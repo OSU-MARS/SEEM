@@ -425,9 +425,9 @@ namespace Osu.Cof.Organon.Test
                     float largeTreeBasalAreaLarger = competition.LargeTreeBasalAreaLarger[largeTreeCompetitionIndex];
                     float largeTreeCrownCompetitionFactor = competition.LargeTreeCrownCompetition[largeTreeCompetitionIndex];
                     Assert.IsTrue(largeTreeBasalAreaLarger >= 0.0F);
-                    Assert.IsTrue(largeTreeBasalAreaLarger < 2000.0F);
+                    Assert.IsTrue(largeTreeBasalAreaLarger < TestConstant.Maximum.TreeBasalAreaLarger);
                     Assert.IsTrue(largeTreeCrownCompetitionFactor >= 0.0F);
-                    Assert.IsTrue(largeTreeCrownCompetitionFactor < 2000.0F);
+                    Assert.IsTrue(largeTreeCrownCompetitionFactor < TestConstant.Maximum.StandCrownCompetitionFactor);
                     this.TestContext.WriteLine("{0},{1}", largeTreeBasalAreaLarger, largeTreeCrownCompetitionFactor);
                 }
                 this.TestContext.WriteLine("index,BAL,CCFL");
@@ -436,9 +436,9 @@ namespace Osu.Cof.Organon.Test
                     float smallTreeBasalAreaLarger = competition.SmallTreeBasalAreaLarger[smallTreeCompetitionIndex];
                     float smallTreeCrownCompetitionFactor = competition.SmallTreeCrownCompetition[smallTreeCompetitionIndex];
                     Assert.IsTrue(smallTreeBasalAreaLarger >= 0.0F);
-                    Assert.IsTrue(smallTreeBasalAreaLarger < 2000.0F);
+                    Assert.IsTrue(smallTreeBasalAreaLarger < TestConstant.Maximum.TreeBasalAreaLarger);
                     Assert.IsTrue(smallTreeCrownCompetitionFactor >= 0.0F);
-                    Assert.IsTrue(smallTreeCrownCompetitionFactor < 2000.0F);
+                    Assert.IsTrue(smallTreeCrownCompetitionFactor < TestConstant.Maximum.StandCrownCompetitionFactor);
                     this.TestContext.WriteLine("{0},{1}", smallTreeBasalAreaLarger, smallTreeCrownCompetitionFactor);
                 }
                 this.TestContext.WriteLine(String.Empty);

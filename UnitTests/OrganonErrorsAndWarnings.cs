@@ -13,9 +13,8 @@
             this.StandErrors = new int[35];
             this.StandWarnings = new int[9];
 
-            // TODO: change to treeCount once Execute2.EDIT() is no longer hard coded to 2000
-            this.TreeErrors = new int[2000, 6];
-            this.TreeWarnings = new int[2000];
+            this.TreeErrors = new int[treeCount, 6];
+            this.TreeWarnings = new int[treeCount];
         }
     }
 }

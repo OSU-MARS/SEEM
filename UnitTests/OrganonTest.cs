@@ -184,7 +184,6 @@ namespace Osu.Cof.Organon.Test
 
         protected void Verify(TreeData treeData, OrganonCapabilities variantCapabilities)
         {
-            Assert.IsTrue(treeData.MaximumRecordCount <= 2000);
             Assert.IsTrue(treeData.UsedRecordCount > 0);
             Assert.IsTrue(treeData.UsedRecordCount <= treeData.MaximumRecordCount);
 

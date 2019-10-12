@@ -30,7 +30,7 @@ namespace Osu.Cof.Organon.Test
                 this.Verify(treeDataForStep, variantCapabilities);
 
                 // run Organon growth simulation
-                treeDataForStep = this.CreateDefaultTrees(variant, 2000);
+                treeDataForStep = this.CreateDefaultTrees(variant);
                 TreeData initialTreeData = treeDataForStep.Clone();
                 OrganonErrorsAndWarnings errorsAndWarnings = new OrganonErrorsAndWarnings(treeDataForStep.UsedRecordCount);
                 OrganonOptions options = new OrganonOptions(variant);

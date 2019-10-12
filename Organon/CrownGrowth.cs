@@ -557,17 +557,17 @@ namespace Osu.Cof.Organon
         {
             // HEIGHT TO CROWN BASE(7 parameters - all species)
             // 
-            // DF Coefficients from Zumrawi and Hann(1989) FRL Research Paper 52
-            // GF Coefficients from Zumrawi and Hann(1989) FRL Research Paper 52
-            // WH Coefficients from Johnson(2002) Willamette Industries Report
-            // RC Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-            // PY Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // MD Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // BL Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // WO Coefficients from Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-            // RA Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-            // PD Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // WI Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
+            // DF Coefficients from Zumrawi and Hann (1989) FRL Research Paper 52
+            // GF Coefficients from Zumrawi and Hann (1989) FRL Research Paper 52
+            // WH Coefficients from Johnson (2002) Willamette Industries Report
+            // RC Coefficients from Hann and Hanus (2002) OSU Department of Forest Management Internal Report #2
+            // PY Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // MD Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // BL Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // WO Coefficients from Gould, Marshall, and Harrington (2008) West.J.Appl.For. 23: 26-33
+            // RA Coefficients from Hann and Hanus (2002) OSU Department of Forest Management Internal Report #1
+            // PD Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // WI Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
             // 
             float[,] HCBPAR = {
                 {
@@ -630,13 +630,14 @@ namespace Osu.Cof.Organon
         {
             // HEIGHT TO CROWN BASE(7 parameters - all species)
             // 
-            // RA Coefficients from Hann, Bluhm, and Hibbs Red Alder Plantation Analysis
-            // DF Coefficients from Hann and Hanus(2004) FS 34: 1193-2003
-            // WH Coefficients from Johnson(2002) Willamette Industries Report
-            // RC Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-            // BL Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // PD Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // WI Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
+            // RA Coefficients from Hann, Bluhm, and Hibbs (2011) Development and Evaluation of the Tree-Level Equations and Their Combined 
+            //    Stand-Level Behavior in the Red Alder Plantation Version of Organon
+            // DF Coefficients from Hann and Hanus (2004) FS 34: 1193-2003
+            // WH Coefficients from Johnson (2002) Willamette Industries Report
+            // RC Coefficients from Hann and Hanus (2002) OSU Department of Forest Management Internal Report #2
+            // BL Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // PD Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // WI Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
             // 
             float[,] HCBPAR = {
                 {
@@ -703,17 +704,17 @@ namespace Osu.Cof.Organon
             // 
             // HEIGHT TO CROWN BASE(7 parameters - all species)
             // 
-            // DF Coefficients from Hann and Hanus(2004) FS 34: 1193-2003
-            // GF Coefficients from Zumrawi and Hann(1989) FRL Research Paper 52
-            // WH Coefficients from Johnson(2002) Willamette Industries Report
+            // DF Coefficients from Hann and Hanus (2004) FS 34: 1193-2003
+            // GF Coefficients from Zumrawi and Hann (1989) FRL Research Paper 52
+            // WH Coefficients from Johnson (2002) Willamette Industries Report
             // RC Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-            // PY Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // MD Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // BL Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // WO Coefficients from Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-            // RA Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-            // PD Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // WI Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
+            // PY Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // MD Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // BL Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // WO Coefficients from Gould, Marshall, and Harrington (2008) West.J.Appl.For. 23: 26-33
+            // RA Coefficients from Hann and Hanus (2002) OSU Department of Forest Management Internal Report #1
+            // PD Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // WI Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
             // 
             float[,] HCBPAR = {
                 {
@@ -780,24 +781,24 @@ namespace Osu.Cof.Organon
             // NEW HEIGHT TO CROWN BASE FOR UNDAMAGED TREES ONLY
             // (7 parameters - all species)
             // 
-            // DF Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // GW Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // PP Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // SP Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // IC Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // WH Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // RC Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-            // PY Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // MD Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // GC Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // TA Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // CL Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // BL Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // WO Coefficients from Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26 - 33
-            // BO Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // RA Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-            // PD Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
-            // WI Coefficients from Hanus, Hann, and Marshall(2000) FRL Research Contribution 29
+            // DF Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // GW Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // PP Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // SP Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // IC Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // WH Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // RC Coefficients from Hann and Hanus (2002) OSU Department of Forest Management Internal Report #2
+            // PY Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // MD Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // GC Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // TA Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // CL Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // BL Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // WO Coefficients from Gould, Marshall, and Harrington (2008) West.J.Appl.For. 23: 26 - 33
+            // BO Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // RA Coefficients from Hann and Hanus (2002) OSU Department of Forest Management Internal Report #1
+            // PD Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
+            // WI Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
             // 
             float[,] HCBPAR = {
                 {

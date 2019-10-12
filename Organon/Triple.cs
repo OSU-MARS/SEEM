@@ -36,19 +36,19 @@ namespace Osu.Cof.Organon
                                  int[,] TDATAI, int[,] PRAGE, int[,] BRCNT, int[,] BRHT, int[,] BRDIA, int[,] JCORE, int[] NPR, float[,] PRLH,
                                  float[,] PRDBH, float[,] PRHT, float[,] PRCR, float[,] PREXP, float[,] SCR, float[,] VOLTR, float[,] SYTVOL)
         {
-            // BUGBUG doesn't increment BIG6, so has implicit assumptions of a big six species and being paired with a DGTRIP() or HGTRIP() call
-            int ISPGRP = TDATAI[K, 1];
-
             // for (int TRIPLING OF VALUES OTHER THAN BASIC TREE ATTRIBUTES
-            if (J > 2000)
-            {
-                throw new ArgumentOutOfRangeException(nameof(J));
-            }
-
             if (M == 0 || (M == 2 && ON == 0))
             {
                 return;
             }
+
+            // BUGBUG doesn't increment BIG6, so has implicit assumptions of a big six species and being paired with a DGTRIP() or HGTRIP() call
+            int ISPGRP = TDATAI[K, 1];
+            if (J > PRLH.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(J));
+            }
+
 
             // TRIPLING PRUNING VARIABLES
             for (int I = 0; I < 3; ++I)
@@ -133,9 +133,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                // BUGBUG should check against length of tree data arrays
-                // BUGBUG off by one error since tree at J + 1 is assigned
-                if (J > 2000)
+                if (J + 1 > MGEXP.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(J));
                 }
@@ -326,8 +324,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                // BUGBUG check against actual length of tree data
-                if (J > 2000)
+                if (J > MGEXP.Length)
                 {
                     throw new ArgumentOutOfRangeException(nameof(J));
                 }

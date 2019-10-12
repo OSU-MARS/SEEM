@@ -19,25 +19,24 @@ namespace Osu.Cof.Organon.Test
                                float[] heightInFeetAtStartOfCycle, float[] heightInFeetAtEndOfCycle,
                                float[] deadExpansionFactorAtEndOfCycle)
         {
-            // TODO: remove workaround for hard coded Organon tree data arrays of length 2000 by changing < to !=
             int treeRecords = this.TotalDbhGrowthInInches.Length;
-            if (dbhInInchesAtStartOfCycle.Length < treeRecords)
+            if (dbhInInchesAtStartOfCycle.Length != treeRecords)
             {
                 throw new ArgumentOutOfRangeException(nameof(dbhInInchesAtStartOfCycle));
             }
-            if (dbhInInchesAtEndOfCycle.Length < treeRecords)
+            if (dbhInInchesAtEndOfCycle.Length != treeRecords)
             {
                 throw new ArgumentOutOfRangeException(nameof(dbhInInchesAtEndOfCycle));
             }
-            if (heightInFeetAtStartOfCycle.Length < treeRecords)
+            if (heightInFeetAtStartOfCycle.Length != treeRecords)
             {
                 throw new ArgumentOutOfRangeException(nameof(heightInFeetAtStartOfCycle));
             }
-            if (heightInFeetAtEndOfCycle.Length < treeRecords)
+            if (heightInFeetAtEndOfCycle.Length != treeRecords)
             {
                 throw new ArgumentOutOfRangeException(nameof(heightInFeetAtEndOfCycle));
             }
-            if (deadExpansionFactorAtEndOfCycle.Length < treeRecords)
+            if (deadExpansionFactorAtEndOfCycle.Length != treeRecords)
             {
                 throw new ArgumentOutOfRangeException(nameof(deadExpansionFactorAtEndOfCycle));
             }

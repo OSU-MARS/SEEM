@@ -9,9 +9,9 @@ namespace Osu.Cof.Organon
         /// </summary>
         /// <param name="VERSION"></param>
         /// <param name="CYCLG"></param>
-        /// <param name="NTREES"></param>
-        /// <param name="IB"></param>
-        /// <param name="BIG6">Number of tree records for big "six" species. Used to determine tree tripling method.</param>
+        /// <param name="treeRecordCount"></param>
+        /// <param name="maxBigSixSpeciesGroupIndex"></param>
+        /// <param name="bigSixTreeRecordCount">Number of tree records for big "six" species. Used to determine tree tripling method.</param>
         /// <param name="OTHER">Total number of trees of other (non-big "six") species.</param>
         /// <param name="NSPN"></param>
         /// <param name="STAGE"></param>
@@ -79,7 +79,7 @@ namespace Osu.Cof.Organon
         /// <param name="GWHG"></param>
         /// <param name="FR"></param>
         /// <param name="PDEN"></param>
-        public static void GROW(Variant VERSION, ref int CYCLG, int NTREES, int IB, int BIG6, int OTHER, int NSPN, ref int STAGE,
+        public static void GROW(Variant VERSION, ref int CYCLG, int treeRecordCount, int maxBigSixSpeciesGroupIndex, int bigSixTreeRecordCount, int OTHER, int NSPN, ref int STAGE,
                      ref int BHAGE, int[] POINT, int[] TREENO, int[,] TDATAI, int[,] PRAGE, int[,] BRCNT, int[,] BRHT, int[,] BRDIA,
                      int[,] JCORE, int[] NPR, ref int TCYCLE, ref int FCYCLE, bool TRIPLE, bool WOODQ, bool POST, bool MORT,
                      bool GENETICS, bool SWISSNC, float[,] TDATAR, float SI_1, float SI_2, float SBA1, float[] BALL1, float[] BAL1,
@@ -108,58 +108,60 @@ namespace Osu.Cof.Organon
             {
                 GrowthModifiers.SNC_MODS(FR, out DGMOD_SNC, out HGMOD_SNC);
             }
-            // GROWTH 1
-            // CALCULATE DIAMGRO
-            int NZERO = 0;
-            int BZERO = 0;
-            int OZERO = 0;
-            for (int I = 1; I < NTREES; ++I)
+
+            // diameter growth
+            int treeRecordsWithExpansionFactorZero = 0;
+            int bigSixRecordsWithExpansionFactorZero = 0;
+            int otherSpeciesRecordsWithExpansionFactorZero = 0;
+            for (int I = 1; I < treeRecordCount; ++I)
             {
                 if (TDATAR[I, 3] <= 0.0F)
                 {
-                    NZERO = NZERO + 1;
-                    if (TDATAI[I, 1] <= IB)
+                    ++treeRecordsWithExpansionFactorZero;
+                    if (TDATAI[I, 1] <= maxBigSixSpeciesGroupIndex)
                     {
-                        BZERO = BZERO + 1;
+                        bigSixRecordsWithExpansionFactorZero = bigSixRecordsWithExpansionFactorZero + 1;
                     }
                     else
                     {
-                        OZERO = OZERO + 1;
+                        otherSpeciesRecordsWithExpansionFactorZero = otherSpeciesRecordsWithExpansionFactorZero + 1;
                     }
                 }
             }
-            int J = NTREES + 1;
-            int NTCAL1 = (NTREES - NZERO) * 3;
-            int NTCAL2 = NZERO + NTCAL1;
-            int NTCAL3 = (NTREES - NZERO) * 2;
-            int NTCAL4 = NZERO + NTCAL3;
-            int NTCAL5 = BIG6 + 2 * (BIG6 - BZERO);
-            int NTCAL6 = BIG6 + (BIG6 - BZERO);
-            int M = 0;
+
+            int J = treeRecordCount + 1;
+            int tripledTreeRecordCount = 3 * (treeRecordCount - treeRecordsWithExpansionFactorZero);
+            int totalTreeRecordCount = treeRecordsWithExpansionFactorZero + tripledTreeRecordCount;
+            int potentialNewTreeRecordsFromTripling = 2 * (treeRecordCount - treeRecordsWithExpansionFactorZero);
+            int NTCAL4 = treeRecordsWithExpansionFactorZero + potentialNewTreeRecordsFromTripling;
+            int potentialBixSixRecordsFromTripling = bigSixTreeRecordCount + 2 * (bigSixTreeRecordCount - bigSixRecordsWithExpansionFactorZero);
+            int NTCAL6 = bigSixTreeRecordCount + (bigSixTreeRecordCount - bigSixRecordsWithExpansionFactorZero);
+            int triplingMethod = 0;
             if (TRIPLE)
             {
-                if (NTCAL1 <= 2000 && NTCAL2 <= 2000)
+                int currentTreeRecordCount = MGEXP.Length;
+                if ((tripledTreeRecordCount <= currentTreeRecordCount) && (totalTreeRecordCount <= currentTreeRecordCount))
                 {
-                    M = 1;
+                    triplingMethod = 1;
                 }
-                if (WOODQ && NTCAL5 > 2000)
+                if (WOODQ && (potentialBixSixRecordsFromTripling > currentTreeRecordCount))
                 {
-                    M = 0;
+                    triplingMethod = 0;
                 }
-                else if (NTCAL3 <= 2000 && NTCAL4 <= 2000)
+                else if ((potentialNewTreeRecordsFromTripling <= currentTreeRecordCount) && (NTCAL4 <= currentTreeRecordCount))
                 {
-                    M = 2;
-                    if (WOODQ && NTCAL6 > 2000)
+                    triplingMethod = 2;
+                    if (WOODQ && (NTCAL6 > currentTreeRecordCount))
                     {
-                        M = 0;
+                        triplingMethod = 0;
                     }
                 }
             }
             int ON = 0;
             int IWQ = 0;
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < treeRecordCount; ++I)
             {
-                if (WOODQ && TDATAI[I, 1] <= IB)
+                if (WOODQ && TDATAI[I, 1] <= maxBigSixSpeciesGroupIndex)
                 {
                     IWQ = IWQ + 1;
                 }
@@ -174,48 +176,48 @@ namespace Osu.Cof.Organon
                     {
                         GROWTH[I, 1] = GROWTH[I, 1] * DGMOD_GG * DGMOD_SNC;
                     }
-                    Triple.XTRIP(I, J, M, ON, IWQ, WOODQ, IB, BIG6, POINT, TREENO, TDATAI, PRAGE, BRCNT, BRHT, BRDIA, JCORE, NPR, PRLH, PRDBH, PRHT, PRCR, PREXP, SCR, VOLTR, SYTVOL);
-                    Triple.DGTRIP(I, ref J, M, ON, VERSION, IB, ref BIG6, ref OTHER, TDATAI, TDATAR, GROWTH, MGEXP, DEADEXP);
+                    Triple.XTRIP(I, J, triplingMethod, ON, IWQ, WOODQ, maxBigSixSpeciesGroupIndex, bigSixTreeRecordCount, POINT, TREENO, TDATAI, PRAGE, BRCNT, BRHT, BRDIA, JCORE, NPR, PRLH, PRDBH, PRHT, PRCR, PREXP, SCR, VOLTR, SYTVOL);
+                    Triple.DGTRIP(I, ref J, triplingMethod, ON, VERSION, maxBigSixSpeciesGroupIndex, ref bigSixTreeRecordCount, ref OTHER, TDATAI, TDATAR, GROWTH, MGEXP, DEADEXP);
                 }
             }
             if (TRIPLE)
             {
-                NTREES = J - 1;
+                treeRecordCount = J - 1;
             }
 
             // GROWTH 2
             // CALCULATE HTGRO FOR BIG6
-            NTCAL1 = (BIG6 - BZERO) * 3 + (OTHER - OZERO);
-            NTCAL2 = BZERO + OZERO + NTCAL1;
-            NTCAL3 = (BIG6 - BZERO) * 2 + (OTHER - OZERO);
-            NTCAL4 = BZERO + OZERO + NTCAL3;
-            NTCAL5 = BIG6 + 2 * (BIG6 - BZERO);
-            NTCAL6 = BIG6 + (BIG6 - BZERO);
-            M = 0;
+            tripledTreeRecordCount = (bigSixTreeRecordCount - bigSixRecordsWithExpansionFactorZero) * 3 + (OTHER - otherSpeciesRecordsWithExpansionFactorZero);
+            totalTreeRecordCount = bigSixRecordsWithExpansionFactorZero + otherSpeciesRecordsWithExpansionFactorZero + tripledTreeRecordCount;
+            potentialNewTreeRecordsFromTripling = (bigSixTreeRecordCount - bigSixRecordsWithExpansionFactorZero) * 2 + (OTHER - otherSpeciesRecordsWithExpansionFactorZero);
+            NTCAL4 = bigSixRecordsWithExpansionFactorZero + otherSpeciesRecordsWithExpansionFactorZero + potentialNewTreeRecordsFromTripling;
+            potentialBixSixRecordsFromTripling = bigSixTreeRecordCount + 2 * (bigSixTreeRecordCount - bigSixRecordsWithExpansionFactorZero);
+            NTCAL6 = bigSixTreeRecordCount + (bigSixTreeRecordCount - bigSixRecordsWithExpansionFactorZero);
+            triplingMethod = 0;
             if (TRIPLE)
             {
-                if (NTCAL1 <= 2000 && NTCAL2 <= 2000)
+                if (tripledTreeRecordCount <= 2000 && totalTreeRecordCount <= 2000)
                 {
-                    M = 1;
+                    triplingMethod = 1;
                 }
-                if (WOODQ && NTCAL5 > 2000)
+                if (WOODQ && potentialBixSixRecordsFromTripling > 2000)
                 {
-                    M = 0;
+                    triplingMethod = 0;
                 }
-                else if (NTCAL3 <= 2000 && NTCAL4 <= 2000)
+                else if (potentialNewTreeRecordsFromTripling <= 2000 && NTCAL4 <= 2000)
                 {
-                    M = 2;
+                    triplingMethod = 2;
                     if (WOODQ && NTCAL6 > 2000)
                     {
-                        M = 0;
+                        triplingMethod = 0;
                     }
                 }
             }
             ON = 0;
             IWQ = 0;
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < treeRecordCount; ++I)
             {
-                if (TDATAI[I, 1] <= IB)
+                if (TDATAI[I, 1] <= maxBigSixSpeciesGroupIndex)
                 {
                     if (WOODQ)
                     {
@@ -227,38 +229,38 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        HeightGrowth.HTGRO1(I, M, ON, VERSION, CYCLG, IB, TDATAI, TDATAR, SI_1, SI_2, CCH, CALIB, PN, YF, BABT, BART, YT, ref OLD, PDEN, GROWTH);
+                        HeightGrowth.HTGRO1(I, triplingMethod, ON, VERSION, CYCLG, maxBigSixSpeciesGroupIndex, TDATAI, TDATAR, SI_1, SI_2, CCH, CALIB, PN, YF, BABT, BART, YT, ref OLD, PDEN, GROWTH);
                         if (TDATAI[I, 0] == 202)
                         {
                             GROWTH[I, 0] = GROWTH[I, 0] * HGMOD_GG * HGMOD_SNC;
                         }
-                        Triple.XTRIP(I, J, M, ON, IWQ, WOODQ, IB, BIG6, POINT, TREENO, TDATAI, PRAGE, BRCNT, BRHT, BRDIA, JCORE, NPR, PRLH, PRDBH, PRHT, PRCR, PREXP, SCR, VOLTR, SYTVOL);
-                        Triple.HGTRIP(I, ref J, M, ON, VERSION, ref BIG6, ref OTHER, TDATAI, TDATAR, GROWTH, MGEXP, DEADEXP);
+                        Triple.XTRIP(I, J, triplingMethod, ON, IWQ, WOODQ, maxBigSixSpeciesGroupIndex, bigSixTreeRecordCount, POINT, TREENO, TDATAI, PRAGE, BRCNT, BRHT, BRDIA, JCORE, NPR, PRLH, PRDBH, PRHT, PRCR, PREXP, SCR, VOLTR, SYTVOL);
+                        Triple.HGTRIP(I, ref J, triplingMethod, ON, VERSION, ref bigSixTreeRecordCount, ref OTHER, TDATAI, TDATAR, GROWTH, MGEXP, DEADEXP);
                     }
                 }
             }
             if (TRIPLE)
             {
-                NTREES = J - 1;
+                treeRecordCount = J - 1;
             }
 
             // DETERMINE MORTALITY, IF REQUIRED
-            Mortality.MORTAL(VERSION, CYCLG, NTREES, IB, TDATAI, POST, MORT, TDATAR, SCR, GROWTH, MGEXP, DEADEXP, BALL1, BAL1, SI_1, SI_2, PN, YF, A1, A2, A1MAX, PA1MAX, NO, RD0, RAAGE, PDEN);
+            Mortality.MORTAL(VERSION, CYCLG, treeRecordCount, maxBigSixSpeciesGroupIndex, TDATAI, POST, MORT, TDATAR, SCR, GROWTH, MGEXP, DEADEXP, BALL1, BAL1, SI_1, SI_2, PN, YF, A1, A2, A1MAX, PA1MAX, NO, RD0, RAAGE, PDEN);
 
             // UPDATE DIAMETERS
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < treeRecordCount; ++I)
             {
                 TDATAR[I, 0] = TDATAR[I, 0] + GROWTH[I, 1];
             }
 
             // CALC EOG SBA, CCF/TREE, CCF IN LARGER TREES AND STAND CCF
-            Stats.SSTATS(VERSION, NTREES, TDATAI, TDATAR, out SBA2, out TPA2, out SCCF2, BAL2, BALL2, CCFL2, CCFLL2);
+            Stats.SSTATS(VERSION, treeRecordCount, TDATAI, TDATAR, out SBA2, out TPA2, out SCCF2, BAL2, BALL2, CCFL2, CCFLL2);
 
             // CALCULATE HTGRO FOR 'OTHER' & CROWN ALL SPECIES
             IWQ = 0;
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < treeRecordCount; ++I)
             {
-                if (TDATAI[I, 1] > IB)
+                if (TDATAI[I, 1] > maxBigSixSpeciesGroupIndex)
                 {
                     if (TDATAR[I, 3] <= 0.0F)
                     {
@@ -266,14 +268,14 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        HeightGrowth.HTGRO2(I, VERSION, IB, TDATAI, TDATAR, RASI, CALIB, GROWTH);
+                        HeightGrowth.HTGRO2(I, VERSION, maxBigSixSpeciesGroupIndex, TDATAI, TDATAR, RASI, CALIB, GROWTH);
                     }
                 }
                 TDATAR[I, 1] = TDATAR[I, 1] + GROWTH[I, 0];
             }
 
             // CALC CROWN GROWTH
-            CrownGrowth.CrowGro(VERSION, CYCLG, NTREES, IB, TDATAI, TDATAR, SCR, GROWTH, MGEXP, DEADEXP, CCFLL1, CCFL1, CCFLL2, CCFL2, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
+            CrownGrowth.CrowGro(VERSION, CYCLG, treeRecordCount, maxBigSixSpeciesGroupIndex, TDATAI, TDATAR, SCR, GROWTH, MGEXP, DEADEXP, CCFLL1, CCFL1, CCFLL2, CCFL2, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
 
             // UPDATE STAND VARIABLES
             if (VERSION <= Variant.Smc)

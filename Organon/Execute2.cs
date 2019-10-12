@@ -162,7 +162,7 @@ namespace Osu.Cof.Organon
             float A1MAX = STOR[4];
             float PA1MAX = STOR[5];
 
-            int[] SPGRP = new int[2000];
+            int[] SPGRP = new int[NTREES];
             EDIT(CYCLG, VERSION, NPTS, NTREES, STAGE, BHAGE, SPECIES, CALH, CALC,
                 CALD, EVEN, PRUNE, THIN, FERT, MORT, GENETICS, SWISSNC, DBH1,
                 HT1, CR1, EXPAN1, SITE_1, SITE_2, MSDI_1, MSDI_2, MSDI_3, PDEN,
@@ -217,14 +217,14 @@ namespace Osu.Cof.Organon
             }
             bool TRIAL = false;
 
-            float[,] GROWTH = new float[2000, 4];
-            float[] DEADEXP = new float[2000];
-            float[,] SCR = new float[2000, 3];
-            float[,] SYTVOL = new float[2000, 2];
-            float[,] TDATAR = new float[2000, 8];
-            int[,] TDATAI = new int[2000, 3];
-            float[,] VOLTR = new float[2000, 4];
-            for (int I = 0; I < 2000; ++I)
+            float[,] GROWTH = new float[NTREES, 4];
+            float[] DEADEXP = new float[NTREES];
+            float[,] SCR = new float[NTREES, 3];
+            float[,] SYTVOL = new float[NTREES, 2];
+            float[,] TDATAR = new float[NTREES, 8];
+            int[,] TDATAI = new int[NTREES, 3];
+            float[,] VOLTR = new float[NTREES, 4];
+            for (int I = 0; I < NTREES; ++I)
             {
                 GROWTH[I, 2] = 0.0F;
                 GROWTH[I, 3] = 0.0F;
@@ -625,8 +625,7 @@ namespace Osu.Cof.Organon
             float MAXPP = 0.0F;
             float MAXIC = 0.0F;
             float MAXRA = 0.0F;
-            // BUGBUG should use number of trees
-            for (int I = 0; I < 2000; ++I)
+            for (int I = 0; I < NTREES; ++I)
             {
                 for (int J = 0; J < 6; ++J)
                 {
@@ -643,7 +642,7 @@ namespace Osu.Cof.Organon
                 SWARNING[I] = 0;
             }
 
-            if (NTREES < 1 || NTREES > 2000)
+            if (NTREES < 1)
             {
                 SERROR[0] = 1;
             }
@@ -1476,7 +1475,7 @@ namespace Osu.Cof.Organon
 
         public static void CROWN_CLOSURE(Variant VERSION, int NTREES, int NPTS, int[] SPECIES, float[] DBH, float[] HT, float[] CR, float[] SCR, float[] EXPAN, out float CC)
         {
-            int[] ISPGRP = new int[2000];
+            int[] ISPGRP = new int[NTREES];
             for (int I = 0; I < NTREES; ++I)
             {
                 SPGROUP(VERSION, I, SPECIES, ISPGRP);
@@ -1592,7 +1591,7 @@ namespace Osu.Cof.Organon
 
             SI_1 = SITE_1 - 4.5F;
             float SI_2 = SITE_2 - 4.5F;
-            int[] SPGRP = new int[2000];
+            int[] SPGRP = new int[NTREES];
             // BUGBUG no check that NINGRO <= NTREES
             for (int I = NTREES - NINGRO; I < NTREES; ++I)
             {
@@ -1624,25 +1623,10 @@ namespace Osu.Cof.Organon
                 HT[I] = 4.5F + ACALIB[SPGRP[I], 0] * (RHT - 4.5F);
             }
 
-            // BUGBUG: should be NTREES in Fortran code, not 2000
-            float[] DEADEXP = new float[2000];
-            float[,] GROWTH = new float[2000, 4];
-            float[,] TDATAR = new float[2000, 4];
-            int[,] TDATAI = new int[2000, 3];
-            for (int I = 0; I < 2000; ++I)
-            {
-                GROWTH[I, 2] = 0.0F;
-                GROWTH[I, 3] = 0.0F;
-                TDATAI[I, 0] = 0;
-                TDATAI[I, 1] = 0;
-                TDATAI[I, 2] = 0; // BUGBUG: not clear why user data needs to be zeroed here
-                TDATAR[I, 0] = 0.0F;
-                TDATAR[I, 1] = 0.0F;
-                TDATAR[I, 2] = 0.0F;
-                TDATAR[I, 3] = 0.0F;
-                DEADEXP[I] = 0.0F;
-            }
-
+            float[] DEADEXP = new float[NTREES];
+            float[,] GROWTH = new float[NTREES, 4];
+            float[,] TDATAR = new float[NTREES, 4];
+            int[,] TDATAI = new int[NTREES, 3];
             for (int I = 0; I < NTREES; ++I)
             {
                 TDATAI[I, 0] = SPECIES[I];

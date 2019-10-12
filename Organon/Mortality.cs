@@ -10,7 +10,7 @@ namespace Osu.Cof.Organon
                                   float SI_2, float[] PN, float[] YF, float A1, float A2, float A1MAX, float PA1MAX, float NO, float RD0, float RAAGE, float PDEN)
         {
             // ROUTINE FOR SETTING TREE MORTALITY
-            float[] POW = new float[2000];
+            float[] POW = new float[NTREES];
             for (int I = 0; I < NTREES; ++I)
             {
                 POW[I] = 1.0F;
@@ -44,7 +44,7 @@ namespace Osu.Cof.Organon
             float STBA = 0.0F;
             float STN = 0.0F;
             float RAN = 0.0F;
-            float[] PMK = new float[2000];
+            float[] PMK = new float[NTREES];
             for (int I = 0; I < NTREES; ++I)
             {
                 STBA = STBA + TDATAR[I, 0] * TDATAR[I, 0] * KB * TDATAR[I, 3];
