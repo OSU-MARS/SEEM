@@ -25,7 +25,7 @@ namespace Osu.Cof.Organon.Test
                     this.TimeStepInYears = 5;
                     break;
                 default:
-                    throw new NotSupportedException(String.Format("Unhandled variant {0}.", variant));
+                    throw VariantExtensions.CreateUnhandledVariantException(variant);
             }
         }
     }

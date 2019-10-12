@@ -86,7 +86,7 @@ namespace Osu.Cof.Organon
                      float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, float[,] GROWTH, float[,] PRLH, float[,] PRDBH, float[,] PRHT,
                      float[,] PRCR, float[,] PREXP, float[,] SCR, float[,] VOLTR, float[,] SYTVOL, float[] CCH, ref float OLD, float[] MGEXP, float[] DEADEXP,
                      float A1, float A2, float A1MAX, float PA1MAX, float NO, float RD0, float RAAGE, float RASI, float[] CCFLL1, float[] CCFL1,
-                     out float SBA2, float[] CCFLL2, float[] CCFL2, float[] BALL2, float[] BAL2, out float TPA2, out float SCCF2, float GWDG, float GWHG,
+                     float[] CCFLL2, float[] CCFL2, float[] BALL2, float[] BAL2, float GWDG, float GWHG,
                      float FR, float PDEN)
         {
             //---------------------------------------------------------
@@ -120,11 +120,11 @@ namespace Osu.Cof.Organon
                     ++treeRecordsWithExpansionFactorZero;
                     if (TDATAI[I, 1] <= maxBigSixSpeciesGroupIndex)
                     {
-                        bigSixRecordsWithExpansionFactorZero = bigSixRecordsWithExpansionFactorZero + 1;
+                        ++bigSixRecordsWithExpansionFactorZero;
                     }
                     else
                     {
-                        otherSpeciesRecordsWithExpansionFactorZero = otherSpeciesRecordsWithExpansionFactorZero + 1;
+                        ++otherSpeciesRecordsWithExpansionFactorZero;
                     }
                 }
             }
@@ -163,7 +163,7 @@ namespace Osu.Cof.Organon
             {
                 if (WOODQ && TDATAI[I, 1] <= maxBigSixSpeciesGroupIndex)
                 {
-                    IWQ = IWQ + 1;
+                    ++IWQ;
                 }
                 if (TDATAR[I, 3] <= 0.0F)
                 {
@@ -177,7 +177,7 @@ namespace Osu.Cof.Organon
                         GROWTH[I, 1] = GROWTH[I, 1] * DGMOD_GG * DGMOD_SNC;
                     }
                     Triple.XTRIP(I, J, triplingMethod, ON, IWQ, WOODQ, maxBigSixSpeciesGroupIndex, bigSixTreeRecordCount, POINT, TREENO, TDATAI, PRAGE, BRCNT, BRHT, BRDIA, JCORE, NPR, PRLH, PRDBH, PRHT, PRCR, PREXP, SCR, VOLTR, SYTVOL);
-                    Triple.DGTRIP(I, ref J, triplingMethod, ON, VERSION, maxBigSixSpeciesGroupIndex, ref bigSixTreeRecordCount, ref OTHER, TDATAI, TDATAR, GROWTH, MGEXP, DEADEXP);
+                    Triple.DGTRIP(I, ref J, triplingMethod, ref ON, VERSION, maxBigSixSpeciesGroupIndex, ref bigSixTreeRecordCount, ref OTHER, TDATAI, TDATAR, GROWTH, MGEXP, DEADEXP);
                 }
             }
             if (TRIPLE)
@@ -221,7 +221,7 @@ namespace Osu.Cof.Organon
                 {
                     if (WOODQ)
                     {
-                        IWQ = IWQ + 1;
+                        ++IWQ;
                     }
                     if (TDATAR[I, 3] <= 0.0F)
                     {
@@ -229,13 +229,13 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        HeightGrowth.HTGRO1(I, triplingMethod, ON, VERSION, CYCLG, maxBigSixSpeciesGroupIndex, TDATAI, TDATAR, SI_1, SI_2, CCH, CALIB, PN, YF, BABT, BART, YT, ref OLD, PDEN, GROWTH);
+                        HeightGrowth.HTGRO1(I, triplingMethod, ON, VERSION, CYCLG, maxBigSixSpeciesGroupIndex, TDATAI, TDATAR, SI_1, SI_2, CCH, PN, YF, BABT, BART, YT, ref OLD, PDEN, GROWTH);
                         if (TDATAI[I, 0] == 202)
                         {
                             GROWTH[I, 0] = GROWTH[I, 0] * HGMOD_GG * HGMOD_SNC;
                         }
                         Triple.XTRIP(I, J, triplingMethod, ON, IWQ, WOODQ, maxBigSixSpeciesGroupIndex, bigSixTreeRecordCount, POINT, TREENO, TDATAI, PRAGE, BRCNT, BRHT, BRDIA, JCORE, NPR, PRLH, PRDBH, PRHT, PRCR, PREXP, SCR, VOLTR, SYTVOL);
-                        Triple.HGTRIP(I, ref J, triplingMethod, ON, VERSION, ref bigSixTreeRecordCount, ref OTHER, TDATAI, TDATAR, GROWTH, MGEXP, DEADEXP);
+                        Triple.HGTRIP(I, ref J, triplingMethod, ref ON, VERSION, ref bigSixTreeRecordCount, TDATAI, TDATAR, GROWTH, MGEXP, DEADEXP);
                     }
                 }
             }
@@ -245,7 +245,7 @@ namespace Osu.Cof.Organon
             }
 
             // DETERMINE MORTALITY, IF REQUIRED
-            Mortality.MORTAL(VERSION, CYCLG, treeRecordCount, maxBigSixSpeciesGroupIndex, TDATAI, POST, MORT, TDATAR, SCR, GROWTH, MGEXP, DEADEXP, BALL1, BAL1, SI_1, SI_2, PN, YF, A1, A2, A1MAX, PA1MAX, NO, RD0, RAAGE, PDEN);
+            Mortality.MORTAL(VERSION, CYCLG, treeRecordCount, maxBigSixSpeciesGroupIndex, TDATAI, POST, MORT, TDATAR, SCR, GROWTH, MGEXP, DEADEXP, BALL1, BAL1, SI_1, SI_2, PN, YF, A1, A2, A1MAX, ref PA1MAX, ref NO, RD0, ref RAAGE, PDEN);
 
             // UPDATE DIAMETERS
             for (int I = 0; I < treeRecordCount; ++I)
@@ -254,10 +254,9 @@ namespace Osu.Cof.Organon
             }
 
             // CALC EOG SBA, CCF/TREE, CCF IN LARGER TREES AND STAND CCF
-            Stats.SSTATS(VERSION, treeRecordCount, TDATAI, TDATAR, out SBA2, out TPA2, out SCCF2, BAL2, BALL2, CCFL2, CCFLL2);
+            Stats.SSTATS(VERSION, treeRecordCount, TDATAI, TDATAR, out float SBA2, out float _, out float _, BAL2, BALL2, CCFL2, CCFLL2);
 
             // CALCULATE HTGRO FOR 'OTHER' & CROWN ALL SPECIES
-            IWQ = 0;
             for (int I = 0; I < treeRecordCount; ++I)
             {
                 if (TDATAI[I, 1] > maxBigSixSpeciesGroupIndex)
@@ -278,28 +277,28 @@ namespace Osu.Cof.Organon
             CrownGrowth.CrowGro(VERSION, CYCLG, treeRecordCount, maxBigSixSpeciesGroupIndex, TDATAI, TDATAR, SCR, GROWTH, MGEXP, DEADEXP, CCFLL1, CCFL1, CCFLL2, CCFL2, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
 
             // UPDATE STAND VARIABLES
-            if (VERSION <= Variant.Smc)
+            if (VERSION != Variant.Rap)
             {
-                STAGE = STAGE + 5;
-                BHAGE = BHAGE + 5;
+                STAGE += 5;
+                BHAGE += 5;
             }
             else
             {
-                STAGE = STAGE + 1;
-                BHAGE = BHAGE + 1;
+                ++STAGE;
+                ++BHAGE;
             }
-            CYCLG = CYCLG + 1;
+            ++CYCLG;
             if (FCYCLE > 2)
             {
                 FCYCLE = 0;
             }
             else if (FCYCLE > 0)
             {
-                FCYCLE = FCYCLE + 1;
+                ++FCYCLE;
             }
             if (TCYCLE > 0)
             {
-                TCYCLE = TCYCLE + 1;
+                ++TCYCLE;
             }
             // REDUCE CALIBRATION RATIOS
             for (int I = 0; I < 3; ++I)

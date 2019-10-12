@@ -123,7 +123,7 @@ namespace Osu.Cof.Organon
         /// <param name="GROWTH">Tree data.</param>
         /// <param name="MGEXP">Tree data.</param>
         /// <param name="DEADEXP">Tree data.</param>
-        public static void DGTRIP(int K, ref int J, int M, int ON, Variant VERSION, int IB, ref int BIG6, ref int OTHER, int[,] TDATAI, float[,] TDATAR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP)
+        public static void DGTRIP(int K, ref int J, int M, ref int ON, Variant VERSION, int IB, ref int BIG6, ref int OTHER, int[,] TDATAI, float[,] TDATAR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP)
         {
             // DO TRIPLING
             if (M == 0 || (M == 2 && ON == 0))
@@ -177,11 +177,11 @@ namespace Osu.Cof.Organon
                 // INCREASE SPECIES COUNT
                 if (TDATAI[K, 2] <= IB)
                 {
-                    BIG6 = BIG6 + 2;
+                    BIG6 += 2;
                 }
                 else
                 {
-                    OTHER = OTHER + 2;
+                    OTHER += 2;
                 }
 
                 float LRES;
@@ -224,7 +224,7 @@ namespace Osu.Cof.Organon
                 GROWTH[J + 1, 3] = GROWTH[K, 3] + GROWTH[J + 1, 1];
                 GROWTH[J, 3] = GROWTH[K, 3];
                 GROWTH[J + 1, 3] = GROWTH[K, 3];
-                J = J + 2;
+                J += 2;
                 ON = 0;
             }
             GROWTH[K, 3] = GROWTH[K, 3] + GROWTH[K, 1];
@@ -313,13 +313,13 @@ namespace Osu.Cof.Organon
         /// <param name="GROWTH">Tree data.</param>
         /// <param name="MGEXP">Tree data.</param>
         /// <param name="DEADEXP">Tree data.</param>
-        public static void HGTRIP(int K, ref int J, int M, int ON, Variant VERSION, ref int BIG6, ref int OTHER, int[,] TDATAI,
+        public static void HGTRIP(int K, ref int J, int M, ref int ON, Variant VERSION, ref int BIG6, int[,] TDATAI,
                                   float[,] TDATAR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP)
         {
-            // BUGBUG doesn't have IB as an input so always treats tree as a big six species
+            // BUGBUG doesn't have IB as an input so always treats tree as a big six species?
             if (M == 0 || (M == 2 && ON == 0))
             {
-                // BUGBUG ON appears to be a bool declared as an int but is hard coded to 0 in Execute2, so can be removed
+                // BUGBUG ON appears to be a bool declared as an int
                 ON = 1;
             }
             else
@@ -404,9 +404,9 @@ namespace Osu.Cof.Organon
                 TDATAR[J, 6] = TDATAR[K, 6];
                 TDATAR[J + 1, 6] = TDATAR[K, 6];
 
-                // INCREASE TREE SPECIES COUNT
-                BIG6 = BIG6 + 2;
-                J = J + 2;
+                // increase tree record count
+                BIG6 += 2;
+                J += 2;
                 ON = 0;
             }
             GROWTH[K, 2] = GROWTH[K, 2] + GROWTH[K, 0];

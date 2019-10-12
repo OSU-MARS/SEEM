@@ -7,7 +7,7 @@ namespace Osu.Cof.Organon
     {
         public static void MORTAL(Variant VERSION, int CYCLG, int NTREES, int IB, int[,] TDATAI, bool POST, bool MORT,
                                   float[,] TDATAR, float[,] SCR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP, float[] BALL1, float[] BAL1, float SI_1,
-                                  float SI_2, float[] PN, float[] YF, float A1, float A2, float A1MAX, float PA1MAX, float NO, float RD0, float RAAGE, float PDEN)
+                                  float SI_2, float[] PN, float[] YF, float A1, float A2, float A1MAX, ref float PA1MAX, ref float NO, float RD0, ref float RAAGE, float PDEN)
         {
             // ROUTINE FOR SETTING TREE MORTALITY
             float[] POW = new float[NTREES];
@@ -40,23 +40,22 @@ namespace Osu.Cof.Organon
             }
 
             float KB = 0.005454154F;
-            float KR1 = 1.0F;
             float STBA = 0.0F;
             float STN = 0.0F;
             float RAN = 0.0F;
             float[] PMK = new float[NTREES];
             for (int I = 0; I < NTREES; ++I)
             {
-                STBA = STBA + TDATAR[I, 0] * TDATAR[I, 0] * KB * TDATAR[I, 3];
-                STN = STN + TDATAR[I, 3];
+                STBA += TDATAR[I, 0] * TDATAR[I, 0] * KB * TDATAR[I, 3];
+                STN += TDATAR[I, 3];
                 if (TDATAI[I, 0] == 351 && VERSION <= Variant.Smc)
                 {
-                    RAN = RAN + TDATAR[I, 3];
+                    RAN += TDATAR[I, 3];
                 }
                 if (CYCLG == 0 && POST)
                 {
-                    STBA = STBA + TDATAR[I, 0] * TDATAR[I, 0] * KB * MGEXP[I];
-                    STN = STN + MGEXP[I];
+                    STBA += TDATAR[I, 0] * TDATAR[I, 0] * KB * MGEXP[I];
+                    STN += MGEXP[I];
                 }
                 PMK[I] = 0.0F;
                 DEADEXP[I] = 0.0F;
@@ -65,7 +64,6 @@ namespace Osu.Cof.Organon
             {
                 RAAGE = 0.0F;
             }
-            float SQMDM = (float)Math.Exp(A1 - A2 * Math.Log(STN));
             float SQMDA = (float)Math.Sqrt(STBA / (KB * STN));
             float RD = STN / (float)Math.Exp(A1 / A2 - Math.Log(SQMDA) / A2);
             if (CYCLG == 0)
@@ -87,7 +85,6 @@ namespace Osu.Cof.Organon
                 }
                 int ISPGRP = TDATAI[I, 1];
                 float DBH = TDATAR[I, 0];
-                float HT = TDATAR[I, 1];
                 PM_FERT(ISPGRP, VERSION, CYCLG, PN, YF, out float FERTADJ);
                 DiameterGrowth.GET_BAL(DBH, BALL1, BAL1, out float SBAL1);
                 float CR;
@@ -103,16 +100,16 @@ namespace Osu.Cof.Organon
                 switch (VERSION)
                 {
                     case Variant.Swo:
-                        PM_SWO(ISPGRP, DBH, CR, SI_1, SBAL1, OG1, POW[I], out PMK[I]);
+                        PM_SWO(ISPGRP, DBH, CR, SI_1, SBAL1, OG1, out POW[I], out PMK[I]);
                         break;
                     case Variant.Nwo:
-                        PM_NWO(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, POW[I], out PMK[I]);
+                        PM_NWO(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, out POW[I], out PMK[I]);
                         break;
                     case Variant.Smc:
-                        PM_SMC(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, POW[I], out PMK[I]);
+                        PM_SMC(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, out POW[I], out PMK[I]);
                         break;
                     case Variant.Rap:
-                        PM_RAP(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, POW[I], out PMK[I]);
+                        PM_RAP(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, out POW[I], out PMK[I]);
                         break;
                     default:
                         throw new NotSupportedException();
@@ -126,7 +123,7 @@ namespace Osu.Cof.Organon
                 {
                     RAMORT(NTREES, TDATAI, RAAGE, TDATAR, RAN, PMK);
                 }
-                RAAGE = RAAGE + 5.0F;
+                RAAGE += 5.0F;
             }
 
             for (int I = 0; I < NTREES; ++I)
@@ -144,8 +141,8 @@ namespace Osu.Cof.Organon
                 float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
                 float PS = (float)Math.Pow(1.0F - XPM, POW[I]);
                 float PM = 1.0F - PS * CRADJ;
-                NA = NA + TDATAR[I, 3] * (1.0F - PM);
-                BAA = BAA + KB * (float)Math.Pow(TDATAR[I, 0] + GROWTH[I, 1], 2) * TDATAR[I, 3] * (1.0F - PM);
+                NA += TDATAR[I, 3] * (1.0F - PM);
+                BAA += KB * (float)Math.Pow(TDATAR[I, 0] + GROWTH[I, 1], 2) * TDATAR[I, 3] * (1.0F - PM);
             }
 
             // DETERMINE IF ADDITIONAL MORTALITY MUST BE TAKEN
@@ -156,7 +153,6 @@ namespace Osu.Cof.Organon
                 if (CYCLG == 0)
                 {
                     // INITALIZATIONS FOR FIRST GROWTH CYCLE
-                    int IND;
                     if (RD >= 1.0)
                     {
                         if (RDA > RD)
@@ -167,7 +163,6 @@ namespace Osu.Cof.Organon
                         {
                             A1MAX = (float)(Math.Log(QMDA) + A2 * Math.Log(NA));
                         }
-                        IND = 1;
                         if (A1MAX < A1)
                         {
                             A1MAX = A1;
@@ -176,7 +171,6 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        IND = 0;
                         if (VERSION <= Variant.Smc)
                         {
                             if (RD > RDCC)
@@ -194,7 +188,6 @@ namespace Osu.Cof.Organon
                         {
                             if (RD0 >= 1.0F)
                             {
-                                IND = 0;
                                 A1MAX = (float)(Math.Log(QMDA) + A2 * Math.Log(NA));
                                 if (A1MAX > PA1MAX)
                                 {
@@ -208,6 +201,7 @@ namespace Osu.Cof.Organon
                             }
                             else
                             {
+                                int IND;
                                 if (RD >= 1.0F && NO <= 0.0F)
                                 {
                                     if (RDA > RD)
@@ -252,7 +246,7 @@ namespace Osu.Cof.Organon
                                     }
                                     else
                                     {
-                                        QMDP = QUAD2(NA, NO, RDCC, A1);
+                                        QMDP = QUAD2(NA, NO, A1);
                                     }
                                 }
                                 else
@@ -289,11 +283,11 @@ namespace Osu.Cof.Organon
                                 else
                                 {
                                     // ADJUSTMENT TO MORTALITY NECESSARY
-                                    KR1 = 0.0F;
+                                    float KR1 = 0.0F;
                                     for (int KK = 0; KK < 7; ++KK)
                                     {
                                         float NK = 10.0F / (float)Math.Pow(10.0, KK);
-                                    kr1: KR1 = KR1 + NK;
+                                    kr1: KR1 += NK;
                                         float NAA = 0.0F;
                                         float BAAA = 0.0F;
                                         for (int I = 0; I < NTREES; ++I)
@@ -317,8 +311,8 @@ namespace Osu.Cof.Organon
                                             float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[I])));
                                             float PS = (float)Math.Pow(1.0 - XPM, POW[I]);
                                             float PM = 1.0F - PS * CRADJ;
-                                            NAA = NAA + TDATAR[I, 3] * (1.0F - PM);
-                                            BAAA = BAAA + KB * (float)Math.Pow(TDATAR[I, 0] + GROWTH[I, 1], 2.0) * TDATAR[I, 3] * (1.0F - PM);
+                                            NAA += TDATAR[I, 3] * (1.0F - PM);
+                                            BAAA += KB * (float)Math.Pow(TDATAR[I, 0] + GROWTH[I, 1], 2.0) * TDATAR[I, 3] * (1.0F - PM);
                                         }
                                         QMDA = (float)Math.Sqrt(BAAA / (KB * NAA));
                                         if (IND == 0)
@@ -329,7 +323,7 @@ namespace Osu.Cof.Organon
                                             }
                                             else
                                             {
-                                                QMDP = QUAD2(NAA, NO, RDCC, A1);
+                                                QMDP = QUAD2(NAA, NO, A1);
                                             }
                                         }
                                         else
@@ -338,7 +332,7 @@ namespace Osu.Cof.Organon
                                         }
                                         if (QMDP >= QMDA)
                                         {
-                                            KR1 = KR1 - NK;
+                                            KR1 -= NK;
                                         }
                                         else
                                         {
@@ -427,7 +421,7 @@ namespace Osu.Cof.Organon
             return (float)Math.Exp(X);
         }
 
-        private static float QUAD2(float NI, float NO, float RDCC, float A1)
+        private static float QUAD2(float NI, float NO, float A1)
         {
             float A2 = 0.64F;
             float A3 = 3.88F;
@@ -445,7 +439,7 @@ namespace Osu.Cof.Organon
                 if (TDATAI[I, 0] == 351)
                 {
                     float PM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
-                    RAMORT1 = RAMORT1 + TDATAR[I, 3] * PM;
+                    RAMORT1 += TDATAR[I, 3] * PM;
                 }
             }
 
@@ -478,19 +472,19 @@ namespace Osu.Cof.Organon
                 for (int KK = 0; KK < 7; ++KK)
                 {
                     float NK = 10.0F / (float)Math.Pow(10.0, KK);
-                kr1: KR1 = KR1 + NK;
+                kr1: KR1 += NK;
                     RAMORT1 = 0.0F;
                     for (int I = 0; I < NTREES; ++I)
                     {
                         if (TDATAI[I, 0] == 351)
                         {
                             float PM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[I])));
-                            RAMORT1 = RAMORT1 + TDATAR[I, 3] * PM;
+                            RAMORT1 += TDATAR[I, 3] * PM;
                         }
                     }
                     if (RAMORT1 > RAMORT2)
                     {
-                        KR1 = KR1 - NK;
+                        KR1 -= NK;
                     }
                     else
                     {
@@ -538,13 +532,13 @@ namespace Osu.Cof.Organon
             float FERTX1 = 0.0F;
             for (int II = 1; II < 5; ++II)
             {
-                FERTX1 = FERTX1 + PN[II] * (float)Math.Exp((PF3 / PF2) * (YF[0] - YF[II]));
+                FERTX1 += PN[II] * (float)Math.Exp((PF3 / PF2) * (YF[0] - YF[II]));
             }
             float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[0]));
             FERTADJ = PF1 * (float)Math.Pow(PN[0]+ FERTX1, PF2) * FERTX2;
         }
 
-        private static void PM_SWO(int ISPGRP, float DBH, float CR, float SI_1, float BAL, float OG, float POW, out float PM)
+        private static void PM_SWO(int ISPGRP, float DBH, float CR, float SI_1, float BAL, float OG, out float POW, out float PM)
         {
             // NEW SWO MORTALITY WITH REVISED CLO PARAMETERS(8 parameters - all species)
             // DF Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
@@ -650,7 +644,7 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void PM_NWO(int ISPGRP, float DBH, float CR, float SI_1, float SI_2, float BAL, float POW, out float PM)
+        private static void PM_NWO(int ISPGRP, float DBH, float CR, float SI_1, float SI_2, float BAL, out float POW, out float PM)
         {
             // NWO MORTALITY(6 parameters - all species)
             //
@@ -741,7 +735,7 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void PM_SMC(int ISPGRP, float DBH, float CR, float SI_1, float SI_2, float BAL, float POW, out float PM)
+        private static void PM_SMC(int ISPGRP, float DBH, float CR, float SI_1, float SI_2, float BAL, out float POW, out float PM)
         {
             // SMC MORTALITY(6 parameters - all species)
             //
@@ -822,7 +816,7 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void PM_RAP(int ISPGRP, float DBH, float CR, float SI_1, float SI_2, float BAL, float POW, out float PM)
+        private static void PM_RAP(int ISPGRP, float DBH, float CR, float SI_1, float SI_2, float BAL, out float POW, out float PM)
         {
             // RAP MORTALITY(6 parameters - all species)
             //
@@ -947,9 +941,9 @@ namespace Osu.Cof.Organon
             float TOTTR = 0.0F;
             for (int I = 99; I > 0; --I)
             {
-                TOTHT = TOTHT + HTCL[I];
-                TOTD = TOTD + DCL[I];
-                TOTTR = TOTTR + TRCL[I];
+                TOTHT += HTCL[I];
+                TOTD += DCL[I];
+                TOTTR += TRCL[I];
                 if (TOTTR > 5.0F)
                 {
                     float TRDIFF = TRCL[I] - (TOTTR - 5.0F);

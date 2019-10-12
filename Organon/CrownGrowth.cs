@@ -74,7 +74,7 @@ namespace Osu.Cof.Organon
         }
 
         /// <summary>
-        /// 
+        /// (DOUG? can this be removed as dead code since the value of CC is never consumed?)
         /// </summary>
         /// <param name="IND">Flag for use of shadow crown ratios (DOUG?). Always false.</param>
         /// <param name="CTMUL">Cut tree multiplier. Always zero.</param>

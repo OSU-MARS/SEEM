@@ -14,78 +14,6 @@ namespace Osu.Cof.Organon
             return 9.73F + 0.64516F * (SI_1 + 4.5F);
         }
 
-        /// <summary>
-        /// Finds height of the first 40 trees of big six species in the stand based on expansion factors. Ignores other species.
-        /// </summary>
-        /// <param name="CTMUL"></param>
-        /// <param name="VERSION"></param>
-        /// <param name="IB">Threshold for big six species membership.</param>
-        /// <param name="NTREES">Number of trees available in tree data.</param>
-        /// <param name="TDATAI">Tree data.</param>
-        /// <param name="TDATAR">Tree data.</param>
-        /// <param name="MGEXP">Tree data.</param>
-        /// <param name="HT40"></param>
-        public static void HTFORTY(float CTMUL, Variant VERSION, int IB, int NTREES, int[,] TDATAI, float[,] TDATAR, float[] MGEXP, out float HT40)
-        {
-            // find total expansion factor and weighted heights for all trees in the stand
-            // BUGBUG Effectively assumes the trees are sorted from largest to smallest. Generally won't calculate H40 in other cases.
-            float[] HTCL = new float[100]; // running sum of heights weighted by expansion factors
-            float[] TRCL = new float[100]; // running sum of expansion factors
-            for (int I = 0; I < 100; ++I)
-            {
-                HTCL[I] = 0.0F;
-                TRCL[I] = 0.0F;
-            }
-
-            int IIB = IB;
-            if (VERSION == Variant.Rap)
-            {
-                // BUGBUG not consistent with IB = 3 elsewhere for red alder variant
-                IIB = 1;
-            }
-            for (int I = 0; I < NTREES; ++I)
-            {
-                if (TDATAI[I, 1] <= IIB)
-                {
-                    int ID = (int)(TDATAR[I, 0]) + 1;
-                    if (ID > 100)
-                    {
-                        ID = 100;
-                    }
-                    float EXPAN = TDATAR[I, 3] + CTMUL * MGEXP[I];
-                    HTCL[ID] = HTCL[ID] + TDATAR[I, 1] * EXPAN;
-                    TRCL[ID] = TRCL[ID] + EXPAN;
-                }
-            }
-
-            // BUGBUG Assumes trees in stand are of species and have expansion factors such that the first 40 trees occur in the first 
-            //        100 tree entries. This isn't necessarily true and the method is additionally fragile as 1) it squashes past index
-            //        100 into the 100th row and 2) relies on uninitialized memory being set to zero when there are less than 100 tree
-            //        entries.
-            float TOTHT = 0.0F; // 
-            float TOTTR = 0.0F;
-            for (int I = 99; I >= 0; --I)
-            {
-                TOTHT = TOTHT + HTCL[I];
-                TOTTR = TOTTR + TRCL[I];
-                if (TOTTR > 40.0F)
-                {
-                    float TRDIFF = TRCL[I] - (TOTTR - 40.0F);
-                    TOTHT = TOTHT - HTCL[I] + ((HTCL[I] / TRCL[I]) * TRDIFF);
-                    TOTTR = 40.0F;
-                    break;
-                }
-            }
-            if (TOTTR > 0.0F)
-            {
-                HT40 = TOTHT / TOTTR;
-            }
-            else
-            {
-                HT40 = 0.0F;
-            }
-        }
-
         public static void RASITE(float H, float A, out float SI)
         {
             // RED ALDER SITE INDEX EQUATION FROM WORTHINGTON, JOHNSON, STAEBLER AND LLOYD(1960) PNW RESEARCH PAPER 36
@@ -137,8 +65,8 @@ namespace Osu.Cof.Organon
                 float HT = TDATAR[I, 1];
                 float EXPAN = TDATAR[I, 3];
                 float BA = DBH * DBH * EXPAN * 0.005454154F;
-                SBA = SBA + BA;
-                TPA = TPA + EXPAN;
+                SBA += BA;
+                TPA += EXPAN;
 
                 float MCW;
                 switch (VERSION)
@@ -162,7 +90,7 @@ namespace Osu.Cof.Organon
                 // (DOUG? Where does 0.001803 come from? Why is it species invariant? Todd: check FOR 322 notes.)
                 // BUGBUG duplicates index calculations of DiameterGrowth.GET_BAL()
                 float CCF = 0.001803F * MCW * MCW * EXPAN;
-                SCCF = SCCF + CCF;
+                SCCF += CCF;
                 if (DBH > 50.0F)
                 {
                     int L = (int)(DBH - 50.0F);

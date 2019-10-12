@@ -63,7 +63,7 @@ namespace Osu.Cof.Organon
             {
                 do
                 {
-                    AGE = AGE + 100.0F / (float)Math.Pow(10.0, I);
+                    AGE += 100.0F / (float)Math.Pow(10.0, I);
                     if (AGE > 500.0F)
                     {
                         GEAGE = 500.0F;
@@ -75,7 +75,7 @@ namespace Osu.Cof.Organon
                     WesternHemlockHeight.SITECV_F(SIM, AGE, out HTOP);
                 }
                 while (HTOP < HTM);
-                AGE = AGE - 100.0F / (float)Math.Pow(10.0, I);
+                AGE -= 100.0F / (float)Math.Pow(10.0, I);
             }
             GEAGE = AGE;
 
@@ -293,7 +293,7 @@ namespace Osu.Cof.Organon
             float FERTX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
-                FERTX1 = FERTX1 + (PN[I] / 800.0F) * (float)Math.Exp((PF3 / PF2) * (YF[0] - YF[I]));
+                FERTX1 += (PN[I] / 800.0F) * (float)Math.Exp((PF3 / PF2) * (YF[0] - YF[I]));
             }
             float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[0]) + PF4 * Math.Pow(SI_1 / 100.0, PF5));
             FERTADJ = 1.0F + PF1 * (float)(Math.Pow(PN[0] / 800.0 + FERTX1, PF2) * FERTX2) * FALDWN;
@@ -501,7 +501,7 @@ namespace Osu.Cof.Organon
             float THINX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
-                THINX1 = THINX1 + BART[I] * (float)Math.Exp((PT3 / PT2) * (YT[0] - YT[0]));
+                THINX1 += BART[I] * (float)Math.Exp((PT3 / PT2) * (YT[0] - YT[0]));
             }
             float THINX2 = THINX1 + BART[0];
             float THINX3 = THINX1 + BABT;
@@ -607,13 +607,11 @@ namespace Osu.Cof.Organon
         /// 0 = DON'T TRIPLE THIS TREE
         /// </remarks>
         public static void HTGRO1(int K, int M, int ON, Variant VERSION, int CYCLG, int IB, int[,] TDATAI, float[,] TDATAR, float SI_1, float SI_2,
-                                  float[] CCH, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN, float[,] GROWTH)
+                                  float[] CCH, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN, float[,] GROWTH)
         {
             // BUGBUG remove M and ON
             // CALCULATE 5-YEAR HEIGHT GROWTH
             float CR = TDATAR[K, 2];
-            float DBH = TDATAR[K, 0];
-            float H = TDATAR[K, 1];
             int ISPGRP = TDATAI[K, 1];
 
             // FOR MAJOR SPECIES
@@ -708,7 +706,7 @@ namespace Osu.Cof.Organon
                         {
                             // POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM(2009) RED ALDER TOP HEIGHT GROWTH
                             SITE = SI_1 + 4.5F;
-                            WHHLB_HG(SITE, PDEN, TDATAR[K, 1], GP, out GEAGE, out PHTGRO);
+                            WHHLB_HG(SITE, PDEN, TDATAR[K, 1], GP, out GEAGE, out _);
                         }
                         else
                         {
@@ -731,28 +729,27 @@ namespace Osu.Cof.Organon
                     default:
                         throw new NotSupportedException();
                 }
-                if (TDATAI[K, 1] <= IB && GEAGE > IDXAGE)
+                if ((TDATAI[K, 1] <= IB) && (GEAGE > IDXAGE))
                 {
-                    OLD = OLD + 1.0F;
+                    OLD += 1.0F;
                     if (M == 1 || (M == 2 && ON == 1))
                     {
                         // BUGBUG should this be reachable when ON = 0? (tripling disabled?)
                         // BUGBUG encapsulation: Triple APIs should manage this
-                        OLD = OLD + 2.0F;
+                        OLD += 2.0F;
                     }
                 }
 
                 HG_FERT(CYCLG, VERSION, ISPGRP, SI_1, PN, YF, out float FERTADJ);
                 HG_THIN(CYCLG, VERSION, ISPGRP, BABT, BART, YT, out float THINADJ);
                 GROWTH[K, 0] = HG * THINADJ * FERTADJ;
-                LIMIT(VERSION, TDATAI[K, 0], TDATAR[K, 0], TDATAR[K, 1], GROWTH[K, 1], GROWTH[K, 0]);
+                LIMIT(VERSION, TDATAI[K, 0], TDATAR[K, 0], TDATAR[K, 1], GROWTH[K, 1], ref GROWTH[K, 0]);
             }
         }
 
         public static void HTGRO2(int K, Variant VERSION, int IB, int[,] TDATAI, float[,] TDATAR, float RASI, float[,] CALIB, float[,] GROWTH)
         {
             // CALCULATE HEIGHT GROWTH FOR MINOR SPECIES
-            float CR = TDATAR[K, 2];
             float DBH = TDATAR[K, 0];
             int ISPGRP = TDATAI[K, 1];
             if (TDATAI[K, 1] > IB)
@@ -809,7 +806,7 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void LIMIT(Variant VERSION, int ISP, float DBH, float HT, float DG, float HG)
+        private static void LIMIT(Variant VERSION, int ISP, float DBH, float HT, float DG, ref float HG)
         {
             int JSP = ISP;
             if (ISP == 263 && VERSION == Variant.Swo)

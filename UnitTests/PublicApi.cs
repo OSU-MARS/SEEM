@@ -32,7 +32,7 @@ namespace Osu.Cof.Organon.Test
                 // run Organon growth simulation
                 treeDataForStep = this.CreateDefaultTrees(variant);
                 TreeData initialTreeData = treeDataForStep.Clone();
-                OrganonErrorsAndWarnings errorsAndWarnings = new OrganonErrorsAndWarnings(treeDataForStep.UsedRecordCount);
+                OrganonWarnings errorsAndWarnings = new OrganonWarnings(treeDataForStep.UsedRecordCount);
                 OrganonOptions options = new OrganonOptions(variant);
                 TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath(treeDataForStep.UsedRecordCount);
 
@@ -49,7 +49,6 @@ namespace Osu.Cof.Organon.Test
                 float[] standParameters = options.ToStandParametersArray();
                 float[] YSF = new float[5]; // (DOUG?)
                 float[] YST = new float[5]; // (DOUG?)
-                int unusedErrorFlag = -1;
 
                 treeDataForStep.GetEmptyArrays(out float[] dbhInInchesAtEndOfCycle, out float[] heightInFeetAtEndOfCycle, 
                                         out float[] crownRatioAtEndOfCycle, out float[] shadowCrownRatioAtEndOfCycle, 
@@ -64,8 +63,7 @@ namespace Osu.Cof.Organon.Test
                                      user, featureFlagsArray, dbhInInchesAtStartOfCycle, heightInFeetAtStartOfCycle, crownRatioAtStartOfCycle,
                                      shadowCrownRatioAtStartOfCycle, expansionFactorAtStartOfCycle, treeDataForStep.MGExpansionFactor, siteVariables, 
                                      ACALIB, PN, YSF, BABT, BART, YST, null, null, null, null, null, null, null, null, null, null, null,
-                                     errorsAndWarnings.StandErrors, errorsAndWarnings.TreeErrors, errorsAndWarnings.StandWarnings,
-                                     errorsAndWarnings.TreeWarnings, unusedErrorFlag, diameterGrowth, heightGrowth, crownChange, 
+                                     errorsAndWarnings.StandWarnings, errorsAndWarnings.TreeWarnings, diameterGrowth, heightGrowth, crownChange, 
                                      shadowCrownRatioChange, treeDataForStep.DeadExpansionFactor, out int treeCountAtEndOfCycle, dbhInInchesAtEndOfCycle, 
                                      heightInFeetAtEndOfCycle, crownRatioAtEndOfCycle, shadowCrownRatioAtEndOfCycle, expansionFactorAtEndOfCycle, 
                                      standParameters);

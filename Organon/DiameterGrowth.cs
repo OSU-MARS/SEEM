@@ -661,7 +661,7 @@ namespace Osu.Cof.Organon
             float THINX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
-                THINX1 = THINX1 + BART[I] * (float)Math.Exp((PT3 / PT2) * (YT[1] - YT[I]));
+                THINX1 += BART[I] * (float)Math.Exp((PT3 / PT2) * (YT[1] - YT[I]));
             }
             float THINX2 = THINX1 + BART[0];
             float THINX3 = THINX1 + BABT;
@@ -735,7 +735,7 @@ namespace Osu.Cof.Organon
             float FERTX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
-                FERTX1 = FERTX1 + (PN[I] / 800.0F) * (float)Math.Exp((PF3 / PF2) * (YF[1] - YF[I]));
+                FERTX1 += (PN[I] / 800.0F) * (float)Math.Exp((PF3 / PF2) * (YF[1] - YF[I]));
             }
 
             float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[1]) + Math.Pow(PF4 * (SI_1 / 100.0), PF5));

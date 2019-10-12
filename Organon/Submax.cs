@@ -93,11 +93,10 @@ namespace Osu.Cof.Organon
             float TOTBA = 0.0F;
             for (int I = 0; I < 3; ++I)
             {
-                TOTBA = TOTBA + BAGRP[I];
+                TOTBA += BAGRP[I];
             }
 
             float PDF;
-            float PRA; // BUGBUG unused in Fortran code; typo for PTF?
             float PTF = 0.0F; // BUGBUG not intialized in Fortran code
             if (TOTBA > 0.0F)
             {
@@ -108,7 +107,8 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    PRA = BAGRP[0] / TOTBA;
+                    // (DOUG? typo for PTF?)
+                    // PRA = BAGRP[0] / TOTBA;
                     PDF = BAGRP[1] / TOTBA;
                 }
             }
@@ -121,7 +121,8 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    PRA = 0.0F;
+                    // (DOUG? typo for PTF?)
+                    // PRA = 0.0F;
                     PDF = 0.0F;
                 }
             }
@@ -222,14 +223,6 @@ namespace Osu.Cof.Organon
                     }
                     break;
                 case Variant.Rap:
-                    if (TOTBA > 0.0F)
-                    {
-                        PWH = BAGRP[2] / TOTBA;
-                    }
-                    else
-                    {
-                        PWH = 0.0F;
-                    }
                     A1MOD = 1.0F;
                     break;
                 default:

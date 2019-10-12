@@ -64,8 +64,7 @@ namespace Osu.Cof.Organon
                                    int[] PTNO, int[] SPECIES, int[] USER, int[] INDS, float[] DBH1, float[] HT1, float[] CR1, float[] SCR1,
                                    float[] EXPAN1, float[] MGEXP, float[] RVARS, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
                                    int[] NPR, int[,] PRAGE, float[,] PRLH, float[,] PRDBH, float[,] PRHT, float[,] PRCR, float[,] PREXP, int[,] BRCNT,
-                                   int[,] BRHT, int[,] BRDIA, int[,] JCOR, int[] SERROR, int[,] TERROR, int[] SWARNING,
-                                   int[] TWARNING, int IERROR, float[] DGRO, float[] HGRO, float[] CRCHNG, float[] SCRCHNG,
+                                   int[,] BRHT, int[,] BRDIA, int[,] JCOR, int[] SWARNING, int[] TWARNING, float[] DGRO, float[] HGRO, float[] CRCHNG, float[] SCRCHNG,
                                    float[] MORTEXP, out int NTREES2, float[] DBH2, float[] HT2, float[] CR2, float[] SCR2, float[] EXPAN2, float[] STOR)
         {
             // SET THE MAXIMUM TREE LEVEL ARRAY SIZES
@@ -163,39 +162,9 @@ namespace Osu.Cof.Organon
             float PA1MAX = STOR[5];
 
             int[] SPGRP = new int[NTREES];
-            EDIT(CYCLG, VERSION, NPTS, NTREES, STAGE, BHAGE, SPECIES, CALH, CALC,
-                CALD, EVEN, PRUNE, THIN, FERT, MORT, GENETICS, SWISSNC, DBH1,
-                HT1, CR1, EXPAN1, SITE_1, SITE_2, MSDI_1, MSDI_2, MSDI_3, PDEN,
-                ACALIB, PN, YSF, BABT, BART, YST, SCR1, MGEXP, GWDG, GWHG, FR, out int IB,
-                out int NSPN, out int BIG6, out int OTHER, out int BNXT, out int ONXT, SPGRP, SERROR, TERROR, SWARNING,
-                TWARNING, out bool ERROR);
-            // BUGBUG dead Fortran code IERROR = 0;
-            if (ERROR)
-            {
-                // BUGBUG dead Fortran code IERROR = 1;
-                NTREES2 = -1;
-                return;
-            }
-
-            float NXT = BNXT + ONXT;
-            // BUGBUG dead Fortran code 
-            //float IDXAGE;
-            //float IDXCYC;
-            //if (VERSION == Version.Swo)
-            //{
-            // IDXAGE = 500F;
-            // IDXCYC = 100F;
-            //}
-            //else if (VERSION == Version.Nwo || VERSION == Version.Smc)
-            //{
-            // IDXAGE = 120F;
-            // IDXCYC = 24F;
-            //}
-            //else
-            //{
-            // IDXAGE = 30F;
-            // IDXCYC = 30F;
-            //}
+            EDIT(CYCLG, VERSION, NPTS, NTREES, STAGE, BHAGE, SPECIES, EVEN, THIN, FERT, GENETICS, SWISSNC, DBH1,
+                HT1, CR1, EXPAN1, SITE_1, SITE_2, MSDI_1, MSDI_2, MSDI_3, PDEN, ACALIB, PN, YSF, BABT, BART, YST, SCR1, 
+                MGEXP, GWDG, GWHG, FR, out int IB, out int NSPN, out int BIG6, out int OTHER, out int BNXT, SPGRP, SWARNING, TWARNING);
 
             int FCYCLE = 0;
             int TCYCLE = 0;
@@ -217,44 +186,45 @@ namespace Osu.Cof.Organon
             }
             bool TRIAL = false;
 
-            float[,] GROWTH = new float[NTREES, 4];
-            float[] DEADEXP = new float[NTREES];
-            float[,] SCR = new float[NTREES, 3];
+            if (DBH2.Length != NTREES)
+            {
+                throw new ArgumentOutOfRangeException(nameof(DBH2));
+            }
+            if (HT2.Length != NTREES)
+            {
+                throw new ArgumentOutOfRangeException(nameof(HT2));
+            }
+            if (CR2.Length != NTREES)
+            {
+                throw new ArgumentOutOfRangeException(nameof(CR2));
+            }
+            if (EXPAN2.Length != NTREES)
+            {
+                throw new ArgumentOutOfRangeException(nameof(EXPAN2));
+            }
             float[,] SYTVOL = new float[NTREES, 2];
-            float[,] TDATAR = new float[NTREES, 8];
-            int[,] TDATAI = new int[NTREES, 3];
             float[,] VOLTR = new float[NTREES, 4];
             for (int I = 0; I < NTREES; ++I)
             {
-                GROWTH[I, 2] = 0.0F;
-                GROWTH[I, 3] = 0.0F;
-                TDATAI[I, 0] = 0;
-                TDATAI[I, 1] = 0;
-                TDATAI[I, 2] = 0;
-                TDATAR[I, 0] = 0.0F;
-                TDATAR[I, 1] = 0.0F;
-                TDATAR[I, 2] = 0.0F;
-                TDATAR[I, 3] = 0.0F;
-                SCR[I, 0] = 0.0F;
-                SCR[I, 1] = 0.0F;
-                SCR[I, 2] = 0.0F;
-                DEADEXP[I] = 0.0F;
                 // BUGBUG doesn't check passed length of DBH2, HT2, CR2, EXPAN2, or SCR2
                 DBH2[I] = 0.0F;
                 HT2[I] = 0.0F;
                 CR2[I] = 0.0F;
                 EXPAN2[I] = 0.0F;
                 SCR2[I] = 0.0F;
-                for (int II = 0; II < 2; ++II) 
-                {
-                   SYTVOL[I, II] = 0.0F;
-                }
-                for (int II = 0; II < 4; ++II)
-                {
-                   VOLTR[I, II] = 0.0F;
-                }
+                SYTVOL[I, 0] = 0.0F;
+                SYTVOL[I, 1] = 0.0F;
+                VOLTR[I, 0] = 0.0F;
+                VOLTR[I, 1] = 0.0F;
+                VOLTR[I, 2] = 0.0F;
+                VOLTR[I, 3] = 0.0F;
             }
 
+            float[,] GROWTH = new float[NTREES, 4];
+            float[] DEADEXP = new float[NTREES];
+            float[,] SCR = new float[NTREES, 3];
+            float[,] TDATAR = new float[NTREES, 8];
+            int[,] TDATAI = new int[NTREES, 3];
             for (int I = 0; I < NTREES; ++I)
             {
                 TDATAI[I, 0] = SPECIES[I];
@@ -414,44 +384,15 @@ namespace Osu.Cof.Organon
             }
 
             // CALCULATE DENSITY VARIABLES AT SOG
-            float SBA1;
-            float TPA1;
-            float SCCF1;
             float[] BAL1 = new float[500];
             float[] BALL1 = new float[51];
             float[] CCFL1 = new float[500];
             float[] CCFLL1 = new float[51];
-            Stats.SSTATS(VERSION, NTREES, TDATAI, TDATAR, out SBA1, out TPA1, out SCCF1, BAL1, BALL1, CCFL1, CCFLL1);
-            float CON = 0.005454154F;
-            float QMD1 = (float)Math.Sqrt(SBA1 / (CON * TPA1));
-            float RD1 = TPA1 / (float)Math.Exp(A1 / A2 - Math.Log(QMD1) / A2);
-
-            // CALCULATE H40 AND MAXIMUM CROWN CLOSURE AT SOG
-            Stats.HTFORTY(0.0F, VERSION, IB, NTREES, TDATAI, TDATAR, MGEXP, out float HT40);
-            float CCMAX;
-            if (HT40 < 140.0F)
-            {
-                CCMAX = 100.0F;
-            }
-            else 
-            {
-                CCMAX = 121.0F - 0.15F * HT40;
-            }
-            if (RD1 < 0.4)
-            {
-                CCMAX = CCMAX * 0.6F;
-            }
-            else 
-            { 
-                if (RD1 >= 0.4F && RD1 < 0.8F) 
-                {
-                    CCMAX = CCMAX * (0.2F + RD1);
-                }
-            }
+            Stats.SSTATS(VERSION, NTREES, TDATAI, TDATAR, out float SBA1, out float _, out float _, BAL1, BALL1, CCFL1, CCFLL1);
 
             // CALCULATE CCH AND CROWN CLOSURE AT SOG
             float[] CCH = new float[41];
-            CrownGrowth.CRNCLO(0, 0.0F, VERSION, NTREES, TDATAI, TDATAR, SCR, MGEXP, CCH, out float CC);
+            CrownGrowth.CRNCLO(0, 0.0F, VERSION, NTREES, TDATAI, TDATAR, SCR, MGEXP, CCH, out float _);
             float OLD = 0.0F;
             for (int I = 0; I < NTREES; ++I)
             {
@@ -480,10 +421,8 @@ namespace Osu.Cof.Organon
                     TDATAR, SI_1, SI_2, SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART,
                     YT, GROWTH, PRLH, PRDBH, PRHT, PRCR, PREXP, SCR, VOLTR, SYTVOL,
                     CCH, ref OLD, MGEXP, DEADEXP, A1, A2, A1MAX, PA1MAX, NO, RD0, RAAGE,
-                    RASI, CCFLL1, CCFL1, out float SBA2, CCFLL2, CCFL2, BALL2, BAL2, out float TPA2,
-                    out float SCCF2, GWDG, GWHG, FR, PDEN);
+                    RASI, CCFLL1, CCFL1, CCFLL2, CCFL2, BALL2, BAL2, GWDG, GWHG, FR, PDEN);
             NTREES2 = NTREES;
-            POST = false;
 
             if (EVEN == false)
             {
@@ -556,20 +495,15 @@ namespace Osu.Cof.Organon
         /// Does argument checking and raises error flags if problems are found.
         /// </summary>
         /// <param name="CYCLG"></param>
-        /// <param name="VERSION">Organon variant.</param>
+        /// <param name="variant">Organon variant.</param>
         /// <param name="NPTS"></param>
-        /// <param name="NTREES"></param>
+        /// <param name="treeRecordCount"></param>
         /// <param name="STAGE"></param>
         /// <param name="BHAGE"></param>
         /// <param name="SPECIES"></param>
-        /// <param name="CALH">Unused.</param>
-        /// <param name="CALC">Unused.</param>
-        /// <param name="CALD">Unused.</param>
         /// <param name="EVEN"></param>
-        /// <param name="PRUNE">Unused.</param>
         /// <param name="THIN"></param>
         /// <param name="FERT"></param>
-        /// <param name="MORT">Unused.</param>
         /// <param name="GENETICS"></param>
         /// <param name="SWISSNC"></param>
         /// <param name="DBH"></param>
@@ -600,103 +534,80 @@ namespace Osu.Cof.Organon
         /// <param name="BNXT"></param>
         /// <param name="ONXT"></param>
         /// <param name="SPGRP"></param>
-        /// <param name="SERROR"></param>
-        /// <param name="TERROR"></param>
         /// <param name="SWARNING"></param>
         /// <param name="TWARNING"></param>
-        /// <param name="ERROR"></param>
-        private static void EDIT(int CYCLG, Variant VERSION, int NPTS, int NTREES, int STAGE, int BHAGE, int[] SPECIES,
-                                 bool CALH, bool CALC, bool CALD, bool EVEN, bool PRUNE, bool THIN, bool FERT, bool MORT, bool GENETICS,
+        private static void EDIT(int CYCLG, Variant variant, int NPTS, int treeRecordCount, int STAGE, int BHAGE, int[] SPECIES,
+                                 bool EVEN, bool THIN, bool FERT, bool GENETICS,
                                  bool SWISSNC, float[] DBH, float[] HT, float[] CR, float[] EXPAN, float SITE_1, float SITE_2, float MSDI_1,
                                  float MSDI_2, float MSDI_3, float PDEN, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
                                  float[] SCR, float[] MGEXP, float GWDG, float GWHG, float FR, out int IB, out int NSPN, out int BIG6, out int OTHER, out int BNXT,
-                                 out int ONXT, int[] SPGRP, int[] SERROR, int[,] TERROR, int[] SWARNING, int[] TWARNING, out bool ERROR)
+                                 int[] SPGRP, int[] SWARNING, int[] TWARNING)
         {
-            ERROR = false;
-
-            int YCYCLG = 5 * CYCLG;
             BIG6 = 0;
             OTHER = 0;
             BNXT = 0;
-            ONXT = 0;
-            float MAXGF = 0.0F;
-            float MAXDF = 0.0F;
-            float MAXWH = 0.0F;
-            float MAXPP = 0.0F;
-            float MAXIC = 0.0F;
-            float MAXRA = 0.0F;
-            for (int I = 0; I < NTREES; ++I)
-            {
-                for (int J = 0; J < 6; ++J)
-                {
-                    TERROR[I, J] = 0;
-                }
-                TWARNING[I] = 0;
-            }
-            for (int I = 0; I < 35; ++I)
-            {
-                SERROR[I] = 0;
-            }
-            for (int I = 0; I < 9; ++I)
-            {
-                SWARNING[I] = 0;
-            }
 
-            if (NTREES < 1)
+            if (treeRecordCount < 1)
             {
-                SERROR[0] = 1;
+                throw new ArgumentOutOfRangeException(nameof(treeRecordCount));
             }
-            if (VERSION < Variant.Swo || VERSION > Variant.Rap)
+            if (Enum.IsDefined(typeof(Variant), variant) == false)
             {
-                SERROR[1] = 1;
+                throw new ArgumentOutOfRangeException(nameof(variant));
             }
             if (NPTS < 0)
             {
-                SERROR[2] = 1;
+                throw new ArgumentOutOfRangeException(nameof(NPTS));
             }
-            if (SITE_1 < 0.0F && SITE_2 < 0.0F)
+            if ((SITE_1 <= 0.0F) || (SITE_1 > Constant.Maximum.SiteIndexInFeet))
             {
-                SERROR[3] = 1;
+                throw new ArgumentOutOfRangeException(nameof(SITE_1));
             }
-            if (EVEN && BHAGE < 0)
+            if ((SITE_2 <= 0.0F) || (SITE_2 > Constant.Maximum.SiteIndexInFeet))
             {
-                SERROR[5] = 1;
+                throw new ArgumentOutOfRangeException(nameof(SITE_2));
             }
-            if (!EVEN && BHAGE > 0)
+
+            if (EVEN && (BHAGE < 0))
             {
-                SERROR[6] = 1;
+                throw new ArgumentOutOfRangeException(nameof(BHAGE), nameof(BHAGE) + "BHAGE must be zero or greater when " + nameof(EVEN) + " is set.");
             }
-            if (EVEN && (STAGE - BHAGE) < 1)
+            if (!EVEN && (BHAGE > 0))
             {
-                SERROR[7] = 1;
+                throw new ArgumentOutOfRangeException(nameof(BHAGE), nameof(BHAGE) + " must be zero or less when " + nameof(EVEN) + " is not set.");
+            }
+            if (EVEN && ((STAGE - BHAGE) < 1))
+            {
+                // (DOUG? can STAGE ever be less than BHAGE?)
+                throw new ArgumentException(nameof(STAGE) + " must be greater than " + nameof(BHAGE) + " when " + nameof(EVEN) + "  is set.");
             }
             if (!EVEN && FERT)
             {
-                SERROR[8] = 1;
+                throw new ArgumentException("If " + nameof(FERT) + " is set " + nameof(EVEN) + "must also be set.");
             }
             for (int I = 0; I < 5; ++I)
             {
                 if (!FERT && (YSF[I] != 0 || PN[I] != 0))
                 {
-                    SERROR[9] = 1;
+                    throw new ArgumentException();
                 }
                 if (FERT)
                 {
-                    if (YSF[I] > STAGE || YSF[I] > 70.0F)
+                    if ((YSF[I] > STAGE) || (YSF[I] > 70.0F))
                     {
-                        SERROR[10] = 1;
+                        throw new ArgumentException();
                     }
                     if (I == 0)
                     {
-                        if (PN[I] < 0.0 || PN[I] > 400.0F)
+                        if ((PN[I] < 0.0) || (PN[I] > 400.0F))
                         {
-                            SERROR[11] = 1;
+                            throw new ArgumentException();
                         }
                         else
                         {
                             if (PN[I] > 400.0F)
                             {
-                                SERROR[11] = 1;
+                                throw new ArgumentException();
                             }
                         }
                     }
@@ -705,146 +616,160 @@ namespace Osu.Cof.Organon
 
             if (THIN && BART[0] >= BABT)
             {
-                SERROR[12] = 1;
+                throw new ArgumentException("The first element of " + nameof(BART) + " must be less than " + nameof(BABT) + " when thinning response is enabled.");
             }
             for (int I = 0; I < 5; ++I)
             {
                 if (!THIN && (YST[I] != 0 || BART[I] != 0))
                 {
-                    SERROR[13] = 1;
+                    throw new ArgumentException();
                 }
                 if (THIN)
                 {
                     if (EVEN && YST[I] > STAGE)
                     {
-                        SERROR[14] = 1;
+                        throw new ArgumentException();
                     }
                     if (I > 1)
                     {
                         if (YST[I] != 0.0F && BART[I] < 0.0F)
                         {
-                            SERROR[15] = 1;
+                            throw new ArgumentException();
                         }
                     }
                     if (BABT < 0.0F)
                     {
-                        SERROR[16] = 1;
+                        throw new ArgumentException();
                     }
                 }
             }
 
-            if (THIN && YST[0] == YCYCLG)
+            // (DOUG? why is YCYCLG 5 * CYCLG for all variants? should YCYCLG = CYCLG for SMC?)
+            int YCYCLG = 5 * CYCLG;
+            if (THIN && (YST[0] == YCYCLG))
             {
-                SERROR[17] = 1;
-                for (int I = 0; I < NTREES; ++I)
+                bool thinningError = true;
+                for (int I = 0; I < treeRecordCount; ++I)
                 {
                     if (MGEXP[I] > 0.0F)
                     {
-                        SERROR[17] = 0;
+                        thinningError = false;
+                        break;
                     }
+                }
+                if (thinningError)
+                {
+                    throw new ArgumentException();
                 }
             }
 
             if (CYCLG < 0)
             {
-                SERROR[18] = 1;
+                throw new ArgumentOutOfRangeException(nameof(CYCLG));
             }
             for (int I = 0; I < 3; ++I)
             {
                 for (int J = 0; J < 18; ++J)
                 {
-                    if (ACALIB[J, I] > 2.0F || ACALIB[J, I] < 0.5F)
+                    if ((ACALIB[J, I] > 2.0F) || (ACALIB[J, I] < 0.5F))
                     {
-                        SERROR[19] = 1;
+                        throw new ArgumentOutOfRangeException(nameof(CYCLG));
                     }
                 }
             }
 
-            if (MSDI_1 > 1000.0F || MSDI_2 > 1000.0F || MSDI_3 > 1000.0F)
+            if (MSDI_1 > Constant.Maximum.MSDI)
             {
-                SERROR[20] = 1;
+                throw new ArgumentOutOfRangeException(nameof(MSDI_1));
             }
-
+            if (MSDI_2 > Constant.Maximum.MSDI)
+            {
+                throw new ArgumentOutOfRangeException(nameof(MSDI_2));
+            }
+            if (MSDI_3 > Constant.Maximum.MSDI)
+            {
+                throw new ArgumentOutOfRangeException(nameof(MSDI_3));
+            }
 
             if (GENETICS)
             {
                 if (!EVEN)
                 {
-                    SERROR[21] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(GENETICS), nameof(GENETICS) + " is supported only when " + nameof(EVEN) + " is set.");
                 }
-                if (GWDG < 0.0F || GWHG < 0.0F)
+                if ((GWDG < 0.0F) || (GWDG > 20.0F))
                 {
-                    SERROR[22] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(GWDG));
                 }
-                if (GWDG > 20.0F || GWHG > 20.0F)
+                if (GWHG < 0.0F || GWHG > 20.0F)
                 {
-                    SERROR[23] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(GWHG));
                 }
             }
             else
             {
-                if (GWDG > 0.0F || GWHG > 0.0F)
+                if (GWDG != 0.0F)
                 {
-                    SERROR[24] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(GWDG));
+                }
+                if (GWHG != 0.0F)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(GWHG));
                 }
             }
 
             if (SWISSNC)
             {
-                if (VERSION == Variant.Swo || VERSION == Variant.Rap)
+                if ((variant == Variant.Swo) || (variant == Variant.Rap))
                 {
-                    SERROR[25] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(variant), "Swiss needle cast is not supported by the SWO and RAP variants.");
                 }
                 if (!EVEN)
                 {
-                    SERROR[26] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(EVEN), "Swiss needle cast is not supported for uneven age stands.");
                 }
-                if (FR < 0.85F)
+                if ((FR < 0.85F) || (FR > 7.0F))
                 {
-                    SERROR[27] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(FR));
                 }
-                if (FR > 7.0F)
+                if (FERT && (FR < 3.0))
                 {
-                    SERROR[28] = 1;
-                }
-                if (FERT && FR < 3.0)
-                {
-                    SERROR[29] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(FR), nameof(FR) + " must be 3.0 or greater when " + nameof(SWISSNC) + " and " + nameof(FERT) + "are set.");
                 }
             }
             else
             {
                 if (FR > 0.0F)
                 {
-                    SERROR[30] = 1;
+                    throw new ArgumentOutOfRangeException(nameof(FR));
                 }
             }
 
-            if (VERSION >= Variant.Rap && SITE_1 < 0.0F)
+            if ((variant >= Variant.Rap) && (SITE_1 < 0.0F))
             {
-                SERROR[31] = 1;
+                throw new ArgumentOutOfRangeException(nameof(SITE_1));
             }
-            if (VERSION >= Variant.Rap && PDEN < 0.0F)
+            if ((variant >= Variant.Rap) && (PDEN < 0.0F))
             {
-                SERROR[32] = 1;
+                throw new ArgumentOutOfRangeException(nameof(PDEN));
             }
-            if (!EVEN && VERSION >= Variant.Rap)
+            if (!EVEN && (variant >= Variant.Rap))
             {
-                SERROR[33] = 1;
-            }
-
-            for (int I = 0; I < 34; ++I)
-            {
-                if (SERROR[I] == 1)
-                {
-                    ERROR = true;
-                    IB = -1;
-                    NSPN = -1;
-                    return;
-                }
+                throw new ArgumentOutOfRangeException(nameof(EVEN));
             }
 
-            switch (VERSION)
+            float MAXGF = 0.0F;
+            float MAXDF = 0.0F;
+            float MAXWH = 0.0F;
+            float MAXPP = 0.0F;
+            float MAXIC = 0.0F;
+            float MAXRA = 0.0F;
+            for (int I = 0; I < 9; ++I)
+            {
+                SWARNING[I] = 0;
+            }
+
+            switch (variant)
             {
                 case Variant.Swo:
                     IB = 4;
@@ -863,52 +788,43 @@ namespace Osu.Cof.Organon
                     throw new NotSupportedException();
             }
 
-            // EDIT TREE RECORDS FOR ERRORS
-            for (int I = 0; I < NTREES; ++I)
+            // check tree records for errors
+            for (int treeIndex = 0; treeIndex < treeRecordCount; ++treeIndex)
             {
-                CKSP(VERSION, I, SPECIES, TERROR);
-                if (DBH[I] < 0.09F)
+                int speciesCode = SPECIES[treeIndex];
+                if (Execute2.IsSpeciesSupported(variant, speciesCode) == false)
                 {
-                    TERROR[I, 1] = 1;
+                    throw new NotSupportedException(String.Format("Species {0} of tree {1} is not supported by variant {2}.", speciesCode, treeIndex, variant));
                 }
-                if (HT[I] < 4.5F)
+                if (DBH[treeIndex] < 0.09F)
                 {
-                    TERROR[I, 2] = 1;
+                    throw new NotSupportedException(String.Format("Diameter of tree {0} is less than 0.1 inches.", treeIndex));
                 }
-                if (CR[I] < 0.0F || CR[I] > 1.0F)
+                if (HT[treeIndex] < 4.5F)
                 {
-                    TERROR[I, 3] = 1;
+                    throw new NotSupportedException(String.Format("Height of tree {0} is less than 4.5 feet.", treeIndex));
                 }
-                if (EXPAN[I] < 0.0F)
+                if (CR[treeIndex] < 0.0F || CR[treeIndex] > 1.0F)
                 {
-                    TERROR[I, 4] = 1;
+                    throw new NotSupportedException(String.Format("Crown ratio of tree {0} is not between 0 and 1.", treeIndex));
                 }
-                if (SCR[I] < 0.0 || SCR[I] > 1.0)
+                if (EXPAN[treeIndex] < 0.0F)
                 {
-                    TERROR[I, 5] = 1;
+                    throw new NotSupportedException(String.Format("Expansion factor of tree {0} is negative.", treeIndex));
                 }
-            }
-
-            for (int I = 0; I < NTREES; ++I)
-            {
-                for (int J = 0; J < 6; ++J)
+                if (SCR[treeIndex] < 0.0 || SCR[treeIndex] > 1.0)
                 {
-                    if (TERROR[I, J] == 1)
-                    {
-                        ERROR = true;
-                        IB = -1;
-                        NSPN = -1;
-                        return;
-                    }
+                    throw new NotSupportedException(String.Format("Shadow crown ratio of tree {0} is not between 0 and 1.", treeIndex));
                 }
             }
 
             int IIB = IB;
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < treeRecordCount; ++I)
             {
-                switch (VERSION)
+                switch (variant)
                 {
-                    case Variant.Swo:           // SWO BIG SIX
+                    // SWO BIG SIX
+                    case Variant.Swo:
                         if (SPECIES[I] == 122 && HT[I] > MAXPP)
                         {
                             MAXPP = HT[I];
@@ -957,26 +873,22 @@ namespace Osu.Cof.Organon
                         break;
                 }
 
-                SPGROUP(VERSION, I, SPECIES, SPGRP);
-                if (VERSION >= Variant.Rap)
+                SPGROUP(variant, I, SPECIES, SPGRP);
+                if (variant >= Variant.Rap)
                 {
                     IIB = 1;
                 }
                 if (SPGRP[I] < IIB)
                 {
-                    BIG6 = BIG6 + 1;
+                    ++BIG6;
                     if (EXPAN[I] < 0.0F)
                     {
-                        BNXT = BNXT + 1;
+                        ++BNXT;
                     }
                 }
                 else
                 {
-                    OTHER = OTHER + 1;
-                    if (EXPAN[I] < 0.0F)
-                    {
-                        ONXT = ONXT + 1;
-                    }
+                    ++OTHER;
                 }
             }
 
@@ -984,37 +896,35 @@ namespace Osu.Cof.Organon
             float SBA = 0.0F;
             float B6SBA = 0.0F;
             float HWSBA = 0.0F;
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < treeRecordCount; ++I)
             {
                 if (EXPAN[I] < 0.0F)
                 {
                     continue;
                 }
                 float BA = DBH[I] * DBH[I] * EXPAN[I];
-                SBA = SBA + BA;
+                SBA += BA;
                 if (SPGRP[I] < IIB)
                 {
-                    B6SBA = B6SBA + BA;
+                    B6SBA += BA;
                 }
-                if (VERSION == Variant.Swo)
+                if (variant == Variant.Swo)
                 {
                     if (SPECIES[I] == 361 || SPECIES[I] == 431 || SPECIES[I] == 818)
                     {
-                        HWSBA = HWSBA + BA;
+                        HWSBA += BA;
                     }
                 }
             }
 
-            SBA = SBA * 0.005454154F / (float)NPTS;
-            B6SBA = B6SBA * .005454154F / (float)NPTS;
-            if (B6SBA < 0)
+            SBA *= 0.005454154F / (float)NPTS;
+            B6SBA *= 0.005454154F / (float)NPTS;
+            if (B6SBA < 0.0F)
             {
-                SERROR[4] = 1;
-                ERROR = true;
-                return;
+                throw new NotSupportedException("Total basal area big six species is negative.");
             }
 
-            if (VERSION >= Variant.Rap)
+            if (variant >= Variant.Rap)
             {
                 float PRA;
                 if (SBA > 0.0F)
@@ -1028,14 +938,13 @@ namespace Osu.Cof.Organon
 
                 if (PRA < 0.9F)
                 {
-                    SERROR[34] = 1;
-                    ERROR = true;
-                    return;
+                    // if needed, make this a warning rather than an error
+                    throw new NotSupportedException("Red alder plantation stand is less than 90% by basal area.");
                 }
             }
 
             // DETERMINE WARNINGS (IF ANY)
-            switch (VERSION)
+            switch (variant)
             {
                 case Variant.Swo:
                     if ((SITE_1 > 0.0F) && (SITE_1 < 40.0F || SITE_1 > 150.0F))
@@ -1070,7 +979,7 @@ namespace Osu.Cof.Organon
                     break;
             }
 
-            switch (VERSION)
+            switch (variant)
             {
                 case Variant.Swo:
                     if (MAXPP > 0.0F)
@@ -1141,38 +1050,38 @@ namespace Osu.Cof.Organon
                     break;
             }
 
-            if (EVEN && VERSION < Variant.Smc && BHAGE < 10)
+            if (EVEN && variant < Variant.Smc && BHAGE < 10)
             {
                 SWARNING[4] = 1;
             }
 
-            if ((VERSION == Variant.Swo && (B6SBA + HWSBA) < SBA * 0.2F) ||
-                (VERSION == Variant.Nwo && (B6SBA + HWSBA) < SBA * 0.5F) ||
-                (VERSION == Variant.Smc && (B6SBA + HWSBA) < SBA * 0.5F) ||
-                (VERSION == Variant.Rap && (B6SBA + HWSBA) < SBA * 0.8F))
+            if ((variant == Variant.Swo && (B6SBA + HWSBA) < SBA * 0.2F) ||
+                (variant == Variant.Nwo && (B6SBA + HWSBA) < SBA * 0.5F) ||
+                (variant == Variant.Smc && (B6SBA + HWSBA) < SBA * 0.5F) ||
+                (variant == Variant.Rap && (B6SBA + HWSBA) < SBA * 0.8F))
             {
                 SWARNING[4] = 1;
             }
-            if (NTREES < 50)
+            if (treeRecordCount < 50)
             {
                 SWARNING[5] = 1;
             }
 
-            CKAGE(VERSION, NTREES, IB, SPGRP, PDEN, SITE_1, SITE_2, HT, out float OLD);
+            CKAGE(variant, treeRecordCount, IB, SPGRP, PDEN, SITE_1, SITE_2, HT, out float OLD);
 
             float X = 100.0F * (OLD / (BIG6 - BNXT));
             if (X >= 50.0F)
             {
                 SWARNING[6] = 1;
             }
-            if (VERSION == Variant.Swo)
+            if (variant == Variant.Swo)
             {
                 if (EVEN && BHAGE > 500.0F)
                 {
                     SWARNING[7] = 1;
                 }
             }
-            else if (VERSION == Variant.Nwo || VERSION == Variant.Smc)
+            else if (variant == Variant.Nwo || variant == Variant.Smc)
             {
                 if (EVEN && BHAGE > 120.0F)
                 {
@@ -1190,7 +1099,7 @@ namespace Osu.Cof.Organon
             int EXCAGE;
             if (EVEN)
             {
-                switch (VERSION)
+                switch (variant)
                 {
                     case Variant.Swo:
                         EXCAGE = 500 - STAGE - 5;
@@ -1208,7 +1117,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                switch (VERSION)
+                switch (variant)
                 {
                     case Variant.Swo:
                         EXCAGE = 500 - (CYCLG + 1) * 5;
@@ -1231,7 +1140,7 @@ namespace Osu.Cof.Organon
             }
 
             float B1 = -0.04484724F;
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < treeRecordCount; ++I)
             {
                 float B0;
                 switch (SPECIES[I])
@@ -1241,11 +1150,11 @@ namespace Osu.Cof.Organon
                         break;
                     // TSHE
                     case 263:
-                        if (VERSION == Variant.Nwo || VERSION == Variant.Smc)
+                        if (variant == Variant.Nwo || variant == Variant.Smc)
                         {
                             B0 = 19.04942539F;
                         }
-                        else if (VERSION == Variant.Rap)
+                        else if (variant == Variant.Rap)
                         {
                             B0 = 19.04942539F;
                         }
@@ -1277,7 +1186,34 @@ namespace Osu.Cof.Organon
                 }
             }
         }
-            
+
+        private static bool IsSpeciesSupported(Variant variant, int speciesCode)
+        {
+            // check if species FIA code is valid for tree I
+            int[] SCODE1 = { 202, 15, 17, 122, 117, 81, 263, 242, 231, 361, 431, 631, 805, 312, 815, 818, 351, 492, 920 };
+            int[] SCODE2 = { 202, 17, 263, 242, 231, 361, 312, 815, 351, 492, 920 };
+            int[] SCODE3 = { 351, 202, 263, 242, 312, 492, 920 };
+
+            int speciesIndex;
+            switch (variant)
+            {
+                case Variant.Swo:
+                    speciesIndex = Array.IndexOf(SCODE1, speciesCode);
+                    break;
+                case Variant.Nwo:
+                case Variant.Smc:
+                    speciesIndex = Array.IndexOf(SCODE2, speciesCode);
+                    break;
+                case Variant.Rap:
+                    speciesIndex = Array.IndexOf(SCODE3, speciesCode);
+                    break;
+                default:
+                    throw VariantExtensions.CreateUnhandledVariantException(variant);
+            }
+
+            return speciesIndex >= 0;
+        }
+
         private static void SPGROUP(Variant VERSION, int I, int[] SPECIES, int[] SPGRP)
         {
             // (DOUG? Why are species assigned to a given group and why does group numbering vary with version? The "group" here is only
@@ -1299,7 +1235,7 @@ namespace Osu.Cof.Organon
                             ISX = J;
                             if (ISX > 1)
                             {
-                                ISX = ISX - 1;
+                                --ISX;
                             }
                             Debug.Assert(ISX < SCODE1.Length - 1);
                             break;
@@ -1334,55 +1270,6 @@ namespace Osu.Cof.Organon
             SPGRP[I] = ISX;
         }
 
-        private static void CKSP(Variant VERSION, int I, int[] SPECIES, int[,] TERROR)
-        {
-            // check if species FIA code is valid for tree I
-            int[] SCODE1 = { 202, 15, 17, 122, 117, 81, 263, 242, 231, 361, 431, 631, 805, 312, 815, 818, 351, 492, 920 };
-            int[] SCODE2 = { 202, 17, 263, 242, 231, 361, 312, 815, 351, 492, 920 };
-            int[] SCODE3 = { 351, 202, 263, 242, 312, 492, 920 };
-
-            bool BAD = true;
-            switch (VERSION)
-            {
-                case Variant.Swo:
-                    for (int J = 0; J < 19; ++J)
-                    {
-                        if (SPECIES[I] == SCODE1[J])
-                        {
-                            // BUGBUG remove BAD flag and just return here
-                            BAD = false;
-                            break;
-                        }
-                    }
-                    break;
-                case Variant.Nwo:
-                case Variant.Smc:
-                    for (int J = 0; J < 11; ++J)
-                    {
-                        if (SPECIES[I] == SCODE2[J])
-                        {
-                            BAD = false;
-                            break;
-                        }
-                    }
-                    break;
-                case Variant.Rap:
-                    for (int J = 0; J < 7; ++J)
-                    {
-                        if (SPECIES[I] == SCODE3[J])
-                        {
-                            BAD = false;
-                            break;
-                        }
-                    }
-                    break;
-            }
-            if (BAD)
-            {
-                TERROR[I, 0] = 1;
-            }
-        }
-
         private static void CKAGE(Variant VERSION, int NTREES, int IB, int[] SPGRP, float PDEN, float SITE_1, float SITE_2, float[] HT, out float OLD)
         {
             OLD = 0.0F;
@@ -1415,7 +1302,7 @@ namespace Osu.Cof.Organon
                             }
                             ISISP = 1;
                         }
-                        HeightGrowth.HS_HG(ISISP, SITE, HT[K], out GEAGE, out float PHTGRO);
+                        HeightGrowth.HS_HG(ISISP, SITE, HT[K], out GEAGE, out _);
                         IDXAGE = 500.0F;
                         break;
                     case Variant.Nwo:
@@ -1424,13 +1311,13 @@ namespace Osu.Cof.Organon
                         {
                             // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQATION
                             SITE = SITE_2;
-                            HeightGrowth.F_HG(SITE, HT[K], GP, out GEAGE, out PHTGRO);
+                            HeightGrowth.F_HG(SITE, HT[K], GP, out GEAGE, out _);
                         }
                         else
                         {
                             // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
                             SITE = SITE_1;
-                            HeightGrowth.B_HG(SITE, HT[K], GP, out GEAGE, out PHTGRO);
+                            HeightGrowth.B_HG(SITE, HT[K], GP, out GEAGE, out _);
                         }
                         IDXAGE = 120.0F;
                         break;
@@ -1440,18 +1327,17 @@ namespace Osu.Cof.Organon
                         {
                             // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
                             SITE = SITE_2;
-                            HeightGrowth.F_HG(SITE, HT[K], GP, out GEAGE, out PHTGRO);
+                            HeightGrowth.F_HG(SITE, HT[K], GP, out GEAGE, out _);
                         }
                         else
                         {
                             // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOP DOUGLAS-FIR AND GRAND FIR
                             SITE = SITE_1;
-                            HeightGrowth.B_HG(SITE, HT[K], GP, out GEAGE, out PHTGRO);
+                            HeightGrowth.B_HG(SITE, HT[K], GP, out GEAGE, out _);
                         }
                         IDXAGE = 120.0F;
                         break;
                     case Variant.Rap:
-                        GP = 1.0F;
                         if (SPGRP[K] == 1)
                         {
                             // GROWTH EFFECTIVE AGE FROM WEISKITTEL ET AL.'S (2009) RED ALDER DOMINANT HEIGHT GROWTH EQUATION
@@ -1468,7 +1354,7 @@ namespace Osu.Cof.Organon
                 // BUGBUG inconsistent use of < IB rather than <= IB
                 if (SPGRP[K] < IB && GEAGE > IDXAGE)
                 {
-                    OLD = OLD + 1.0F;
+                    OLD += 1.0F;
                 }
             }
         }
@@ -1642,7 +1528,7 @@ namespace Osu.Cof.Organon
             float[] BALL = new float[51];
             float[] CCFL = new float[500];
             float[] CCFLL = new float[51];
-            Stats.SSTATS(VERSION, NTREES, TDATAI, TDATAR, out float SBA, out float TPA, out float SCCF, BAL, BALL, CCFL, CCFLL);
+            Stats.SSTATS(VERSION, NTREES, TDATAI, TDATAR, out float SBA, out float _, out float _, BAL, BALL, CCFL, CCFLL);
             for (int I = NTREES - NINGRO; I < NTREES; ++I)
             {
                 if (CR[I] != 0.0F)

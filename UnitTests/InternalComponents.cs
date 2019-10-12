@@ -77,7 +77,7 @@ namespace Osu.Cof.Organon.Test
                                 CrownGrowth.LCW_SWO(speciesGroup, maximumCrownWidthInFeet, crownRatio, shadowCrownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
                                 break;
                             default:
-                                throw new NotSupportedException(String.Format("Unhandled variant {0}.", variant));
+                                throw VariantExtensions.CreateUnhandledVariantException(variant);
                         }
                         // (DOUG? can height to largest crown width be less than height to crown base?)
                         Assert.IsTrue(heightToCrownBaseInFeet >= 0.0F);
@@ -208,10 +208,9 @@ namespace Osu.Cof.Organon.Test
                               CCH, ref OLD, treeData.MGExpansionFactor, treeData.DeadExpansionFactor,
                               TestConstant.Default.A1, TestConstant.Default.A2, TestConstant.Default.A1MAX, TestConstant.Default.PA1MAX,
                               TestConstant.Default.NO, TestConstant.Default.RD0, TestConstant.Default.RAAGE, TestConstant.Default.RedAlderSiteIndex,
-                              treeCompetitionStartOfStep.LargeTreeCrownCompetition, treeCompetitionStartOfStep.SmallTreeCrownCompetition, out float standBasalAreaEndOfStep, 
+                              treeCompetitionStartOfStep.LargeTreeCrownCompetition, treeCompetitionStartOfStep.SmallTreeCrownCompetition, 
                               treeCompetitionEndOfStep.LargeTreeCrownCompetition, treeCompetitionEndOfStep.SmallTreeCrownCompetition, treeCompetitionEndOfStep.LargeTreeBasalAreaLarger, 
-                              treeCompetitionEndOfStep.SmallTreeBasalAreaLarger, out float standTreesPerAcreEndOfStep, out float standCrownCompetitionFactorEndofStep, 
-                              options.GWDG, options.GWHG, options.FR, options.PDEN);
+                              treeCompetitionEndOfStep.SmallTreeBasalAreaLarger, options.GWDG, options.GWHG, options.FR, options.PDEN);
                     this.Verify(treeData, variantCapabilities);
                 }
             }
@@ -286,7 +285,7 @@ namespace Osu.Cof.Organon.Test
                             HeightGrowth.HD_SWO(speciesGroup, dbhInInches, out predictedHeightInFeet);
                             break;
                         default:
-                            throw new NotSupportedException(String.Format("Unhandled Organon variant {0}.", variant));
+                            throw VariantExtensions.CreateUnhandledVariantException(variant);
                     }
                     Assert.IsTrue(predictedHeightInFeet >= 0.0F);
                     // TODO: make upper limit of height species specific
@@ -334,7 +333,7 @@ namespace Osu.Cof.Organon.Test
                         if (treeData.Integer[treeIndex, (int)TreePropertyInteger.SpeciesGroup] <= treeData.MaxBigSixSpeciesGroupIndex)
                         {
                             HeightGrowth.HTGRO1(treeIndex, 0, 0, variant, simulationStep, treeData.MaxBigSixSpeciesGroupIndex, treeData.Integer,
-                                                treeData.Float, treeData.PrimarySiteIndex, treeData.MortalitySiteIndex, CCH, null, PN, YF, 
+                                                treeData.Float, treeData.PrimarySiteIndex, treeData.MortalitySiteIndex, CCH, PN, YF, 
                                                 TestConstant.Default.BABT, BART, YT, ref OLD, TestConstant.Default.PDEN, treeData.Growth);
                         }
                         else
@@ -375,6 +374,9 @@ namespace Osu.Cof.Organon.Test
                 OrganonCapabilities variantCapabilities = new OrganonCapabilities(variant);
 
                 TreeData treeData = this.CreateDefaultTrees(variant);
+                float PA1MAX = TestConstant.Default.PA1MAX;
+                float NO = TestConstant.Default.NO;
+                float RAAGE = TestConstant.Default.RAAGE;
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     // TODO: MORT = false case for additional mortality disabled
@@ -383,8 +385,8 @@ namespace Osu.Cof.Organon.Test
                                      treeData.Float, treeData.ShadowCrownRatio, treeData.Growth, treeData.MGExpansionFactor, 
                                      treeData.DeadExpansionFactor, competition.LargeTreeBasalAreaLarger, competition.SmallTreeBasalAreaLarger, treeData.PrimarySiteIndex, 
                                      treeData.MortalitySiteIndex, PN, YF, TestConstant.Default.A1, TestConstant.Default.A2, 
-                                     TestConstant.Default.A1MAX, TestConstant.Default.PA1MAX, TestConstant.Default.NO,
-                                     TestConstant.Default.RD0, TestConstant.Default.RAAGE, TestConstant.Default.PDEN);
+                                     TestConstant.Default.A1MAX, ref PA1MAX, ref NO,
+                                     TestConstant.Default.RD0, ref RAAGE, TestConstant.Default.PDEN);
                     this.Verify(treeData, variantCapabilities);
 
                     // TODO: xind -1.0 case
@@ -402,9 +404,6 @@ namespace Osu.Cof.Organon.Test
         {
             // no test coverage: one line function
             // Stats.CON_RASI();
-
-            // no test coverage: current implementation appears fragile, likely needs rewriting
-            // Stats.HTFORTY();
 
             // no test coverage: one line function
             // Stats.RASITE();
@@ -489,16 +488,17 @@ namespace Osu.Cof.Organon.Test
                         continue;
                     }
 
+                    int triplingDone = 0;
                     int destinationTreeIndex = treeData.UsedRecordCount + bigSixSpeciesTreeRecordCountAfterTripling;
-                    Triple.XTRIP(sourceTreeIndex, destinationTreeIndex, 1, 0, bigSixSpeciesTreeRecordCountBeforeTripling, true, 
+                    Triple.XTRIP(sourceTreeIndex, destinationTreeIndex, 1, triplingDone, bigSixSpeciesTreeRecordCountBeforeTripling, true, 
                                  treeData.MaxBigSixSpeciesGroupIndex, bigSixSpeciesTreeRecordCountAfterTripling, 
                                  treeData.Triple.POINT, treeData.Triple.TREENO, treeData.Integer, treeData.Triple.PruningAge, treeData.Triple.BranchCount, treeData.Triple.BranchHeight, treeData.Triple.BranchDiameter, treeData.Triple.JuvenileCore, treeData.Triple.NPR, treeData.Triple.PruningLH, treeData.Triple.PruningDbhInInches, treeData.Triple.PruningHeightInFeet, treeData.Triple.PruningCrownRatio, treeData.Triple.PREXP, treeData.ShadowCrownRatio, treeData.Triple.VOLTR, treeData.Triple.SYTVOL);
 
-                    Triple.DGTRIP(sourceTreeIndex, ref destinationTreeIndex, 1, 0, variant, treeData.MaxBigSixSpeciesGroupIndex, ref bigSixSpeciesTreeRecordCountAfterTripling, ref otherTreeSpeciesRecordCountAfterTripling, treeData.Integer, treeData.Float, treeData.Growth, treeData.MGExpansionFactor, treeData.DeadExpansionFactor);
+                    Triple.DGTRIP(sourceTreeIndex, ref destinationTreeIndex, 1, ref triplingDone, variant, treeData.MaxBigSixSpeciesGroupIndex, ref bigSixSpeciesTreeRecordCountAfterTripling, ref otherTreeSpeciesRecordCountAfterTripling, treeData.Integer, treeData.Float, treeData.Growth, treeData.MGExpansionFactor, treeData.DeadExpansionFactor);
 
                     destinationTreeIndex -= 2;
                     bigSixSpeciesTreeRecordCountAfterTripling -= 2;
-                    Triple.HGTRIP(sourceTreeIndex, ref destinationTreeIndex, 1, 0, variant, ref bigSixSpeciesTreeRecordCountAfterTripling, ref otherTreeSpeciesRecordCountAfterTripling, treeData.Integer, treeData.Float, treeData.Growth, treeData.MGExpansionFactor, treeData.DeadExpansionFactor);
+                    Triple.HGTRIP(sourceTreeIndex, ref destinationTreeIndex, 1, ref triplingDone, variant, ref bigSixSpeciesTreeRecordCountAfterTripling, treeData.Integer, treeData.Float, treeData.Growth, treeData.MGExpansionFactor, treeData.DeadExpansionFactor);
 
                     usedRecordCount = destinationTreeIndex;
                 }

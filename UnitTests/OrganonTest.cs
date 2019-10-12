@@ -97,7 +97,7 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.Salix, 0.1F, 1.0F, 0.5F));
                     break;
                 default:
-                    throw new NotSupportedException(String.Format("Unhandled version {0}.", variant));
+                    throw VariantExtensions.CreateUnhandledVariantException(variant);
             }
 
             if (maximumRecordCount.HasValue == false)
@@ -142,16 +142,12 @@ namespace Osu.Cof.Organon.Test
                     }
                     return speciesGroup;
                 default:
-                    throw new NotSupportedException(String.Format("Unhandled version {0}.", variant));
+                    throw VariantExtensions.CreateUnhandledVariantException(variant);
             }
         }
 
-        protected void Verify(OrganonErrorsAndWarnings errorsAndWarnings, Variant variant)
+        protected void Verify(OrganonWarnings errorsAndWarnings, Variant variant)
         {
-            for (int standErrorIndex = 0; standErrorIndex < errorsAndWarnings.StandErrors.Length; ++standErrorIndex)
-            {
-                Assert.IsTrue(errorsAndWarnings.StandErrors[standErrorIndex] == 0);
-            }
             for (int standWarningIndex = 0; standWarningIndex < errorsAndWarnings.StandWarnings.Length; ++standWarningIndex)
             {
                 if (standWarningIndex == 5)
@@ -167,14 +163,6 @@ namespace Osu.Cof.Organon.Test
                 }
             }
 
-            int treeErrorRowLength = errorsAndWarnings.TreeErrors.Length / errorsAndWarnings.TreeWarnings.Length;
-            for (int treeIndex = 0; treeIndex < errorsAndWarnings.TreeWarnings.Length; ++treeIndex)
-            {
-                for (int errorIndex = 0; errorIndex < treeErrorRowLength; ++errorIndex)
-                {
-                    Assert.IsTrue(errorsAndWarnings.TreeErrors[treeIndex, errorIndex] == 0);
-                }
-            }
             for (int treeWarningIndex = 0; treeWarningIndex < errorsAndWarnings.TreeWarnings.Length; ++treeWarningIndex)
             {
                 // for now, ignore warnings on height exceeding potential height
