@@ -458,7 +458,6 @@ namespace Osu.Cof.Organon
             float PT1;
             float PT2;
             float PT3;
-            float GP;
             if (VERSION <= Variant.Smc)
             {
                 if (ISPGRP == 0)
@@ -473,7 +472,6 @@ namespace Osu.Cof.Organon
                     PT2 = 1.0F;
                     PT3 = 0.0F;
                 }
-                GP = 5.0F;
             }
             else
             {
@@ -487,8 +485,7 @@ namespace Osu.Cof.Organon
                 {
                     if (ISPGRP == 1)
                     {
-                        // PT1=-0.3197415492
-                        PT1 = -0.47842928F; // ANNUALIZED PARAMETER
+                        PT1 = -0.3197415492F;
                         PT2 = 0.7528887377F;
                         PT3 = -0.2268800162F;
                     }
@@ -499,9 +496,8 @@ namespace Osu.Cof.Organon
                         PT3 = 0.0F;
                     }
                 }
-                GP = 1.0F;
             }
-            float XTIME = (float)CYCLG * GP;
+            float XTIME = 5.0F * (float)CYCLG;
             float THINX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {

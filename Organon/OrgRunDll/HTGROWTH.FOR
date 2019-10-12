@@ -920,7 +920,7 @@ C
       SUBROUTINE HG_THIN(CYCLG,VERSION,ISPGRP,BABT,BART,YT,THINADJ)
       IMPLICIT NONE
       REAL*4 BABT,BART(5),YT(5),THINADJ,PT1,PT2,PT3,XTIME,THINX1,THINX2,
-     1       THINX3,PREM,GP
+     1       THINX3,PREM
       INTEGER*4 CYCLG,VERSION,ISPGRP,I
       IF(VERSION .LE. 3) THEN
          IF(ISPGRP .EQ. 1)THEN
@@ -932,15 +932,13 @@ C
             PT2=1.0
             PT3=0.0
          ENDIF
-         GP=5.0
       ELSE
          IF(ISPGRP .EQ. 1)THEN
             PT1=-0.613313694
             PT2=1.0
             PT3=-0.443824038
          ELSEIF(ISPGRP .EQ. 2)THEN
-C            PT1=-0.3197415492
-            PT1=-0.47842928                                         ! ANNUALIZED PARAMETER
+            PT1=-0.3197415492
             PT2=0.7528887377
             PT3=-0.2268800162
          ELSE
@@ -948,9 +946,8 @@ C            PT1=-0.3197415492
             PT2=1.0
             PT3=0.0
          ENDIF
-         GP=1.0
       ENDIF
-      XTIME=FLOAT(CYCLG)*GP
+      XTIME=FLOAT(CYCLG)*5.0
       THINX1=0.0
       DO I=2,5
          THINX1=THINX1+BART(I)*EXP((PT3/PT2)*(YT(1)-YT(I)))
