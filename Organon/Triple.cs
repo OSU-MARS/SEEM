@@ -7,17 +7,16 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// Clones entry for tree twice and sets pruning, wood quality, and volume variables.
         /// </summary>
-        /// <param name="K">Index of tree to clone.</param>
-        /// <param name="J">Index to assign clone of tree K to. Tree J + 1 is also set to a copy of tree M.</param>
-        /// <param name="M">Flag indicating whether space is available in the tree data arrays for cloning the tree?</param>
+        /// <param name="sourceTreeIndex">Index of tree to clone.</param>
+        /// <param name="pruningAndVolumeDestinationTreeIndex">Index to assign clone of tree K to. Tree J + 1 is also set to a copy of tree M.</param>
+        /// <param name="triplingMethod">Flag indicating whether space is available in the tree data arrays for cloning the tree?</param>
         /// <param name="ON">Unused unless M = 2, in which case ON = 0 bypasses tripling.</param>
         /// <param name="IWQ">Initial number of tree records of big six species.</param>
         /// <param name="WOODQ"></param>
-        /// <param name="IB">Species group threshold for determining if tree is of a big six speecies or falls into the other species category.</param>
-        /// <param name="BIG6">Total number of trees of big six species after tripling.</param>
+        /// <param name="stand">Stand data.</param>
+        /// <param name="bigSixDestinationTreeIndex">Location to clone wood quality variables to and total number of trees of big six species after tripling.</param>
         /// <param name="POINT"></param>
         /// <param name="TREENO"></param>
-        /// <param name="TDATAI">Tree data.</param>
         /// <param name="PRAGE"></param>
         /// <param name="BRCNT"></param>
         /// <param name="BRHT"></param>
@@ -32,180 +31,178 @@ namespace Osu.Cof.Organon
         /// <param name="SCR"></param>
         /// <param name="VOLTR"></param>
         /// <param name="SYTVOL"></param>
-        public static void XTRIP(int K, int J, int M, int ON, int IWQ, bool WOODQ, int IB, int BIG6, int[] POINT, int[] TREENO,
-                                 int[,] TDATAI, int[,] PRAGE, int[,] BRCNT, int[,] BRHT, int[,] BRDIA, int[,] JCORE, int[] NPR, float[,] PRLH,
+        public static void XTRIP(int sourceTreeIndex, int pruningAndVolumeDestinationTreeIndex, int triplingMethod, int ON, int IWQ, bool WOODQ, Stand stand, int bigSixDestinationTreeIndex, int[] POINT, int[] TREENO,
+                                 int[,] PRAGE, int[,] BRCNT, int[,] BRHT, int[,] BRDIA, int[,] JCORE, int[] NPR, float[,] PRLH,
                                  float[,] PRDBH, float[,] PRHT, float[,] PRCR, float[,] PREXP, float[,] SCR, float[,] VOLTR, float[,] SYTVOL)
         {
-            // for (int TRIPLING OF VALUES OTHER THAN BASIC TREE ATTRIBUTES
-            if (M == 0 || (M == 2 && ON == 0))
+            // tripling of values other than basic tree attributes
+            if (triplingMethod == 0 || (triplingMethod == 2 && ON == 0))
             {
                 return;
             }
 
             // BUGBUG doesn't increment BIG6, so has implicit assumptions of a big six species and being paired with a DGTRIP() or HGTRIP() call
-            int ISPGRP = TDATAI[K, 1];
-            if (J > PRLH.Length)
+            if (pruningAndVolumeDestinationTreeIndex > PRLH.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(J));
+                throw new ArgumentOutOfRangeException(nameof(pruningAndVolumeDestinationTreeIndex));
             }
 
 
-            // TRIPLING PRUNING VARIABLES
-            for (int I = 0; I < 3; ++I)
+            // pruning variables
+            for (int pruningIndex = 0; pruningIndex < 3; ++pruningIndex)
             {
-                PRLH[J, I] = PRLH[K, I];
-                PRLH[J + 1, I] = PRLH[K, I];
-                PRAGE[J, I] = PRAGE[K, I];
-                PRAGE[J + 1, I] = PRAGE[K, I];
-                PRDBH[J, I] = PRDBH[K, I];
-                PRDBH[J + 1, I] = PRDBH[K, I];
-                PRHT[J, I] = PRHT[K, I];
-                PRHT[J + 1, I] = PRHT[K, I];
-                PRCR[J, I] = PRCR[K, I];
-                PRCR[J + 1, I] = PRCR[K, I];
-                PREXP[J, I] = PREXP[K, I];
-                PREXP[J + 1, I] = PREXP[K, I];
-                SCR[J, I] = SCR[K, I];
-                SCR[J + 1, I] = SCR[K, I];
+                PRLH[pruningAndVolumeDestinationTreeIndex, pruningIndex] = PRLH[sourceTreeIndex, pruningIndex];
+                PRLH[pruningAndVolumeDestinationTreeIndex + 1, pruningIndex] = PRLH[sourceTreeIndex, pruningIndex];
+                PRAGE[pruningAndVolumeDestinationTreeIndex, pruningIndex] = PRAGE[sourceTreeIndex, pruningIndex];
+                PRAGE[pruningAndVolumeDestinationTreeIndex + 1, pruningIndex] = PRAGE[sourceTreeIndex, pruningIndex];
+                PRDBH[pruningAndVolumeDestinationTreeIndex, pruningIndex] = PRDBH[sourceTreeIndex, pruningIndex];
+                PRDBH[pruningAndVolumeDestinationTreeIndex + 1, pruningIndex] = PRDBH[sourceTreeIndex, pruningIndex];
+                PRHT[pruningAndVolumeDestinationTreeIndex, pruningIndex] = PRHT[sourceTreeIndex, pruningIndex];
+                PRHT[pruningAndVolumeDestinationTreeIndex + 1, pruningIndex] = PRHT[sourceTreeIndex, pruningIndex];
+                PRCR[pruningAndVolumeDestinationTreeIndex, pruningIndex] = PRCR[sourceTreeIndex, pruningIndex];
+                PRCR[pruningAndVolumeDestinationTreeIndex + 1, pruningIndex] = PRCR[sourceTreeIndex, pruningIndex];
+                PREXP[pruningAndVolumeDestinationTreeIndex, pruningIndex] = PREXP[sourceTreeIndex, pruningIndex];
+                PREXP[pruningAndVolumeDestinationTreeIndex + 1, pruningIndex] = PREXP[sourceTreeIndex, pruningIndex];
+                SCR[pruningAndVolumeDestinationTreeIndex, pruningIndex] = SCR[sourceTreeIndex, pruningIndex];
+                SCR[pruningAndVolumeDestinationTreeIndex + 1, pruningIndex] = SCR[sourceTreeIndex, pruningIndex];
+            }
 
-                // TRIPLING WOOD QUALITY VARIBLES
-                if (WOODQ && ISPGRP <= IB)
+            // wood quality varaibles
+            if (WOODQ && stand.IsBigSixSpecies(sourceTreeIndex))
+            {
+                for (int woodQualityIndex = 0; woodQualityIndex < 3; ++woodQualityIndex)
                 {
-                    BRCNT[BIG6, I] = BRCNT[IWQ, I];
-                    BRCNT[BIG6 + 1, I] = BRCNT[IWQ, I];
+                    BRCNT[bigSixDestinationTreeIndex, woodQualityIndex] = BRCNT[IWQ, woodQualityIndex];
+                    BRCNT[bigSixDestinationTreeIndex + 1, woodQualityIndex] = BRCNT[IWQ, woodQualityIndex];
                 }
-            }
 
-            // TRIPLING WOOD QUALITY VARIBLES
-            if (WOODQ && ISPGRP <= IB)
-            {
-                for (int I = 0; I < 40; ++I)
+                for (int woodQualityIndex = 0; woodQualityIndex < 40; ++woodQualityIndex)
                 {
-                    BRHT[BIG6, I] = BRHT[IWQ, I];
-                    BRHT[BIG6 + 1, I] = BRHT[IWQ, I];
-                    BRDIA[BIG6, I] = BRDIA[IWQ, I];
-                    BRDIA[BIG6 + 1, I] = BRDIA[IWQ, I];
-                    JCORE[BIG6, I] = JCORE[IWQ, I];
-                    JCORE[BIG6 + 1, I] = JCORE[IWQ, I];
+                    BRHT[bigSixDestinationTreeIndex, woodQualityIndex] = BRHT[IWQ, woodQualityIndex];
+                    BRHT[bigSixDestinationTreeIndex + 1, woodQualityIndex] = BRHT[IWQ, woodQualityIndex];
+                    BRDIA[bigSixDestinationTreeIndex, woodQualityIndex] = BRDIA[IWQ, woodQualityIndex];
+                    BRDIA[bigSixDestinationTreeIndex + 1, woodQualityIndex] = BRDIA[IWQ, woodQualityIndex];
+                    JCORE[bigSixDestinationTreeIndex, woodQualityIndex] = JCORE[IWQ, woodQualityIndex];
+                    JCORE[bigSixDestinationTreeIndex + 1, woodQualityIndex] = JCORE[IWQ, woodQualityIndex];
                 }
             }
 
             // TRIPLING VOLUMES
-            VOLTR[J, 0] = VOLTR[K, 1];
-            VOLTR[J, 3] = VOLTR[K, 3];
-            VOLTR[J + 1, 1] = VOLTR[K, 1];
-            VOLTR[J + 1, 2] = VOLTR[K, 3];
-            SYTVOL[J, 0] = SYTVOL[K, 0];
-            SYTVOL[J + 1, 0] = SYTVOL[K, 0];
-            SYTVOL[J, 1] = SYTVOL[K, 1];
-            SYTVOL[J + 1, 1] = SYTVOL[K, 1];
-            NPR[J] = NPR[K];
-            NPR[J + 1] = NPR[K];
-            POINT[J] = POINT[K];
-            POINT[J + 1] = POINT[K];
-            TREENO[J] = TREENO[K];
-            TREENO[J + 1] = TREENO[K];
+            VOLTR[pruningAndVolumeDestinationTreeIndex, 0] = VOLTR[sourceTreeIndex, 1];
+            VOLTR[pruningAndVolumeDestinationTreeIndex, 3] = VOLTR[sourceTreeIndex, 3];
+            VOLTR[pruningAndVolumeDestinationTreeIndex + 1, 1] = VOLTR[sourceTreeIndex, 1];
+            VOLTR[pruningAndVolumeDestinationTreeIndex + 1, 2] = VOLTR[sourceTreeIndex, 3];
+            SYTVOL[pruningAndVolumeDestinationTreeIndex, 0] = SYTVOL[sourceTreeIndex, 0];
+            SYTVOL[pruningAndVolumeDestinationTreeIndex + 1, 0] = SYTVOL[sourceTreeIndex, 0];
+            SYTVOL[pruningAndVolumeDestinationTreeIndex, 1] = SYTVOL[sourceTreeIndex, 1];
+            SYTVOL[pruningAndVolumeDestinationTreeIndex + 1, 1] = SYTVOL[sourceTreeIndex, 1];
+            NPR[pruningAndVolumeDestinationTreeIndex] = NPR[sourceTreeIndex];
+            NPR[pruningAndVolumeDestinationTreeIndex + 1] = NPR[sourceTreeIndex];
+            POINT[pruningAndVolumeDestinationTreeIndex] = POINT[sourceTreeIndex];
+            POINT[pruningAndVolumeDestinationTreeIndex + 1] = POINT[sourceTreeIndex];
+            TREENO[pruningAndVolumeDestinationTreeIndex] = TREENO[sourceTreeIndex];
+            TREENO[pruningAndVolumeDestinationTreeIndex + 1] = TREENO[sourceTreeIndex];
         }
 
         /// <summary>
         /// Clones entry for tree twice with no change to the tree's expansion factor totalled across all three entries. Sets diameter growth.
         /// </summary>
-        /// <param name="K">Index of tree to clone.</param>
-        /// <param name="J">Index to assign clone of tree K to. Tree J + 1 is also set to a copy of tree M.</param>
-        /// <param name="M">Flag indicating whether space is available in the tree data arrays for cloning the tree?</param>
+        /// <param name="sourceTreeIndex">Index of tree to clone.</param>
+        /// <param name="destinationTreeIndex">Index to assign clone of tree K to. Tree J + 1 is also set to a copy of tree M.</param>
+        /// <param name="triplingMethod">Flag indicating whether space is available in the tree data arrays for cloning the tree?</param>
         /// <param name="ON">Unused unless M = 2, in which case ON = 0 bypasses tripling.</param>
-        /// <param name="VERSION">Organon variant.</param>
-        /// <param name="IB">Threshold for determining if tree is of a big 6 or falls into the other species category.</param>
-        /// <param name="BIG6">Total number of trees of big 6 species.</param>
-        /// <param name="OTHER">Total number of trees of other species.</param>
-        /// <param name="TDATAI">Tree data.</param>
+        /// <param name="variant">Organon variant.</param>
+        /// <param name="stand">Stand data.</param>
+        /// <param name="bigSixTreeRecordCount">Total number of trees of big 6 species.</param>
+        /// <param name="otherSpeciesTreeRecordCount">Total number of trees of other species.</param>
         /// <param name="TDATAR">Tree data.</param>
         /// <param name="GROWTH">Tree data.</param>
         /// <param name="MGEXP">Tree data.</param>
         /// <param name="DEADEXP">Tree data.</param>
-        public static void DGTRIP(int K, ref int J, int M, ref int ON, Variant VERSION, int IB, ref int BIG6, ref int OTHER, int[,] TDATAI, float[,] TDATAR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP)
+        public static void DGTRIP(int sourceTreeIndex, ref int destinationTreeIndex, int triplingMethod, ref int ON, Variant variant, Stand stand, ref int bigSixTreeRecordCount, ref int otherSpeciesTreeRecordCount, float[,] TDATAR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP)
         {
             // DO TRIPLING
-            if (M == 0 || (M == 2 && ON == 0))
+            if (triplingMethod == 0 || (triplingMethod == 2 && ON == 0))
             {
                 // BUGBUG ON appears to be a bool declared as an int but is hard coded to 0 in Execute2, so can be removed
                 ON = 1;
             }
             else
             {
-                if (J + 1 > MGEXP.Length)
+                if (destinationTreeIndex + 1 > MGEXP.Length)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(J));
+                    throw new ArgumentOutOfRangeException(nameof(destinationTreeIndex));
                 }
 
                 // SPECIES, GROUP, UC, DBH, HT, CR, @HT & @DIAM,
                 // CUM @HT & @DIAM = ORIGINAL TREE
-                for (int I = 0; I < 3; ++I)
+                for (int integerIndex = 0; integerIndex < 3; ++integerIndex)
                 {
-                    TDATAI[J, I] = TDATAI[K, I];
-                    TDATAI[J + 1, I] = TDATAI[K, I];
-                    TDATAR[J, I] = TDATAR[K, I];
-                    TDATAR[J + 1, I] = TDATAR[K, I];
+                    stand.Integer[destinationTreeIndex, integerIndex] = stand.Integer[sourceTreeIndex, integerIndex];
+                    stand.Integer[destinationTreeIndex + 1, integerIndex] = stand.Integer[sourceTreeIndex, integerIndex];
+                    TDATAR[destinationTreeIndex, integerIndex] = TDATAR[sourceTreeIndex, integerIndex];
+                    TDATAR[destinationTreeIndex + 1, integerIndex] = TDATAR[sourceTreeIndex, integerIndex];
                 }
 
                 // EXPANSION FACTORS ARE 1/3
-                float A = TDATAR[K, 3] / 3.0F;
-                TDATAR[J, 3] = A;
-                TDATAR[J + 1, 3] = A;
-                TDATAR[K, 3] = A;
-                A = TDATAR[K, 7] / 3.0F;
-                TDATAR[J, 7] = A;
-                TDATAR[J + 1, 7] = A;
-                TDATAR[K, 7] = A;
-                A = TDATAR[K, 4] / 3.0F;
-                TDATAR[J, 4] = A;
-                TDATAR[J + 1, 4] = A;
-                TDATAR[K, 4] = A;
-                A = MGEXP[K] / 3.0F;
-                MGEXP[J] = A;
-                MGEXP[J + 1] = A;
-                MGEXP[K] = A;
-                A = DEADEXP[K] / 3.0F;
-                DEADEXP[J] = A;
-                DEADEXP[J + 1] = A;
-                DEADEXP[K] = A;
-                TDATAR[J, 5] = TDATAR[K, 5];
-                TDATAR[J + 1, 5] = TDATAR[K, 5];
-                TDATAR[J, 6] = TDATAR[K, 6];
-                TDATAR[J + 1, 6] = TDATAR[K, 6];
+                float A = TDATAR[sourceTreeIndex, 3] / 3.0F;
+                TDATAR[destinationTreeIndex, 3] = A;
+                TDATAR[destinationTreeIndex + 1, 3] = A;
+                TDATAR[sourceTreeIndex, 3] = A;
+                A = TDATAR[sourceTreeIndex, 7] / 3.0F;
+                TDATAR[destinationTreeIndex, 7] = A;
+                TDATAR[destinationTreeIndex + 1, 7] = A;
+                TDATAR[sourceTreeIndex, 7] = A;
+                A = TDATAR[sourceTreeIndex, 4] / 3.0F;
+                TDATAR[destinationTreeIndex, 4] = A;
+                TDATAR[destinationTreeIndex + 1, 4] = A;
+                TDATAR[sourceTreeIndex, 4] = A;
+                A = MGEXP[sourceTreeIndex] / 3.0F;
+                MGEXP[destinationTreeIndex] = A;
+                MGEXP[destinationTreeIndex + 1] = A;
+                MGEXP[sourceTreeIndex] = A;
+                A = DEADEXP[sourceTreeIndex] / 3.0F;
+                DEADEXP[destinationTreeIndex] = A;
+                DEADEXP[destinationTreeIndex + 1] = A;
+                DEADEXP[sourceTreeIndex] = A;
+                TDATAR[destinationTreeIndex, 5] = TDATAR[sourceTreeIndex, 5];
+                TDATAR[destinationTreeIndex + 1, 5] = TDATAR[sourceTreeIndex, 5];
+                TDATAR[destinationTreeIndex, 6] = TDATAR[sourceTreeIndex, 6];
+                TDATAR[destinationTreeIndex + 1, 6] = TDATAR[sourceTreeIndex, 6];
 
                 // INCREASE SPECIES COUNT
-                if (TDATAI[K, 2] <= IB)
+                if (stand.IsBigSixSpecies(sourceTreeIndex))
                 {
-                    BIG6 += 2;
+                    bigSixTreeRecordCount += 2;
                 }
                 else
                 {
-                    OTHER += 2;
+                    otherSpeciesTreeRecordCount += 2;
                 }
 
+                int speciesGroup = stand.Integer[sourceTreeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
                 float LRES;
                 float URES;
-                switch (VERSION)
+                switch (variant)
                 {
                     // BUGBUG no check ISPGRP indicates a species which is in range for DGRES
                     case Variant.Swo:
-                        DGRES_SWO(TDATAI[K, 1], out LRES, out URES);
+                        DGRES_SWO(speciesGroup, out LRES, out URES);
                         break;
                     case Variant.Nwo:
-                        DGRES_NWO(TDATAI[K, 1], out LRES, out URES);
+                        DGRES_NWO(speciesGroup, out LRES, out URES);
                         break;
                     case Variant.Smc:
-                        DGRES_SMC(TDATAI[K, 1], out LRES, out URES);
+                        DGRES_SMC(speciesGroup, out LRES, out URES);
                         break;
                     case Variant.Rap:
-                        DGRES_RAP(TDATAI[K, 1], out LRES, out URES);
+                        DGRES_RAP(speciesGroup, out LRES, out URES);
                         break;
                     default:
                         throw new NotSupportedException();
                 }
 
-                float DG = GROWTH[K, 1];
+                float DG = GROWTH[sourceTreeIndex, 1];
                 float DGRO = DG - (LRES + URES) * (float)Math.Sqrt(DG);
                 if (DGRO < 0.0F)
                 {
@@ -217,17 +214,17 @@ namespace Osu.Cof.Organon
                 {
                     DGRO2 = 0.0F;
                 }
-                GROWTH[K, 1] = DGRO;
-                GROWTH[J, 1] = DGRO1;
-                GROWTH[J, 3] = GROWTH[K, 3] + GROWTH[J, 1];
-                GROWTH[J + 1, 1] = DGRO2;
-                GROWTH[J + 1, 3] = GROWTH[K, 3] + GROWTH[J + 1, 1];
-                GROWTH[J, 3] = GROWTH[K, 3];
-                GROWTH[J + 1, 3] = GROWTH[K, 3];
-                J += 2;
+                GROWTH[sourceTreeIndex, 1] = DGRO;
+                GROWTH[destinationTreeIndex, 1] = DGRO1;
+                GROWTH[destinationTreeIndex, 3] = GROWTH[sourceTreeIndex, 3] + GROWTH[destinationTreeIndex, 1];
+                GROWTH[destinationTreeIndex + 1, 1] = DGRO2;
+                GROWTH[destinationTreeIndex + 1, 3] = GROWTH[sourceTreeIndex, 3] + GROWTH[destinationTreeIndex + 1, 1];
+                GROWTH[destinationTreeIndex, 3] = GROWTH[sourceTreeIndex, 3];
+                GROWTH[destinationTreeIndex + 1, 3] = GROWTH[sourceTreeIndex, 3];
+                destinationTreeIndex += 2;
                 ON = 0;
             }
-            GROWTH[K, 3] = GROWTH[K, 3] + GROWTH[K, 1];
+            GROWTH[sourceTreeIndex, 3] = GROWTH[sourceTreeIndex, 3] + GROWTH[sourceTreeIndex, 1];
         }
 
         private static void DGRES_SWO(int ISPGRP, out float LRES, out float URES)

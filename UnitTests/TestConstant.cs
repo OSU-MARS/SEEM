@@ -106,6 +106,7 @@ namespace Osu.Cof.Organon.Test
             public const float TreeBasalAreaLarger = 1000.0F;
             public const float MaximumCrownWidthInFeet = 300.0F;
             public const float MGExpansionFactor = 1000.0F;
+            public const int StandAgeInYears = 500;
             public const float StandCrownCompetitionFactor = 10000.0F;
         }
     }

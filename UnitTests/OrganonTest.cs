@@ -31,12 +31,12 @@ namespace Osu.Cof.Organon.Test
             };
         }
 
-        protected TreeData CreateDefaultTrees(Variant variant)
+        protected TestStand CreateDefaultStand(Variant variant)
         {
-            return this.CreateDefaultTrees(variant, null);
+            return this.CreateDefaultStand(variant, null);
         }
 
-        protected TreeData CreateDefaultTrees(Variant variant, Nullable<int> maximumRecordCount)
+        protected TestStand CreateDefaultStand(Variant variant, Nullable<int> maximumRecordCount)
         {
             List<TreeRecord> trees = new List<TreeRecord>();
             switch (variant)
@@ -105,23 +105,44 @@ namespace Osu.Cof.Organon.Test
                 maximumRecordCount = trees.Count;
             }
 
-            TreeData treeData = new TreeData(variant, maximumRecordCount.Value, TestConstant.Default.SiteIndex, TestConstant.Default.SiteIndex - 10.0F);
+            TestStand stand = new TestStand(variant, 0, maximumRecordCount.Value, TestConstant.Default.SiteIndex, TestConstant.Default.SiteIndex - 10.0F);
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 TreeRecord tree = trees[treeIndex];
                 int speciesGroup = this.GetSpeciesGroup(variant, tree.Species);
-                treeData.Integer[treeIndex, (int)TreePropertyInteger.Species] = (int)tree.Species;
-                treeData.Integer[treeIndex, (int)TreePropertyInteger.SpeciesGroup] = speciesGroup;
-                treeData.Integer[treeIndex, (int)TreePropertyInteger.User] = treeIndex;
-                treeData.Float[treeIndex, (int)TreePropertyFloat.Dbh] = tree.DbhInInches;
-                treeData.Float[treeIndex, (int)TreePropertyFloat.Height] = tree.HeightInFeet;
-                treeData.Float[treeIndex, (int)TreePropertyFloat.CrownRatio] = tree.CrownRatio;
-                treeData.Float[treeIndex, (int)TreePropertyFloat.ExpansionFactor] = tree.ExpansionFactor;
-                treeData.MGExpansionFactor[treeIndex] = tree.ExpansionFactor + 1.0F;
+                stand.Integer[treeIndex, (int)TreePropertyInteger.Species] = (int)tree.Species;
+                stand.Integer[treeIndex, (int)TreePropertyInteger.SpeciesGroup] = speciesGroup;
+                stand.Integer[treeIndex, (int)TreePropertyInteger.User] = treeIndex;
+                stand.Float[treeIndex, (int)TreePropertyFloat.Dbh] = tree.DbhInInches;
+                stand.Float[treeIndex, (int)TreePropertyFloat.Height] = tree.HeightInFeet;
+                stand.Float[treeIndex, (int)TreePropertyFloat.CrownRatio] = tree.CrownRatio;
+                stand.Float[treeIndex, (int)TreePropertyFloat.ExpansionFactor] = tree.ExpansionFactor;
+                stand.MGExpansionFactor[treeIndex] = tree.ExpansionFactor + 1.0F;
             }
-            treeData.UsedRecordCount = trees.Count;
+            stand.TreeRecordsInUse = trees.Count;
 
-            return treeData;
+            return stand;
+        }
+
+        protected OrganonConfiguration CreateOrganonConfiguration(Variant variant)
+        {
+            OrganonConfiguration configuration = new OrganonConfiguration(variant)
+            {
+                SITE_1 = TestConstant.Default.SiteIndex,
+                SITE_2 = TestConstant.Default.SiteIndex - 10.0F,
+                MSDI_1 = TestConstant.Default.MaximumReinekeStandDensityIndex,
+                MSDI_2 = TestConstant.Default.MaximumReinekeStandDensityIndex,
+                MSDI_3 = TestConstant.Default.MaximumReinekeStandDensityIndex,
+
+                A1 = TestConstant.Default.A1,
+                A2 = TestConstant.Default.A2,
+                A1MAX = TestConstant.Default.A1MAX,
+                PA1MAX = TestConstant.Default.PA1MAX,
+                NO = TestConstant.Default.NO,
+                RD0 = TestConstant.Default.RD0
+            };
+
+            return configuration;
         }
 
         private int GetSpeciesGroup(Variant variant, FiaCode species)
@@ -146,102 +167,101 @@ namespace Osu.Cof.Organon.Test
             }
         }
 
-        protected void Verify(OrganonWarnings errorsAndWarnings, Variant variant)
+        protected void Verify(TestStand stand, OrganonCapabilities variantCapabilities)
         {
-            for (int standWarningIndex = 0; standWarningIndex < errorsAndWarnings.StandWarnings.Length; ++standWarningIndex)
-            {
-                if (standWarningIndex == 5)
-                {
-                    // allow warning for less than 50 tree records
-                    Assert.IsTrue(errorsAndWarnings.StandWarnings[standWarningIndex] >= 0);
-                    Assert.IsTrue(errorsAndWarnings.StandWarnings[standWarningIndex] <= 1);
-                }
-                else if ((variant != Variant.Smc) && (standWarningIndex != 4))
-                {
-                    // for now, ignore SMC warning for breast height age < 10
-                    Assert.IsTrue(errorsAndWarnings.StandWarnings[standWarningIndex] == 0);
-                }
-            }
+            Assert.IsTrue(stand.AgeInYears >= 0);
+            Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
+            Assert.IsTrue(stand.BreastHeightAgeInYears >= 0);
+            Assert.IsTrue(stand.BreastHeightAgeInYears <= TestConstant.Maximum.StandAgeInYears);
+            Assert.IsTrue(stand.NPTS == 1);
+            Assert.IsTrue(stand.TreeRecordsInUse > 0);
+            Assert.IsTrue(stand.TreeRecordsInUse <= stand.MaximumTreeRecords);
 
-            for (int treeWarningIndex = 0; treeWarningIndex < errorsAndWarnings.TreeWarnings.Length; ++treeWarningIndex)
-            {
-                // for now, ignore warnings on height exceeding potential height
-                // Assert.IsTrue(errorsAndWarnings.TreeWarnings[treeWarningIndex] == 0);
-            }
-        }
-
-        protected void Verify(TreeData treeData, OrganonCapabilities variantCapabilities)
-        {
-            Assert.IsTrue(treeData.UsedRecordCount > 0);
-            Assert.IsTrue(treeData.UsedRecordCount <= treeData.MaximumRecordCount);
-
-            for (int treeIndex = 0; treeIndex < treeData.UsedRecordCount; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
                 // primary tree data
-                float deadExpansionFactor = treeData.DeadExpansionFactor[treeIndex];
+                float deadExpansionFactor = stand.DeadExpansionFactor[treeIndex];
                 Assert.IsTrue(deadExpansionFactor >= 0.0F);
                 Assert.IsTrue(deadExpansionFactor <= TestConstant.Maximum.ExpansionFactor);
 
-                float crownRatio = treeData.Float[treeIndex, (int)TreePropertyFloat.CrownRatio];
+                float crownRatio = stand.Float[treeIndex, (int)TreePropertyFloat.CrownRatio];
                 Assert.IsTrue(crownRatio >= 0.0F);
                 Assert.IsTrue(crownRatio <= 1.0F);
-                float dbhInInches = treeData.Float[treeIndex, (int)TreePropertyFloat.Dbh];
+                float dbhInInches = stand.Float[treeIndex, (int)TreePropertyFloat.Dbh];
                 Assert.IsTrue(dbhInInches >= 0.0F);
                 Assert.IsTrue(dbhInInches <= TestConstant.Maximum.DbhInInches);
-                float expansionFactor = treeData.Float[treeIndex, (int)TreePropertyFloat.ExpansionFactor];
+                float expansionFactor = stand.Float[treeIndex, (int)TreePropertyFloat.ExpansionFactor];
                 Assert.IsTrue(expansionFactor >= 0.0F);
                 Assert.IsTrue(expansionFactor <= TestConstant.Maximum.ExpansionFactor);
-                float heightInFeet = treeData.Float[treeIndex, (int)TreePropertyFloat.Height];
+                float heightInFeet = stand.Float[treeIndex, (int)TreePropertyFloat.Height];
                 Assert.IsTrue(heightInFeet >= 0.0F);
                 Assert.IsTrue(heightInFeet <= TestConstant.Maximum.HeightInFeet);
 
                 Assert.IsTrue(expansionFactor + deadExpansionFactor <= TestConstant.Maximum.ExpansionFactor);
 
-                float accumulatedDiameterGrowthInInches = treeData.Growth[treeIndex, (int)TreePropertyGrowth.AccumulatedDiameter];
+                float accumulatedDiameterGrowthInInches = stand.Growth[treeIndex, (int)TreePropertyGrowth.AccumulatedDiameter];
                 Assert.IsTrue(accumulatedDiameterGrowthInInches >= 0.0F);
                 Assert.IsTrue(accumulatedDiameterGrowthInInches <= dbhInInches);
-                float accumulatedHeightGrowthInFeet = treeData.Growth[treeIndex, (int)TreePropertyGrowth.AccumulatedHeight];
+                float accumulatedHeightGrowthInFeet = stand.Growth[treeIndex, (int)TreePropertyGrowth.AccumulatedHeight];
                 Assert.IsTrue(accumulatedHeightGrowthInFeet >= 0.0F);
                 // (DOUG? why does accumulated height growth exceed the actual tree height?)
                 // Assert.IsTrue(accumulatedHeightGrowthInFeet <= (heightInFeet + 100.0F));
                 // Assert.IsTrue(accumulatedHeightGrowthInFeet <= TestConstant.Maximum.HeightInFeet);
-                float diameterGrowthInInches = treeData.Growth[treeIndex, (int)TreePropertyGrowth.Diameter];
+                float diameterGrowthInInches = stand.Growth[treeIndex, (int)TreePropertyGrowth.Diameter];
                 Assert.IsTrue(diameterGrowthInInches >= 0.0F);
                 Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DbhInInches);
-                float heightGrowthInFeet = treeData.Growth[treeIndex, (int)TreePropertyGrowth.Height];
+                float heightGrowthInFeet = stand.Growth[treeIndex, (int)TreePropertyGrowth.Height];
                 Assert.IsTrue(heightGrowthInFeet >= 0.0F);
                 Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
 
-                int species = treeData.Integer[treeIndex, (int)TreePropertyInteger.Species];
+                int species = stand.Integer[treeIndex, (int)TreePropertyInteger.Species];
                 Assert.IsTrue(Enum.IsDefined(typeof(FiaCode), species));
-                int speciesGroup = treeData.Integer[treeIndex, (int)TreePropertyInteger.SpeciesGroup];
+                int speciesGroup = stand.Integer[treeIndex, (int)TreePropertyInteger.SpeciesGroup];
                 Assert.IsTrue(speciesGroup >= 0);
                 Assert.IsTrue(speciesGroup < variantCapabilities.SpeciesGroupCount);
-                int user = treeData.Integer[treeIndex, (int)TreePropertyInteger.User];
+                int user = stand.Integer[treeIndex, (int)TreePropertyInteger.User];
                 Assert.IsTrue(user >= 0);
                 Assert.IsTrue(user <= 100);
 
-                float mgExpansionFactor = treeData.MGExpansionFactor[treeIndex];
+                float mgExpansionFactor = stand.MGExpansionFactor[treeIndex];
                 Assert.IsTrue(mgExpansionFactor >= 0.0F);
                 Assert.IsTrue(mgExpansionFactor <= TestConstant.Maximum.MGExpansionFactor);
 
-                float shadowCrownRatio0 = treeData.ShadowCrownRatio[treeIndex, 0];
+                float shadowCrownRatio0 = stand.ShadowCrownRatio[treeIndex, 0];
                 Assert.IsTrue(shadowCrownRatio0 >= 0.0F);
                 Assert.IsTrue(shadowCrownRatio0 <= 1.0F);
-                float shadowCrownRatio1 = treeData.ShadowCrownRatio[treeIndex, 1];
+                float shadowCrownRatio1 = stand.ShadowCrownRatio[treeIndex, 1];
                 Assert.IsTrue(shadowCrownRatio1 >= 0.0F);
                 Assert.IsTrue(shadowCrownRatio1 <= 1.0F);
-                float shadowCrownRatio2 = treeData.ShadowCrownRatio[treeIndex, 2];
+                float shadowCrownRatio2 = stand.ShadowCrownRatio[treeIndex, 2];
                 Assert.IsTrue(shadowCrownRatio2 >= 0.0F);
                 Assert.IsTrue(shadowCrownRatio2 <= 1.0F);
 
                 // for now, no need to verify tripling data as it isn't passed in most tests
+
+                // for now, ignore warnings on height exceeding potential height
+                // Assert.IsTrue(stand.TreeWarnings[treeWarningIndex] == 0);
+            }
+
+            for (int standWarningIndex = 0; standWarningIndex < stand.StandWarnings.Length; ++standWarningIndex)
+            {
+                if (standWarningIndex == 5)
+                {
+                    // allow warning for less than 50 tree records
+                    Assert.IsTrue(stand.StandWarnings[standWarningIndex] >= 0);
+                    Assert.IsTrue(stand.StandWarnings[standWarningIndex] <= 1);
+                }
+                else if ((variantCapabilities.Variant != Variant.Smc) && (standWarningIndex != 4))
+                {
+                    // for now, ignore SMC warning for breast height age < 10
+                    Assert.IsTrue(stand.StandWarnings[standWarningIndex] == 0);
+                }
             }
         }
 
-        protected void Verify(TreeLifeAndDeath treeGrowth, TreeData initialTreeData, TreeData finalTreeData)
+        protected void Verify(TreeLifeAndDeath treeGrowth, TestStand initialTreeData, TestStand finalTreeData)
         {
-            int treeRecords = initialTreeData.UsedRecordCount;
+            int treeRecords = initialTreeData.TreeRecordsInUse;
             for (int treeIndex = 0; treeIndex < treeRecords; ++treeIndex)
             {
                 float totalDbhGrowth = treeGrowth.TotalDbhGrowthInInches[treeIndex];

@@ -5,23 +5,25 @@ namespace Osu.Cof.Organon
 {
     internal class Mortality
     {
-        public static void MORTAL(Variant VERSION, int CYCLG, int NTREES, int IB, int[,] TDATAI, bool POST, bool MORT,
+        // ROUTINE FOR SETTING TREE MORTALITY
+        // BUGBUG: sets configuration.RD0, NO, A1MAX - move these to stand data?
+        public static void MORTAL(OrganonConfiguration configuration, int CYCLG, Stand stand, bool POST, 
                                   float[,] TDATAR, float[,] SCR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP, float[] BALL1, float[] BAL1, float SI_1,
-                                  float SI_2, float[] PN, float[] YF, float A1, float A2, float A1MAX, ref float PA1MAX, ref float NO, float RD0, ref float RAAGE, float PDEN)
+                                  float SI_2, float[] PN, float[] YF, ref float RAAGE)
         {
-            // ROUTINE FOR SETTING TREE MORTALITY
-            float[] POW = new float[NTREES];
-            for (int I = 0; I < NTREES; ++I)
+            float[] POW = new float[stand.TreeRecordsInUse];
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                POW[I] = 1.0F;
-                if (VERSION == Variant.Rap && TDATAI[I, 0] != 351)
+                POW[treeIndex] = 1.0F;
+                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                if ((configuration.Variant == Variant.Rap) && (species != FiaCode.AlnusRubra))
                 {
-                    POW[I] = 0.2F;
+                    POW[treeIndex] = 0.2F;
                 }
             }
 
             float A3;
-            if (VERSION <= Variant.Smc)
+            if (configuration.Variant <= Variant.Smc)
             {
                 A3 = 14.39533971F;
             }
@@ -30,7 +32,7 @@ namespace Osu.Cof.Organon
                 A3 = 3.88F;
             }
             float RDCC;
-            if (VERSION <= Variant.Smc)
+            if (configuration.Variant <= Variant.Smc)
             {
                 RDCC = 0.60F;
             }
@@ -43,90 +45,93 @@ namespace Osu.Cof.Organon
             float STBA = 0.0F;
             float STN = 0.0F;
             float RAN = 0.0F;
-            float[] PMK = new float[NTREES];
-            for (int I = 0; I < NTREES; ++I)
+            float[] PMK = new float[stand.TreeRecordsInUse];
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                STBA += TDATAR[I, 0] * TDATAR[I, 0] * KB * TDATAR[I, 3];
-                STN += TDATAR[I, 3];
-                if (TDATAI[I, 0] == 351 && VERSION <= Variant.Smc)
+                STBA += TDATAR[treeIndex, 0] * TDATAR[treeIndex, 0] * KB * TDATAR[treeIndex, 3];
+                STN += TDATAR[treeIndex, 3];
+
+                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                if ((species == FiaCode.AlnusRubra) && (configuration.Variant <= Variant.Smc))
                 {
-                    RAN += TDATAR[I, 3];
+                    RAN += TDATAR[treeIndex, 3];
                 }
+
                 if (CYCLG == 0 && POST)
                 {
-                    STBA += TDATAR[I, 0] * TDATAR[I, 0] * KB * MGEXP[I];
-                    STN += MGEXP[I];
+                    STBA += TDATAR[treeIndex, 0] * TDATAR[treeIndex, 0] * KB * MGEXP[treeIndex];
+                    STN += MGEXP[treeIndex];
                 }
-                PMK[I] = 0.0F;
-                DEADEXP[I] = 0.0F;
+                PMK[treeIndex] = 0.0F;
+                DEADEXP[treeIndex] = 0.0F;
             }
             if (RAN <= 0.0001)
             {
                 RAAGE = 0.0F;
             }
             float SQMDA = (float)Math.Sqrt(STBA / (KB * STN));
-            float RD = STN / (float)Math.Exp(A1 / A2 - Math.Log(SQMDA) / A2);
+            float RD = STN / (float)Math.Exp(configuration.A1 / configuration.A2 - Math.Log(SQMDA) / configuration.A2);
             if (CYCLG == 0)
             {
-                RD0 = RD;
-                NO = 0.0F;
-                A1MAX = A1;
+                configuration.RD0 = RD;
+                configuration.NO = 0.0F;
+                configuration.A1MAX = configuration.A1;
             }
             float BAA = 0.0F;
             float NA = 0.0F;
-            OldGro(NTREES, IB, TDATAI, TDATAR, GROWTH, DEADEXP, 0.0F, out float OG1);
+            OldGro(stand, TDATAR, GROWTH, DEADEXP, 0.0F, out float OG1);
 
             // INDIVIDUAL TREE MORTALITY EQUATIONS
-            for (int I = 0; I < NTREES; ++I)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                if (TDATAR[I, 3] <= 0.0F)
+                if (TDATAR[treeIndex, 3] <= 0.0F)
                 {
                     continue;
                 }
-                int ISPGRP = TDATAI[I, 1];
-                float DBH = TDATAR[I, 0];
-                PM_FERT(ISPGRP, VERSION, CYCLG, PN, YF, out float FERTADJ);
+                int speciesGroup = stand.Integer[treeIndex, 1];
+                PM_FERT(speciesGroup, configuration.Variant, CYCLG, PN, YF, out float FERTADJ);
+                float DBH = TDATAR[treeIndex, 0];
                 DiameterGrowth.GET_BAL(DBH, BALL1, BAL1, out float SBAL1);
                 float CR;
-                if (SCR[I, 0] > TDATAR[I, 2])
+                if (SCR[treeIndex, 0] > TDATAR[treeIndex, 2])
                 {
-                    CR = SCR[I, 0];
+                    CR = SCR[treeIndex, 0];
                 }
                 else
                 {
-                    CR = TDATAR[I, 2];
+                    CR = TDATAR[treeIndex, 2];
                 }
 
-                switch (VERSION)
+                switch (configuration.Variant)
                 {
                     case Variant.Swo:
-                        PM_SWO(ISPGRP, DBH, CR, SI_1, SBAL1, OG1, out POW[I], out PMK[I]);
+                        PM_SWO(speciesGroup, DBH, CR, SI_1, SBAL1, OG1, out POW[treeIndex], out PMK[treeIndex]);
                         break;
                     case Variant.Nwo:
-                        PM_NWO(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, out POW[I], out PMK[I]);
+                        PM_NWO(speciesGroup, DBH, CR, SI_1, SI_2, SBAL1, out POW[treeIndex], out PMK[treeIndex]);
                         break;
                     case Variant.Smc:
-                        PM_SMC(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, out POW[I], out PMK[I]);
+                        PM_SMC(speciesGroup, DBH, CR, SI_1, SI_2, SBAL1, out POW[treeIndex], out PMK[treeIndex]);
                         break;
                     case Variant.Rap:
-                        PM_RAP(ISPGRP, DBH, CR, SI_1, SI_2, SBAL1, out POW[I], out PMK[I]);
+                        PM_RAP(speciesGroup, DBH, CR, SI_1, SI_2, SBAL1, out POW[treeIndex], out PMK[treeIndex]);
                         break;
                     default:
                         throw new NotSupportedException();
                 }
-                PMK[I] = PMK[I] + FERTADJ;
+                PMK[treeIndex] = PMK[treeIndex] + FERTADJ;
             }
 
-            if (VERSION <= Variant.Smc)
+            if (configuration.Variant <= Variant.Smc)
             {
                 if (RAAGE >= 55.0)
                 {
-                    RAMORT(NTREES, TDATAI, RAAGE, TDATAR, RAN, PMK);
+                    RAMORT(stand, RAAGE, TDATAR, RAN, PMK);
                 }
                 RAAGE += 5.0F;
             }
 
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < stand.TreeRecordsInUse; ++I)
             {
                 float CR;
                 if (SCR[I, 0] > TDATAR[I, 2])
@@ -146,10 +151,10 @@ namespace Osu.Cof.Organon
             }
 
             // DETERMINE IF ADDITIONAL MORTALITY MUST BE TAKEN
-            if (MORT)
+            if (configuration.AdditionalMortality)
             {
                 float QMDA = (float)Math.Sqrt(BAA / (KB * NA));
-                float RDA = NA / (float)Math.Exp(A1 / A2 - Math.Log(QMDA) / A2);
+                float RDA = NA / (float)Math.Exp(configuration.A1 / configuration.A2 - Math.Log(QMDA) / configuration.A2);
                 if (CYCLG == 0)
                 {
                     // INITALIZATIONS FOR FIRST GROWTH CYCLE
@@ -157,107 +162,107 @@ namespace Osu.Cof.Organon
                     {
                         if (RDA > RD)
                         {
-                            A1MAX = (float)(Math.Log(SQMDA) + A2 * Math.Log(STN));
+                            configuration.A1MAX = (float)(Math.Log(SQMDA) + configuration.A2 * Math.Log(STN));
                         }
                         else
                         {
-                            A1MAX = (float)(Math.Log(QMDA) + A2 * Math.Log(NA));
+                            configuration.A1MAX = (float)(Math.Log(QMDA) + configuration.A2 * Math.Log(NA));
                         }
-                        if (A1MAX < A1)
+                        if (configuration.A1MAX < configuration.A1)
                         {
-                            A1MAX = A1;
+                            configuration.A1MAX = configuration.A1;
                         }
-                        PA1MAX = A1MAX;
+                        configuration.PA1MAX = configuration.A1MAX;
                     }
                     else
                     {
-                        if (VERSION <= Variant.Smc)
+                        if (configuration.Variant <= Variant.Smc)
                         {
                             if (RD > RDCC)
                             {
                                 float XA3 = -1.0F / A3;
-                                NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
+                                configuration.NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
                             }
                             else
                             {
-                                NO = PDEN;
+                                configuration.NO = configuration.PDEN;
                             }
                         }
                         // INITIALIZATIONS FOR SUBSEQUENT GROWTH CYCLES
                         else
                         {
-                            if (RD0 >= 1.0F)
+                            if (configuration.RD0 >= 1.0F)
                             {
-                                A1MAX = (float)(Math.Log(QMDA) + A2 * Math.Log(NA));
-                                if (A1MAX > PA1MAX)
+                                configuration.A1MAX = (float)(Math.Log(QMDA) + configuration.A2 * Math.Log(NA));
+                                if (configuration.A1MAX > configuration.PA1MAX)
                                 {
-                                    A1MAX = PA1MAX;
+                                    configuration.A1MAX = configuration.PA1MAX;
                                 }
-                                if (A1MAX < A1)
+                                if (configuration.A1MAX < configuration.A1)
                                 {
-                                    A1MAX = A1;
+                                    configuration.A1MAX = configuration.A1;
                                 }
-                                PA1MAX = A1MAX;
+                                configuration.PA1MAX = configuration.A1MAX;
                             }
                             else
                             {
                                 int IND;
-                                if (RD >= 1.0F && NO <= 0.0F)
+                                if (RD >= 1.0F && configuration.NO <= 0.0F)
                                 {
                                     if (RDA > RD)
                                     {
-                                        A1MAX = (float)(Math.Log(SQMDA) + A2 * Math.Log(STN));
+                                        configuration.A1MAX = (float)(Math.Log(SQMDA) + configuration.A2 * Math.Log(STN));
                                     }
                                     else
                                     {
-                                        A1MAX = (float)(Math.Log(QMDA) + A2 * Math.Log(NA));
+                                        configuration.A1MAX = (float)(Math.Log(QMDA) + configuration.A2 * Math.Log(NA));
                                     }
                                     IND = 1;
-                                    if (A1MAX < A1)
+                                    if (configuration.A1MAX < configuration.A1)
                                     {
-                                        A1MAX = A1;
+                                        configuration.A1MAX = configuration.A1;
                                     }
-                                    PA1MAX = A1MAX;
+                                    configuration.PA1MAX = configuration.A1MAX;
                                 }
                                 else
                                 {
                                     IND = 0;
-                                    if (VERSION <= Variant.Smc)
+                                    if (configuration.Variant <= Variant.Smc)
                                     {
-                                        if (RD > RDCC && NO <= 0.0F)
+                                        if (RD > RDCC && configuration.NO <= 0.0F)
                                         {
                                             float XA3 = -1.0F / A3;
-                                            NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
+                                            configuration.NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
                                         }
                                         else
                                         {
-                                            NO = PDEN;
+                                            configuration.NO = configuration.PDEN;
                                         }
                                     }
                                 }
 
                                 // COMPUTATION OF ADDITIONAL MORTALITY IF NECESSARY
                                 float QMDP;
-                                if (IND == 0 && NO > 0.0F)
+                                if ((IND == 0) && (configuration.NO > 0.0F))
                                 {
-                                    if (VERSION <= Variant.Smc)
+                                    if (configuration.Variant <= Variant.Smc)
                                     {
-                                        QMDP = QUAD1(NA, NO, RDCC, A1);
+                                        QMDP = QUAD1(NA, configuration.NO, RDCC, configuration.A1);
                                     }
                                     else
                                     {
-                                        QMDP = QUAD2(NA, NO, A1);
+                                        QMDP = QUAD2(NA, configuration.NO, configuration.A1);
                                     }
                                 }
                                 else
                                 {
-                                    QMDP = (float)Math.Exp(A1MAX - A2 * Math.Log(NA));
+                                    QMDP = (float)Math.Exp(configuration.A1MAX - configuration.A2 * Math.Log(NA));
                                 }
 
                                 if (RD <= RDCC || QMDP > QMDA)
                                 {
                                     // NO ADDITIONAL MORTALITY NECESSARY
-                                    for (int I = 0; I < NTREES; ++I)
+                                    for (int I = 0; I < stand.TreeRecordsInUse; ++I)
                                     {
                                         float CR;
                                         if (SCR[I, 0] > TDATAR[I, 2])
@@ -290,7 +295,7 @@ namespace Osu.Cof.Organon
                                     kr1: KR1 += NK;
                                         float NAA = 0.0F;
                                         float BAAA = 0.0F;
-                                        for (int I = 0; I < NTREES; ++I)
+                                        for (int I = 0; I < stand.TreeRecordsInUse; ++I)
                                         {
                                             if (TDATAR[I, 3] < 0.001F)
                                             {
@@ -317,18 +322,18 @@ namespace Osu.Cof.Organon
                                         QMDA = (float)Math.Sqrt(BAAA / (KB * NAA));
                                         if (IND == 0)
                                         {
-                                            if (VERSION <= Variant.Smc)
+                                            if (configuration.Variant <= Variant.Smc)
                                             {
-                                                QMDP = QUAD1(NAA, NO, RDCC, A1);
+                                                QMDP = QUAD1(NAA, configuration.NO, RDCC, configuration.A1);
                                             }
                                             else
                                             {
-                                                QMDP = QUAD2(NAA, NO, A1);
+                                                QMDP = QUAD2(NAA, configuration.NO, configuration.A1);
                                             }
                                         }
                                         else
                                         {
-                                            QMDP = (float)Math.Exp(A1MAX - A2 * Math.Log(NAA));
+                                            QMDP = (float)Math.Exp(configuration.A1MAX - configuration.A2 * Math.Log(NAA));
                                         }
                                         if (QMDP >= QMDA)
                                         {
@@ -339,7 +344,7 @@ namespace Osu.Cof.Organon
                                             goto kr1;
                                         }
                                     }
-                                    for (int I = 0; I < NTREES; ++I)
+                                    for (int I = 0; I < stand.TreeRecordsInUse; ++I)
                                     {
                                         if (TDATAR[I, 3] <= 0.0F)
                                         {
@@ -376,7 +381,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                for (int I = 0; I < NTREES; ++I)
+                for (int I = 0; I < stand.TreeRecordsInUse; ++I)
                 {
                     float CR;
                     if (SCR[I, 0] > TDATAR[I, 2])
@@ -400,7 +405,7 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            for (int I = 0; I < NTREES; ++I)
+            for (int I = 0; I < stand.TreeRecordsInUse; ++I)
             {
                 Debug.Assert(DEADEXP[I] >= 0.0F);
                 Debug.Assert(DEADEXP[I] <= 1000.0F);
@@ -430,16 +435,17 @@ namespace Osu.Cof.Organon
             return (float)Math.Exp(X);
         }
 
-        private static void RAMORT(int NTREES, int[,] TDATAI, float RAAGE, float[,] TDATAR, float RAN, float[] PMK)
+        private static void RAMORT(Stand stand, float RAAGE, float[,] TDATAR, float RAN, float[] PMK)
         {
             float KB = 0.005454154F;
             float RAMORT1 = 0.0F;
-            for (int I = 0; I < NTREES; ++I)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                if (TDATAI[I, 0] == 351)
+                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                if (species == FiaCode.AlnusRubra)
                 {
-                    float PM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
-                    RAMORT1 += TDATAR[I, 3] * PM;
+                    float PM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
+                    RAMORT1 += TDATAR[treeIndex, 3] * PM;
                 }
             }
 
@@ -456,11 +462,12 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                for (int I = 0; I < NTREES; ++I)
+                for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
                 {
-                    if (TDATAI[I, 0] == 351)
+                    FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                    if (species == FiaCode.AlnusRubra)
                     {
-                        PMK[I] = 1000.0F;
+                        PMK[treeIndex] = 1000.0F;
                     }
                 }
                 return;
@@ -474,12 +481,13 @@ namespace Osu.Cof.Organon
                     float NK = 10.0F / (float)Math.Pow(10.0, KK);
                 kr1: KR1 += NK;
                     RAMORT1 = 0.0F;
-                    for (int I = 0; I < NTREES; ++I)
+                    for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
                     {
-                        if (TDATAI[I, 0] == 351)
+                        FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species]; 
+                        if (species == FiaCode.AlnusRubra)
                         {
-                            float PM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[I])));
-                            RAMORT1 += TDATAR[I, 3] * PM;
+                            float PM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
+                            RAMORT1 += TDATAR[treeIndex, 3] * PM;
                         }
                     }
                     if (RAMORT1 > RAMORT2)
@@ -491,22 +499,23 @@ namespace Osu.Cof.Organon
                         goto kr1;
                     }
                 }
-                for (int I = 0; I < NTREES; ++I)
+                for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
                 {
-                    if (TDATAI[I, 0] == 351)
+                    FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                    if (species == FiaCode.AlnusRubra)
                     {
-                        PMK[I] = KR1 + PMK[I];
+                        PMK[treeIndex] = KR1 + PMK[treeIndex];
                     }
                 }
             }
         }
 
-        private static void PM_FERT(int ISPGRP, Variant VERSION, int CYCLG, float[] PN, float[] YF, out float FERTADJ)
+        private static void PM_FERT(int ISPGRP, Variant variant, int CYCLG, float[] PN, float[] YF, out float FERTADJ)
         {
             float PF1;
             float PF2;
             float PF3;
-            if (VERSION <= Variant.Smc)
+            if (variant <= Variant.Smc)
             {
                 if (ISPGRP == 0)
                 {
@@ -889,9 +898,7 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// Computes old growth index?
         /// </summary>
-        /// <param name="NTREES">Number of trees in tree data.</param>
-        /// <param name="IB">Big six species index? (DOUG?)</param>
-        /// <param name="TDATAI">Tree data.</param>
+        /// <param name="stand">Stand data.</param>
         /// <param name="TDATAR">Tree data.</param>
         /// <param name="GROWTH">Tree data.</param>
         /// <param name="DEADEXP">Tree data.</param>
@@ -904,7 +911,7 @@ namespace Osu.Cof.Organon
         ///    1.0: ADD GROWTH VALUES AND SUBTRACT MORTALITY VALUES
         /// </remarks>
         // BUGBUG: supports only to 98 DBH
-        public static void OldGro(int NTREES, int IB, int[,] TDATAI, float[,] TDATAR, float[,] GROWTH, float[] DEADEXP, float XIND, out float OG)
+        public static void OldGro(Stand stand, float[,] TDATAR, float[,] GROWTH, float[] DEADEXP, float XIND, out float OG)
         {
             float[] HTCL = new float[100];
             float[] DCL = new float[100];
@@ -915,15 +922,15 @@ namespace Osu.Cof.Organon
                 DCL[I] = 0.0F;
                 TRCL[I] = 0.0F;
             }
-            for (int I = 0; I < NTREES; ++I)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                if (TDATAI[I, 1] <= IB)
+                if (stand.IsBigSixSpecies(treeIndex))
                 {
-                    float HT = TDATAR[I, 1] + XIND * GROWTH[I, 0];
-                    float DBH = TDATAR[I, 0] + XIND * GROWTH[I, 1];
-                    float EXPAN = TDATAR[I, 3] - XIND * DEADEXP[I];
-                    Debug.Assert(EXPAN >= 0.0);
-                    Debug.Assert(EXPAN <= 1000.0);
+                    float HT = TDATAR[treeIndex, 1] + XIND * GROWTH[treeIndex, 0];
+                    float DBH = TDATAR[treeIndex, 0] + XIND * GROWTH[treeIndex, 1];
+                    float EXPAN = TDATAR[treeIndex, 3] - XIND * DEADEXP[treeIndex];
+                    Debug.Assert(EXPAN >= 0.0F);
+                    Debug.Assert(EXPAN <= 1000.0F);
 
                     int ID = (int)DBH + 1;
                     if (ID > 99)

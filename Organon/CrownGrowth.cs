@@ -78,15 +78,14 @@ namespace Osu.Cof.Organon
         /// </summary>
         /// <param name="IND">Flag for use of shadow crown ratios (DOUG?). Always false.</param>
         /// <param name="CTMUL">Cut tree multiplier. Always zero.</param>
-        /// <param name="VERSION">Organon variant.</param>
-        /// <param name="NTREES">Number of trees in tree data.</param>
-        /// <param name="TDATAI">Tree data.</param>
+        /// <param name="variant">Organon variant.</param>
+        /// <param name="stand">Stand data.</param>
         /// <param name="TDATAR">Tree data.</param>
         /// <param name="SCR">Tree data.</param>
         /// <param name="MGEXP">Tree data.</param>
         /// <param name="CCH"></param>
         /// <param name="CC">Crown closure</param>
-        public static void CRNCLO(int IND, float CTMUL, Variant VERSION, int NTREES, int[,] TDATAI, float[,] TDATAR, float[,] SCR, float[] MGEXP, float[] CCH, out float CC)
+        public static void CRNCLO(int IND, float CTMUL, Variant variant, Stand stand, float[,] TDATAR, float[,] SCR, float[] MGEXP, float[] CCH, out float CC)
         {
             // BUGBUG remove IND and CTMUL?
             // DETERMINE CROWN CLOSURE
@@ -102,105 +101,107 @@ namespace Osu.Cof.Organon
                 CCH[L] = 0.0F;
             }
             CCH[40] = TDATAR[0, 1];
-            for (int I = 1; I < NTREES; ++I)
+            for (int treeIndex = 1; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                if (TDATAR[I, 1] > CCH[40])
+                if (TDATAR[treeIndex, 1] > CCH[40])
                 {
-                    CCH[40] = TDATAR[I, 1];
+                    CCH[40] = TDATAR[treeIndex, 1];
                 }
             }
-            for (int I = 1; I < NTREES; ++I)
+            for (int treeIndex = 1; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                int ISPGRP = TDATAI[I, 1];
-                float DBH = TDATAR[I, 0];
-                float HT = TDATAR[I, 1];
+                float DBH = TDATAR[treeIndex, 0];
+                float HT = TDATAR[treeIndex, 1];
                 float CR;
-                if (IND == 1 && SCR[I, 0] > 0.0F)
+                if (IND == 1 && SCR[treeIndex, 0] > 0.0F)
                 {
-                    CR = SCR[I, 0];
+                    CR = SCR[treeIndex, 0];
                 }
                 else
                 {
-                    CR = TDATAR[I, 2];
+                    CR = TDATAR[treeIndex, 2];
                 }
-                float SCR1 = SCR[I, 0];
+                float SCR1 = SCR[treeIndex, 0];
                 float CL = CR * HT;
                 float HCB = HT - CL;
-                float EXPAN = TDATAR[I, 3] + CTMUL * MGEXP[I];
-                switch (VERSION)
+                float EXPAN = TDATAR[treeIndex, 3] + CTMUL * MGEXP[treeIndex];
+                int speciesGroup = stand.Integer[treeIndex, 1];
+                switch (variant)
                 {
                     case Variant.Swo:
-                        MCW_SWO(ISPGRP, DBH, HT, out float MCW);
-                        LCW_SWO(ISPGRP, MCW, CR, SCR1, DBH, HT, out float LCW);
-                        HLCW_SWO(ISPGRP, HT, CR, SCR1, out float HLCW);
-                        CALC_CC(VERSION, ISPGRP, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
+                        MCW_SWO(speciesGroup, DBH, HT, out float MCW);
+                        LCW_SWO(speciesGroup, MCW, CR, SCR1, DBH, HT, out float LCW);
+                        HLCW_SWO(speciesGroup, HT, CR, SCR1, out float HLCW);
+                        CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
                         break;
                     case Variant.Nwo:
-                        MCW_NWO(ISPGRP, DBH, HT, out MCW);
-                        LCW_NWO(ISPGRP, MCW, CR, SCR1, DBH, HT, out LCW);
-                        HLCW_NWO(ISPGRP, HT, CR, SCR1, out HLCW);
-                        CALC_CC(VERSION, ISPGRP, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
+                        MCW_NWO(speciesGroup, DBH, HT, out MCW);
+                        LCW_NWO(speciesGroup, MCW, CR, SCR1, DBH, HT, out LCW);
+                        HLCW_NWO(speciesGroup, HT, CR, SCR1, out HLCW);
+                        CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
                         break;
                     case Variant.Smc:
-                        MCW_SMC(ISPGRP, DBH, HT, out MCW);
-                        LCW_SMC(ISPGRP, MCW, CR, SCR1, DBH, HT, out LCW);
-                        HLCW_SMC(ISPGRP, HT, CR, SCR1, out HLCW);
-                        CALC_CC(VERSION, ISPGRP, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
+                        MCW_SMC(speciesGroup, DBH, HT, out MCW);
+                        LCW_SMC(speciesGroup, MCW, CR, SCR1, DBH, HT, out LCW);
+                        HLCW_SMC(speciesGroup, HT, CR, SCR1, out HLCW);
+                        CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
                         break;
                     case Variant.Rap:
-                        MCW_RAP(ISPGRP, DBH, HT, out MCW);
-                        LCW_RAP(ISPGRP, MCW, CR, SCR1, DBH, HT, out LCW);
-                        HLCW_RAP(ISPGRP, HT, CR, SCR1, out HLCW);
-                        CALC_CC(VERSION, ISPGRP, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
+                        MCW_RAP(speciesGroup, DBH, HT, out MCW);
+                        LCW_RAP(speciesGroup, MCW, CR, SCR1, DBH, HT, out LCW);
+                        HLCW_RAP(speciesGroup, HT, CR, SCR1, out HLCW);
+                        CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
                         break;
                 }
             }
             CC = CCH[0];
         }
 
-        public static void CrowGro(Variant VERSION, int CYCLG, int NTREES, int IB, int[,] TDATAI, float[,] TDATAR, float[,] SCR, float[,] GROWTH, float[] MGEXP,
-                                    float[] DEADEXP, float[] CCFLL1, float[] CCFL1, float[] CCFLL2, float[] CCFL2, float SBA1, float SBA2, float SI_1, float SI_2,
-                                    float[,] CALIB, float[] CCH)
+        public static void CrowGro(Variant variant, int CYCLG, Stand stand, float[,] TDATAR, float[,] SCR, float[,] GROWTH, float[] MGEXP,
+                                   float[] DEADEXP, float[] CCFLL1, float[] CCFL1, float[] CCFLL2, float[] CCFL2, float SBA1, float SBA2, float SI_1, float SI_2,
+                                   float[,] CALIB, float[] CCH)
         {
             // DETERMINE 5-YR CROWN RECESSION
-            Mortality.OldGro(NTREES, IB, TDATAI, TDATAR, GROWTH, DEADEXP, -1.0F, out float OG1);
-            Mortality.OldGro(NTREES, IB, TDATAI, TDATAR, GROWTH, DEADEXP, 0.0F, out float OG2);
-            for (int I = 0; I < NTREES; ++I)
+            Mortality.OldGro(stand, TDATAR, GROWTH, DEADEXP, -1.0F, out float OG1);
+            Mortality.OldGro(stand, TDATAR, GROWTH, DEADEXP, 0.0F, out float OG2);
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                if (TDATAI[I, 0] == 0)
+                int species = stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                if (species == 0)
                 {
+                    // BUGBUG shouldn't a tree with an invalid species code be an error?
                     continue;
                 }
 
                 if (CYCLG == 0)
                 {
-                    TDATAR[I, 5] = TDATAR[I, 2];
+                    TDATAR[treeIndex, 5] = TDATAR[treeIndex, 2];
                 }
 
                 // CALCULATE HCB START OF GROWTH
                 // CALCULATE STARTING HEIGHT
-                float PHT = TDATAR[I, 1] - GROWTH[I, 0];
+                float PHT = TDATAR[treeIndex, 1] - GROWTH[treeIndex, 0];
                 // CALCULATE STARTING DBH
-                float PDBH = TDATAR[I, 0] - GROWTH[I, 1];
-                int ISPGRP = TDATAI[I, 1];
+                float PDBH = TDATAR[treeIndex, 0] - GROWTH[treeIndex, 1];
+                int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
                 GET_CCFL(PDBH, CCFLL1, CCFL1, out float SCCFL1);
                 float PCR1;
-                switch (VERSION)
+                switch (variant)
                 {
                     case Variant.Swo:
-                        HCB_SWO(ISPGRP, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out float HCB1);
+                        HCB_SWO(speciesGroup, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out float HCB1);
                         PCR1 = 1.0F - HCB1 / PHT;
                         break;
                     case Variant.Nwo:
-                        HCB_NWO(ISPGRP, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
-                        PCR1 = CALIB[ISPGRP, 1] * (1.0F - HCB1 / PHT);
+                        HCB_NWO(speciesGroup, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
+                        PCR1 = CALIB[speciesGroup, 1] * (1.0F - HCB1 / PHT);
                         break;
                     case Variant.Smc:
-                        HCB_SMC(ISPGRP, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
+                        HCB_SMC(speciesGroup, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
                         PCR1 = 1.0F - HCB1 / PHT;
                         break;
                     case Variant.Rap:
-                        HCB_RAP(ISPGRP, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
+                        HCB_RAP(speciesGroup, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
                         PCR1 = 1.0F - HCB1 / PHT;
                         break;
                     default:
@@ -210,31 +211,31 @@ namespace Osu.Cof.Organon
                 float PHCB1 = (1.0F - PCR1) * PHT;
 
                 // CALCULATE HCB END OF GROWTH
-                float HT = TDATAR[I, 1];
-                float DBH = TDATAR[I, 0];
+                float HT = TDATAR[treeIndex, 1];
+                float DBH = TDATAR[treeIndex, 0];
                 GET_CCFL(DBH, CCFLL2, CCFL2, out float SCCFL2);
                 float MAXHCB;
                 float PCR2;
-                switch (VERSION)
+                switch (variant)
                 {
                     case Variant.Swo:
-                        HCB_SWO(ISPGRP, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out float HCB2);
-                        MAXHCB_SWO(ISPGRP, HT, SCCFL2, out MAXHCB);
+                        HCB_SWO(speciesGroup, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out float HCB2);
+                        MAXHCB_SWO(speciesGroup, HT, SCCFL2, out MAXHCB);
                         PCR2 = 1.0F - HCB2 / HT;
                         break;
                     case Variant.Nwo:
-                        HCB_NWO(ISPGRP, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
-                        MAXHCB_NWO(ISPGRP, HT, SCCFL2, out MAXHCB);
-                        PCR2 = CALIB[ISPGRP, 1] * (1.0F - HCB2 / HT);
+                        HCB_NWO(speciesGroup, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
+                        MAXHCB_NWO(speciesGroup, HT, SCCFL2, out MAXHCB);
+                        PCR2 = CALIB[speciesGroup, 1] * (1.0F - HCB2 / HT);
                         break;
                     case Variant.Smc:
-                        HCB_SMC(ISPGRP, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
-                        MAXHCB_SMC(ISPGRP, HT, SCCFL2, out MAXHCB);
+                        HCB_SMC(speciesGroup, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
+                        MAXHCB_SMC(speciesGroup, HT, SCCFL2, out MAXHCB);
                         PCR2 = 1.0F - HCB2 / HT;
                         break;
                     case Variant.Rap:
-                        HCB_RAP(ISPGRP, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
-                        MAXHCB_RAP(ISPGRP, HT, SCCFL2, out MAXHCB);
+                        HCB_RAP(speciesGroup, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
+                        MAXHCB_RAP(speciesGroup, HT, SCCFL2, out MAXHCB);
                         PCR2 = 1.0F - HCB2 / HT;
                         break;
                     default:
@@ -251,8 +252,8 @@ namespace Osu.Cof.Organon
                 }
                 Debug.Assert(HCBG >= 0.0F); // catch NaNs
 
-                float AHCB1 = (1.0F - TDATAR[I, 2]) * PHT;
-                float SHCB1 = (1.0F - SCR[I, 0]) * PHT;
+                float AHCB1 = (1.0F - TDATAR[treeIndex, 2]) * PHT;
+                float SHCB1 = (1.0F - SCR[treeIndex, 0]) * PHT;
                 float AHCB2 = AHCB1 + HCBG;
                 float SHCB2 = SHCB1 + HCBG;
                 if (AHCB1 > SHCB1)
@@ -261,21 +262,21 @@ namespace Osu.Cof.Organon
                     {
                         if (SHCB2 >= MAXHCB)
                         {
-                            SCR[I, 0] = 1.0F - MAXHCB / HT;
-                            TDATAR[I, 2] = 1.0F - AHCB1 / HT;
+                            SCR[treeIndex, 0] = 1.0F - MAXHCB / HT;
+                            TDATAR[treeIndex, 2] = 1.0F - AHCB1 / HT;
                         }
                         else
                         {
-                            SCR[I, 0] = 1.0F - SHCB2 / HT;
-                            TDATAR[I, 2] = 1.0F - AHCB1 / HT;
+                            SCR[treeIndex, 0] = 1.0F - SHCB2 / HT;
+                            TDATAR[treeIndex, 2] = 1.0F - AHCB1 / HT;
                         }
                     }
                     else
                     {
-                        TDATAR[I, 2] = 1.0F - SHCB2 / HT;
+                        TDATAR[treeIndex, 2] = 1.0F - SHCB2 / HT;
                         for (int J = 0; J < 3; ++J)
                         {
-                            SCR[I, J] = 0.0F;
+                            SCR[treeIndex, J] = 0.0F;
                         }
                     }
                 }
@@ -283,21 +284,21 @@ namespace Osu.Cof.Organon
                 {
                     if (AHCB1 >= MAXHCB)
                     {
-                        TDATAR[I, 2] = 1.0F - AHCB1 / HT;
+                        TDATAR[treeIndex, 2] = 1.0F - AHCB1 / HT;
                     }
                     else if (AHCB2 >= MAXHCB)
                     {
-                        TDATAR[I, 2] = 1.0F - MAXHCB / HT;
+                        TDATAR[treeIndex, 2] = 1.0F - MAXHCB / HT;
                     }
                     else
                     {
-                        TDATAR[I, 2] = 1.0F - AHCB2 / HT;
+                        TDATAR[treeIndex, 2] = 1.0F - AHCB2 / HT;
                     }
                 }
-                Debug.Assert((TDATAR[I, 2] >= 0.0F) && (TDATAR[I, 2] <= 1.0F));
+                Debug.Assert((TDATAR[treeIndex, 2] >= 0.0F) && (TDATAR[treeIndex, 2] <= 1.0F));
             }
 
-            CRNCLO(0, 0.0F, VERSION, NTREES, TDATAI, TDATAR, SCR, MGEXP, CCH, out float _);
+            CRNCLO(0, 0.0F, variant, stand, TDATAR, SCR, MGEXP, CCH, out float _);
         }
 
         private static void CW_NWO(int ISPGRP, float HLCW, float LCW, float HT, float DBH, float XL, out float CW)
@@ -1280,12 +1281,14 @@ namespace Osu.Cof.Organon
             float B2 = MAXPAR[2, ISPGRP];
             float B3 = MAXPAR[3, ISPGRP];
             float LIMIT = MAXPAR[4, ISPGRP];
-            float MAXBR = (float)(B0 - B1 * Math.Exp(Math.Pow(B2 * (CCFL / 100.0), B3)));
+            float MAXBR = (float)(B0 - B1 * Math.Exp(B2 * Math.Pow(CCFL / 100.0, B3)));
             if (MAXBR > LIMIT)
             {
                 MAXBR = LIMIT;
             }
             MAXHCB = MAXBR * HT;
+            Debug.Assert(MAXHCB >= 0.0F);
+            Debug.Assert(MAXHCB <= 500.0F);
         }
 
         private static void MAXHCB_RAP(int ISPGRP, float HT, float CCFL, out float MAXHCB)
@@ -1320,7 +1323,7 @@ namespace Osu.Cof.Organon
             float B2 = MAXPAR[2, ISPGRP];
             float B3 = MAXPAR[3, ISPGRP];
             float LIMIT = MAXPAR[4, ISPGRP];
-            float MAXBR = (float)(B0 - B1 * Math.Exp(Math.Pow(B2 * (CCFL / 100.0), B3)));
+            float MAXBR = (float)(B0 - B1 * Math.Exp(B2 * Math.Pow(CCFL / 100.0, B3)));
             if (MAXBR > LIMIT)
             {
                 MAXBR = LIMIT;
@@ -1366,7 +1369,7 @@ namespace Osu.Cof.Organon
             float B2 = MAXPAR[2, ISPGRP];
             float B3 = MAXPAR[3, ISPGRP];
             float LIMIT = MAXPAR[4, ISPGRP];
-            float MAXBR = (float)(B0 - B1 * Math.Exp(Math.Pow(B2 * (CCFL / 100.0), B3)));
+            float MAXBR = (float)(B0 - B1 * Math.Exp(B2 * Math.Pow(CCFL / 100.0, B3)));
             if (MAXBR > LIMIT)
             {
                 MAXBR = LIMIT;
@@ -1422,7 +1425,7 @@ namespace Osu.Cof.Organon
             float B2 = MAXPAR[2, ISPGRP];
             float B3 = MAXPAR[3, ISPGRP];
             float LIMIT = MAXPAR[4, ISPGRP];
-            float MAXBR = (float)(B0 - B1 * Math.Exp(Math.Pow(B2 * (CCFL / 100.0), B3)));
+            float MAXBR = (float)(B0 - B1 * Math.Exp(B2 * Math.Pow(CCFL / 100.0, B3)));
             if (MAXBR > LIMIT)
             {
                 MAXBR = LIMIT;

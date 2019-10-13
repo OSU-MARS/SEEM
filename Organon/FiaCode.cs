@@ -1,12 +1,12 @@
-﻿namespace Osu.Cof.Organon.Test
+﻿namespace Osu.Cof.Organon
 {
     /// <summary>
     /// FIA species and genera codes known to Organon.
     /// </summary>
     /// <remarks>
-    /// Taken from the FIA western species list provided with FVS's documentation.
+    /// Taken from the USFS FIA western species list provided with FVS's documentation.
     /// </remarks>
-    internal enum FiaCode
+    public enum FiaCode
     {
         AbiesConcolor = 15,
         AbiesGrandis = 17,

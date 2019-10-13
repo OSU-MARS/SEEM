@@ -575,18 +575,16 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="K">Index of tree to grow in tree data.</param>
-        /// <param name="M">Method of tripling. Unused.</param>
+        /// <param name="treeIndex">Index of tree to grow in tree data.</param>
+        /// <param name="triplingMethod">Method of tripling. Unused.</param>
         /// <param name="ON">Always zero. Set to 1 to enable tripling.</param>
-        /// <param name="VERSION">Organon variant.</param>
+        /// <param name="variant">Organon variant.</param>
         /// <param name="CYCLG">Simulation cycle.</param>
-        /// <param name="IB">Big six species index threshold?</param>
-        /// <param name="TDATAI">Tree data.</param>
+        /// <param name="stand">Stand data.</param>
         /// <param name="TDATAR">Tree data.</param>
         /// <param name="SI_1">Primary site index from breast height.</param>
         /// <param name="SI_2">Secondary site index from breast height.</param>
         /// <param name="CCH">Canopy height? (DOUG?)</param>
-        /// <param name="CALIB">Unused.</param>
         /// <param name="PN"></param>
         /// <param name="YF"></param>
         /// <param name="BABT">Thinning?</param>
@@ -606,22 +604,22 @@ namespace Osu.Cof.Organon
         /// 1 = TRIPLE THIS TREE
         /// 0 = DON'T TRIPLE THIS TREE
         /// </remarks>
-        public static void HTGRO1(int K, int M, int ON, Variant VERSION, int CYCLG, int IB, int[,] TDATAI, float[,] TDATAR, float SI_1, float SI_2,
+        public static void HTGRO1(int treeIndex, int triplingMethod, int ON, Variant variant, int CYCLG, Stand stand, float[,] TDATAR, float SI_1, float SI_2,
                                   float[] CCH, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN, float[,] GROWTH)
         {
             // BUGBUG remove M and ON
             // CALCULATE 5-YEAR HEIGHT GROWTH
-            float CR = TDATAR[K, 2];
-            int ISPGRP = TDATAI[K, 1];
+            float CR = TDATAR[treeIndex, 2];
 
             // FOR MAJOR SPECIES
-            if (TDATAI[K, 1] <= IB)
+            int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
+            if (stand.IsBigSixSpecies(treeIndex))
             {
-                float XI = 40.0F * (TDATAR[K, 1] / CCH[40]);
+                float XI = 40.0F * (TDATAR[treeIndex, 1] / CCH[40]);
                 int I = (int)XI + 2;
                 float XXI = (float)I - 1.0F;
                 float TCCH;
-                if (TDATAR[K, 1] >= CCH[40])
+                if (TDATAR[treeIndex, 1] >= CCH[40])
                 {
                     TCCH = 0.0F;
                 }
@@ -638,16 +636,17 @@ namespace Osu.Cof.Organon
                 // GEAGE growth effective age in years
                 // IDXAGE index age? (DOUG?)
                 // HG height growth in feet
+                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
                 float GEAGE;
                 float IDXAGE = 0.0F; // BUGBUG: IDXAGE not initialized on all Fortran code paths
                 float HG = 0.0F; // BUGBUG: HG not initialized on all Fortran code paths
-                switch (VERSION)
+                switch (variant)
                 {
                     case Variant.Swo:
                         float SITE;
                         int ISISP;
                         // POTENTIAL HEIGHT GROWTH FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
-                        if (TDATAI[K, 0] == 122)
+                        if (species == FiaCode.PinusPonderosa)
                         {
                             SITE = SI_2;
                             ISISP = 2;
@@ -655,84 +654,84 @@ namespace Osu.Cof.Organon
                         else
                         {
                             SITE = SI_1;
-                            if (TDATAI[K, 0] == 81)
+                            if (species == FiaCode.CalocedrusDecurrens)
                             {
                                 SITE = (SI_1 + 4.5F) * 0.66F - 4.5F;
                             }
                             ISISP = 1;
                         }
-                        HS_HG(ISISP, SITE, TDATAR[K, 1], out GEAGE, out float PHTGRO);
+                        HS_HG(ISISP, SITE, TDATAR[treeIndex, 1], out GEAGE, out float PHTGRO);
                         IDXAGE = 500.0F;
-                        HG_SWO(ISPGRP, PHTGRO, CR, TCCH, out HG);
+                        HG_SWO(speciesGroup, PHTGRO, CR, TCCH, out HG);
                         break;
                     case Variant.Nwo:
                         float GP = 5.0F;
-                        if (TDATAI[K, 1] == 3)
+                        if (speciesGroup == 3)
                         {
                             // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                             SITE = SI_2 + 4.5F;
-                            F_HG(SITE, TDATAR[K, 1], GP, out GEAGE, out PHTGRO);
+                            F_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
                         }
                         else
                         {
                             // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                             SITE = SI_1 + 4.5F;
-                            B_HG(SITE, TDATAR[K, 1], GP, out GEAGE, out PHTGRO);
+                            B_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
                         }
                         IDXAGE = 120.0F;
-                        HG_NWO(ISPGRP, PHTGRO, CR, TCCH, out HG);
+                        HG_NWO(speciesGroup, PHTGRO, CR, TCCH, out HG);
                         break;
                     case Variant.Smc:
                         GP = 5.0F;
-                        if (TDATAI[K, 1] == 3)
+                        if (speciesGroup == 3)
                         {
                             // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK
                             // DOMINANT HEIGHT GROWTH
                             SITE = SI_2 + 4.5F;
-                            F_HG(SITE, TDATAR[K, 1], GP, out GEAGE, out PHTGRO);
+                            F_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
                         }
                         else
                         {
                             // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                             SITE = SI_1 + 4.5F;
-                            B_HG(SITE, TDATAR[K, 1], GP, out GEAGE, out PHTGRO);
+                            B_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
                         }
                         IDXAGE = 120.0F;
-                        HG_SMC(ISPGRP, PHTGRO, CR, TCCH, out HG);
+                        HG_SMC(speciesGroup, PHTGRO, CR, TCCH, out HG);
                         break;
                     case Variant.Rap:
                         GP = 1.0F;
-                        if (TDATAI[K, 1] == 1)
+                        if (speciesGroup == 1)
                         {
                             // POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM(2009) RED ALDER TOP HEIGHT GROWTH
                             SITE = SI_1 + 4.5F;
-                            WHHLB_HG(SITE, PDEN, TDATAR[K, 1], GP, out GEAGE, out _);
+                            WHHLB_HG(SITE, PDEN, TDATAR[treeIndex, 1], GP, out GEAGE, out _);
                         }
                         else
                         {
-                            if (TDATAI[K, 1] == 3)
+                            if (speciesGroup == 3)
                             {
                                 // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                                 SITE = -0.432F + 0.899F * (SI_2 + 4.5F);
-                                F_HG(SITE, TDATAR[K, 1], GP, out GEAGE, out PHTGRO);
+                                F_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
                             }
                             else
                             {
                                 // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                                 SITE = SI_2 + 4.5F;
-                                B_HG(SITE, TDATAR[K, 1], GP, out GEAGE, out PHTGRO);
+                                B_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
                             }
                             IDXAGE = 30.0F;
-                            HG_RAP(ISPGRP, PHTGRO, CR, TCCH, out HG);
+                            HG_RAP(speciesGroup, PHTGRO, CR, TCCH, out HG);
                         }
                         break;
                     default:
                         throw new NotSupportedException();
                 }
-                if ((TDATAI[K, 1] <= IB) && (GEAGE > IDXAGE))
+                if (stand.IsBigSixSpecies(treeIndex) && (GEAGE > IDXAGE))
                 {
                     OLD += 1.0F;
-                    if (M == 1 || (M == 2 && ON == 1))
+                    if (triplingMethod == 1 || (triplingMethod == 2 && ON == 1))
                     {
                         // BUGBUG should this be reachable when ON = 0? (tripling disabled?)
                         // BUGBUG encapsulation: Triple APIs should manage this
@@ -740,108 +739,110 @@ namespace Osu.Cof.Organon
                     }
                 }
 
-                HG_FERT(CYCLG, VERSION, ISPGRP, SI_1, PN, YF, out float FERTADJ);
-                HG_THIN(CYCLG, VERSION, ISPGRP, BABT, BART, YT, out float THINADJ);
-                GROWTH[K, 0] = HG * THINADJ * FERTADJ;
-                LIMIT(VERSION, TDATAI[K, 0], TDATAR[K, 0], TDATAR[K, 1], GROWTH[K, 1], ref GROWTH[K, 0]);
+                HG_FERT(CYCLG, variant, speciesGroup, SI_1, PN, YF, out float FERTADJ);
+                HG_THIN(CYCLG, variant, speciesGroup, BABT, BART, YT, out float THINADJ);
+                GROWTH[treeIndex, 0] = HG * THINADJ * FERTADJ;
+                LIMIT(variant, species, TDATAR[treeIndex, 0], TDATAR[treeIndex, 1], GROWTH[treeIndex, 1], ref GROWTH[treeIndex, 0]);
             }
         }
 
-        public static void HTGRO2(int K, Variant VERSION, int IB, int[,] TDATAI, float[,] TDATAR, float RASI, float[,] CALIB, float[,] GROWTH)
+        public static void HTGRO2(int treeIndex, Variant variant, Stand stand, float[,] TDATAR, float RASI, float[,] CALIB, float[,] GROWTH)
         {
             // CALCULATE HEIGHT GROWTH FOR MINOR SPECIES
-            float DBH = TDATAR[K, 0];
-            int ISPGRP = TDATAI[K, 1];
-            if (TDATAI[K, 1] > IB)
+            float DBH = TDATAR[treeIndex, 0];
+            int speciesGroup = stand.Integer[treeIndex, 1];
+            if (stand.IsBigSixSpecies(treeIndex))
             {
-                float PDBH = DBH - GROWTH[K, 1];
+                float PDBH = DBH - GROWTH[treeIndex, 1];
                 float PRDHT1;
                 float PRDHT2;
-                switch (VERSION)
+                switch (variant)
                 {
                     case Variant.Swo:
-                        HD_SWO(ISPGRP, DBH, out PRDHT2);
-                        HD_SWO(ISPGRP, PDBH, out PRDHT1);
+                        HD_SWO(speciesGroup, DBH, out PRDHT2);
+                        HD_SWO(speciesGroup, PDBH, out PRDHT1);
                         break;
                     case Variant.Nwo:
-                        HD_NWO(ISPGRP, DBH, out PRDHT2);
-                        HD_NWO(ISPGRP, PDBH, out PRDHT1);
+                        HD_NWO(speciesGroup, DBH, out PRDHT2);
+                        HD_NWO(speciesGroup, PDBH, out PRDHT1);
                         break;
                     case Variant.Smc:
-                        HD_SMC(ISPGRP, DBH, out PRDHT2);
-                        HD_SMC(ISPGRP, PDBH, out PRDHT1);
+                        HD_SMC(speciesGroup, DBH, out PRDHT2);
+                        HD_SMC(speciesGroup, PDBH, out PRDHT1);
                         break;
                     case Variant.Rap:
-                        HD_RAP(ISPGRP, DBH, out PRDHT2);
-                        HD_RAP(ISPGRP, PDBH, out PRDHT1);
+                        HD_RAP(speciesGroup, DBH, out PRDHT2);
+                        HD_RAP(speciesGroup, PDBH, out PRDHT1);
                         break;
                     default:
                         throw new NotSupportedException();
                 }
-                PRDHT1 = 4.5F + CALIB[ISPGRP, 0] * (PRDHT1 - 4.5F);
-                PRDHT2 = 4.5F + CALIB[ISPGRP, 0] * (PRDHT2 - 4.5F);
-                float PRDHT = (PRDHT2 / PRDHT1) * TDATAR[K, 1];
+                PRDHT1 = 4.5F + CALIB[speciesGroup, 0] * (PRDHT1 - 4.5F);
+                PRDHT2 = 4.5F + CALIB[speciesGroup, 0] * (PRDHT2 - 4.5F);
+                float PRDHT = (PRDHT2 / PRDHT1) * TDATAR[treeIndex, 1];
 
                 // RED ALDER HEIGHT GROWTH
-                if (TDATAI[K, 0] == 351 && VERSION <= Variant.Smc)
+                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                if ((species == FiaCode.AlnusRubra) && (variant <= Variant.Smc))
                 {
-                    RAGEA(TDATAR[K, 1], RASI, out float GEARA);
+                    RAGEA(TDATAR[treeIndex, 1], RASI, out float GEARA);
                     if (GEARA <= 0.0F)
                     {
-                        GROWTH[K, 0] = 0.0F;
+                        GROWTH[treeIndex, 0] = 0.0F;
                     }
                     else
                     {
                         RAH40(GEARA, RASI, out float RAH1);
                         RAH40(GEARA + 5.0F, RASI, out float RAH2);
                         float RAHG = RAH2 - RAH1;
-                        GROWTH[K, 0] = RAHG;
+                        GROWTH[treeIndex, 0] = RAHG;
                     }
                 }
                 else
                 {
-                    GROWTH[K, 0] = PRDHT - TDATAR[K, 1];
+                    GROWTH[treeIndex, 0] = PRDHT - TDATAR[treeIndex, 1];
                 }
-                GROWTH[K, 2] = GROWTH[K, 2] + GROWTH[K, 0];
+                GROWTH[treeIndex, 2] = GROWTH[treeIndex, 2] + GROWTH[treeIndex, 0];
             }
         }
 
-        private static void LIMIT(Variant VERSION, int ISP, float DBH, float HT, float DG, ref float HG)
+        private static void LIMIT(Variant variant, FiaCode species, float DBH, float HT, float DG, ref float HG)
         {
-            int JSP = ISP;
-            if (ISP == 263 && VERSION == Variant.Swo)
+            FiaCode speciesWithSwoTsheOptOut = species;
+            if ((species == FiaCode.TsugaHeterophylla) && (variant == Variant.Swo))
             {
-                JSP = 2631;
+                // BUGBUG: not clear why SWO uses default coefficients for hemlock
+                speciesWithSwoTsheOptOut = FiaCode.LithocarpusDensiflorus;
             }
 
             float A0;
             float A1;
             float A2;
-            switch (JSP)
+            switch (speciesWithSwoTsheOptOut)
             {
-                case 202:
-                case 263:
+                case FiaCode.PseudotsugaMenziesii:
+                case FiaCode.TsugaHeterophylla:
                     A0 = 19.04942539F;
                     A1 = -0.04484724F;
                     A2 = 1.0F;
                     break;
-                case 17:
-                case 15:
+                case FiaCode.AbiesConcolor:
+                case FiaCode.AbiesGrandis:
                     A0 = 16.26279948F;
                     A1 = -0.04484724F;
                     A2 = 1.0F;
                     break;
-                case 122:
+                case FiaCode.PinusPonderosa:
                     A0 = 17.11482201F;
                     A1 = -0.04484724F;
                     A2 = 1.0F;
                     break;
-                case 117:
+                case FiaCode.PinusLambertiana:
                     A0 = 14.29011403F;
                     A1 = -0.04484724F;
                     A2 = 1.0F;
                     break;
-                case 351:
+                case FiaCode.AlnusRubra:
                     A0 = 60.619859F;
                     A1 = -1.59138564F;
                     A2 = 0.496705997F;

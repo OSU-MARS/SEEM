@@ -6,6 +6,7 @@ namespace Osu.Cof.Organon.Test
     {
         public int SpeciesGroupCount { get; private set; }
         public int TimeStepInYears { get; private set; }
+        public Variant Variant { get; private set; }
 
         public OrganonCapabilities(Variant variant)
         {
@@ -27,6 +28,7 @@ namespace Osu.Cof.Organon.Test
                 default:
                     throw VariantExtensions.CreateUnhandledVariantException(variant);
             }
+            this.Variant = variant;
         }
     }
 }

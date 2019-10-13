@@ -1,7 +1,9 @@
-﻿namespace Osu.Cof.Organon.Test
+﻿namespace Osu.Cof.Organon
 {
-    internal class OrganonOptions
+    public class OrganonConfiguration
     {
+        public Variant Variant { get; private set; }
+
         // INDS[0] switches CALIB[, 0] from 1.0 to ACALIB[, 0]
         public bool CALH { get; set; }
         // INDS[1] switches CALIB[, 1] from 1.0 to ACALIB[, 1]
@@ -22,12 +24,6 @@
         public bool AdditionalMortality { get; set; }
         // INDS[9] triggers some data copying in Triple
         public bool WoodQuality { get; set; }
-        // INDS[10] unused
-        public bool OSTORY { get; set; }
-        // INDS[11] unused
-        public bool INGRO { get; set; }
-        // INDS[12] unused
-        public bool B6Thin { get; set; }
         // INDS[13] enables genetic growth modifiers
         public bool Genetics { get; set; }
         // INDS[14] enables Swiss needle cast (Nothophaeocryptopus gaeumanii) growth modifiers, applies only to NWO and SMC variants
@@ -38,10 +34,13 @@
         // RVARS[1] site index from ground height in feet (internal variable SI_2 is from breast height), used for ??? in 
         public float SITE_2 { get; set; }
         // RVARS[2] maximum SDI for Douglas-fir?, only used by Submax()
+        // If less than or equal to zero. (DOUG? also, what species?)</param>
         public float MSDI_1 { get; set; }
         // RVARS[3] maximum SDI for true firs?, only used by Submax() for calculation of TFMOD
+        // Maximum? stand density index for calculating TFMOD, ignored if less than or equal to zero. (DOUG?)
         public float MSDI_2 { get; set; }
         // RVARS[4] maximum SDI for OC?, only used by Submax() for calculation of OCMOD
+        // Maximum? stand density index for calculating OCMOD, ignored if less than or equal to zero. (DOUG?)
         public float MSDI_3 { get; set; }
         // RVARS[5] genetic diameter growth modifier (requires Genetics = true)
         public float GWDG { get; set; }
@@ -65,74 +64,14 @@
         // STOR[5] SDImax cap for mortality, overrides A1MAX if lower
         public float PA1MAX { get; set; }
 
-        public OrganonOptions(Variant variant)
+        public OrganonConfiguration(Variant variant)
         {
-            if (variant == Variant.Rap)
+            this.Variant = variant;
+            if (this.Variant == Variant.Rap)
             {
                 // only even age red alder plantations are supported
                 this.IsEvenAge = true;
             }
-
-            this.SITE_1 = TestConstant.Default.SiteIndex;
-            this.SITE_2 = TestConstant.Default.SiteIndex - 10.0F;
-            this.MSDI_1 = TestConstant.Default.MaximumReinekeStandDensityIndex;
-            this.MSDI_2 = TestConstant.Default.MaximumReinekeStandDensityIndex;
-            this.MSDI_3 = TestConstant.Default.MaximumReinekeStandDensityIndex;
-
-            this.A1 = TestConstant.Default.A1;
-            this.A2 = TestConstant.Default.A2;
-            this.A1MAX = TestConstant.Default.A1MAX;
-            this.PA1MAX = TestConstant.Default.PA1MAX;
-            this.NO = TestConstant.Default.NO;
-            this.RD0 = TestConstant.Default.RD0;
-        }
-
-        public int[] ToFeatureFlagsArray()
-        {
-            int[] featureFlags = new int[15];
-            featureFlags[0] = this.CALH ? 1 : 0;
-            featureFlags[1] = this.CALC ? 1 : 0;
-            featureFlags[2] = this.CALD ? 1 : 0;
-            featureFlags[3] = this.IsEvenAge ? 1 : 0;
-            featureFlags[4] = this.Triple ? 1 : 0;
-            featureFlags[5] = this.Prune ? 1 : 0;
-            featureFlags[6] = this.Thin ? 1 : 0;
-            featureFlags[7] = this.Fertilizer ? 1 : 0;
-            featureFlags[8] = this.AdditionalMortality ? 1 : 0;
-            featureFlags[9] = this.WoodQuality ? 1 : 0;
-            featureFlags[10] = this.OSTORY ? 1 : 0;
-            featureFlags[11] = this.INGRO ? 1 : 0;
-            featureFlags[12] = this.B6Thin ? 1 : 0;
-            featureFlags[13] = this.Genetics ? 1 : 0;
-            featureFlags[14] = this.SwissNeedleCast ? 1 : 0;
-            return featureFlags;
-        }
-
-        public float[] ToSiteVariablesArray()
-        {
-            float[] siteVariables = new float[9];
-            siteVariables[0] = this.SITE_1;
-            siteVariables[1] = this.SITE_2;
-            siteVariables[2] = this.MSDI_1;
-            siteVariables[3] = this.MSDI_2;
-            siteVariables[4] = this.MSDI_3;
-            siteVariables[5] = this.GWDG;
-            siteVariables[6] = this.GWHG;
-            siteVariables[7] = this.FR;
-            siteVariables[8] = this.PDEN;
-            return siteVariables;
-        }
-
-        public float[] ToStandParametersArray()
-        {
-            float[] standParameters = new float[6];
-            standParameters[0] = this.NO;
-            standParameters[1] = this.RD0;
-            standParameters[2] = this.A1;
-            standParameters[3] = this.A2;
-            standParameters[4] = this.A1MAX;
-            standParameters[5] = this.PA1MAX;
-            return standParameters;
         }
     }
 }

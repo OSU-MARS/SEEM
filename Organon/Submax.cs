@@ -5,33 +5,28 @@ namespace Osu.Cof.Organon
     internal class Submax
     {
         /// <summary>
-        /// Finds power of SDImax line.
+        /// Finds power of SDImax line. Sets configuration.A1 (constant of SDImax line) and A2 (exponent of SDImax line, dimensionless).
         /// </summary>
         /// <param name="TRIAL">Hard coded to false in Execute(). MGEXP is subtracted from tree expansion factors if true, otherwise MGEXP is ignored.</param>
-        /// <param name="VERSION"></param>
+        /// <param name="configuration">Organon configuration settings.</param>
         /// <param name="NTREES"></param>
         /// <param name="TDATAI"></param>
         /// <param name="TDATAR"></param>
         /// <param name="MGEXP"></param>
-        /// <param name="MSDI_1">Maximum? stand density index, ignored if less than or equal to zero. (DOUG? also, what species?)</param>
-        /// <param name="MSDI_2">Maximum? stand density index for calculating TFMOD, ignored if less than or equal to zero. (DOUG?)</param>
-        /// <param name="MSDI_3">Maximum? stand density index for calculating OCMOD, ignored if less than or equal to zero. (DOUG?)</param>
-        /// <param name="A1"></param>
-        /// <param name="A2">exponent of SDImax line (dimensionless)</param>
-        public static void SUBMAX(bool TRIAL, Variant VERSION, int NTREES, int[,] TDATAI, float[,] TDATAR, float[] MGEXP, float MSDI_1, float MSDI_2, float MSDI_3, out float A1, out float A2)
+        public static void SUBMAX(bool TRIAL, OrganonConfiguration configuration, Stand stand, float[,] TDATAR)
         {
             // CALCULATE THE MAXIMUM SIZE-DENISTY LINE
-            switch (VERSION)
+            switch (configuration.Variant)
             {
                 case Variant.Swo:
                 case Variant.Nwo:
                 case Variant.Smc:
                     // REINEKE (1933): 1.605^-1 = 0.623053
-                    A2 = 0.62305F;
+                    configuration.A2 = 0.62305F;
                     break;
                 case Variant.Rap:
                     // PUETTMANN ET AL. (1993)
-                    A2 = 0.64F;
+                    configuration.A2 = 0.64F;
                     break;
                 default:
                     throw new NotSupportedException();
@@ -39,13 +34,13 @@ namespace Osu.Cof.Organon
 
             float KB = 0.005454154F;
             float TEMPA1;
-            if (MSDI_1 > 0.0F)
+            if (configuration.MSDI_1 > 0.0F)
             {
-                TEMPA1 = (float)(Math.Log(10.0) + A2 * Math.Log(MSDI_1));
+                TEMPA1 = (float)(Math.Log(10.0) + configuration.A2 * Math.Log(configuration.MSDI_1));
             }
             else
             {
-                switch (VERSION)
+                switch (configuration.Variant)
                 {
                     case Variant.Swo:
                         // ORIGINAL SWO-ORGANON - Max.SDI = 530.2
@@ -68,24 +63,20 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            // BUGBUG why does BAGRP have length 18 when ISPGRP does not exceed 2?
+            // BUGBUG need API with maximum species group ID to safely allocate BAGRP
             float[] BAGRP = new float[18];
-            for (int I = 0; I < 18; ++I)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                BAGRP[I] = 0.0F;
-            }
-            for (int I = 0; I < NTREES; ++I)
-            {
-                int ISPGRP = TDATAI[I, 1];
-                float DBH = TDATAR[I, 0];
+                int ISPGRP = stand.Integer[treeIndex, 1];
+                float DBH = TDATAR[treeIndex, 0];
                 float EX1;
                 if (TRIAL)
                 {
-                    EX1 = TDATAR[I, 3] - MGEXP[I];
+                    EX1 = TDATAR[treeIndex, 3] - stand.MGExpansionFactor[treeIndex];
                 }
                 else
                 {
-                    EX1 = TDATAR[I, 3];
+                    EX1 = TDATAR[treeIndex, 3];
                 }
                 BAGRP[ISPGRP] = BAGRP[ISPGRP] + KB * DBH * DBH * EX1;
              }
@@ -100,7 +91,7 @@ namespace Osu.Cof.Organon
             float PTF = 0.0F; // BUGBUG not intialized in Fortran code
             if (TOTBA > 0.0F)
             {
-                if (VERSION <= Variant.Smc)
+                if (configuration.Variant <= Variant.Smc)
                 {
                     PDF = BAGRP[0] / TOTBA;
                     PTF = BAGRP[1] / TOTBA;
@@ -114,7 +105,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                if (VERSION <= Variant.Smc)
+                if (configuration.Variant <= Variant.Smc)
                 {
                     PDF = 0.0F;
                     PTF = 0.0F;
@@ -131,20 +122,20 @@ namespace Osu.Cof.Organon
             float OCMOD;
             float PPP;
             float TFMOD;
-            switch (VERSION)
+            switch (configuration.Variant)
             {
                 case Variant.Swo:
-                    if (MSDI_2 > 0.0F)
+                    if (configuration.MSDI_2 > 0.0F)
                     {
-                        TFMOD = (float)(Math.Log(10.0) + A2 * Math.Log(MSDI_2)) / TEMPA1;
+                        TFMOD = (float)(Math.Log(10.0) + configuration.A2 * Math.Log(configuration.MSDI_2)) / TEMPA1;
                     }
                     else
                     {
                         TFMOD = 1.03481817F;
                     }
-                    if (MSDI_3 > 0.0F)
+                    if (configuration.MSDI_3 > 0.0F)
                     {
-                        OCMOD = (float)(Math.Log(10.0) + A2 * Math.Log(MSDI_3)) / TEMPA1;
+                        OCMOD = (float)(Math.Log(10.0) + configuration.A2 * Math.Log(configuration.MSDI_3)) / TEMPA1;
                     }
                     else
                     {
@@ -178,17 +169,17 @@ namespace Osu.Cof.Organon
                     break;
                 case Variant.Nwo:
                 case Variant.Smc:
-                    if (MSDI_2 > 0.0F)
+                    if (configuration.MSDI_2 > 0.0F)
                     {
-                        TFMOD = (float)(Math.Log(10.0) + A2 * Math.Log(MSDI_2)) / TEMPA1;
+                        TFMOD = (float)(Math.Log(10.0) + configuration.A2 * Math.Log(configuration.MSDI_2)) / TEMPA1;
                     }
                     else
                     {
                         TFMOD = 1.03481817F;
                     }
-                    if (MSDI_3 > 0.0F)
+                    if (configuration.MSDI_3 > 0.0F)
                     {
-                        OCMOD = (float)(Math.Log(10.0) + A2 * Math.Log(MSDI_3)) / TEMPA1;
+                        OCMOD = (float)(Math.Log(10.0) + configuration.A2 * Math.Log(configuration.MSDI_3)) / TEMPA1;
                     }
                     else
                     {
@@ -233,7 +224,7 @@ namespace Osu.Cof.Organon
                 A1MOD = 1.0F;
             }
 
-            A1 = TEMPA1 * A1MOD;
+            configuration.A1 = TEMPA1 * A1MOD;
         }
     }
 }

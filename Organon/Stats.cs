@@ -23,9 +23,8 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// Calculate stand statistics.
         /// </summary>
-        /// <param name="VERSION">Organon variant.</param>
-        /// <param name="NTREES">Number of trees in tree data.</param>
-        /// <param name="TDATAI">Tree data.</param>
+        /// <param name="variant">Organon variant.</param>
+        /// <param name="stand">Stand data.</param>
         /// <param name="TDATAR">Tree data.</param>
         /// <param name="SBA">Total basal area per acre.</param>
         /// <param name="TPA">Total trees per acre.</param>
@@ -37,51 +36,52 @@ namespace Osu.Cof.Organon
         /// <remarks>
         /// Trees of DBH larger than 100 inches are treated as if their diameter was 100 inches.
         /// </remarks>
-        public static void SSTATS(Variant VERSION, int NTREES, int[,] TDATAI, float[,] TDATAR, out float SBA, out float TPA, out float SCCF, float[] BAL, float[] BALL, float[] CCFL, float[] CCFLL)
+        public static void SSTATS(Variant variant, Stand stand, float[,] TDATAR, out float SBA, out float TPA, out float SCCF, float[] BAL, float[] BALL, float[] CCFL, float[] CCFLL)
         {
             // BUGBUG doesn't check length of CCFL, BAL, CCFLL, and BALL
-            for (int I = 0; I < 500; ++I)
+            for (int competitionIndex = 0; competitionIndex < 500; ++competitionIndex)
             {
-                CCFL[I] = 0.0F;
-                BAL[I] = 0.0F;
+                CCFL[competitionIndex] = 0.0F;
+                BAL[competitionIndex] = 0.0F;
             }
-            for (int I = 0; I < 51; ++I)
+            for (int competitionIndex = 0; competitionIndex < 51; ++competitionIndex)
             {
-                CCFLL[I] = 0.0F;
-                BALL[I] = 0.0F;
+                CCFLL[competitionIndex] = 0.0F;
+                BALL[competitionIndex] = 0.0F;
             }
 
             SBA = 0.0F;
             SCCF = 0.0F;
             TPA = 0.0F;
-            for (int I = 0; I < NTREES; ++I)
+            for (int treeOndex = 0; treeOndex < stand.TreeRecordsInUse; ++treeOndex)
             {
-                if (TDATAR[I, 3] < 0.0001F)
+                if (TDATAR[treeOndex, 3] < 0.0001F)
                 {
                     continue;
                 }
-                int ISPGRP = TDATAI[I, 1];
-                float DBH = TDATAR[I, 0];
-                float HT = TDATAR[I, 1];
-                float EXPAN = TDATAR[I, 3];
+
+                float DBH = TDATAR[treeOndex, 0];
+                float HT = TDATAR[treeOndex, 1];
+                float EXPAN = TDATAR[treeOndex, 3];
                 float BA = DBH * DBH * EXPAN * 0.005454154F;
                 SBA += BA;
                 TPA += EXPAN;
 
+                int speciesGroup = stand.Integer[treeOndex, 1];
                 float MCW;
-                switch (VERSION)
+                switch (variant)
                 {
                     case Variant.Swo:
-                        CrownGrowth.MCW_SWO(ISPGRP, DBH, HT, out MCW);
+                        CrownGrowth.MCW_SWO(speciesGroup, DBH, HT, out MCW);
                         break;
                     case Variant.Nwo:
-                        CrownGrowth.MCW_NWO(ISPGRP, DBH, HT, out MCW);
+                        CrownGrowth.MCW_NWO(speciesGroup, DBH, HT, out MCW);
                         break;
                     case Variant.Smc:
-                        CrownGrowth.MCW_SMC(ISPGRP, DBH, HT, out MCW);
+                        CrownGrowth.MCW_SMC(speciesGroup, DBH, HT, out MCW);
                         break;
                     case Variant.Rap:
-                        CrownGrowth.MCW_RAP(ISPGRP, DBH, HT, out MCW);
+                        CrownGrowth.MCW_RAP(speciesGroup, DBH, HT, out MCW);
                         break;
                     default:
                         throw new NotSupportedException();
