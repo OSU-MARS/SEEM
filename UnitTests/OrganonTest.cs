@@ -31,15 +31,10 @@ namespace Osu.Cof.Organon.Test
             };
         }
 
-        protected TestStand CreateDefaultStand(Variant variant)
-        {
-            return this.CreateDefaultStand(variant, null);
-        }
-
-        protected TestStand CreateDefaultStand(Variant variant, Nullable<int> maximumRecordCount)
+        protected TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
             List<TreeRecord> trees = new List<TreeRecord>();
-            switch (variant)
+            switch (configuration.Variant)
             {
                 case Variant.Nwo:
                 case Variant.Smc:
@@ -97,19 +92,14 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.Salix, 0.1F, 1.0F, 0.5F));
                     break;
                 default:
-                    throw VariantExtensions.CreateUnhandledVariantException(variant);
+                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
             }
 
-            if (maximumRecordCount.HasValue == false)
-            {
-                maximumRecordCount = trees.Count;
-            }
-
-            TestStand stand = new TestStand(variant, 0, maximumRecordCount.Value, TestConstant.Default.SiteIndex, TestConstant.Default.SiteIndex - 10.0F);
+            TestStand stand = new TestStand(configuration.Variant, 0, trees.Count, TestConstant.Default.SiteIndex);
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 TreeRecord tree = trees[treeIndex];
-                int speciesGroup = this.GetSpeciesGroup(variant, tree.Species);
+                int speciesGroup = this.GetSpeciesGroup(configuration.Variant, tree.Species);
                 stand.Integer[treeIndex, (int)TreePropertyInteger.Species] = (int)tree.Species;
                 stand.Integer[treeIndex, (int)TreePropertyInteger.SpeciesGroup] = speciesGroup;
                 stand.Integer[treeIndex, (int)TreePropertyInteger.User] = treeIndex;
@@ -121,6 +111,7 @@ namespace Osu.Cof.Organon.Test
             }
             stand.TreeRecordsInUse = trees.Count;
 
+            stand.SUBMAX(configuration);
             return stand;
         }
 
@@ -128,17 +119,9 @@ namespace Osu.Cof.Organon.Test
         {
             OrganonConfiguration configuration = new OrganonConfiguration(variant)
             {
-                SITE_1 = TestConstant.Default.SiteIndex,
-                SITE_2 = TestConstant.Default.SiteIndex - 10.0F,
                 MSDI_1 = TestConstant.Default.MaximumReinekeStandDensityIndex,
                 MSDI_2 = TestConstant.Default.MaximumReinekeStandDensityIndex,
                 MSDI_3 = TestConstant.Default.MaximumReinekeStandDensityIndex,
-
-                A1 = TestConstant.Default.A1,
-                A2 = TestConstant.Default.A2,
-                A1MAX = TestConstant.Default.A1MAX,
-                NO = TestConstant.Default.NO,
-                RD0 = TestConstant.Default.RD0
             };
 
             return configuration;
@@ -166,7 +149,7 @@ namespace Osu.Cof.Organon.Test
             }
         }
 
-        protected void Verify(TestStand stand, OrganonCapabilities variantCapabilities)
+        protected void Verify(TestStand stand, VariantCapabilities variantCapabilities)
         {
             Assert.IsTrue(stand.AgeInYears >= 0);
             Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
@@ -230,20 +213,17 @@ namespace Osu.Cof.Organon.Test
                 // Assert.IsTrue(stand.TreeWarnings[treeWarningIndex] == 0);
             }
 
-            for (int standWarningIndex = 0; standWarningIndex < stand.StandWarnings.Length; ++standWarningIndex)
+            Assert.IsTrue(stand.Warnings.BigSixHeightAbovePotential == false);
+            // ignore stand.Warnings.LessThan50TreeRecords
+            Assert.IsTrue(stand.Warnings.MortalitySiteIndexOutOfRange == false);
+            Assert.IsTrue(stand.Warnings.OtherSpeciesBasalAreaTooHigh == false);
+            Assert.IsTrue(stand.Warnings.PrimarySiteIndexOutOfRange == false);
+            if (variantCapabilities.Variant != Variant.Smc)
             {
-                if (standWarningIndex == 5)
-                {
-                    // allow warning for less than 50 tree records
-                    Assert.IsTrue(stand.StandWarnings[standWarningIndex] >= 0);
-                    Assert.IsTrue(stand.StandWarnings[standWarningIndex] <= 1);
-                }
-                else if ((variantCapabilities.Variant != Variant.Smc) && (standWarningIndex != 4))
-                {
-                    // for now, ignore SMC warning for breast height age < 10
-                    Assert.IsTrue(stand.StandWarnings[standWarningIndex] == 0);
-                }
+                // for now, ignore SMC warning for breast height age < 10
+                Assert.IsTrue(stand.Warnings.TreesOld == false);
             }
+            // for now, ignore stand.Warnings.TreesYoung
         }
 
         protected void Verify(TreeLifeAndDeath treeGrowth, TestStand initialTreeData, TestStand finalTreeData)

@@ -5,26 +5,26 @@ namespace Osu.Cof.Organon
 {
     internal class CrownGrowth
     {
-        public static void CALC_CC(Variant VERSION, int ISPGRP, float HLCW, float LCW, float HT, float DBH, float HCB, float EXPAN, float[] CCH)
+        public static void CALC_CC(Variant variant, int speciesGroup, float HLCW, float LCW, float HT, float DBH, float HCB, float EXPAN, float[] CCH)
         {
             float XHLCW;
             float XLCW;
             if (HCB > HLCW)
             {
                 XHLCW = HCB;
-                switch (VERSION)
+                switch (variant)
                 {
                     case Variant.Swo:
-                        CW_SWO(ISPGRP, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
+                        CW_SWO(speciesGroup, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
                         break;
                     case Variant.Nwo:
-                        CW_NWO(ISPGRP, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
+                        CW_NWO(speciesGroup, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
                         break;
                     case Variant.Smc:
-                        CW_SMC(ISPGRP, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
+                        CW_SMC(speciesGroup, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
                         break;
                     case Variant.Rap:
-                        CW_RAP(ISPGRP, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
+                        CW_RAP(speciesGroup, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
                         break;
                     default:
                         throw new NotSupportedException();
@@ -46,19 +46,19 @@ namespace Osu.Cof.Organon
                 }
                 else if (XL > XHLCW && XL < HT)
                 {
-                    switch (VERSION)
+                    switch (variant)
                     {
                         case Variant.Swo:
-                            CW_SWO(ISPGRP, HLCW, LCW, HT, DBH, XL, out CW);
+                            CW_SWO(speciesGroup, HLCW, LCW, HT, DBH, XL, out CW);
                             break;
                         case Variant.Nwo:
-                            CW_NWO(ISPGRP, HLCW, LCW, HT, DBH, XL, out CW);
+                            CW_NWO(speciesGroup, HLCW, LCW, HT, DBH, XL, out CW);
                             break;
                         case Variant.Smc:
-                            CW_SMC(ISPGRP, HLCW, LCW, HT, DBH, XL, out CW);
+                            CW_SMC(speciesGroup, HLCW, LCW, HT, DBH, XL, out CW);
                             break;
                         case Variant.Rap:
-                            CW_RAP(ISPGRP, HLCW, LCW, HT, DBH, XL, out CW);
+                            CW_RAP(speciesGroup, HLCW, LCW, HT, DBH, XL, out CW);
                             break;
                         default:
                             throw new NotSupportedException();
@@ -76,14 +76,13 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// (DOUG? can this be removed as dead code since the value of CC is never consumed?)
         /// </summary>
-        /// <param name="CTMUL">Cut tree multiplier. Always zero.</param>
         /// <param name="variant">Organon variant.</param>
         /// <param name="stand">Stand data.</param>
         /// <param name="TDATAR">Tree data.</param>
         /// <param name="MGEXP">Tree data.</param>
         /// <param name="CCH"></param>
         /// <param name="CC">Crown closure</param>
-        public static void CRNCLO(float CTMUL, Variant variant, Stand stand, float[,] TDATAR, float[] MGEXP, float[] CCH, out float CC)
+        public static void CRNCLO(Variant variant, Stand stand, float[,] TDATAR, float[] CCH, out float CC)
         {
             // BUGBUG remove IND and CTMUL?
             // DETERMINE CROWN CLOSURE
@@ -113,7 +112,7 @@ namespace Osu.Cof.Organon
                 float CR = TDATAR[treeIndex, 2];
                 float CL = CR * HT;
                 float HCB = HT - CL;
-                float EXPAN = TDATAR[treeIndex, 3] + CTMUL * MGEXP[treeIndex];
+                float EXPAN = TDATAR[treeIndex, 3];
                 int speciesGroup = stand.Integer[treeIndex, 1];
                 switch (variant)
                 {
@@ -146,7 +145,7 @@ namespace Osu.Cof.Organon
             CC = CCH[0];
         }
 
-        public static void CrowGro(Variant variant, int CYCLG, Stand stand, float[,] TDATAR, float[,] GROWTH, float[] MGEXP,
+        public static void CrowGro(Variant variant, int simulationStep, Stand stand, float[,] TDATAR, float[,] GROWTH, 
                                    float[] DEADEXP, float[] CCFLL1, float[] CCFL1, float[] CCFLL2, float[] CCFL2, float SBA1, float SBA2, float SI_1, float SI_2,
                                    float[,] CALIB, float[] CCH)
         {
@@ -162,7 +161,7 @@ namespace Osu.Cof.Organon
                     continue;
                 }
 
-                if (CYCLG == 0)
+                if (simulationStep == 0)
                 {
                     TDATAR[treeIndex, 5] = TDATAR[treeIndex, 2];
                 }
@@ -258,7 +257,7 @@ namespace Osu.Cof.Organon
                 Debug.Assert((TDATAR[treeIndex, 2] >= 0.0F) && (TDATAR[treeIndex, 2] <= 1.0F));
             }
 
-            CRNCLO(0.0F, variant, stand, TDATAR, MGEXP, CCH, out float _);
+            CRNCLO(variant, stand, TDATAR, CCH, out float _);
         }
 
         private static void CW_NWO(int ISPGRP, float HLCW, float LCW, float HT, float DBH, float XL, out float CW)

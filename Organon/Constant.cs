@@ -10,8 +10,6 @@
 
         public static class TreeIndex
         {
-            public const int ShadowCrownRatio = 0;
-
             public static class Float
             {
                 public const int DbhInInches = 0;

@@ -23,10 +23,6 @@
         // INDS[14] enables Swiss needle cast (Nothophaeocryptopus gaeumanii) growth modifiers, applies only to NWO and SMC variants
         public bool SwissNeedleCast { get; set; }
 
-        // RVARS[0] site index from ground height in feet (internal variable SI_1 is from breast height), used for most species
-        public float SITE_1 { get; set; }
-        // RVARS[1] site index from ground height in feet (internal variable SI_2 is from breast height), used for ??? in 
-        public float SITE_2 { get; set; }
         // RVARS[2] maximum SDI for Douglas-fir?, only used by Submax()
         // If less than or equal to zero. (DOUG? also, what species?)</param>
         public float MSDI_1 { get; set; }
@@ -45,23 +41,12 @@
         // RVARS[8] density correction coefficient for red alder height growth (WHHLB_SI_UC) and additional mortality (Mortality = true)
         public float PDEN { get; set; }
 
-        // STOR[0]
-        public float NO { get; set; }
-        // STOR[1]
-        public float RD0 { get; set; }
-        // STOR[2]
-        public float A1 { get; set; }
-        // STOR[3] exponent for slope of SDImax line
-        public float A2 { get; set; }
-        // STOR[4] SDImax cap for mortality, overrides A1 if lower
-        public float A1MAX { get; set; }
-
         public OrganonConfiguration(Variant variant)
         {
             this.Variant = variant;
             if (this.Variant == Variant.Rap)
             {
-                // only even age red alder plantations are supported
+                // only even age red alder plantations more than 10 years old are supported
                 this.IsEvenAge = true;
             }
         }

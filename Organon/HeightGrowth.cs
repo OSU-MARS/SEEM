@@ -8,42 +8,42 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// Estimate growth effective age for Douglas-fir and grand fir using Bruce's (1981) dominant height model.
         /// </summary>
-        /// <param name="SI"></param>
-        /// <param name="HT"></param>
+        /// <param name="siteIndexFromGround">Site index from ground in feet.</param>
+        /// <param name="treeHeight">Tree height in feet.</param>
         /// <param name="GP"></param>
-        /// <param name="GEAGE"></param>
-        /// <param name="PHTGRO"></param>
+        /// <param name="growthEffectiveAge">Growth effective age in years.</param>
+        /// <param name="potentialHeightGrowth"></param>
         /// <remarks>
         /// Bruce. 1981. Forest Science 27:711-725.
         /// </remarks>
-        public static void B_HG(float SI, float HT, float GP, out float GEAGE, out float PHTGRO)
+        public static void BrucePsmeAbgrGrowthEffectiveAge(float siteIndexFromGround, float treeHeight, float GP, out float growthEffectiveAge, out float potentialHeightGrowth)
         {
-            float X1 = 13.25F - SI / 20.0F;
-            float X2 = 63.25F - SI / 20.0F;
-            float B2 = -0.447762F - 0.894427F * SI / 100.0F + 0.793548F * (float)Math.Pow(SI / 100.0, 2.0) - 0.171666F * (float)Math.Pow(SI / 100.0, 3.0);
-            float B1 = (float)(Math.Log(4.5 / SI) / (Math.Pow(X1, B2) - Math.Pow(X2, B2)));
-            float XX1 = (float)(Math.Log(HT / SI) / B1 + Math.Pow(X2, B2));
+            float X1 = 13.25F - siteIndexFromGround / 20.0F;
+            float X2 = 63.25F - siteIndexFromGround / 20.0F;
+            float B2 = -0.447762F - 0.894427F * siteIndexFromGround / 100.0F + 0.793548F * (float)Math.Pow(siteIndexFromGround / 100.0, 2.0) - 0.171666F * (float)Math.Pow(siteIndexFromGround / 100.0, 3.0);
+            float B1 = (float)(Math.Log(4.5 / siteIndexFromGround) / (Math.Pow(X1, B2) - Math.Pow(X2, B2)));
+            float XX1 = (float)(Math.Log(treeHeight / siteIndexFromGround) / B1 + Math.Pow(X2, B2));
             if (XX1 > 0.0F)
             {
-                GEAGE = (float)Math.Pow(XX1, 1.0 / B2) - X1;
+                growthEffectiveAge = (float)Math.Pow(XX1, 1.0 / B2) - X1;
             }
             else
             {
-                GEAGE = 500.0F;
+                growthEffectiveAge = 500.0F;
             }
-            float PHT = SI * (float)Math.Exp(B1 * (Math.Pow(GEAGE + GP + X1, B2) - Math.Pow(X2, B2)));
-            PHTGRO = PHT - HT;
+            float potentialHeight = siteIndexFromGround * (float)Math.Exp(B1 * (Math.Pow(growthEffectiveAge + GP + X1, B2) - Math.Pow(X2, B2)));
+            potentialHeightGrowth = potentialHeight - treeHeight;
         }
 
         /// <summary>
         /// Calculate western hemlock growth effective age and potential height growth using Flewelling's model for dominant individuals.
         /// </summary>
-        /// <param name="SI">Site index (feet) from ground.</param>
-        /// <param name="HT">Height of tree.</param>
+        /// <param name="siteIndexFromGround">Site index (feet) from ground.</param>
+        /// <param name="treeHeight">Height of tree.</param>
         /// <param name="GP"></param>
-        /// <param name="GEAGE">Growth effective age of tree.</param>
-        /// <param name="PHTGRO">Potential height growth increment in feet.</param>
-        public static void F_HG(float SI, float HT, float GP, out float GEAGE, out float PHTGRO)
+        /// <param name="growthEffectiveAge">Growth effective age of tree.</param>
+        /// <param name="potentialHeightGrowth">Potential height growth increment in feet.</param>
+        public static void F_HG(float siteIndexFromGround, float treeHeight, float GP, out float growthEffectiveAge, out float potentialHeightGrowth)
         {
             // For Western Hemlock compute Growth Effective Age and 5-year potential
             // or 1-year height growth using the western hemlock top height curves of
@@ -53,8 +53,8 @@ namespace Osu.Cof.Organon
             // SITEF_SI   calculates an approximate psi for a given site
             // Note: Flewelling's curves are metric.
             // Site Index is not adjusted for stump height.
-            float SIM = SI * 0.3048F;
-            float HTM = HT * 0.3048F;
+            float SIM = siteIndexFromGround * 0.3048F;
+            float HTM = treeHeight * 0.3048F;
 
             // Compute growth effective age
             float HTOP;
@@ -66,32 +66,32 @@ namespace Osu.Cof.Organon
                     AGE += 100.0F / (float)Math.Pow(10.0, I);
                     if (AGE > 500.0F)
                     {
-                        GEAGE = 500.0F;
-                        WesternHemlockHeight.SITECV_F(SIM, GEAGE, out float XHTOP1);
-                        WesternHemlockHeight.SITECV_F(SIM, GEAGE + GP, out float XHTOP2);
-                        PHTGRO = 3.2808F * (XHTOP2 - XHTOP1);
+                        growthEffectiveAge = 500.0F;
+                        WesternHemlock.SITECV_F(SIM, growthEffectiveAge, out float XHTOP1);
+                        WesternHemlock.SITECV_F(SIM, growthEffectiveAge + GP, out float XHTOP2);
+                        potentialHeightGrowth = 3.2808F * (XHTOP2 - XHTOP1);
                         return;
                     }
-                    WesternHemlockHeight.SITECV_F(SIM, AGE, out HTOP);
+                    WesternHemlock.SITECV_F(SIM, AGE, out HTOP);
                 }
                 while (HTOP < HTM);
                 AGE -= 100.0F / (float)Math.Pow(10.0, I);
             }
-            GEAGE = AGE;
+            growthEffectiveAge = AGE;
 
             // Compute top height and potential height growth
-            WesternHemlockHeight.SITECV_F(SIM, GEAGE + GP, out HTOP);
-            float PHT = HTOP * 3.2808F;
-            PHTGRO = PHT - HT;
+            WesternHemlock.SITECV_F(SIM, growthEffectiveAge + GP, out HTOP);
+            float potentialTopHeightInFeet = HTOP * 3.2808F;
+            potentialHeightGrowth = potentialTopHeightInFeet - treeHeight;
         }
 
         /// <summary>
         /// Predict height from DBH for southwest Oregon species.
         /// </summary>
-        /// <param name="ISPGRP">Species group.</param>
-        /// <param name="DBH">Diameter at breast height (inches).</param>
-        /// <param name="PRDHT">Predicted height (feet).</param>
-        public static void HD_SWO(int ISPGRP, float DBH, out float PRDHT)
+        /// <param name="speciesGroup">Species group.</param>
+        /// <param name="dbhInInches">Diameter at breast height (inches).</param>
+        /// <param name="predictedHeight">Predicted height (feet).</param>
+        public static void HD_SWO(int speciesGroup, float dbhInInches, out float predictedHeight)
         {
             // NEW HEIGHT/DIAMETER PARAMETERS FOR UNDAMAGED TREES.EXCEPT RC, WO, AND RA(3 parameters - all species)
             //
@@ -136,13 +136,13 @@ namespace Osu.Cof.Organon
                     -0.16874962F, -0.98015696F } //PD,WI
             };
 
-            float B0 = HDPAR[0, ISPGRP];
-            float B1 = HDPAR[1, ISPGRP];
-            float B2 = HDPAR[2, ISPGRP];
-            PRDHT = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(DBH, B2));
+            float B0 = HDPAR[0, speciesGroup];
+            float B1 = HDPAR[1, speciesGroup];
+            float B2 = HDPAR[2, speciesGroup];
+            predictedHeight = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
         }
 
-        public static void HD_NWO(int ISPGRP, float DBH, out float PRDHT)
+        public static void HD_NWO(int speciesGroup, float dbhInInches, out float predictedHeightInFeet)
         {
             // HEIGHT/DIAMETER PARAMETERS(3 parameters - all species)
             //
@@ -174,13 +174,13 @@ namespace Osu.Cof.Organon
                     -0.38783403F, -0.388650F, -0.309050F } //RA,PD,WI
             };
 
-            float B0 = HDPAR[0, ISPGRP];
-            float B1 = HDPAR[1, ISPGRP];
-            float B2 = HDPAR[2, ISPGRP];
-            PRDHT = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(DBH, B2));
+            float B0 = HDPAR[0, speciesGroup];
+            float B1 = HDPAR[1, speciesGroup];
+            float B2 = HDPAR[2, speciesGroup];
+            predictedHeightInFeet = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
         }
 
-        public static void HD_RAP(int ISPGRP, float DBH, out float PRDHT)
+        public static void HD_RAP(int speciesGroup, float dbhInInches, out float predictedHeightInFeet)
         {
             // HEIGHT/DIAMETER PARAMETERS(3 parameters - all species)
             //
@@ -191,7 +191,6 @@ namespace Osu.Cof.Organon
             // BL Coefficients from Wang and Hann(1988) FRL Research Paper 51
             // PD Coefficients from Wang and Hann(1988) FRL Research Paper 51
             // WI Coefficients from Wang and Hann(1988) FRL Research Paper 51
-            //
             float[,] HDPAR = {
                 {
                     6.75650139F, 7.262195456F, 6.555344622F, 6.14817441F,//RA,DF,WH,RC
@@ -207,13 +206,13 @@ namespace Osu.Cof.Organon
                 }
             };
 
-            float B0 = HDPAR[0, ISPGRP];
-            float B1 = HDPAR[1, ISPGRP];
-            float B2 = HDPAR[2, ISPGRP];
-            PRDHT = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(DBH, B2));
+            float B0 = HDPAR[0, speciesGroup];
+            float B1 = HDPAR[1, speciesGroup];
+            float B2 = HDPAR[2, speciesGroup];
+            predictedHeightInFeet = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
         }
 
-        public static void HD_SMC(int ISPGRP, float DBH, out float PRDHT)
+        public static void HD_SMC(int speciesGroup, float dbhInInches, out float predictedHeightInFeet)
         {
             // HEIGHT/DIAMETER PARAMETERS(3 parameters - all species)
             //
@@ -247,22 +246,22 @@ namespace Osu.Cof.Organon
                 }
             };
 
-            float B0 = HDPAR[0, ISPGRP];
-            float B1 = HDPAR[1, ISPGRP];
-            float B2 = HDPAR[2, ISPGRP];
-            PRDHT = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(DBH, B2));
+            float B0 = HDPAR[0, speciesGroup];
+            float B1 = HDPAR[1, speciesGroup];
+            float B2 = HDPAR[2, speciesGroup];
+            predictedHeightInFeet = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
         }
 
-        private static void HG_FERT(int CYCLG, Variant VERSION, int ISPGRP, float SI_1, float[] PN, float[] YF, out float FERTADJ)
+        private static void HG_FERT(int simulationStep, Variant variant, int speciesGroup, float siteIndexFromBreastHeight, float[] PN, float[] YF, out float FERTADJ)
         {
             float PF1;
             float PF2;
             float PF3;
             float PF4;
             float PF5;
-            if (VERSION <= Variant.Smc)
+            if (variant <= Variant.Smc)
             {
-                if (ISPGRP == 0)
+                if (speciesGroup == 0)
                 {
                     PF1 = 1.0F;
                     PF2 = 0.333333333F;
@@ -289,18 +288,18 @@ namespace Osu.Cof.Organon
             }
 
             float FALDWN = 1.0F;
-            float XTIME = (float)CYCLG * 5.0F;
+            float XTIME = (float)simulationStep * 5.0F;
             float FERTX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
                 FERTX1 += (PN[I] / 800.0F) * (float)Math.Exp((PF3 / PF2) * (YF[0] - YF[I]));
             }
-            float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[0]) + PF4 * Math.Pow(SI_1 / 100.0, PF5));
+            float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[0]) + PF4 * Math.Pow(siteIndexFromBreastHeight / 100.0, PF5));
             FERTADJ = 1.0F + PF1 * (float)(Math.Pow(PN[0] / 800.0 + FERTX1, PF2) * FERTX2) * FALDWN;
             Debug.Assert(FERTADJ >= 1.0F);
         }
 
-        private static void HG_NWO(int ISPGRP, float PHTGRO, float CR, float TCCH, out float HG)
+        private static void HG_NWO(int speciesGroup, float potentialHeightGrowth, float CR, float TCCH, out float HG)
         {
             // HEIGHT GROWTH PARAMETERS(8 parameters - big 3 conifers only)
             //
@@ -313,24 +312,24 @@ namespace Osu.Cof.Organon
                 { 1.0F, -0.0384415F, -0.0144139F, 0.5F, 1.04409F, 2.0F, 0.0F, 1.03F } //WH
             };
 
-            float P1 = HGPAR[ISPGRP, 0];
-            float P2 = HGPAR[ISPGRP, 1];
-            float P3 = HGPAR[ISPGRP, 2];
-            float P4 = HGPAR[ISPGRP, 3];
-            float P5 = HGPAR[ISPGRP, 4];
-            float P6 = HGPAR[ISPGRP, 5];
-            float P7 = HGPAR[ISPGRP, 6];
-            float P8 = HGPAR[ISPGRP, 7];
+            float P1 = HGPAR[speciesGroup, 0];
+            float P2 = HGPAR[speciesGroup, 1];
+            float P3 = HGPAR[speciesGroup, 2];
+            float P4 = HGPAR[speciesGroup, 3];
+            float P5 = HGPAR[speciesGroup, 4];
+            float P6 = HGPAR[speciesGroup, 5];
+            float P7 = HGPAR[speciesGroup, 6];
+            float P8 = HGPAR[speciesGroup, 7];
             float FCR = (float)(-P5 * Math.Pow(1.0F - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
             float B0 = P1 * (float)Math.Exp(P2 * TCCH);
             float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
             float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-            HG = PHTGRO * MODIFER * CRADJ;
+            HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG >= 0.0F);
         }
 
-        private static void HG_RAP(int ISPGRP, float PHTGRO, float CR, float TCCH, out float HG)
+        private static void HG_RAP(int speciesGroup, float potentialHeightGrowth, float CR, float TCCH, out float HG)
         {
             // HEIGHT GROWTH PARAMETERS(8 parameters - 3 species only)
             //
@@ -355,24 +354,24 @@ namespace Osu.Cof.Organon
             // 0.120539836 ,  0.631643636 ,  0.0         ,   // RA,DF,WH
             // 1.07563185  ,  1.010018427 ,  1.03        /   // RA,DF,WH
             // };
-            float P1 = HGPAR[ISPGRP, 0];
-            float P2 = HGPAR[ISPGRP, 1];
-            float P3 = HGPAR[ISPGRP, 2];
-            float P4 = HGPAR[ISPGRP, 3];
-            float P5 = HGPAR[ISPGRP, 4];
-            float P6 = HGPAR[ISPGRP, 5];
-            float P7 = HGPAR[ISPGRP, 6];
-            float P8 = HGPAR[ISPGRP, 7];
+            float P1 = HGPAR[speciesGroup, 0];
+            float P2 = HGPAR[speciesGroup, 1];
+            float P3 = HGPAR[speciesGroup, 2];
+            float P4 = HGPAR[speciesGroup, 3];
+            float P5 = HGPAR[speciesGroup, 4];
+            float P6 = HGPAR[speciesGroup, 5];
+            float P7 = HGPAR[speciesGroup, 6];
+            float P8 = HGPAR[speciesGroup, 7];
             float FCR = (float)(-P5 * Math.Pow(1.0 - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
             float B0 = P1 * (float)Math.Exp(P2 * TCCH);
             float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
             float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-            HG = PHTGRO * MODIFER * CRADJ;
+            HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG >= 0.0F);
         }
 
-        private static void HG_SMC(int ISPGRP, float PHTGRO, float CR, float TCCH, out float HG)
+        private static void HG_SMC(int speciesGroup, float potentialHeightGrowth, float CR, float TCCH, out float HG)
         {
             // HEIGHT GROWTH PARAMETERS(8 parameters - big 3 conifers only)
             //
@@ -402,24 +401,24 @@ namespace Osu.Cof.Organon
                 { 1.0F, -0.0384415F, -0.0144139F, 0.5F, 1.04409F, 2.0F, 0.0F, 1.03F } // WH
             };
 
-            float P1 = HGPAR[ISPGRP, 0];
-            float P2 = HGPAR[ISPGRP, 1];
-            float P3 = HGPAR[ISPGRP, 2];
-            float P4 = HGPAR[ISPGRP, 3];
-            float P5 = HGPAR[ISPGRP, 4];
-            float P6 = HGPAR[ISPGRP, 5];
-            float P7 = HGPAR[ISPGRP, 6];
-            float P8 = HGPAR[ISPGRP, 7];
+            float P1 = HGPAR[speciesGroup, 0];
+            float P2 = HGPAR[speciesGroup, 1];
+            float P3 = HGPAR[speciesGroup, 2];
+            float P4 = HGPAR[speciesGroup, 3];
+            float P5 = HGPAR[speciesGroup, 4];
+            float P6 = HGPAR[speciesGroup, 5];
+            float P7 = HGPAR[speciesGroup, 6];
+            float P8 = HGPAR[speciesGroup, 7];
             float FCR = (float)(-P5 * Math.Pow(1.0 - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
             float B0 = P1 * (float)Math.Exp(P2 * TCCH);
             float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
             float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
             float CRADJ = (float)(1.0 - Math.Exp(-(25.0 * 25.0 * CR * CR)));
-            HG = PHTGRO * MODIFER * CRADJ;
+            HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG >= 0.0F);
         }
 
-        private static void HG_SWO(int ISPGRP, float PHTGRO, float CR, float TCCH, out float HG)
+        private static void HG_SWO(int speciesGroup, float potentialHeightGrowth, float CR, float TCCH, out float HG)
         {
             // HEIGHT GROWTH PARAMETERS(8 parameters - big 5 conifers only)
             //
@@ -436,31 +435,31 @@ namespace Osu.Cof.Organon
                 { 1.0F, -0.14889850F, -0.00678955F, 1.0F, 0.92071847F, 2.0F, 0.0F, 1.0F }, // SP
                 { 1.0F, -0.01453250F, -0.00637434F, 1.0F, 1.27228638F, 2.0F, 0.0F, 1.0F } // IC
             };
-            float P1 = HGPAR[ISPGRP, 0];
-            float P2 = HGPAR[ISPGRP, 1];
-            float P3 = HGPAR[ISPGRP, 2];
-            float P4 = HGPAR[ISPGRP, 3];
-            float P5 = HGPAR[ISPGRP, 4];
-            float P6 = HGPAR[ISPGRP, 5];
-            float P7 = HGPAR[ISPGRP, 6];
-            float P8 = HGPAR[ISPGRP, 7];
+            float P1 = HGPAR[speciesGroup, 0];
+            float P2 = HGPAR[speciesGroup, 1];
+            float P3 = HGPAR[speciesGroup, 2];
+            float P4 = HGPAR[speciesGroup, 3];
+            float P5 = HGPAR[speciesGroup, 4];
+            float P6 = HGPAR[speciesGroup, 5];
+            float P7 = HGPAR[speciesGroup, 6];
+            float P8 = HGPAR[speciesGroup, 7];
             float FCR = (float)(-P5 * Math.Pow(1.0 - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
             float B0 = P1 * (float)Math.Exp(P2 * TCCH);
             float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
             float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-            HG = PHTGRO * MODIFER * CRADJ;
+            HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG >= 0.0F);
         }
 
-        private static void HG_THIN(int CYCLG, Variant VERSION, int ISPGRP, float BABT, float[] BART, float[] YT, out float THINADJ)
+        private static void HG_THIN(int simulationStep, Variant variant, int speciesGroup, float BABT, float[] BART, float[] YT, out float THINADJ)
         {
             float PT1;
             float PT2;
             float PT3;
-            if (VERSION <= Variant.Smc)
+            if (variant <= Variant.Smc)
             {
-                if (ISPGRP == 0)
+                if (speciesGroup == 0)
                 {
                     PT1 = -0.3197415492F;
                     PT2 = 0.7528887377F;
@@ -475,7 +474,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                if (ISPGRP == 0)
+                if (speciesGroup == 0)
                 {
                     PT1 = -0.613313694F;
                     PT2 = 1.0F;
@@ -483,7 +482,7 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    if (ISPGRP == 1)
+                    if (speciesGroup == 1)
                     {
                         PT1 = -0.3197415492F;
                         PT2 = 0.7528887377F;
@@ -497,7 +496,7 @@ namespace Osu.Cof.Organon
                     }
                 }
             }
-            float XTIME = 5.0F * (float)CYCLG;
+            float XTIME = 5.0F * (float)simulationStep;
             float THINX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
@@ -525,7 +524,7 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// Calculate Douglas-fir and ponderosa growth effective age and potential height growth for southwest Oregon.
         /// </summary>
-        /// <param name="ISP">Douglas-fir coefficients are used if ISP == 1, ponderosa otherwise.</param>
+        /// <param name="isDouglasFir">Douglas-fir coefficients are used if ISP == 1, ponderosa otherwise.</param>
         /// <param name="SI">Site index (feet) from breast height.</param>
         /// <param name="HT">Height of tree.</param>
         /// <param name="GEAGE">Growth effective age of tree.</param>
@@ -534,13 +533,13 @@ namespace Osu.Cof.Organon
         /// Derived from the code in appendix 2 of Hann and Scrivani 1987 (FRL Research Bulletin 59). Growth effective age is introduced in 
         /// Hann and Ritchie 1988 (Height Growth Rate of Douglas-Fir: A Comparison of Model Forms. Forest Science 34(1): 165–175.).
         /// </remarks>
-        public static void HS_HG(int ISP, float SI, float HT, out float GEAGE, out float PHTGRO)
+        public static void HS_HG(bool isDouglasFir, float SI, float HT, out float GEAGE, out float PHTGRO)
         {
             // BUGBUG these are a0, a1, and a2 in the paper
             float B0;
             float B1;
             float B2;
-            if (ISP == 1)
+            if (isDouglasFir)
             {
                 // PSME
                 B0 = -6.21693F;
@@ -577,7 +576,7 @@ namespace Osu.Cof.Organon
         /// </summary>
         /// <param name="treeIndex">Index of tree to grow in tree data.</param>
         /// <param name="variant">Organon variant.</param>
-        /// <param name="CYCLG">Simulation cycle.</param>
+        /// <param name="simulationStep">Simulation cycle.</param>
         /// <param name="stand">Stand data.</param>
         /// <param name="TDATAR">Tree data.</param>
         /// <param name="SI_1">Primary site index from breast height.</param>
@@ -591,7 +590,7 @@ namespace Osu.Cof.Organon
         /// <param name="OLD">Obsolete?</param>
         /// <param name="PDEN">(DOUG?)</param>
         /// <param name="GROWTH">Tree data.</param>
-        public static void HTGRO1(int treeIndex, Variant variant, int CYCLG, Stand stand, float[,] TDATAR, float SI_1, float SI_2,
+        public static void HTGRO1(int treeIndex, Variant variant, int simulationStep, Stand stand, float[,] TDATAR, float SI_1, float SI_2,
                                   float[] CCH, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN, float[,] GROWTH)
         {
             // BUGBUG remove M and ON
@@ -624,30 +623,28 @@ namespace Osu.Cof.Organon
                 // IDXAGE index age? (DOUG?)
                 // HG height growth in feet
                 FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
-                float GEAGE;
+                float growthEffectiveAge;
                 float IDXAGE = 0.0F; // BUGBUG: IDXAGE not initialized on all Fortran code paths
                 float HG = 0.0F; // BUGBUG: HG not initialized on all Fortran code paths
                 switch (variant)
                 {
                     case Variant.Swo:
-                        float SITE;
-                        int ISISP;
+                        float siteIndexFromGround = SI_1;
+                        bool treatAsDouglasFir = false;
                         // POTENTIAL HEIGHT GROWTH FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
                         if (species == FiaCode.PinusPonderosa)
                         {
-                            SITE = SI_2;
-                            ISISP = 2;
+                            siteIndexFromGround = SI_2;
                         }
                         else
                         {
-                            SITE = SI_1;
                             if (species == FiaCode.CalocedrusDecurrens)
                             {
-                                SITE = (SI_1 + 4.5F) * 0.66F - 4.5F;
+                                siteIndexFromGround = (SI_1 + 4.5F) * 0.66F - 4.5F;
                             }
-                            ISISP = 1;
+                            treatAsDouglasFir = true;
                         }
-                        HS_HG(ISISP, SITE, TDATAR[treeIndex, 1], out GEAGE, out float PHTGRO);
+                        HS_HG(treatAsDouglasFir, siteIndexFromGround, TDATAR[treeIndex, 1], out growthEffectiveAge, out float PHTGRO);
                         IDXAGE = 500.0F;
                         HG_SWO(speciesGroup, PHTGRO, CR, TCCH, out HG);
                         break;
@@ -656,14 +653,14 @@ namespace Osu.Cof.Organon
                         if (speciesGroup == 3)
                         {
                             // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
-                            SITE = SI_2 + 4.5F;
-                            F_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
+                            siteIndexFromGround = SI_2 + 4.5F;
+                            F_HG(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
                         }
                         else
                         {
                             // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
-                            SITE = SI_1 + 4.5F;
-                            B_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
+                            siteIndexFromGround = SI_1 + 4.5F;
+                            BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
                         }
                         IDXAGE = 120.0F;
                         HG_NWO(speciesGroup, PHTGRO, CR, TCCH, out HG);
@@ -674,14 +671,14 @@ namespace Osu.Cof.Organon
                         {
                             // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK
                             // DOMINANT HEIGHT GROWTH
-                            SITE = SI_2 + 4.5F;
-                            F_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
+                            siteIndexFromGround = SI_2 + 4.5F;
+                            F_HG(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
                         }
                         else
                         {
                             // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
-                            SITE = SI_1 + 4.5F;
-                            B_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
+                            siteIndexFromGround = SI_1 + 4.5F;
+                            BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
                         }
                         IDXAGE = 120.0F;
                         HG_SMC(speciesGroup, PHTGRO, CR, TCCH, out HG);
@@ -691,22 +688,22 @@ namespace Osu.Cof.Organon
                         if (speciesGroup == 1)
                         {
                             // POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM(2009) RED ALDER TOP HEIGHT GROWTH
-                            SITE = SI_1 + 4.5F;
-                            WHHLB_HG(SITE, PDEN, TDATAR[treeIndex, 1], GP, out GEAGE, out _);
+                            siteIndexFromGround = SI_1 + 4.5F;
+                            RedAlder.WHHLB_HG(siteIndexFromGround, PDEN, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out _);
                         }
                         else
                         {
                             if (speciesGroup == 3)
                             {
                                 // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
-                                SITE = -0.432F + 0.899F * (SI_2 + 4.5F);
-                                F_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
+                                siteIndexFromGround = -0.432F + 0.899F * (SI_2 + 4.5F);
+                                F_HG(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
                             }
                             else
                             {
                                 // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
-                                SITE = SI_2 + 4.5F;
-                                B_HG(SITE, TDATAR[treeIndex, 1], GP, out GEAGE, out PHTGRO);
+                                siteIndexFromGround = SI_2 + 4.5F;
+                                BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
                             }
                             IDXAGE = 30.0F;
                             HG_RAP(speciesGroup, PHTGRO, CR, TCCH, out HG);
@@ -715,13 +712,13 @@ namespace Osu.Cof.Organon
                     default:
                         throw new NotSupportedException();
                 }
-                if (stand.IsBigSixSpecies(treeIndex) && (GEAGE > IDXAGE))
+                if (stand.IsBigSixSpecies(treeIndex) && (growthEffectiveAge > IDXAGE))
                 {
                     OLD += 1.0F;
                 }
 
-                HG_FERT(CYCLG, variant, speciesGroup, SI_1, PN, YF, out float FERTADJ);
-                HG_THIN(CYCLG, variant, speciesGroup, BABT, BART, YT, out float THINADJ);
+                HG_FERT(simulationStep, variant, speciesGroup, SI_1, PN, YF, out float FERTADJ);
+                HG_THIN(simulationStep, variant, speciesGroup, BABT, BART, YT, out float THINADJ);
                 GROWTH[treeIndex, 0] = HG * THINADJ * FERTADJ;
                 LIMIT(variant, species, TDATAR[treeIndex, 0], TDATAR[treeIndex, 1], GROWTH[treeIndex, 1], ref GROWTH[treeIndex, 0]);
             }
@@ -766,15 +763,15 @@ namespace Osu.Cof.Organon
                 FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
                 if ((species == FiaCode.AlnusRubra) && (variant <= Variant.Smc))
                 {
-                    RAGEA(TDATAR[treeIndex, 1], RASI, out float GEARA);
+                    RedAlder.RAGEA(TDATAR[treeIndex, 1], RASI, out float GEARA);
                     if (GEARA <= 0.0F)
                     {
                         GROWTH[treeIndex, 0] = 0.0F;
                     }
                     else
                     {
-                        RAH40(GEARA, RASI, out float RAH1);
-                        RAH40(GEARA + 5.0F, RASI, out float RAH2);
+                        RedAlder.RAH40(GEARA, RASI, out float RAH1);
+                        RedAlder.RAH40(GEARA + 5.0F, RASI, out float RAH2);
                         float RAHG = RAH2 - RAH1;
                         GROWTH[treeIndex, 0] = RAHG;
                     }
@@ -868,58 +865,6 @@ namespace Osu.Cof.Organon
             {
                 HG = 0.0F;
             }
-        }
-
-        public static void RAGEA(float H, float SI, out float GEA)
-        {
-            // RED ALDER GROWTH EFFECTIVE AGE EQUATION BASED ON H40 EQUATION FROM
-            // WORTHINGTON, JOHNSON, STAEBLER AND LLOYD(1960) PNW RESEARCH PAPER 36
-            GEA = 19.538F * H / (SI - 0.60924F * H);
-        }
-
-        public static void RAH40(float A, float SI, out float H)
-        {
-            // RED ALDER H40 EQUATION FROM FROM WORTHINGTON, JOHNSON, STAEBLER AND LLOYD(1960) PNW RESEARCH PAPER 36
-            H = SI / (0.60924F + 19.538F / A);
-        }
-
-        public static void WHHLB_GEA(float H, float SI_UC, out float GEA)
-        {
-            // RED ALDER GROWTH EFFECTIVE AGE EQUATION BASED ON H40 EQUATION FROM
-            // THE WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH EQUATION
-            float B1 = -4.481266F;
-            float B2 = -0.658884F;
-            float X = (1.0F / B1) * (float)(Math.Log(H / SI_UC) + Math.Pow(20.0, B2));
-            if (X < 0.03F)
-            {
-                X = 0.03F;
-            }
-            GEA = (float)Math.Pow(X, 1.0 / B2);
-        }
-
-        public static void WHHLB_H40(float H40M, float TAGEM, float TAGEP, out float PH40P)
-        {
-            // WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH EQUATION FOR RED ALDER
-            float B1 = -4.481266F;
-            float B2 = -0.658884F;
-            PH40P = H40M * (float)Math.Exp(B1 * (Math.Pow(TAGEP, B2) - Math.Pow(TAGEM, B2)));
-        }
-
-        private static void WHHLB_HG(float SI_C, float PDEN, float HT, float GP, out float GEA, out float POTHGRO)
-        {
-            // WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH INCREMENT EQUATION FOR RED ALDER
-            WHHLB_SI_UC(SI_C, PDEN, out float SI_UC);
-            WHHLB_GEA(HT, SI_UC, out GEA);
-            float A = GEA + GP;
-            WHHLB_H40(HT, GEA, A, out float PHT);
-            POTHGRO = PHT - HT;
-        }
-
-        public static void WHHLB_SI_UC(float SI_C, float PDEN, out float SI_UC)
-        {
-            // UNCORRECTS THE DENSITY INPACT UPON THE WEISKITTEL, HANN, HIBBS, LAM, AND BLUHN SITE INDEX FOR RED ALDER
-            // SITE INDEX UNCORRECTED FOR DENSITY EFFECT
-            SI_UC = SI_C * (1.0F - 0.326480904F * (float)Math.Exp(-0.000400268678 * Math.Pow(PDEN, 1.5)));
         }
     }
 }

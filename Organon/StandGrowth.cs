@@ -8,7 +8,7 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="CYCLG"></param>
+        /// <param name="simulationStep"></param>
         /// <param name="configuration">Organon growth simulation options and site settings.</param>
         /// <param name="ACALIB"></param>
         /// <param name="PN"></param>
@@ -24,24 +24,24 @@ namespace Osu.Cof.Organon
         /// <param name="HT2"></param>
         /// <param name="CR2"></param>
         /// <param name="EXPAN2"></param>
-        public static void EXECUTE(int CYCLG, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, 
+        public static void EXECUTE(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, 
                                    float BABT, float[] BART, float[] YST, float[] DGRO, float[] HGRO, float[] CRCHNG, 
                                    out int NTREES2, float[] DBH2, float[] HT2, float[] CR2, float[] EXPAN2)
         {
-            // BUGBUG: CYCLG duplicates stand age
-            // BUGBUG: for negative CYCLG values of A1 and A2 are overwritten by calls to SUBMAX and therefore silently ignored in certain cases
-            EDIT(CYCLG, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int BNXT);
+            // BUGBUG: simulationStep largely duplicates stand age
+            EDIT(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int BNXT);
 
+            // BUGBUG: 5 * simulationStep is incorrect for RAP
+            int simulationYear = 5 * simulationStep;
             int FCYCLE = 0;
             int TCYCLE = 0;
-            int YCYCLG = 5 * CYCLG;
-            if (configuration.Fertilizer && (YSF[0] == (float)YCYCLG))
+            if (configuration.Fertilizer && (YSF[0] == (float)simulationYear))
             {
                 FCYCLE = 1;
             }
 
             bool POST = false;
-            if (configuration.Thin && (YST[0] == (float)YCYCLG))
+            if (configuration.Thin && (YST[0] == (float)simulationYear))
             {
                 TCYCLE = 1;
                 POST = true;
@@ -91,7 +91,7 @@ namespace Osu.Cof.Organon
                 CALIB[I, 5] = ACALIB[I, 2];
                 if (configuration.CALH)
                 {
-                    CALIB[I, 0] = (1.0F + CALIB[I, 3]) / 2.0F + (float)Math.Pow(0.5, 0.5 * CYCLG) * ((CALIB[I, 3] - 1.0F) / 2.0F);
+                    CALIB[I, 0] = (1.0F + CALIB[I, 3]) / 2.0F + (float)Math.Pow(0.5, 0.5 * simulationStep) * ((CALIB[I, 3] - 1.0F) / 2.0F);
                 }
                 else 
                 {
@@ -99,7 +99,7 @@ namespace Osu.Cof.Organon
                 }
                 if (configuration.CALC)
                 {
-                    CALIB[I, 1] = (1.0F + CALIB[I, 4]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * CYCLG) * ((CALIB[I, 4] - 1.0F) / 2.0F);
+                    CALIB[I, 1] = (1.0F + CALIB[I, 4]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((CALIB[I, 4] - 1.0F) / 2.0F);
                 }
                 else 
                 {
@@ -107,7 +107,7 @@ namespace Osu.Cof.Organon
                 }
                 if (configuration.CALD)
                 {
-                    CALIB[I, 2] = (1.0F + CALIB[I, 6]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * CYCLG) * ((CALIB[I, 6] - 1.0F) / 2.0F);
+                    CALIB[I, 2] = (1.0F + CALIB[I, 6]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((CALIB[I, 6] - 1.0F) / 2.0F);
                 }
                 else 
                 {
@@ -123,47 +123,6 @@ namespace Osu.Cof.Organon
                 YT[I] = YST[I];
             }
 
-            // CALCULATE SPECIES GROUP
-            //
-            // SPGROUP(configuration.Variant, NSPN, stand.TreeRecordsInUse, TDATAI)
-            //
-            // BUGBUG MAXRAH, RASI, and RAAGE not initialized in Fortran
-            // BUGBUG SI_1 not intialized in Fortran code for Nwo and Smc calculation of SITE_2 in else { }
-            float MAXRAH = 0.0F;
-            float RASI = 0.0F;
-            float RAAGE = 0.0F;
-            float SI_1 = 0.0F;
-            if (configuration.Variant == Variant.Swo)
-            {
-                if ((configuration.SITE_1 < 0.0F) && (configuration.SITE_2 > 0.0F))
-                {
-                    configuration.SITE_1 = 1.062934F * configuration.SITE_2;
-                }
-                else if (configuration.SITE_2 < 0.0F)
-                {
-                    configuration.SITE_2 = 0.940792F * configuration.SITE_1;
-                }
-            }
-            else if (configuration.Variant == Variant.Nwo || configuration.Variant == Variant.Smc)
-            {
-                // Site index conconfiguration.Variant equation from Nigh(1995, Forest Science 41:84-98)
-                if ((configuration.SITE_1 < 0.0F) && (configuration.SITE_2 > 0.0F))
-                {
-                    configuration.SITE_1 = 0.480F + (1.110F * configuration.SITE_2);
-                }
-                else if (configuration.SITE_2 < 0.0F)
-                {
-                    configuration.SITE_2 = -0.432F + (0.899F * configuration.SITE_1);
-                }
-            }
-            else
-            {
-                if (configuration.SITE_2 < 0.0F)
-                {
-                    configuration.SITE_2 = 4.776377F * (float)Math.Pow(SI_1, 0.763530587);
-                }
-            }
-
             // shift expansion factors to stand level from sample level
             for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
@@ -174,44 +133,40 @@ namespace Osu.Cof.Organon
             }
 
             // find red alder site index for natural (DOUG? non-plantation?) stands
-            if (configuration.Variant < Variant.Smc)
+            // BUGBUG heightOfTallestRedAlderInFeet, RASI, and RAAGE not initialized in Fortran
+            float heightOfTallestRedAlderInFeet = 0.0F;
+            float RASI = 0.0F;
+            if ((configuration.Variant == Variant.Nwo) || (configuration.Variant == Variant.Swo))
             {
                 for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
                 {
-                    if ((stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species] == 351) && (TDATAR[treeIndex, 1] > MAXRAH))
+                    if (((FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species] == FiaCode.AlnusRubra))
                     {
-                        MAXRAH = TDATAR[treeIndex, 1];
+                        float alderHeightInFeet = TDATAR[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                        if (alderHeightInFeet > heightOfTallestRedAlderInFeet)
+                        {
+                            heightOfTallestRedAlderInFeet = alderHeightInFeet;
+                        }
                     }
                 }
-                // BUGBUG SITE_1 is the site index from ground but the code in CON_RASI appears to expect the breast height site index (SI_1)
-                RASI = Stats.CON_RASI(configuration.SITE_1);
+                RASI = Stats.ConiferToRedAlderSiteIndex(stand.PrimarySiteIndex);
             }
 
             // CALCULATE RED ALDER AGE FOR NATURAL STANDS
             // BUGBUG RAAGE not initialized for MAXRAH <= 0.0 in Fortran code
-            if (MAXRAH > 0.0F)
+            float RAAGE = 0.0F;
+            if (heightOfTallestRedAlderInFeet > 0.0F)
             {
-                HeightGrowth.RAGEA(MAXRAH, RASI, out RAAGE);
+                RedAlder.RAGEA(heightOfTallestRedAlderInFeet, RASI, out RAAGE);
             }
             if (RAAGE < 0.0F)
             {
                 RAAGE = 55.0F;
-                Stats.RASITE(MAXRAH, RAAGE, out RASI);
+                Stats.RASITE(heightOfTallestRedAlderInFeet, RAAGE, out RASI);
             }
             if (RAAGE > 55.0F)
             {
                 RAAGE = 55.0F;
-            }
-
-            // BUGBUG no check that SITE_1 and SITE_2 indices are greater than 4.5 feet
-            SI_1 = configuration.SITE_1 - 4.5F;
-            float SI_2 = configuration.SITE_2 - 4.5F;
-
-            // INITIALIZE A1 AND A2
-            // BUGBUG this is inconsistent with EDIT(), which raises an error when CYCLG < 0
-            if (CYCLG < 0)
-            {
-                Submax.SUBMAX(false, configuration, stand, TDATAR);
             }
 
             // CALCULATE DENSITY VARIABLES AT SOG
@@ -223,7 +178,7 @@ namespace Osu.Cof.Organon
 
             // CALCULATE CCH AND CROWN CLOSURE AT SOG
             float[] CCH = new float[41];
-            CrownGrowth.CRNCLO(0.0F, configuration.Variant, stand, TDATAR, stand.MGExpansionFactor, CCH, out float _);
+            CrownGrowth.CRNCLO(configuration.Variant, stand, TDATAR, CCH, out float _);
             float OLD = 0.0F;
             for (int I = 0; I < stand.TreeRecordsInUse; ++I)
             {
@@ -235,8 +190,8 @@ namespace Osu.Cof.Organon
             float[] CCFL2 = new float[500];
             float[] BALL2 = new float[51];
             float[] BAL2 = new float[500];
-            TreeGrowth.GROW(ref CYCLG, configuration, stand, TDATAR, DEADEXP, POST, NSPN, ref TCYCLE, ref FCYCLE, 
-                            SI_1, SI_2, SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART,
+            TreeGrowth.GROW(ref simulationStep, configuration, stand, TDATAR, DEADEXP, POST, NSPN, ref TCYCLE, ref FCYCLE, 
+                            SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART,
                             YT, GROWTH, CCH, ref OLD, RAAGE, RASI, CCFLL1, CCFL1, CCFLL2, CCFL2, BALL2, BAL2);
             NTREES2 = stand.TreeRecordsInUse;
 
@@ -248,27 +203,27 @@ namespace Osu.Cof.Organon
             float X = 100.0F * (OLD / (BIG6 - BNXT));
             if (X > 50.0F)
             {
-                stand.StandWarnings[6] = 1;
+                stand.Warnings.TreesOld = true;
             }
             if (configuration.Variant == Variant.Swo)
             {
                 if (configuration.IsEvenAge && (stand.BreastHeightAgeInYears > 500.0F))
                 {
-                    stand.StandWarnings[6] = 1;
+                    stand.Warnings.TreesOld = true;
                 }
             }
             else if (configuration.Variant == Variant.Nwo || configuration.Variant == Variant.Smc)
             {
                 if (configuration.IsEvenAge && (stand.BreastHeightAgeInYears > 120.0F))
                 {
-                    stand.StandWarnings[6] = 1;
+                    stand.Warnings.TreesOld = true;
                 }
             }
             else
             {
                 if (configuration.IsEvenAge && (stand.AgeInYears > 30.0F))
                 {
-                    stand.StandWarnings[6] = 1;
+                    stand.Warnings.TreesOld = true;
                 }
             }
 
@@ -291,7 +246,7 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// Does argument checking and raises error flags if problems are found.
         /// </summary>
-        /// <param name="CYCLG"></param>
+        /// <param name="simulationStep"></param>
         /// <param name="configuration">Organon configuration settings.</param>
         /// <param name="ACALIB"></param>
         /// <param name="PN"></param>
@@ -302,7 +257,7 @@ namespace Osu.Cof.Organon
         /// <param name="NSPN">Number of species groups supported by specified Organon variant.</param>
         /// <param name="BIG6"></param>
         /// <param name="BNXT"></param>
-        private static void EDIT(int CYCLG, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
+        private static void EDIT(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
                                  out int NSPN, out int BIG6, out int BNXT)
         {
             if (stand.TreeRecordsInUse < 1)
@@ -317,13 +272,13 @@ namespace Osu.Cof.Organon
             {
                 throw new ArgumentOutOfRangeException(nameof(stand.NPTS));
             }
-            if ((configuration.SITE_1 <= 0.0F) || (configuration.SITE_1 > Constant.Maximum.SiteIndexInFeet))
+            if ((stand.PrimarySiteIndex <= 0.0F) || (stand.PrimarySiteIndex > Constant.Maximum.SiteIndexInFeet))
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.SITE_1));
+                throw new ArgumentOutOfRangeException(nameof(stand.PrimarySiteIndex));
             }
-            if ((configuration.SITE_2 <= 0.0F) || (configuration.SITE_2 > Constant.Maximum.SiteIndexInFeet))
+            if ((stand.MortalitySiteIndex <= 0.0F) || (stand.MortalitySiteIndex > Constant.Maximum.SiteIndexInFeet))
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.SITE_2));
+                throw new ArgumentOutOfRangeException(nameof(stand.MortalitySiteIndex));
             }
 
             if (configuration.IsEvenAge)
@@ -408,9 +363,9 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            // (DOUG? why is YCYCLG 5 * CYCLG for all variants? should YCYCLG = CYCLG for SMC?)
-            int YCYCLG = 5 * CYCLG;
-            if (configuration.Thin && (YST[0] == YCYCLG))
+            // BUGBUG: duplicates code in Execute()
+            int simulationYear = 5 * simulationStep;
+            if (configuration.Thin && (YST[0] == simulationYear))
             {
                 bool thinningError = true;
                 for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
@@ -427,9 +382,9 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            if (CYCLG < 0)
+            if (simulationStep < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(CYCLG));
+                throw new ArgumentOutOfRangeException(nameof(simulationStep));
             }
             for (int I = 0; I < 3; ++I)
             {
@@ -437,7 +392,7 @@ namespace Osu.Cof.Organon
                 {
                     if ((ACALIB[J, I] > 2.0F) || (ACALIB[J, I] < 0.5F))
                     {
-                        throw new ArgumentOutOfRangeException(nameof(CYCLG));
+                        throw new ArgumentOutOfRangeException(nameof(simulationStep));
                     }
                 }
             }
@@ -509,9 +464,9 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            if ((configuration.Variant >= Variant.Rap) && (configuration.SITE_1 < 0.0F))
+            if ((configuration.Variant >= Variant.Rap) && (stand.PrimarySiteIndex < 0.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.SITE_1));
+                throw new ArgumentOutOfRangeException(nameof(stand.PrimarySiteIndex));
             }
             if ((configuration.Variant >= Variant.Rap) && (configuration.PDEN < 0.0F))
             {
@@ -522,11 +477,14 @@ namespace Osu.Cof.Organon
                 throw new ArgumentOutOfRangeException(nameof(configuration.IsEvenAge));
             }
 
-            for (int standWarningIndex = 0; standWarningIndex < 9; ++standWarningIndex)
-            {
-                // TODO: is it desirable to clear existing stand warnings?
-                stand.StandWarnings[standWarningIndex] = 0;
-            }
+            // TODO: is it desirable to clear existing stand warnings?
+            stand.Warnings.BigSixHeightAbovePotential = false;
+            stand.Warnings.LessThan50TreeRecords = false;
+            stand.Warnings.MortalitySiteIndexOutOfRange = false;
+            stand.Warnings.OtherSpeciesBasalAreaTooHigh = false;
+            stand.Warnings.PrimarySiteIndexOutOfRange = false;
+            stand.Warnings.TreesOld = false;
+            stand.Warnings.TreesYoung = false;
 
             // BUGBUG: move NSPN into Stand and OrganonConfiguration
             switch (configuration.Variant)
@@ -715,37 +673,38 @@ namespace Osu.Cof.Organon
             }
 
             // DETERMINE WARNINGS (IF ANY)
+            // BUGBUG move maximum site indices to variant capabilities
             switch (configuration.Variant)
             {
                 case Variant.Swo:
-                    if ((configuration.SITE_1 > 0.0F) && ((configuration.SITE_1 < 40.0F) || (configuration.SITE_1 > 150.0F)))
+                    if ((stand.PrimarySiteIndex > 0.0F) && ((stand.PrimarySiteIndex < 40.0F) || (stand.PrimarySiteIndex > 150.0F)))
                     {
-                        stand.StandWarnings[0] = 1;
+                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
                     }
-                    if ((configuration.SITE_2 > 0.0F) && ((configuration.SITE_2 < 50.0F) || (configuration.SITE_2 > 140.0F)))
+                    if ((stand.MortalitySiteIndex > 0.0F) && ((stand.MortalitySiteIndex < 50.0F) || (stand.MortalitySiteIndex > 140.0F)))
                     {
-                        stand.StandWarnings[1] = 1;
+                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
                     }
                     break;
                 case Variant.Nwo:
                 case Variant.Smc:
-                    if ((configuration.SITE_1 > 0.0F) && ((configuration.SITE_1 < 90.0F) || (configuration.SITE_1 > 142.0F)))
+                    if ((stand.PrimarySiteIndex > 0.0F) && ((stand.PrimarySiteIndex < 90.0F) || (stand.PrimarySiteIndex > 142.0F)))
                     {
-                        stand.StandWarnings[0] = 1;
+                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
                     }
-                    if ((configuration.SITE_2 > 0.0F) && ((configuration.SITE_2 < 90.0F) || (configuration.SITE_2 > 142.0F)))
+                    if ((stand.MortalitySiteIndex > 0.0F) && ((stand.MortalitySiteIndex < 90.0F) || (stand.MortalitySiteIndex > 142.0F)))
                     {
-                        stand.StandWarnings[1] = 1;
+                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
                     }
                     break;
                 case Variant.Rap:
-                    if ((configuration.SITE_1 < 20.0F) || (configuration.SITE_1 > 125.0F))
+                    if ((stand.PrimarySiteIndex < 20.0F) || (stand.PrimarySiteIndex > 125.0F))
                     {
-                        stand.StandWarnings[0] = 1;
+                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
                     }
-                    if ((configuration.SITE_2 > 0.0F) && (configuration.SITE_2 < 90.0F || configuration.SITE_2 > 142.0F))
+                    if ((stand.MortalitySiteIndex > 0.0F) && (stand.MortalitySiteIndex < 90.0F || stand.MortalitySiteIndex > 142.0F))
                     {
-                        stand.StandWarnings[1] = 1;
+                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
                     }
                     break;
             }
@@ -757,27 +716,27 @@ namespace Osu.Cof.Organon
                 case Variant.Swo:
                     if (MAXPP > 0.0F)
                     {
-                        float MAXHT = (configuration.SITE_2 - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.164985 * (configuration.SITE_2 - 4.5), 0.288169)))) + 4.5F;
+                        float MAXHT = (stand.MortalitySiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.164985 * (stand.MortalitySiteIndex - 4.5), 0.288169)))) + 4.5F;
                         if (MAXPP > MAXHT)
                         {
-                            stand.StandWarnings[2] = 1;
+                            stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     if (MAXIC > 0.0F)
                     {
-                        float ICSI = (0.66F * configuration.SITE_1) - 4.5F;
+                        float ICSI = (0.66F * stand.PrimarySiteIndex) - 4.5F;
                         float MAXHT = ICSI * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * ICSI, 0.281176)))) + 4.5F;
                         if (MAXIC > MAXHT)
                         {
-                            stand.StandWarnings[2] = 1;
+                            stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     if (MAXDF > 0.0F)
                     {
-                        float MAXHT = (configuration.SITE_1 - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * (configuration.SITE_1 - 4.5), 0.281176)))) + 4.5F;
+                        float MAXHT = (stand.PrimarySiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * (stand.PrimarySiteIndex - 4.5), 0.281176)))) + 4.5F;
                         if (MAXDF > MAXHT)
                         {
-                            stand.StandWarnings[2] = 1;
+                            stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     break;
@@ -785,59 +744,74 @@ namespace Osu.Cof.Organon
                 case Variant.Smc:
                     if (MAXDF > 0.0F)
                     {
-                        float Z50 = 2500.0F / (configuration.SITE_1 - 4.5F);
+                        float Z50 = 2500.0F / (stand.PrimarySiteIndex - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
                         if (MAXDF > MAXHT)
                         {
-                            stand.StandWarnings[2] = 1;
+                            stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     if (MAXGF > 0.0F)
                     {
-                        float Z50 = 2500.0F / (configuration.SITE_1 - 4.5F);
+                        float Z50 = 2500.0F / (stand.PrimarySiteIndex - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
                         if (MAXGF > MAXHT)
                         {
-                            stand.StandWarnings[2] = 1;
+                            stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     if (MAXWH > 0.0F)
                     {
-                        float Z50 = 2500.0F / (configuration.SITE_2 - 4.5F);
+                        float Z50 = 2500.0F / (stand.MortalitySiteIndex - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (0.00192F + 0.00007F * Z50);
                         if (MAXWH > MAXHT)
                         {
-                            stand.StandWarnings[2] = 1;
+                            stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     break;
                 case Variant.Rap:
                     if (MAXRA > 0.0F)
                     {
-                        HeightGrowth.WHHLB_H40(configuration.SITE_1, 20.0F, 150.0F, out float MAXHT);
+                        RedAlder.WHHLB_H40(stand.PrimarySiteIndex, 20.0F, 150.0F, out float MAXHT);
                         if (MAXRA > MAXHT)
                         {
-                            stand.StandWarnings[2] = 1;
+                            stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     break;
             }
 
-            if (configuration.IsEvenAge && (configuration.Variant < Variant.Smc) && (stand.BreastHeightAgeInYears < 10))
+            if (configuration.IsEvenAge && (configuration.Variant != Variant.Smc))
             {
-                stand.StandWarnings[4] = 1;
+                stand.Warnings.TreesYoung = stand.BreastHeightAgeInYears < 10;
             }
 
-            if ((configuration.Variant == Variant.Swo && (standBigSixBasalArea + standHardwoodBasalArea) < standBasalArea * 0.2F) ||
-                (configuration.Variant == Variant.Nwo && (standBigSixBasalArea + standHardwoodBasalArea) < standBasalArea * 0.5F) ||
-                (configuration.Variant == Variant.Smc && (standBigSixBasalArea + standHardwoodBasalArea) < standBasalArea * 0.5F) ||
-                (configuration.Variant == Variant.Rap && (standBigSixBasalArea + standHardwoodBasalArea) < standBasalArea * 0.8F))
+            float requiredWellKnownSpeciesBasalAreaFraction;
+            switch (configuration.Variant)
             {
-                stand.StandWarnings[4] = 1;
+                case Variant.Nwo:
+                    requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
+                    break;
+                case Variant.Rap:
+                    requiredWellKnownSpeciesBasalAreaFraction = 0.8F;
+                    break;
+                case Variant.Smc:
+                    requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
+                    break;
+                case Variant.Swo:
+                    requiredWellKnownSpeciesBasalAreaFraction = 0.2F;
+                    break;
+                default:
+                    throw new NotSupportedException(String.Format("Unhandled Organon variant {0}.", configuration.Variant));
+            }
+            if ((standBigSixBasalArea + standHardwoodBasalArea) < (requiredWellKnownSpeciesBasalAreaFraction * standBasalArea))
+            {
+                stand.Warnings.OtherSpeciesBasalAreaTooHigh = true;
             }
             if (stand.TreeRecordsInUse < 50)
             {
-                stand.StandWarnings[5] = 1;
+                stand.Warnings.LessThan50TreeRecords = true;
             }
 
             CKAGE(configuration, stand, out float OLD);
@@ -845,44 +819,45 @@ namespace Osu.Cof.Organon
             float X = 100.0F * (OLD / (BIG6 - BNXT));
             if (X >= 50.0F)
             {
-                stand.StandWarnings[6] = 1;
+                stand.Warnings.TreesOld = true;
             }
             if (configuration.Variant == Variant.Swo)
             {
                 if (configuration.IsEvenAge && stand.BreastHeightAgeInYears > 500)
                 {
-                    stand.StandWarnings[7] = 1;
+                    stand.Warnings.TreesOld = true;
                 }
             }
             else if (configuration.Variant == Variant.Nwo || configuration.Variant == Variant.Smc)
             {
                 if (configuration.IsEvenAge && stand.BreastHeightAgeInYears > 120)
                 {
-                    stand.StandWarnings[7] = 1;
+                    stand.Warnings.TreesOld = true;
                 }
             }
             else
             {
                 if (configuration.IsEvenAge && stand.AgeInYears > 30)
                 {
-                    stand.StandWarnings[7] = 1;
+                    stand.Warnings.TreesOld = true;
                 }
             }
 
-            int EXCAGE;
+            // BUGBUG: this is overcomplicated, should just check against maximum stand age using time step from OrganonVapabilities
+            int standAgeBudgetAvailableAtNextTimeStep;
             if (configuration.IsEvenAge)
             {
                 switch (configuration.Variant)
                 {
                     case Variant.Swo:
-                        EXCAGE = 500 - stand.AgeInYears - 5;
+                        standAgeBudgetAvailableAtNextTimeStep = 500 - stand.AgeInYears - 5;
                         break;
                     case Variant.Nwo:
                     case Variant.Smc:
-                        EXCAGE = 120 - stand.AgeInYears - 5;
+                        standAgeBudgetAvailableAtNextTimeStep = 120 - stand.AgeInYears - 5;
                         break;
                     case Variant.Rap:
-                        EXCAGE = 30 - stand.AgeInYears - 1;
+                        standAgeBudgetAvailableAtNextTimeStep = 30 - stand.AgeInYears - 1;
                         break;
                     default:
                         throw new NotSupportedException();
@@ -893,23 +868,23 @@ namespace Osu.Cof.Organon
                 switch (configuration.Variant)
                 {
                     case Variant.Swo:
-                        EXCAGE = 500 - (CYCLG + 1) * 5;
+                        standAgeBudgetAvailableAtNextTimeStep = 500 - (simulationStep + 1) * 5;
                         break;
                     case Variant.Nwo:
                     case Variant.Smc:
-                        EXCAGE = 120 - (CYCLG + 1) * 5;
+                        standAgeBudgetAvailableAtNextTimeStep = 120 - (simulationStep + 1) * 5;
                         break;
                     case Variant.Rap:
-                        EXCAGE = 30 - (CYCLG + 1) * 1;
+                        standAgeBudgetAvailableAtNextTimeStep = 30 - (simulationStep + 1) * 1;
                         break;
                     default:
                         throw new NotSupportedException();
                 }
             }
 
-            if (EXCAGE < 0)
+            if (standAgeBudgetAvailableAtNextTimeStep < 0)
             {
-                stand.StandWarnings[8] = 1;
+                stand.Warnings.TreesOld = true;
             }
 
             float B1 = -0.04484724F;
@@ -957,7 +932,7 @@ namespace Osu.Cof.Organon
                 float heightInFeet = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
                 if (heightInFeet > potentialHeight)
                 {
-                    stand.TreeWarnings[treeIndex] = 1;
+                    stand.TreeHeightWarning[treeIndex] = true;
                 }
             }
         }
@@ -1059,27 +1034,26 @@ namespace Osu.Cof.Organon
                 int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
                 float growthEffectiveAge = 0.0F; // BUGBUG not intitialized on all Fortran paths
                 float IDXAGE;
-                int ISISP;
                 float SITE;
                 switch (configuration.Variant)
                 {
                     case Variant.Swo:
                         // GROWTH EFFECTIVE AGE FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
+                        bool treatAsDouglasFir = false;
                         if (speciesGroup == 3)
                         {
-                            SITE = configuration.SITE_2 - 4.5F;
-                            ISISP = 2;
+                            SITE = stand.MortalitySiteIndex - 4.5F;
                         }
                         else
                         {
-                            SITE = configuration.SITE_1 - 4.5F;
+                            SITE = stand.PrimarySiteIndex - 4.5F;
                             if (speciesGroup == 5)
                             {
-                                SITE = configuration.SITE_1 * 0.66F - 4.5F;
+                                SITE = stand.PrimarySiteIndex * 0.66F - 4.5F;
                             }
-                            ISISP = 1;
+                            treatAsDouglasFir = true;
                         }
-                        HeightGrowth.HS_HG(ISISP, SITE, treeHeightInFeet, out growthEffectiveAge, out _);
+                        HeightGrowth.HS_HG(treatAsDouglasFir, SITE, treeHeightInFeet, out growthEffectiveAge, out _);
                         IDXAGE = 500.0F;
                         break;
                     case Variant.Nwo:
@@ -1087,14 +1061,14 @@ namespace Osu.Cof.Organon
                         if (speciesGroup == 3)
                         {
                             // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQATION
-                            SITE = configuration.SITE_2;
+                            SITE = stand.MortalitySiteIndex;
                             HeightGrowth.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
                         }
                         else
                         {
                             // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
-                            SITE = configuration.SITE_1;
-                            HeightGrowth.B_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                            SITE = stand.PrimarySiteIndex;
+                            HeightGrowth.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
                         }
                         IDXAGE = 120.0F;
                         break;
@@ -1103,14 +1077,14 @@ namespace Osu.Cof.Organon
                         if (speciesGroup == 3)
                         {
                             // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
-                            SITE = configuration.SITE_2;
+                            SITE = stand.MortalitySiteIndex;
                             HeightGrowth.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
                         }
                         else
                         {
                             // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOP DOUGLAS-FIR AND GRAND FIR
-                            SITE = configuration.SITE_1;
-                            HeightGrowth.B_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                            SITE = stand.PrimarySiteIndex;
+                            HeightGrowth.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
                         }
                         IDXAGE = 120.0F;
                         break;
@@ -1118,9 +1092,9 @@ namespace Osu.Cof.Organon
                         if (speciesGroup == 1)
                         {
                             // GROWTH EFFECTIVE AGE FROM WEISKITTEL ET AL.'S (2009) RED ALDER DOMINANT HEIGHT GROWTH EQUATION
-                            SITE = configuration.SITE_1;
-                            HeightGrowth.WHHLB_SI_UC(SITE, configuration.PDEN, out float SI_UC);
-                            HeightGrowth.WHHLB_GEA(treeHeightInFeet, SI_UC, out growthEffectiveAge);
+                            SITE = stand.PrimarySiteIndex;
+                            RedAlder.WHHLB_SI_UC(SITE, configuration.PDEN, out float SI_UC);
+                            RedAlder.WHHLB_GEA(treeHeightInFeet, SI_UC, out growthEffectiveAge);
                         }
                         IDXAGE = 30.0F;
                         break;
@@ -1219,7 +1193,7 @@ namespace Osu.Cof.Organon
                     SITE_2 = 0.940792F * SITE_1;
                 }
             }
-            else if (variant == Variant.Nwo || variant == Variant.Smc)
+            else if ((variant == Variant.Nwo) || (variant == Variant.Smc))
             {
                 if ((SITE_1 < 0.0F) && (SITE_2 > 0.0F))
                 {

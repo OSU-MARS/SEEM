@@ -5,13 +5,13 @@ namespace Osu.Cof.Organon
     internal static class Stats
     {
         /// <summary>
-        /// Convert conifer site index to red alder site index?
+        /// Estimate red alder site index from conifer site index
         /// </summary>
-        /// <param name="SI_1">Conifer site index at breast height?</param>
-        /// <returns>Red alder site index.</returns>
-        public static float CON_RASI(float SI_1)
+        /// <param name="SITE_1">Conifer site index from ground.</param>
+        /// <returns>Red alder site index from ground?</returns>
+        public static float ConiferToRedAlderSiteIndex(float SITE_1)
         {
-            return 9.73F + 0.64516F * (SI_1 + 4.5F);
+            return 9.73F + 0.64516F * SITE_1;
         }
 
         public static void RASITE(float H, float A, out float SI)

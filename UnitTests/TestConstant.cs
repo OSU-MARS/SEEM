@@ -79,15 +79,10 @@ namespace Osu.Cof.Organon.Test
 
         public static class Default
         {
-            public const float A1 = 0.62F;
-            public const float A1MAX = 0.62F;
-            public const float A2 = 5.5F;
             public const float AgeToReachBreastHeightInYears = 5.0F;
             public const float BABT = 0.0F; // (DOUG?)
             public const float MaximumReinekeStandDensityIndex = 600.0F;
             public const float PDEN = 1.0F; // (DOUG?)
-            public const float NO = 0.0F; // (DOUG?)
-            public const float RD0 = 0.0F; // (DOUG?)
             public const float RAAGE = 0.0F; // (DOUG?)
             public const float RedAlderSiteIndex = 100.0F; // TODO: look at Andy's papers and change to a not made up value
             public const int SimulationCyclesToRun = 20; // 20 5 year time steps

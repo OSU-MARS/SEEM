@@ -23,7 +23,7 @@ namespace Osu.Cof.Organon
     /// likely range of validity is for heights up to 60-70 meters and DBH to 80 cm for hemlocks growing in coastal Washington.
     /// </remarks>
     // BUGBUG fix most recent cache inherited from Fortran
-    internal class WesternHemlockHeight
+    internal class WesternHemlock
     {
         private static float ALPHA;
         private static float B1;
@@ -74,14 +74,14 @@ namespace Osu.Cof.Organon
             // Current Date: FEB 2, 1994    J. FLEWELLING
             //
             // psi input REAL productivity index (m/yr)
-            WesternHemlockHeight.PPSI = PSI;
-            WesternHemlockHeight.XK = 128.326F * (float)Math.Exp(-2.54871 * PSI);
-            WesternHemlockHeight.B1 = 0.2F + 0.8F / (1.0F + (float)Math.Exp(5.33208 -9.00622 * PSI));
-            WesternHemlockHeight.C = 1.0F + 1.2F * PSI;
-            WesternHemlockHeight.ALPHA = 52.7948F * PSI;
-            WesternHemlockHeight.H1 = 1.3F + (B1 * PSI) / 2.0F;
-            WesternHemlockHeight.YK = H1 + PSI * XK * (1.0F - (1.0F - B1) / (C + 1.0F));
-            WesternHemlockHeight.BETA = PSI / ALPHA;
+            WesternHemlock.PPSI = PSI;
+            WesternHemlock.XK = 128.326F * (float)Math.Exp(-2.54871 * PSI);
+            WesternHemlock.B1 = 0.2F + 0.8F / (1.0F + (float)Math.Exp(5.33208 -9.00622 * PSI));
+            WesternHemlock.C = 1.0F + 1.2F * PSI;
+            WesternHemlock.ALPHA = 52.7948F * PSI;
+            WesternHemlock.H1 = 1.3F + (B1 * PSI) / 2.0F;
+            WesternHemlock.YK = H1 + PSI * XK * (1.0F - (1.0F - B1) / (C + 1.0F));
+            WesternHemlock.BETA = PSI / ALPHA;
         }
 
         private static void SITEF_SI(float SI, out float PSI)

@@ -5,26 +5,26 @@ namespace Osu.Cof.Organon
 {
     internal class DiameterGrowth
     {
-        public static void DIAMGRO(Variant VERSION, int K, int CYCLG, int[,] TDATAI, float[,] TDATAR, float SI_1, float SI_2, float SBA1, float[] BALL1, 
+        public static void DIAMGRO(Variant variant, int treeIndex, int simulationStep, Stand stand, float[,] TDATAR, float SI_1, float SI_2, float SBA1, float[] BALL1, 
                                    float[] BAL1, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, float[,] GROWTH)
         {
             // CALCULATES FIVE-YEAR DIAMETER GROWTH RATE OF THE K-TH TREE
             // CALCULATE BASAL AREA IN LARGER TREES
-            float DBH = TDATAR[K, 0];
-            float CR = TDATAR[K, 2];
-            int ISP = TDATAI[K, 0];
-            int ISPGRP = TDATAI[K, 1];
-            GET_BAL(DBH, BALL1, BAL1, out float SBAL1);
+            float dbhInInches = TDATAR[treeIndex, 0];
+            float crownRatio = TDATAR[treeIndex, 2];
+            FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+            int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
+            GET_BAL(dbhInInches, BALL1, BAL1, out float SBAL1);
 
             float SITE;
-            switch(VERSION)
+            switch(variant)
             {
                 case Variant.Swo:
                     SITE = SI_1;
                     break;
                 case Variant.Nwo:
                 case Variant.Smc:
-                    if (ISP == 263)
+                    if (species == FiaCode.TsugaHeterophylla)
                     {
                         SITE = SI_2;
                     }
@@ -34,7 +34,7 @@ namespace Osu.Cof.Organon
                     }
                     break;
                case Variant.Rap:
-                    if (ISP == 263)
+                    if (species == FiaCode.TsugaHeterophylla)
                     {
                         SITE = SI_2;
                     }
@@ -49,31 +49,31 @@ namespace Osu.Cof.Organon
 
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED TREES
             float DG;
-            switch(VERSION)
+            switch(variant)
             {
                 case Variant.Swo:
-                    DG_SWO(ISPGRP, DBH, CR, SITE, SBAL1, SBA1, out DG);
+                    DG_SWO(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, SBA1, out DG);
                     break;
                 case Variant.Nwo:
-                    DG_NWO(ISPGRP, DBH, CR, SITE, SBAL1, SBA1, out DG);
+                    DG_NWO(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, SBA1, out DG);
                     break;
                 case Variant.Smc:
-                    DG_SMC(ISPGRP, DBH, CR, SITE, SBAL1, SBA1, out DG);
+                    DG_SMC(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, SBA1, out DG);
                     break;
                 case Variant.Rap:
-                    DG_RAP(ISPGRP, DBH, CR, SITE, SBAL1, SBA1, out DG);
+                    DG_RAP(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, SBA1, out DG);
                     break;
                 default:
                     throw new NotSupportedException();
             }
 
             // CALCULATE FERTILIZER ADJUSTMENT
-            DG_FERT(ISP, VERSION, CYCLG, SI_1, PN, YF, out float FERTADJ);
+            DG_FERT(species, variant, simulationStep, SI_1, PN, YF, out float FERTADJ);
             // CALCULATE THINNING ADJUSTMENT
-            DG_THIN(ISP, VERSION, CYCLG, BABT, BART, YT, out float THINADJ);
+            DG_THIN(species, variant, simulationStep, BABT, BART, YT, out float THINADJ);
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED OR TREATED TREES
-            float DGRO = DG * CALIB[ISPGRP, 2] * FERTADJ* THINADJ;
-            GROWTH[K, 1] = DGRO;
+            float DGRO = DG * CALIB[speciesGroup, 2] * FERTADJ* THINADJ;
+            GROWTH[treeIndex, 1] = DGRO;
         }
 
         private static void DG_NWO(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
@@ -463,7 +463,6 @@ namespace Osu.Cof.Organon
             // RA Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
             // PD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
             // WI Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            //
             float[,] DGPAR = {
                 {
                     -5.35558894F, -5.84904111F, -4.51958940F,      // DF,GW,PP
@@ -613,9 +612,9 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="ISP">FIA species code.</param>
-        /// <param name="VERSION">Organon variant.</param>
-        /// <param name="CYCLG">Simulation cycle.</param>
+        /// <param name="species">FIA species code.</param>
+        /// <param name="variant">Organon variant.</param>
+        /// <param name="simulationStep">Simulation cycle.</param>
         /// <param name="BABT">Basal area before treatment? (DOUG?)</param>
         /// <param name="BART">Basal area removed by treatment? (DOUG?)</param>
         /// <param name="YT">Thinning year data? (DOUG?)</param>
@@ -623,7 +622,7 @@ namespace Osu.Cof.Organon
         /// <remarks>
         /// Has special cases for Douglas-fir, western hemlock, and red alder (only for RAP).
         /// </remarks>
-        private static void DG_THIN(int ISP, Variant VERSION, int CYCLG, float BABT, float[] BART, float[] YT, out float THINADJ)
+        private static void DG_THIN(FiaCode species, Variant variant, int simulationStep, float BABT, float[] BART, float[] YT, out float THINADJ)
         {
             // CALCULATE THINNING ADJUSTMENT FOR DIAMETER GROWTH RATE FROM
             // HANN ET AL.(2003) FRL RESEARCH CONTRIBUTION 40
@@ -632,19 +631,19 @@ namespace Osu.Cof.Organon
             float PT1;
             float PT2;
             float PT3;
-            if (ISP == 263)
+            if (species == FiaCode.TsugaHeterophylla)
             {
                 PT1 = 0.723095045F;
                 PT2 = 1.0F;
                 PT3 = -0.2644085320F;
             }
-            else if (ISP == 202)
+            else if (species == FiaCode.PseudotsugaMenziesii)
             {
                 PT1 = 0.6203827985F;
                 PT2 = 1.0F;
                 PT3 = -0.2644085320F;
             }
-            else if (VERSION == Variant.Rap && ISP == 351)
+            else if ((variant == Variant.Rap) && (species == FiaCode.AlnusRubra))
             {
                 PT1 = 0.0F;
                 PT2 = 1.0F;
@@ -657,7 +656,7 @@ namespace Osu.Cof.Organon
                 PT3 = -0.2644085320F;
             }
 
-            float XTIME = (float)(CYCLG) * 5.0F;
+            float XTIME = (float)(simulationStep) * 5.0F;
             float THINX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
@@ -684,7 +683,7 @@ namespace Osu.Cof.Organon
             Debug.Assert(THINADJ >= 1.0F);
         }
 
-        private static void DG_FERT(int ISP, Variant VERSION, int CYCLG, float SI_1, float[] PN, float[] YF, out float FERTADJ)
+        private static void DG_FERT(FiaCode species, Variant variant, int simulationStep, float SI_1, float[] PN, float[] YF, out float FERTADJ)
         {
             // CALCULATE FERTILIZER ADJUSTMENT FOR DIAMETER GROWTH RATE
             // FROM HANN ET AL.(2003) FRL RESEARCH CONTRIBUTION 40
@@ -694,9 +693,9 @@ namespace Osu.Cof.Organon
             float PF3;
             float PF4;
             float PF5;
-            if (VERSION <= Variant.Smc)
+            if (variant <= Variant.Smc)
             {
-                if (ISP == 263)
+                if (species == FiaCode.TsugaHeterophylla)
                 {
                     PF1 = 0.0F;
                     PF2 = 1.0F;
@@ -704,7 +703,7 @@ namespace Osu.Cof.Organon
                     PF4 = 0.0F;
                     PF5 = 1.0F;
                 }
-                else if (ISP == 202)
+                else if (species == FiaCode.PseudotsugaMenziesii)
                 {
                     PF1 = 1.368661121F;
                     PF2 = 0.741476964F;
@@ -731,7 +730,7 @@ namespace Osu.Cof.Organon
             }
                 
             float FALDWN = 1.0F;
-            float XTIME = (float)CYCLG * 5.0F;
+            float XTIME = (float)simulationStep * 5.0F;
             float FERTX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {

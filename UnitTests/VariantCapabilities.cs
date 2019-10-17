@@ -1,14 +1,12 @@
-﻿using System;
-
-namespace Osu.Cof.Organon.Test
+﻿namespace Osu.Cof.Organon.Test
 {
-    public class OrganonCapabilities
+    public class VariantCapabilities
     {
         public int SpeciesGroupCount { get; private set; }
         public int TimeStepInYears { get; private set; }
         public Variant Variant { get; private set; }
 
-        public OrganonCapabilities(Variant variant)
+        public VariantCapabilities(Variant variant)
         {
             switch (variant)
             {

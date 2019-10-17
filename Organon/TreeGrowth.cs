@@ -15,8 +15,6 @@ namespace Osu.Cof.Organon
         /// <param name="NSPN"></param>
         /// <param name="TCYCLE"></param>
         /// <param name="FCYCLE"></param>
-        /// <param name="SI_1"></param>
-        /// <param name="SI_2"></param>
         /// <param name="SBA1"></param>
         /// <param name="BALL1"></param>
         /// <param name="BAL1"></param>
@@ -38,7 +36,7 @@ namespace Osu.Cof.Organon
         /// <param name="BALL2"></param>
         /// <param name="BAL2"></param>
         public static void GROW(ref int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] TDATAR, float[] DEADEXP, bool POST, int NSPN,
-                                ref int TCYCLE, ref int FCYCLE, float SI_1, float SI_2, float SBA1, float[] BALL1, float[] BAL1,
+                                ref int TCYCLE, ref int FCYCLE, float SBA1, float[] BALL1, float[] BAL1,
                                 float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, float[,] GROWTH,
                                 float[] CCH, ref float OLD, float RAAGE, float RASI, float[] CCFLL1, float[] CCFL1,
                                 float[] CCFLL2, float[] CCFL2, float[] BALL2, float[] BAL2)
@@ -76,6 +74,9 @@ namespace Osu.Cof.Organon
                 }
             }
 
+            // BUGBUG no check that SITE_1 and SITE_2 indices are greater than 4.5 feet
+            float SI_1 = stand.PrimarySiteIndex - 4.5F;
+            float SI_2 = stand.MortalitySiteIndex - 4.5F;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
                 if (TDATAR[treeIndex, 3] <= 0.0F)
@@ -84,7 +85,7 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    DiameterGrowth.DIAMGRO(configuration.Variant, treeIndex, simulationStep, stand.Integer, TDATAR, SI_1, SI_2, SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART, YT, GROWTH);
+                    DiameterGrowth.DIAMGRO(configuration.Variant, treeIndex, simulationStep, stand, TDATAR, SI_1, SI_2, SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART, YT, GROWTH);
                     if (stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species] == (int)FiaCode.PseudotsugaMenziesii)
                     {
                         GROWTH[treeIndex, 1] = GROWTH[treeIndex, 1] * DGMOD_GG * DGMOD_SNC;
@@ -144,7 +145,7 @@ namespace Osu.Cof.Organon
             }
 
             // grow growns
-            CrownGrowth.CrowGro(configuration.Variant, simulationStep, stand, TDATAR, GROWTH, stand.MGExpansionFactor, DEADEXP, CCFLL1, CCFL1, CCFLL2, CCFL2, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
+            CrownGrowth.CrowGro(configuration.Variant, simulationStep, stand, TDATAR, GROWTH, DEADEXP, CCFLL1, CCFL1, CCFLL2, CCFL2, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
 
             // update stand variables
             if (configuration.Variant != Variant.Rap)

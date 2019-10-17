@@ -14,8 +14,9 @@ namespace Osu.Cof.Organon.Test
             foreach (Variant variant in TestConstant.Variants)
             {
                 // get crown closure
-                OrganonCapabilities variantCapabilities = new OrganonCapabilities(variant);
-                TestStand stand = this.CreateDefaultStand(variant);
+                VariantCapabilities variantCapabilities = new VariantCapabilities(variant);
+                OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
+                TestStand stand = this.CreateDefaultStand(configuration);
                 StandGrowth.CROWN_CLOSURE(variant, stand, variantCapabilities.SpeciesGroupCount, out float crownClosure);
                 Assert.IsTrue(crownClosure >= 0.0F);
                 Assert.IsTrue(crownClosure <= TestConstant.Maximum.CrownClosure);
@@ -27,9 +28,8 @@ namespace Osu.Cof.Organon.Test
                 this.Verify(stand, variantCapabilities);
 
                 // run Organon growth simulation
-                stand = this.CreateDefaultStand(variant);
+                stand = this.CreateDefaultStand(configuration);
                 TestStand initialTreeData = stand.Clone();
-                OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath(stand.TreeRecordsInUse);
 
                 float BABT = 0.0F; // (DOUG? basal area before thinning?)

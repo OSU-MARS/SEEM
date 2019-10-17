@@ -5,9 +5,10 @@ namespace Osu.Cof.Organon.Test
 {
     public class TestStand : Stand
     {
-        public TestStand(Variant variant, int ageInYears, int treeCount, float primarySiteIndex, float mortalitySiteIndex)
-            : base(ageInYears, treeCount, primarySiteIndex, mortalitySiteIndex, (variant == Variant.Swo) ? 4 : 2)
+        public TestStand(Variant variant, int ageInYears, int treeCount, float primarySiteIndex)
+            : base(ageInYears, treeCount, primarySiteIndex, (variant == Variant.Swo) ? 4 : 2)
         {
+            this.SetDefaultSiteIndices(variant);
         }
 
         protected TestStand(TestStand other)

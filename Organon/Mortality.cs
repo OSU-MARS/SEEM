@@ -6,8 +6,7 @@ namespace Osu.Cof.Organon
     internal class Mortality
     {
         // ROUTINE FOR SETTING TREE MORTALITY
-        // BUGBUG: sets configuration.RD0, NO, A1MAX - move these to stand data?
-        public static void MORTAL(OrganonConfiguration configuration, int CYCLG, Stand stand, bool POST, 
+        public static void MORTAL(OrganonConfiguration configuration, int simulationStep, Stand stand, bool POST, 
                                   float[,] TDATAR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP, float[] BALL1, float[] BAL1, float SI_1,
                                   float SI_2, float[] PN, float[] YF, ref float RAAGE)
         {
@@ -42,13 +41,13 @@ namespace Osu.Cof.Organon
             }
 
             float KB = 0.005454154F;
-            float STBA = 0.0F;
+            float standBasalArea = 0.0F;
             float STN = 0.0F;
             float RAN = 0.0F;
             float[] PMK = new float[stand.TreeRecordsInUse];
             for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
             {
-                STBA += TDATAR[treeIndex, 0] * TDATAR[treeIndex, 0] * KB * TDATAR[treeIndex, 3];
+                standBasalArea += TDATAR[treeIndex, 0] * TDATAR[treeIndex, 0] * KB * TDATAR[treeIndex, 3];
                 STN += TDATAR[treeIndex, 3];
 
                 FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
@@ -57,9 +56,9 @@ namespace Osu.Cof.Organon
                     RAN += TDATAR[treeIndex, 3];
                 }
 
-                if (CYCLG == 0 && POST)
+                if ((simulationStep == 0) && POST)
                 {
-                    STBA += TDATAR[treeIndex, 0] * TDATAR[treeIndex, 0] * KB * MGEXP[treeIndex];
+                    standBasalArea += TDATAR[treeIndex, 0] * TDATAR[treeIndex, 0] * KB * MGEXP[treeIndex];
                     STN += MGEXP[treeIndex];
                 }
                 PMK[treeIndex] = 0.0F;
@@ -69,13 +68,13 @@ namespace Osu.Cof.Organon
             {
                 RAAGE = 0.0F;
             }
-            float SQMDA = (float)Math.Sqrt(STBA / (KB * STN));
-            float RD = STN / (float)Math.Exp(configuration.A1 / configuration.A2 - Math.Log(SQMDA) / configuration.A2);
-            if (CYCLG == 0)
+            float SQMDA = (float)Math.Sqrt(standBasalArea / (KB * STN));
+            float RD = STN / (float)Math.Exp(stand.A1 / stand.A2 - Math.Log(SQMDA) / stand.A2);
+            if (simulationStep == 0)
             {
-                configuration.RD0 = RD;
-                configuration.NO = 0.0F;
-                configuration.A1MAX = configuration.A1;
+                stand.RD0 = RD;
+                stand.NO = 0.0F;
+                stand.A1MAX = stand.A1;
             }
             float BAA = 0.0F;
             float NA = 0.0F;
@@ -89,7 +88,7 @@ namespace Osu.Cof.Organon
                     continue;
                 }
                 int speciesGroup = stand.Integer[treeIndex, 1];
-                PM_FERT(speciesGroup, configuration.Variant, CYCLG, PN, YF, out float FERTADJ);
+                PM_FERT(speciesGroup, configuration.Variant, simulationStep, PN, YF, out float FERTADJ);
                 float DBH = TDATAR[treeIndex, 0];
                 DiameterGrowth.GET_BAL(DBH, BALL1, BAL1, out float SBAL1);
                 float CR = TDATAR[treeIndex, 2];
@@ -138,23 +137,23 @@ namespace Osu.Cof.Organon
             if (configuration.AdditionalMortality)
             {
                 float QMDA = (float)Math.Sqrt(BAA / (KB * NA));
-                float RDA = NA / (float)Math.Exp(configuration.A1 / configuration.A2 - Math.Log(QMDA) / configuration.A2);
-                if (CYCLG == 0)
+                float RDA = NA / (float)Math.Exp(stand.A1 / stand.A2 - Math.Log(QMDA) / stand.A2);
+                if (simulationStep == 0)
                 {
                     // INITALIZATIONS FOR FIRST GROWTH CYCLE
                     if (RD >= 1.0)
                     {
                         if (RDA > RD)
                         {
-                            configuration.A1MAX = (float)(Math.Log(SQMDA) + configuration.A2 * Math.Log(STN));
+                            stand.A1MAX = (float)(Math.Log(SQMDA) + stand.A2 * Math.Log(STN));
                         }
                         else
                         {
-                            configuration.A1MAX = (float)(Math.Log(QMDA) + configuration.A2 * Math.Log(NA));
+                            stand.A1MAX = (float)(Math.Log(QMDA) + stand.A2 * Math.Log(NA));
                         }
-                        if (configuration.A1MAX < configuration.A1)
+                        if (stand.A1MAX < stand.A1)
                         {
-                            configuration.A1MAX = configuration.A1;
+                            stand.A1MAX = stand.A1;
                         }
                     }
                     else
@@ -164,41 +163,41 @@ namespace Osu.Cof.Organon
                             if (RD > RDCC)
                             {
                                 float XA3 = -1.0F / A3;
-                                configuration.NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
+                                stand.NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
                             }
                             else
                             {
-                                configuration.NO = configuration.PDEN;
+                                stand.NO = configuration.PDEN;
                             }
                         }
                         // INITIALIZATIONS FOR SUBSEQUENT GROWTH CYCLES
                         else
                         {
-                            if (configuration.RD0 >= 1.0F)
+                            if (stand.RD0 >= 1.0F)
                             {
-                                configuration.A1MAX = (float)(Math.Log(QMDA) + configuration.A2 * Math.Log(NA));
-                                if (configuration.A1MAX < configuration.A1)
+                                stand.A1MAX = (float)(Math.Log(QMDA) + stand.A2 * Math.Log(NA));
+                                if (stand.A1MAX < stand.A1)
                                 {
-                                    configuration.A1MAX = configuration.A1;
+                                    stand.A1MAX = stand.A1;
                                 }
                             }
                             else
                             {
                                 int IND;
-                                if (RD >= 1.0F && configuration.NO <= 0.0F)
+                                if ((RD >= 1.0F) && (stand.NO <= 0.0F))
                                 {
                                     if (RDA > RD)
                                     {
-                                        configuration.A1MAX = (float)(Math.Log(SQMDA) + configuration.A2 * Math.Log(STN));
+                                        stand.A1MAX = (float)(Math.Log(SQMDA) + stand.A2 * Math.Log(STN));
                                     }
                                     else
                                     {
-                                        configuration.A1MAX = (float)(Math.Log(QMDA) + configuration.A2 * Math.Log(NA));
+                                        stand.A1MAX = (float)(Math.Log(QMDA) + stand.A2 * Math.Log(NA));
                                     }
                                     IND = 1;
-                                    if (configuration.A1MAX < configuration.A1)
+                                    if (stand.A1MAX < stand.A1)
                                     {
-                                        configuration.A1MAX = configuration.A1;
+                                        stand.A1MAX = stand.A1;
                                     }
                                 }
                                 else
@@ -206,34 +205,34 @@ namespace Osu.Cof.Organon
                                     IND = 0;
                                     if (configuration.Variant <= Variant.Smc)
                                     {
-                                        if (RD > RDCC && configuration.NO <= 0.0F)
+                                        if ((RD > RDCC) && (stand.NO <= 0.0F))
                                         {
                                             float XA3 = -1.0F / A3;
-                                            configuration.NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
+                                            stand.NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
                                         }
                                         else
                                         {
-                                            configuration.NO = configuration.PDEN;
+                                            stand.NO = configuration.PDEN;
                                         }
                                     }
                                 }
 
                                 // COMPUTATION OF ADDITIONAL MORTALITY IF NECESSARY
                                 float QMDP;
-                                if ((IND == 0) && (configuration.NO > 0.0F))
+                                if ((IND == 0) && (stand.NO > 0.0F))
                                 {
                                     if (configuration.Variant <= Variant.Smc)
                                     {
-                                        QMDP = QUAD1(NA, configuration.NO, RDCC, configuration.A1);
+                                        QMDP = QUAD1(NA, stand.NO, RDCC, stand.A1);
                                     }
                                     else
                                     {
-                                        QMDP = QUAD2(NA, configuration.NO, configuration.A1);
+                                        QMDP = QUAD2(NA, stand.NO, stand.A1);
                                     }
                                 }
                                 else
                                 {
-                                    QMDP = (float)Math.Exp(configuration.A1MAX - configuration.A2 * Math.Log(NA));
+                                    QMDP = (float)Math.Exp(stand.A1MAX - stand.A2 * Math.Log(NA));
                                 }
 
                                 if (RD <= RDCC || QMDP > QMDA)
@@ -283,16 +282,16 @@ namespace Osu.Cof.Organon
                                         {
                                             if (configuration.Variant <= Variant.Smc)
                                             {
-                                                QMDP = QUAD1(NAA, configuration.NO, RDCC, configuration.A1);
+                                                QMDP = QUAD1(NAA, stand.NO, RDCC, stand.A1);
                                             }
                                             else
                                             {
-                                                QMDP = QUAD2(NAA, configuration.NO, configuration.A1);
+                                                QMDP = QUAD2(NAA, stand.NO, stand.A1);
                                             }
                                         }
                                         else
                                         {
-                                            QMDP = (float)Math.Exp(configuration.A1MAX - configuration.A2 * Math.Log(NAA));
+                                            QMDP = (float)Math.Exp(stand.A1MAX - stand.A2 * Math.Log(NAA));
                                         }
                                         if (QMDP >= QMDA)
                                         {
@@ -452,7 +451,7 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void PM_FERT(int ISPGRP, Variant variant, int CYCLG, float[] PN, float[] YF, out float FERTADJ)
+        private static void PM_FERT(int ISPGRP, Variant variant, int simulationStep, float[] PN, float[] YF, out float FERTADJ)
         {
             float PF1;
             float PF2;
@@ -479,7 +478,7 @@ namespace Osu.Cof.Organon
                 PF3 = 0.0F;
             }
 
-            float XTIME = (float)CYCLG * 5.0F;
+            float XTIME = (float)simulationStep * 5.0F;
             float FERTX1 = 0.0F;
             for (int II = 1; II < 5; ++II)
             {
