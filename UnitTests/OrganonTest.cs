@@ -226,18 +226,6 @@ namespace Osu.Cof.Organon.Test
                 Assert.IsTrue(mgExpansionFactor >= 0.0F);
                 Assert.IsTrue(mgExpansionFactor <= TestConstant.Maximum.MGExpansionFactor);
 
-                float shadowCrownRatio0 = stand.ShadowCrownRatio[treeIndex, 0];
-                Assert.IsTrue(shadowCrownRatio0 >= 0.0F);
-                Assert.IsTrue(shadowCrownRatio0 <= 1.0F);
-                float shadowCrownRatio1 = stand.ShadowCrownRatio[treeIndex, 1];
-                Assert.IsTrue(shadowCrownRatio1 >= 0.0F);
-                Assert.IsTrue(shadowCrownRatio1 <= 1.0F);
-                float shadowCrownRatio2 = stand.ShadowCrownRatio[treeIndex, 2];
-                Assert.IsTrue(shadowCrownRatio2 >= 0.0F);
-                Assert.IsTrue(shadowCrownRatio2 <= 1.0F);
-
-                // for now, no need to verify tripling data as it isn't passed in most tests
-
                 // for now, ignore warnings on height exceeding potential height
                 // Assert.IsTrue(stand.TreeWarnings[treeWarningIndex] == 0);
             }

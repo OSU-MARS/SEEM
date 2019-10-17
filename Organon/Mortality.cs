@@ -8,7 +8,7 @@ namespace Osu.Cof.Organon
         // ROUTINE FOR SETTING TREE MORTALITY
         // BUGBUG: sets configuration.RD0, NO, A1MAX - move these to stand data?
         public static void MORTAL(OrganonConfiguration configuration, int CYCLG, Stand stand, bool POST, 
-                                  float[,] TDATAR, float[,] SCR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP, float[] BALL1, float[] BAL1, float SI_1,
+                                  float[,] TDATAR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP, float[] BALL1, float[] BAL1, float SI_1,
                                   float SI_2, float[] PN, float[] YF, ref float RAAGE)
         {
             float[] POW = new float[stand.TreeRecordsInUse];
@@ -92,15 +92,7 @@ namespace Osu.Cof.Organon
                 PM_FERT(speciesGroup, configuration.Variant, CYCLG, PN, YF, out float FERTADJ);
                 float DBH = TDATAR[treeIndex, 0];
                 DiameterGrowth.GET_BAL(DBH, BALL1, BAL1, out float SBAL1);
-                float CR;
-                if (SCR[treeIndex, 0] > TDATAR[treeIndex, 2])
-                {
-                    CR = SCR[treeIndex, 0];
-                }
-                else
-                {
-                    CR = TDATAR[treeIndex, 2];
-                }
+                float CR = TDATAR[treeIndex, 2];
 
                 switch (configuration.Variant)
                 {
@@ -133,15 +125,7 @@ namespace Osu.Cof.Organon
 
             for (int I = 0; I < stand.TreeRecordsInUse; ++I)
             {
-                float CR;
-                if (SCR[I, 0] > TDATAR[I, 2])
-                {
-                    CR = SCR[I, 0];
-                }
-                else
-                {
-                    CR = TDATAR[I, 2];
-                }
+                float CR = TDATAR[I, 2];
                 float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
                 float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
                 float PS = (float)Math.Pow(1.0F - XPM, POW[I]);
@@ -257,16 +241,7 @@ namespace Osu.Cof.Organon
                                     // NO ADDITIONAL MORTALITY NECESSARY
                                     for (int I = 0; I < stand.TreeRecordsInUse; ++I)
                                     {
-                                        float CR;
-                                        if (SCR[I, 0] > TDATAR[I, 2])
-                                        {
-                                            CR = SCR[I, 0];
-                                        }
-                                        else
-                                        {
-                                            CR = TDATAR[I, 2];
-                                        }
-
+                                        float CR = TDATAR[I, 2];
                                         float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
                                         float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
                                         float PS = (float)Math.Pow(1.0 - XPM, POW[I]);
@@ -295,16 +270,7 @@ namespace Osu.Cof.Organon
                                                 continue;
                                             }
 
-                                            float CR;
-                                            if (SCR[I, 0] > TDATAR[I, 2])
-                                            {
-                                                CR = SCR[I, 0];
-                                            }
-                                            else
-                                            {
-                                                CR = TDATAR[I, 2];
-                                            }
-
+                                            float CR = TDATAR[I, 2];
                                             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
                                             float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[I])));
                                             float PS = (float)Math.Pow(1.0 - XPM, POW[I]);
@@ -346,15 +312,7 @@ namespace Osu.Cof.Organon
                                         }
                                         else
                                         {
-                                            float CR;
-                                            if (SCR[I, 0] > TDATAR[I, 2])
-                                            {
-                                                CR = SCR[I, 0];
-                                            }
-                                            else
-                                            {
-                                                CR = TDATAR[I, 2];
-                                            }
+                                            float CR = TDATAR[I, 2];
                                             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
                                             float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[I])));
                                             float PS = (float)Math.Pow(1.0F - XPM, POW[I]);
@@ -376,16 +334,7 @@ namespace Osu.Cof.Organon
             {
                 for (int I = 0; I < stand.TreeRecordsInUse; ++I)
                 {
-                    float CR;
-                    if (SCR[I, 0] > TDATAR[I, 2])
-                    {
-                        CR = SCR[I, 0];
-                    }
-                    else
-                    {
-                        CR = TDATAR[I, 2];
-                    }
-
+                    float CR = TDATAR[I, 2];
                     float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
                     float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
                     float PS = (float)Math.Pow(1.0 - XPM, POW[I]);
@@ -394,15 +343,15 @@ namespace Osu.Cof.Organon
                     Debug.Assert(PM <= 1000.0F);
 
                     DEADEXP[I] = TDATAR[I, 3] * PM;
+                    Debug.Assert(DEADEXP[I] >= 0.0F);
+                    Debug.Assert(DEADEXP[I] <= 1000.0F);
+
                     TDATAR[I, 3] = TDATAR[I, 3] * (1.0F - PM);
                 }
             }
 
             for (int I = 0; I < stand.TreeRecordsInUse; ++I)
             {
-                Debug.Assert(DEADEXP[I] >= 0.0F);
-                Debug.Assert(DEADEXP[I] <= 1000.0F);
-
                 if (TDATAR[I, 3] < 0.00001F)
                 {
                     TDATAR[I, 3] = 0.0F;

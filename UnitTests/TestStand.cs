@@ -20,7 +20,7 @@ namespace Osu.Cof.Organon.Test
             return new TestStand(this);
         }
 
-        public void FromArrays(float[] dbhInInches, float[] heightInFeet, float[] crownRatio, float[] expansionFactor, float[] shadowCrownRatio)
+        public void FromArrays(float[] dbhInInches, float[] heightInFeet, float[] crownRatio, float[] expansionFactor)
         {
             if (dbhInInches.Length != this.MaximumTreeRecords)
             {
@@ -38,10 +38,6 @@ namespace Osu.Cof.Organon.Test
             {
                 throw new ArgumentOutOfRangeException(nameof(expansionFactor));
             }
-            if (shadowCrownRatio.Length != this.MaximumTreeRecords)
-            {
-                throw new ArgumentOutOfRangeException(nameof(shadowCrownRatio));
-            }
 
             for (int treeIndex = 0; treeIndex < this.MaximumTreeRecords; ++treeIndex)
             {
@@ -49,13 +45,11 @@ namespace Osu.Cof.Organon.Test
                 this.Float[treeIndex, (int)TreePropertyFloat.Height] = heightInFeet[treeIndex];
                 this.Float[treeIndex, (int)TreePropertyFloat.CrownRatio] = crownRatio[treeIndex];
                 this.Float[treeIndex, (int)TreePropertyFloat.ExpansionFactor] = expansionFactor[treeIndex];
-                this.ShadowCrownRatio[treeIndex, 0] = shadowCrownRatio[treeIndex];
             }
         }
 
-        public void FromArrays(float[] dbhInInches, float[] heightInFeet, float[] crownRatio,
-                               float[] expansionFactor, float[] shadowCrownRatio, float[] diameterGrowthInInches, float[] heightGrowthInFeet,
-                               float[] crownChange, float[] shadowCrownRatioChange)
+        public void FromArrays(float[] dbhInInches, float[] heightInFeet, float[] crownRatio, float[] expansionFactor,
+                               float[] diameterGrowthInInches, float[] heightGrowthInFeet, float[] crownChange)
         {
             if (diameterGrowthInInches.Length != this.MaximumTreeRecords)
             {
@@ -69,12 +63,8 @@ namespace Osu.Cof.Organon.Test
             {
                 throw new ArgumentOutOfRangeException(nameof(crownChange));
             }
-            if (shadowCrownRatioChange.Length != this.MaximumTreeRecords)
-            {
-                throw new ArgumentOutOfRangeException(nameof(shadowCrownRatioChange));
-            }
 
-            this.FromArrays(dbhInInches, heightInFeet, crownRatio, expansionFactor, shadowCrownRatio);
+            this.FromArrays(dbhInInches, heightInFeet, crownRatio, expansionFactor);
         }
 
         public int GetBigSixSpeciesRecordCount()
@@ -92,38 +82,35 @@ namespace Osu.Cof.Organon.Test
         }
 
         public void GetEmptyArrays(out float[] dbhInInchesAtEndOfCycle, out float[] heightAtEndOfCycle, out float[] crownRatioAtEndOfCycle,
-                                   out float[] shadowCrownRatioAtEndOfCycle, out float[] expansionFactorAtEndOfCycle)
+                                   out float[] expansionFactorAtEndOfCycle)
         {
             dbhInInchesAtEndOfCycle = new float[this.MaximumTreeRecords];
             heightAtEndOfCycle = new float[this.MaximumTreeRecords];
             crownRatioAtEndOfCycle = new float[this.MaximumTreeRecords];
-            shadowCrownRatioAtEndOfCycle = new float[this.MaximumTreeRecords];
             expansionFactorAtEndOfCycle = new float[this.MaximumTreeRecords];
         }
 
         public void ToArrays(out float[] dbhInInches, out float[] heightInFeet, out float[] crownRatio,
-                             out float[] expansionFactor, out float[] shadowCrownRatio)
+                             out float[] expansionFactor)
         {
             dbhInInches = new float[this.MaximumTreeRecords];
             heightInFeet = new float[this.MaximumTreeRecords];
             crownRatio = new float[this.MaximumTreeRecords];
             expansionFactor = new float[this.MaximumTreeRecords];
-            shadowCrownRatio = new float[this.MaximumTreeRecords];
             for (int treeIndex = 0; treeIndex < this.MaximumTreeRecords; ++treeIndex)
             {
                 dbhInInches[treeIndex] = this.Float[treeIndex, (int)TreePropertyFloat.Dbh];
                 heightInFeet[treeIndex] = this.Float[treeIndex, (int)TreePropertyFloat.Height];
                 crownRatio[treeIndex] = this.Float[treeIndex, (int)TreePropertyFloat.CrownRatio];
                 expansionFactor[treeIndex] = this.Float[treeIndex, (int)TreePropertyFloat.ExpansionFactor];
-                shadowCrownRatio[treeIndex] = this.ShadowCrownRatio[treeIndex, 0];
             }
         }
 
         public void ToArrays(out float[] dbhInInches, out float[] heightInFeet, out float[] crownRatio,
-                             out float[] expansionFactor, out float[] shadowCrownRatio, out float[] diameterGrowthInInches,
-                             out float[] heightGrowthInFeet, out float[] crownChange, out float[] shadowCrownRatioChange)
+                             out float[] expansionFactor, out float[] diameterGrowthInInches, out float[] heightGrowthInFeet,
+                             out float[] crownChange, out float[] shadowCrownRatioChange)
         {
-            this.ToArrays(out dbhInInches, out heightInFeet, out crownRatio, out expansionFactor, out shadowCrownRatio);
+            this.ToArrays(out dbhInInches, out heightInFeet, out crownRatio, out expansionFactor);
 
             diameterGrowthInInches = new float[this.MaximumTreeRecords];
             heightGrowthInFeet = new float[this.MaximumTreeRecords];
@@ -144,14 +131,10 @@ namespace Osu.Cof.Organon.Test
                 float treeCrownRatio = this.Float[treeIndex, (int)TreePropertyFloat.CrownRatio];
                 float treeDeadExpansionFactor = this.DeadExpansionFactor[treeIndex];
                 float treeMGExpansionFactor = this.MGExpansionFactor[treeIndex];
-                float treeShadowCrownRatio0 = this.ShadowCrownRatio[treeIndex, 0];
-                float treeShadowCrownRatio1 = this.ShadowCrownRatio[treeIndex, 1];
-                float treeShadowCrownRatio2 = this.ShadowCrownRatio[treeIndex, 2];
-                testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14}",
+                testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
                                       variant, simulationStep, treeIndex, treeSpecies, treeSpeciesGroup, treeUserData,
                                       treeDbhInInches, treeHeightInFeet, treeExpansionFactor, treeDeadExpansionFactor,
-                                      treeMGExpansionFactor, treeCrownRatio, treeShadowCrownRatio0, treeShadowCrownRatio1,
-                                      treeShadowCrownRatio2);
+                                      treeMGExpansionFactor, treeCrownRatio);
             }
         }
     }

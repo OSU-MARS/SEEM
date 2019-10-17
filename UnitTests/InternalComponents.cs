@@ -30,7 +30,7 @@ namespace Osu.Cof.Organon.Test
                                  out float treesPerAcreEnd, out float standCompetitionEnd, treeCompetitionEndOfStep.SmallTreeBasalAreaLarger, 
                                  treeCompetitionEndOfStep.LargeTreeBasalAreaLarger, treeCompetitionEndOfStep.SmallTreeCrownCompetition, treeCompetitionEndOfStep.LargeTreeCrownCompetition);
 
-                    CrownGrowth.CRNCLO(0, 0.0F, variant, stand, stand.Float, stand.ShadowCrownRatio, stand.MGExpansionFactor, CCH, out float crownClosure);
+                    CrownGrowth.CRNCLO(0.0F, variant, stand, stand.Float, stand.MGExpansionFactor, CCH, out float crownClosure);
                     Assert.IsTrue(crownClosure >= 0.0F);
                     Assert.IsTrue(crownClosure <= TestConstant.Maximum.CrownClosure);
 
@@ -39,7 +39,6 @@ namespace Osu.Cof.Organon.Test
                         float crownRatio = stand.Float[treeIndex, (int)TreePropertyFloat.CrownRatio];
                         float dbhInInches = stand.Float[treeIndex, (int)TreePropertyFloat.Dbh];
                         float heightInFeet = stand.Float[treeIndex, (int)TreePropertyFloat.Height];
-                        float shadowCrownRatio = stand.ShadowCrownRatio[treeIndex, 0];
                         int speciesGroup = stand.Integer[treeIndex, (int)TreePropertyInteger.SpeciesGroup];
 
                         CrownGrowth.GET_CCFL(dbhInInches, treeCompetitionStartOfStep.LargeTreeCrownCompetition, treeCompetitionStartOfStep.SmallTreeCrownCompetition, out float crownCompetitionFactor);
@@ -54,27 +53,27 @@ namespace Osu.Cof.Organon.Test
                         {
                             case Variant.Nwo:
                                 CrownGrowth.HCB_NWO(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactor, standBasalAreaStart, stand.PrimarySiteIndex, stand.MortalitySiteIndex, OG, out heightToCrownBaseInFeet);
-                                CrownGrowth.HLCW_NWO(speciesGroup, heightInFeet, crownRatio, shadowCrownRatio, out heightToLargestCrownWidthInFeet);
+                                CrownGrowth.HLCW_NWO(speciesGroup, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
                                 CrownGrowth.MCW_NWO(speciesGroup, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
-                                CrownGrowth.LCW_NWO(speciesGroup, maximumCrownWidthInFeet, crownRatio, shadowCrownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
+                                CrownGrowth.LCW_NWO(speciesGroup, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
                                 break;
                             case Variant.Rap:
                                 CrownGrowth.HCB_RAP(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactor, standBasalAreaStart, stand.PrimarySiteIndex, stand.MortalitySiteIndex, OG, out heightToCrownBaseInFeet);
-                                CrownGrowth.HLCW_RAP(speciesGroup, heightInFeet, crownRatio, shadowCrownRatio, out heightToLargestCrownWidthInFeet);
+                                CrownGrowth.HLCW_RAP(speciesGroup, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
                                 CrownGrowth.MCW_RAP(speciesGroup, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
-                                CrownGrowth.LCW_RAP(speciesGroup, maximumCrownWidthInFeet, crownRatio, shadowCrownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
+                                CrownGrowth.LCW_RAP(speciesGroup, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
                                 break;
                             case Variant.Smc:
                                 CrownGrowth.HCB_SMC(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactor, standBasalAreaStart, stand.PrimarySiteIndex, stand.MortalitySiteIndex, OG, out heightToCrownBaseInFeet);
-                                CrownGrowth.HLCW_SMC(speciesGroup, heightInFeet, crownRatio, shadowCrownRatio, out heightToLargestCrownWidthInFeet);
+                                CrownGrowth.HLCW_SMC(speciesGroup, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
                                 CrownGrowth.MCW_SMC(speciesGroup, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
-                                CrownGrowth.LCW_SMC(speciesGroup, maximumCrownWidthInFeet, crownRatio, shadowCrownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
+                                CrownGrowth.LCW_SMC(speciesGroup, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
                                 break;
                             case Variant.Swo:
                                 CrownGrowth.HCB_SWO(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactor, standBasalAreaStart, stand.PrimarySiteIndex, stand.MortalitySiteIndex, OG, out heightToCrownBaseInFeet);
-                                CrownGrowth.HLCW_SWO(speciesGroup, heightInFeet, crownRatio, shadowCrownRatio, out heightToLargestCrownWidthInFeet);
+                                CrownGrowth.HLCW_SWO(speciesGroup, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
                                 CrownGrowth.MCW_SWO(speciesGroup, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
-                                CrownGrowth.LCW_SWO(speciesGroup, maximumCrownWidthInFeet, crownRatio, shadowCrownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
+                                CrownGrowth.LCW_SWO(speciesGroup, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
                                 break;
                             default:
                                 throw VariantExtensions.CreateUnhandledVariantException(variant);
@@ -101,7 +100,7 @@ namespace Osu.Cof.Organon.Test
                         }
                     }
 
-                    CrownGrowth.CrowGro(variant, simulationStep, stand, stand.Float, stand.ShadowCrownRatio, stand.Growth, stand.MGExpansionFactor, 
+                    CrownGrowth.CrowGro(variant, simulationStep, stand, stand.Float, stand.Growth, stand.MGExpansionFactor, 
                                         stand.DeadExpansionFactor, treeCompetitionStartOfStep.LargeTreeCrownCompetition, treeCompetitionStartOfStep.SmallTreeCrownCompetition, 
                                         treeCompetitionEndOfStep.LargeTreeCrownCompetition, treeCompetitionEndOfStep.SmallTreeCrownCompetition, standBasalAreaStart, standBasalAreaEnd,
                                         stand.PrimarySiteIndex, stand.MortalitySiteIndex, CALIB, CCH);
@@ -201,8 +200,7 @@ namespace Osu.Cof.Organon.Test
                                     variantCapabilities.SpeciesGroupCount, ref thinningCycle, ref fertlizerCycle,
                                     stand.PrimarySiteIndex, stand.MortalitySiteIndex,
                                     standBasalAreaStart, treeCompetitionStartOfStep.LargeTreeBasalAreaLarger, treeCompetitionStartOfStep.SmallTreeBasalAreaLarger, CALIB, PN, YF, 
-                                    BABT, BART, YT, stand.Growth, stand.ShadowCrownRatio, 
-                                    CCH, ref OLD, TestConstant.Default.RAAGE, TestConstant.Default.RedAlderSiteIndex,
+                                    BABT, BART, YT, stand.Growth, CCH, ref OLD, TestConstant.Default.RAAGE, TestConstant.Default.RedAlderSiteIndex,
                                     treeCompetitionStartOfStep.LargeTreeCrownCompetition, treeCompetitionStartOfStep.SmallTreeCrownCompetition, 
                                     treeCompetitionEndOfStep.LargeTreeCrownCompetition, treeCompetitionEndOfStep.SmallTreeCrownCompetition, treeCompetitionEndOfStep.LargeTreeBasalAreaLarger, 
                                     treeCompetitionEndOfStep.SmallTreeBasalAreaLarger);
@@ -376,7 +374,7 @@ namespace Osu.Cof.Organon.Test
                     // TODO: MORT = false case for additional mortality disabled
                     // TODO: POST = true case for cycle after thinning
                     Mortality.MORTAL(configuration, simulationStep, stand, false,  
-                                     stand.Float, stand.ShadowCrownRatio, stand.Growth, stand.MGExpansionFactor, 
+                                     stand.Float, stand.Growth, stand.MGExpansionFactor, 
                                      stand.DeadExpansionFactor, competition.LargeTreeBasalAreaLarger, competition.SmallTreeBasalAreaLarger, stand.PrimarySiteIndex, 
                                      stand.MortalitySiteIndex, PN, YF, ref RAAGE);
                     this.Verify(stand, variantCapabilities);

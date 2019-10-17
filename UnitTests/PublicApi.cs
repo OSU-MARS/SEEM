@@ -10,7 +10,7 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void OrganonStandGrowthApi()
         {
-            this.TestContext.WriteLine("variant,simulation step,tree,species,species group,user data,DBH,height,expansion factor,dead expansion factor,MG expansion factor,crown ratio,shadow crown ratio 0,1,2");
+            this.TestContext.WriteLine("variant,simulation step,tree,species,species group,user data,DBH,height,expansion factor,dead expansion factor,MG expansion factor,crown ratio");
             foreach (Variant variant in TestConstant.Variants)
             {
                 // get crown closure
@@ -46,22 +46,20 @@ namespace Osu.Cof.Organon.Test
                 float[] YST = new float[5]; // (DOUG?)
 
                 stand.GetEmptyArrays(out float[] dbhInInchesAtEndOfCycle, out float[] heightInFeetAtEndOfCycle, 
-                                     out float[] crownRatioAtEndOfCycle, out float[] shadowCrownRatioAtEndOfCycle, 
-                                     out float[] expansionFactorAtEndOfCycle);
+                                     out float[] crownRatioAtEndOfCycle, out float[] expansionFactorAtEndOfCycle);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     stand.ToArrays(out float[] dbhInInchesAtStartOfCycle, out float[] heightInFeetAtStartOfCycle,
                                    out float[] crownRatioAtStartOfCycle, out float[] expansionFactorAtStartOfCycle,
-                                   out float[] shadowCrownRatioAtStartOfCycle, out float[] diameterGrowth, out float[] heightGrowth,
+                                   out float[] diameterGrowth, out float[] heightGrowth,
                                    out float[] crownChange, out float[] shadowCrownRatioChange);
                     StandGrowth.EXECUTE(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST,
-                                        diameterGrowth, heightGrowth, crownChange, shadowCrownRatioChange, out int treeCountAtEndOfCycle, 
-                                        dbhInInchesAtEndOfCycle, heightInFeetAtEndOfCycle, crownRatioAtEndOfCycle, shadowCrownRatioAtEndOfCycle, expansionFactorAtEndOfCycle);
+                                        diameterGrowth, heightGrowth, crownChange, out int treeCountAtEndOfCycle, 
+                                        dbhInInchesAtEndOfCycle, heightInFeetAtEndOfCycle, crownRatioAtEndOfCycle, expansionFactorAtEndOfCycle);
                     treeGrowth.Accumulate(dbhInInchesAtStartOfCycle, dbhInInchesAtEndOfCycle, heightInFeetAtStartOfCycle, heightInFeetAtEndOfCycle,
                                           stand.DeadExpansionFactor);
                     stand.FromArrays(dbhInInchesAtEndOfCycle, heightInFeetAtEndOfCycle, crownRatioAtEndOfCycle, 
-                                     expansionFactorAtEndOfCycle, shadowCrownRatioAtEndOfCycle, diameterGrowth, heightGrowth,
-                                     crownChange, shadowCrownRatioChange);
+                                     expansionFactorAtEndOfCycle, diameterGrowth, heightGrowth, crownChange);
                     stand.WriteAsCsv(this.TestContext, variant, simulationStep);
                     this.Verify(stand, variantCapabilities);
                 }

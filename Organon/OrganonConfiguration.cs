@@ -12,8 +12,6 @@
         public bool CALD { get; set; }
         // INDS[3] hint for error checking age ranges
         public bool IsEvenAge { get; set; }
-        // INDS[5] switches on use of SCR
-        public bool Prune { get; set; }
         // INDS[6] hint for error checking and triggers TCYCLE count
         public bool Thin { get; set; }
         // INDS[7] hint for error checking and triggers FCYCLE count

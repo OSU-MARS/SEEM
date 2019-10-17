@@ -27,7 +27,6 @@ namespace Osu.Cof.Organon
         /// <param name="BART"></param>
         /// <param name="YT"></param>
         /// <param name="GROWTH"></param>
-        /// <param name="SCR"></param>
         /// <param name="CCH"></param>
         /// <param name="OLD"></param>
         /// <param name="RAAGE"></param>
@@ -41,8 +40,7 @@ namespace Osu.Cof.Organon
         public static void GROW(ref int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] TDATAR, float[] DEADEXP, bool POST, int NSPN,
                                 ref int TCYCLE, ref int FCYCLE, float SI_1, float SI_2, float SBA1, float[] BALL1, float[] BAL1,
                                 float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, float[,] GROWTH,
-                                float[,] SCR, float[] CCH, ref float OLD, 
-                                float RAAGE, float RASI, float[] CCFLL1, float[] CCFL1,
+                                float[] CCH, ref float OLD, float RAAGE, float RASI, float[] CCFLL1, float[] CCFL1,
                                 float[] CCFLL2, float[] CCFL2, float[] BALL2, float[] BAL2)
         {
             float DGMOD_GG = 1.0F;
@@ -117,7 +115,7 @@ namespace Osu.Cof.Organon
 
             // determine mortality
             // Sets configuration.NO.
-            Mortality.MORTAL(configuration, simulationStep, stand, POST, TDATAR, SCR, GROWTH, stand.MGExpansionFactor, DEADEXP, BALL1, BAL1, SI_1, SI_2, PN, YF, ref RAAGE);
+            Mortality.MORTAL(configuration, simulationStep, stand, POST, TDATAR, GROWTH, stand.MGExpansionFactor, DEADEXP, BALL1, BAL1, SI_1, SI_2, PN, YF, ref RAAGE);
 
             // grow tree diameters
             for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
@@ -146,7 +144,7 @@ namespace Osu.Cof.Organon
             }
 
             // grow growns
-            CrownGrowth.CrowGro(configuration.Variant, simulationStep, stand, TDATAR, SCR, GROWTH, stand.MGExpansionFactor, DEADEXP, CCFLL1, CCFL1, CCFLL2, CCFL2, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
+            CrownGrowth.CrowGro(configuration.Variant, simulationStep, stand, TDATAR, GROWTH, stand.MGExpansionFactor, DEADEXP, CCFLL1, CCFL1, CCFLL2, CCFL2, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
 
             // update stand variables
             if (configuration.Variant != Variant.Rap)

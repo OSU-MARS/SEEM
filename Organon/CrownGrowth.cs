@@ -76,16 +76,14 @@ namespace Osu.Cof.Organon
         /// <summary>
         /// (DOUG? can this be removed as dead code since the value of CC is never consumed?)
         /// </summary>
-        /// <param name="IND">Flag for use of shadow crown ratios (DOUG?). Always false.</param>
         /// <param name="CTMUL">Cut tree multiplier. Always zero.</param>
         /// <param name="variant">Organon variant.</param>
         /// <param name="stand">Stand data.</param>
         /// <param name="TDATAR">Tree data.</param>
-        /// <param name="SCR">Tree data.</param>
         /// <param name="MGEXP">Tree data.</param>
         /// <param name="CCH"></param>
         /// <param name="CC">Crown closure</param>
-        public static void CRNCLO(int IND, float CTMUL, Variant variant, Stand stand, float[,] TDATAR, float[,] SCR, float[] MGEXP, float[] CCH, out float CC)
+        public static void CRNCLO(float CTMUL, Variant variant, Stand stand, float[,] TDATAR, float[] MGEXP, float[] CCH, out float CC)
         {
             // BUGBUG remove IND and CTMUL?
             // DETERMINE CROWN CLOSURE
@@ -112,16 +110,7 @@ namespace Osu.Cof.Organon
             {
                 float DBH = TDATAR[treeIndex, 0];
                 float HT = TDATAR[treeIndex, 1];
-                float CR;
-                if (IND == 1 && SCR[treeIndex, 0] > 0.0F)
-                {
-                    CR = SCR[treeIndex, 0];
-                }
-                else
-                {
-                    CR = TDATAR[treeIndex, 2];
-                }
-                float SCR1 = SCR[treeIndex, 0];
+                float CR = TDATAR[treeIndex, 2];
                 float CL = CR * HT;
                 float HCB = HT - CL;
                 float EXPAN = TDATAR[treeIndex, 3] + CTMUL * MGEXP[treeIndex];
@@ -130,26 +119,26 @@ namespace Osu.Cof.Organon
                 {
                     case Variant.Swo:
                         MCW_SWO(speciesGroup, DBH, HT, out float MCW);
-                        LCW_SWO(speciesGroup, MCW, CR, SCR1, DBH, HT, out float LCW);
-                        HLCW_SWO(speciesGroup, HT, CR, SCR1, out float HLCW);
+                        LCW_SWO(speciesGroup, MCW, CR, DBH, HT, out float LCW);
+                        HLCW_SWO(speciesGroup, HT, CR, out float HLCW);
                         CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
                         break;
                     case Variant.Nwo:
                         MCW_NWO(speciesGroup, DBH, HT, out MCW);
-                        LCW_NWO(speciesGroup, MCW, CR, SCR1, DBH, HT, out LCW);
-                        HLCW_NWO(speciesGroup, HT, CR, SCR1, out HLCW);
+                        LCW_NWO(speciesGroup, MCW, CR, DBH, HT, out LCW);
+                        HLCW_NWO(speciesGroup, HT, CR, out HLCW);
                         CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
                         break;
                     case Variant.Smc:
                         MCW_SMC(speciesGroup, DBH, HT, out MCW);
-                        LCW_SMC(speciesGroup, MCW, CR, SCR1, DBH, HT, out LCW);
-                        HLCW_SMC(speciesGroup, HT, CR, SCR1, out HLCW);
+                        LCW_SMC(speciesGroup, MCW, CR, DBH, HT, out LCW);
+                        HLCW_SMC(speciesGroup, HT, CR, out HLCW);
                         CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
                         break;
                     case Variant.Rap:
                         MCW_RAP(speciesGroup, DBH, HT, out MCW);
-                        LCW_RAP(speciesGroup, MCW, CR, SCR1, DBH, HT, out LCW);
-                        HLCW_RAP(speciesGroup, HT, CR, SCR1, out HLCW);
+                        LCW_RAP(speciesGroup, MCW, CR, DBH, HT, out LCW);
+                        HLCW_RAP(speciesGroup, HT, CR, out HLCW);
                         CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
                         break;
                 }
@@ -157,7 +146,7 @@ namespace Osu.Cof.Organon
             CC = CCH[0];
         }
 
-        public static void CrowGro(Variant variant, int CYCLG, Stand stand, float[,] TDATAR, float[,] SCR, float[,] GROWTH, float[] MGEXP,
+        public static void CrowGro(Variant variant, int CYCLG, Stand stand, float[,] TDATAR, float[,] GROWTH, float[] MGEXP,
                                    float[] DEADEXP, float[] CCFLL1, float[] CCFL1, float[] CCFLL2, float[] CCFL2, float SBA1, float SBA2, float SI_1, float SI_2,
                                    float[,] CALIB, float[] CCH)
         {
@@ -253,52 +242,23 @@ namespace Osu.Cof.Organon
                 Debug.Assert(HCBG >= 0.0F); // catch NaNs
 
                 float AHCB1 = (1.0F - TDATAR[treeIndex, 2]) * PHT;
-                float SHCB1 = (1.0F - SCR[treeIndex, 0]) * PHT;
                 float AHCB2 = AHCB1 + HCBG;
-                float SHCB2 = SHCB1 + HCBG;
-                if (AHCB1 > SHCB1)
+                if (AHCB1 >= MAXHCB)
                 {
-                    if (AHCB1 > SHCB2)
-                    {
-                        if (SHCB2 >= MAXHCB)
-                        {
-                            SCR[treeIndex, 0] = 1.0F - MAXHCB / HT;
-                            TDATAR[treeIndex, 2] = 1.0F - AHCB1 / HT;
-                        }
-                        else
-                        {
-                            SCR[treeIndex, 0] = 1.0F - SHCB2 / HT;
-                            TDATAR[treeIndex, 2] = 1.0F - AHCB1 / HT;
-                        }
-                    }
-                    else
-                    {
-                        TDATAR[treeIndex, 2] = 1.0F - SHCB2 / HT;
-                        for (int J = 0; J < 3; ++J)
-                        {
-                            SCR[treeIndex, J] = 0.0F;
-                        }
-                    }
+                    TDATAR[treeIndex, 2] = 1.0F - AHCB1 / HT;
+                }
+                else if (AHCB2 >= MAXHCB)
+                {
+                    TDATAR[treeIndex, 2] = 1.0F - MAXHCB / HT;
                 }
                 else
                 {
-                    if (AHCB1 >= MAXHCB)
-                    {
-                        TDATAR[treeIndex, 2] = 1.0F - AHCB1 / HT;
-                    }
-                    else if (AHCB2 >= MAXHCB)
-                    {
-                        TDATAR[treeIndex, 2] = 1.0F - MAXHCB / HT;
-                    }
-                    else
-                    {
-                        TDATAR[treeIndex, 2] = 1.0F - AHCB2 / HT;
-                    }
+                    TDATAR[treeIndex, 2] = 1.0F - AHCB2 / HT;
                 }
                 Debug.Assert((TDATAR[treeIndex, 2] >= 0.0F) && (TDATAR[treeIndex, 2] <= 1.0F));
             }
 
-            CRNCLO(0, 0.0F, variant, stand, TDATAR, SCR, MGEXP, CCH, out float _);
+            CRNCLO(0.0F, variant, stand, TDATAR, MGEXP, CCH, out float _);
         }
 
         private static void CW_NWO(int ISPGRP, float HLCW, float LCW, float HT, float DBH, float XL, out float CW)
@@ -880,7 +840,7 @@ namespace Osu.Cof.Organon
         /// <param name="CR">Tree's crown ratio.</param>
         /// <param name="SCR"></param>
         /// <param name="HLCW">Heigh to largest crown width (feet)</param>
-        public static void HLCW_NWO(int ISPGRP, float HT, float CR, float SCR, out float HLCW)
+        public static void HLCW_NWO(int ISPGRP, float HT, float CR, out float HLCW)
         {
             // DISTANCE ABOVE CROWN BASE TO LARGEST CROWN WIDTH(1 parameter - all species)
             //
@@ -902,19 +862,11 @@ namespace Osu.Cof.Organon
             };
 
             float B1 = DACBPAR[ISPGRP];
-            float CL;
-            if (SCR > CR)
-            {
-                CL = SCR * HT;
-            }
-            else
-            {
-                CL = CR * HT;
-            }
+            float CL = CR * HT;
             HLCW = HT - (1.0F - B1) * CL;
         }
 
-        public static void HLCW_RAP(int ISPGRP, float HT, float CR, float SCR, out float HLCW)
+        public static void HLCW_RAP(int ISPGRP, float HT, float CR, out float HLCW)
         {
             // DISTANCE ABOVE CROWN BASE TO LARGEST CROWN WIDTH(1 parameter - all species)
             //
@@ -938,19 +890,11 @@ namespace Osu.Cof.Organon
 
             float B1 = DACBPAR[0, ISPGRP];
             float B2 = DACBPAR[1, ISPGRP];
-            float CL;
-            if (SCR > CR)
-            {
-                CL = SCR * HT;
-            }
-            else
-            {
-                CL = CR * HT;
-            }
+            float CL = CR * HT;
             HLCW = (float)(HT - (1.0F - B1 * Math.Exp(Math.Pow(B2 * (1.0F - HT / 140.0F), 3))) * CL);
         }
 
-        public static void HLCW_SMC(int ISPGRP, float HT, float CR, float SCR, out float HLCW)
+        public static void HLCW_SMC(int ISPGRP, float HT, float CR, out float HLCW)
         {
             //C DISTANCE ABOVE CROWN BASE TO LARGEST CROWN WIDTH(1 parameter - all species)
             //
@@ -972,19 +916,11 @@ namespace Osu.Cof.Organon
             };
 
             float B1 = DACBPAR[ISPGRP];
-            float CL;
-            if (SCR > CR)
-            {
-                CL = SCR * HT;
-            }
-            else
-            {
-                CL = CR * HT;
-            }
+            float CL = CR * HT;
             HLCW = HT - (1.0F - B1) * CL;
         }
 
-        public static void HLCW_SWO(int ISPGRP, float HT, float CR, float SCR, out float HLCW)
+        public static void HLCW_SWO(int ISPGRP, float HT, float CR, out float HLCW)
         {
             // DISTANCE ABOVE CROWN BASE TO LARGEST CROWN WIDTH(1 parameter - all species)
             //
@@ -1014,16 +950,7 @@ namespace Osu.Cof.Organon
             };
 
             float B1 = DACBPAR[ISPGRP];
-            float CL;
-            if (SCR > CR)
-            {
-                CL = SCR * HT;
-            }
-            else
-            {
-                CL = CR * HT;
-            }
-
+            float CL = CR * HT;
             HLCW = HT - (1.0F - B1) * CL;
         }
 
@@ -1033,11 +960,10 @@ namespace Osu.Cof.Organon
         /// <param name="ISPGRP">Tree's species group.</param>
         /// <param name="MCW">Tree's maximum crown width (feet).</param>
         /// <param name="CR">Tree's crown ratio.</param>
-        /// <param name="SCR"></param>
         /// <param name="DBH">Tree's diameter at breast height (inches).</param>
         /// <param name="HT">Tree's height (feet).</param>
         /// <param name="LCW">Tree's largest crown width (feet).</param>
-        public static void LCW_NWO(int ISPGRP, float MCW, float CR, float SCR, float DBH, float HT, out float LCW)
+        public static void LCW_NWO(int ISPGRP, float MCW, float CR, float DBH, float HT, out float LCW)
         {
             // LARGEST CROWN WIDTH(3 parameters - all species)
             //
@@ -1074,19 +1000,11 @@ namespace Osu.Cof.Organon
             float B1 = LCWPAR[0, ISPGRP];
             float B2 = LCWPAR[1, ISPGRP];
             float B3 = LCWPAR[2, ISPGRP];
-            if (SCR > CR)
-            {
-                float CL = SCR * HT;
-                LCW = (float)(MCW * Math.Pow(SCR, B1 + B2 * CL + B3 * (DBH / HT)));
-            }
-            else
-            {
-                float CL = CR * HT;
-                LCW = (float)(MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
-            }
+            float CL = CR * HT;
+            LCW = (float)(MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
         }
 
-        public static void LCW_RAP(int ISPGRP, float MCW, float CR, float SCR, float DBH, float HT, out float LCW)
+        public static void LCW_RAP(int ISPGRP, float MCW, float CR, float DBH, float HT, out float LCW)
         {
             // LARGEST CROWN WIDTH(3 parameters - all species)
             //
@@ -1120,19 +1038,11 @@ namespace Osu.Cof.Organon
             float B1 = LCWPAR[1, ISPGRP];
             float B2 = LCWPAR[2, ISPGRP];
             float B3 = LCWPAR[3, ISPGRP];
-            if (SCR > CR)
-            {
-                float CL = SCR * HT;
-                LCW = (float)(B0 * MCW * Math.Pow(SCR, B1 + B2 * CL + B3 * (DBH / HT)));
-            }
-            else
-            {
-                float CL = CR * HT;
-                LCW = (float)(B0 * MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
-            }
+            float CL = CR * HT;
+            LCW = (float)(B0 * MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
         }
 
-        public static void LCW_SMC(int ISPGRP, float MCW, float CR, float SCR, float DBH, float HT, out float LCW)
+        public static void LCW_SMC(int ISPGRP, float MCW, float CR, float DBH, float HT, out float LCW)
         {
             // LARGEST CROWN WIDTH(3 parameters - all species)
             //
@@ -1169,19 +1079,11 @@ namespace Osu.Cof.Organon
             float B1 = LCWPAR[0, ISPGRP];
             float B2 = LCWPAR[1, ISPGRP];
             float B3 = LCWPAR[2, ISPGRP];
-            if (SCR > CR)
-            {
-                float CL = SCR * HT;
-                LCW = (float)(MCW * Math.Pow(SCR, B1 + B2 * CL + B3 * (DBH / HT)));
-            }
-            else
-            {
-                float CL = CR * HT;
-                LCW = (float)(MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
-            }
+            float CL = CR * HT;
+            LCW = (float)(MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
         }
 
-        public static void LCW_SWO(int ISPGRP, float MCW, float CR, float SCR, float DBH, float HT, out float LCW)
+        public static void LCW_SWO(int ISPGRP, float MCW, float CR, float DBH, float HT, out float LCW)
         {
             // LARGEST CROWN WIDTH(3 parameters - all species)
             //
@@ -1231,16 +1133,8 @@ namespace Osu.Cof.Organon
             float B1 = LCWPAR[0, ISPGRP];
             float B2 = LCWPAR[1, ISPGRP];
             float B3 = LCWPAR[2, ISPGRP];
-            if (SCR > CR)
-            {
-                float CL = SCR * HT;
-                LCW = (float)(MCW * Math.Pow(SCR, B1 + B2 * CL + B3 * (DBH / HT)));
-            }
-            else
-            {
-                float CL = CR * HT;
-                LCW = (float)(MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
-            }
+            float CL = CR * HT;
+            LCW = (float)(MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
         }
 
         private static void MAXHCB_NWO(int ISPGRP, float HT, float CCFL, out float MAXHCB)

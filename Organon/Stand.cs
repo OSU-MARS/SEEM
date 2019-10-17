@@ -48,9 +48,6 @@ namespace Osu.Cof.Organon
         // secondary site index used for additional mortality calculations
         public float MortalitySiteIndex { get; private set; }
 
-        // shadown crown ratio, apparently unused (DOUG?)
-        public float[,] ShadowCrownRatio { get; private set; }
-
         public int[] StandWarnings { get; private set; }
 
         public int[] TreeWarnings { get; private set; }
@@ -68,7 +65,6 @@ namespace Osu.Cof.Organon
             Buffer.BlockCopy(other.Integer, 0, this.Integer, 0, sizeof(int) * other.Integer.Length);
             other.MGExpansionFactor.CopyTo(this.MGExpansionFactor, 0);
             this.NPTS = other.NPTS;
-            Buffer.BlockCopy(other.ShadowCrownRatio, 0, this.ShadowCrownRatio, 0, sizeof(float) * other.ShadowCrownRatio.Length);
             this.TreeRecordsInUse = other.TreeRecordsInUse;
             other.StandWarnings.CopyTo(this.StandWarnings, 0);
             other.TreeWarnings.CopyTo(this.TreeWarnings, 0);
@@ -87,7 +83,6 @@ namespace Osu.Cof.Organon
             this.NPTS = 1;
             this.PrimarySiteIndex = primarySiteIndex;
             this.MortalitySiteIndex = mortalitySiteIndex;
-            this.ShadowCrownRatio = new float[treeCount, 3];
             this.StandWarnings = new int[9];
             this.TreeWarnings = new int[treeCount];
             this.TreeRecordsInUse = 0;
