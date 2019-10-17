@@ -54,8 +54,7 @@ namespace Osu.Cof.Organon.Test
                                    out float[] crownRatioAtStartOfCycle, out float[] expansionFactorAtStartOfCycle,
                                    out float[] shadowCrownRatioAtStartOfCycle, out float[] diameterGrowth, out float[] heightGrowth,
                                    out float[] crownChange, out float[] shadowCrownRatioChange);
-                    StandGrowth.EXECUTE(simulationStep, configuration, stand, null, null, ACALIB, PN, YSF, BABT, BART, YST,
-                                        null, null, null, null, null, null, null, null, null, null, null,
+                    StandGrowth.EXECUTE(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST,
                                         diameterGrowth, heightGrowth, crownChange, shadowCrownRatioChange, out int treeCountAtEndOfCycle, 
                                         dbhInInchesAtEndOfCycle, heightInFeetAtEndOfCycle, crownRatioAtEndOfCycle, shadowCrownRatioAtEndOfCycle, expansionFactorAtEndOfCycle);
                     treeGrowth.Accumulate(dbhInInchesAtStartOfCycle, dbhInInchesAtEndOfCycle, heightInFeetAtStartOfCycle, heightInFeetAtEndOfCycle,

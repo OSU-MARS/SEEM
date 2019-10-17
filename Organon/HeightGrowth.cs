@@ -576,8 +576,6 @@ namespace Osu.Cof.Organon
         /// 
         /// </summary>
         /// <param name="treeIndex">Index of tree to grow in tree data.</param>
-        /// <param name="triplingMethod">Method of tripling. Unused.</param>
-        /// <param name="ON">Always zero. Set to 1 to enable tripling.</param>
         /// <param name="variant">Organon variant.</param>
         /// <param name="CYCLG">Simulation cycle.</param>
         /// <param name="stand">Stand data.</param>
@@ -593,18 +591,7 @@ namespace Osu.Cof.Organon
         /// <param name="OLD">Obsolete?</param>
         /// <param name="PDEN">(DOUG?)</param>
         /// <param name="GROWTH">Tree data.</param>
-        /// <remarks>
-        /// M = METHOD OF TRIPLING
-        /// 0 = NO TRIPLING
-        /// 1 = TRIPLE EVERY TREE
-        /// 2 = TRIPLE EVERY OTHER TREE
-        /// 3 = RANDOM ERROR
-        /// 
-        /// ON = EVERY OTHER TREE TRIPLING DESIGNATOR
-        /// 1 = TRIPLE THIS TREE
-        /// 0 = DON'T TRIPLE THIS TREE
-        /// </remarks>
-        public static void HTGRO1(int treeIndex, int triplingMethod, int ON, Variant variant, int CYCLG, Stand stand, float[,] TDATAR, float SI_1, float SI_2,
+        public static void HTGRO1(int treeIndex, Variant variant, int CYCLG, Stand stand, float[,] TDATAR, float SI_1, float SI_2,
                                   float[] CCH, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN, float[,] GROWTH)
         {
             // BUGBUG remove M and ON
@@ -731,12 +718,6 @@ namespace Osu.Cof.Organon
                 if (stand.IsBigSixSpecies(treeIndex) && (GEAGE > IDXAGE))
                 {
                     OLD += 1.0F;
-                    if (triplingMethod == 1 || (triplingMethod == 2 && ON == 1))
-                    {
-                        // BUGBUG should this be reachable when ON = 0? (tripling disabled?)
-                        // BUGBUG encapsulation: Triple APIs should manage this
-                        OLD += 2.0F;
-                    }
                 }
 
                 HG_FERT(CYCLG, variant, speciesGroup, SI_1, PN, YF, out float FERTADJ);

@@ -12,8 +12,6 @@
         public bool CALD { get; set; }
         // INDS[3] hint for error checking age ranges
         public bool IsEvenAge { get; set; }
-        // INDS[4] switches on logic in Grow, effect unclear
-        public bool Triple { get; set; }
         // INDS[5] switches on use of SCR
         public bool Prune { get; set; }
         // INDS[6] hint for error checking and triggers TCYCLE count
@@ -22,8 +20,6 @@
         public bool Fertilizer { get; set; }
         // INDS[8] switches to if() clause in Mortality.MORTAL()
         public bool AdditionalMortality { get; set; }
-        // INDS[9] triggers some data copying in Triple
-        public bool WoodQuality { get; set; }
         // INDS[13] enables genetic growth modifiers
         public bool Genetics { get; set; }
         // INDS[14] enables Swiss needle cast (Nothophaeocryptopus gaeumanii) growth modifiers, applies only to NWO and SMC variants

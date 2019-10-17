@@ -5,18 +5,14 @@ namespace Osu.Cof.Organon.Test
 {
     public class TestStand : Stand
     {
-        public TriplingData Triple { get; private set; }
-
         public TestStand(Variant variant, int ageInYears, int treeCount, float primarySiteIndex, float mortalitySiteIndex)
             : base(ageInYears, treeCount, primarySiteIndex, mortalitySiteIndex, (variant == Variant.Swo) ? 4 : 2)
         {
-            this.Triple = new TriplingData(treeCount);
         }
 
         protected TestStand(TestStand other)
             : base(other)
         {
-            this.Triple = new TriplingData(other.Triple);
         }
 
         public TestStand Clone()

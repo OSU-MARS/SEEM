@@ -10,25 +10,12 @@ namespace Osu.Cof.Organon
         /// </summary>
         /// <param name="CYCLG"></param>
         /// <param name="configuration">Organon growth simulation options and site settings.</param>
-        /// <param name="TREENO"></param>
-        /// <param name="PTNO"></param>
         /// <param name="ACALIB"></param>
         /// <param name="PN"></param>
         /// <param name="YSF"></param>
         /// <param name="BABT"></param>
         /// <param name="BART"></param>
         /// <param name="YST"></param>
-        /// <param name="NPR"></param>
-        /// <param name="PRAGE"></param>
-        /// <param name="PRLH"></param>
-        /// <param name="PRDBH"></param>
-        /// <param name="PRHT"></param>
-        /// <param name="PRCR"></param>
-        /// <param name="PREXP"></param>
-        /// <param name="BRCNT"></param>
-        /// <param name="BRHT"></param>
-        /// <param name="BRDIA"></param>
-        /// <param name="JCORE"></param>
         /// <param name="DGRO"></param>
         /// <param name="HGRO"></param>
         /// <param name="CRCHNG"></param>
@@ -39,15 +26,13 @@ namespace Osu.Cof.Organon
         /// <param name="CR2"></param>
         /// <param name="SCR2"></param>
         /// <param name="EXPAN2"></param>
-        public static void EXECUTE(int CYCLG, OrganonConfiguration configuration, Stand stand, int[] TREENO,
-                                   int[] PTNO, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
-                                   int[] NPR, int[,] PRAGE, float[,] PRLH, float[,] PRDBH, float[,] PRHT, float[,] PRCR, float[,] PREXP, int[,] BRCNT,
-                                   int[,] BRHT, int[,] BRDIA, int[,] JCORE, float[] DGRO, float[] HGRO, float[] CRCHNG, float[] SCRCHNG,
+        public static void EXECUTE(int CYCLG, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, 
+                                   float BABT, float[] BART, float[] YST, float[] DGRO, float[] HGRO, float[] CRCHNG, float[] SCRCHNG,
                                    out int NTREES2, float[] DBH2, float[] HT2, float[] CR2, float[] SCR2, float[] EXPAN2)
         {
             // BUGBUG: CYCLG duplicates stand age
             // BUGBUG: for negative CYCLG values of A1 and A2 are overwritten by calls to SUBMAX and therefore silently ignored in certain cases
-            EDIT(CYCLG, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int OTHER, out int BNXT);
+            EDIT(CYCLG, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int BNXT);
 
             int FCYCLE = 0;
             int TCYCLE = 0;
@@ -288,10 +273,9 @@ namespace Osu.Cof.Organon
             float[] CCFL2 = new float[500];
             float[] BALL2 = new float[51];
             float[] BAL2 = new float[500];
-            TreeGrowth.GROW(ref CYCLG, configuration, stand, TDATAR, DEADEXP, POST, BIG6, OTHER, NSPN, PTNO, TREENO, PRAGE, BRCNT, BRHT, BRDIA, JCORE, NPR,
-                            ref TCYCLE, ref FCYCLE, SI_1, SI_2, SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART,
-                            YT, GROWTH, PRLH, PRDBH, PRHT, PRCR, PREXP, SCR, VOLTR, SYTVOL,
-                            CCH, ref OLD, RAAGE, RASI, CCFLL1, CCFL1, CCFLL2, CCFL2, BALL2, BAL2);
+            TreeGrowth.GROW(ref CYCLG, configuration, stand, TDATAR, DEADEXP, POST, NSPN, ref TCYCLE, ref FCYCLE, 
+                            SI_1, SI_2, SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART,
+                            YT, GROWTH, SCR, CCH, ref OLD, RAAGE, RASI, CCFLL1, CCFL1, CCFLL2, CCFL2, BALL2, BAL2);
             NTREES2 = stand.TreeRecordsInUse;
 
             if (configuration.IsEvenAge == false)
@@ -368,10 +352,9 @@ namespace Osu.Cof.Organon
         /// <param name="YST"></param>
         /// <param name="NSPN">Number of species groups supported by specified Organon variant.</param>
         /// <param name="BIG6"></param>
-        /// <param name="OTHER"></param>
         /// <param name="BNXT"></param>
         private static void EDIT(int CYCLG, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
-                                 out int NSPN, out int BIG6, out int OTHER, out int BNXT)
+                                 out int NSPN, out int BIG6, out int BNXT)
         {
             if (stand.TreeRecordsInUse < 1)
             {
@@ -649,7 +632,6 @@ namespace Osu.Cof.Organon
             }
 
             BIG6 = 0;
-            OTHER = 0;
             BNXT = 0;
             float MAXGF = 0.0F;
             float MAXDF = 0.0F;
@@ -728,10 +710,6 @@ namespace Osu.Cof.Organon
                     {
                         ++BNXT;
                     }
-                }
-                else
-                {
-                    ++OTHER;
                 }
             }
 

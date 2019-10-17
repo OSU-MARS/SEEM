@@ -197,12 +197,11 @@ namespace Osu.Cof.Organon.Test
 
                     // (DOUG? POST?)
                     bool POST = false;
-                    TreeGrowth.GROW(ref simulationStep, configuration, stand, stand.Float, stand.DeadExpansionFactor, POST, bigSixSpeciesTreeRecords, 
-                                    otherSpeciesTreeRecords, variantCapabilities.SpeciesGroupCount, 
-                                    null, null, null, null, null, null, null, null, ref thinningCycle, ref fertlizerCycle,
+                    TreeGrowth.GROW(ref simulationStep, configuration, stand, stand.Float, stand.DeadExpansionFactor, POST, 
+                                    variantCapabilities.SpeciesGroupCount, ref thinningCycle, ref fertlizerCycle,
                                     stand.PrimarySiteIndex, stand.MortalitySiteIndex,
                                     standBasalAreaStart, treeCompetitionStartOfStep.LargeTreeBasalAreaLarger, treeCompetitionStartOfStep.SmallTreeBasalAreaLarger, CALIB, PN, YF, 
-                                    BABT, BART, YT, stand.Growth, null, null, null, null, null, stand.ShadowCrownRatio, null, null, 
+                                    BABT, BART, YT, stand.Growth, stand.ShadowCrownRatio, 
                                     CCH, ref OLD, TestConstant.Default.RAAGE, TestConstant.Default.RedAlderSiteIndex,
                                     treeCompetitionStartOfStep.LargeTreeCrownCompetition, treeCompetitionStartOfStep.SmallTreeCrownCompetition, 
                                     treeCompetitionEndOfStep.LargeTreeCrownCompetition, treeCompetitionEndOfStep.SmallTreeCrownCompetition, treeCompetitionEndOfStep.LargeTreeBasalAreaLarger, 
@@ -328,7 +327,7 @@ namespace Osu.Cof.Organon.Test
                     {
                         if (stand.Integer[treeIndex, (int)TreePropertyInteger.SpeciesGroup] <= stand.MaxBigSixSpeciesGroupIndex)
                         {
-                            HeightGrowth.HTGRO1(treeIndex, 0, 0, variant, simulationStep, stand,
+                            HeightGrowth.HTGRO1(treeIndex, variant, simulationStep, stand,
                                                 stand.Float, stand.PrimarySiteIndex, stand.MortalitySiteIndex, CCH, PN, YF, 
                                                 TestConstant.Default.BABT, BART, YT, ref OLD, TestConstant.Default.PDEN, stand.Growth);
                         }
@@ -456,48 +455,6 @@ namespace Osu.Cof.Organon.Test
                 Assert.IsTrue(configuration.A2 > 0.60F);
                 Assert.IsTrue(configuration.A2 < 0.65F);
                 this.Verify(stand, variantCapabilities);
-            }
-        }
-
-        [TestMethod]
-        public void TripleApi()
-        {
-            this.TestContext.WriteLine("version, A1, A2");
-            foreach (Variant variant in TestConstant.Variants)
-            {
-                TestStand stand = this.CreateDefaultStand(variant, 100);
-                int bigSixSpeciesTreeRecordCountBeforeTripling = stand.GetBigSixSpeciesRecordCount();
-                int bigSixSpeciesTreeRecordCountAfterTripling = 0;
-                int otherTreeSpeciesRecordCountAfterTripling = 0;
-                int usedRecordCount = stand.TreeRecordsInUse;
-
-                for (int sourceTreeIndex = 0; sourceTreeIndex < stand.TreeRecordsInUse; ++sourceTreeIndex)
-                {
-                    int speciesGroup = stand.Integer[sourceTreeIndex, (int)TreePropertyInteger.SpeciesGroup];
-                    if (speciesGroup > stand.MaxBigSixSpeciesGroupIndex)
-                    {
-                        continue;
-                    }
-
-                    int triplingDone = 0;
-                    int destinationTreeIndex = stand.TreeRecordsInUse + bigSixSpeciesTreeRecordCountAfterTripling;
-                    Triple.XTRIP(sourceTreeIndex, destinationTreeIndex, 1, triplingDone, bigSixSpeciesTreeRecordCountBeforeTripling, true, 
-                                 stand, bigSixSpeciesTreeRecordCountAfterTripling, 
-                                 stand.Triple.POINT, stand.Triple.TREENO, stand.Triple.PruningAge, stand.Triple.BranchCount, stand.Triple.BranchHeight, stand.Triple.BranchDiameter, stand.Triple.JuvenileCore, stand.Triple.NPR, stand.Triple.PruningLH, stand.Triple.PruningDbhInInches, stand.Triple.PruningHeightInFeet, stand.Triple.PruningCrownRatio, stand.Triple.PREXP, stand.ShadowCrownRatio, stand.Triple.VOLTR, stand.Triple.SYTVOL);
-
-                    Triple.DGTRIP(sourceTreeIndex, ref destinationTreeIndex, 1, ref triplingDone, variant, stand, ref bigSixSpeciesTreeRecordCountAfterTripling, ref otherTreeSpeciesRecordCountAfterTripling, stand.Float, stand.Growth, stand.MGExpansionFactor, stand.DeadExpansionFactor);
-
-                    destinationTreeIndex -= 2;
-                    bigSixSpeciesTreeRecordCountAfterTripling -= 2;
-                    Triple.HGTRIP(sourceTreeIndex, ref destinationTreeIndex, 1, ref triplingDone, variant, ref bigSixSpeciesTreeRecordCountAfterTripling, stand.Integer, stand.Float, stand.Growth, stand.MGExpansionFactor, stand.DeadExpansionFactor);
-
-                    usedRecordCount = destinationTreeIndex;
-                }
-
-                OrganonCapabilities variantCapabilities = new OrganonCapabilities(variant);
-                stand.TreeRecordsInUse = usedRecordCount;
-                this.Verify(stand, variantCapabilities);
-                this.Verify(stand.Triple);
             }
         }
 
