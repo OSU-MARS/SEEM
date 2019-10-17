@@ -137,7 +137,6 @@ namespace Osu.Cof.Organon.Test
                 A1 = TestConstant.Default.A1,
                 A2 = TestConstant.Default.A2,
                 A1MAX = TestConstant.Default.A1MAX,
-                PA1MAX = TestConstant.Default.PA1MAX,
                 NO = TestConstant.Default.NO,
                 RD0 = TestConstant.Default.RD0
             };

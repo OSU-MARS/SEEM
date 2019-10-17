@@ -57,8 +57,6 @@
         public float A2 { get; set; }
         // STOR[4] SDImax cap for mortality, overrides A1 if lower
         public float A1MAX { get; set; }
-        // STOR[5] SDImax cap for mortality, overrides A1MAX if lower
-        public float PA1MAX { get; set; }
 
         public OrganonConfiguration(Variant variant)
         {

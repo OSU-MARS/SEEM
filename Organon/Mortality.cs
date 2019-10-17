@@ -172,7 +172,6 @@ namespace Osu.Cof.Organon
                         {
                             configuration.A1MAX = configuration.A1;
                         }
-                        configuration.PA1MAX = configuration.A1MAX;
                     }
                     else
                     {
@@ -194,15 +193,10 @@ namespace Osu.Cof.Organon
                             if (configuration.RD0 >= 1.0F)
                             {
                                 configuration.A1MAX = (float)(Math.Log(QMDA) + configuration.A2 * Math.Log(NA));
-                                if (configuration.A1MAX > configuration.PA1MAX)
-                                {
-                                    configuration.A1MAX = configuration.PA1MAX;
-                                }
                                 if (configuration.A1MAX < configuration.A1)
                                 {
                                     configuration.A1MAX = configuration.A1;
                                 }
-                                configuration.PA1MAX = configuration.A1MAX;
                             }
                             else
                             {
@@ -222,7 +216,6 @@ namespace Osu.Cof.Organon
                                     {
                                         configuration.A1MAX = configuration.A1;
                                     }
-                                    configuration.PA1MAX = configuration.A1MAX;
                                 }
                                 else
                                 {

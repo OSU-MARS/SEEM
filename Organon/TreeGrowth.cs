@@ -116,7 +116,7 @@ namespace Osu.Cof.Organon
             }
 
             // determine mortality
-            // Sets configuration.PA1MAX and NO.
+            // Sets configuration.NO.
             Mortality.MORTAL(configuration, simulationStep, stand, POST, TDATAR, SCR, GROWTH, stand.MGExpansionFactor, DEADEXP, BALL1, BAL1, SI_1, SI_2, PN, YF, ref RAAGE);
 
             // grow tree diameters
