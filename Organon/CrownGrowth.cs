@@ -74,104 +74,83 @@ namespace Osu.Cof.Organon
         }
 
         /// <summary>
-        /// (DOUG? can this be removed as dead code since the value of CC is never consumed?)
+        /// Find crown closure. (DOUG? can this be removed as dead code since the value of CC is never consumed?)
         /// </summary>
         /// <param name="variant">Organon variant.</param>
         /// <param name="stand">Stand data.</param>
-        /// <param name="TDATAR">Tree data.</param>
-        /// <param name="MGEXP">Tree data.</param>
         /// <param name="CCH"></param>
         /// <param name="CC">Crown closure</param>
-        public static void CRNCLO(Variant variant, Stand stand, float[,] TDATAR, float[] CCH, out float CC)
+        public static void CRNCLO(Variant variant, Stand stand, float[] CCH, out float CC)
         {
-            // BUGBUG remove IND and CTMUL?
-            // DETERMINE CROWN CLOSURE
-            //**********************************************************************
-            // IND = 0 COMPUTE CROWN CLOSURES WITHOUT SHADOW CROWN RATIOS
-            // = 1 COMPUTE CROWN CLOSURES WITH SHADOW CROWN RATIOS
-            // CTMUL = CUT TREE MULTIPLIER
-            // = 0.0 TO NOT ADD OR SUBTRACT CUT TREES
-            // = 1.0 TO ADD CUT TREES
-            // = -1.0 TO SUBTRACT CUT TREES
             for (int L = 0; L < 40; ++L)
             {
                 CCH[L] = 0.0F;
             }
-            CCH[40] = TDATAR[0, 1];
-            for (int treeIndex = 1; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            CCH[40] = stand.Height[0];
+            for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                if (TDATAR[treeIndex, 1] > CCH[40])
+                if (stand.Height[treeIndex] > CCH[40])
                 {
-                    CCH[40] = TDATAR[treeIndex, 1];
+                    CCH[40] = stand.Height[treeIndex];
                 }
             }
-            for (int treeIndex = 1; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+
+            float treeCountAsFloat = (float)stand.TreeRecordCount;
+            for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float DBH = TDATAR[treeIndex, 0];
-                float HT = TDATAR[treeIndex, 1];
-                float CR = TDATAR[treeIndex, 2];
-                float CL = CR * HT;
-                float HCB = HT - CL;
-                float EXPAN = TDATAR[treeIndex, 3];
-                int speciesGroup = stand.Integer[treeIndex, 1];
+                float dbhInInches = stand.Dbh[treeIndex];
+                float heightInFeet = stand.Height[treeIndex];
+                float crownRatio = stand.CrownRatio[treeIndex];
+                float crownLengthInFeet = crownRatio * heightInFeet;
+                float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
                 switch (variant)
                 {
                     case Variant.Swo:
-                        MCW_SWO(speciesGroup, DBH, HT, out float MCW);
-                        LCW_SWO(speciesGroup, MCW, CR, DBH, HT, out float LCW);
-                        HLCW_SWO(speciesGroup, HT, CR, out float HLCW);
-                        CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
+                        MCW_SWO(speciesGroup, dbhInInches, heightInFeet, out float MCW);
+                        LCW_SWO(speciesGroup, MCW, crownRatio, dbhInInches, heightInFeet, out float LCW);
+                        HLCW_SWO(speciesGroup, heightInFeet, crownRatio, out float HLCW);
+                        CALC_CC(variant, speciesGroup, HLCW, LCW, heightInFeet, dbhInInches, heightToCrownBaseInFeet, expansionFactor, CCH);
                         break;
                     case Variant.Nwo:
-                        MCW_NWO(speciesGroup, DBH, HT, out MCW);
-                        LCW_NWO(speciesGroup, MCW, CR, DBH, HT, out LCW);
-                        HLCW_NWO(speciesGroup, HT, CR, out HLCW);
-                        CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
+                        MCW_NWO(speciesGroup, dbhInInches, heightInFeet, out MCW);
+                        LCW_NWO(speciesGroup, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
+                        HLCW_NWO(speciesGroup, heightInFeet, crownRatio, out HLCW);
+                        CALC_CC(variant, speciesGroup, HLCW, LCW, heightInFeet, dbhInInches, heightToCrownBaseInFeet, expansionFactor, CCH);
                         break;
                     case Variant.Smc:
-                        MCW_SMC(speciesGroup, DBH, HT, out MCW);
-                        LCW_SMC(speciesGroup, MCW, CR, DBH, HT, out LCW);
-                        HLCW_SMC(speciesGroup, HT, CR, out HLCW);
-                        CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
+                        MCW_SMC(speciesGroup, dbhInInches, heightInFeet, out MCW);
+                        LCW_SMC(speciesGroup, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
+                        HLCW_SMC(speciesGroup, heightInFeet, crownRatio, out HLCW);
+                        CALC_CC(variant, speciesGroup, HLCW, LCW, heightInFeet, dbhInInches, heightToCrownBaseInFeet, expansionFactor, CCH);
                         break;
                     case Variant.Rap:
-                        MCW_RAP(speciesGroup, DBH, HT, out MCW);
-                        LCW_RAP(speciesGroup, MCW, CR, DBH, HT, out LCW);
-                        HLCW_RAP(speciesGroup, HT, CR, out HLCW);
-                        CALC_CC(variant, speciesGroup, HLCW, LCW, HT, DBH, HCB, EXPAN, CCH);
+                        MCW_RAP(speciesGroup, dbhInInches, heightInFeet, out MCW);
+                        LCW_RAP(speciesGroup, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
+                        HLCW_RAP(speciesGroup, heightInFeet, crownRatio, out HLCW);
+                        CALC_CC(variant, speciesGroup, HLCW, LCW, heightInFeet, dbhInInches, heightToCrownBaseInFeet, expansionFactor, CCH);
                         break;
                 }
             }
             CC = CCH[0];
         }
 
-        public static void CrowGro(Variant variant, int simulationStep, Stand stand, float[,] TDATAR, float[,] GROWTH, 
-                                   float[] DEADEXP, float[] CCFLL1, float[] CCFL1, float[] CCFLL2, float[] CCFL2, float SBA1, float SBA2, float SI_1, float SI_2,
+        public static void CrowGro(Variant variant, Stand stand, 
+                                   float[] CCFLL1, float[] CCFL1, float[] CCFLL2, float[] CCFL2, float SBA1, float SBA2, float SI_1, float SI_2,
                                    float[,] CALIB, float[] CCH)
         {
             // DETERMINE 5-YR CROWN RECESSION
-            Mortality.OldGro(stand, TDATAR, GROWTH, DEADEXP, -1.0F, out float OG1);
-            Mortality.OldGro(stand, TDATAR, GROWTH, DEADEXP, 0.0F, out float OG2);
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            Mortality.OldGro(stand, -1.0F, out float OG1);
+            Mortality.OldGro(stand, 0.0F, out float OG2);
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                int species = stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
-                if (species == 0)
-                {
-                    // BUGBUG shouldn't a tree with an invalid species code be an error?
-                    continue;
-                }
-
-                if (simulationStep == 0)
-                {
-                    TDATAR[treeIndex, 5] = TDATAR[treeIndex, 2];
-                }
-
                 // CALCULATE HCB START OF GROWTH
                 // CALCULATE STARTING HEIGHT
-                float PHT = TDATAR[treeIndex, 1] - GROWTH[treeIndex, 0];
+                float PHT = stand.Height[treeIndex] - stand.HeightGrowth[treeIndex];
                 // CALCULATE STARTING DBH
-                float PDBH = TDATAR[treeIndex, 0] - GROWTH[treeIndex, 1];
-                int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
+                float PDBH = stand.Dbh[treeIndex] - stand.DbhGrowth[treeIndex];
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
                 GET_CCFL(PDBH, CCFLL1, CCFL1, out float SCCFL1);
                 float PCR1;
                 switch (variant)
@@ -199,8 +178,8 @@ namespace Osu.Cof.Organon
                 float PHCB1 = (1.0F - PCR1) * PHT;
 
                 // CALCULATE HCB END OF GROWTH
-                float HT = TDATAR[treeIndex, 1];
-                float DBH = TDATAR[treeIndex, 0];
+                float HT = stand.Height[treeIndex];
+                float DBH = stand.Dbh[treeIndex];
                 GET_CCFL(DBH, CCFLL2, CCFL2, out float SCCFL2);
                 float MAXHCB;
                 float PCR2;
@@ -240,24 +219,24 @@ namespace Osu.Cof.Organon
                 }
                 Debug.Assert(HCBG >= 0.0F); // catch NaNs
 
-                float AHCB1 = (1.0F - TDATAR[treeIndex, 2]) * PHT;
+                float AHCB1 = (1.0F - stand.CrownRatio[treeIndex]) * PHT;
                 float AHCB2 = AHCB1 + HCBG;
                 if (AHCB1 >= MAXHCB)
                 {
-                    TDATAR[treeIndex, 2] = 1.0F - AHCB1 / HT;
+                    stand.CrownRatio[treeIndex] = 1.0F - AHCB1 / HT;
                 }
                 else if (AHCB2 >= MAXHCB)
                 {
-                    TDATAR[treeIndex, 2] = 1.0F - MAXHCB / HT;
+                    stand.CrownRatio[treeIndex] = 1.0F - MAXHCB / HT;
                 }
                 else
                 {
-                    TDATAR[treeIndex, 2] = 1.0F - AHCB2 / HT;
+                    stand.CrownRatio[treeIndex] = 1.0F - AHCB2 / HT;
                 }
-                Debug.Assert((TDATAR[treeIndex, 2] >= 0.0F) && (TDATAR[treeIndex, 2] <= 1.0F));
+                Debug.Assert((stand.CrownRatio[treeIndex] >= 0.0F) && (stand.CrownRatio[treeIndex] <= 1.0F));
             }
 
-            CRNCLO(variant, stand, TDATAR, CCH, out float _);
+            CRNCLO(variant, stand, CCH, out float _);
         }
 
         private static void CW_NWO(int ISPGRP, float HLCW, float LCW, float HT, float DBH, float XL, out float CW)

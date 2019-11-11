@@ -6,15 +6,15 @@ namespace Osu.Cof.Organon
     internal class Mortality
     {
         // ROUTINE FOR SETTING TREE MORTALITY
-        public static void MORTAL(OrganonConfiguration configuration, int simulationStep, Stand stand, bool POST, 
-                                  float[,] TDATAR, float[,] GROWTH, float[] MGEXP, float[] DEADEXP, float[] BALL1, float[] BAL1, float SI_1,
+        public static void MORTAL(OrganonConfiguration configuration, int simulationStep, Stand stand, 
+                                  float[] BALL1, float[] BAL1, float SI_1,
                                   float SI_2, float[] PN, float[] YF, ref float RAAGE)
         {
-            float[] POW = new float[stand.TreeRecordsInUse];
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            float[] POW = new float[stand.TreeRecordCount];
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 POW[treeIndex] = 1.0F;
-                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                FiaCode species = stand.Species[treeIndex];
                 if ((configuration.Variant == Variant.Rap) && (species != FiaCode.AlnusRubra))
                 {
                     POW[treeIndex] = 0.2F;
@@ -44,26 +44,20 @@ namespace Osu.Cof.Organon
             float standBasalArea = 0.0F;
             float STN = 0.0F;
             float RAN = 0.0F;
-            float[] PMK = new float[stand.TreeRecordsInUse];
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            float treeCountAsFloat = (float)stand.TreeRecordCount;
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                standBasalArea += TDATAR[treeIndex, 0] * TDATAR[treeIndex, 0] * KB * TDATAR[treeIndex, 3];
-                STN += TDATAR[treeIndex, 3];
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                standBasalArea += stand.Dbh[treeIndex] * stand.Dbh[treeIndex] * KB * expansionFactor;
+                STN += expansionFactor;
 
-                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                FiaCode species = stand.Species[treeIndex];
                 if ((species == FiaCode.AlnusRubra) && (configuration.Variant <= Variant.Smc))
                 {
-                    RAN += TDATAR[treeIndex, 3];
+                    RAN += expansionFactor;
                 }
-
-                if ((simulationStep == 0) && POST)
-                {
-                    standBasalArea += TDATAR[treeIndex, 0] * TDATAR[treeIndex, 0] * KB * MGEXP[treeIndex];
-                    STN += MGEXP[treeIndex];
-                }
-                PMK[treeIndex] = 0.0F;
-                DEADEXP[treeIndex] = 0.0F;
             }
+
             if (RAN <= 0.0001)
             {
                 RAAGE = 0.0F;
@@ -78,20 +72,21 @@ namespace Osu.Cof.Organon
             }
             float BAA = 0.0F;
             float NA = 0.0F;
-            OldGro(stand, TDATAR, GROWTH, DEADEXP, 0.0F, out float OG1);
+            OldGro(stand, 0.0F, out float OG1);
 
             // INDIVIDUAL TREE MORTALITY EQUATIONS
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            float[] PMK = new float[stand.TreeRecordCount];
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                if (TDATAR[treeIndex, 3] <= 0.0F)
+                if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
                 {
                     continue;
                 }
-                int speciesGroup = stand.Integer[treeIndex, 1];
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
                 PM_FERT(speciesGroup, configuration.Variant, simulationStep, PN, YF, out float FERTADJ);
-                float DBH = TDATAR[treeIndex, 0];
+                float DBH = stand.Dbh[treeIndex];
                 DiameterGrowth.GET_BAL(DBH, BALL1, BAL1, out float SBAL1);
-                float CR = TDATAR[treeIndex, 2];
+                float CR = stand.CrownRatio[treeIndex];
 
                 switch (configuration.Variant)
                 {
@@ -117,20 +112,22 @@ namespace Osu.Cof.Organon
             {
                 if (RAAGE >= 55.0)
                 {
-                    RAMORT(stand, RAAGE, TDATAR, RAN, PMK);
+                    RAMORT(stand, RAAGE, RAN, PMK);
                 }
                 RAAGE += 5.0F;
             }
 
-            for (int I = 0; I < stand.TreeRecordsInUse; ++I)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float CR = TDATAR[I, 2];
+                float CR = stand.CrownRatio[treeIndex];
                 float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-                float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
-                float PS = (float)Math.Pow(1.0F - XPM, POW[I]);
+                float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
+                float PS = (float)Math.Pow(1.0F - XPM, POW[treeIndex]);
                 float PM = 1.0F - PS * CRADJ;
-                NA += TDATAR[I, 3] * (1.0F - PM);
-                BAA += KB * (float)Math.Pow(TDATAR[I, 0] + GROWTH[I, 1], 2) * TDATAR[I, 3] * (1.0F - PM);
+
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                NA += expansionFactor * (1.0F - PM);
+                BAA += KB * (float)Math.Pow(stand.Dbh[treeIndex] + stand.DbhGrowth[treeIndex], 2) * expansionFactor * (1.0F - PM);
             }
 
             // DETERMINE IF ADDITIONAL MORTALITY MUST BE TAKEN
@@ -238,18 +235,18 @@ namespace Osu.Cof.Organon
                                 if (RD <= RDCC || QMDP > QMDA)
                                 {
                                     // NO ADDITIONAL MORTALITY NECESSARY
-                                    for (int I = 0; I < stand.TreeRecordsInUse; ++I)
+                                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                                     {
-                                        float CR = TDATAR[I, 2];
+                                        float CR = stand.CrownRatio[treeIndex];
                                         float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-                                        float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
-                                        float PS = (float)Math.Pow(1.0 - XPM, POW[I]);
+                                        float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
+                                        float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                                         float PM = 1.0F - PS * CRADJ;
                                         Debug.Assert(PM >= 0.0F);
-                                        Debug.Assert(PM <= 1000.0F);
+                                        Debug.Assert(PM <= 1.0F);
 
-                                        DEADEXP[I] = TDATAR[I, 3] * PM;
-                                        TDATAR[I, 3] = TDATAR[I, 3] * (1.0F - PM);
+                                        stand.DeadExpansionFactor[treeIndex] = PM * stand.LiveExpansionFactor[treeIndex];
+                                        stand.LiveExpansionFactor[treeIndex] -= stand.DeadExpansionFactor[treeIndex];
                                     }
                                 }
                                 else
@@ -262,20 +259,22 @@ namespace Osu.Cof.Organon
                                     kr1: KR1 += NK;
                                         float NAA = 0.0F;
                                         float BAAA = 0.0F;
-                                        for (int I = 0; I < stand.TreeRecordsInUse; ++I)
+                                        for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                                         {
-                                            if (TDATAR[I, 3] < 0.001F)
+                                            if (stand.LiveExpansionFactor[treeIndex] < 0.001F)
                                             {
                                                 continue;
                                             }
 
-                                            float CR = TDATAR[I, 2];
+                                            float CR = stand.CrownRatio[treeIndex];
                                             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-                                            float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[I])));
-                                            float PS = (float)Math.Pow(1.0 - XPM, POW[I]);
+                                            float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
+                                            float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
-                                            NAA += TDATAR[I, 3] * (1.0F - PM);
-                                            BAAA += KB * (float)Math.Pow(TDATAR[I, 0] + GROWTH[I, 1], 2.0) * TDATAR[I, 3] * (1.0F - PM);
+
+                                            float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                                            NAA += expansionFactor * (1.0F - PM);
+                                            BAAA += KB * (float)Math.Pow(stand.Dbh[treeIndex] + stand.DbhGrowth[treeIndex], 2.0) * expansionFactor * (1.0F - PM);
                                         }
                                         QMDA = (float)Math.Sqrt(BAAA / (KB * NAA));
                                         if (IND == 0)
@@ -302,25 +301,26 @@ namespace Osu.Cof.Organon
                                             goto kr1;
                                         }
                                     }
-                                    for (int I = 0; I < stand.TreeRecordsInUse; ++I)
+
+                                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                                     {
-                                        if (TDATAR[I, 3] <= 0.0F)
+                                        if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
                                         {
-                                            DEADEXP[I] = 0.0F;
-                                            TDATAR[I, 3] = 0.0F;
+                                            stand.DeadExpansionFactor[treeIndex] = 0.0F;
+                                            stand.LiveExpansionFactor[treeIndex] = 0.0F;
                                         }
                                         else
                                         {
-                                            float CR = TDATAR[I, 2];
+                                            float CR = stand.CrownRatio[treeIndex];
                                             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-                                            float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[I])));
-                                            float PS = (float)Math.Pow(1.0F - XPM, POW[I]);
+                                            float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
+                                            float PS = (float)Math.Pow(1.0F - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
                                             Debug.Assert(PM >= 0.0F);
-                                            Debug.Assert(PM <= 1000.0F);
+                                            Debug.Assert(PM <= 1.0F);
 
-                                            DEADEXP[I] = TDATAR[I, 3] * PM;
-                                            TDATAR[I, 3] = TDATAR[I, 3] * (1.0F - PM);
+                                            stand.DeadExpansionFactor[treeIndex] = PM * stand.LiveExpansionFactor[treeIndex];
+                                            stand.LiveExpansionFactor[treeIndex] -= stand.DeadExpansionFactor[treeIndex];
                                         }
                                     }
                                 }
@@ -331,29 +331,26 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                for (int I = 0; I < stand.TreeRecordsInUse; ++I)
+                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
-                    float CR = TDATAR[I, 2];
+                    float CR = stand.CrownRatio[treeIndex];
                     float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-                    float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[I]));
-                    float PS = (float)Math.Pow(1.0 - XPM, POW[I]);
+                    float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
+                    float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                     float PM = 1.0F - PS * CRADJ;
                     Debug.Assert(PM >= 0.0F);
-                    Debug.Assert(PM <= 1000.0F);
+                    Debug.Assert(PM <= 1.0F);
 
-                    DEADEXP[I] = TDATAR[I, 3] * PM;
-                    Debug.Assert(DEADEXP[I] >= 0.0F);
-                    Debug.Assert(DEADEXP[I] <= 1000.0F);
-
-                    TDATAR[I, 3] = TDATAR[I, 3] * (1.0F - PM);
+                    stand.DeadExpansionFactor[treeIndex] = PM * stand.LiveExpansionFactor[treeIndex];
+                    stand.LiveExpansionFactor[treeIndex] -= stand.DeadExpansionFactor[treeIndex];
                 }
             }
 
-            for (int I = 0; I < stand.TreeRecordsInUse; ++I)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                if (TDATAR[I, 3] < 0.00001F)
+                if (stand.LiveExpansionFactor[treeIndex] < 0.00001F)
                 {
-                    TDATAR[I, 3] = 0.0F;
+                    stand.LiveExpansionFactor[treeIndex] = 0.0F;
                 }
             }
         }
@@ -376,17 +373,18 @@ namespace Osu.Cof.Organon
             return (float)Math.Exp(X);
         }
 
-        private static void RAMORT(Stand stand, float RAAGE, float[,] TDATAR, float RAN, float[] PMK)
+        private static void RAMORT(Stand stand, float RAAGE, float RAN, float[] PMK)
         {
             float KB = 0.005454154F;
             float RAMORT1 = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            float treeCountAsFloat = (float)stand.TreeRecordCount;
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                FiaCode species = stand.Species[treeIndex];
                 if (species == FiaCode.AlnusRubra)
                 {
                     float PM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
-                    RAMORT1 += TDATAR[treeIndex, 3] * PM;
+                    RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
                 }
             }
 
@@ -403,9 +401,9 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
-                    FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                    FiaCode species = stand.Species[treeIndex];
                     if (species == FiaCode.AlnusRubra)
                     {
                         PMK[treeIndex] = 1000.0F;
@@ -422,13 +420,13 @@ namespace Osu.Cof.Organon
                     float NK = 10.0F / (float)Math.Pow(10.0, KK);
                 kr1: KR1 += NK;
                     RAMORT1 = 0.0F;
-                    for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                     {
-                        FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species]; 
+                        FiaCode species = stand.Species[treeIndex]; 
                         if (species == FiaCode.AlnusRubra)
                         {
                             float PM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
-                            RAMORT1 += TDATAR[treeIndex, 3] * PM;
+                            RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
                         }
                     }
                     if (RAMORT1 > RAMORT2)
@@ -440,9 +438,9 @@ namespace Osu.Cof.Organon
                         goto kr1;
                     }
                 }
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
-                    FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                    FiaCode species = stand.Species[treeIndex];
                     if (species == FiaCode.AlnusRubra)
                     {
                         PMK[treeIndex] = KR1 + PMK[treeIndex];
@@ -840,11 +838,9 @@ namespace Osu.Cof.Organon
         /// Computes old growth index?
         /// </summary>
         /// <param name="stand">Stand data.</param>
-        /// <param name="TDATAR">Tree data.</param>
         /// <param name="GROWTH">Tree data.</param>
-        /// <param name="DEADEXP">Tree data.</param>
         /// <param name="XIND">Zero or minus one, usually zero.</param>
-        /// <param name="OG"></param>
+        /// <param name="OG">Old growth indicator.</param>
         /// <remarks>
         /// XIND
         ///    0.0: NOT ADD GROWTH VALUES OR MORTALITY VALUES
@@ -852,7 +848,7 @@ namespace Osu.Cof.Organon
         ///    1.0: ADD GROWTH VALUES AND SUBTRACT MORTALITY VALUES
         /// </remarks>
         // BUGBUG: supports only to 98 DBH
-        public static void OldGro(Stand stand, float[,] TDATAR, float[,] GROWTH, float[] DEADEXP, float XIND, out float OG)
+        public static void OldGro(Stand stand, float XIND, out float OG)
         {
             float[] HTCL = new float[100];
             float[] DCL = new float[100];
@@ -863,24 +859,26 @@ namespace Osu.Cof.Organon
                 DCL[I] = 0.0F;
                 TRCL[I] = 0.0F;
             }
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+
+            float treeCountAsFloat = (float)stand.TreeRecordCount;
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 if (stand.IsBigSixSpecies(treeIndex))
                 {
-                    float HT = TDATAR[treeIndex, 1] + XIND * GROWTH[treeIndex, 0];
-                    float DBH = TDATAR[treeIndex, 0] + XIND * GROWTH[treeIndex, 1];
-                    float EXPAN = TDATAR[treeIndex, 3] - XIND * DEADEXP[treeIndex];
-                    Debug.Assert(EXPAN >= 0.0F);
-                    Debug.Assert(EXPAN <= 1000.0F);
+                    float heightInFeet = stand.Height[treeIndex] + XIND * stand.HeightGrowth[treeIndex];
+                    float dbhInInches = stand.Dbh[treeIndex] + XIND * stand.DbhGrowth[treeIndex];
+                    float expansionFactor = (stand.LiveExpansionFactor[treeIndex] - XIND * stand.DeadExpansionFactor[treeIndex]) / treeCountAsFloat;
+                    Debug.Assert(expansionFactor >= 0.0F);
+                    Debug.Assert(expansionFactor <= 1000.0F);
 
-                    int ID = (int)DBH + 1;
+                    int ID = (int)dbhInInches + 1;
                     if (ID > 99)
                     {
                         ID = 99;
                     }
-                    HTCL[ID] = HTCL[ID] + HT * EXPAN;
-                    DCL[ID] = DCL[ID] + DBH * EXPAN;
-                    TRCL[ID] = TRCL[ID] + EXPAN;
+                    HTCL[ID] = HTCL[ID] + heightInFeet * expansionFactor;
+                    DCL[ID] = DCL[ID] + dbhInInches * expansionFactor;
+                    TRCL[ID] = TRCL[ID] + expansionFactor;
                 }
             }
 

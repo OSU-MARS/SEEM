@@ -16,17 +16,8 @@ namespace Osu.Cof.Organon
         /// <param name="BABT"></param>
         /// <param name="BART"></param>
         /// <param name="YST"></param>
-        /// <param name="DGRO"></param>
-        /// <param name="HGRO"></param>
-        /// <param name="CRCHNG"></param>
-        /// <param name="NTREES2"></param>
-        /// <param name="DBH2"></param>
-        /// <param name="HT2"></param>
-        /// <param name="CR2"></param>
-        /// <param name="EXPAN2"></param>
         public static void EXECUTE(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, 
-                                   float BABT, float[] BART, float[] YST, float[] DGRO, float[] HGRO, float[] CRCHNG, 
-                                   out int NTREES2, float[] DBH2, float[] HT2, float[] CR2, float[] EXPAN2)
+                                   float BABT, float[] BART, float[] YST)
         {
             // BUGBUG: simulationStep largely duplicates stand age
             EDIT(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int BNXT);
@@ -38,49 +29,6 @@ namespace Osu.Cof.Organon
             if (configuration.Fertilizer && (YSF[0] == (float)simulationYear))
             {
                 FCYCLE = 1;
-            }
-
-            bool POST = false;
-            if (configuration.Thin && (YST[0] == (float)simulationYear))
-            {
-                TCYCLE = 1;
-                POST = true;
-            }
-
-            if (DBH2.Length != stand.TreeRecordsInUse)
-            {
-                throw new ArgumentOutOfRangeException(nameof(DBH2));
-            }
-            if (HT2.Length != stand.TreeRecordsInUse)
-            {
-                throw new ArgumentOutOfRangeException(nameof(HT2));
-            }
-            if (CR2.Length != stand.TreeRecordsInUse)
-            {
-                throw new ArgumentOutOfRangeException(nameof(CR2));
-            }
-            if (EXPAN2.Length != stand.TreeRecordsInUse)
-            {
-                throw new ArgumentOutOfRangeException(nameof(EXPAN2));
-            }
-
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
-            {
-                DBH2[treeIndex] = 0.0F;
-                HT2[treeIndex] = 0.0F;
-                CR2[treeIndex] = 0.0F;
-                EXPAN2[treeIndex] = 0.0F;
-            }
-
-            float[,] GROWTH = new float[stand.TreeRecordsInUse, 4];
-            float[] DEADEXP = new float[stand.TreeRecordsInUse];
-            float[,] TDATAR = new float[stand.TreeRecordsInUse, 8];
-            for (int I = 0; I < stand.TreeRecordsInUse; ++I)
-            {
-                TDATAR[I, 0] = stand.Float[I, Constant.TreeIndex.Float.DbhInInches];
-                TDATAR[I, 1] = stand.Float[I, Constant.TreeIndex.Float.HeightInFeet];
-                TDATAR[I, 2] = stand.Float[I, Constant.TreeIndex.Float.CrownRatio];
-                TDATAR[I, 3] = stand.Float[I, Constant.TreeIndex.Float.ExpansionFactor];
             }
 
             float[,] CALIB = new float[18, 6];
@@ -123,77 +71,63 @@ namespace Osu.Cof.Organon
                 YT[I] = YST[I];
             }
 
-            // shift expansion factors to stand level from sample level
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
-            {
-                TDATAR[treeIndex, 3] = TDATAR[treeIndex, 3] / (float)stand.TreeRecordsInUse;
-                stand.MGExpansionFactor[treeIndex] = stand.MGExpansionFactor[treeIndex] / (float)stand.TreeRecordsInUse;
-                TDATAR[treeIndex, 4] = TDATAR[treeIndex, 3];
-                TDATAR[treeIndex, 5] = TDATAR[treeIndex, 2];
-            }
-
             // find red alder site index for natural (DOUG? non-plantation?) stands
             // BUGBUG heightOfTallestRedAlderInFeet, RASI, and RAAGE not initialized in Fortran
             float heightOfTallestRedAlderInFeet = 0.0F;
-            float RASI = 0.0F;
+            float redAlderSiteIndex = 0.0F;
             if ((configuration.Variant == Variant.Nwo) || (configuration.Variant == Variant.Swo))
             {
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
-                    if (((FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species] == FiaCode.AlnusRubra))
+                    if (stand.Species[treeIndex] == FiaCode.AlnusRubra)
                     {
-                        float alderHeightInFeet = TDATAR[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                        float alderHeightInFeet = stand.Height[treeIndex];
                         if (alderHeightInFeet > heightOfTallestRedAlderInFeet)
                         {
                             heightOfTallestRedAlderInFeet = alderHeightInFeet;
                         }
                     }
                 }
-                RASI = Stats.ConiferToRedAlderSiteIndex(stand.PrimarySiteIndex);
+                redAlderSiteIndex = Stats.ConiferToRedAlderSiteIndex(stand.PrimarySiteIndex);
             }
 
             // CALCULATE RED ALDER AGE FOR NATURAL STANDS
             // BUGBUG RAAGE not initialized for MAXRAH <= 0.0 in Fortran code
-            float RAAGE = 0.0F;
+            float redAlderAge = 0.0F;
             if (heightOfTallestRedAlderInFeet > 0.0F)
             {
-                RedAlder.RAGEA(heightOfTallestRedAlderInFeet, RASI, out RAAGE);
+                RedAlder.RAGEA(heightOfTallestRedAlderInFeet, redAlderSiteIndex, out redAlderAge);
             }
-            if (RAAGE < 0.0F)
+            if (redAlderAge < 0.0F)
             {
-                RAAGE = 55.0F;
-                Stats.RASITE(heightOfTallestRedAlderInFeet, RAAGE, out RASI);
+                redAlderAge = 55.0F;
+                Stats.RASITE(heightOfTallestRedAlderInFeet, redAlderAge, out redAlderSiteIndex);
             }
-            if (RAAGE > 55.0F)
+            if (redAlderAge > 55.0F)
             {
-                RAAGE = 55.0F;
+                redAlderAge = 55.0F;
             }
 
             // CALCULATE DENSITY VARIABLES AT SOG
+
             float[] BAL1 = new float[500];
             float[] BALL1 = new float[51];
             float[] CCFL1 = new float[500];
             float[] CCFLL1 = new float[51];
-            Stats.SSTATS(configuration.Variant, stand, TDATAR, out float SBA1, out float _, out float _, BAL1, BALL1, CCFL1, CCFLL1);
+            Stats.SSTATS(configuration.Variant, stand, out float SBA1, out float _, out float _, BAL1, BALL1, CCFL1, CCFLL1);
 
             // CALCULATE CCH AND CROWN CLOSURE AT SOG
+            // shift expansion factors to stand level from sample level
             float[] CCH = new float[41];
-            CrownGrowth.CRNCLO(configuration.Variant, stand, TDATAR, CCH, out float _);
+            CrownGrowth.CRNCLO(configuration.Variant, stand, CCH, out float _);
             float OLD = 0.0F;
-            for (int I = 0; I < stand.TreeRecordsInUse; ++I)
-            {
-                TDATAR[I, 7] = TDATAR[I, 3];
-                TDATAR[I, 6] = TDATAR[I, 2];
-            }
-
             float[] CCFLL2 = new float[51];
             float[] CCFL2 = new float[500];
             float[] BALL2 = new float[51];
             float[] BAL2 = new float[500];
-            TreeGrowth.GROW(ref simulationStep, configuration, stand, TDATAR, DEADEXP, POST, NSPN, ref TCYCLE, ref FCYCLE, 
+            TreeGrowth.GROW(ref simulationStep, configuration, stand, NSPN, ref TCYCLE, ref FCYCLE, 
                             SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART,
-                            YT, GROWTH, CCH, ref OLD, RAAGE, RASI, CCFLL1, CCFL1, CCFLL2, CCFL2, BALL2, BAL2);
-            NTREES2 = stand.TreeRecordsInUse;
+                            YT, CCH, ref OLD, redAlderAge, redAlderSiteIndex, CCFLL1, CCFL1, CCFLL2, CCFL2, BALL2, BAL2);
 
             if (configuration.IsEvenAge == false)
             {
@@ -226,21 +160,6 @@ namespace Osu.Cof.Organon
                     stand.Warnings.TreesOld = true;
                 }
             }
-
-            for (int treeIndex = 0; treeIndex < NTREES2; ++treeIndex)
-            {
-                // needed for trees added by tripling but should have no effect for existing trees
-                stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species] = stand.Integer[treeIndex, 0];
-                stand.MGExpansionFactor[treeIndex] = 0.0F; // BUGBUG: MGExpansionFactor is simulation step state and shouldn't be part of the stand object
-                DBH2[treeIndex] = TDATAR[treeIndex, 0];
-                HT2[treeIndex] = TDATAR[treeIndex, 1];
-                CR2[treeIndex] = TDATAR[treeIndex, 2];
-                EXPAN2[treeIndex] = TDATAR[treeIndex, 3] * (float)stand.TreeRecordsInUse;
-                HGRO[treeIndex] = GROWTH[treeIndex, 0];
-                DGRO[treeIndex] = GROWTH[treeIndex, 1];
-                stand.DeadExpansionFactor[treeIndex] = DEADEXP[treeIndex] * (float)stand.TreeRecordsInUse;
-                CRCHNG[treeIndex] = TDATAR[treeIndex, 2] - TDATAR[treeIndex, 6];
-            }
         }
 
         /// <summary>
@@ -260,9 +179,9 @@ namespace Osu.Cof.Organon
         private static void EDIT(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
                                  out int NSPN, out int BIG6, out int BNXT)
         {
-            if (stand.TreeRecordsInUse < 1)
+            if (stand.TreeRecordCount < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.TreeRecordsInUse));
+                throw new ArgumentOutOfRangeException(nameof(stand.TreeRecordCount));
             }
             if (Enum.IsDefined(typeof(Variant), configuration.Variant) == false)
             {
@@ -360,25 +279,6 @@ namespace Osu.Cof.Organon
                     {
                         throw new ArgumentException();
                     }
-                }
-            }
-
-            // BUGBUG: duplicates code in Execute()
-            int simulationYear = 5 * simulationStep;
-            if (configuration.Thin && (YST[0] == simulationYear))
-            {
-                bool thinningError = true;
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
-                {
-                    if (stand.MGExpansionFactor[treeIndex] > 0.0F)
-                    {
-                        thinningError = false;
-                        break;
-                    }
-                }
-                if (thinningError)
-                {
-                    throw new ArgumentException();
                 }
             }
 
@@ -504,29 +404,29 @@ namespace Osu.Cof.Organon
             }
 
             // check tree records for errors
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                int speciesCode = stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
-                if (StandGrowth.IsSpeciesSupported(configuration.Variant, speciesCode) == false)
+                FiaCode species = stand.Species[treeIndex];
+                if (StandGrowth.IsSpeciesSupported(configuration.Variant, species) == false)
                 {
-                    throw new NotSupportedException(String.Format("Species {0} of tree {1} is not supported by variant {2}.", speciesCode, treeIndex, configuration.Variant));
+                    throw new NotSupportedException(String.Format("Species {0} of tree {1} is not supported by variant {2}.", species, treeIndex, configuration.Variant));
                 }
-                float dbhInInches = stand.Float[treeIndex, Constant.TreeIndex.Float.DbhInInches];
+                float dbhInInches = stand.Dbh[treeIndex];
                 if (dbhInInches < 0.09F)
                 {
                     throw new NotSupportedException(String.Format("Diameter of tree {0} is less than 0.1 inches.", treeIndex));
                 }
-                float heightInFeet = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                float heightInFeet = stand.Height[treeIndex];
                 if (heightInFeet < 4.5F)
                 {
                     throw new NotSupportedException(String.Format("Height of tree {0} is less than 4.5 feet.", treeIndex));
                 }
-                float crownRatio = stand.Float[treeIndex, Constant.TreeIndex.Float.CrownRatio];
+                float crownRatio = stand.CrownRatio[treeIndex];
                 if ((crownRatio < 0.0F) || (crownRatio > 1.0F))
                 {
                     throw new NotSupportedException(String.Format("Crown ratio of tree {0} is not between 0 and 1.", treeIndex));
                 }
-                float expansionFactor = stand.Float[treeIndex, Constant.TreeIndex.Float.ExpansionFactor];
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 if (expansionFactor < 0.0F)
                 {
                     throw new NotSupportedException(String.Format("Expansion factor of tree {0} is negative.", treeIndex));
@@ -542,56 +442,57 @@ namespace Osu.Cof.Organon
             float MAXIC = 0.0F;
             float MAXRA = 0.0F;
             int IIB = stand.MaxBigSixSpeciesGroupIndex;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                int speciesCode = stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
-                float heightInFeet = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                FiaCode speciesCode = stand.Species[treeIndex];
+                float heightInFeet = stand.Height[treeIndex];
                 switch (configuration.Variant)
                 {
                     // SWO BIG SIX
                     case Variant.Swo:
-                        if ((speciesCode == 122) && (heightInFeet > MAXPP))
+                        if ((speciesCode == FiaCode.PinusPonderosa) && (heightInFeet > MAXPP))
                         {
                             MAXPP = heightInFeet;
                         }
-                        else if ((speciesCode == 81) && (heightInFeet > MAXIC))
+                        else if ((speciesCode == FiaCode.CalocedrusDecurrens) && (heightInFeet > MAXIC))
                         {
                             MAXIC = heightInFeet;
                         }
-                        else if ((speciesCode == 202) && (heightInFeet > MAXDF))
+                        else if ((speciesCode == FiaCode.PseudotsugaMenziesii) && (heightInFeet > MAXDF))
                         {
                             MAXDF = heightInFeet;
                         }
-                        else if ((speciesCode == 15) && (heightInFeet > MAXDF))
+                        // BUGBUG: why are true firs and sugar pine being assigned to Douglas-fir max height?
+                        else if ((speciesCode == FiaCode.AbiesConcolor) && (heightInFeet > MAXDF))
                         {
                             MAXDF = heightInFeet;
                         }
-                        else if ((speciesCode == 17) && (heightInFeet > MAXDF))
+                        else if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > MAXDF))
                         {
                             MAXDF = heightInFeet;
                         }
-                        else if ((speciesCode == 117) && (heightInFeet > MAXDF))
+                        else if ((speciesCode == FiaCode.PinusLambertiana) && (heightInFeet > MAXDF))
                         {
                             MAXDF = heightInFeet;
                         }
                         break;
                     case Variant.Nwo:
                     case Variant.Smc:
-                        if ((speciesCode == 17) && (heightInFeet > MAXGF))
+                        if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > MAXGF))
                         {
                             MAXGF = heightInFeet;
                         }
-                        else if ((speciesCode == 202) && (heightInFeet > MAXDF))
+                        else if ((speciesCode == FiaCode.PseudotsugaMenziesii) && (heightInFeet > MAXDF))
                         {
                             MAXDF = heightInFeet;
                         }
-                        else if ((speciesCode == 263) && (heightInFeet > MAXWH))
+                        else if ((speciesCode == FiaCode.TsugaHeterophylla) && (heightInFeet > MAXWH))
                         {
                             MAXWH = heightInFeet;
                         }
                         break;
                     case Variant.Rap:
-                        if ((speciesCode == 351) && (heightInFeet > MAXRA))
+                        if ((speciesCode == FiaCode.AlnusRubra) && (heightInFeet > MAXRA))
                         {
                             MAXRA = heightInFeet;
                         }
@@ -599,7 +500,7 @@ namespace Osu.Cof.Organon
                 }
 
                 int speciesGroup = GetSpeciesGroup(configuration.Variant, speciesCode);
-                stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup] = speciesGroup;
+                stand.SpeciesGroup[treeIndex] = speciesGroup;
                 if (configuration.Variant >= Variant.Rap)
                 {
                     // BUGBUG: encapsulation violation - move this into GetSpeciesGroup()
@@ -608,7 +509,7 @@ namespace Osu.Cof.Organon
                 if (speciesGroup < IIB)
                 {
                     ++BIG6;
-                    if (stand.Float[treeIndex, Constant.TreeIndex.Float.ExpansionFactor] < 0.0F)
+                    if (stand.LiveExpansionFactor[treeIndex] < 0.0F)
                     {
                         ++BNXT;
                     }
@@ -619,26 +520,26 @@ namespace Osu.Cof.Organon
             float standBasalArea = 0.0F;
             float standBigSixBasalArea = 0.0F;
             float standHardwoodBasalArea = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float expansionFactor = stand.Float[treeIndex, Constant.TreeIndex.Float.ExpansionFactor];
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 if (expansionFactor < 0.0F)
                 {
                     continue;
                 }
 
-                float dbhInInches = stand.Float[treeIndex, Constant.TreeIndex.Float.ExpansionFactor];
+                float dbhInInches = stand.Dbh[treeIndex];
                 float basalArea = expansionFactor * dbhInInches * dbhInInches;
                 standBasalArea += basalArea;
 
-                int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
                 if (speciesGroup < IIB)
                 {
                     standBigSixBasalArea += basalArea;
                 }
                 if (configuration.Variant == Variant.Swo)
                 {
-                    FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                    FiaCode species = stand.Species[treeIndex];
                     if ((species == FiaCode.ArbutusMenziesii) || (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla) || (species == FiaCode.QuercusKelloggii))
                     {
                         standHardwoodBasalArea += basalArea;
@@ -809,7 +710,7 @@ namespace Osu.Cof.Organon
             {
                 stand.Warnings.OtherSpeciesBasalAreaTooHigh = true;
             }
-            if (stand.TreeRecordsInUse < 50)
+            if (stand.TreeRecordCount < 50)
             {
                 stand.Warnings.LessThan50TreeRecords = true;
             }
@@ -888,9 +789,9 @@ namespace Osu.Cof.Organon
             }
 
             float B1 = -0.04484724F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                FiaCode species = stand.Species[treeIndex];
                 float B0;
                 switch (species)
                 {
@@ -927,9 +828,9 @@ namespace Osu.Cof.Organon
                         break;
                 }
 
-                float dbhInInches = stand.Float[treeIndex, Constant.TreeIndex.Float.DbhInInches];
+                float dbhInInches = stand.Dbh[treeIndex];
                 float potentialHeight = 4.5F + B0 * dbhInInches / (1.0F - B1 * dbhInInches);
-                float heightInFeet = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                float heightInFeet = stand.Height[treeIndex];
                 if (heightInFeet > potentialHeight)
                 {
                     stand.TreeHeightWarning[treeIndex] = true;
@@ -937,101 +838,45 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static bool IsSpeciesSupported(Variant variant, int speciesCode)
+        private static int GetSpeciesGroup(Variant variant, FiaCode species)
         {
-            // check if species FIA code is valid for tree I
-            int[] SCODE1 = { 202, 15, 17, 122, 117, 81, 263, 242, 231, 361, 431, 631, 805, 312, 815, 818, 351, 492, 920 };
-            int[] SCODE2 = { 202, 17, 263, 242, 231, 361, 312, 815, 351, 492, 920 };
-            int[] SCODE3 = { 351, 202, 263, 242, 312, 492, 920 };
-
-            int speciesIndex;
             switch (variant)
             {
-                case Variant.Swo:
-                    speciesIndex = Array.IndexOf(SCODE1, speciesCode);
-                    break;
                 case Variant.Nwo:
                 case Variant.Smc:
-                    speciesIndex = Array.IndexOf(SCODE2, speciesCode);
-                    break;
+                    return Constant.NwoSmcSpecies.IndexOf(species);
                 case Variant.Rap:
-                    speciesIndex = Array.IndexOf(SCODE3, speciesCode);
-                    break;
+                    return Constant.RapSpecies.IndexOf(species);
+                case Variant.Swo:
+                    int speciesGroup = Constant.SwoSpecies.IndexOf(species);
+                    if (speciesGroup > 1)
+                    {
+                        --speciesGroup;
+                    }
+                    return speciesGroup;
                 default:
                     throw VariantExtensions.CreateUnhandledVariantException(variant);
             }
-
-            return speciesIndex >= 0;
         }
 
-        private static int GetSpeciesGroup(Variant variant, int speciesCode)
+        private static bool IsSpeciesSupported(Variant variant, FiaCode speciesCode)
         {
-            // (DOUG? Why are species assigned to a given group and why does group numbering vary with version? The "group" here is only
-            //    202 + 15 for NWO, which is PSME and ABCO.)
-            // DETERMINE SPECIES GROUP FOR EACH TREE IN TREE LIST 
-            // I = TREE INDICATOR
-            // BUGBUG: doesn't iterate over length of SCODE arrays
-            int[] SCODE1 = { 202, 15, 17, 122, 117, 81, 263, 242, 231, 361, 431, 631, 805, 312, 815, 818, 351, 492, 920 };
-            int[] SCODE2 = { 202, 17, 263, 242, 231, 361, 312, 815, 351, 492, 920 };
-            int[] SCODE3 = { 351, 202, 263, 242, 312, 492, 920 };
-            int ISX = -9999;
-            switch (variant)
-            {
-                case Variant.Swo:
-                    for (int J = 0; J < 19; ++J)
-                    {
-                        if (speciesCode == SCODE1[J])
-                        {
-                            ISX = J;
-                            if (ISX > 1)
-                            {
-                                --ISX;
-                            }
-                            Debug.Assert(ISX < SCODE1.Length - 1);
-                            break;
-                        }
-                    }
-                    break;
-                case Variant.Nwo:
-                case Variant.Smc:
-                    for (int J = 0; J < 11; ++J)
-                    {
-                        if (speciesCode == SCODE2[J])
-                        {
-                            ISX = J;
-                            Debug.Assert(ISX < SCODE2.Length);
-                            break;
-                        }
-                    }
-                    break;
-                case Variant.Rap:
-                    for (int J = 0; J < 7; ++J)
-                    {
-                        if (speciesCode == SCODE3[J])
-                        {
-                            ISX = J;
-                            Debug.Assert(ISX < SCODE3.Length);
-                            break;
-                        }
-                    }
-                    break;
-            }
-
-            return ISX;
+            int speciesGroup = StandGrowth.GetSpeciesGroup(variant, speciesCode);
+            return speciesGroup >= 0;
         }
 
         private static void CKAGE(OrganonConfiguration configuration, Stand stand, out float OLD)
         {
             OLD = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float treeHeightInFeet = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                float treeHeightInFeet = stand.Height[treeIndex];
                 if (treeHeightInFeet < 4.5F)
                 {
                     continue;
                 }
 
-                int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
                 float growthEffectiveAge = 0.0F; // BUGBUG not intitialized on all Fortran paths
                 float IDXAGE;
                 float SITE;
@@ -1113,23 +958,23 @@ namespace Osu.Cof.Organon
         public static void CROWN_CLOSURE(Variant variant, Stand stand, int NPTS, out float CC)
         {
             float[] CCH = new float[41];
-            CCH[40] = stand.Float[0, Constant.TreeIndex.Float.HeightInFeet];
-            for (int treeIndex = 1; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            CCH[40] = stand.Height[0];
+            for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float heightInFeet = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                float heightInFeet = stand.Height[treeIndex];
                 if (heightInFeet > CCH[40])
                 {
                     CCH[40] = heightInFeet;
                 }
             }
 
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
-                float expansionFactor = stand.Float[treeIndex, Constant.TreeIndex.Float.ExpansionFactor];
-                float dbhInInches = stand.Float[treeIndex, Constant.TreeIndex.Float.DbhInInches];
-                float heightInFeet  = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
-                float crownRatio = stand.Float[treeIndex, Constant.TreeIndex.Float.CrownRatio];
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
+                float dbhInInches = stand.Dbh[treeIndex];
+                float heightInFeet  = stand.Height[treeIndex];
+                float crownRatio = stand.CrownRatio[treeIndex];
 
                 float CL = crownRatio * heightInFeet;
                 float HCB = heightInFeet - CL;
@@ -1217,16 +1062,16 @@ namespace Osu.Cof.Organon
             SI_1 = SITE_1 - 4.5F;
             float SI_2 = SITE_2 - 4.5F;
             // BUGBUG no check that NINGRO <= stand.TreeRecordsInUse
-            for (int treeIndex = stand.TreeRecordsInUse - NINGRO; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            for (int treeIndex = stand.TreeRecordCount - NINGRO; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float heightInFeet = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                float heightInFeet = stand.Height[treeIndex];
                 if (heightInFeet != 0.0F)
                 {
                     continue;
                 }
 
-                int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
-                float dbhInInches = stand.Float[treeIndex, Constant.TreeIndex.Float.DbhInInches];
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                float dbhInInches = stand.Dbh[treeIndex];
                 float RHT;
                 switch (variant)
                 {
@@ -1245,38 +1090,27 @@ namespace Osu.Cof.Organon
                     default:
                         throw new NotSupportedException();
                 }
-                stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet] = 4.5F + ACALIB[speciesGroup, 0] * (RHT - 4.5F);
+                stand.Height[treeIndex] = 4.5F + ACALIB[speciesGroup, 0] * (RHT - 4.5F);
             }
 
-            float[] DEADEXP = new float[stand.TreeRecordsInUse];
-            float[,] GROWTH = new float[stand.TreeRecordsInUse, 4];
-            float[,] TDATAR = new float[stand.TreeRecordsInUse, 4];
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
-            {
-                TDATAR[treeIndex, 0] = stand.Float[treeIndex, Constant.TreeIndex.Float.DbhInInches];
-                TDATAR[treeIndex, 1] = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
-                TDATAR[treeIndex, 2] = stand.Float[treeIndex, Constant.TreeIndex.Float.CrownRatio];
-                TDATAR[treeIndex, 3] = stand.Float[treeIndex, Constant.TreeIndex.Float.ExpansionFactor];
-            }
-
-            Mortality.OldGro(stand, TDATAR, GROWTH, DEADEXP, 0.0F, out float OG);
+            Mortality.OldGro(stand, 0.0F, out float OG);
             float[] BAL = new float[500];
             float[] BALL = new float[51];
             float[] CCFL = new float[500];
             float[] CCFLL = new float[51];
-            Stats.SSTATS(variant, stand, TDATAR, out float SBA, out float _, out float _, BAL, BALL, CCFL, CCFLL);
-            for (int treeIndex = stand.TreeRecordsInUse - NINGRO; treeIndex < stand.TreeRecordsInUse; ++treeIndex)
+            Stats.SSTATS(variant, stand, out float SBA, out float _, out float _, BAL, BALL, CCFL, CCFLL);
+            for (int treeIndex = stand.TreeRecordCount - NINGRO; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float crownRatio = stand.Float[treeIndex, Constant.TreeIndex.Float.CrownRatio];
+                float crownRatio = stand.CrownRatio[treeIndex];
                 if (crownRatio != 0.0F)
                 {
                     continue;
                 }
 
                 // CALCULATE HCB
-                int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
-                float dbhInInches = stand.Float[treeIndex, Constant.TreeIndex.Float.DbhInInches];
-                float heightInFeet = stand.Float[treeIndex, Constant.TreeIndex.Float.HeightInFeet];
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                float dbhInInches = stand.Dbh[treeIndex];
+                float heightInFeet = stand.Height[treeIndex];
                 CrownGrowth.GET_CCFL(dbhInInches, CCFLL, CCFL, out float SCCFL);
                 float HCB;
                 switch (variant)
@@ -1304,7 +1138,7 @@ namespace Osu.Cof.Organon
                 {
                     HCB = 0.95F * heightInFeet;
                 }
-                stand.Float[treeIndex, Constant.TreeIndex.Float.CrownRatio] = (1.0F - (HCB / heightInFeet)) * ACALIB[speciesGroup, 1];
+                stand.CrownRatio[treeIndex] = (1.0F - (HCB / heightInFeet)) * ACALIB[speciesGroup, 1];
             }
         }
     }

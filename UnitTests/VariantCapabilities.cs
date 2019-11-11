@@ -12,15 +12,15 @@
             {
                 case Variant.Nwo:
                 case Variant.Smc:
-                    this.SpeciesGroupCount = TestConstant.NwoSmcSpeciesCodes.Count;
+                    this.SpeciesGroupCount = Constant.NwoSmcSpecies.Count;
                     this.TimeStepInYears = 5;
                     break;
                 case Variant.Rap:
-                    this.SpeciesGroupCount = TestConstant.RapSpeciesCodes.Count;
+                    this.SpeciesGroupCount = Constant.RapSpecies.Count;
                     this.TimeStepInYears = 1;
                     break;
                 case Variant.Swo:
-                    this.SpeciesGroupCount = TestConstant.SwoSpeciesCodes.Count - 1;
+                    this.SpeciesGroupCount = Constant.SwoSpecies.Count - 1;
                     this.TimeStepInYears = 5;
                     break;
                 default:

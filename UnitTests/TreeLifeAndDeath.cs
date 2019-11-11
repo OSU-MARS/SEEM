@@ -15,37 +15,19 @@ namespace Osu.Cof.Organon.Test
             this.TotalHeightGrowthInFeet = new float[treeRecordCount];
         }
 
-        public void Accumulate(float[] dbhInInchesAtStartOfCycle, float[] dbhInInchesAtEndOfCycle,
-                               float[] heightInFeetAtStartOfCycle, float[] heightInFeetAtEndOfCycle,
-                               float[] deadExpansionFactorAtEndOfCycle)
+        public void AccumulateGrowthAndMortality(Stand stand)
         {
             int treeRecords = this.TotalDbhGrowthInInches.Length;
-            if (dbhInInchesAtStartOfCycle.Length != treeRecords)
+            if (stand.TreeRecordCount != treeRecords)
             {
-                throw new ArgumentOutOfRangeException(nameof(dbhInInchesAtStartOfCycle));
-            }
-            if (dbhInInchesAtEndOfCycle.Length != treeRecords)
-            {
-                throw new ArgumentOutOfRangeException(nameof(dbhInInchesAtEndOfCycle));
-            }
-            if (heightInFeetAtStartOfCycle.Length != treeRecords)
-            {
-                throw new ArgumentOutOfRangeException(nameof(heightInFeetAtStartOfCycle));
-            }
-            if (heightInFeetAtEndOfCycle.Length != treeRecords)
-            {
-                throw new ArgumentOutOfRangeException(nameof(heightInFeetAtEndOfCycle));
-            }
-            if (deadExpansionFactorAtEndOfCycle.Length != treeRecords)
-            {
-                throw new ArgumentOutOfRangeException(nameof(deadExpansionFactorAtEndOfCycle));
+                throw new ArgumentOutOfRangeException(nameof(stand));
             }
 
             for (int treeIndex = 0; treeIndex < treeRecords; ++treeIndex)
             {
-                this.TotalDbhGrowthInInches[treeIndex] += (dbhInInchesAtEndOfCycle[treeIndex] - dbhInInchesAtStartOfCycle[treeIndex]);
-                this.TotalHeightGrowthInFeet[treeIndex] += (heightInFeetAtEndOfCycle[treeIndex] - heightInFeetAtStartOfCycle[treeIndex]);
-                this.TotalDeadExpansionFactor[treeIndex] += deadExpansionFactorAtEndOfCycle[treeIndex];
+                this.TotalDbhGrowthInInches[treeIndex] += stand.DbhGrowth[treeIndex];
+                this.TotalHeightGrowthInFeet[treeIndex] += stand.HeightGrowth[treeIndex];
+                this.TotalDeadExpansionFactor[treeIndex] += stand.DeadExpansionFactor[treeIndex];
             }
         }
     }

@@ -578,7 +578,6 @@ namespace Osu.Cof.Organon
         /// <param name="variant">Organon variant.</param>
         /// <param name="simulationStep">Simulation cycle.</param>
         /// <param name="stand">Stand data.</param>
-        /// <param name="TDATAR">Tree data.</param>
         /// <param name="SI_1">Primary site index from breast height.</param>
         /// <param name="SI_2">Secondary site index from breast height.</param>
         /// <param name="CCH">Canopy height? (DOUG?)</param>
@@ -589,23 +588,22 @@ namespace Osu.Cof.Organon
         /// <param name="YT">Thinning?</param>
         /// <param name="OLD">Obsolete?</param>
         /// <param name="PDEN">(DOUG?)</param>
-        /// <param name="GROWTH">Tree data.</param>
-        public static void HTGRO1(int treeIndex, Variant variant, int simulationStep, Stand stand, float[,] TDATAR, float SI_1, float SI_2,
-                                  float[] CCH, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN, float[,] GROWTH)
+        public static void HTGRO1(int treeIndex, Variant variant, int simulationStep, Stand stand, float SI_1, float SI_2,
+                                  float[] CCH, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN)
         {
             // BUGBUG remove M and ON
             // CALCULATE 5-YEAR HEIGHT GROWTH
-            float CR = TDATAR[treeIndex, 2];
+            float CR = stand.CrownRatio[treeIndex];
 
             // FOR MAJOR SPECIES
-            int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
+            int speciesGroup = stand.SpeciesGroup[treeIndex];
             if (stand.IsBigSixSpecies(treeIndex))
             {
-                float XI = 40.0F * (TDATAR[treeIndex, 1] / CCH[40]);
+                float XI = 40.0F * (stand.Height[treeIndex] / CCH[40]);
                 int I = (int)XI + 2;
                 float XXI = (float)I - 1.0F;
                 float TCCH;
-                if (TDATAR[treeIndex, 1] >= CCH[40])
+                if (stand.Height[treeIndex] >= CCH[40])
                 {
                     TCCH = 0.0F;
                 }
@@ -622,7 +620,7 @@ namespace Osu.Cof.Organon
                 // GEAGE growth effective age in years
                 // IDXAGE index age? (DOUG?)
                 // HG height growth in feet
-                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                FiaCode species = stand.Species[treeIndex];
                 float growthEffectiveAge;
                 float IDXAGE = 0.0F; // BUGBUG: IDXAGE not initialized on all Fortran code paths
                 float HG = 0.0F; // BUGBUG: HG not initialized on all Fortran code paths
@@ -644,7 +642,7 @@ namespace Osu.Cof.Organon
                             }
                             treatAsDouglasFir = true;
                         }
-                        HS_HG(treatAsDouglasFir, siteIndexFromGround, TDATAR[treeIndex, 1], out growthEffectiveAge, out float PHTGRO);
+                        HS_HG(treatAsDouglasFir, siteIndexFromGround, stand.Height[treeIndex], out growthEffectiveAge, out float PHTGRO);
                         IDXAGE = 500.0F;
                         HG_SWO(speciesGroup, PHTGRO, CR, TCCH, out HG);
                         break;
@@ -654,13 +652,13 @@ namespace Osu.Cof.Organon
                         {
                             // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                             siteIndexFromGround = SI_2 + 4.5F;
-                            F_HG(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
+                            F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
                         }
                         else
                         {
                             // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                             siteIndexFromGround = SI_1 + 4.5F;
-                            BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
+                            BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
                         }
                         IDXAGE = 120.0F;
                         HG_NWO(speciesGroup, PHTGRO, CR, TCCH, out HG);
@@ -672,13 +670,13 @@ namespace Osu.Cof.Organon
                             // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK
                             // DOMINANT HEIGHT GROWTH
                             siteIndexFromGround = SI_2 + 4.5F;
-                            F_HG(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
+                            F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
                         }
                         else
                         {
                             // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                             siteIndexFromGround = SI_1 + 4.5F;
-                            BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
+                            BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
                         }
                         IDXAGE = 120.0F;
                         HG_SMC(speciesGroup, PHTGRO, CR, TCCH, out HG);
@@ -689,7 +687,7 @@ namespace Osu.Cof.Organon
                         {
                             // POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM(2009) RED ALDER TOP HEIGHT GROWTH
                             siteIndexFromGround = SI_1 + 4.5F;
-                            RedAlder.WHHLB_HG(siteIndexFromGround, PDEN, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out _);
+                            RedAlder.WHHLB_HG(siteIndexFromGround, PDEN, stand.Height[treeIndex], GP, out growthEffectiveAge, out _);
                         }
                         else
                         {
@@ -697,13 +695,13 @@ namespace Osu.Cof.Organon
                             {
                                 // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                                 siteIndexFromGround = -0.432F + 0.899F * (SI_2 + 4.5F);
-                                F_HG(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
+                                F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
                             }
                             else
                             {
                                 // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                                 siteIndexFromGround = SI_2 + 4.5F;
-                                BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, TDATAR[treeIndex, 1], GP, out growthEffectiveAge, out PHTGRO);
+                                BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
                             }
                             IDXAGE = 30.0F;
                             HG_RAP(speciesGroup, PHTGRO, CR, TCCH, out HG);
@@ -719,19 +717,19 @@ namespace Osu.Cof.Organon
 
                 HG_FERT(simulationStep, variant, speciesGroup, SI_1, PN, YF, out float FERTADJ);
                 HG_THIN(simulationStep, variant, speciesGroup, BABT, BART, YT, out float THINADJ);
-                GROWTH[treeIndex, 0] = HG * THINADJ * FERTADJ;
-                LIMIT(variant, species, TDATAR[treeIndex, 0], TDATAR[treeIndex, 1], GROWTH[treeIndex, 1], ref GROWTH[treeIndex, 0]);
+                stand.HeightGrowth[treeIndex] = HG * THINADJ * FERTADJ;
+                LIMIT(variant, species, stand.Dbh[treeIndex], stand.Height[treeIndex], stand.DbhGrowth[treeIndex], ref stand.HeightGrowth[treeIndex]);
             }
         }
 
-        public static void HTGRO2(int treeIndex, Variant variant, Stand stand, float[,] TDATAR, float RASI, float[,] CALIB, float[,] GROWTH)
+        public static void HTGRO2(int treeIndex, Variant variant, Stand stand, float RASI, float[,] CALIB)
         {
             // CALCULATE HEIGHT GROWTH FOR MINOR SPECIES
-            float DBH = TDATAR[treeIndex, 0];
-            int speciesGroup = stand.Integer[treeIndex, 1];
+            float DBH = stand.Dbh[treeIndex];
+            int speciesGroup = stand.SpeciesGroup[treeIndex];
             if (stand.IsBigSixSpecies(treeIndex))
             {
-                float PDBH = DBH - GROWTH[treeIndex, 1];
+                float PDBH = DBH - stand.DbhGrowth[treeIndex];
                 float PRDHT1;
                 float PRDHT2;
                 switch (variant)
@@ -757,30 +755,29 @@ namespace Osu.Cof.Organon
                 }
                 PRDHT1 = 4.5F + CALIB[speciesGroup, 0] * (PRDHT1 - 4.5F);
                 PRDHT2 = 4.5F + CALIB[speciesGroup, 0] * (PRDHT2 - 4.5F);
-                float PRDHT = (PRDHT2 / PRDHT1) * TDATAR[treeIndex, 1];
+                float PRDHT = (PRDHT2 / PRDHT1) * stand.Height[treeIndex];
 
                 // RED ALDER HEIGHT GROWTH
-                FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
+                FiaCode species = stand.Species[treeIndex];
                 if ((species == FiaCode.AlnusRubra) && (variant <= Variant.Smc))
                 {
-                    RedAlder.RAGEA(TDATAR[treeIndex, 1], RASI, out float GEARA);
+                    RedAlder.RAGEA(stand.Height[treeIndex], RASI, out float GEARA);
                     if (GEARA <= 0.0F)
                     {
-                        GROWTH[treeIndex, 0] = 0.0F;
+                        stand.HeightGrowth[treeIndex] = 0.0F;
                     }
                     else
                     {
                         RedAlder.RAH40(GEARA, RASI, out float RAH1);
                         RedAlder.RAH40(GEARA + 5.0F, RASI, out float RAH2);
                         float RAHG = RAH2 - RAH1;
-                        GROWTH[treeIndex, 0] = RAHG;
+                        stand.HeightGrowth[treeIndex] = RAHG;
                     }
                 }
                 else
                 {
-                    GROWTH[treeIndex, 0] = PRDHT - TDATAR[treeIndex, 1];
+                    stand.HeightGrowth[treeIndex] = PRDHT - stand.Height[treeIndex];
                 }
-                GROWTH[treeIndex, 2] = GROWTH[treeIndex, 2] + GROWTH[treeIndex, 0];
             }
         }
 

@@ -5,17 +5,15 @@ namespace Osu.Cof.Organon
 {
     internal class DiameterGrowth
     {
-        public static void DIAMGRO(Variant variant, int treeIndex, int simulationStep, Stand stand, float[,] TDATAR, float SI_1, float SI_2, float SBA1, float[] BALL1, 
-                                   float[] BAL1, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, float[,] GROWTH)
+        public static void DIAMGRO(Variant variant, int treeIndex, int simulationStep, Stand stand, float SI_1, float SI_2, float SBA1, float[] BALL1, 
+                                   float[] BAL1, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
         {
             // CALCULATES FIVE-YEAR DIAMETER GROWTH RATE OF THE K-TH TREE
             // CALCULATE BASAL AREA IN LARGER TREES
-            float dbhInInches = TDATAR[treeIndex, 0];
-            float crownRatio = TDATAR[treeIndex, 2];
-            FiaCode species = (FiaCode)stand.Integer[treeIndex, Constant.TreeIndex.Integer.Species];
-            int speciesGroup = stand.Integer[treeIndex, Constant.TreeIndex.Integer.SpeciesGroup];
+            float dbhInInches = stand.Dbh[treeIndex];
             GET_BAL(dbhInInches, BALL1, BAL1, out float SBAL1);
 
+            FiaCode species = stand.Species[treeIndex];
             float SITE;
             switch(variant)
             {
@@ -48,6 +46,8 @@ namespace Osu.Cof.Organon
             }
 
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED TREES
+            float crownRatio = stand.CrownRatio[treeIndex];
+            int speciesGroup = stand.SpeciesGroup[treeIndex];
             float DG;
             switch(variant)
             {
@@ -73,7 +73,7 @@ namespace Osu.Cof.Organon
             DG_THIN(species, variant, simulationStep, BABT, BART, YT, out float THINADJ);
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED OR TREATED TREES
             float DGRO = DG * CALIB[speciesGroup, 2] * FERTADJ* THINADJ;
-            GROWTH[treeIndex, 1] = DGRO;
+            stand.DbhGrowth[treeIndex] = DGRO;
         }
 
         private static void DG_NWO(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
