@@ -136,9 +136,8 @@ namespace Osu.Cof.Organon
             CC = CCH[0];
         }
 
-        public static void CrowGro(Variant variant, Stand stand, 
-                                   float[] CCFLL1, float[] CCFL1, float[] CCFLL2, float[] CCFL2, float SBA1, float SBA2, float SI_1, float SI_2,
-                                   float[,] CALIB, float[] CCH)
+        public static void CrowGro(Variant variant, Stand stand, TreeCompetition competitionBeforeGrowth, TreeCompetition competitionAfterGrowth,
+                                   float SBA1, float SBA2, float SI_1, float SI_2, float[,] CALIB, float[] CCH)
         {
             // DETERMINE 5-YR CROWN RECESSION
             Mortality.OldGro(stand, -1.0F, out float OG1);
@@ -151,7 +150,7 @@ namespace Osu.Cof.Organon
                 // CALCULATE STARTING DBH
                 float PDBH = stand.Dbh[treeIndex] - stand.DbhGrowth[treeIndex];
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
-                GET_CCFL(PDBH, CCFLL1, CCFL1, out float SCCFL1);
+                float SCCFL1 = competitionBeforeGrowth.GET_CCFL(PDBH);
                 float PCR1;
                 switch (variant)
                 {
@@ -180,7 +179,7 @@ namespace Osu.Cof.Organon
                 // CALCULATE HCB END OF GROWTH
                 float HT = stand.Height[treeIndex];
                 float DBH = stand.Dbh[treeIndex];
-                GET_CCFL(DBH, CCFLL2, CCFL2, out float SCCFL2);
+                float SCCFL2 = competitionAfterGrowth.GET_CCFL(DBH);
                 float MAXHCB;
                 float PCR2;
                 switch (variant)
@@ -453,31 +452,6 @@ namespace Osu.Cof.Organon
                 }
             }
             CW = (float)(LCW * Math.Pow(RP, (B1 + B2 * Math.Sqrt(RP) + B3 * (RATIO))));
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="DBH">Tree's diameter at breast height (inches)</param>
-        /// <param name="CCFLL1">Stand crown competitition data.</param>
-        /// <param name="CCFL1">Stand crown competitition data.</param>
-        /// <param name="CCFL">Crown competition factor for specified DBH.</param>
-        public static void GET_CCFL(float DBH, float[] CCFLL1, float[] CCFL1, out float CCFL)
-        {
-            if (DBH > 100.0F)
-            {
-                CCFL = 0.0F;
-            }
-            else if (DBH > 50.0F)
-            {
-                int K = (int)(DBH - 49.0F) - 1;
-                CCFL = CCFLL1[K];
-            }
-            else
-            {
-                int K = (int)(DBH * 10.0 + 0.5) - 1;
-                CCFL = CCFL1[K];
-            }
         }
 
         /// <summary>

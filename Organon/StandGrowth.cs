@@ -109,25 +109,15 @@ namespace Osu.Cof.Organon
             }
 
             // CALCULATE DENSITY VARIABLES AT SOG
-
-            float[] BAL1 = new float[500];
-            float[] BALL1 = new float[51];
-            float[] CCFL1 = new float[500];
-            float[] CCFLL1 = new float[51];
-            Stats.SSTATS(configuration.Variant, stand, out float SBA1, out float _, out float _, BAL1, BALL1, CCFL1, CCFLL1);
+            Stats.SSTATS(configuration.Variant, stand, out float SBA1, out float _, out float _, out TreeCompetition competitionBeforeGrowth);
 
             // CALCULATE CCH AND CROWN CLOSURE AT SOG
-            // shift expansion factors to stand level from sample level
             float[] CCH = new float[41];
             CrownGrowth.CRNCLO(configuration.Variant, stand, CCH, out float _);
             float OLD = 0.0F;
-            float[] CCFLL2 = new float[51];
-            float[] CCFL2 = new float[500];
-            float[] BALL2 = new float[51];
-            float[] BAL2 = new float[500];
             TreeGrowth.GROW(ref simulationStep, configuration, stand, NSPN, ref TCYCLE, ref FCYCLE, 
-                            SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART,
-                            YT, CCH, ref OLD, redAlderAge, redAlderSiteIndex, CCFLL1, CCFL1, CCFLL2, CCFL2, BALL2, BAL2);
+                            SBA1, competitionBeforeGrowth, CALIB, PN, YF, BABT, BART,
+                            YT, CCH, ref OLD, redAlderAge, redAlderSiteIndex, out TreeCompetition _);
 
             if (configuration.IsEvenAge == false)
             {
@@ -1094,11 +1084,7 @@ namespace Osu.Cof.Organon
             }
 
             Mortality.OldGro(stand, 0.0F, out float OG);
-            float[] BAL = new float[500];
-            float[] BALL = new float[51];
-            float[] CCFL = new float[500];
-            float[] CCFLL = new float[51];
-            Stats.SSTATS(variant, stand, out float SBA, out float _, out float _, BAL, BALL, CCFL, CCFLL);
+            Stats.SSTATS(variant, stand, out float SBA, out float _, out float _, out TreeCompetition treeCompetition);
             for (int treeIndex = stand.TreeRecordCount - NINGRO; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 float crownRatio = stand.CrownRatio[treeIndex];
@@ -1111,7 +1097,7 @@ namespace Osu.Cof.Organon
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
                 float dbhInInches = stand.Dbh[treeIndex];
                 float heightInFeet = stand.Height[treeIndex];
-                CrownGrowth.GET_CCFL(dbhInInches, CCFLL, CCFL, out float SCCFL);
+                float SCCFL = treeCompetition.GET_CCFL(dbhInInches);
                 float HCB;
                 switch (variant)
                 {

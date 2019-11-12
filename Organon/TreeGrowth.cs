@@ -14,8 +14,6 @@ namespace Osu.Cof.Organon
         /// <param name="TCYCLE"></param>
         /// <param name="FCYCLE"></param>
         /// <param name="SBA1"></param>
-        /// <param name="BALL1"></param>
-        /// <param name="BAL1"></param>
         /// <param name="CALIB"></param>
         /// <param name="PN"></param>
         /// <param name="YF"></param>
@@ -26,17 +24,14 @@ namespace Osu.Cof.Organon
         /// <param name="OLD"></param>
         /// <param name="RAAGE"></param>
         /// <param name="RASI"></param>
-        /// <param name="CCFLL1"></param>
-        /// <param name="CCFL1"></param>
         /// <param name="CCFLL2"></param>
         /// <param name="CCFL2"></param>
         /// <param name="BALL2"></param>
         /// <param name="BAL2"></param>
         public static void GROW(ref int simulationStep, OrganonConfiguration configuration, Stand stand, int NSPN,
-                                ref int TCYCLE, ref int FCYCLE, float SBA1, float[] BALL1, float[] BAL1,
+                                ref int TCYCLE, ref int FCYCLE, float SBA1, TreeCompetition competitionBeforeGrowth,
                                 float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, 
-                                float[] CCH, ref float OLD, float RAAGE, float RASI, float[] CCFLL1, float[] CCFL1,
-                                float[] CCFLL2, float[] CCFL2, float[] BALL2, float[] BAL2)
+                                float[] CCH, ref float OLD, float RAAGE, float RASI, out TreeCompetition competitionAfterGrowth)
         {
             float DGMOD_GG = 1.0F;
             float HGMOD_GG = 1.0F;
@@ -82,7 +77,7 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    DiameterGrowth.DIAMGRO(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, SBA1, BALL1, BAL1, CALIB, PN, YF, BABT, BART, YT);
+                    DiameterGrowth.DIAMGRO(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, SBA1, competitionBeforeGrowth, CALIB, PN, YF, BABT, BART, YT);
                     if (stand.Species[treeIndex] == FiaCode.PseudotsugaMenziesii)
                     {
                         stand.DbhGrowth[treeIndex] = stand.DbhGrowth[treeIndex] * DGMOD_GG * DGMOD_SNC;
@@ -113,7 +108,7 @@ namespace Osu.Cof.Organon
 
             // determine mortality
             // Sets configuration.NO.
-            Mortality.MORTAL(configuration, simulationStep, stand, BALL1, BAL1, SI_1, SI_2, PN, YF, ref RAAGE);
+            Mortality.MORTAL(configuration, simulationStep, stand, competitionBeforeGrowth, SI_1, SI_2, PN, YF, ref RAAGE);
 
             // grow tree diameters
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -122,7 +117,7 @@ namespace Osu.Cof.Organon
             }
 
             // CALC EOG SBA, CCF/TREE, CCF IN LARGER TREES AND STAND CCF
-            Stats.SSTATS(configuration.Variant, stand, out float SBA2, out float _, out float _, BAL2, BALL2, CCFL2, CCFLL2);
+            Stats.SSTATS(configuration.Variant, stand, out float SBA2, out float _, out float _, out competitionAfterGrowth);
 
             // CALCULATE HTGRO FOR 'OTHER' & CROWN ALL SPECIES
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -142,7 +137,7 @@ namespace Osu.Cof.Organon
             }
 
             // grow crowns
-            CrownGrowth.CrowGro(configuration.Variant, stand, CCFLL1, CCFL1, CCFLL2, CCFL2, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
+            CrownGrowth.CrowGro(configuration.Variant, stand, competitionBeforeGrowth, competitionAfterGrowth, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
 
             // update stand variables
             if (configuration.Variant != Variant.Rap)

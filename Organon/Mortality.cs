@@ -7,7 +7,7 @@ namespace Osu.Cof.Organon
     {
         // ROUTINE FOR SETTING TREE MORTALITY
         public static void MORTAL(OrganonConfiguration configuration, int simulationStep, Stand stand, 
-                                  float[] BALL1, float[] BAL1, float SI_1,
+                                  TreeCompetition competitionBeforeGrowth, float SI_1,
                                   float SI_2, float[] PN, float[] YF, ref float RAAGE)
         {
             float[] POW = new float[stand.TreeRecordCount];
@@ -85,7 +85,7 @@ namespace Osu.Cof.Organon
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
                 PM_FERT(speciesGroup, configuration.Variant, simulationStep, PN, YF, out float FERTADJ);
                 float DBH = stand.Dbh[treeIndex];
-                DiameterGrowth.GET_BAL(DBH, BALL1, BAL1, out float SBAL1);
+                float SBAL1 = competitionBeforeGrowth.GET_BAL(DBH);
                 float CR = stand.CrownRatio[treeIndex];
 
                 switch (configuration.Variant)

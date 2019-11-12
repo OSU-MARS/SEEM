@@ -5,13 +5,13 @@ namespace Osu.Cof.Organon
 {
     internal class DiameterGrowth
     {
-        public static void DIAMGRO(Variant variant, int treeIndex, int simulationStep, Stand stand, float SI_1, float SI_2, float SBA1, float[] BALL1, 
-                                   float[] BAL1, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
+        public static void DIAMGRO(Variant variant, int treeIndex, int simulationStep, Stand stand, float SI_1, float SI_2, float SBA1, 
+                                   TreeCompetition competitionBeforeGrowth, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
         {
             // CALCULATES FIVE-YEAR DIAMETER GROWTH RATE OF THE K-TH TREE
             // CALCULATE BASAL AREA IN LARGER TREES
             float dbhInInches = stand.Dbh[treeIndex];
-            GET_BAL(dbhInInches, BALL1, BAL1, out float SBAL1);
+            float SBAL1 = competitionBeforeGrowth.GET_BAL(dbhInInches);
 
             FiaCode species = stand.Species[treeIndex];
             float SITE;
@@ -740,25 +740,6 @@ namespace Osu.Cof.Organon
             float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[1]) + Math.Pow(PF4 * (SI_1 / 100.0), PF5));
             FERTADJ = 1.0F + (float)(PF1 * Math.Pow((PN[1] / 800.0) + FERTX1, PF2) * FERTX2) * FALDWN;
             Debug.Assert(FERTADJ >= 1.0F);
-        }
-
-        public static void GET_BAL(float DBH, float[] BALL1, float[] BAL1, out float BAL)
-        {
-            if (DBH > 100.0F) 
-            {
-                BAL = 0.0F;
-            }
-            else if (DBH > 50.0F)
-            {
-                // BUGBUG missing clamp to avoid lookups beyond end of BALL1
-                int K = (int)(DBH - 50.0F);
-                BAL = BALL1[K];
-            }
-            else 
-            {
-                int K = (int)(DBH * 10.0F + 0.5F);
-                BAL = BAL1[K];
-            }
         }
     }
 }

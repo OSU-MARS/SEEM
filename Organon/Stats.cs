@@ -28,33 +28,20 @@ namespace Osu.Cof.Organon
         /// <param name="standBasalArea">Total basal area per acre.</param>
         /// <param name="treesPerAcre">Total trees per acre.</param>
         /// <param name="standCrownCompetitionFactor">Total crown competition factor.</param>
-        /// <param name="BAL">Basal area competition range vector of length 500 indexed by DBH in tenths of an inch.</param>
-        /// <param name="BALL">Basal area competition range vector of length 51 for trees 50-100 inches DBH.</param>
-        /// <param name="CCFL">Crown competition factor range vector of length 500 indexed by DBH in tenths of an inch.</param>
-        /// <param name="CCFLL">Crown competition factor range vector of length 51 for trees 50-100 inches DBH.</param>
+        /// <param name="competition">Basal area and crown competiation.</param>
         /// <remarks>
         /// Trees of DBH larger than 100 inches are treated as if their diameter was 100 inches.
         /// </remarks>
-        public static void SSTATS(Variant variant, Stand stand, out float standBasalArea, out float treesPerAcre, out float standCrownCompetitionFactor, float[] BAL, float[] BALL, float[] CCFL, float[] CCFLL)
+        public static void SSTATS(Variant variant, Stand stand, out float standBasalArea, out float treesPerAcre, out float standCrownCompetitionFactor, out TreeCompetition competition)
         {
-            // BUGBUG doesn't check length of CCFL, BAL, CCFLL, and BALL
-            for (int competitionIndex = 0; competitionIndex < 500; ++competitionIndex)
-            {
-                CCFL[competitionIndex] = 0.0F;
-                BAL[competitionIndex] = 0.0F;
-            }
-            for (int competitionIndex = 0; competitionIndex < 51; ++competitionIndex)
-            {
-                CCFLL[competitionIndex] = 0.0F;
-                BALL[competitionIndex] = 0.0F;
-            }
-
+            float treeCountAsFloat = (float)stand.TreeRecordCount;
+            competition = new TreeCompetition();
             standBasalArea = 0.0F;
             standCrownCompetitionFactor = 0.0F;
             treesPerAcre = 0.0F;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
                 if (expansionFactor < 0.0001F)
                 {
                     continue;
@@ -92,42 +79,37 @@ namespace Osu.Cof.Organon
                 standCrownCompetitionFactor += crownCompetitionFactor;
                 if (dbhInInches > 50.0F)
                 {
-                    int L = (int)(dbhInInches - 50.0F);
-                    if (L > 51)
+                    int largeTreeLimit = (int)(dbhInInches - 50.0F);
+                    if (largeTreeLimit > 51)
                     {
                         // (DOUG? Why limit DBH to 100 inches?)
-                        L = 51;
+                        largeTreeLimit = 51;
                     }
 
                     // add large tree to all competition diameter classes
                     // (DOUG? Why are trees 50+ inches DBH all competitors to each other in the 500 vectors?)
-                    for (int K = 0; K < 500; ++K)
+                    for (int smallTreeIndex = 0; smallTreeIndex < 500; ++smallTreeIndex)
                     {
                         // (PERF? this is O(500N), would run in O(N) + O(500) if moved to initialization)
-                        CCFL[K] = CCFL[K] + crownCompetitionFactor;
-                        BAL[K] = BAL[K] + basalArea;
+                        competition.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
+                        competition.SmallTreeBasalAreaLarger[smallTreeIndex] += basalArea;
                     }
-                    for (int K = 0; K < L - 1; ++K)
+                    for (int largeTreeIndex = 0; largeTreeIndex < largeTreeLimit - 1; ++largeTreeIndex)
                     {
-                        CCFLL[K] = CCFLL[K] + crownCompetitionFactor;
-                        BALL[K] = BALL[K] + basalArea;
+                        competition.LargeTreeCrownCompetition[largeTreeIndex] += crownCompetitionFactor;
+                        competition.LargeTreeBasalAreaLarger[largeTreeIndex] += basalArea;
                     }
                 }
                 else
                 {
-                    int L = (int)(dbhInInches * 10.0F + 0.5F);
-                    for (int K = 0; K < L - 1; ++K)
+                    int smallTreeLimit = (int)(dbhInInches * 10.0F + 0.5F);
+                    for (int smallTreeIndex = 0; smallTreeIndex < smallTreeLimit - 1; ++smallTreeIndex)
                     {
-                        CCFL[K] = CCFL[K] + crownCompetitionFactor;
-                        BAL[K] = BAL[K] + basalArea;
+                        competition.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
+                        competition.SmallTreeBasalAreaLarger[smallTreeIndex] += basalArea;
                     }
                 }
             }
-
-            float treeCountAsFloat = (float)stand.TreeRecordCount;
-            standBasalArea /= treeCountAsFloat;
-            standCrownCompetitionFactor /= treeCountAsFloat;
-            treesPerAcre /= treeCountAsFloat;
         }
     }
 }
