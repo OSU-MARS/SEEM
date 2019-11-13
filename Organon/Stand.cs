@@ -140,7 +140,7 @@ namespace Osu.Cof.Organon
                     this.A2 = 0.64F;
                     break;
                 default:
-                    throw new NotSupportedException();
+                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
             }
 
             float KB = 0.005454154F;
@@ -170,7 +170,7 @@ namespace Osu.Cof.Organon
                         TEMPA1 = 5.96F;
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
                 }
             }
 
@@ -320,7 +320,7 @@ namespace Osu.Cof.Organon
                     A1MOD = 1.0F;
                     break;
                 default:
-                    throw new NotSupportedException();
+                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
             }
             if (A1MOD <= 0.0F)
             {

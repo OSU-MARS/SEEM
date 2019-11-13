@@ -96,7 +96,7 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        HeightGrowth.HTGRO1(treeIndex, configuration.Variant, simulationStep, stand, SI_1, SI_2, CCH, PN, YF, BABT, BART, YT, ref OLD, configuration.PDEN);
+                        HeightGrowth.GrowBigSixSpecies(treeIndex, configuration.Variant, simulationStep, stand, SI_1, SI_2, CCH, PN, YF, BABT, BART, YT, ref OLD, configuration.PDEN);
                         FiaCode species = stand.Species[treeIndex];
                         if (species == FiaCode.PseudotsugaMenziesii)
                         {
@@ -130,7 +130,7 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        HeightGrowth.HTGRO2(treeIndex, configuration.Variant, stand, RASI, CALIB);
+                        HeightGrowth.GrowMinorSpecies(treeIndex, configuration.Variant, stand, RASI, CALIB);
                     }
                 }
                 stand.Height[treeIndex] += stand.HeightGrowth[treeIndex];

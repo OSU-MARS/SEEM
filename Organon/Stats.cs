@@ -5,22 +5,6 @@ namespace Osu.Cof.Organon
     internal static class Stats
     {
         /// <summary>
-        /// Estimate red alder site index from conifer site index
-        /// </summary>
-        /// <param name="SITE_1">Conifer site index from ground.</param>
-        /// <returns>Red alder site index from ground?</returns>
-        public static float ConiferToRedAlderSiteIndex(float SITE_1)
-        {
-            return 9.73F + 0.64516F * SITE_1;
-        }
-
-        public static void RASITE(float H, float A, out float SI)
-        {
-            // RED ALDER SITE INDEX EQUATION FROM WORTHINGTON, JOHNSON, STAEBLER AND LLOYD(1960) PNW RESEARCH PAPER 36
-            SI = (0.60924F + 19.538F / A) * H;
-        }
-
-        /// <summary>
         /// Calculate stand statistics.
         /// </summary>
         /// <param name="variant">Organon variant.</param>
@@ -70,7 +54,7 @@ namespace Osu.Cof.Organon
                         CrownGrowth.MCW_RAP(speciesGroup, dbhInInches, heightInFeet, out maxCrownWidth);
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(variant);
                 }
 
                 // (DOUG? Where does 0.001803 come from? Why is it species invariant? Todd: check FOR 322 notes.)

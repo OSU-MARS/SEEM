@@ -46,10 +46,12 @@ namespace Osu.Cof.Organon.Test
                 float treeExpansionFactor = this.LiveExpansionFactor[treeIndex];
                 float treeCrownRatio = this.CrownRatio[treeIndex];
                 float treeDeadExpansionFactor = this.DeadExpansionFactor[treeIndex];
-                testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
+                float treeDbhGrowth = this.DbhGrowth[treeIndex];
+                float treeHeightGrowth = this.HeightGrowth[treeIndex];
+                testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
                                       variant, simulationStep, treeIndex, treeSpecies, treeSpeciesGroup, 
                                       treeDbhInInches, treeHeightInFeet, treeExpansionFactor, treeDeadExpansionFactor,
-                                      treeCrownRatio);
+                                      treeCrownRatio, treeDbhGrowth, treeHeightGrowth);
             }
         }
     }

@@ -10,7 +10,7 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void OrganonStandGrowthApi()
         {
-            this.TestContext.WriteLine("variant,simulation step,tree,species,species group,DBH,height,expansion factor,dead expansion factor,crown ratio");
+            this.TestContext.WriteLine("variant,simulation step,tree,species,species group,DBH,height,expansion factor,dead expansion factor,crown ratio,diameter growth,height growth");
             foreach (Variant variant in TestConstant.Variants)
             {
                 // get crown closure
@@ -20,12 +20,12 @@ namespace Osu.Cof.Organon.Test
                 StandGrowth.CROWN_CLOSURE(variant, stand, variantCapabilities.SpeciesGroupCount, out float crownClosure);
                 Assert.IsTrue(crownClosure >= 0.0F);
                 Assert.IsTrue(crownClosure <= TestConstant.Maximum.CrownClosure);
-                this.Verify(stand, variantCapabilities);
+                this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
 
                 // recalculate heights and crown ratios for all trees
                 float[,] ACALIB = this.CreateCalibrationArray();
                 StandGrowth.INGRO_FILL(variant, stand, stand.TreeRecordCount, ACALIB);
-                this.Verify(stand, variantCapabilities);
+                this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
 
                 // run Organon growth simulation
                 stand = this.CreateDefaultStand(configuration);
@@ -50,7 +50,7 @@ namespace Osu.Cof.Organon.Test
                     StandGrowth.EXECUTE(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
                     stand.WriteAsCsv(this.TestContext, variant, simulationStep);
-                    this.Verify(stand, variantCapabilities);
+                    this.Verify(stand, ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, variantCapabilities);
                 }
 
                 this.Verify(treeGrowth, initialTreeData, stand);

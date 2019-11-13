@@ -5,6 +5,8 @@ namespace Osu.Cof.Organon
 {
     internal static class Constant
     {
+        public const int DefaultTimeStepInYears = 5;
+
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
         {
             FiaCode.PseudotsugaMenziesii,

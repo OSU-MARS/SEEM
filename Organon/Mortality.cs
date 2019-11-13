@@ -103,18 +103,18 @@ namespace Osu.Cof.Organon
                         PM_RAP(speciesGroup, DBH, CR, SI_1, SI_2, SBAL1, out POW[treeIndex], out PMK[treeIndex]);
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
                 }
                 PMK[treeIndex] = PMK[treeIndex] + FERTADJ;
             }
 
-            if (configuration.Variant <= Variant.Smc)
+            if (configuration.Variant != Variant.Rap)
             {
                 if (RAAGE >= 55.0)
                 {
-                    RAMORT(stand, RAAGE, RAN, PMK);
+                    RedAlder.RAMORT(stand, RAAGE, RAN, PMK);
                 }
-                RAAGE += 5.0F;
+                RAAGE += Constant.DefaultTimeStepInYears;
             }
 
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -373,82 +373,6 @@ namespace Osu.Cof.Organon
             return (float)Math.Exp(X);
         }
 
-        private static void RAMORT(Stand stand, float RAAGE, float RAN, float[] PMK)
-        {
-            float KB = 0.005454154F;
-            float RAMORT1 = 0.0F;
-            float treeCountAsFloat = (float)stand.TreeRecordCount;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                FiaCode species = stand.Species[treeIndex];
-                if (species == FiaCode.AlnusRubra)
-                {
-                    float PM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
-                    RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
-                }
-            }
-
-            float RAQMDN1 = 3.313F + 0.18769F * RAAGE - 0.000198F * RAAGE * RAAGE;
-            float RABAN1 = -26.1467F + 5.31482F * RAAGE - 0.037466F * RAAGE * RAAGE;
-            float RAQMDN2 = 3.313F + 0.18769F * (RAAGE + 5.0F) - 0.000198F * (float)Math.Pow(RAAGE + 5.0, 2.0);
-            float RABAN2 = -26.1467F + 5.31482F * (RAAGE + 5.0F) - 0.037466F * (float)Math.Pow(RAAGE + 5.0F, 2.0);
-            float RATPAN1 = RABAN1 / (KB * RAQMDN1 * RAQMDN1);
-            float RATPAN2 = RABAN2 / (KB * RAQMDN2 * RAQMDN2);
-            float RAMORT2;
-            if (RATPAN1 > 0.0F && RATPAN2 > 0.0F)
-            {
-                RAMORT2 = RAN * (1.0F - RATPAN2 / RATPAN1);
-            }
-            else
-            {
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-                {
-                    FiaCode species = stand.Species[treeIndex];
-                    if (species == FiaCode.AlnusRubra)
-                    {
-                        PMK[treeIndex] = 1000.0F;
-                    }
-                }
-                return;
-            }
-
-            if (RAMORT1 < RAMORT2)
-            {
-                float KR1 = 0.0F;
-                for (int KK = 0; KK < 7; ++KK)
-                {
-                    float NK = 10.0F / (float)Math.Pow(10.0, KK);
-                kr1: KR1 += NK;
-                    RAMORT1 = 0.0F;
-                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-                    {
-                        FiaCode species = stand.Species[treeIndex]; 
-                        if (species == FiaCode.AlnusRubra)
-                        {
-                            float PM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
-                            RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
-                        }
-                    }
-                    if (RAMORT1 > RAMORT2)
-                    {
-                        KR1 -= NK;
-                    }
-                    else
-                    {
-                        goto kr1;
-                    }
-                }
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-                {
-                    FiaCode species = stand.Species[treeIndex];
-                    if (species == FiaCode.AlnusRubra)
-                    {
-                        PMK[treeIndex] = KR1 + PMK[treeIndex];
-                    }
-                }
-            }
-        }
-
         private static void PM_FERT(int ISPGRP, Variant variant, int simulationStep, float[] PN, float[] YF, out float FERTADJ)
         {
             float PF1;
@@ -476,7 +400,7 @@ namespace Osu.Cof.Organon
                 PF3 = 0.0F;
             }
 
-            float XTIME = (float)simulationStep * 5.0F;
+            float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
             float FERTX1 = 0.0F;
             for (int II = 1; II < 5; ++II)
             {

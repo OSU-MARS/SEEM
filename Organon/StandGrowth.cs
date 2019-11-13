@@ -23,7 +23,7 @@ namespace Osu.Cof.Organon
             EDIT(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int BNXT);
 
             // BUGBUG: 5 * simulationStep is incorrect for RAP
-            int simulationYear = 5 * simulationStep;
+            int simulationYear = Constant.DefaultTimeStepInYears * simulationStep;
             int FCYCLE = 0;
             int TCYCLE = 0;
             if (configuration.Fertilizer && (YSF[0] == (float)simulationYear))
@@ -71,39 +71,30 @@ namespace Osu.Cof.Organon
                 YT[I] = YST[I];
             }
 
-            // find red alder site index for natural (DOUG? non-plantation?) stands
-            // BUGBUG heightOfTallestRedAlderInFeet, RASI, and RAAGE not initialized in Fortran
+            // find red alder site index and growth effective age
+            // In CIPSR 2.2.4 these paths are disabled for SMC red alder even though it's a supported species, resulting in zero
+            // height growth. In this fork the code's called regardless of variant.
             float heightOfTallestRedAlderInFeet = 0.0F;
-            float redAlderSiteIndex = 0.0F;
-            if ((configuration.Variant == Variant.Nwo) || (configuration.Variant == Variant.Swo))
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                if (stand.Species[treeIndex] == FiaCode.AlnusRubra)
                 {
-                    if (stand.Species[treeIndex] == FiaCode.AlnusRubra)
+                    float alderHeightInFeet = stand.Height[treeIndex];
+                    if (alderHeightInFeet > heightOfTallestRedAlderInFeet)
                     {
-                        float alderHeightInFeet = stand.Height[treeIndex];
-                        if (alderHeightInFeet > heightOfTallestRedAlderInFeet)
-                        {
-                            heightOfTallestRedAlderInFeet = alderHeightInFeet;
-                        }
+                        heightOfTallestRedAlderInFeet = alderHeightInFeet;
                     }
                 }
-                redAlderSiteIndex = Stats.ConiferToRedAlderSiteIndex(stand.PrimarySiteIndex);
             }
 
-            // CALCULATE RED ALDER AGE FOR NATURAL STANDS
-            // BUGBUG RAAGE not initialized for MAXRAH <= 0.0 in Fortran code
-            float redAlderAge = 0.0F;
-            if (heightOfTallestRedAlderInFeet > 0.0F)
-            {
-                RedAlder.RAGEA(heightOfTallestRedAlderInFeet, redAlderSiteIndex, out redAlderAge);
-            }
-            if (redAlderAge < 0.0F)
+            float redAlderSiteIndex = RedAlder.ConiferToRedAlderSiteIndex(stand.PrimarySiteIndex);
+            float redAlderAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, redAlderSiteIndex);
+            if (redAlderAge <= 0.0F)
             {
                 redAlderAge = 55.0F;
-                Stats.RASITE(heightOfTallestRedAlderInFeet, redAlderAge, out redAlderSiteIndex);
+                redAlderSiteIndex = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, redAlderAge);
             }
-            if (redAlderAge > 55.0F)
+            else if (redAlderAge > 55.0F)
             {
                 redAlderAge = 55.0F;
             }
@@ -390,7 +381,7 @@ namespace Osu.Cof.Organon
                     NSPN = 7;
                     break;
                 default:
-                    throw new NotSupportedException();
+                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
             }
 
             // check tree records for errors
@@ -751,7 +742,7 @@ namespace Osu.Cof.Organon
                         standAgeBudgetAvailableAtNextTimeStep = 30 - stand.AgeInYears - 1;
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
                 }
             }
             else
@@ -769,7 +760,7 @@ namespace Osu.Cof.Organon
                         standAgeBudgetAvailableAtNextTimeStep = 30 - (simulationStep + 1) * 1;
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
                 }
             }
 
@@ -934,7 +925,7 @@ namespace Osu.Cof.Organon
                         IDXAGE = 30.0F;
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
                 }
 
                 // BUGBUG inconsistent use of < IB rather than <= IB
@@ -1078,7 +1069,7 @@ namespace Osu.Cof.Organon
                         HeightGrowth.HD_RAP(speciesGroup, dbhInInches, out RHT);
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(variant);
                 }
                 stand.Height[treeIndex] = 4.5F + ACALIB[speciesGroup, 0] * (RHT - 4.5F);
             }
@@ -1114,7 +1105,7 @@ namespace Osu.Cof.Organon
                         CrownGrowth.HCB_RAP(speciesGroup, heightInFeet, dbhInInches, SCCFL, SBA, SI_1, SI_2, OG, out HCB);
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(variant);
                 }
                 if (HCB < 0.0F)
                 {

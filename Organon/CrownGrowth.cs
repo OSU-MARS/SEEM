@@ -27,7 +27,7 @@ namespace Osu.Cof.Organon
                         CW_RAP(speciesGroup, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(variant);
                 }
             }
             else
@@ -61,7 +61,7 @@ namespace Osu.Cof.Organon
                             CW_RAP(speciesGroup, HLCW, LCW, HT, DBH, XL, out CW);
                             break;
                         default:
-                            throw new NotSupportedException();
+                            throw VariantExtensions.CreateUnhandledVariantException(variant);
                     }
                 }
                 else
@@ -171,7 +171,7 @@ namespace Osu.Cof.Organon
                         PCR1 = 1.0F - HCB1 / PHT;
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(variant);
                 }
 
                 float PHCB1 = (1.0F - PCR1) * PHT;
@@ -205,7 +205,7 @@ namespace Osu.Cof.Organon
                         PCR2 = 1.0F - HCB2 / HT;
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw VariantExtensions.CreateUnhandledVariantException(variant);
                 }
 
                 float PHCB2 = (1.0F - PCR2) * HT;

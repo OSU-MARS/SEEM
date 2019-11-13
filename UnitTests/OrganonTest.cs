@@ -146,7 +146,7 @@ namespace Osu.Cof.Organon.Test
             }
         }
 
-        protected void Verify(TestStand stand, VariantCapabilities variantCapabilities)
+        protected void Verify(TestStand stand, ExpectedTreeChanges expectedGrowth, VariantCapabilities variantCapabilities)
         {
             Assert.IsTrue(stand.AgeInYears >= 0);
             Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
@@ -178,12 +178,32 @@ namespace Osu.Cof.Organon.Test
 
                 Assert.IsTrue(expansionFactor + deadExpansionFactor <= TestConstant.Maximum.ExpansionFactor);
 
+                // diameter and height growth
                 float diameterGrowthInInches = stand.DbhGrowth[treeIndex];
-                Assert.IsTrue(diameterGrowthInInches >= 0.0F);
-                Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DbhInInches);
+                if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowth))
+                {
+                    Assert.IsTrue(diameterGrowthInInches > 0.0F);
+                    Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DbhInInches);
+                }
+                else
+                {
+                    Assert.IsTrue(diameterGrowthInInches == 0.0F);
+                }
                 float heightGrowthInFeet = stand.HeightGrowth[treeIndex];
-                Assert.IsTrue(heightGrowthInFeet >= 0.0F);
-                Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
+                if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowth))
+                {
+                    Assert.IsTrue(heightGrowthInFeet > 0.0F, "{0}: {1} {2} did not grow in height.", variantCapabilities.Variant, stand.Species[treeIndex], treeIndex);
+                    Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
+                }
+                else if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowthOrNoChange))
+                {
+                    Assert.IsTrue(heightGrowthInFeet >= 0.0F, "{0}: {1} {2} decreased in height.", variantCapabilities.Variant, stand.Species[treeIndex], treeIndex);
+                    Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
+                }
+                else
+                {
+                    Assert.IsTrue(heightGrowthInFeet == 0.0F);
+                }
 
                 FiaCode species = stand.Species[treeIndex];
                 Assert.IsTrue(Enum.IsDefined(typeof(FiaCode), species));

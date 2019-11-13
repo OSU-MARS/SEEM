@@ -107,7 +107,7 @@ namespace Osu.Cof.Organon.Test
 
                     CrownGrowth.CrowGro(variant, stand, treeCompetitionStartOfStep, treeCompetitionEndOfStep,
                                         standBasalAreaStart, standBasalAreaEnd, stand.PrimarySiteIndex, stand.MortalitySiteIndex, CALIB, CCH);
-                    this.Verify(stand, variantCapabilities);
+                    this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
                 }
             }
         }
@@ -148,7 +148,7 @@ namespace Osu.Cof.Organon.Test
                         previousDbhInInches = dbhInInches;
                     }
 
-                    this.Verify(stand, variantCapabilities);
+                    this.Verify(stand, ExpectedTreeChanges.DiameterGrowth, variantCapabilities);
                 }
             }
 
@@ -200,7 +200,7 @@ namespace Osu.Cof.Organon.Test
                                     standBasalAreaStart, treeCompetitionStartOfStep, CALIB, PN, YF, 
                                     BABT, BART, YT, CCH, ref OLD, TestConstant.Default.RAAGE, TestConstant.Default.RedAlderSiteIndex,
                                     out treeCompetitionEndOfStep);
-                    this.Verify(stand, variantCapabilities);
+                    this.Verify(stand, ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, variantCapabilities);
                 }
             }
         }
@@ -209,7 +209,7 @@ namespace Osu.Cof.Organon.Test
         public void GrowthModifiersApi()
         {
             this.TestContext.WriteLine("tree age, diameter genetic factor, height genetic factor, diameter growth modifier, height growth modifier");
-            for (float treeAgeInYears = 0.0F; treeAgeInYears <= 50.0F; treeAgeInYears += 5.0F)
+            for (float treeAgeInYears = 0.0F; treeAgeInYears <= 50.0F; treeAgeInYears += Constant.DefaultTimeStepInYears)
             {
                 for (float diameterGeneticFactor = 0.0F; diameterGeneticFactor <= 25.0F; diameterGeneticFactor += 5.0F)
                 {
@@ -322,12 +322,12 @@ namespace Osu.Cof.Organon.Test
                     {
                         if (stand.IsBigSixSpecies(treeIndex))
                         {
-                            HeightGrowth.HTGRO1(treeIndex, variant, simulationStep, stand, stand.PrimarySiteIndex, stand.MortalitySiteIndex, 
+                            HeightGrowth.GrowBigSixSpecies(treeIndex, variant, simulationStep, stand, stand.PrimarySiteIndex, stand.MortalitySiteIndex, 
                                                 CCH, PN, YF, TestConstant.Default.BABT, BART, YT, ref OLD, TestConstant.Default.PDEN);
                         }
                         else
                         {
-                            HeightGrowth.HTGRO2(treeIndex, variant, stand, TestConstant.Default.RedAlderSiteIndex, CALIB);
+                            HeightGrowth.GrowMinorSpecies(treeIndex, variant, stand, TestConstant.Default.RedAlderSiteIndex, CALIB);
                         }
 
                         float heightInFeet = stand.Height[treeIndex];
@@ -338,7 +338,10 @@ namespace Osu.Cof.Organon.Test
                         previousTreeHeights[treeIndex] = heightInFeet;
                     }
 
-                    this.Verify(stand, variantCapabilities);
+                    // since diameter growth is zero in this test any tree which is above its anticipated height for its current diameter 
+                    // should have zero growth
+                    // This is expected behavior the height growth functions and, potentially, height growth limiting.
+                    this.Verify(stand, ExpectedTreeChanges.HeightGrowthOrNoChange, variantCapabilities);
                 }
             }
         }
@@ -363,7 +366,7 @@ namespace Osu.Cof.Organon.Test
                     // TODO: POST = true case for cycle after thinning
                     Mortality.MORTAL(configuration, simulationStep, stand, competition, stand.PrimarySiteIndex, 
                                      stand.MortalitySiteIndex, PN, YF, ref RAAGE);
-                    this.Verify(stand, variantCapabilities);
+                    this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
 
                     // TODO: xind -1.0 case
                     float xind = 0.0F;
@@ -416,7 +419,7 @@ namespace Osu.Cof.Organon.Test
                 }
                 this.TestContext.WriteLine(String.Empty);
 
-                this.Verify(stand, variantCapabilities);
+                this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
             }
         }
 
@@ -446,7 +449,7 @@ namespace Osu.Cof.Organon.Test
                 Assert.IsTrue(stand.A1 > 5.0F);
                 Assert.IsTrue(stand.A2 > 0.60F);
                 Assert.IsTrue(stand.A2 < 0.65F);
-                this.Verify(stand, variantCapabilities);
+                this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
             }
         }
 

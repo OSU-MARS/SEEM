@@ -42,7 +42,7 @@ namespace Osu.Cof.Organon
                     }
                     break;
                 default:
-                    throw new NotSupportedException();
+                    throw VariantExtensions.CreateUnhandledVariantException(variant);
             }
 
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED TREES
@@ -64,7 +64,7 @@ namespace Osu.Cof.Organon
                     DG_RAP(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, SBA1, out DG);
                     break;
                 default:
-                    throw new NotSupportedException();
+                    throw VariantExtensions.CreateUnhandledVariantException(variant);
             }
 
             // CALCULATE FERTILIZER ADJUSTMENT
@@ -204,7 +204,7 @@ namespace Osu.Cof.Organon
             }
 
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
-            Debug.Assert(DG >= 0.0F);
+            Debug.Assert(DG > 0.0F);
         }
 
         private static void DG_RAP(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
@@ -307,7 +307,7 @@ namespace Osu.Cof.Organon
             }
 
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
-            Debug.Assert(DG >= 0.0F);
+            Debug.Assert(DG > 0.0F);
         }
 
         private static void DG_SMC(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
@@ -438,7 +438,7 @@ namespace Osu.Cof.Organon
             }
 
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
-            Debug.Assert(DG >= 0.0F);
+            Debug.Assert(DG > 0.0F);
         }
 
         private static void DG_SWO(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
@@ -606,7 +606,7 @@ namespace Osu.Cof.Organon
             }
 
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
-            Debug.Assert(DG >= 0.0F);
+            Debug.Assert(DG > 0.0F);
         }
 
         /// <summary>
@@ -656,7 +656,7 @@ namespace Osu.Cof.Organon
                 PT3 = -0.2644085320F;
             }
 
-            float XTIME = (float)(simulationStep) * 5.0F;
+            float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
             float THINX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
@@ -730,7 +730,7 @@ namespace Osu.Cof.Organon
             }
                 
             float FALDWN = 1.0F;
-            float XTIME = (float)simulationStep * 5.0F;
+            float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
             float FERTX1 = 0.0F;
             for (int I = 1; I < 5; ++I)
             {
