@@ -1,5 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
 
 namespace Osu.Cof.Organon.Test
 {
@@ -8,7 +7,7 @@ namespace Osu.Cof.Organon.Test
         public TestStand(Variant variant, int ageInYears, int treeCount, float primarySiteIndex)
             : base(ageInYears, treeCount, primarySiteIndex, (variant == Variant.Swo) ? 4 : 2)
         {
-            this.SetDefaultSiteIndices(variant);
+            this.SetDefaultAndMortalitySiteIndices(variant);
         }
 
         protected TestStand(TestStand other)

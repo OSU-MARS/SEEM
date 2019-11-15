@@ -23,8 +23,8 @@ namespace Osu.Cof.Organon.Test
                 this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
 
                 // recalculate heights and crown ratios for all trees
-                float[,] ACALIB = this.CreateCalibrationArray();
-                StandGrowth.INGRO_FILL(variant, stand, stand.TreeRecordCount, ACALIB);
+                float[,] CALIB = this.CreateCalibrationArray();
+                StandGrowth.INGRO_FILL(variant, stand, stand.TreeRecordCount, CALIB);
                 this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
 
                 // run Organon growth simulation
@@ -34,7 +34,6 @@ namespace Osu.Cof.Organon.Test
 
                 float BABT = 0.0F; // (DOUG? basal area before thinning?)
                 float[] BART = new float[5]; // (DOUG? basal area removed by thinning?)
-                float[,] CALIB = this.CreateCalibrationArray();
                 float[] CCH = new float[41]; // (DOUG?)
                 float[] PN = new float[5]; // (DOUG?)
                 if (configuration.IsEvenAge)
@@ -47,13 +46,14 @@ namespace Osu.Cof.Organon.Test
 
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    StandGrowth.EXECUTE(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST);
+                    StandGrowth.EXECUTE(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
                     stand.WriteAsCsv(this.TestContext, variant, simulationStep);
                     this.Verify(stand, ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, variantCapabilities);
                 }
 
                 this.Verify(treeGrowth, initialTreeData, stand);
+                this.Verify(CALIB);
             }
         }
     }

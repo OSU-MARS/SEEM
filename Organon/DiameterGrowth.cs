@@ -6,12 +6,12 @@ namespace Osu.Cof.Organon
     internal class DiameterGrowth
     {
         public static void DIAMGRO(Variant variant, int treeIndex, int simulationStep, Stand stand, float SI_1, float SI_2, float SBA1, 
-                                   TreeCompetition competitionBeforeGrowth, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
+                                   StandDensity densityBeforeGrowth, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
         {
             // CALCULATES FIVE-YEAR DIAMETER GROWTH RATE OF THE K-TH TREE
             // CALCULATE BASAL AREA IN LARGER TREES
             float dbhInInches = stand.Dbh[treeIndex];
-            float SBAL1 = competitionBeforeGrowth.GET_BAL(dbhInInches);
+            float SBAL1 = densityBeforeGrowth.GET_BAL(dbhInInches);
 
             FiaCode species = stand.Species[treeIndex];
             float SITE;
@@ -72,7 +72,7 @@ namespace Osu.Cof.Organon
             // CALCULATE THINNING ADJUSTMENT
             DG_THIN(species, variant, simulationStep, BABT, BART, YT, out float THINADJ);
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED OR TREATED TREES
-            float DGRO = DG * CALIB[speciesGroup, 2] * FERTADJ* THINADJ;
+            float DGRO = DG * CALIB[speciesGroup, 2] * FERTADJ * THINADJ;
             stand.DbhGrowth[treeIndex] = DGRO;
         }
 
@@ -610,13 +610,13 @@ namespace Osu.Cof.Organon
         }
 
         /// <summary>
-        /// 
+        /// Find diameter growth multiplier for thinning.
         /// </summary>
         /// <param name="species">FIA species code.</param>
         /// <param name="variant">Organon variant.</param>
         /// <param name="simulationStep">Simulation cycle.</param>
-        /// <param name="BABT">Basal area before treatment? (DOUG?)</param>
-        /// <param name="BART">Basal area removed by treatment? (DOUG?)</param>
+        /// <param name="BABT">Basal area before thinning? (DOUG?)</param>
+        /// <param name="BART">Basal area removed by thinning? (DOUG?)</param>
         /// <param name="YT">Thinning year data? (DOUG?)</param>
         /// <param name="THINADJ">Thinning adjustment. (DOUG?)</param>
         /// <remarks>
@@ -693,7 +693,7 @@ namespace Osu.Cof.Organon
             float PF3;
             float PF4;
             float PF5;
-            if (variant <= Variant.Smc)
+            if (variant != Variant.Rap)
             {
                 if (species == FiaCode.TsugaHeterophylla)
                 {

@@ -1,6 +1,6 @@
 ﻿namespace Osu.Cof.Organon
 {
-    internal class TreeCompetition
+    internal class StandDensity
     {
         /// <summary>
         /// Basal area competition range vector of length 51 for trees 50-100 inches DBH. (BALL)
@@ -21,14 +21,13 @@
         /// </summary>
         public float[] SmallTreeCrownCompetition { get; private set; }
 
-        public TreeCompetition()
+        public StandDensity()
         {
             this.LargeTreeBasalAreaLarger = new float[51];
             this.LargeTreeCrownCompetition = new float[51];
             this.SmallTreeBasalAreaLarger = new float[500];
             this.SmallTreeCrownCompetition = new float[500];
         }
-
 
         public float GET_BAL(float dbhInInches)
         {

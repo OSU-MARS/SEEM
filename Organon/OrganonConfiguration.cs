@@ -4,24 +4,24 @@
     {
         public Variant Variant { get; private set; }
 
-        // INDS[0] switches CALIB[, 0] from 1.0 to ACALIB[, 0]
-        public bool CALH { get; set; }
-        // INDS[1] switches CALIB[, 1] from 1.0 to ACALIB[, 1]
-        public bool CALC { get; set; }
-        // INDS[2] switches CALIB[, 2] from 1.0 to ACALIB[, 2]
-        public bool CALD { get; set; }
-        // INDS[3] hint for error checking age ranges
-        public bool IsEvenAge { get; set; }
-        // INDS[6] hint for error checking and triggers TCYCLE count
-        public bool Thin { get; set; }
-        // INDS[7] hint for error checking and triggers FCYCLE count
-        public bool Fertilizer { get; set; }
-        // INDS[8] switches to if() clause in Mortality.MORTAL()
+        // switches to if() clause in Mortality.MORTAL()
         public bool AdditionalMortality { get; set; }
-        // INDS[13] enables genetic growth modifiers
+        // enable per species crown ratio growth multiplier used only for NWO
+        public bool CalibrateCrownRatio { get; set; }
+        // enable per species diameter growth multiplier for minor species
+        public bool CalibrateDiameter { get; set; }
+        // enable per species height multiplier
+        public bool CalibrateHeight { get; set; }
+        // hint for error checking and triggers FCYCLE count
+        public bool Fertilizer { get; set; }
+        // enables genetic growth modifiers
         public bool Genetics { get; set; }
-        // INDS[14] enables Swiss needle cast (Nothophaeocryptopus gaeumanii) growth modifiers, applies only to NWO and SMC variants
+        // hint for error checking age ranges
+        public bool IsEvenAge { get; set; }
+        // enables Swiss needle cast (Nothophaeocryptopus gaeumanii) growth modifiers, applies only to NWO and SMC variants
         public bool SwissNeedleCast { get; set; }
+        // hint for error checking and triggers TCYCLE count
+        public bool Thin { get; set; }
 
         // RVARS[2] maximum SDI for Douglas-fir?, only used by Submax()
         // If less than or equal to zero. (DOUG? also, what species?)</param>

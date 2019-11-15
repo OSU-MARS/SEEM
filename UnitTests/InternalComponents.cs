@@ -24,7 +24,7 @@ namespace Osu.Cof.Organon.Test
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     Stats.SSTATS(variant, stand, out float standBasalAreaStart, 
-                                 out float treesPerAcreStart, out float standCompetitionStart, out TreeCompetition treeCompetitionStartOfStep);
+                                 out float treesPerAcreStart, out float standCompetitionStart, out StandDensity densityStartOfStep);
                     Assert.IsTrue(standBasalAreaStart > 0.0F);
                     Assert.IsTrue(standCompetitionStart > 0.0F);
                     Assert.IsTrue(treesPerAcreStart > 0.0F);
@@ -40,7 +40,7 @@ namespace Osu.Cof.Organon.Test
                         float heightInFeet = stand.Height[treeIndex];
                         int speciesGroup = stand.SpeciesGroup[treeIndex];
 
-                        float crownCompetitionFactor = treeCompetitionStartOfStep.GET_CCFL(dbhInInches);
+                        float crownCompetitionFactor = densityStartOfStep.GET_CCFL(dbhInInches);
                         Assert.IsTrue(crownCompetitionFactor >= 0.0F);
                         Assert.IsTrue(crownCompetitionFactor < TestConstant.Maximum.StandCrownCompetitionFactor);
 
@@ -100,14 +100,15 @@ namespace Osu.Cof.Organon.Test
                     }
 
                     Stats.SSTATS(variant, stand, out float standBasalAreaEnd,
-                                 out float treesPerAcreEnd, out float standCompetitionEnd, out TreeCompetition treeCompetitionEndOfStep);
+                                 out float treesPerAcreEnd, out float standCompetitionEnd, out StandDensity densityEndOfStep);
                     Assert.IsTrue(standBasalAreaEnd > 0.0F);
                     Assert.IsTrue(standCompetitionEnd > 0.0F);
                     Assert.IsTrue(treesPerAcreEnd > 0.0F);
 
-                    CrownGrowth.CrowGro(variant, stand, treeCompetitionStartOfStep, treeCompetitionEndOfStep,
+                    CrownGrowth.CrowGro(variant, stand, densityStartOfStep, densityEndOfStep,
                                         standBasalAreaStart, standBasalAreaEnd, stand.PrimarySiteIndex, stand.MortalitySiteIndex, CALIB, CCH);
                     this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
+                    this.Verify(CALIB);
                 }
             }
         }
@@ -133,7 +134,7 @@ namespace Osu.Cof.Organon.Test
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     Stats.SSTATS(variant, stand, out float standBasalArea, out float treesPerAcre, 
-                                 out float standCompetition, out TreeCompetition treeCompetition);
+                                 out float standCompetition, out StandDensity treeCompetition);
 
                     for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                     {
@@ -149,16 +150,17 @@ namespace Osu.Cof.Organon.Test
                     }
 
                     this.Verify(stand, ExpectedTreeChanges.DiameterGrowth, variantCapabilities);
+                    this.Verify(CALIB);
                 }
             }
 
-            TreeCompetition competitionForLookup = new TreeCompetition();
+            StandDensity densityForLookup = new StandDensity();
             for (float dbhInInches = 0.5F; dbhInInches <= 101.0F; ++dbhInInches)
             {
-                float basalAreaLarger = competitionForLookup.GET_BAL(dbhInInches);
+                float basalAreaLarger = densityForLookup.GET_BAL(dbhInInches);
                 Assert.IsTrue(basalAreaLarger >= 0.0F);
                 Assert.IsTrue(basalAreaLarger <= 1.0F);
-                float crownCompetitionLarger = competitionForLookup.GET_CCFL(dbhInInches);
+                float crownCompetitionLarger = densityForLookup.GET_CCFL(dbhInInches);
                 Assert.IsTrue(crownCompetitionLarger >= 0.0F);
                 Assert.IsTrue(crownCompetitionLarger <= 1.0F);
             }
@@ -191,16 +193,16 @@ namespace Osu.Cof.Organon.Test
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; /* incremented by GROW() */)
                 {
                     Stats.SSTATS(variant, stand, out float standBasalAreaStart,
-                                 out float treesPerAcreStart, out float standCompetitionStart, out TreeCompetition treeCompetitionStartOfStep);
+                                 out float treesPerAcreStart, out float standCompetitionStart, out StandDensity densityStartOfStep);
                     Stats.SSTATS(variant, stand, out float standBasalAreaEnd,
-                                 out float treesPerAcreEnd, out float standCompetitionEnd, out TreeCompetition treeCompetitionEndOfStep);
+                                 out float treesPerAcreEnd, out float standCompetitionEnd, out StandDensity densityEndOfStep);
 
                     TreeGrowth.GROW(ref simulationStep, configuration, stand,
                                     variantCapabilities.SpeciesGroupCount, ref thinningCycle, ref fertlizerCycle,
-                                    standBasalAreaStart, treeCompetitionStartOfStep, CALIB, PN, YF, 
-                                    BABT, BART, YT, CCH, ref OLD, TestConstant.Default.RAAGE, TestConstant.Default.RedAlderSiteIndex,
-                                    out treeCompetitionEndOfStep);
+                                    standBasalAreaStart, densityStartOfStep, CALIB, PN, YF, 
+                                    BABT, BART, YT, CCH, ref OLD, TestConstant.Default.RAAGE, out densityEndOfStep);
                     this.Verify(stand, ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, variantCapabilities);
+                    this.Verify(CALIB);
                 }
             }
         }
@@ -327,7 +329,7 @@ namespace Osu.Cof.Organon.Test
                         }
                         else
                         {
-                            HeightGrowth.GrowMinorSpecies(treeIndex, variant, stand, TestConstant.Default.RedAlderSiteIndex, CALIB);
+                            HeightGrowth.GrowMinorSpecies(treeIndex, variant, stand, CALIB);
                         }
 
                         float heightInFeet = stand.Height[treeIndex];
@@ -342,6 +344,7 @@ namespace Osu.Cof.Organon.Test
                     // should have zero growth
                     // This is expected behavior the height growth functions and, potentially, height growth limiting.
                     this.Verify(stand, ExpectedTreeChanges.HeightGrowthOrNoChange, variantCapabilities);
+                    this.Verify(CALIB);
                 }
             }
         }
@@ -349,7 +352,7 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void MortalityApi()
         {
-            TreeCompetition competition = new TreeCompetition();
+            StandDensity density = new StandDensity();
             float[] PN = new float[5]; // (DOUG?)
             float[] YF = new float[5]; // (DOUG?)
             
@@ -364,7 +367,7 @@ namespace Osu.Cof.Organon.Test
                 {
                     // TODO: MORT = false case for additional mortality disabled
                     // TODO: POST = true case for cycle after thinning
-                    Mortality.MORTAL(configuration, simulationStep, stand, competition, stand.PrimarySiteIndex, 
+                    Mortality.MORTAL(configuration, simulationStep, stand, density, stand.PrimarySiteIndex, 
                                      stand.MortalitySiteIndex, PN, YF, ref RAAGE);
                     this.Verify(stand, ExpectedTreeChanges.NoDiameterOrHeightGrowth, variantCapabilities);
 
@@ -392,14 +395,14 @@ namespace Osu.Cof.Organon.Test
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
 
-                Stats.SSTATS(variant, stand, out float basalAreaPerAcre, out float treesPerAcre, out float SCCF, out TreeCompetition competition);
+                Stats.SSTATS(variant, stand, out float basalAreaPerAcre, out float treesPerAcre, out float SCCF, out StandDensity density);
 
                 this.TestContext.WriteLine("{0},{1} ft²/ac,{2} trees per acre,{3} crown competition factor", variant, basalAreaPerAcre, treesPerAcre, SCCF);
                 this.TestContext.WriteLine("index,large tree BA larger,large tree CCF larger");
-                for (int largeTreeCompetitionIndex = 0; largeTreeCompetitionIndex < competition.LargeTreeBasalAreaLarger.Length; ++largeTreeCompetitionIndex)
+                for (int largeTreeCompetitionIndex = 0; largeTreeCompetitionIndex < density.LargeTreeBasalAreaLarger.Length; ++largeTreeCompetitionIndex)
                 {
-                    float largeTreeBasalAreaLarger = competition.LargeTreeBasalAreaLarger[largeTreeCompetitionIndex];
-                    float largeTreeCrownCompetitionFactor = competition.LargeTreeCrownCompetition[largeTreeCompetitionIndex];
+                    float largeTreeBasalAreaLarger = density.LargeTreeBasalAreaLarger[largeTreeCompetitionIndex];
+                    float largeTreeCrownCompetitionFactor = density.LargeTreeCrownCompetition[largeTreeCompetitionIndex];
                     Assert.IsTrue(largeTreeBasalAreaLarger >= 0.0F);
                     Assert.IsTrue(largeTreeBasalAreaLarger < TestConstant.Maximum.TreeBasalAreaLarger);
                     Assert.IsTrue(largeTreeCrownCompetitionFactor >= 0.0F);
@@ -407,10 +410,10 @@ namespace Osu.Cof.Organon.Test
                     this.TestContext.WriteLine("{0},{1}", largeTreeBasalAreaLarger, largeTreeCrownCompetitionFactor);
                 }
                 this.TestContext.WriteLine("index,small tree BA larger,large tree CCF larger");
-                for (int smallTreeCompetitionIndex = 0; smallTreeCompetitionIndex < competition.SmallTreeBasalAreaLarger.Length; ++smallTreeCompetitionIndex)
+                for (int smallTreeCompetitionIndex = 0; smallTreeCompetitionIndex < density.SmallTreeBasalAreaLarger.Length; ++smallTreeCompetitionIndex)
                 {
-                    float smallTreeBasalAreaLarger = competition.SmallTreeBasalAreaLarger[smallTreeCompetitionIndex];
-                    float smallTreeCrownCompetitionFactor = competition.SmallTreeCrownCompetition[smallTreeCompetitionIndex];
+                    float smallTreeBasalAreaLarger = density.SmallTreeBasalAreaLarger[smallTreeCompetitionIndex];
+                    float smallTreeCrownCompetitionFactor = density.SmallTreeCrownCompetition[smallTreeCompetitionIndex];
                     Assert.IsTrue(smallTreeBasalAreaLarger >= 0.0F);
                     Assert.IsTrue(smallTreeBasalAreaLarger < TestConstant.Maximum.TreeBasalAreaLarger);
                     Assert.IsTrue(smallTreeCrownCompetitionFactor >= 0.0F);

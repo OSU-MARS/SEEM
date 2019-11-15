@@ -23,14 +23,17 @@ namespace Osu.Cof.Organon
         // STOR[0]
         public float NO { get; set; }
 
-        // number of plots? (DOUG?)
-        public int NPTS { get; private set; }
+        // RVARS[1] site index from ground height in feet (internal variable SI_2 is from breast height), used for ??? in 
+        public float MortalitySiteIndex { get; private set; }
+
+        // number of plots tree data is from
+        // If data is for entire stand use one plot.
+        public float NumberOfPlots { get; private set; }
 
         // RVARS[0] site index from ground height in feet (internal variable SI_1 is from breast height), used for most species
         public float PrimarySiteIndex { get; private set; }
 
-        // RVARS[1] site index from ground height in feet (internal variable SI_2 is from breast height), used for ??? in 
-        public float MortalitySiteIndex { get; private set; }
+        public float RedAlderSiteIndex { get; private set; }
 
         // STOR[1]
         public float RD0 { get; set; }
@@ -46,8 +49,9 @@ namespace Osu.Cof.Organon
             this.BreastHeightAgeInYears = ageInYears;
             this.MaxBigSixSpeciesGroupIndex = maxBigSixSpeciesGroupIndex;
             this.MortalitySiteIndex = -1.0F;
-            this.NPTS = 1;
+            this.NumberOfPlots = 1;
             this.PrimarySiteIndex = primarySiteIndex;
+            this.RedAlderSiteIndex = -1.0F;
             this.TreeHeightWarning = new bool[treeRecordCount];
             this.Warnings = new StandWarnings();
         }
@@ -65,7 +69,8 @@ namespace Osu.Cof.Organon
             other.Height.CopyTo(this.Height, 0);
             other.HeightGrowth.CopyTo(this.HeightGrowth, 0);
             this.MortalitySiteIndex = other.MortalitySiteIndex;
-            this.NPTS = other.NPTS;
+            this.NumberOfPlots = other.NumberOfPlots;
+            this.RedAlderSiteIndex = other.RedAlderSiteIndex;
             other.Species.CopyTo(this.Species, 0);
             other.SpeciesGroup.CopyTo(this.SpeciesGroup, 0);
             other.TreeHeightWarning.CopyTo(this.TreeHeightWarning, 0);
@@ -77,7 +82,7 @@ namespace Osu.Cof.Organon
             return this.SpeciesGroup[treeIndex] <= this.MaxBigSixSpeciesGroupIndex;
         }
 
-        public void SetDefaultSiteIndices(Variant variant)
+        public void SetDefaultAndMortalitySiteIndices(Variant variant)
         {
             switch (variant)
             {
@@ -119,12 +124,45 @@ namespace Osu.Cof.Organon
             }
         }
 
+        public float SetRedAlderSiteIndex()
+        {
+            // find red alder site index and growth effective age
+            // In CIPSR 2.2.4 these paths are disabled for SMC red alder even though it's a supported species, resulting in zero
+            // height growth. In this fork the code's called regardless of variant.
+            float heightOfTallestRedAlderInFeet = 0.0F;
+            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            {
+                if (this.Species[treeIndex] == FiaCode.AlnusRubra)
+                {
+                    float alderHeightInFeet = this.Height[treeIndex];
+                    if (alderHeightInFeet > heightOfTallestRedAlderInFeet)
+                    {
+                        heightOfTallestRedAlderInFeet = alderHeightInFeet;
+                    }
+                }
+            }
+
+            this.RedAlderSiteIndex = RedAlder.ConiferToRedAlderSiteIndex(this.PrimarySiteIndex);
+            float redAlderAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndex);
+            if (redAlderAge <= 0.0F)
+            {
+                redAlderAge = 55.0F;
+                this.RedAlderSiteIndex = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, redAlderAge);
+            }
+            else if (redAlderAge > 55.0F)
+            {
+                redAlderAge = 55.0F;
+            }
+
+            return redAlderAge;
+        }
+
         /// <summary>
-        /// Finds power of SDImax line. Sets A1 (constant of SDImax line) and A2 (exponent of SDImax line, dimensionless).
+        /// Finds SDImax line. Sets A1 (constant of SDImax line) and A2 (exponent of SDImax line, dimensionless).
         /// </summary>
         /// <param name="configuration">Organon configuration.</param>
         /// <param name="stand">Stand data.</param>
-        public void SUBMAX(OrganonConfiguration configuration)
+        public void SetSdiMax(OrganonConfiguration configuration)
         {
             // CALCULATE THE MAXIMUM SIZE-DENISTY LINE
             switch (configuration.Variant)
@@ -194,7 +232,7 @@ namespace Osu.Cof.Organon
             float PTF = 0.0F; // BUGBUG not intialized in Fortran code
             if (TOTBA > 0.0F)
             {
-                if (configuration.Variant <= Variant.Smc)
+                if (configuration.Variant != Variant.Rap)
                 {
                     PDF = BAGRP[0] / TOTBA;
                     PTF = BAGRP[1] / TOTBA;
@@ -208,7 +246,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                if (configuration.Variant <= Variant.Smc)
+                if (configuration.Variant != Variant.Rap)
                 {
                     PDF = 0.0F;
                     PTF = 0.0F;
@@ -324,6 +362,7 @@ namespace Osu.Cof.Organon
             }
             if (A1MOD <= 0.0F)
             {
+                // BUGBUG: silently ignores error condition
                 A1MOD = 1.0F;
             }
 

@@ -287,7 +287,7 @@ namespace Osu.Cof.Organon
             LIMIT(variant, species, stand.Dbh[treeIndex], stand.Height[treeIndex], stand.DbhGrowth[treeIndex], ref stand.HeightGrowth[treeIndex]);
         }
 
-        public static void GrowMinorSpecies(int treeIndex, Variant variant, Stand stand, float RASI, float[,] CALIB)
+        public static void GrowMinorSpecies(int treeIndex, Variant variant, Stand stand, float[,] CALIB)
         {
             Debug.Assert(stand.IsBigSixSpecies(treeIndex) == false);
 
@@ -325,7 +325,7 @@ namespace Osu.Cof.Organon
             FiaCode species = stand.Species[treeIndex];
             if ((species == FiaCode.AlnusRubra) && (variant != Variant.Rap))
             {
-                float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(stand.Height[treeIndex], RASI);
+                float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(stand.Height[treeIndex], stand.RedAlderSiteIndex);
                 if (growthEffectiveAge <= 0.0F)
                 {
                     stand.HeightGrowth[treeIndex] = 0.0F;
@@ -333,8 +333,8 @@ namespace Osu.Cof.Organon
                 else
                 {
                     // BUGBUG: this is strange as it appears to assume red alders are always dominant trees
-                    float RAH1 = RedAlder.GetH50(growthEffectiveAge, RASI);
-                    float RAH2 = RedAlder.GetH50(growthEffectiveAge + Constant.DefaultTimeStepInYears, RASI);
+                    float RAH1 = RedAlder.GetH50(growthEffectiveAge, stand.RedAlderSiteIndex);
+                    float RAH2 = RedAlder.GetH50(growthEffectiveAge + Constant.DefaultTimeStepInYears, stand.RedAlderSiteIndex);
                     float redAlderHeightGrowth = RAH2 - RAH1;
                     stand.HeightGrowth[treeIndex] = redAlderHeightGrowth;
                 }
@@ -462,7 +462,7 @@ namespace Osu.Cof.Organon
             float PF3;
             float PF4;
             float PF5;
-            if (variant <= Variant.Smc)
+            if (variant != Variant.Rap)
             {
                 if (speciesGroup == 0)
                 {
@@ -660,7 +660,7 @@ namespace Osu.Cof.Organon
             float PT1;
             float PT2;
             float PT3;
-            if (variant <= Variant.Smc)
+            if (variant != Variant.Rap)
             {
                 if (speciesGroup == 0)
                 {

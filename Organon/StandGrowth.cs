@@ -10,17 +10,17 @@ namespace Osu.Cof.Organon
         /// </summary>
         /// <param name="simulationStep"></param>
         /// <param name="configuration">Organon growth simulation options and site settings.</param>
-        /// <param name="ACALIB"></param>
-        /// <param name="PN"></param>
-        /// <param name="YSF"></param>
+        /// <param name="ACALIB">Array of calibration coefficients. Values must be between 0.5 and 2.0.</param>
+        /// <param name="PN">Pounds of nitrogen per acre?</param>
+        /// <param name="YSF">Years fertilization performed?</param>
         /// <param name="BABT"></param>
         /// <param name="BART"></param>
-        /// <param name="YST"></param>
+        /// <param name="YST">Years thinning performed?</param>
         public static void EXECUTE(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, 
                                    float BABT, float[] BART, float[] YST)
         {
             // BUGBUG: simulationStep largely duplicates stand age
-            EDIT(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int BNXT);
+            ValidateArguments(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int BNXT);
 
             // BUGBUG: 5 * simulationStep is incorrect for RAP
             int simulationYear = Constant.DefaultTimeStepInYears * simulationStep;
@@ -31,35 +31,32 @@ namespace Osu.Cof.Organon
                 FCYCLE = 1;
             }
 
-            float[,] CALIB = new float[18, 6];
-            for (int I = 0; I < 18; ++I)
+            float[,] CALIB = new float[NSPN, 3];
+            for (int speciesGroupIndex = 0; speciesGroupIndex < NSPN; ++speciesGroupIndex)
             {
-                CALIB[I, 3] = ACALIB[I, 0];
-                CALIB[I, 4] = ACALIB[I, 1];
-                CALIB[I, 5] = ACALIB[I, 2];
-                if (configuration.CALH)
+                if (configuration.CalibrateHeight)
                 {
-                    CALIB[I, 0] = (1.0F + CALIB[I, 3]) / 2.0F + (float)Math.Pow(0.5, 0.5 * simulationStep) * ((CALIB[I, 3] - 1.0F) / 2.0F);
+                    CALIB[speciesGroupIndex, 0] = (1.0F + ACALIB[speciesGroupIndex, 0]) / 2.0F + (float)Math.Pow(0.5, 0.5 * simulationStep) * ((ACALIB[speciesGroupIndex, 0] - 1.0F) / 2.0F);
                 }
                 else 
                 {
-                    CALIB[I, 0] = 1.0F;
+                    CALIB[speciesGroupIndex, 0] = 1.0F;
                 }
-                if (configuration.CALC)
+                if (configuration.CalibrateCrownRatio)
                 {
-                    CALIB[I, 1] = (1.0F + CALIB[I, 4]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((CALIB[I, 4] - 1.0F) / 2.0F);
-                }
-                else 
-                {
-                    CALIB[I, 1] = 1.0F;
-                }
-                if (configuration.CALD)
-                {
-                    CALIB[I, 2] = (1.0F + CALIB[I, 6]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((CALIB[I, 6] - 1.0F) / 2.0F);
+                    CALIB[speciesGroupIndex, 1] = (1.0F + ACALIB[speciesGroupIndex, 1]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[speciesGroupIndex, 1] - 1.0F) / 2.0F);
                 }
                 else 
                 {
-                    CALIB[I, 2] = 1.0F;
+                    CALIB[speciesGroupIndex, 1] = 1.0F;
+                }
+                if (configuration.CalibrateDiameter)
+                {
+                    CALIB[speciesGroupIndex, 2] = (1.0F + ACALIB[speciesGroupIndex, 2]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[speciesGroupIndex, 2] - 1.0F) / 2.0F);
+                }
+                else 
+                {
+                    CALIB[speciesGroupIndex, 2] = 1.0F;
                 }
             }
 
@@ -72,43 +69,18 @@ namespace Osu.Cof.Organon
             }
 
             // find red alder site index and growth effective age
-            // In CIPSR 2.2.4 these paths are disabled for SMC red alder even though it's a supported species, resulting in zero
-            // height growth. In this fork the code's called regardless of variant.
-            float heightOfTallestRedAlderInFeet = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                if (stand.Species[treeIndex] == FiaCode.AlnusRubra)
-                {
-                    float alderHeightInFeet = stand.Height[treeIndex];
-                    if (alderHeightInFeet > heightOfTallestRedAlderInFeet)
-                    {
-                        heightOfTallestRedAlderInFeet = alderHeightInFeet;
-                    }
-                }
-            }
+            float redAlderAge = stand.SetRedAlderSiteIndex();
 
-            float redAlderSiteIndex = RedAlder.ConiferToRedAlderSiteIndex(stand.PrimarySiteIndex);
-            float redAlderAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, redAlderSiteIndex);
-            if (redAlderAge <= 0.0F)
-            {
-                redAlderAge = 55.0F;
-                redAlderSiteIndex = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, redAlderAge);
-            }
-            else if (redAlderAge > 55.0F)
-            {
-                redAlderAge = 55.0F;
-            }
+            // density at start of growth
+            Stats.SSTATS(configuration.Variant, stand, out float SBA1, out float _, out float _, out StandDensity densityBeforeGrowth);
 
-            // CALCULATE DENSITY VARIABLES AT SOG
-            Stats.SSTATS(configuration.Variant, stand, out float SBA1, out float _, out float _, out TreeCompetition competitionBeforeGrowth);
-
-            // CALCULATE CCH AND CROWN CLOSURE AT SOG
+            // CCH and crown closure at start of growth
             float[] CCH = new float[41];
             CrownGrowth.CRNCLO(configuration.Variant, stand, CCH, out float _);
             float OLD = 0.0F;
             TreeGrowth.GROW(ref simulationStep, configuration, stand, NSPN, ref TCYCLE, ref FCYCLE, 
-                            SBA1, competitionBeforeGrowth, CALIB, PN, YF, BABT, BART,
-                            YT, CCH, ref OLD, redAlderAge, redAlderSiteIndex, out TreeCompetition _);
+                            SBA1, densityBeforeGrowth, CALIB, PN, YF, BABT, BART,
+                            YT, CCH, ref OLD, redAlderAge, out StandDensity _);
 
             if (configuration.IsEvenAge == false)
             {
@@ -139,682 +111,6 @@ namespace Osu.Cof.Organon
                 if (configuration.IsEvenAge && (stand.AgeInYears > 30.0F))
                 {
                     stand.Warnings.TreesOld = true;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Does argument checking and raises error flags if problems are found.
-        /// </summary>
-        /// <param name="simulationStep"></param>
-        /// <param name="configuration">Organon configuration settings.</param>
-        /// <param name="ACALIB"></param>
-        /// <param name="PN"></param>
-        /// <param name="YSF"></param>
-        /// <param name="BABT"></param>
-        /// <param name="BART"></param>
-        /// <param name="YST"></param>
-        /// <param name="NSPN">Number of species groups supported by specified Organon variant.</param>
-        /// <param name="BIG6"></param>
-        /// <param name="BNXT"></param>
-        private static void EDIT(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
-                                 out int NSPN, out int BIG6, out int BNXT)
-        {
-            if (stand.TreeRecordCount < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(stand.TreeRecordCount));
-            }
-            if (Enum.IsDefined(typeof(Variant), configuration.Variant) == false)
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration.Variant));
-            }
-            if (stand.NPTS < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(stand.NPTS));
-            }
-            if ((stand.PrimarySiteIndex <= 0.0F) || (stand.PrimarySiteIndex > Constant.Maximum.SiteIndexInFeet))
-            {
-                throw new ArgumentOutOfRangeException(nameof(stand.PrimarySiteIndex));
-            }
-            if ((stand.MortalitySiteIndex <= 0.0F) || (stand.MortalitySiteIndex > Constant.Maximum.SiteIndexInFeet))
-            {
-                throw new ArgumentOutOfRangeException(nameof(stand.MortalitySiteIndex));
-            }
-
-            if (configuration.IsEvenAge)
-            {
-                if (stand.BreastHeightAgeInYears < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(stand.BreastHeightAgeInYears), nameof(stand.BreastHeightAgeInYears) + " must be zero or greater when " + nameof(configuration.IsEvenAge) + " is set.");
-                }
-                if ((stand.AgeInYears - stand.BreastHeightAgeInYears) < 1)
-                {
-                    // (DOUG? can stand.AgeInYears ever be less than stand.BreastHeightAgeInYears?)
-                    throw new ArgumentException(nameof(stand.AgeInYears) + " must be greater than " + nameof(stand.BreastHeightAgeInYears) + " when " + nameof(configuration.IsEvenAge) + " is set.");
-                }
-            }
-            else
-            {
-                if (stand.BreastHeightAgeInYears != 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(stand.BreastHeightAgeInYears), nameof(stand.BreastHeightAgeInYears) + " must be zero or less when " + nameof(configuration.IsEvenAge) + " is not set.");
-                }
-                if (configuration.Fertilizer)
-                {
-                    throw new ArgumentException("If " + nameof(configuration.Fertilizer) + " is set " + nameof(configuration.IsEvenAge) + "must also be set.");
-                }
-            }
-            for (int I = 0; I < 5; ++I)
-            {
-                if (!configuration.Fertilizer && (YSF[I] != 0 || PN[I] != 0))
-                {
-                    throw new ArgumentException();
-                }
-                if (configuration.Fertilizer)
-                {
-                    if ((YSF[I] > stand.AgeInYears) || (YSF[I] > 70.0F))
-                    {
-                        throw new ArgumentException();
-                    }
-                    if (I == 0)
-                    {
-                        if ((PN[I] < 0.0) || (PN[I] > 400.0F))
-                        {
-                            throw new ArgumentException();
-                        }
-                        else
-                        {
-                            if (PN[I] > 400.0F)
-                            {
-                                throw new ArgumentException();
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (configuration.Thin && (BART[0] >= BABT))
-            {
-                throw new ArgumentException("The first element of " + nameof(BART) + " must be less than " + nameof(BABT) + " when thinning response is enabled.");
-            }
-            for (int I = 0; I < 5; ++I)
-            {
-                if (!configuration.Thin && (YST[I] != 0 || BART[I] != 0))
-                {
-                    throw new ArgumentException();
-                }
-                if (configuration.Thin)
-                {
-                    if (configuration.IsEvenAge && YST[I] > stand.AgeInYears)
-                    {
-                        throw new ArgumentException();
-                    }
-                    if (I > 1)
-                    {
-                        if (YST[I] != 0.0F && BART[I] < 0.0F)
-                        {
-                            throw new ArgumentException();
-                        }
-                    }
-                    if (BABT < 0.0F)
-                    {
-                        throw new ArgumentException();
-                    }
-                }
-            }
-
-            if (simulationStep < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(simulationStep));
-            }
-            for (int I = 0; I < 3; ++I)
-            {
-                for (int J = 0; J < 18; ++J)
-                {
-                    if ((ACALIB[J, I] > 2.0F) || (ACALIB[J, I] < 0.5F))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(simulationStep));
-                    }
-                }
-            }
-
-            if (configuration.MSDI_1 > Constant.Maximum.MSDI)
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_1));
-            }
-            if (configuration.MSDI_2 > Constant.Maximum.MSDI)
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_2));
-            }
-            if (configuration.MSDI_3 > Constant.Maximum.MSDI)
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_3));
-            }
-
-            if (configuration.Genetics)
-            {
-                if (!configuration.IsEvenAge)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.Genetics), nameof(configuration.Genetics) + " is supported only when " + nameof(configuration.IsEvenAge) + " is set.");
-                }
-                if ((configuration.GWDG < 0.0F) || (configuration.GWDG > 20.0F))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.GWDG));
-                }
-                if ((configuration.GWHG < 0.0F) || (configuration.GWHG > 20.0F))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.GWHG));
-                }
-            }
-            else
-            {
-                if (configuration.GWDG != 0.0F)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.GWDG));
-                }
-                if (configuration.GWHG != 0.0F)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.GWHG));
-                }
-            }
-
-            if (configuration.SwissNeedleCast)
-            {
-                if ((configuration.Variant == Variant.Swo) || (configuration.Variant == Variant.Rap))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.Variant), "Swiss needle cast is not supported by the SWO and RAP variants.");
-                }
-                if (!configuration.IsEvenAge)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.IsEvenAge), "Swiss needle cast is not supported for uneven age stands.");
-                }
-                if ((configuration.FR < 0.85F) || (configuration.FR > 7.0F))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.FR));
-                }
-                if (configuration.Fertilizer && (configuration.FR < 3.0))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.FR), nameof(configuration.FR) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(configuration.Fertilizer) + "are set.");
-                }
-            }
-            else
-            {
-                if (configuration.FR > 0.0F)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.FR));
-                }
-            }
-
-            if ((configuration.Variant >= Variant.Rap) && (stand.PrimarySiteIndex < 0.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(stand.PrimarySiteIndex));
-            }
-            if ((configuration.Variant >= Variant.Rap) && (configuration.PDEN < 0.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration.PDEN));
-            }
-            if (!configuration.IsEvenAge && (configuration.Variant >= Variant.Rap))
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration.IsEvenAge));
-            }
-
-            // TODO: is it desirable to clear existing stand warnings?
-            stand.Warnings.BigSixHeightAbovePotential = false;
-            stand.Warnings.LessThan50TreeRecords = false;
-            stand.Warnings.MortalitySiteIndexOutOfRange = false;
-            stand.Warnings.OtherSpeciesBasalAreaTooHigh = false;
-            stand.Warnings.PrimarySiteIndexOutOfRange = false;
-            stand.Warnings.TreesOld = false;
-            stand.Warnings.TreesYoung = false;
-
-            // BUGBUG: move NSPN into Stand and OrganonConfiguration
-            switch (configuration.Variant)
-            {
-                case Variant.Swo:
-                    NSPN = 18;
-                    break;
-                case Variant.Nwo:
-                case Variant.Smc:
-                    NSPN = 11;
-                    break;
-                case Variant.Rap:
-                    NSPN = 7;
-                    break;
-                default:
-                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
-            }
-
-            // check tree records for errors
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                FiaCode species = stand.Species[treeIndex];
-                if (StandGrowth.IsSpeciesSupported(configuration.Variant, species) == false)
-                {
-                    throw new NotSupportedException(String.Format("Species {0} of tree {1} is not supported by variant {2}.", species, treeIndex, configuration.Variant));
-                }
-                float dbhInInches = stand.Dbh[treeIndex];
-                if (dbhInInches < 0.09F)
-                {
-                    throw new NotSupportedException(String.Format("Diameter of tree {0} is less than 0.1 inches.", treeIndex));
-                }
-                float heightInFeet = stand.Height[treeIndex];
-                if (heightInFeet < 4.5F)
-                {
-                    throw new NotSupportedException(String.Format("Height of tree {0} is less than 4.5 feet.", treeIndex));
-                }
-                float crownRatio = stand.CrownRatio[treeIndex];
-                if ((crownRatio < 0.0F) || (crownRatio > 1.0F))
-                {
-                    throw new NotSupportedException(String.Format("Crown ratio of tree {0} is not between 0 and 1.", treeIndex));
-                }
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                if (expansionFactor < 0.0F)
-                {
-                    throw new NotSupportedException(String.Format("Expansion factor of tree {0} is negative.", treeIndex));
-                }
-            }
-
-            BIG6 = 0;
-            BNXT = 0;
-            float MAXGF = 0.0F;
-            float MAXDF = 0.0F;
-            float MAXWH = 0.0F;
-            float MAXPP = 0.0F;
-            float MAXIC = 0.0F;
-            float MAXRA = 0.0F;
-            int IIB = stand.MaxBigSixSpeciesGroupIndex;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                FiaCode speciesCode = stand.Species[treeIndex];
-                float heightInFeet = stand.Height[treeIndex];
-                switch (configuration.Variant)
-                {
-                    // SWO BIG SIX
-                    case Variant.Swo:
-                        if ((speciesCode == FiaCode.PinusPonderosa) && (heightInFeet > MAXPP))
-                        {
-                            MAXPP = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.CalocedrusDecurrens) && (heightInFeet > MAXIC))
-                        {
-                            MAXIC = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.PseudotsugaMenziesii) && (heightInFeet > MAXDF))
-                        {
-                            MAXDF = heightInFeet;
-                        }
-                        // BUGBUG: why are true firs and sugar pine being assigned to Douglas-fir max height?
-                        else if ((speciesCode == FiaCode.AbiesConcolor) && (heightInFeet > MAXDF))
-                        {
-                            MAXDF = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > MAXDF))
-                        {
-                            MAXDF = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.PinusLambertiana) && (heightInFeet > MAXDF))
-                        {
-                            MAXDF = heightInFeet;
-                        }
-                        break;
-                    case Variant.Nwo:
-                    case Variant.Smc:
-                        if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > MAXGF))
-                        {
-                            MAXGF = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.PseudotsugaMenziesii) && (heightInFeet > MAXDF))
-                        {
-                            MAXDF = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.TsugaHeterophylla) && (heightInFeet > MAXWH))
-                        {
-                            MAXWH = heightInFeet;
-                        }
-                        break;
-                    case Variant.Rap:
-                        if ((speciesCode == FiaCode.AlnusRubra) && (heightInFeet > MAXRA))
-                        {
-                            MAXRA = heightInFeet;
-                        }
-                        break;
-                }
-
-                int speciesGroup = GetSpeciesGroup(configuration.Variant, speciesCode);
-                stand.SpeciesGroup[treeIndex] = speciesGroup;
-                if (configuration.Variant >= Variant.Rap)
-                {
-                    // BUGBUG: encapsulation violation - move this into GetSpeciesGroup()
-                    IIB = 1;
-                }
-                if (speciesGroup < IIB)
-                {
-                    ++BIG6;
-                    if (stand.LiveExpansionFactor[treeIndex] < 0.0F)
-                    {
-                        ++BNXT;
-                    }
-                }
-            }
-
-            // DETERMINE IF SPECIES MIX CORRECT FOR STAND AGE
-            float standBasalArea = 0.0F;
-            float standBigSixBasalArea = 0.0F;
-            float standHardwoodBasalArea = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                if (expansionFactor < 0.0F)
-                {
-                    continue;
-                }
-
-                float dbhInInches = stand.Dbh[treeIndex];
-                float basalArea = expansionFactor * dbhInInches * dbhInInches;
-                standBasalArea += basalArea;
-
-                int speciesGroup = stand.SpeciesGroup[treeIndex];
-                if (speciesGroup < IIB)
-                {
-                    standBigSixBasalArea += basalArea;
-                }
-                if (configuration.Variant == Variant.Swo)
-                {
-                    FiaCode species = stand.Species[treeIndex];
-                    if ((species == FiaCode.ArbutusMenziesii) || (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla) || (species == FiaCode.QuercusKelloggii))
-                    {
-                        standHardwoodBasalArea += basalArea;
-                    }
-                }
-            }
-
-            standBasalArea *= 0.005454154F / (float)stand.NPTS;
-            standBigSixBasalArea *= 0.005454154F / (float)stand.NPTS;
-            if (standBigSixBasalArea < 0.0F)
-            {
-                throw new NotSupportedException("Total basal area big six species is negative.");
-            }
-
-            if (configuration.Variant >= Variant.Rap)
-            {
-                float PRA;
-                if (standBasalArea > 0.0F)
-                {
-                    PRA = standBigSixBasalArea / standBasalArea;
-                }
-                else
-                {
-                    PRA = 0.0F;
-                }
-
-                if (PRA < 0.9F)
-                {
-                    // if needed, make this a warning rather than an error
-                    throw new NotSupportedException("Red alder plantation stand is less than 90% by basal area.");
-                }
-            }
-
-            // DETERMINE WARNINGS (IF ANY)
-            // BUGBUG move maximum site indices to variant capabilities
-            switch (configuration.Variant)
-            {
-                case Variant.Swo:
-                    if ((stand.PrimarySiteIndex > 0.0F) && ((stand.PrimarySiteIndex < 40.0F) || (stand.PrimarySiteIndex > 150.0F)))
-                    {
-                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
-                    }
-                    if ((stand.MortalitySiteIndex > 0.0F) && ((stand.MortalitySiteIndex < 50.0F) || (stand.MortalitySiteIndex > 140.0F)))
-                    {
-                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
-                    }
-                    break;
-                case Variant.Nwo:
-                case Variant.Smc:
-                    if ((stand.PrimarySiteIndex > 0.0F) && ((stand.PrimarySiteIndex < 90.0F) || (stand.PrimarySiteIndex > 142.0F)))
-                    {
-                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
-                    }
-                    if ((stand.MortalitySiteIndex > 0.0F) && ((stand.MortalitySiteIndex < 90.0F) || (stand.MortalitySiteIndex > 142.0F)))
-                    {
-                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
-                    }
-                    break;
-                case Variant.Rap:
-                    if ((stand.PrimarySiteIndex < 20.0F) || (stand.PrimarySiteIndex > 125.0F))
-                    {
-                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
-                    }
-                    if ((stand.MortalitySiteIndex > 0.0F) && (stand.MortalitySiteIndex < 90.0F || stand.MortalitySiteIndex > 142.0F))
-                    {
-                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
-                    }
-                    break;
-            }
-
-            // check tallest trees in stand against maximum height for big six species
-            // BUGBUG: need an API for maximum heights rather than inline code here
-            switch (configuration.Variant)
-            {
-                case Variant.Swo:
-                    if (MAXPP > 0.0F)
-                    {
-                        float MAXHT = (stand.MortalitySiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.164985 * (stand.MortalitySiteIndex - 4.5), 0.288169)))) + 4.5F;
-                        if (MAXPP > MAXHT)
-                        {
-                            stand.Warnings.BigSixHeightAbovePotential = true;
-                        }
-                    }
-                    if (MAXIC > 0.0F)
-                    {
-                        float ICSI = (0.66F * stand.PrimarySiteIndex) - 4.5F;
-                        float MAXHT = ICSI * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * ICSI, 0.281176)))) + 4.5F;
-                        if (MAXIC > MAXHT)
-                        {
-                            stand.Warnings.BigSixHeightAbovePotential = true;
-                        }
-                    }
-                    if (MAXDF > 0.0F)
-                    {
-                        float MAXHT = (stand.PrimarySiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * (stand.PrimarySiteIndex - 4.5), 0.281176)))) + 4.5F;
-                        if (MAXDF > MAXHT)
-                        {
-                            stand.Warnings.BigSixHeightAbovePotential = true;
-                        }
-                    }
-                    break;
-                case Variant.Nwo:
-                case Variant.Smc:
-                    if (MAXDF > 0.0F)
-                    {
-                        float Z50 = 2500.0F / (stand.PrimarySiteIndex - 4.5F);
-                        float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
-                        if (MAXDF > MAXHT)
-                        {
-                            stand.Warnings.BigSixHeightAbovePotential = true;
-                        }
-                    }
-                    if (MAXGF > 0.0F)
-                    {
-                        float Z50 = 2500.0F / (stand.PrimarySiteIndex - 4.5F);
-                        float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
-                        if (MAXGF > MAXHT)
-                        {
-                            stand.Warnings.BigSixHeightAbovePotential = true;
-                        }
-                    }
-                    if (MAXWH > 0.0F)
-                    {
-                        float Z50 = 2500.0F / (stand.MortalitySiteIndex - 4.5F);
-                        float MAXHT = 4.5F + 1.0F / (0.00192F + 0.00007F * Z50);
-                        if (MAXWH > MAXHT)
-                        {
-                            stand.Warnings.BigSixHeightAbovePotential = true;
-                        }
-                    }
-                    break;
-                case Variant.Rap:
-                    if (MAXRA > 0.0F)
-                    {
-                        RedAlder.WHHLB_H40(stand.PrimarySiteIndex, 20.0F, 150.0F, out float MAXHT);
-                        if (MAXRA > MAXHT)
-                        {
-                            stand.Warnings.BigSixHeightAbovePotential = true;
-                        }
-                    }
-                    break;
-            }
-
-            if (configuration.IsEvenAge && (configuration.Variant != Variant.Smc))
-            {
-                stand.Warnings.TreesYoung = stand.BreastHeightAgeInYears < 10;
-            }
-
-            float requiredWellKnownSpeciesBasalAreaFraction;
-            switch (configuration.Variant)
-            {
-                case Variant.Nwo:
-                    requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
-                    break;
-                case Variant.Rap:
-                    requiredWellKnownSpeciesBasalAreaFraction = 0.8F;
-                    break;
-                case Variant.Smc:
-                    requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
-                    break;
-                case Variant.Swo:
-                    requiredWellKnownSpeciesBasalAreaFraction = 0.2F;
-                    break;
-                default:
-                    throw new NotSupportedException(String.Format("Unhandled Organon variant {0}.", configuration.Variant));
-            }
-            if ((standBigSixBasalArea + standHardwoodBasalArea) < (requiredWellKnownSpeciesBasalAreaFraction * standBasalArea))
-            {
-                stand.Warnings.OtherSpeciesBasalAreaTooHigh = true;
-            }
-            if (stand.TreeRecordCount < 50)
-            {
-                stand.Warnings.LessThan50TreeRecords = true;
-            }
-
-            CKAGE(configuration, stand, out float OLD);
-
-            float X = 100.0F * (OLD / (BIG6 - BNXT));
-            if (X >= 50.0F)
-            {
-                stand.Warnings.TreesOld = true;
-            }
-            if (configuration.Variant == Variant.Swo)
-            {
-                if (configuration.IsEvenAge && stand.BreastHeightAgeInYears > 500)
-                {
-                    stand.Warnings.TreesOld = true;
-                }
-            }
-            else if (configuration.Variant == Variant.Nwo || configuration.Variant == Variant.Smc)
-            {
-                if (configuration.IsEvenAge && stand.BreastHeightAgeInYears > 120)
-                {
-                    stand.Warnings.TreesOld = true;
-                }
-            }
-            else
-            {
-                if (configuration.IsEvenAge && stand.AgeInYears > 30)
-                {
-                    stand.Warnings.TreesOld = true;
-                }
-            }
-
-            // BUGBUG: this is overcomplicated, should just check against maximum stand age using time step from OrganonVapabilities
-            int standAgeBudgetAvailableAtNextTimeStep;
-            if (configuration.IsEvenAge)
-            {
-                switch (configuration.Variant)
-                {
-                    case Variant.Swo:
-                        standAgeBudgetAvailableAtNextTimeStep = 500 - stand.AgeInYears - 5;
-                        break;
-                    case Variant.Nwo:
-                    case Variant.Smc:
-                        standAgeBudgetAvailableAtNextTimeStep = 120 - stand.AgeInYears - 5;
-                        break;
-                    case Variant.Rap:
-                        standAgeBudgetAvailableAtNextTimeStep = 30 - stand.AgeInYears - 1;
-                        break;
-                    default:
-                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
-                }
-            }
-            else
-            {
-                switch (configuration.Variant)
-                {
-                    case Variant.Swo:
-                        standAgeBudgetAvailableAtNextTimeStep = 500 - (simulationStep + 1) * 5;
-                        break;
-                    case Variant.Nwo:
-                    case Variant.Smc:
-                        standAgeBudgetAvailableAtNextTimeStep = 120 - (simulationStep + 1) * 5;
-                        break;
-                    case Variant.Rap:
-                        standAgeBudgetAvailableAtNextTimeStep = 30 - (simulationStep + 1) * 1;
-                        break;
-                    default:
-                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
-                }
-            }
-
-            if (standAgeBudgetAvailableAtNextTimeStep < 0)
-            {
-                stand.Warnings.TreesOld = true;
-            }
-
-            float B1 = -0.04484724F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                FiaCode species = stand.Species[treeIndex];
-                float B0;
-                switch (species)
-                {
-                    case FiaCode.PseudotsugaMenziesii:
-                        B0 = 19.04942539F;
-                        break;
-                    case FiaCode.TsugaHeterophylla:
-                        if (configuration.Variant == Variant.Nwo || configuration.Variant == Variant.Smc)
-                        {
-                            B0 = 19.04942539F;
-                        }
-                        else if (configuration.Variant == Variant.Rap)
-                        {
-                            B0 = 19.04942539F;
-                        }
-                        else
-                        {
-                            // BUGBUG Fortran code leaves B0 unitialized in Version.Swo case but also always treats hemlock as Douglas-fir
-                            B0 = 19.04942539F;
-                        }
-                        break;
-                    case FiaCode.AbiesConcolor:
-                    case FiaCode.AbiesGrandis:
-                        B0 = 16.26279948F;
-                        break;
-                    case FiaCode.PinusPonderosa:
-                        B0 = 17.11482201F;
-                        break;
-                    case FiaCode.PinusLambertiana:
-                        B0 = 14.29011403F;
-                        break;
-                    default:
-                        B0 = 15.80319194F;
-                        break;
-                }
-
-                float dbhInInches = stand.Dbh[treeIndex];
-                float potentialHeight = 4.5F + B0 * dbhInInches / (1.0F - B1 * dbhInInches);
-                float heightInFeet = stand.Height[treeIndex];
-                if (heightInFeet > potentialHeight)
-                {
-                    stand.TreeHeightWarning[treeIndex] = true;
                 }
             }
         }
@@ -1075,7 +371,7 @@ namespace Osu.Cof.Organon
             }
 
             Mortality.OldGro(stand, 0.0F, out float OG);
-            Stats.SSTATS(variant, stand, out float SBA, out float _, out float _, out TreeCompetition treeCompetition);
+            Stats.SSTATS(variant, stand, out float SBA, out float _, out float _, out StandDensity standDensity);
             for (int treeIndex = stand.TreeRecordCount - NINGRO; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 float crownRatio = stand.CrownRatio[treeIndex];
@@ -1088,7 +384,7 @@ namespace Osu.Cof.Organon
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
                 float dbhInInches = stand.Dbh[treeIndex];
                 float heightInFeet = stand.Height[treeIndex];
-                float SCCFL = treeCompetition.GET_CCFL(dbhInInches);
+                float SCCFL = standDensity.GET_CCFL(dbhInInches);
                 float HCB;
                 switch (variant)
                 {
@@ -1116,6 +412,689 @@ namespace Osu.Cof.Organon
                     HCB = 0.95F * heightInFeet;
                 }
                 stand.CrownRatio[treeIndex] = (1.0F - (HCB / heightInFeet)) * ACALIB[speciesGroup, 1];
+            }
+        }
+
+        /// <summary>
+        /// Does argument checking and raises error flags if problems are found.
+        /// </summary>
+        /// <param name="simulationStep"></param>
+        /// <param name="configuration">Organon configuration settings.</param>
+        /// <param name="ACALIB"></param>
+        /// <param name="PN"></param>
+        /// <param name="YSF"></param>
+        /// <param name="BABT"></param>
+        /// <param name="BART"></param>
+        /// <param name="YST"></param>
+        /// <param name="NSPN">Number of species groups supported by specified Organon variant.</param>
+        /// <param name="BIG6"></param>
+        /// <param name="BNXT"></param>
+        private static void ValidateArguments(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
+                                 out int NSPN, out int BIG6, out int BNXT)
+        {
+            if (stand.TreeRecordCount < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand.TreeRecordCount));
+            }
+            if (Enum.IsDefined(typeof(Variant), configuration.Variant) == false)
+            {
+                throw new ArgumentOutOfRangeException(nameof(configuration.Variant));
+            }
+            if (stand.NumberOfPlots < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand.NumberOfPlots));
+            }
+            if ((stand.PrimarySiteIndex <= 0.0F) || (stand.PrimarySiteIndex > Constant.Maximum.SiteIndexInFeet))
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand.PrimarySiteIndex));
+            }
+            if ((stand.MortalitySiteIndex <= 0.0F) || (stand.MortalitySiteIndex > Constant.Maximum.SiteIndexInFeet))
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand.MortalitySiteIndex));
+            }
+
+            if (configuration.IsEvenAge)
+            {
+                if (stand.BreastHeightAgeInYears < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(stand.BreastHeightAgeInYears), nameof(stand.BreastHeightAgeInYears) + " must be zero or greater when " + nameof(configuration.IsEvenAge) + " is set.");
+                }
+                if ((stand.AgeInYears - stand.BreastHeightAgeInYears) < 1)
+                {
+                    // (DOUG? can stand.AgeInYears ever be less than stand.BreastHeightAgeInYears?)
+                    throw new ArgumentException(nameof(stand.AgeInYears) + " must be greater than " + nameof(stand.BreastHeightAgeInYears) + " when " + nameof(configuration.IsEvenAge) + " is set.");
+                }
+            }
+            else
+            {
+                if (stand.BreastHeightAgeInYears != 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(stand.BreastHeightAgeInYears), nameof(stand.BreastHeightAgeInYears) + " must be zero or less when " + nameof(configuration.IsEvenAge) + " is not set.");
+                }
+                if (configuration.Fertilizer)
+                {
+                    throw new ArgumentException("If " + nameof(configuration.Fertilizer) + " is set " + nameof(configuration.IsEvenAge) + "must also be set.");
+                }
+            }
+            for (int I = 0; I < 5; ++I)
+            {
+                if (!configuration.Fertilizer && (YSF[I] != 0 || PN[I] != 0))
+                {
+                    throw new ArgumentException();
+                }
+                if (configuration.Fertilizer)
+                {
+                    if ((YSF[I] > stand.AgeInYears) || (YSF[I] > 70.0F))
+                    {
+                        throw new ArgumentException();
+                    }
+                    if (I == 0)
+                    {
+                        if ((PN[I] < 0.0) || (PN[I] > 400.0F))
+                        {
+                            throw new ArgumentException();
+                        }
+                        else
+                        {
+                            if (PN[I] > 400.0F)
+                            {
+                                throw new ArgumentException();
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (configuration.Thin && (BART[0] >= BABT))
+            {
+                throw new ArgumentException("The first element of " + nameof(BART) + " must be less than " + nameof(BABT) + " when thinning response is enabled.");
+            }
+            for (int I = 0; I < 5; ++I)
+            {
+                if (!configuration.Thin && (YST[I] != 0 || BART[I] != 0))
+                {
+                    throw new ArgumentException();
+                }
+                if (configuration.Thin)
+                {
+                    if (configuration.IsEvenAge && YST[I] > stand.AgeInYears)
+                    {
+                        throw new ArgumentException();
+                    }
+                    if (I > 1)
+                    {
+                        if (YST[I] != 0.0F && BART[I] < 0.0F)
+                        {
+                            throw new ArgumentException();
+                        }
+                    }
+                    if (BABT < 0.0F)
+                    {
+                        throw new ArgumentException();
+                    }
+                }
+            }
+
+            if (simulationStep < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(simulationStep));
+            }
+
+            if (configuration.MSDI_1 > Constant.Maximum.MSDI)
+            {
+                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_1));
+            }
+            if (configuration.MSDI_2 > Constant.Maximum.MSDI)
+            {
+                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_2));
+            }
+            if (configuration.MSDI_3 > Constant.Maximum.MSDI)
+            {
+                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_3));
+            }
+
+            if (configuration.Genetics)
+            {
+                if (!configuration.IsEvenAge)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.Genetics), nameof(configuration.Genetics) + " is supported only when " + nameof(configuration.IsEvenAge) + " is set.");
+                }
+                if ((configuration.GWDG < 0.0F) || (configuration.GWDG > 20.0F))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.GWDG));
+                }
+                if ((configuration.GWHG < 0.0F) || (configuration.GWHG > 20.0F))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.GWHG));
+                }
+            }
+            else
+            {
+                if (configuration.GWDG != 0.0F)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.GWDG));
+                }
+                if (configuration.GWHG != 0.0F)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.GWHG));
+                }
+            }
+
+            if (configuration.SwissNeedleCast)
+            {
+                if ((configuration.Variant == Variant.Swo) || (configuration.Variant == Variant.Rap))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.Variant), "Swiss needle cast is not supported by the SWO and RAP variants.");
+                }
+                if (!configuration.IsEvenAge)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.IsEvenAge), "Swiss needle cast is not supported for uneven age stands.");
+                }
+                if ((configuration.FR < 0.85F) || (configuration.FR > 7.0F))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.FR));
+                }
+                if (configuration.Fertilizer && (configuration.FR < 3.0))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.FR), nameof(configuration.FR) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(configuration.Fertilizer) + "are set.");
+                }
+            }
+            else
+            {
+                if (configuration.FR > 0.0F)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(configuration.FR));
+                }
+            }
+
+            if ((configuration.Variant >= Variant.Rap) && (stand.PrimarySiteIndex < 0.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand.PrimarySiteIndex));
+            }
+            if ((configuration.Variant >= Variant.Rap) && (configuration.PDEN < 0.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(configuration.PDEN));
+            }
+            if (!configuration.IsEvenAge && (configuration.Variant >= Variant.Rap))
+            {
+                throw new ArgumentOutOfRangeException(nameof(configuration.IsEvenAge));
+            }
+
+            // TODO: is it desirable to clear existing stand warnings?
+            stand.Warnings.BigSixHeightAbovePotential = false;
+            stand.Warnings.LessThan50TreeRecords = false;
+            stand.Warnings.MortalitySiteIndexOutOfRange = false;
+            stand.Warnings.OtherSpeciesBasalAreaTooHigh = false;
+            stand.Warnings.PrimarySiteIndexOutOfRange = false;
+            stand.Warnings.TreesOld = false;
+            stand.Warnings.TreesYoung = false;
+
+            // BUGBUG: move NSPN into Stand and OrganonConfiguration
+            switch (configuration.Variant)
+            {
+                case Variant.Swo:
+                    NSPN = 18;
+                    break;
+                case Variant.Nwo:
+                case Variant.Smc:
+                    NSPN = 11;
+                    break;
+                case Variant.Rap:
+                    NSPN = 7;
+                    break;
+                default:
+                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
+            }
+
+            // BUGBUG should check against species group count from variant configuration
+            int speciesGroupCount = ACALIB.GetLength(0);
+            if ((speciesGroupCount < NSPN) || (ACALIB.GetLength(0) < 3))
+            {
+                throw new ArgumentOutOfRangeException(nameof(ACALIB));
+            }
+            for (int speciesGroupIndex = 0; speciesGroupIndex < speciesGroupCount; ++speciesGroupIndex)
+            {
+                for (int I = 0; I < 3; ++I)
+                {
+                    if ((ACALIB[speciesGroupIndex, I] > 2.0F) || (ACALIB[speciesGroupIndex, I] < 0.5F))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(ACALIB));
+                    }
+                }
+            }
+
+            // check tree records for errors
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                FiaCode species = stand.Species[treeIndex];
+                if (StandGrowth.IsSpeciesSupported(configuration.Variant, species) == false)
+                {
+                    throw new NotSupportedException(String.Format("Species {0} of tree {1} is not supported by variant {2}.", species, treeIndex, configuration.Variant));
+                }
+                float dbhInInches = stand.Dbh[treeIndex];
+                if (dbhInInches < 0.09F)
+                {
+                    throw new NotSupportedException(String.Format("Diameter of tree {0} is less than 0.1 inches.", treeIndex));
+                }
+                float heightInFeet = stand.Height[treeIndex];
+                if (heightInFeet < 4.5F)
+                {
+                    throw new NotSupportedException(String.Format("Height of tree {0} is less than 4.5 feet.", treeIndex));
+                }
+                float crownRatio = stand.CrownRatio[treeIndex];
+                if ((crownRatio < 0.0F) || (crownRatio > 1.0F))
+                {
+                    throw new NotSupportedException(String.Format("Crown ratio of tree {0} is not between 0 and 1.", treeIndex));
+                }
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
+                if (expansionFactor < 0.0F)
+                {
+                    throw new NotSupportedException(String.Format("Expansion factor of tree {0} is negative.", treeIndex));
+                }
+            }
+
+            BIG6 = 0;
+            BNXT = 0;
+            float maxGrandFirHeight = 0.0F;
+            float maxDouglasFirHeight = 0.0F;
+            float maxWesternHemlockHeight = 0.0F;
+            float maxPonderosaHeight = 0.0F;
+            float maxIncenseCedarHeight = 0.0F;
+            float maxRedAlderHeight = 0.0F;
+            int IIB = stand.MaxBigSixSpeciesGroupIndex;
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                FiaCode speciesCode = stand.Species[treeIndex];
+                float heightInFeet = stand.Height[treeIndex];
+                switch (configuration.Variant)
+                {
+                    // SWO BIG SIX
+                    case Variant.Swo:
+                        if ((speciesCode == FiaCode.PinusPonderosa) && (heightInFeet > maxPonderosaHeight))
+                        {
+                            maxPonderosaHeight = heightInFeet;
+                        }
+                        else if ((speciesCode == FiaCode.CalocedrusDecurrens) && (heightInFeet > maxIncenseCedarHeight))
+                        {
+                            maxIncenseCedarHeight = heightInFeet;
+                        }
+                        else if ((speciesCode == FiaCode.PseudotsugaMenziesii) && (heightInFeet > maxDouglasFirHeight))
+                        {
+                            maxDouglasFirHeight = heightInFeet;
+                        }
+                        // BUGBUG: why are true firs and sugar pine being assigned to Douglas-fir max height?
+                        else if ((speciesCode == FiaCode.AbiesConcolor) && (heightInFeet > maxDouglasFirHeight))
+                        {
+                            maxDouglasFirHeight = heightInFeet;
+                        }
+                        else if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > maxDouglasFirHeight))
+                        {
+                            maxDouglasFirHeight = heightInFeet;
+                        }
+                        else if ((speciesCode == FiaCode.PinusLambertiana) && (heightInFeet > maxDouglasFirHeight))
+                        {
+                            maxDouglasFirHeight = heightInFeet;
+                        }
+                        break;
+                    case Variant.Nwo:
+                    case Variant.Smc:
+                        if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > maxGrandFirHeight))
+                        {
+                            maxGrandFirHeight = heightInFeet;
+                        }
+                        else if ((speciesCode == FiaCode.PseudotsugaMenziesii) && (heightInFeet > maxDouglasFirHeight))
+                        {
+                            maxDouglasFirHeight = heightInFeet;
+                        }
+                        else if ((speciesCode == FiaCode.TsugaHeterophylla) && (heightInFeet > maxWesternHemlockHeight))
+                        {
+                            maxWesternHemlockHeight = heightInFeet;
+                        }
+                        break;
+                    case Variant.Rap:
+                        if ((speciesCode == FiaCode.AlnusRubra) && (heightInFeet > maxRedAlderHeight))
+                        {
+                            maxRedAlderHeight = heightInFeet;
+                        }
+                        break;
+                }
+
+                int speciesGroup = GetSpeciesGroup(configuration.Variant, speciesCode);
+                stand.SpeciesGroup[treeIndex] = speciesGroup;
+                if (configuration.Variant == Variant.Rap)
+                {
+                    // BUGBUG: encapsulation violation - move this into variant configuration
+                    IIB = 1;
+                }
+                if (speciesGroup < IIB)
+                {
+                    ++BIG6;
+                    if (stand.LiveExpansionFactor[treeIndex] < 0.0F)
+                    {
+                        ++BNXT;
+                    }
+                }
+            }
+
+            // DETERMINE IF SPECIES MIX CORRECT FOR STAND AGE
+            float standBasalArea = 0.0F;
+            float standBigSixBasalArea = 0.0F;
+            float standHardwoodBasalArea = 0.0F;
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
+                if (expansionFactor < 0.0F)
+                {
+                    continue;
+                }
+
+                float dbhInInches = stand.Dbh[treeIndex];
+                float basalArea = expansionFactor * dbhInInches * dbhInInches;
+                standBasalArea += basalArea;
+
+                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                if (speciesGroup < IIB)
+                {
+                    standBigSixBasalArea += basalArea;
+                }
+                if (configuration.Variant == Variant.Swo)
+                {
+                    FiaCode species = stand.Species[treeIndex];
+                    if ((species == FiaCode.ArbutusMenziesii) || (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla) || (species == FiaCode.QuercusKelloggii))
+                    {
+                        standHardwoodBasalArea += basalArea;
+                    }
+                }
+            }
+
+            standBasalArea *= 0.005454154F / stand.NumberOfPlots;
+            standBigSixBasalArea *= 0.005454154F / stand.NumberOfPlots;
+            if (standBigSixBasalArea < 0.0F)
+            {
+                throw new NotSupportedException("Total basal area big six species is negative.");
+            }
+
+            if (configuration.Variant >= Variant.Rap)
+            {
+                float PRA;
+                if (standBasalArea > 0.0F)
+                {
+                    PRA = standBigSixBasalArea / standBasalArea;
+                }
+                else
+                {
+                    PRA = 0.0F;
+                }
+
+                if (PRA < 0.9F)
+                {
+                    // if needed, make this a warning rather than an error
+                    throw new NotSupportedException("Red alder plantation stand is less than 90% by basal area.");
+                }
+            }
+
+            // DETERMINE WARNINGS (IF ANY)
+            // BUGBUG move maximum site indices to variant capabilities
+            switch (configuration.Variant)
+            {
+                case Variant.Swo:
+                    if ((stand.PrimarySiteIndex > 0.0F) && ((stand.PrimarySiteIndex < 40.0F) || (stand.PrimarySiteIndex > 150.0F)))
+                    {
+                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
+                    }
+                    if ((stand.MortalitySiteIndex > 0.0F) && ((stand.MortalitySiteIndex < 50.0F) || (stand.MortalitySiteIndex > 140.0F)))
+                    {
+                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
+                    }
+                    break;
+                case Variant.Nwo:
+                case Variant.Smc:
+                    if ((stand.PrimarySiteIndex > 0.0F) && ((stand.PrimarySiteIndex < 90.0F) || (stand.PrimarySiteIndex > 142.0F)))
+                    {
+                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
+                    }
+                    if ((stand.MortalitySiteIndex > 0.0F) && ((stand.MortalitySiteIndex < 90.0F) || (stand.MortalitySiteIndex > 142.0F)))
+                    {
+                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
+                    }
+                    break;
+                case Variant.Rap:
+                    if ((stand.PrimarySiteIndex < 20.0F) || (stand.PrimarySiteIndex > 125.0F))
+                    {
+                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
+                    }
+                    if ((stand.MortalitySiteIndex > 0.0F) && (stand.MortalitySiteIndex < 90.0F || stand.MortalitySiteIndex > 142.0F))
+                    {
+                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
+                    }
+                    break;
+            }
+
+            // check tallest trees in stand against maximum height for big six species
+            // BUGBUG: need an API for maximum heights rather than inline code here
+            switch (configuration.Variant)
+            {
+                case Variant.Swo:
+                    if (maxPonderosaHeight > 0.0F)
+                    {
+                        float MAXHT = (stand.MortalitySiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.164985 * (stand.MortalitySiteIndex - 4.5), 0.288169)))) + 4.5F;
+                        if (maxPonderosaHeight > MAXHT)
+                        {
+                            stand.Warnings.BigSixHeightAbovePotential = true;
+                        }
+                    }
+                    if (maxIncenseCedarHeight > 0.0F)
+                    {
+                        float ICSI = (0.66F * stand.PrimarySiteIndex) - 4.5F;
+                        float MAXHT = ICSI * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * ICSI, 0.281176)))) + 4.5F;
+                        if (maxIncenseCedarHeight > MAXHT)
+                        {
+                            stand.Warnings.BigSixHeightAbovePotential = true;
+                        }
+                    }
+                    if (maxDouglasFirHeight > 0.0F)
+                    {
+                        float MAXHT = (stand.PrimarySiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * (stand.PrimarySiteIndex - 4.5), 0.281176)))) + 4.5F;
+                        if (maxDouglasFirHeight > MAXHT)
+                        {
+                            stand.Warnings.BigSixHeightAbovePotential = true;
+                        }
+                    }
+                    break;
+                case Variant.Nwo:
+                case Variant.Smc:
+                    if (maxDouglasFirHeight > 0.0F)
+                    {
+                        float Z50 = 2500.0F / (stand.PrimarySiteIndex - 4.5F);
+                        float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
+                        if (maxDouglasFirHeight > MAXHT)
+                        {
+                            stand.Warnings.BigSixHeightAbovePotential = true;
+                        }
+                    }
+                    if (maxGrandFirHeight > 0.0F)
+                    {
+                        float Z50 = 2500.0F / (stand.PrimarySiteIndex - 4.5F);
+                        float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
+                        if (maxGrandFirHeight > MAXHT)
+                        {
+                            stand.Warnings.BigSixHeightAbovePotential = true;
+                        }
+                    }
+                    if (maxWesternHemlockHeight > 0.0F)
+                    {
+                        float Z50 = 2500.0F / (stand.MortalitySiteIndex - 4.5F);
+                        float MAXHT = 4.5F + 1.0F / (0.00192F + 0.00007F * Z50);
+                        if (maxWesternHemlockHeight > MAXHT)
+                        {
+                            stand.Warnings.BigSixHeightAbovePotential = true;
+                        }
+                    }
+                    break;
+                case Variant.Rap:
+                    if (maxRedAlderHeight > 0.0F)
+                    {
+                        RedAlder.WHHLB_H40(stand.PrimarySiteIndex, 20.0F, 150.0F, out float MAXHT);
+                        if (maxRedAlderHeight > MAXHT)
+                        {
+                            stand.Warnings.BigSixHeightAbovePotential = true;
+                        }
+                    }
+                    break;
+            }
+
+            if (configuration.IsEvenAge && (configuration.Variant != Variant.Smc))
+            {
+                stand.Warnings.TreesYoung = stand.BreastHeightAgeInYears < 10;
+            }
+
+            float requiredWellKnownSpeciesBasalAreaFraction;
+            switch (configuration.Variant)
+            {
+                case Variant.Nwo:
+                    requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
+                    break;
+                case Variant.Rap:
+                    requiredWellKnownSpeciesBasalAreaFraction = 0.8F;
+                    break;
+                case Variant.Smc:
+                    requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
+                    break;
+                case Variant.Swo:
+                    requiredWellKnownSpeciesBasalAreaFraction = 0.2F;
+                    break;
+                default:
+                    throw new NotSupportedException(String.Format("Unhandled Organon variant {0}.", configuration.Variant));
+            }
+            if ((standBigSixBasalArea + standHardwoodBasalArea) < (requiredWellKnownSpeciesBasalAreaFraction * standBasalArea))
+            {
+                stand.Warnings.OtherSpeciesBasalAreaTooHigh = true;
+            }
+            if (stand.TreeRecordCount < 50)
+            {
+                stand.Warnings.LessThan50TreeRecords = true;
+            }
+
+            CKAGE(configuration, stand, out float OLD);
+
+            float X = 100.0F * (OLD / (BIG6 - BNXT));
+            if (X >= 50.0F)
+            {
+                stand.Warnings.TreesOld = true;
+            }
+            if (configuration.Variant == Variant.Swo)
+            {
+                if (configuration.IsEvenAge && stand.BreastHeightAgeInYears > 500)
+                {
+                    stand.Warnings.TreesOld = true;
+                }
+            }
+            else if (configuration.Variant == Variant.Nwo || configuration.Variant == Variant.Smc)
+            {
+                if (configuration.IsEvenAge && stand.BreastHeightAgeInYears > 120)
+                {
+                    stand.Warnings.TreesOld = true;
+                }
+            }
+            else
+            {
+                if (configuration.IsEvenAge && stand.AgeInYears > 30)
+                {
+                    stand.Warnings.TreesOld = true;
+                }
+            }
+
+            // BUGBUG: this is overcomplicated, should just check against maximum stand age using time step from OrganonVapabilities
+            int standAgeBudgetAvailableAtNextTimeStep;
+            if (configuration.IsEvenAge)
+            {
+                switch (configuration.Variant)
+                {
+                    case Variant.Swo:
+                        standAgeBudgetAvailableAtNextTimeStep = 500 - stand.AgeInYears - 5;
+                        break;
+                    case Variant.Nwo:
+                    case Variant.Smc:
+                        standAgeBudgetAvailableAtNextTimeStep = 120 - stand.AgeInYears - 5;
+                        break;
+                    case Variant.Rap:
+                        standAgeBudgetAvailableAtNextTimeStep = 30 - stand.AgeInYears - 1;
+                        break;
+                    default:
+                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
+                }
+            }
+            else
+            {
+                switch (configuration.Variant)
+                {
+                    case Variant.Swo:
+                        standAgeBudgetAvailableAtNextTimeStep = 500 - (simulationStep + 1) * 5;
+                        break;
+                    case Variant.Nwo:
+                    case Variant.Smc:
+                        standAgeBudgetAvailableAtNextTimeStep = 120 - (simulationStep + 1) * 5;
+                        break;
+                    case Variant.Rap:
+                        standAgeBudgetAvailableAtNextTimeStep = 30 - (simulationStep + 1) * 1;
+                        break;
+                    default:
+                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
+                }
+            }
+
+            if (standAgeBudgetAvailableAtNextTimeStep < 0)
+            {
+                stand.Warnings.TreesOld = true;
+            }
+
+            float B1 = -0.04484724F;
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                FiaCode species = stand.Species[treeIndex];
+                float B0;
+                switch (species)
+                {
+                    case FiaCode.PseudotsugaMenziesii:
+                        B0 = 19.04942539F;
+                        break;
+                    case FiaCode.TsugaHeterophylla:
+                        if (configuration.Variant == Variant.Nwo || configuration.Variant == Variant.Smc)
+                        {
+                            B0 = 19.04942539F;
+                        }
+                        else if (configuration.Variant == Variant.Rap)
+                        {
+                            B0 = 19.04942539F;
+                        }
+                        else
+                        {
+                            // BUGBUG Fortran code leaves B0 unitialized in Version.Swo case but also always treats hemlock as Douglas-fir
+                            B0 = 19.04942539F;
+                        }
+                        break;
+                    case FiaCode.AbiesConcolor:
+                    case FiaCode.AbiesGrandis:
+                        B0 = 16.26279948F;
+                        break;
+                    case FiaCode.PinusPonderosa:
+                        B0 = 17.11482201F;
+                        break;
+                    case FiaCode.PinusLambertiana:
+                        B0 = 14.29011403F;
+                        break;
+                    default:
+                        B0 = 15.80319194F;
+                        break;
+                }
+
+                float dbhInInches = stand.Dbh[treeIndex];
+                float potentialHeight = 4.5F + B0 * dbhInInches / (1.0F - B1 * dbhInInches);
+                float heightInFeet = stand.Height[treeIndex];
+                if (heightInFeet > potentialHeight)
+                {
+                    stand.TreeHeightWarning[treeIndex] = true;
+                }
             }
         }
     }

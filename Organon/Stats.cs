@@ -12,14 +12,14 @@ namespace Osu.Cof.Organon
         /// <param name="standBasalArea">Total basal area per acre.</param>
         /// <param name="treesPerAcre">Total trees per acre.</param>
         /// <param name="standCrownCompetitionFactor">Total crown competition factor.</param>
-        /// <param name="competition">Basal area and crown competiation.</param>
+        /// <param name="density">Basal area and crown competiation.</param>
         /// <remarks>
         /// Trees of DBH larger than 100 inches are treated as if their diameter was 100 inches.
         /// </remarks>
-        public static void SSTATS(Variant variant, Stand stand, out float standBasalArea, out float treesPerAcre, out float standCrownCompetitionFactor, out TreeCompetition competition)
+        public static void SSTATS(Variant variant, Stand stand, out float standBasalArea, out float treesPerAcre, out float standCrownCompetitionFactor, out StandDensity density)
         {
             float treeCountAsFloat = (float)stand.TreeRecordCount;
-            competition = new TreeCompetition();
+            density = new StandDensity();
             standBasalArea = 0.0F;
             standCrownCompetitionFactor = 0.0F;
             treesPerAcre = 0.0F;
@@ -75,13 +75,13 @@ namespace Osu.Cof.Organon
                     for (int smallTreeIndex = 0; smallTreeIndex < 500; ++smallTreeIndex)
                     {
                         // (PERF? this is O(500N), would run in O(N) + O(500) if moved to initialization)
-                        competition.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
-                        competition.SmallTreeBasalAreaLarger[smallTreeIndex] += basalArea;
+                        density.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
+                        density.SmallTreeBasalAreaLarger[smallTreeIndex] += basalArea;
                     }
                     for (int largeTreeIndex = 0; largeTreeIndex < largeTreeLimit - 1; ++largeTreeIndex)
                     {
-                        competition.LargeTreeCrownCompetition[largeTreeIndex] += crownCompetitionFactor;
-                        competition.LargeTreeBasalAreaLarger[largeTreeIndex] += basalArea;
+                        density.LargeTreeCrownCompetition[largeTreeIndex] += crownCompetitionFactor;
+                        density.LargeTreeBasalAreaLarger[largeTreeIndex] += basalArea;
                     }
                 }
                 else
@@ -89,8 +89,8 @@ namespace Osu.Cof.Organon
                     int smallTreeLimit = (int)(dbhInInches * 10.0F + 0.5F);
                     for (int smallTreeIndex = 0; smallTreeIndex < smallTreeLimit - 1; ++smallTreeIndex)
                     {
-                        competition.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
-                        competition.SmallTreeBasalAreaLarger[smallTreeIndex] += basalArea;
+                        density.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
+                        density.SmallTreeBasalAreaLarger[smallTreeIndex] += basalArea;
                     }
                 }
             }

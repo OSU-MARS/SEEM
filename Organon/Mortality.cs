@@ -7,7 +7,7 @@ namespace Osu.Cof.Organon
     {
         // ROUTINE FOR SETTING TREE MORTALITY
         public static void MORTAL(OrganonConfiguration configuration, int simulationStep, Stand stand, 
-                                  TreeCompetition competitionBeforeGrowth, float SI_1,
+                                  StandDensity densityGrowth, float SI_1,
                                   float SI_2, float[] PN, float[] YF, ref float RAAGE)
         {
             float[] POW = new float[stand.TreeRecordCount];
@@ -22,7 +22,7 @@ namespace Osu.Cof.Organon
             }
 
             float A3;
-            if (configuration.Variant <= Variant.Smc)
+            if (configuration.Variant != Variant.Rap)
             {
                 A3 = 14.39533971F;
             }
@@ -31,7 +31,7 @@ namespace Osu.Cof.Organon
                 A3 = 3.88F;
             }
             float RDCC;
-            if (configuration.Variant <= Variant.Smc)
+            if (configuration.Variant != Variant.Rap)
             {
                 RDCC = 0.60F;
             }
@@ -52,7 +52,7 @@ namespace Osu.Cof.Organon
                 STN += expansionFactor;
 
                 FiaCode species = stand.Species[treeIndex];
-                if ((species == FiaCode.AlnusRubra) && (configuration.Variant <= Variant.Smc))
+                if ((species == FiaCode.AlnusRubra) && (configuration.Variant != Variant.Rap))
                 {
                     RAN += expansionFactor;
                 }
@@ -85,7 +85,7 @@ namespace Osu.Cof.Organon
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
                 PM_FERT(speciesGroup, configuration.Variant, simulationStep, PN, YF, out float FERTADJ);
                 float DBH = stand.Dbh[treeIndex];
-                float SBAL1 = competitionBeforeGrowth.GET_BAL(DBH);
+                float SBAL1 = densityGrowth.GET_BAL(DBH);
                 float CR = stand.CrownRatio[treeIndex];
 
                 switch (configuration.Variant)
@@ -155,7 +155,7 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        if (configuration.Variant <= Variant.Smc)
+                        if (configuration.Variant != Variant.Rap)
                         {
                             if (RD > RDCC)
                             {
@@ -200,7 +200,7 @@ namespace Osu.Cof.Organon
                                 else
                                 {
                                     IND = 0;
-                                    if (configuration.Variant <= Variant.Smc)
+                                    if (configuration.Variant != Variant.Rap)
                                     {
                                         if ((RD > RDCC) && (stand.NO <= 0.0F))
                                         {
@@ -218,7 +218,7 @@ namespace Osu.Cof.Organon
                                 float QMDP;
                                 if ((IND == 0) && (stand.NO > 0.0F))
                                 {
-                                    if (configuration.Variant <= Variant.Smc)
+                                    if (configuration.Variant != Variant.Rap)
                                     {
                                         QMDP = QUAD1(NA, stand.NO, RDCC, stand.A1);
                                     }
@@ -232,7 +232,7 @@ namespace Osu.Cof.Organon
                                     QMDP = (float)Math.Exp(stand.A1MAX - stand.A2 * Math.Log(NA));
                                 }
 
-                                if (RD <= RDCC || QMDP > QMDA)
+                                if ((RD <= RDCC) || (QMDP > QMDA))
                                 {
                                     // NO ADDITIONAL MORTALITY NECESSARY
                                     for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -279,7 +279,7 @@ namespace Osu.Cof.Organon
                                         QMDA = (float)Math.Sqrt(BAAA / (KB * NAA));
                                         if (IND == 0)
                                         {
-                                            if (configuration.Variant <= Variant.Smc)
+                                            if (configuration.Variant != Variant.Rap)
                                             {
                                                 QMDP = QUAD1(NAA, stand.NO, RDCC, stand.A1);
                                             }
@@ -355,12 +355,16 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static float QUAD1(float NI, float NO, float RDCC, float A1)
+        private static float QUAD1(float ti, float t1, float RDCC, float A1)
         {
-            float A2 = 0.62305F;
-            float A3 = 14.39533971F;
-            float A4 = -((float)Math.Log(RDCC) * A2 / A1);
-            float X = A1 - A2 * (float)Math.Log(NI) - (A1 * A4) * (float)Math.Exp(-A3 * (Math.Log(NO) - Math.Log(NI)));
+            // Hann 2003 Research Contribution 40, Table 38: Parameters for predicting the maximum size density line for Douglas-fir
+            // maximum size density line for measurement i: ln(max QMDi for TPA) = MLQi = g1 + g2 * LTi
+            // stand approach to maximum density: LQi = MLQi - (g1 + g2 * LT0 - LQ0) exp(g3 * (LT0 - LTi))
+            // A1 = g1 + sum_j(g1_j) + g2 * log(ti)
+            float g2 = 0.62305F;
+            float g3 = 14.39533971F;
+            float A4 = -((float)Math.Log(RDCC) * g2 / A1);
+            float X = A1 - g2 * (float)Math.Log(ti) - (A1 * A4) * (float)Math.Exp(-g3 * (Math.Log(t1) - Math.Log(ti)));
             return (float)Math.Exp(X);
         }
 
@@ -373,29 +377,32 @@ namespace Osu.Cof.Organon
             return (float)Math.Exp(X);
         }
 
-        private static void PM_FERT(int ISPGRP, Variant variant, int simulationStep, float[] PN, float[] YF, out float FERTADJ)
+        private static void PM_FERT(int ISPGRP, Variant variant, int simulationStep, float[] PN, float[] yearsSinceFertilization, out float FERTADJ)
         {
-            float PF1;
+            float c5;
             float PF2;
             float PF3;
-            if (variant <= Variant.Smc)
+            if (variant != Variant.Rap)
             {
+                // Hann 2003 Research Contribution 40, Table 37: Parameters for predicting fertlization response of 5-year mortality
                 if (ISPGRP == 0)
                 {
-                    PF1 = 0.0000552859F;
+                    // Douglas-fir
+                    c5 = 0.0000552859F;
                     PF2 = 1.5F;
                     PF3 = -0.5F;
                 }
                 else
                 {
-                    PF1 = 0.0F;
+                    // western hemlock
+                    c5 = 0.0F;
                     PF2 = 1.0F;
                     PF3 = 0.0F;
                 }
             }
             else
             {
-                PF1 = 0.0F;
+                c5 = 0.0F;
                 PF2 = 1.0F;
                 PF3 = 0.0F;
             }
@@ -404,10 +411,10 @@ namespace Osu.Cof.Organon
             float FERTX1 = 0.0F;
             for (int II = 1; II < 5; ++II)
             {
-                FERTX1 += PN[II] * (float)Math.Exp((PF3 / PF2) * (YF[0] - YF[II]));
+                // BUGBUG: summation range doesn't match 13 or 18 year periods given in Hann 2003 Table 3
+                FERTX1 += PN[II] * (float)Math.Exp((PF3 / PF2) * (yearsSinceFertilization[0] - yearsSinceFertilization[II]));
             }
-            float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[0]));
-            FERTADJ = PF1 * (float)Math.Pow(PN[0]+ FERTX1, PF2) * FERTX2;
+            FERTADJ = c5 * (float)Math.Pow(PN[0] + FERTX1, PF2) * (float)Math.Exp(PF3 * (XTIME - yearsSinceFertilization[0]));
         }
 
         private static void PM_SWO(int ISPGRP, float DBH, float CR, float SI_1, float BAL, float OG, out float POW, out float PM)

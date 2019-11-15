@@ -23,15 +23,10 @@ namespace Osu.Cof.Organon
         /// <param name="CCH"></param>
         /// <param name="OLD"></param>
         /// <param name="RAAGE"></param>
-        /// <param name="RASI"></param>
-        /// <param name="CCFLL2"></param>
-        /// <param name="CCFL2"></param>
-        /// <param name="BALL2"></param>
-        /// <param name="BAL2"></param>
         public static void GROW(ref int simulationStep, OrganonConfiguration configuration, Stand stand, int NSPN,
-                                ref int TCYCLE, ref int FCYCLE, float SBA1, TreeCompetition competitionBeforeGrowth,
+                                ref int TCYCLE, ref int FCYCLE, float SBA1, StandDensity densityBeforeGrowth,
                                 float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, 
-                                float[] CCH, ref float OLD, float RAAGE, float RASI, out TreeCompetition competitionAfterGrowth)
+                                float[] CCH, ref float OLD, float RAAGE, out StandDensity densityAfterGrowth)
         {
             float DGMOD_GG = 1.0F;
             float HGMOD_GG = 1.0F;
@@ -77,7 +72,7 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    DiameterGrowth.DIAMGRO(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, SBA1, competitionBeforeGrowth, CALIB, PN, YF, BABT, BART, YT);
+                    DiameterGrowth.DIAMGRO(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, SBA1, densityBeforeGrowth, CALIB, PN, YF, BABT, BART, YT);
                     if (stand.Species[treeIndex] == FiaCode.PseudotsugaMenziesii)
                     {
                         stand.DbhGrowth[treeIndex] = stand.DbhGrowth[treeIndex] * DGMOD_GG * DGMOD_SNC;
@@ -108,7 +103,7 @@ namespace Osu.Cof.Organon
 
             // determine mortality
             // Sets configuration.NO.
-            Mortality.MORTAL(configuration, simulationStep, stand, competitionBeforeGrowth, SI_1, SI_2, PN, YF, ref RAAGE);
+            Mortality.MORTAL(configuration, simulationStep, stand, densityBeforeGrowth, SI_1, SI_2, PN, YF, ref RAAGE);
 
             // grow tree diameters
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -117,7 +112,7 @@ namespace Osu.Cof.Organon
             }
 
             // CALC EOG SBA, CCF/TREE, CCF IN LARGER TREES AND STAND CCF
-            Stats.SSTATS(configuration.Variant, stand, out float SBA2, out float _, out float _, out competitionAfterGrowth);
+            Stats.SSTATS(configuration.Variant, stand, out float SBA2, out float _, out float _, out densityAfterGrowth);
 
             // CALCULATE HTGRO FOR 'OTHER' & CROWN ALL SPECIES
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -130,14 +125,14 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        HeightGrowth.GrowMinorSpecies(treeIndex, configuration.Variant, stand, RASI, CALIB);
+                        HeightGrowth.GrowMinorSpecies(treeIndex, configuration.Variant, stand, CALIB);
                     }
                 }
                 stand.Height[treeIndex] += stand.HeightGrowth[treeIndex];
             }
 
             // grow crowns
-            CrownGrowth.CrowGro(configuration.Variant, stand, competitionBeforeGrowth, competitionAfterGrowth, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
+            CrownGrowth.CrowGro(configuration.Variant, stand, densityBeforeGrowth, densityAfterGrowth, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
 
             // update stand variables
             if (configuration.Variant != Variant.Rap)
@@ -165,14 +160,14 @@ namespace Osu.Cof.Organon
             }
 
             // reduce calibration ratios
-            for (int I = 0; I < 3; ++I)
+            for (int speciesGroupIndex = 0; speciesGroupIndex < NSPN; ++speciesGroupIndex)
             {
-                for (int II = 0; II < NSPN; ++II)
+                for (int I = 0; I < 3; ++I)
                 {
-                    if (CALIB[II, I] < 1.0F || CALIB[II, I] > 1.0F)
+                    if (CALIB[speciesGroupIndex, I] < 1.0F || CALIB[speciesGroupIndex, I] > 1.0F)
                     {
-                        float MCALIB = (1.0F + CALIB[II, I + 2]) / 2.0F;
-                        CALIB[II, I] = MCALIB + (float)Math.Sqrt(0.5) * (CALIB[II, I] - MCALIB);
+                        float MCALIB = (1.0F + CALIB[speciesGroupIndex, I + 2]) / 2.0F;
+                        CALIB[speciesGroupIndex, I] = MCALIB + (float)Math.Sqrt(0.5) * (CALIB[speciesGroupIndex, I] - MCALIB);
                     }
                 }
             }

@@ -107,8 +107,8 @@ namespace Osu.Cof.Organon.Test
                 stand.CrownRatio[treeIndex] = tree.CrownRatio;
                 stand.LiveExpansionFactor[treeIndex] = tree.ExpansionFactor;
             }
-
-            stand.SUBMAX(configuration);
+            stand.SetRedAlderSiteIndex();
+            stand.SetSdiMax(configuration);
             return stand;
         }
 
@@ -146,13 +146,24 @@ namespace Osu.Cof.Organon.Test
             }
         }
 
+        protected void Verify(float[,] calibration)
+        {
+            int speciesGroupCount = calibration.GetLength(0);
+            for (int speciesGroupIndex = 0; speciesGroupIndex < speciesGroupCount; ++speciesGroupIndex)
+            {
+                Assert.IsTrue(calibration[speciesGroupIndex, 0] == 1.0F);
+                Assert.IsTrue(calibration[speciesGroupIndex, 1] == 1.0F);
+                Assert.IsTrue(calibration[speciesGroupIndex, 2] == 1.0F);
+            }
+        }
+
         protected void Verify(TestStand stand, ExpectedTreeChanges expectedGrowth, VariantCapabilities variantCapabilities)
         {
             Assert.IsTrue(stand.AgeInYears >= 0);
             Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
             Assert.IsTrue(stand.BreastHeightAgeInYears >= 0);
             Assert.IsTrue(stand.BreastHeightAgeInYears <= TestConstant.Maximum.StandAgeInYears);
-            Assert.IsTrue(stand.NPTS == 1);
+            Assert.IsTrue(stand.NumberOfPlots == 1);
             Assert.IsTrue(stand.TreeRecordCount > 0);
             Assert.IsTrue(stand.TreeRecordCount <= stand.TreeRecordCount);
 

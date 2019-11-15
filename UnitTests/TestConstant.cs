@@ -36,7 +36,6 @@ namespace Osu.Cof.Organon.Test
             public const float MaximumReinekeStandDensityIndex = 600.0F;
             public const float PDEN = 1.0F; // (DOUG?)
             public const float RAAGE = 0.0F; // (DOUG?)
-            public const float RedAlderSiteIndex = 100.0F; // TODO: look at Andy's papers and change to a not made up value
             public const int SimulationCyclesToRun = 20; // 20 5 year time steps
             public const float SiteIndex = 125.0F; // feet at 50 years
         }

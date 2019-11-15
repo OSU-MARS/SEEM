@@ -136,7 +136,7 @@ namespace Osu.Cof.Organon
             CC = CCH[0];
         }
 
-        public static void CrowGro(Variant variant, Stand stand, TreeCompetition competitionBeforeGrowth, TreeCompetition competitionAfterGrowth,
+        public static void CrowGro(Variant variant, Stand stand, StandDensity densityBeforeGrowth, StandDensity densityAfterGrowth,
                                    float SBA1, float SBA2, float SI_1, float SI_2, float[,] CALIB, float[] CCH)
         {
             // DETERMINE 5-YR CROWN RECESSION
@@ -150,7 +150,7 @@ namespace Osu.Cof.Organon
                 // CALCULATE STARTING DBH
                 float PDBH = stand.Dbh[treeIndex] - stand.DbhGrowth[treeIndex];
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
-                float SCCFL1 = competitionBeforeGrowth.GET_CCFL(PDBH);
+                float SCCFL1 = densityBeforeGrowth.GET_CCFL(PDBH);
                 float PCR1;
                 switch (variant)
                 {
@@ -179,7 +179,7 @@ namespace Osu.Cof.Organon
                 // CALCULATE HCB END OF GROWTH
                 float HT = stand.Height[treeIndex];
                 float DBH = stand.Dbh[treeIndex];
-                float SCCFL2 = competitionAfterGrowth.GET_CCFL(DBH);
+                float SCCFL2 = densityAfterGrowth.GET_CCFL(DBH);
                 float MAXHCB;
                 float PCR2;
                 switch (variant)
