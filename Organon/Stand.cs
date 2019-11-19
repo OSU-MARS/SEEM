@@ -82,9 +82,9 @@ namespace Osu.Cof.Organon
             return this.SpeciesGroup[treeIndex] <= this.MaxBigSixSpeciesGroupIndex;
         }
 
-        public void SetDefaultAndMortalitySiteIndices(Variant variant)
+        public void SetDefaultAndMortalitySiteIndices(OrganonVariant variant)
         {
-            switch (variant)
+            switch (variant.Variant)
             {
                 case Variant.Nwo:
                 case Variant.Smc:
@@ -165,7 +165,7 @@ namespace Osu.Cof.Organon
         public void SetSdiMax(OrganonConfiguration configuration)
         {
             // CALCULATE THE MAXIMUM SIZE-DENISTY LINE
-            switch (configuration.Variant)
+            switch (configuration.Variant.Variant)
             {
                 case Variant.Swo:
                 case Variant.Nwo:
@@ -178,7 +178,7 @@ namespace Osu.Cof.Organon
                     this.A2 = 0.64F;
                     break;
                 default:
-                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
+                    throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
             }
 
             float KB = 0.005454154F;
@@ -189,7 +189,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                switch (configuration.Variant)
+                switch (configuration.Variant.Variant)
                 {
                     case Variant.Swo:
                         // ORIGINAL SWO-ORGANON - Max.SDI = 530.2
@@ -208,7 +208,7 @@ namespace Osu.Cof.Organon
                         TEMPA1 = 5.96F;
                         break;
                     default:
-                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
+                        throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
                 }
             }
 
@@ -232,7 +232,7 @@ namespace Osu.Cof.Organon
             float PTF = 0.0F; // BUGBUG not intialized in Fortran code
             if (TOTBA > 0.0F)
             {
-                if (configuration.Variant != Variant.Rap)
+                if (configuration.Variant.Variant != Variant.Rap)
                 {
                     PDF = BAGRP[0] / TOTBA;
                     PTF = BAGRP[1] / TOTBA;
@@ -246,7 +246,7 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                if (configuration.Variant != Variant.Rap)
+                if (configuration.Variant.Variant != Variant.Rap)
                 {
                     PDF = 0.0F;
                     PTF = 0.0F;
@@ -263,7 +263,7 @@ namespace Osu.Cof.Organon
             float OCMOD;
             float PPP;
             float TFMOD;
-            switch (configuration.Variant)
+            switch (configuration.Variant.Variant)
             {
                 case Variant.Swo:
                     if (configuration.MSDI_2 > 0.0F)
@@ -358,7 +358,7 @@ namespace Osu.Cof.Organon
                     A1MOD = 1.0F;
                     break;
                 default:
-                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
+                    throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
             }
             if (A1MOD <= 0.0F)
             {

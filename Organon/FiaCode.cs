@@ -8,8 +8,11 @@
     /// </remarks>
     public enum FiaCode
     {
+        AbiesAmabalis = 11,
         AbiesConcolor = 15,
         AbiesGrandis = 17,
+        AbiesProcera = 22,
+        AcerGlabrum = 321,
         AcerMacrophyllum = 312,
         AlnusRubra = 351,
         ArbutusMenziesii = 361,
@@ -17,6 +20,7 @@
         ChrysolepisChrysophyllaVarChrysophylla = 431,
         CornusNuttallii = 492,
         LithocarpusDensiflorus = 631,
+        PiceaSitchensis = 98,
         PinusLambertiana = 117,
         PinusPonderosa = 122,
         PseudotsugaMenziesii = 202,

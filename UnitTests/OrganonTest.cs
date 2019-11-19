@@ -34,7 +34,7 @@ namespace Osu.Cof.Organon.Test
         protected TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
             List<TreeRecord> trees = new List<TreeRecord>();
-            switch (configuration.Variant)
+            switch (configuration.Variant.Variant)
             {
                 case Variant.Nwo:
                 case Variant.Smc:
@@ -92,7 +92,7 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.Salix, 0.1F, 1.0F, 0.5F));
                     break;
                 default:
-                    throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
+                    throw Organon.OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
             }
 
             TestStand stand = new TestStand(configuration.Variant, 0, trees.Count, TestConstant.Default.SiteIndex);
@@ -112,7 +112,7 @@ namespace Osu.Cof.Organon.Test
             return stand;
         }
 
-        protected OrganonConfiguration CreateOrganonConfiguration(Variant variant)
+        protected OrganonConfiguration CreateOrganonConfiguration(OrganonVariant variant)
         {
             OrganonConfiguration configuration = new OrganonConfiguration(variant)
             {
@@ -124,10 +124,10 @@ namespace Osu.Cof.Organon.Test
             return configuration;
         }
 
-        private int GetSpeciesGroup(Variant variant, FiaCode species)
+        private int GetSpeciesGroup(OrganonVariant variant, FiaCode species)
         {
-            // copy of StandGrowth.GetSpeciesGroup()
-            switch (variant)
+            // copy of OrganonVariant.GetSpeciesGroup()
+            switch (variant.Variant)
             {
                 case Variant.Nwo:
                 case Variant.Smc:
@@ -142,7 +142,7 @@ namespace Osu.Cof.Organon.Test
                     }
                     return speciesGroup;
                 default:
-                    throw VariantExtensions.CreateUnhandledVariantException(variant);
+                    throw Organon.OrganonVariant.CreateUnhandledVariantException(variant.Variant);
             }
         }
 
@@ -157,7 +157,12 @@ namespace Osu.Cof.Organon.Test
             }
         }
 
-        protected void Verify(TestStand stand, ExpectedTreeChanges expectedGrowth, VariantCapabilities variantCapabilities)
+        protected void Verify(ExpectedTreeChanges expectedGrowth, TestStand stand, OrganonVariant variantCapabilities)
+        {
+            this.Verify(expectedGrowth, OrganonWarnings.None, stand, variantCapabilities);
+        }
+
+        protected void Verify(ExpectedTreeChanges expectedGrowth, OrganonWarnings expectedWarnings, TestStand stand, OrganonVariant variantCapabilities)
         {
             Assert.IsTrue(stand.AgeInYears >= 0);
             Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
@@ -196,6 +201,11 @@ namespace Osu.Cof.Organon.Test
                     Assert.IsTrue(diameterGrowthInInches > 0.0F);
                     Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DbhInInches);
                 }
+                else if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowthOrNoChange))
+                {
+                    Assert.IsTrue(diameterGrowthInInches >= 0.0F);
+                    Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DbhInInches);
+                }
                 else
                 {
                     Assert.IsTrue(diameterGrowthInInches == 0.0F);
@@ -227,8 +237,8 @@ namespace Osu.Cof.Organon.Test
             }
 
             Assert.IsTrue(stand.Warnings.BigSixHeightAbovePotential == false);
-            // ignore stand.Warnings.LessThan50TreeRecords
-            Assert.IsTrue(stand.Warnings.MortalitySiteIndexOutOfRange == false);
+            Assert.IsTrue(stand.Warnings.LessThan50TreeRecords == expectedWarnings.HasFlag(OrganonWarnings.LessThan50TreeRecords));
+            Assert.IsTrue(stand.Warnings.MortalitySiteIndexOutOfRange == expectedWarnings.HasFlag(OrganonWarnings.MortalitySiteIndex));
             Assert.IsTrue(stand.Warnings.OtherSpeciesBasalAreaTooHigh == false);
             Assert.IsTrue(stand.Warnings.PrimarySiteIndexOutOfRange == false);
             if (variantCapabilities.Variant != Variant.Smc)
@@ -239,18 +249,42 @@ namespace Osu.Cof.Organon.Test
             // for now, ignore stand.Warnings.TreesYoung
         }
 
-        protected void Verify(TreeLifeAndDeath treeGrowth, TestStand initialTreeData, TestStand finalTreeData)
+        protected void Verify(ExpectedTreeChanges expectedGrowth, TreeLifeAndDeath treeGrowth, TestStand initialTreeData, TestStand finalTreeData)
         {
             int treeRecords = initialTreeData.TreeRecordCount;
             for (int treeIndex = 0; treeIndex < treeRecords; ++treeIndex)
             {
                 float totalDbhGrowth = treeGrowth.TotalDbhGrowthInInches[treeIndex];
-                Assert.IsTrue(totalDbhGrowth > 0.0F);
-                Assert.IsTrue(totalDbhGrowth <= TestConstant .Maximum.DbhInInches);
+                if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowth))
+                {
+                    Assert.IsTrue(totalDbhGrowth > 0.0F);
+                    Assert.IsTrue(totalDbhGrowth <= TestConstant.Maximum.DbhInInches);
+                }
+                else if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowthOrNoChange))
+                {
+                    Assert.IsTrue(totalDbhGrowth >= 0.0F);
+                    Assert.IsTrue(totalDbhGrowth <= TestConstant.Maximum.DbhInInches);
+                }
+                else
+                {
+                    Assert.IsTrue(totalDbhGrowth == 0.0F);
+                }
 
                 float totalHeightGrowth = treeGrowth.TotalHeightGrowthInFeet[treeIndex];
-                Assert.IsTrue(totalHeightGrowth >= 0.0F);
-                Assert.IsTrue(totalHeightGrowth <= TestConstant.Maximum.HeightInFeet);
+                if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowth))
+                {
+                    Assert.IsTrue(totalHeightGrowth > 0.0F);
+                    Assert.IsTrue(totalHeightGrowth <= TestConstant.Maximum.HeightInFeet);
+                }
+                else if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowthOrNoChange))
+                {
+                    Assert.IsTrue(totalHeightGrowth >= 0.0F);
+                    Assert.IsTrue(totalHeightGrowth <= TestConstant.Maximum.HeightInFeet);
+                }
+                else
+                {
+                    Assert.IsTrue(totalHeightGrowth == 0.0F);
+                }
 
                 float totalDeadExpansionFactor = treeGrowth.TotalDeadExpansionFactor[treeIndex];
                 Assert.IsTrue(totalDeadExpansionFactor >= 0.0F);
@@ -258,11 +292,19 @@ namespace Osu.Cof.Organon.Test
 
                 float initialTotalExpansionFactor = initialTreeData.LiveExpansionFactor[treeIndex] + initialTreeData.DeadExpansionFactor[treeIndex];
                 float finalTotalExpansionFactor = finalTreeData.LiveExpansionFactor[treeIndex] + totalDeadExpansionFactor;
-                Assert.IsTrue(initialTotalExpansionFactor > 0.0F);
-                Assert.IsTrue(finalTotalExpansionFactor > 0.0F);
                 float expansionFactorRatio = finalTotalExpansionFactor / initialTotalExpansionFactor;
                 Assert.IsTrue(expansionFactorRatio >= 0.999F);
-                Assert.IsTrue(expansionFactorRatio <= 1.001F);
+                if (expectedGrowth.HasFlag(ExpectedTreeChanges.ExpansionFactorConservedOrIncreased))
+                {
+                    Assert.IsTrue(initialTotalExpansionFactor >= 0.0F);
+                }
+                else
+                {
+                    Assert.IsTrue(initialTotalExpansionFactor > 0.0F);
+                    Assert.IsTrue(finalTotalExpansionFactor > 0.0F);
+                    Assert.IsTrue(expansionFactorRatio <= 1.001F);
+                }
+                Assert.IsTrue(finalTotalExpansionFactor <= TestConstant.Maximum.ExpansionFactor);
             }
         }
     }

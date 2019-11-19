@@ -34,6 +34,9 @@
         // valid range for species group is [0, 17]
         public int[] SpeciesGroup { get; private set; }
 
+        // trees' tag number, if specified
+        public int[] Tag { get; private set; }
+
         public int TreeRecordCount { get; private set; }
 
         public Trees(int treeRecordCount)
@@ -47,6 +50,7 @@
             this.HeightGrowth = new float[treeRecordCount];
             this.Species = new FiaCode[treeRecordCount];
             this.SpeciesGroup = new int[treeRecordCount];
+            this.Tag = new int[treeRecordCount];
             this.TreeRecordCount = treeRecordCount;
         }
 
@@ -62,6 +66,7 @@
             other.HeightGrowth.CopyTo(this.HeightGrowth, 0);
             other.Species.CopyTo(this.Species, 0);
             other.SpeciesGroup.CopyTo(this.SpeciesGroup, 0);
+            other.Tag.CopyTo(this.Tag, 0);
         }
     }
 }

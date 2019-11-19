@@ -56,7 +56,7 @@ namespace Osu.Cof.Organon
             float SIM = siteIndexFromGround * 0.3048F;
             float HTM = treeHeight * 0.3048F;
 
-            // Compute growth effective age
+            // find growth effective age within precision of 0.01 years
             float HTOP;
             float AGE = 1.0F;
             for (int I = 0; I < 4; ++I)
@@ -77,7 +77,7 @@ namespace Osu.Cof.Organon
                 while (HTOP < HTM);
                 AGE -= 100.0F / (float)Math.Pow(10.0, I);
             }
-            growthEffectiveAge = AGE;
+            growthEffectiveAge = AGE; 
 
             // Compute top height and potential height growth
             WesternHemlock.SITECV_F(SIM, growthEffectiveAge + GP, out HTOP);
@@ -159,7 +159,7 @@ namespace Osu.Cof.Organon
         /// <param name="YT">Thinning?</param>
         /// <param name="OLD">Obsolete?</param>
         /// <param name="PDEN">(DOUG?)</param>
-        public static void GrowBigSixSpecies(int treeIndex, Variant variant, int simulationStep, Stand stand, float SI_1, float SI_2,
+        public static void GrowBigSixSpecies(int treeIndex, OrganonVariant variant, int simulationStep, Stand stand, float SI_1, float SI_2,
                                              float[] CCH, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN)
         {
             Debug.Assert(stand.IsBigSixSpecies(treeIndex));
@@ -193,7 +193,7 @@ namespace Osu.Cof.Organon
             float growthEffectiveAge;
             float oldIndexAge;
             float heightGrowthInFeet;
-            switch (variant)
+            switch (variant.Variant)
             {
                 case Variant.Swo:
                     float siteIndexFromGround = SI_1;
@@ -274,7 +274,7 @@ namespace Osu.Cof.Organon
                     HG_RAP(speciesGroup, PHTGRO, CR, TCCH, out heightGrowthInFeet);
                     break;
                 default:
-                    throw VariantExtensions.CreateUnhandledVariantException(variant);
+                    throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
             }
             if (stand.IsBigSixSpecies(treeIndex) && (growthEffectiveAge > oldIndexAge))
             {
@@ -287,7 +287,7 @@ namespace Osu.Cof.Organon
             LIMIT(variant, species, stand.Dbh[treeIndex], stand.Height[treeIndex], stand.DbhGrowth[treeIndex], ref stand.HeightGrowth[treeIndex]);
         }
 
-        public static void GrowMinorSpecies(int treeIndex, Variant variant, Stand stand, float[,] CALIB)
+        public static void GrowMinorSpecies(int treeIndex, OrganonVariant variant, Stand stand, float[,] CALIB)
         {
             Debug.Assert(stand.IsBigSixSpecies(treeIndex) == false);
 
@@ -296,7 +296,7 @@ namespace Osu.Cof.Organon
             float previousDbhInInches = dbhInInches - stand.DbhGrowth[treeIndex];
             float PRDHT1;
             float PRDHT2;
-            switch (variant)
+            switch (variant.Variant)
             {
                 case Variant.Swo:
                     HD_SWO(speciesGroup, previousDbhInInches, out PRDHT1);
@@ -315,7 +315,7 @@ namespace Osu.Cof.Organon
                     HD_RAP(speciesGroup, dbhInInches, out PRDHT2);
                     break;
                 default:
-                    throw VariantExtensions.CreateUnhandledVariantException(variant);
+                    throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
             }
             PRDHT1 = 4.5F + CALIB[speciesGroup, 0] * (PRDHT1 - 4.5F);
             PRDHT2 = 4.5F + CALIB[speciesGroup, 0] * (PRDHT2 - 4.5F);
@@ -323,7 +323,7 @@ namespace Osu.Cof.Organon
 
             // RED ALDER HEIGHT GROWTH
             FiaCode species = stand.Species[treeIndex];
-            if ((species == FiaCode.AlnusRubra) && (variant != Variant.Rap))
+            if ((species == FiaCode.AlnusRubra) && (variant.Variant != Variant.Rap))
             {
                 float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(stand.Height[treeIndex], stand.RedAlderSiteIndex);
                 if (growthEffectiveAge <= 0.0F)
@@ -455,14 +455,14 @@ namespace Osu.Cof.Organon
             predictedHeightInFeet = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
         }
 
-        private static void HG_FERT(int simulationStep, Variant variant, int speciesGroup, float siteIndexFromBreastHeight, float[] PN, float[] YF, out float FERTADJ)
+        private static void HG_FERT(int simulationStep, OrganonVariant variant, int speciesGroup, float siteIndexFromBreastHeight, float[] PN, float[] YF, out float FERTADJ)
         {
             float PF1;
             float PF2;
             float PF3;
             float PF4;
             float PF5;
-            if (variant != Variant.Rap)
+            if (variant.Variant != Variant.Rap)
             {
                 if (speciesGroup == 0)
                 {
@@ -621,46 +621,54 @@ namespace Osu.Cof.Organon
             Debug.Assert(HG > 0.0F);
         }
 
-        private static void HG_SWO(int speciesGroup, float potentialHeightGrowth, float CR, float TCCH, out float HG)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="speciesGroup"></param>
+        /// <param name="potentialHeightGrowth"></param>
+        /// <param name="CR">Crown ratio.</param>
+        /// <param name="SCCH">Percent stand level crown closure at height.</param>
+        /// <param name="HG">Height growth in feet.</param>
+        private static void HG_SWO(int speciesGroup, float potentialHeightGrowth, float CR, float SCCH, out float HG)
         {
-            // HEIGHT GROWTH PARAMETERS(8 parameters - big 5 conifers only)
-            //
-            // DF Coefficients from Hann and Hanus(2002) FRL Research Contribution 41
-            // GW Coefficients from Hann and Hanus(2002) FRL Research Contribution 41
-            // PP Coefficients from Hann and Hanus(2002) FRL Research Contribution 41
-            // SP Coefficients from Hann and Hanus(2002) FRL Research Contribution 41
-            // IC Coefficients from Hann and Hanus(2002) FRL Research Contribution 41
-            //
+            // Hann DW, Hanus ML. 2002. Enhanced height growth rate equations for SWO trees. FRL Research Contribution 41.
+            // https://ir.library.oregonstate.edu/concern/technical_reports/08612q05c
+            // 8 parameters: big 5 conifers only, all coefficients from Hann 20002
             float[,] HGPAR = {
-                { 1.0F, -0.02457621F, -0.00407303F, 1.0F, 2.89556338F, 2.0F, 0.0F, 1.0F }, // DF
-                { 1.0F, -0.14889850F, -0.00407303F, 1.0F, 7.69023575F, 2.0F, 0.0F, 1.0F }, // GW
-                { 1.0F, -0.14889850F, -0.00322752F, 1.0F, 0.92071847F, 2.0F, 0.0F, 1.0F }, // PP
-                { 1.0F, -0.14889850F, -0.00678955F, 1.0F, 0.92071847F, 2.0F, 0.0F, 1.0F }, // SP
-                { 1.0F, -0.01453250F, -0.00637434F, 1.0F, 1.27228638F, 2.0F, 0.0F, 1.0F } // IC
+                // a1    a2            a3           k1    k2           k3    a5    a0
+                //       b1            b2                 b3                       b0
+                { 1.0F, -0.02457621F, -0.00407303F, 1.0F, 2.89556338F, 2.0F, 0.0F, 1.0F }, // DF - Table 8 5.1
+                { 1.0F, -0.14889850F, -0.00407303F, 1.0F, 7.69023575F, 2.0F, 0.0F, 1.0F }, // GW - Tables 8 + 9 + other BUGBUG?
+                { 1.0F, -0.14889850F, -0.00322752F, 1.0F, 0.92071847F, 2.0F, 0.0F, 1.0F }, // PP - Table 9 6.1
+                { 1.0F, -0.14889850F, -0.00678955F, 1.0F, 0.92071847F, 2.0F, 0.0F, 1.0F }, // SP - Table 9 + other BUGBUG?
+                { 1.0F, -0.01453250F, -0.00637434F, 1.0F, 1.27228638F, 2.0F, 0.0F, 1.0F }  // IC - other + other + other BUGBUG?
             };
-            float P1 = HGPAR[speciesGroup, 0];
-            float P2 = HGPAR[speciesGroup, 1];
-            float P3 = HGPAR[speciesGroup, 2];
-            float P4 = HGPAR[speciesGroup, 3];
-            float P5 = HGPAR[speciesGroup, 4];
-            float P6 = HGPAR[speciesGroup, 5];
-            float P7 = HGPAR[speciesGroup, 6];
-            float P8 = HGPAR[speciesGroup, 7];
-            float FCR = (float)(-P5 * Math.Pow(1.0 - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
-            float B0 = P1 * (float)Math.Exp(P2 * TCCH);
-            float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
-            float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
+            float a1 = HGPAR[speciesGroup, 0];
+            float a2 = HGPAR[speciesGroup, 1];
+            float a3 = HGPAR[speciesGroup, 2];
+            float k1 = HGPAR[speciesGroup, 3];
+            float k2 = HGPAR[speciesGroup, 4];
+            float k3 = HGPAR[speciesGroup, 5];
+            float a5 = HGPAR[speciesGroup, 6];
+            float a0 = HGPAR[speciesGroup, 7];
+            // Hann 2002 Equation 2 (p17) as reduced to Eq 5.1 (p19), 5.2 (p20), 5.3 (p20) by setting a1 = 1, k1 = 1, k3 = 2, a5 = 0
+            //                                             5.x forms are identical: 5.1 uses SCCH, 5.2 scaled PCCH, and 5.3 PCCH
+            // Note: Equation 2 has SCCH^k1, not SCCH^0.5
+            float FCR = (float)(-k2 * Math.Pow(1.0 - CR, k3) * Math.Exp(a5 * Math.Pow(SCCH, 0.5)));
+            float B0 = a1 * (float)Math.Exp(a2 * SCCH);
+            float B1 = (float)Math.Exp(a3 * Math.Pow(SCCH, k1));
+            float MODIFER = a0 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
             HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG > 0.0F);
         }
 
-        private static void HG_THIN(int simulationStep, Variant variant, int speciesGroup, float BABT, float[] BART, float[] YT, out float THINADJ)
+        private static void HG_THIN(int simulationStep, OrganonVariant variant, int speciesGroup, float BABT, float[] BART, float[] YT, out float THINADJ)
         {
             float PT1;
             float PT2;
             float PT3;
-            if (variant != Variant.Rap)
+            if (variant.Variant != Variant.Rap)
             {
                 if (speciesGroup == 0)
                 {
@@ -774,10 +782,10 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void LIMIT(Variant variant, FiaCode species, float DBH, float HT, float DG, ref float HG)
+        private static void LIMIT(OrganonVariant variant, FiaCode species, float DBH, float HT, float DG, ref float HG)
         {
             FiaCode speciesWithSwoTsheOptOut = species;
-            if ((species == FiaCode.TsugaHeterophylla) && (variant == Variant.Swo))
+            if ((species == FiaCode.TsugaHeterophylla) && (variant.Variant == Variant.Swo))
             {
                 // BUGBUG: not clear why SWO uses default coefficients for hemlock
                 speciesWithSwoTsheOptOut = FiaCode.LithocarpusDensiflorus;

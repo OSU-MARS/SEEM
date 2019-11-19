@@ -27,12 +27,19 @@ namespace Osu.Cof.Organon.Test
                 FiaCode.QuercusKelloggii
             });
 
-        public static readonly Variant[] Variants = new Variant[] { Variant.Nwo, Variant.Swo, Variant.Smc, Variant.Rap };
+        public static readonly OrganonVariant[] Variants = new OrganonVariant[] 
+        { 
+            new OrganonVariant(Variant.Nwo),
+            new OrganonVariant(Variant.Swo),
+            new OrganonVariant(Variant.Smc),
+            new OrganonVariant(Variant.Rap)
+        };
 
         public static class Default
         {
             public const float AgeToReachBreastHeightInYears = 5.0F;
             public const float BABT = 0.0F; // (DOUG?)
+            public const float CrownRatio = 0.5F;
             public const float MaximumReinekeStandDensityIndex = 600.0F;
             public const float PDEN = 1.0F; // (DOUG?)
             public const float RAAGE = 0.0F; // (DOUG?)
@@ -52,6 +59,34 @@ namespace Osu.Cof.Organon.Test
             public const float MaximumCrownWidthInFeet = 300.0F;
             public const int StandAgeInYears = 500;
             public const float StandCrownCompetitionFactor = 10000.0F;
+        }
+
+        public static class OpenXml
+        {
+            public const string Namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+
+            public static class Attribute
+            {
+                public const string CellReference = "r";
+                public const string CellType = "t";
+                public const string Reference = "ref";
+            }
+
+            public static class CellType
+            {
+                public const string SharedString = "s";
+            }
+
+            public static class Element
+            {
+                public const string Cell = "c";
+                public const string CellValue = "v";
+                public const string Dimension = "dimension";
+                public const string Row = "row";
+                public const string SharedString = "si";
+                public const string SharedStringText = "t";
+                public const string SheetData = "sheetData";
+            }
         }
     }
 }

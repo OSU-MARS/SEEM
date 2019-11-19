@@ -2,7 +2,7 @@
 {
     public class OrganonConfiguration
     {
-        public Variant Variant { get; private set; }
+        public OrganonVariant Variant { get; private set; }
 
         // switches to if() clause in Mortality.MORTAL()
         public bool AdditionalMortality { get; set; }
@@ -41,10 +41,10 @@
         // RVARS[8] density correction coefficient for red alder height growth (WHHLB_SI_UC) and additional mortality (Mortality = true)
         public float PDEN { get; set; }
 
-        public OrganonConfiguration(Variant variant)
+        public OrganonConfiguration(OrganonVariant variant)
         {
             this.Variant = variant;
-            if (this.Variant == Variant.Rap)
+            if (this.Variant.Variant == Organon.Variant.Rap)
             {
                 // only even age red alder plantations more than 10 years old are supported
                 this.IsEvenAge = true;

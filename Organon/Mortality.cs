@@ -15,14 +15,14 @@ namespace Osu.Cof.Organon
             {
                 POW[treeIndex] = 1.0F;
                 FiaCode species = stand.Species[treeIndex];
-                if ((configuration.Variant == Variant.Rap) && (species != FiaCode.AlnusRubra))
+                if ((configuration.Variant.Variant == Variant.Rap) && (species != FiaCode.AlnusRubra))
                 {
                     POW[treeIndex] = 0.2F;
                 }
             }
 
             float A3;
-            if (configuration.Variant != Variant.Rap)
+            if (configuration.Variant.Variant != Variant.Rap)
             {
                 A3 = 14.39533971F;
             }
@@ -31,7 +31,7 @@ namespace Osu.Cof.Organon
                 A3 = 3.88F;
             }
             float RDCC;
-            if (configuration.Variant != Variant.Rap)
+            if (configuration.Variant.Variant != Variant.Rap)
             {
                 RDCC = 0.60F;
             }
@@ -52,7 +52,7 @@ namespace Osu.Cof.Organon
                 STN += expansionFactor;
 
                 FiaCode species = stand.Species[treeIndex];
-                if ((species == FiaCode.AlnusRubra) && (configuration.Variant != Variant.Rap))
+                if ((species == FiaCode.AlnusRubra) && (configuration.Variant.Variant != Variant.Rap))
                 {
                     RAN += expansionFactor;
                 }
@@ -83,12 +83,12 @@ namespace Osu.Cof.Organon
                     continue;
                 }
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
-                PM_FERT(speciesGroup, configuration.Variant, simulationStep, PN, YF, out float FERTADJ);
+                PM_FERT(speciesGroup, configuration.Variant.Variant, simulationStep, PN, YF, out float FERTADJ);
                 float DBH = stand.Dbh[treeIndex];
-                float SBAL1 = densityGrowth.GET_BAL(DBH);
+                float SBAL1 = densityGrowth.GetBasalAreaLarger(DBH);
                 float CR = stand.CrownRatio[treeIndex];
 
-                switch (configuration.Variant)
+                switch (configuration.Variant.Variant)
                 {
                     case Variant.Swo:
                         PM_SWO(speciesGroup, DBH, CR, SI_1, SBAL1, OG1, out POW[treeIndex], out PMK[treeIndex]);
@@ -103,12 +103,12 @@ namespace Osu.Cof.Organon
                         PM_RAP(speciesGroup, DBH, CR, SI_1, SI_2, SBAL1, out POW[treeIndex], out PMK[treeIndex]);
                         break;
                     default:
-                        throw VariantExtensions.CreateUnhandledVariantException(configuration.Variant);
+                        throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
                 }
                 PMK[treeIndex] = PMK[treeIndex] + FERTADJ;
             }
 
-            if (configuration.Variant != Variant.Rap)
+            if (configuration.Variant.Variant != Variant.Rap)
             {
                 if (RAAGE >= 55.0)
                 {
@@ -155,7 +155,7 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        if (configuration.Variant != Variant.Rap)
+                        if (configuration.Variant.Variant != Variant.Rap)
                         {
                             if (RD > RDCC)
                             {
@@ -200,7 +200,7 @@ namespace Osu.Cof.Organon
                                 else
                                 {
                                     IND = 0;
-                                    if (configuration.Variant != Variant.Rap)
+                                    if (configuration.Variant.Variant != Variant.Rap)
                                     {
                                         if ((RD > RDCC) && (stand.NO <= 0.0F))
                                         {
@@ -218,7 +218,7 @@ namespace Osu.Cof.Organon
                                 float QMDP;
                                 if ((IND == 0) && (stand.NO > 0.0F))
                                 {
-                                    if (configuration.Variant != Variant.Rap)
+                                    if (configuration.Variant.Variant != Variant.Rap)
                                     {
                                         QMDP = QUAD1(NA, stand.NO, RDCC, stand.A1);
                                     }
@@ -279,7 +279,7 @@ namespace Osu.Cof.Organon
                                         QMDA = (float)Math.Sqrt(BAAA / (KB * NAA));
                                         if (IND == 0)
                                         {
-                                            if (configuration.Variant != Variant.Rap)
+                                            if (configuration.Variant.Variant != Variant.Rap)
                                             {
                                                 QMDP = QUAD1(NAA, stand.NO, RDCC, stand.A1);
                                             }

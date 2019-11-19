@@ -5,14 +5,14 @@ namespace Osu.Cof.Organon
 {
     internal class CrownGrowth
     {
-        public static void CALC_CC(Variant variant, int speciesGroup, float HLCW, float LCW, float HT, float DBH, float HCB, float EXPAN, float[] CCH)
+        public static void CALC_CC(OrganonVariant variant, int speciesGroup, float HLCW, float LCW, float HT, float DBH, float HCB, float EXPAN, float[] CCH)
         {
             float XHLCW;
             float XLCW;
             if (HCB > HLCW)
             {
                 XHLCW = HCB;
-                switch (variant)
+                switch (variant.Variant)
                 {
                     case Variant.Swo:
                         CW_SWO(speciesGroup, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
@@ -27,7 +27,7 @@ namespace Osu.Cof.Organon
                         CW_RAP(speciesGroup, HLCW, LCW, HT, DBH, XHLCW, out XLCW);
                         break;
                     default:
-                        throw VariantExtensions.CreateUnhandledVariantException(variant);
+                        throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
                 }
             }
             else
@@ -46,7 +46,7 @@ namespace Osu.Cof.Organon
                 }
                 else if (XL > XHLCW && XL < HT)
                 {
-                    switch (variant)
+                    switch (variant.Variant)
                     {
                         case Variant.Swo:
                             CW_SWO(speciesGroup, HLCW, LCW, HT, DBH, XL, out CW);
@@ -61,7 +61,7 @@ namespace Osu.Cof.Organon
                             CW_RAP(speciesGroup, HLCW, LCW, HT, DBH, XL, out CW);
                             break;
                         default:
-                            throw VariantExtensions.CreateUnhandledVariantException(variant);
+                            throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
                     }
                 }
                 else
@@ -80,7 +80,7 @@ namespace Osu.Cof.Organon
         /// <param name="stand">Stand data.</param>
         /// <param name="CCH"></param>
         /// <param name="CC">Crown closure</param>
-        public static void CRNCLO(Variant variant, Stand stand, float[] CCH, out float CC)
+        public static void CRNCLO(OrganonVariant variant, Stand stand, float[] CCH, out float CC)
         {
             for (int L = 0; L < 40; ++L)
             {
@@ -105,7 +105,7 @@ namespace Osu.Cof.Organon
                 float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
                 float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
-                switch (variant)
+                switch (variant.Variant)
                 {
                     case Variant.Swo:
                         MCW_SWO(speciesGroup, dbhInInches, heightInFeet, out float MCW);
@@ -136,8 +136,8 @@ namespace Osu.Cof.Organon
             CC = CCH[0];
         }
 
-        public static void CrowGro(Variant variant, Stand stand, StandDensity densityBeforeGrowth, StandDensity densityAfterGrowth,
-                                   float SBA1, float SBA2, float SI_1, float SI_2, float[,] CALIB, float[] CCH)
+        public static void CrowGro(OrganonVariant variant, Stand stand, StandDensity densityBeforeGrowth, StandDensity densityAfterGrowth,
+                                   float SI_1, float SI_2, float[,] CALIB, float[] CCH)
         {
             // DETERMINE 5-YR CROWN RECESSION
             Mortality.OldGro(stand, -1.0F, out float OG1);
@@ -150,28 +150,28 @@ namespace Osu.Cof.Organon
                 // CALCULATE STARTING DBH
                 float PDBH = stand.Dbh[treeIndex] - stand.DbhGrowth[treeIndex];
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
-                float SCCFL1 = densityBeforeGrowth.GET_CCFL(PDBH);
+                float SCCFL1 = densityBeforeGrowth.GetCrownCompetitionFactorLarger(PDBH);
                 float PCR1;
-                switch (variant)
+                switch (variant.Variant)
                 {
                     case Variant.Swo:
-                        HCB_SWO(speciesGroup, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out float HCB1);
+                        HCB_SWO(speciesGroup, PHT, PDBH, SCCFL1, densityBeforeGrowth.BasalAreaPerAcre, SI_1, SI_2, OG1, out float HCB1);
                         PCR1 = 1.0F - HCB1 / PHT;
                         break;
                     case Variant.Nwo:
-                        HCB_NWO(speciesGroup, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
+                        HCB_NWO(speciesGroup, PHT, PDBH, SCCFL1, densityBeforeGrowth.BasalAreaPerAcre, SI_1, SI_2, OG1, out HCB1);
                         PCR1 = CALIB[speciesGroup, 1] * (1.0F - HCB1 / PHT);
                         break;
                     case Variant.Smc:
-                        HCB_SMC(speciesGroup, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
+                        HCB_SMC(speciesGroup, PHT, PDBH, SCCFL1, densityBeforeGrowth.BasalAreaPerAcre, SI_1, SI_2, OG1, out HCB1);
                         PCR1 = 1.0F - HCB1 / PHT;
                         break;
                     case Variant.Rap:
-                        HCB_RAP(speciesGroup, PHT, PDBH, SCCFL1, SBA1, SI_1, SI_2, OG1, out HCB1);
+                        HCB_RAP(speciesGroup, PHT, PDBH, SCCFL1, densityBeforeGrowth.BasalAreaPerAcre, SI_1, SI_2, OG1, out HCB1);
                         PCR1 = 1.0F - HCB1 / PHT;
                         break;
                     default:
-                        throw VariantExtensions.CreateUnhandledVariantException(variant);
+                        throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
                 }
 
                 float PHCB1 = (1.0F - PCR1) * PHT;
@@ -179,33 +179,33 @@ namespace Osu.Cof.Organon
                 // CALCULATE HCB END OF GROWTH
                 float HT = stand.Height[treeIndex];
                 float DBH = stand.Dbh[treeIndex];
-                float SCCFL2 = densityAfterGrowth.GET_CCFL(DBH);
+                float SCCFL2 = densityAfterGrowth.GetCrownCompetitionFactorLarger(DBH);
                 float MAXHCB;
                 float PCR2;
-                switch (variant)
+                switch (variant.Variant)
                 {
                     case Variant.Swo:
-                        HCB_SWO(speciesGroup, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out float HCB2);
+                        HCB_SWO(speciesGroup, HT, DBH, SCCFL2, densityAfterGrowth.BasalAreaPerAcre, SI_1, SI_2, OG2, out float HCB2);
                         MAXHCB_SWO(speciesGroup, HT, SCCFL2, out MAXHCB);
                         PCR2 = 1.0F - HCB2 / HT;
                         break;
                     case Variant.Nwo:
-                        HCB_NWO(speciesGroup, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
+                        HCB_NWO(speciesGroup, HT, DBH, SCCFL2, densityAfterGrowth.BasalAreaPerAcre, SI_1, SI_2, OG2, out HCB2);
                         MAXHCB_NWO(speciesGroup, HT, SCCFL2, out MAXHCB);
                         PCR2 = CALIB[speciesGroup, 1] * (1.0F - HCB2 / HT);
                         break;
                     case Variant.Smc:
-                        HCB_SMC(speciesGroup, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
+                        HCB_SMC(speciesGroup, HT, DBH, SCCFL2, densityAfterGrowth.BasalAreaPerAcre, SI_1, SI_2, OG2, out HCB2);
                         MAXHCB_SMC(speciesGroup, HT, SCCFL2, out MAXHCB);
                         PCR2 = 1.0F - HCB2 / HT;
                         break;
                     case Variant.Rap:
-                        HCB_RAP(speciesGroup, HT, DBH, SCCFL2, SBA2, SI_1, SI_2, OG2, out HCB2);
+                        HCB_RAP(speciesGroup, HT, DBH, SCCFL2, densityAfterGrowth.BasalAreaPerAcre, SI_1, SI_2, OG2, out HCB2);
                         MAXHCB_RAP(speciesGroup, HT, SCCFL2, out MAXHCB);
                         PCR2 = 1.0F - HCB2 / HT;
                         break;
                     default:
-                        throw VariantExtensions.CreateUnhandledVariantException(variant);
+                        throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
                 }
 
                 float PHCB2 = (1.0F - PCR2) * HT;

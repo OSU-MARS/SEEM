@@ -15,12 +15,12 @@ namespace Osu.Cof.Organon
     /// Calculates Flewelling's top heights for western hemlock (Tsuga heterophylla).
     /// </summary>
     /// <remarks>
-    /// Uses unpublished curves from Flewelling. Only known documentation is the overviews for Organon southwest and Organon
-    /// Pacific Northwest variations of FVS, which repeats the equations.
-    /// 
-    /// Flewelling's 1994 hemlock growth papers (<a href="https://doi.org/10.1139/x93-070">part 1</a> and 
+    /// Flewelling's 1993 hemlock growth papers (<a href="https://doi.org/10.1139/x93-070">part 1</a> and 
     /// <a href="https://doi.org/10.1139/x93-071">part 2</a>) do not use this method. Assuming they use the same data the
     /// likely range of validity is for heights up to 60-70 meters and DBH to 80 cm for hemlocks growing in coastal Washington.
+    /// 
+    /// Marshall 2003 (https://www.nrcresearchpress.com/doi/pdf/10.1139/x03-126) suggests the equations here might from a 1994
+    /// report to the Northwest Taper Cooperative which does not appear to be online.
     /// </remarks>
     // BUGBUG fix most recent cache inherited from Fortran
     internal class WesternHemlock
@@ -41,7 +41,7 @@ namespace Osu.Cof.Organon
         /// <param name="SI">site index (meters) for breast height age of 50 years</param>
         /// <param name="AGE">breast height age (years)</param>
         /// <param name="HTOP">site height (meters) for given site index and age</param>
-        /// <remarks>PSI appears to be a translated site index used in the curve fit.</remarks>
+        /// <remarks>PSI is the pivoted (translated) site index from SITEF_SI.</remarks>
         public static void SITECV_F(float SI, float AGE, out float HTOP)
         {
             // determine if coefficients for this SI are
@@ -76,7 +76,7 @@ namespace Osu.Cof.Organon
             // psi input REAL productivity index (m/yr)
             WesternHemlock.PPSI = PSI;
             WesternHemlock.XK = 128.326F * (float)Math.Exp(-2.54871 * PSI);
-            WesternHemlock.B1 = 0.2F + 0.8F / (1.0F + (float)Math.Exp(5.33208 -9.00622 * PSI));
+            WesternHemlock.B1 = 0.2F + 0.8F / (1.0F + (float)Math.Exp(5.33208 - 9.00622 * PSI));
             WesternHemlock.C = 1.0F + 1.2F * PSI;
             WesternHemlock.ALPHA = 52.7948F * PSI;
             WesternHemlock.H1 = 1.3F + (B1 * PSI) / 2.0F;

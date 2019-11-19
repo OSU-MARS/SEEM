@@ -13,7 +13,6 @@ namespace Osu.Cof.Organon
         /// <param name="NSPN"></param>
         /// <param name="TCYCLE"></param>
         /// <param name="FCYCLE"></param>
-        /// <param name="SBA1"></param>
         /// <param name="CALIB"></param>
         /// <param name="PN"></param>
         /// <param name="YF"></param>
@@ -24,7 +23,7 @@ namespace Osu.Cof.Organon
         /// <param name="OLD"></param>
         /// <param name="RAAGE"></param>
         public static void GROW(ref int simulationStep, OrganonConfiguration configuration, Stand stand, int NSPN,
-                                ref int TCYCLE, ref int FCYCLE, float SBA1, StandDensity densityBeforeGrowth,
+                                ref int TCYCLE, ref int FCYCLE, StandDensity densityBeforeGrowth,
                                 float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, 
                                 float[] CCH, ref float OLD, float RAAGE, out StandDensity densityAfterGrowth)
         {
@@ -36,7 +35,7 @@ namespace Osu.Cof.Organon
             {
                 GrowthModifiers.GG_MODS((float)stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMOD_GG, out HGMOD_GG);
             }
-            if (configuration.SwissNeedleCast && (configuration.Variant == Variant.Nwo || configuration.Variant == Variant.Smc))
+            if (configuration.SwissNeedleCast && (configuration.Variant.Variant == Variant.Nwo || configuration.Variant.Variant == Variant.Smc))
             {
                 GrowthModifiers.SNC_MODS(configuration.FR, out DGMOD_SNC, out HGMOD_SNC);
             }
@@ -72,7 +71,7 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    DiameterGrowth.DIAMGRO(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, SBA1, densityBeforeGrowth, CALIB, PN, YF, BABT, BART, YT);
+                    DiameterGrowth.DIAMGRO(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, densityBeforeGrowth, CALIB, PN, YF, BABT, BART, YT);
                     if (stand.Species[treeIndex] == FiaCode.PseudotsugaMenziesii)
                     {
                         stand.DbhGrowth[treeIndex] = stand.DbhGrowth[treeIndex] * DGMOD_GG * DGMOD_SNC;
@@ -112,7 +111,7 @@ namespace Osu.Cof.Organon
             }
 
             // CALC EOG SBA, CCF/TREE, CCF IN LARGER TREES AND STAND CCF
-            Stats.SSTATS(configuration.Variant, stand, out float SBA2, out float _, out float _, out densityAfterGrowth);
+            densityAfterGrowth = new StandDensity(stand, configuration.Variant);
 
             // CALCULATE HTGRO FOR 'OTHER' & CROWN ALL SPECIES
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -132,10 +131,10 @@ namespace Osu.Cof.Organon
             }
 
             // grow crowns
-            CrownGrowth.CrowGro(configuration.Variant, stand, densityBeforeGrowth, densityAfterGrowth, SBA1, SBA2, SI_1, SI_2, CALIB, CCH);
+            CrownGrowth.CrowGro(configuration.Variant, stand, densityBeforeGrowth, densityAfterGrowth, SI_1, SI_2, CALIB, CCH);
 
             // update stand variables
-            if (configuration.Variant != Variant.Rap)
+            if (configuration.Variant.Variant != Variant.Rap)
             {
                 stand.AgeInYears += 5;
                 stand.BreastHeightAgeInYears += 5;

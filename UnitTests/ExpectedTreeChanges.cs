@@ -7,7 +7,9 @@ namespace Osu.Cof.Organon.Test
     {
         NoDiameterOrHeightGrowth = 0x0,
         DiameterGrowth = 0x1,
-        HeightGrowth = 0x2,
-        HeightGrowthOrNoChange = 0x4
+        DiameterGrowthOrNoChange = 0x2,
+        ExpansionFactorConservedOrIncreased = 0x4,
+        HeightGrowth = 0x8,
+        HeightGrowthOrNoChange = 0x10
     }
 }
