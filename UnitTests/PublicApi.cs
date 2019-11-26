@@ -3,63 +3,42 @@ using System.IO;
 
 namespace Osu.Cof.Organon.Test
 {
+    // Data were provided by the HJ Andrews Experimental Forest research program, funded by the National Science Foundation's 
+    // Long-Term Ecological Research Program (DEB 1440409), US Forest Service Pacific Northwest Research Station, and Oregon 
+    // State University.
     [TestClass]
     public class PublicApi : OrganonTest
     {
         public TestContext TestContext { get; set; }
 
         [TestMethod]
+        [DeploymentItem("HPNF.xlsx")]
         [DeploymentItem("HPNF plot 1.xlsx")]
         public void HuffmanPeakNobleFir()
         {
-            // Data were provided by the HJ Andrews Experimental Forest research program, funded by the National Science Foundation's 
-            // Long-Term Ecological Research Program (DEB 1440409), US Forest Service Pacific Northwest Research Station, and Oregon 
-            // State University.
-            OrganonVariant variant = new OrganonVariant(Variant.Swo); // allows mapping ABAM -> ABGR and ABPR -> ABCO
-            PspStand huffmanPeakPlot1 = new PspStand("HPNF plot 1.xlsx", "HPNF", 0.2F);
-            TestStand stand = huffmanPeakPlot1.ToOrganonStand(variant, 0, 55.0F);
+            //string plotFileName = "HPNF.xlsx";
+            string plotFileName = "HPNF plot 1.xlsx";
+            PspStand huffmanPeak = new PspStand(plotFileName, "HPNF", 0.2F);
+            OrganonVariant variant = new OrganonVariant(Variant.Swo); // SWO allows mapping ABAM -> ABGR and ABPR -> ABCO
+            TestStand stand = huffmanPeak.ToOrganonStand(variant, 0, 55.0F);
+            this.GrowPspStand(huffmanPeak, stand, variant, Path.GetFileNameWithoutExtension(plotFileName));
 
-            OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
-            TestStand initialTreeData = stand.Clone();
-            TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath(stand.TreeRecordCount);
-
-            float BABT = 0.0F;
-            float[] BART = new float[5];
-            float[,] CALIB = this.CreateCalibrationArray(); 
-            float[] PN = new float[5];
-            if (configuration.IsEvenAge)
+            TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, huffmanPeak, 1980);
+            using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("HPNF plot 1 measured quantiles.csv", variant, 1980);
+            foreach (int measurementYear in huffmanPeak.MeasurementYears)
             {
-                // stand error if less than one year to grow to breast height
-                stand.AgeInYears = stand.BreastHeightAgeInYears + 2;
+                if (measurementYear != 1980)
+                {
+                    measuredQuantiles = new TreeQuantiles(stand, huffmanPeak, measurementYear);
+                    measuredQuantiles.WriteToCsv(quantileWriter, variant, measurementYear);
+                }
             }
-            float[] YSF = new float[5];
-            float[] YST = new float[5];
-
-            TestStandDensity density = new TestStandDensity(stand, variant);
-            using StreamWriter densityWriter = density.WriteToCsv("HPNF plot 1 density.csv", variant, 1980);
-            using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv("HPNF plot 1 tree growth.csv", variant, 1980);
-            stand.LogAsCsv(this.TestContext, variant, 1980, true);
-            for (int simulationStep = 0; simulationStep < 7; ++simulationStep)
-            {
-                StandGrowth.EXECUTE(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
-                treeGrowth.AccumulateGrowthAndMortality(stand);
-
-                int endYear = 1980 + variant.GetEndYear(simulationStep);
-                huffmanPeakPlot1.AddIngrowth(endYear, stand, density);
-                density = new TestStandDensity(stand, variant);
-                density.WriteToCsv(densityWriter, variant, endYear);
-                stand.WriteTreesToCsv(treeGrowthWriter, variant, endYear);
-                this.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
-            }
-
-            this.Verify(ExpectedTreeChanges.ExpansionFactorConservedOrIncreased | ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, treeGrowth, initialTreeData, stand);
-            this.Verify(CALIB);
         }
 
         [TestMethod]
         public void OrganonStandGrowthApi()
         {
-            TestStand.LogCsvHeader(this.TestContext);
+            TestStand.WriteTreeHeader(this.TestContext);
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 // get crown closure
@@ -91,12 +70,12 @@ namespace Osu.Cof.Organon.Test
                 float[] YSF = new float[5]; // (DOUG?)
                 float[] YST = new float[5]; // (DOUG?)
 
-                stand.LogAsCsv(this.TestContext, variant, 0, false);
+                stand.WriteTreesAsCsv(this.TestContext, variant, 0, false);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     StandGrowth.EXECUTE(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
-                    stand.LogAsCsv(this.TestContext, variant, variant.GetEndYear(simulationStep), false);
+                    stand.WriteTreesAsCsv(this.TestContext, variant, variant.GetEndYear(simulationStep), false);
                     this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
                 }
 

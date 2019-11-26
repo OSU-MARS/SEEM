@@ -67,6 +67,7 @@ namespace Osu.Cof.Organon
             public static class ColumnIndex
             {
                 public const int Dbh = 11;
+                public const int Plot = 5;
                 public const int Species = 7;
                 public const int Status = 10;
                 public const int Tag = 8;

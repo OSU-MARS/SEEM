@@ -28,7 +28,7 @@ namespace Osu.Cof.Organon
 
         // number of plots tree data is from
         // If data is for entire stand use one plot.
-        public float NumberOfPlots { get; private set; }
+        public float NumberOfPlots { get; set; }
 
         // RVARS[0] site index from ground height in feet (internal variable SI_1 is from breast height), used for most species
         public float PrimarySiteIndex { get; private set; }

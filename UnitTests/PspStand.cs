@@ -5,17 +5,20 @@ using System.Linq;
 
 namespace Osu.Cof.Organon.Test
 {
-    internal class PspStand
+    public class PspStand
     {
-        private readonly SortedList<int, PspTreeMeasurementSeries> measurementsByTag;
-        private readonly HashSet<int> measurementYears;
         private readonly float plotAreaInAcres;
+        private int plotCount;
+
+        public SortedList<int, PspTreeMeasurementSeries> MeasurementsByTag { get; set; }
+        public HashSet<int> MeasurementYears { get; set; }
 
         public PspStand(string xlsxFilePath, string worksheetName, float plotAreaInAcres)
         {
-            this.measurementsByTag = new SortedList<int, PspTreeMeasurementSeries>();
-            this.measurementYears = new HashSet<int>();
+            this.MeasurementsByTag = new SortedList<int, PspTreeMeasurementSeries>();
+            this.MeasurementYears = new HashSet<int>();
             this.plotAreaInAcres = plotAreaInAcres;
+            this.plotCount = 0;
 
             XlsxReader reader = new XlsxReader();
             reader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
@@ -25,7 +28,7 @@ namespace Osu.Cof.Organon.Test
         {
             float fixedPlotExpansionFactor = 1.0F / this.plotAreaInAcres;
             int treeIndex = 0;
-            foreach (PspTreeMeasurementSeries tree in this.measurementsByTag.Values)
+            foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
                 float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 if (expansionFactor == 0.0F)
@@ -44,6 +47,11 @@ namespace Osu.Cof.Organon.Test
             }
         }
 
+        public float GetTreesPerHectareExpansionFactor()
+        {
+            return TestConstant.AcresPerHectare / (this.plotAreaInAcres * this.plotCount);
+        }
+
         private void ParseRow(int rowIndex, string[] rowAsStrings)
         {
             if ((rowIndex == 0) || (rowAsStrings[Constant.Psp.ColumnIndex.Tag] == null))
@@ -51,12 +59,15 @@ namespace Osu.Cof.Organon.Test
                 return;
             }
 
+            int plot = Int32.Parse(rowAsStrings[Constant.Psp.ColumnIndex.Plot]);
+            this.plotCount = Math.Max(this.plotCount, plot);
+
             int tag = Int32.Parse(rowAsStrings[Constant.Psp.ColumnIndex.Tag]);
-            if (this.measurementsByTag.TryGetValue(tag, out PspTreeMeasurementSeries tree) == false)
+            if (this.MeasurementsByTag.TryGetValue(tag, out PspTreeMeasurementSeries tree) == false)
             {
                 string species = rowAsStrings[Constant.Psp.ColumnIndex.Species];
                 tree = new PspTreeMeasurementSeries(tag, species);
-                this.measurementsByTag.Add(tag, tree);
+                this.MeasurementsByTag.Add(tag, tree);
             }
 
             int status = Int32.Parse(rowAsStrings[Constant.Psp.ColumnIndex.Status]);
@@ -68,18 +79,21 @@ namespace Osu.Cof.Organon.Test
                 tree.DbhInCentimetersByYear.Add(year, dbhInCentimeters);
             }
 
-            this.measurementYears.Add(year);
+            this.MeasurementYears.Add(year);
         }
 
         public TestStand ToOrganonStand(OrganonVariant variant, int ageInYears, float siteIndex)
         {
-            int earliestMeasurementYear = this.measurementYears.Min();
+            int earliestMeasurementYear = this.MeasurementYears.Min();
 
             // populate Organon version of stand
-            TestStand stand = new TestStand(variant, ageInYears, this.measurementsByTag.Count, siteIndex);
+            TestStand stand = new TestStand(variant, ageInYears, this.MeasurementsByTag.Count, siteIndex)
+            {
+                NumberOfPlots = this.plotCount
+            };
             float fixedPlotExpansionFactor = 1.0F / this.plotAreaInAcres;
             int treeIndex = 0;
-            foreach (PspTreeMeasurementSeries tree in this.measurementsByTag.Values)
+            foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
                 float expansionFactor = fixedPlotExpansionFactor;
                 if (tree.DbhInCentimetersByYear.TryGetValue(earliestMeasurementYear, out float dbhInCentimeters) == false)
@@ -100,10 +114,13 @@ namespace Osu.Cof.Organon.Test
                 ++treeIndex;
             }
 
+            // establish growth tracking quantiles
+            stand.SetQuantiles();
+
             // estimate crown ratios
             StandDensity standDensity = new StandDensity(stand, variant);
             treeIndex = 0;
-            foreach (PspTreeMeasurementSeries tree in this.measurementsByTag.Values)
+            foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
                 float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 if (expansionFactor > 0.0F)

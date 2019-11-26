@@ -660,7 +660,7 @@ namespace Osu.Cof.Organon
             float MODIFER = a0 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
             float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
             HG = potentialHeightGrowth * MODIFER * CRADJ;
-            Debug.Assert(HG > 0.0F);
+            Debug.Assert(HG >= 0.0F);
         }
 
         private static void HG_THIN(int simulationStep, OrganonVariant variant, int speciesGroup, float BABT, float[] BART, float[] YT, out float THINADJ)

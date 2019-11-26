@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Osu.Cof.Organon.Test
 {
@@ -144,6 +145,48 @@ namespace Osu.Cof.Organon.Test
                 default:
                     throw Organon.OrganonVariant.CreateUnhandledVariantException(variant.Variant);
             }
+        }
+
+        protected void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, string baseFileName)
+        {
+            OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
+            TestStand initialTreeData = stand.Clone();
+            TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath(stand.TreeRecordCount);
+
+            float BABT = 0.0F;
+            float[] BART = new float[5];
+            float[,] CALIB = this.CreateCalibrationArray();
+            float[] PN = new float[5];
+            if (configuration.IsEvenAge)
+            {
+                // stand error if less than one year to grow to breast height
+                stand.AgeInYears = stand.BreastHeightAgeInYears + 2;
+            }
+            float[] YSF = new float[5];
+            float[] YST = new float[5];
+
+            TestStandDensity density = new TestStandDensity(stand, variant);
+            using StreamWriter densityWriter = density.WriteToCsv(baseFileName + " density.csv", variant, 1980);
+            TreeQuantiles quantiles = new TreeQuantiles(stand);
+            using StreamWriter quantileWriter = quantiles.WriteToCsv(baseFileName + " quantiles.csv", variant, 1980);
+            using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, 1980);
+            for (int simulationStep = 0; simulationStep < 7; ++simulationStep)
+            {
+                StandGrowth.EXECUTE(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
+                treeGrowth.AccumulateGrowthAndMortality(stand);
+
+                int endYear = 1980 + variant.GetEndYear(simulationStep);
+                huffmanPeak.AddIngrowth(endYear, stand, density);
+                density = new TestStandDensity(stand, variant);
+                density.WriteToCsv(densityWriter, variant, endYear);
+                quantiles = new TreeQuantiles(stand);
+                quantiles.WriteToCsv(quantileWriter, variant, endYear);
+                stand.WriteTreesToCsv(treeGrowthWriter, variant, endYear);
+                this.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
+            }
+
+            this.Verify(ExpectedTreeChanges.ExpansionFactorConservedOrIncreased | ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, treeGrowth, initialTreeData, stand);
+            this.Verify(CALIB);
         }
 
         protected void Verify(float[,] calibration)
