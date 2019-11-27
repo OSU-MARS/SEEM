@@ -17,21 +17,21 @@ namespace Osu.Cof.Organon
         // time since oldest cohort of trees in the stand reached breast height (4.5 feet) (DOUG?)
         public int BreastHeightAgeInYears { get; set; }
 
+        // also used for ponderosa (SWO) and western redcedar (NWO)
+        public float HemlockSiteIndex { get; private set; }
+
         // IB, sometimes also named IIB
         public int MaxBigSixSpeciesGroupIndex { get; private set; }
 
         // STOR[0]
         public float NO { get; set; }
 
-        // RVARS[1] site index from ground height in feet (internal variable SI_2 is from breast height), used for ??? in 
-        public float MortalitySiteIndex { get; private set; }
-
         // number of plots tree data is from
         // If data is for entire stand use one plot.
         public float NumberOfPlots { get; set; }
 
         // RVARS[0] site index from ground height in feet (internal variable SI_1 is from breast height), used for most species
-        public float PrimarySiteIndex { get; private set; }
+        public float SiteIndex { get; private set; }
 
         public float RedAlderSiteIndex { get; private set; }
 
@@ -47,17 +47,17 @@ namespace Osu.Cof.Organon
         {
             this.AgeInYears = ageInYears;
             this.BreastHeightAgeInYears = ageInYears;
+            this.HemlockSiteIndex = -1.0F;
             this.MaxBigSixSpeciesGroupIndex = maxBigSixSpeciesGroupIndex;
-            this.MortalitySiteIndex = -1.0F;
             this.NumberOfPlots = 1;
-            this.PrimarySiteIndex = primarySiteIndex;
+            this.SiteIndex = primarySiteIndex;
             this.RedAlderSiteIndex = -1.0F;
             this.TreeHeightWarning = new bool[treeRecordCount];
             this.Warnings = new StandWarnings();
         }
 
         protected Stand(Stand other)
-            : this(other.AgeInYears, other.TreeRecordCount, other.PrimarySiteIndex, other.MaxBigSixSpeciesGroupIndex)
+            : this(other.AgeInYears, other.TreeRecordCount, other.SiteIndex, other.MaxBigSixSpeciesGroupIndex)
         {
             this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
 
@@ -68,7 +68,7 @@ namespace Osu.Cof.Organon
             other.LiveExpansionFactor.CopyTo(this.LiveExpansionFactor, 0);
             other.Height.CopyTo(this.Height, 0);
             other.HeightGrowth.CopyTo(this.HeightGrowth, 0);
-            this.MortalitySiteIndex = other.MortalitySiteIndex;
+            this.HemlockSiteIndex = other.HemlockSiteIndex;
             this.NumberOfPlots = other.NumberOfPlots;
             this.RedAlderSiteIndex = other.RedAlderSiteIndex;
             other.Species.CopyTo(this.Species, 0);
@@ -89,34 +89,34 @@ namespace Osu.Cof.Organon
                 case Variant.Nwo:
                 case Variant.Smc:
                     // Site index equation from Nigh(1995, Forest Science 41:84-98)
-                    if ((this.PrimarySiteIndex < 0.0F) && (this.MortalitySiteIndex > 0.0F))
+                    if ((this.SiteIndex < 0.0F) && (this.HemlockSiteIndex > 0.0F))
                     {
-                        this.PrimarySiteIndex = 0.480F + (1.110F * this.MortalitySiteIndex);
+                        this.SiteIndex = 0.480F + (1.110F * this.HemlockSiteIndex);
                     }
-                    else if (this.MortalitySiteIndex < 0.0F)
+                    else if (this.HemlockSiteIndex < 0.0F)
                     {
-                        this.MortalitySiteIndex = -0.432F + (0.899F * this.PrimarySiteIndex);
+                        this.HemlockSiteIndex = -0.432F + (0.899F * this.SiteIndex);
                     }
                     break;
                 case Variant.Rap:
-                    if (this.MortalitySiteIndex < 0.0F)
+                    if (this.HemlockSiteIndex < 0.0F)
                     {
                         // Fortran code sets SITE_2 from an uninitialized value of SI_1. It's unclear what the Fortran equation was intended
                         // to accomplish as using SITE_1, which is initialized translates to
                         //   this.MortalitySiteIndex = 4.776377F * (float)Math.Pow(this.PrimarySiteIndex, 0.763530587);
                         // which produces mortality site indices outside of the range supported for RAP.
                         // BUGBUG: clamp range to maximum and minimum once these constants are available from variant capabilities
-                        this.MortalitySiteIndex = this.PrimarySiteIndex;
+                        this.HemlockSiteIndex = this.SiteIndex;
                     }
                     break;
                 case Variant.Swo:
-                    if ((this.PrimarySiteIndex < 0.0F) && (this.MortalitySiteIndex > 0.0F))
+                    if ((this.SiteIndex < 0.0F) && (this.HemlockSiteIndex > 0.0F))
                     {
-                        this.PrimarySiteIndex = 1.062934F * this.MortalitySiteIndex;
+                        this.SiteIndex = 1.062934F * this.HemlockSiteIndex;
                     }
-                    else if (this.MortalitySiteIndex < 0.0F)
+                    else if (this.HemlockSiteIndex < 0.0F)
                     {
-                        this.MortalitySiteIndex = 0.940792F * this.PrimarySiteIndex;
+                        this.HemlockSiteIndex = 0.940792F * this.SiteIndex;
                     }
                     break;
                 default:
@@ -142,7 +142,7 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            this.RedAlderSiteIndex = RedAlder.ConiferToRedAlderSiteIndex(this.PrimarySiteIndex);
+            this.RedAlderSiteIndex = RedAlder.ConiferToRedAlderSiteIndex(this.SiteIndex);
             float redAlderAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndex);
             if (redAlderAge <= 0.0F)
             {

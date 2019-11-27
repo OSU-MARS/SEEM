@@ -86,6 +86,30 @@ namespace Osu.Cof.Organon.Test
             }
         }
 
+        public void WriteCompetitionAsCsv(string filePath, OrganonVariant variant, int year)
+        {
+            StandDensity density = new StandDensity(this, variant);
+
+            FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using StreamWriter writer = new StreamWriter(stream);
+            writer.WriteLine("variant,year,tree,species,BAL,CCFL,DBH,height,expansion factor,crown ratio");
+            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            {
+                int id = this.Tag[treeIndex] > 0 ? this.Tag[treeIndex] : treeIndex;
+                FiaCode species = this.Species[treeIndex];
+                float dbhInInches = this.Dbh[treeIndex];
+                float heightInMeters = TestConstant.MetersPerFoot * this.Height[treeIndex];
+                float crownRatio = this.CrownRatio[treeIndex];
+                float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
+
+                float basalAreaLarger = TestConstant.AcresPerHectare * TestConstant.SquareMetersPerSquareFoot * density.GetBasalAreaLarger(dbhInInches);
+                float ccfLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
+                writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}", 
+                                 variant.Variant, year, id, species, basalAreaLarger, ccfLarger, TestConstant.CmPerInch * dbhInInches, 
+                                 heightInMeters, liveExpansionFactor, crownRatio);
+            }
+        }
+
         public void WriteTreesAsCsv(TestContext testContext, OrganonVariant variant, int year, bool omitExpansionFactorZeroTrees)
         {
             for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
@@ -105,23 +129,24 @@ namespace Osu.Cof.Organon.Test
                 float deadExpansionFactor = this.DeadExpansionFactor[treeIndex];
                 float dbhGrowth = this.DbhGrowth[treeIndex];
                 float heightGrowth = this.HeightGrowth[treeIndex];
-                testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
+                int quantile = this.QuantileByInitialDbh[treeIndex];
+                testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
                                       variant.Variant, year, id, species, speciesGroup, 
                                       dbhInInches, heightInFeet, expansionFactor, deadExpansionFactor,
-                                      crownRatio, dbhGrowth, heightGrowth);
+                                      crownRatio, dbhGrowth, heightGrowth, quantile);
             }
         }
 
         public static void WriteTreeHeader(TestContext testContext)
         {
-            testContext.WriteLine("variant,year,tree,species,species group,DBH,height,expansion factor,dead expansion factor,crown ratio,diameter growth,height growth");
+            testContext.WriteLine("variant,year,tree,species,species group,DBH,height,expansion factor,dead expansion factor,crown ratio,diameter growth,height growth,quantile");
         }
 
         public StreamWriter WriteTreesToCsv(string filePath, OrganonVariant variant, int year)
         {
             FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             StreamWriter writer = new StreamWriter(stream);
-            writer.WriteLine("variant,year,tree,species,species group,DBH,height,expansion factor,dead expansion factor,crown ratio,diameter growth,height growth");
+            writer.WriteLine("variant,year,tree,species,species group,DBH,height,expansion factor,dead expansion factor,crown ratio,diameter growth,height growth,quantile");
             this.WriteTreesToCsv(writer, variant, year);
             return writer;
         }
@@ -130,7 +155,7 @@ namespace Osu.Cof.Organon.Test
         {
             for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
             {
-                float expansionFactor = 2.47105F * this.LiveExpansionFactor[treeIndex];
+                float expansionFactor = TestConstant.AcresPerHectare * this.LiveExpansionFactor[treeIndex];
                 if (expansionFactor == 0)
                 {
                     continue;
@@ -145,9 +170,10 @@ namespace Osu.Cof.Organon.Test
                 float deadExpansionFactor = TestConstant.AcresPerHectare * this.DeadExpansionFactor[treeIndex];
                 float dbhGrowth = TestConstant.CmPerInch * this.DbhGrowth[treeIndex];
                 float heightGrowth = TestConstant.MetersPerFoot * this.HeightGrowth[treeIndex];
-                writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
+                int quantile = this.QuantileByInitialDbh[treeIndex];
+                writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
                                  variant.Variant, year, id, species, speciesGroup, dbhInCentimeters, heightInMeters, 
-                                 expansionFactor, deadExpansionFactor, crownRatio, dbhGrowth, heightGrowth);
+                                 expansionFactor, deadExpansionFactor, crownRatio, dbhGrowth, heightGrowth, quantile);
             }
         }
     }

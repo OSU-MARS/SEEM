@@ -217,7 +217,7 @@ namespace Osu.Cof.Organon
                     break;
                 case Variant.Nwo:
                     float GP = 5.0F;
-                    if (speciesGroup == 3)
+                    if (species == FiaCode.TsugaHeterophylla)
                     {
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                         siteIndexFromGround = SI_2 + 4.5F;
@@ -234,7 +234,7 @@ namespace Osu.Cof.Organon
                     break;
                 case Variant.Smc:
                     GP = 5.0F;
-                    if (speciesGroup == 3)
+                    if (species == FiaCode.TsugaHeterophylla)
                     {
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK
                         // DOMINANT HEIGHT GROWTH
@@ -252,13 +252,13 @@ namespace Osu.Cof.Organon
                     break;
                 case Variant.Rap:
                     GP = 1.0F;
-                    if (speciesGroup == 1)
+                    if (species == FiaCode.AlnusRubra)
                     {
                         // POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM(2009) RED ALDER TOP HEIGHT GROWTH
                         siteIndexFromGround = SI_1 + 4.5F;
                         RedAlder.WHHLB_HG(siteIndexFromGround, PDEN, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
                     }
-                    else if (speciesGroup == 3)
+                    else if (species == FiaCode.TsugaHeterophylla)
                     {
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                         siteIndexFromGround = -0.432F + 0.899F * (SI_2 + 4.5F);
@@ -527,7 +527,7 @@ namespace Osu.Cof.Organon
             float B0 = P1 * (float)Math.Exp(P2 * TCCH);
             float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
             float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG > 0.0F);
         }
@@ -569,7 +569,7 @@ namespace Osu.Cof.Organon
             float B0 = P1 * (float)Math.Exp(P2 * TCCH);
             float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
             float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG > 0.0F);
         }
@@ -616,7 +616,7 @@ namespace Osu.Cof.Organon
             float B0 = P1 * (float)Math.Exp(P2 * TCCH);
             float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
             float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = (float)(1.0 - Math.Exp(-(25.0 * 25.0 * CR * CR)));
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG > 0.0F);
         }
@@ -658,7 +658,7 @@ namespace Osu.Cof.Organon
             float B0 = a1 * (float)Math.Exp(a2 * SCCH);
             float B1 = (float)Math.Exp(a3 * Math.Pow(SCCH, k1));
             float MODIFER = a0 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG >= 0.0F);
         }

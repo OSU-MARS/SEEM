@@ -19,8 +19,8 @@ namespace Osu.Cof.Organon
     /// <a href="https://doi.org/10.1139/x93-071">part 2</a>) do not use this method. Assuming they use the same data the
     /// likely range of validity is for heights up to 60-70 meters and DBH to 80 cm for hemlocks growing in coastal Washington.
     /// 
-    /// Marshall 2003 (https://www.nrcresearchpress.com/doi/pdf/10.1139/x03-126) suggests the equations here might from a 1994
-    /// report to the Northwest Taper Cooperative which does not appear to be online.
+    /// Marshall 2003 (https://www.nrcresearchpress.com/doi/pdf/10.1139/x03-126) suggests the equations here might be from a 
+    /// 1994 report to the Northwest Taper Cooperative which does not appear to be online.
     /// </remarks>
     // BUGBUG fix most recent cache inherited from Fortran
     internal class WesternHemlock

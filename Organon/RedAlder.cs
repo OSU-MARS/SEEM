@@ -37,14 +37,13 @@ namespace Osu.Cof.Organon
         {
             float KB = 0.005454154F;
             float RAMORT1 = 0.0F;
-            float treeCountAsFloat = (float)stand.TreeRecordCount;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 FiaCode species = stand.Species[treeIndex];
                 if (species == FiaCode.AlnusRubra)
                 {
                     float PM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
-                    RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                    RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex];
                 }
             }
 
@@ -86,7 +85,7 @@ namespace Osu.Cof.Organon
                         if (species == FiaCode.AlnusRubra)
                         {
                             float PM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
-                            RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                            RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex];
                         }
                     }
                     if (RAMORT1 > RAMORT2)

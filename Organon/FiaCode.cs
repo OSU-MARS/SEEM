@@ -14,6 +14,7 @@
         AbiesProcera = 22,
         AcerGlabrum = 321,
         AcerMacrophyllum = 312,
+        Alnus = 350,
         AlnusRubra = 351,
         ArbutusMenziesii = 361,
         CalocedrusDecurrens = 81,

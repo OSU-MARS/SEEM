@@ -147,7 +147,7 @@ namespace Osu.Cof.Organon.Test
             }
         }
 
-        protected void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, string baseFileName)
+        protected void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
         {
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
             TestStand initialTreeData = stand.Clone();
@@ -166,22 +166,21 @@ namespace Osu.Cof.Organon.Test
             float[] YST = new float[5];
 
             TestStandDensity density = new TestStandDensity(stand, variant);
-            using StreamWriter densityWriter = density.WriteToCsv(baseFileName + " density.csv", variant, 1980);
+            using StreamWriter densityWriter = density.WriteToCsv(baseFileName + " density.csv", variant, startYear);
             TreeQuantiles quantiles = new TreeQuantiles(stand);
-            using StreamWriter quantileWriter = quantiles.WriteToCsv(baseFileName + " quantiles.csv", variant, 1980);
-            using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, 1980);
-            for (int simulationStep = 0; simulationStep < 7; ++simulationStep)
+            using StreamWriter quantileWriter = quantiles.WriteToCsv(baseFileName + " quantiles.csv", variant, startYear);
+            using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
+            for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)
             {
                 StandGrowth.EXECUTE(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
 
-                int endYear = 1980 + variant.GetEndYear(simulationStep);
-                huffmanPeak.AddIngrowth(endYear, stand, density);
+                huffmanPeak.AddIngrowth(year, stand, density);
                 density = new TestStandDensity(stand, variant);
-                density.WriteToCsv(densityWriter, variant, endYear);
+                density.WriteToCsv(densityWriter, variant, year);
                 quantiles = new TreeQuantiles(stand);
-                quantiles.WriteToCsv(quantileWriter, variant, endYear);
-                stand.WriteTreesToCsv(treeGrowthWriter, variant, endYear);
+                quantiles.WriteToCsv(quantileWriter, variant, year);
+                stand.WriteTreesToCsv(treeGrowthWriter, variant, year);
                 this.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
             }
 
@@ -211,7 +210,8 @@ namespace Osu.Cof.Organon.Test
             Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
             Assert.IsTrue(stand.BreastHeightAgeInYears >= 0);
             Assert.IsTrue(stand.BreastHeightAgeInYears <= TestConstant.Maximum.StandAgeInYears);
-            Assert.IsTrue(stand.NumberOfPlots == 1);
+            Assert.IsTrue(stand.NumberOfPlots >= 1);
+            Assert.IsTrue(stand.NumberOfPlots <= 36);
             Assert.IsTrue(stand.TreeRecordCount > 0);
             Assert.IsTrue(stand.TreeRecordCount <= stand.TreeRecordCount);
 
@@ -281,9 +281,9 @@ namespace Osu.Cof.Organon.Test
 
             Assert.IsTrue(stand.Warnings.BigSixHeightAbovePotential == false);
             Assert.IsTrue(stand.Warnings.LessThan50TreeRecords == expectedWarnings.HasFlag(OrganonWarnings.LessThan50TreeRecords));
-            Assert.IsTrue(stand.Warnings.MortalitySiteIndexOutOfRange == expectedWarnings.HasFlag(OrganonWarnings.MortalitySiteIndex));
+            Assert.IsTrue(stand.Warnings.HemlockSiteIndexOutOfRange == expectedWarnings.HasFlag(OrganonWarnings.HemlockSiteIndex));
             Assert.IsTrue(stand.Warnings.OtherSpeciesBasalAreaTooHigh == false);
-            Assert.IsTrue(stand.Warnings.PrimarySiteIndexOutOfRange == false);
+            Assert.IsTrue(stand.Warnings.SiteIndexOutOfRange == false);
             if (variantCapabilities.Variant != Variant.Smc)
             {
                 // for now, ignore SMC warning for breast height age < 10

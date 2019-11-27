@@ -19,12 +19,12 @@
         public float[] LargeTreeCrownCompetition { get; private set; }
 
         /// <summary>
-        /// Basal area competition range vector of length 500 indexed by DBH in tenths of an inch. (BAL)
+        /// Basal area competition range vector of length 501 indexed by DBH in tenths of an inch. (BAL)
         /// </summary>
         public float[] SmallTreeBasalAreaLarger { get; private set; }
 
         /// <summary>
-        /// Crown competition factor range vector of length 500 indexed by DBH in tenths of an inch. (CCFL)
+        /// Crown competition factor range vector of length 501 indexed by DBH in tenths of an inch. (CCFL)
         /// </summary>
         public float[] SmallTreeCrownCompetition { get; private set; }
 
@@ -39,14 +39,13 @@
             this.CrownCompetitionFactor = 0.0F;
             this.LargeTreeBasalAreaLarger = new float[51];
             this.LargeTreeCrownCompetition = new float[51];
-            this.SmallTreeBasalAreaLarger = new float[500];
-            this.SmallTreeCrownCompetition = new float[500];
+            this.SmallTreeBasalAreaLarger = new float[501];
+            this.SmallTreeCrownCompetition = new float[501];
             this.TreesPerAcre = 0.0F;
 
-            float treeCountAsFloat = (float)stand.TreeRecordCount;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 if (expansionFactor < 0.0001F)
                 {
                     continue;
@@ -54,7 +53,7 @@
 
                 float dbhInInches = stand.Dbh[treeIndex];
                 float heightInFeet = stand.Height[treeIndex];
-                float basalArea = 0.005454154F * dbhInInches * dbhInInches * expansionFactor;
+                float basalArea = expansionFactor * 0.005454154F * dbhInInches * dbhInInches;
                 this.BasalAreaPerAcre += basalArea;
                 this.TreesPerAcre += expansionFactor;
 
@@ -78,8 +77,7 @@
                         throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
                 }
 
-                // (DOUG? Where does 0.001803 come from? Why is it species invariant? Todd: check FOR 322 notes.)
-                // BUGBUG duplicates index calculations of DiameterGrowth.GET_BAL()
+                // 0.001803 = 100 * pi / (4 * 42560) from definition of crown competition factor
                 float crownCompetitionFactor = 0.001803F * maxCrownWidth * maxCrownWidth * expansionFactor;
                 this.CrownCompetitionFactor += crownCompetitionFactor;
                 if (dbhInInches > 50.0F)
@@ -87,13 +85,11 @@
                     int largeTreeLimit = (int)(dbhInInches - 50.0F);
                     if (largeTreeLimit > 51)
                     {
-                        // (DOUG? Why limit DBH to 100 inches?)
                         largeTreeLimit = 51;
                     }
 
                     // add large tree to all competition diameter classes
-                    // (DOUG? Why are trees 50+ inches DBH all competitors to each other in the 500 vectors?)
-                    for (int smallTreeIndex = 0; smallTreeIndex < 500; ++smallTreeIndex)
+                    for (int smallTreeIndex = 0; smallTreeIndex < this.SmallTreeCrownCompetition.Length; ++smallTreeIndex)
                     {
                         // (PERF? this is O(500N), would run in O(N) + O(500) if moved to initialization)
                         this.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
@@ -124,7 +120,7 @@
                 return 0.0F;
             }
             
-            if (dbhInInches > 50.0F)
+            if (dbhInInches >= 50.0F)
             {
                 // BUGBUG missing clamp to avoid lookups beyond end of BALL1
                 int largeTreeIndex = (int)(dbhInInches - 50.0F);

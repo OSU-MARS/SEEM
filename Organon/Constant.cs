@@ -80,6 +80,7 @@ namespace Osu.Cof.Organon
                 public static readonly int Fused = 3;
                 public static readonly int Ingrowth = 2;
                 public static readonly int Live = 1;
+                public static readonly int NotFound = 9;
             }
         }
 

@@ -4,6 +4,11 @@ namespace Osu.Cof.Organon
 {
     internal class TreeGrowth
     {
+        public static float GetCrownRatioAdjustment(float crownRatio)
+        {
+            return 1.0F - (float)Math.Exp(-(25.0 * 25.0 * crownRatio * crownRatio));
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -61,8 +66,8 @@ namespace Osu.Cof.Organon
             }
 
             // BUGBUG no check that SITE_1 and SITE_2 indices are greater than 4.5 feet
-            float SI_1 = stand.PrimarySiteIndex - 4.5F;
-            float SI_2 = stand.MortalitySiteIndex - 4.5F;
+            float SI_1 = stand.SiteIndex - 4.5F;
+            float SI_2 = stand.HemlockSiteIndex - 4.5F;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)

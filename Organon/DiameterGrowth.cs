@@ -93,67 +93,67 @@ namespace Osu.Cof.Organon
             // WI Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
             //
             float[,] DGPAR = {
-                {
+                { // B0
                     -4.69624F, -2.34619F, -4.49867F, // DF,GF,WH
                     -11.45456097F, -9.15835863F, -8.84531757F, // RC,PY,MD
                     -3.41449922F, -7.81267986F, -4.39082007F, // BL,WO,RA
                     -8.08352683F, -8.08352683F,                    // PD,WI
                 },
-                {
+                { // B1
                     0.339513F, 0.594640F, 0.362369F, // DF,GF,WH
                     0.784133664F, 1.0F, 1.5F, // RC,PY,MD
                     1.0F, 1.405616529F, 1.0F, // BL,WO,RA
                     1.0F, 1.0F,                    // PD,WI
                 },
-                {
+                { // B2
                     -0.000428261F, -0.000976092F, -0.00153907F, // DF,GF,WH
                     -0.0261377888F, -0.00000035F, -0.0006F, // RC,PY,MD
                     -0.05F, -0.0603105850F, -0.0945057147F, // BL,WO,RA
                     -0.00000035F, -0.00000035F,                    // PD,WI
                 },
-                {
+                { // B3
                     1.19952F, 1.12712F, 1.1557F, // DF,GF,WH
                     0.70174783F, 1.16688474F, 0.51225596F, // RC,PY,MD
                     0.0F, 0.64286007F, 1.06867026F, // BL,WO,RA
                     0.31176647F, 0.31176647F,                    // PD,WI
                 },
-                {
+                { // B4
                     1.15612F, 0.555333F, 1.12154F, // DF,GF,WH
                     2.057236260F, 0.0F, 0.418129153F, // RC,PY,MD
                     0.324349277F, 1.037687142F, 0.685908029F, // BL,WO,RA
                     0.0F, 0.0F,                    // PD,WI
                 },
-                {
+                { // B5
                     -0.0000446327F, -0.0000290672F, -0.0000201041F, // DF,GF,WH
                     -0.00415440257F, 0.0F, -0.00355254593F, // RC,PY,MD
                     0.0F, 0.0F, -0.00586331028F, // BL,WO,RA
                     0.0F, 0.0F,                    // PD,WI
                 },
-                {
+                { // B6
                     -0.0237003F, -0.0470848F, -0.0417388F, // DF,GF,WH
                     0.0F, -0.02F, -0.0321315389F, // RC,PY,MD
                     -0.0989519477F, -0.0787012218F, 0.0F, // BL,WO,RA
                     -0.0730788052F, -0.0730788052F,                    // PD,WI
                 },
-                {
+                { // K1
                     1.0F, 1.0F, 1.0F, // DF,GF,WH
                     5.0F, 4000.0F, 110.0F, // RC,PY,MD
                     10.0F, 5.0F, 5.0F, // BL,WO,RA
                     4000.0F, 4000.0F,                    // PD,WI
                 },
-                {
+                { // K2
                     2.0F, 2.0F, 2.0F, // DF,GF,WH
                     1.0F, 4.0F, 2.0F, // RC,PY,MD
                     1.0F, 1.0F, 1.0F, // BL,WO,RA
                     4.0F, 4.0F,                    // PD,WI
                 },
-                {
+                { // K3
                     2.0F, 2.0F, 2.0F, // DF,GF,WH
                     1.0F, 1.0F, 1.0F, // RC,PY,MD
                     1.0F, 1.0F, 1.0F, // BL,WO,RA
                     1.0F, 1.0F,                    // PD,WI
                 },
-                {
+                { // K4
                     5.0F, 5.0F, 5.0F, // DF,GF,WH
                     2.7F, 2.7F, 2.7F, // RC,PY,MD
                     2.7F, 2.7F, 2.7F, // BL,WO,RA
@@ -175,8 +175,6 @@ namespace Osu.Cof.Organon
             float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
 
             // CROWN RATIO ADJUSTMENT
-            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-
             float ADJ;
             if (ISPGRP == 0)
             {
@@ -203,6 +201,7 @@ namespace Osu.Cof.Organon
                 ADJ = 0.8F;
             }
 
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
             Debug.Assert(DG > 0.0F);
         }
@@ -223,57 +222,57 @@ namespace Osu.Cof.Organon
             // WI Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
             //
             float[,] DGPAR = {
-                {
-                   - 4.622849554F,     -6.95196910F,     -6.48391203F   ,// RA,DF,WH
-                  - 13.06399888F,     -5.02393713F,     -9.69296474F   ,// RC,BL,PD
-                  - 9.69296474F,                                        // WI
+                { // B0
+                    -4.622849554F,     -6.95196910F,     -6.48391203F   ,// RA,DF,WH
+                    -13.06399888F,     -5.02393713F,     -9.69296474F   ,// RC,BL,PD
+                    -9.69296474F,                                        // WI
                 },
-                {
+                { // B1
                     0.5112200516F,      1.098406840F,      0.4150723209F,// RA,DF,WH
                     0.784133664F,      1.0F,       1.0F          ,// RC,BL,PD
                     1.0F,                                         // WI
                 },
-                {
-                 - .1040194568F,     -0.05218621F,     -0.023744997F,// RA,DF,WH
-                  - 0.0261377888F,     -0.05F,     -0.00000035F   ,// RC,BL,PD
-                  - 0.00000035F,                                        // WI
+                { // B2
+                    -0.1040194568F,     -0.05218621F,     -0.023744997F,// RA,DF,WH
+                    -0.0261377888F,     -0.05F,     -0.00000035F   ,// RC,BL,PD
+                    -0.00000035F,                                        // WI
                 },
-                {
+                { // B3
                     0.9536538143F,      1.01380810F,      0.907837299F  ,// RA,DF,WH
                     0.70174783F,      0.0F,       0.31176647F   ,// RC,BL,PD
                     0.31176647F,                                        // WI
                 },
-                {
+                { // B4
                     1.0659344724F,      0.91202025F,      1.1346766989F,// RA,DF,WH
                     2.057236260F,      0.324349277F,      0.0F         ,// RC,BL,PD
                     0.0F,                                         // WI
                 },
-                {
-                    - .0193047405F,     -0.01756220F,     -0.015333503F,// RA,DF,WH
-                    - 0.00415440257F,      0.0F,       0.0F          ,// RC,BL,PD
+                { // B5
+                    -0.0193047405F,     -0.01756220F,     -0.015333503F,// RA,DF,WH
+                    -0.00415440257F,      0.0F,       0.0F          ,// RC,BL,PD
                     0.0F,                                         // WI
                 },
-                {
-                    - 0.0773539455F,     -0.05168923F,     -0.03309787F   ,// RA,DF,WH
+                { // B6
+                    -0.0773539455F,     -0.05168923F,     -0.03309787F   ,// RA,DF,WH
                     0.0F,      -0.0989519477F,     -0.0730788052F,// RC,BL,PD
-                    - 0.0730788052F,                                        // WI
+                    -0.0730788052F,                                        // WI
                 },
-                {
+                { // K1
                     1.0F,       6.0F,       5.0F          ,// RA,DF,WH
                     5.0F,      10.0F,    4000.0F          ,// RC,BL,PD
                     4000.0F,                                         // WI
                 },
-                {
+                { // K1
                     1.0F,       1.0F,       1.0F          ,// RA,DF,WH
                     1.0F,       1.0F,       4.0F          ,// RC,BL,PD
                     4.0F,                                         // BL
                 },
-                {
+                { // K2
                     1.0F,       1.0F,       1.0F          ,// RA,DF,WH
                     1.0F,       1.0F,       1.0F          ,// RC,BL,PD
                     1.0F,                                         // WI
                 },
-                {
+                { // K3
                     1.0F,       2.7F,       2.7F          ,// RA,DF,WH
                     2.7F,       2.7F,       2.7F          ,// RC,BL,PD
                     2.7F                                   // WI
@@ -294,8 +293,6 @@ namespace Osu.Cof.Organon
             float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
 
             // CROWN RATIO ADJUSTMENT
-            //
-            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
             float ADJ;
             if (ISPGRP <= 2)
             {
@@ -306,6 +303,7 @@ namespace Osu.Cof.Organon
                 ADJ = 0.8F;
             }
 
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
             Debug.Assert(DG > 0.0F);
         }
@@ -325,69 +323,68 @@ namespace Osu.Cof.Organon
             // RA Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
             // PD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
             // WI Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            //
             float[,] DGPAR = {
-                {
+                { // B0
                     -5.34253119F, -2.34619F, -4.87447412F, // DF,GF,WH
                     -11.45456097F, -9.15835863F, -8.84531757F, // RC,PY,MD
                     -3.41449922F, -7.81267986F, -4.39082007F, // BL,WO,RA
                     -8.08352683F, -8.08352683F,                    // PD,WI
                 },
-                {
+                { // B1
                     1.098406840F, 0.594640F, 0.4150723209F, // DF,GF,WH
                     0.784133664F, 1.0F, 1.5F, // RC,PY,MD
                     1.0F, 1.405616529F, 1.0F, // BL,WO,RA
                     1.0F, 1.0F,                    // PD,WI
                 },
-                {
+                { // B3
                     -0.05218621F, -0.000976092F, -0.023744997F, // DF,GF,WH
                     -0.0261377888F, -0.00000035F, -0.0006F, // RC,PY,MD
                     -0.05F, -0.0603105850F, -0.0945057147F, // BL,WO,RA
                     -0.00000035F, -0.00000035F,                    // PD,WI
                 },
-                {
+                { // B4
                     1.01380810F, 1.12712F, 0.907837299F, // DF,GF,WH
                     0.70174783F, 1.16688474F, 0.51225596F, // RC,PY,MD
                     0.0F, 0.64286007F, 1.06867026F, // BL,WO,RA
                     0.31176647F, 0.31176647F,                    // PD,WI
                 },
-                {
+                { // B4
                     0.91202025F, 0.555333F, 1.1346766989F, // DF,GF,WH
                     2.057236260F, 0.0F, 0.418129153F, // RC,PY,MD
                     0.324349277F, 1.037687142F, 0.685908029F, // BL,WO,RA
                     0.0F, 0.0F,                    // PD,WI
                 },
-                {
+                { // B5
                     -0.01756220F, -0.0000290672F, -0.015333503F, // DF,GF,WH
                     -0.00415440257F, 0.0F, -0.00355254593F, // RC,PY,MD
                     0.0F, 0.0F, -0.00586331028F, // BL,WO,RA
                     0.0F, 0.0F,                    // PD,WI
                 },
-                {
+                { // B6
                     -0.05168923F, -0.0470848F, -0.03309787F, // DF,GF,WH
                     0.0F, -0.02F, -0.0321315389F, // RC,PY,MD
                     -0.0989519477F, -0.0787012218F, 0.0F, // BL,WO,RA
                     -0.0730788052F, -0.0730788052F,                    // PD,WI
                 },
-                {
+                { // K1
                     6.0F, 1.0F, 5.0F, // DF,GF,WH
                     5.0F, 4000.0F, 110.0F, // RC,PY,MD
                     10.0F, 5.0F, 5.0F, // BL,WO,RA
                     4000.0F, 4000.0F,  // PD,WI
                 },
-                {
+                { // K2
                     1.0F, 2.0F, 1.0F, // DF,GF,WH
                     1.0F, 4.0F, 2.0F, // RC,PY,MD
                     1.0F, 1.0F, 1.0F, // BL,WO,RA
                     4.0F, 4.0F,       // PD,WI
                 },
-                {
+                { // K3
                     1.0F, 2.0F, 1.0F, // DF,GF,WH
                     1.0F, 1.0F, 1.0F, // RC,PY,MD
                     1.0F, 1.0F, 1.0F, // BL,WO,RA
                     1.0F, 1.0F,       // PD,WI
                 },
-                {
+                { // K4
                     2.7F, 5.0F, 2.7F, // DF,GF,WH
                     2.7F, 2.7F, 2.7F, // RC,PY,MD
                     2.7F, 2.7F, 2.7F, // BL,WO,RA
@@ -409,7 +406,6 @@ namespace Osu.Cof.Organon
             float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
 
             // CROWN RATIO ADJUSTMENT
-            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
             float ADJ;
             if (ISPGRP == 0)
             {
@@ -436,6 +432,7 @@ namespace Osu.Cof.Organon
                 ADJ = 0.8F;
             }
 
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
             Debug.Assert(DG > 0.0F);
         }
@@ -566,9 +563,6 @@ namespace Osu.Cof.Organon
             float K4 = DGPAR[10, ISPGRP];
             float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
 
-            // CROWN RATIO ADJUSTMENT
-            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
-
             // FULL ADJUSTMENTS
             float ADJ;
             if (ISPGRP == 0)
@@ -604,6 +598,8 @@ namespace Osu.Cof.Organon
                 ADJ = 0.8F;
             }
 
+            // CROWN RATIO ADJUSTMENT
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
             Debug.Assert(DG > 0.0F);
         }

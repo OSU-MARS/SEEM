@@ -8,6 +8,7 @@ namespace Osu.Cof.Organon.Test
         public const float CmPerInch = 2.54F;
         public const int DbhQuantiles = 5;
         public const float MetersPerFoot = 0.3048F;
+        public const float SquareMetersPerSquareFoot = 0.092903F;
 
         public static ReadOnlyCollection<FiaCode> TreeSpeciesList = new ReadOnlyCollection<FiaCode>(new FiaCode[] {
                 FiaCode.AbiesGrandis,

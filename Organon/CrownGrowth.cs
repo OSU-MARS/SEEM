@@ -95,7 +95,6 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            float treeCountAsFloat = (float)stand.TreeRecordCount;
             for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 float dbhInInches = stand.Dbh[treeIndex];
@@ -103,7 +102,7 @@ namespace Osu.Cof.Organon
                 float crownRatio = stand.CrownRatio[treeIndex];
                 float crownLengthInFeet = crownRatio * heightInFeet;
                 float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 int speciesGroup = stand.SpeciesGroup[treeIndex];
                 switch (variant.Variant)
                 {
@@ -712,7 +711,6 @@ namespace Osu.Cof.Organon
             // RA Coefficients from Hann and Hanus (2002) OSU Department of Forest Management Internal Report #1
             // PD Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
             // WI Coefficients from Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
-            // 
             float[,] HCBPAR = {
                 {
                      1.797136911F,  3.451045887F,  1.656364063F,  3.785155749F,  // DF,GW,PP,SP
@@ -1225,9 +1223,7 @@ namespace Osu.Cof.Organon
 
         private static void MAXHCB_SWO(int ISPGRP, float HT, float CCFL, out float MAXHCB)
         {
-            // MAXIMUM HEIGHT TO CROWN BASE
-            // (5 parameters - all species)
-            // 
+            // MAXIMUM HEIGHT TO CROWN BASE (5 parameters - all species)
             float[,] MAXPAR = {
                 {
                    0.96F       ,  0.96F       ,  1.01F       ,  1.02F       , // DF,GW,PP,SP

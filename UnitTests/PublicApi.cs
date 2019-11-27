@@ -13,21 +13,23 @@ namespace Osu.Cof.Organon.Test
 
         [TestMethod]
         [DeploymentItem("HPNF.xlsx")]
-        [DeploymentItem("HPNF plot 1.xlsx")]
+        //[DeploymentItem("HPNF plot 1.xlsx")]
         public void HuffmanPeakNobleFir()
         {
-            //string plotFileName = "HPNF.xlsx";
-            string plotFileName = "HPNF plot 1.xlsx";
+            string plotFileName = "HPNF.xlsx";
+            //string plotFileName = "HPNF plot 1.xlsx";
             PspStand huffmanPeak = new PspStand(plotFileName, "HPNF", 0.2F);
             OrganonVariant variant = new OrganonVariant(Variant.Swo); // SWO allows mapping ABAM -> ABGR and ABPR -> ABCO
-            TestStand stand = huffmanPeak.ToOrganonStand(variant, 0, 55.0F);
-            this.GrowPspStand(huffmanPeak, stand, variant, Path.GetFileNameWithoutExtension(plotFileName));
+            TestStand stand = huffmanPeak.ToOrganonStand(variant, 80.0F);
+            int startYear = 1980;
+            stand.WriteCompetitionAsCsv("HPNF initial competition.csv", variant, startYear);
+            this.GrowPspStand(huffmanPeak, stand, variant, startYear, 2015, Path.GetFileNameWithoutExtension(plotFileName));
 
-            TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, huffmanPeak, 1980);
-            using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("HPNF plot 1 measured quantiles.csv", variant, 1980);
+            TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, huffmanPeak, startYear);
+            using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("HPNF measured quantiles.csv", variant, startYear);
             foreach (int measurementYear in huffmanPeak.MeasurementYears)
             {
-                if (measurementYear != 1980)
+                if (measurementYear != startYear)
                 {
                     measuredQuantiles = new TreeQuantiles(stand, huffmanPeak, measurementYear);
                     measuredQuantiles.WriteToCsv(quantileWriter, variant, measurementYear);
@@ -81,6 +83,30 @@ namespace Osu.Cof.Organon.Test
 
                 this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, treeGrowth, initialTreeData, stand);
                 this.Verify(CALIB);
+            }
+        }
+
+        [TestMethod]
+        [DeploymentItem("RS39 lower half.xlsx")]
+        public void RS39()
+        {
+            string plotFileName = "RS39 lower half.xlsx";
+            PspStand rs39 = new PspStand(plotFileName, "RS39 lower half", 0.154441F);
+            OrganonVariant variant = new OrganonVariant(Variant.Nwo);
+            TestStand stand = rs39.ToOrganonStand(variant, 105.0F);
+            int startYear = 1992;
+            stand.WriteCompetitionAsCsv("RS39 lower half initial competition.csv", variant, startYear);
+            this.GrowPspStand(rs39, stand, variant, startYear, 2019, Path.GetFileNameWithoutExtension(plotFileName));
+
+            TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, rs39, startYear);
+            using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("RS39 lower half measured quantiles.csv", variant, startYear);
+            foreach (int measurementYear in rs39.MeasurementYears)
+            {
+                if (measurementYear != startYear)
+                {
+                    measuredQuantiles = new TreeQuantiles(stand, rs39, measurementYear);
+                    measuredQuantiles.WriteToCsv(quantileWriter, variant, measurementYear);
+                }
             }
         }
     }

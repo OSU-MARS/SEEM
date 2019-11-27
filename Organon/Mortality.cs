@@ -42,14 +42,13 @@ namespace Osu.Cof.Organon
 
             float KB = 0.005454154F;
             float standBasalArea = 0.0F;
-            float STN = 0.0F;
+            float standTreesPerAcre = 0.0F;
             float RAN = 0.0F;
-            float treeCountAsFloat = (float)stand.TreeRecordCount;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
-                standBasalArea += stand.Dbh[treeIndex] * stand.Dbh[treeIndex] * KB * expansionFactor;
-                STN += expansionFactor;
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
+                standBasalArea += expansionFactor * KB * stand.Dbh[treeIndex] * stand.Dbh[treeIndex];
+                standTreesPerAcre += expansionFactor;
 
                 FiaCode species = stand.Species[treeIndex];
                 if ((species == FiaCode.AlnusRubra) && (configuration.Variant.Variant != Variant.Rap))
@@ -62,8 +61,8 @@ namespace Osu.Cof.Organon
             {
                 RAAGE = 0.0F;
             }
-            float SQMDA = (float)Math.Sqrt(standBasalArea / (KB * STN));
-            float RD = STN / (float)Math.Exp(stand.A1 / stand.A2 - Math.Log(SQMDA) / stand.A2);
+            float SQMDA = (float)Math.Sqrt(standBasalArea / (KB * standTreesPerAcre));
+            float RD = standTreesPerAcre / (float)Math.Exp(stand.A1 / stand.A2 - Math.Log(SQMDA) / stand.A2);
             if (simulationStep == 0)
             {
                 stand.RD0 = RD;
@@ -120,12 +119,12 @@ namespace Osu.Cof.Organon
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 float CR = stand.CrownRatio[treeIndex];
-                float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
+                float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
                 float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
                 float PS = (float)Math.Pow(1.0F - XPM, POW[treeIndex]);
                 float PM = 1.0F - PS * CRADJ;
 
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 NA += expansionFactor * (1.0F - PM);
                 BAA += KB * (float)Math.Pow(stand.Dbh[treeIndex] + stand.DbhGrowth[treeIndex], 2) * expansionFactor * (1.0F - PM);
             }
@@ -142,7 +141,7 @@ namespace Osu.Cof.Organon
                     {
                         if (RDA > RD)
                         {
-                            stand.A1MAX = (float)(Math.Log(SQMDA) + stand.A2 * Math.Log(STN));
+                            stand.A1MAX = (float)(Math.Log(SQMDA) + stand.A2 * Math.Log(standTreesPerAcre));
                         }
                         else
                         {
@@ -160,7 +159,7 @@ namespace Osu.Cof.Organon
                             if (RD > RDCC)
                             {
                                 float XA3 = -1.0F / A3;
-                                stand.NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
+                                stand.NO = standTreesPerAcre * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
                             }
                             else
                             {
@@ -185,7 +184,7 @@ namespace Osu.Cof.Organon
                                 {
                                     if (RDA > RD)
                                     {
-                                        stand.A1MAX = (float)(Math.Log(SQMDA) + stand.A2 * Math.Log(STN));
+                                        stand.A1MAX = (float)(Math.Log(SQMDA) + stand.A2 * Math.Log(standTreesPerAcre));
                                     }
                                     else
                                     {
@@ -205,7 +204,7 @@ namespace Osu.Cof.Organon
                                         if ((RD > RDCC) && (stand.NO <= 0.0F))
                                         {
                                             float XA3 = -1.0F / A3;
-                                            stand.NO = STN * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
+                                            stand.NO = standTreesPerAcre * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
                                         }
                                         else
                                         {
@@ -238,7 +237,7 @@ namespace Osu.Cof.Organon
                                     for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                                     {
                                         float CR = stand.CrownRatio[treeIndex];
-                                        float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
+                                        float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
                                         float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
                                         float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                                         float PM = 1.0F - PS * CRADJ;
@@ -267,12 +266,12 @@ namespace Osu.Cof.Organon
                                             }
 
                                             float CR = stand.CrownRatio[treeIndex];
-                                            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
+                                            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
                                             float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
                                             float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
 
-                                            float expansionFactor = stand.LiveExpansionFactor[treeIndex] / treeCountAsFloat;
+                                            float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                                             NAA += expansionFactor * (1.0F - PM);
                                             BAAA += KB * (float)Math.Pow(stand.Dbh[treeIndex] + stand.DbhGrowth[treeIndex], 2.0) * expansionFactor * (1.0F - PM);
                                         }
@@ -312,7 +311,7 @@ namespace Osu.Cof.Organon
                                         else
                                         {
                                             float CR = stand.CrownRatio[treeIndex];
-                                            float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
+                                            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
                                             float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
                                             float PS = (float)Math.Pow(1.0F - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
@@ -334,7 +333,7 @@ namespace Osu.Cof.Organon
                 for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
                     float CR = stand.CrownRatio[treeIndex];
-                    float CRADJ = 1.0F - (float)Math.Exp(-(25.0 * 25.0 * CR * CR));
+                    float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
                     float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
                     float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                     float PM = 1.0F - PS * CRADJ;
@@ -417,112 +416,6 @@ namespace Osu.Cof.Organon
             FERTADJ = c5 * (float)Math.Pow(PN[0] + FERTX1, PF2) * (float)Math.Exp(PF3 * (XTIME - yearsSinceFertilization[0]));
         }
 
-        private static void PM_SWO(int ISPGRP, float DBH, float CR, float SI_1, float BAL, float OG, out float POW, out float PM)
-        {
-            // NEW SWO MORTALITY WITH REVISED CLO PARAMETERS(8 parameters - all species)
-            // DF Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // GW Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // PP Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // SP Coefficients from Unpublished Equation on File at OSU Dept.Forest Resources
-            // IC Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // WH Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // RC Coefficients from WH of Hann, Marshall, Hanus(2003) FRL Research Contribution 40
-            // PY Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // MD Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // GC Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // TA Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // CL Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // BL Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // WO Coefficients from Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-            // BO Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // RA Coefficients from Best Guess
-            // PD Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
-            // WI Coefficients from Best Guess
-            float[,] MPAR = {
-                {
-                    -4.648483270F, -2.215777201F, -1.050000682F, -1.531051304F, // DF,GW,PP,SP
-                    -1.922689902F, -1.166211991F, -0.761609F, -4.072781265F, // IC,WH,RC,PY
-                    -6.089598985F, -4.317549852F, -2.410756914F, -2.990451960F, // MD,GC,TA,CL
-                    -2.976822456F, -6.00031085F, -3.108619921F, -2.0F, // BL,WO,BO,RA
-                    -3.020345211F, -1.386294361F,                             // PD,WI
-                },
-                {
-                    -0.266558690F, -0.162895666F, -0.194363402F, 0.0F, // DF,GW,PP,SP
-                    -0.136081990F, 0.0F, -0.529366F, -0.176433475F, // IC,WH,RC,PY
-                    -0.245615070F, -0.057696253F, 0.0F, 0.0F, // MD,GC,TA,CL
-                    0.0F, -0.10490823F, -0.570366764F, -0.5F, // BL,WO,BO,RA
-                    0.0F, 0.0F,                             // PD,WI
-                },
-                {
-                    0.003699110F, 0.003317290F, 0.003803100F, 0.0F, // DF,GW,PP,SP
-                    0.002479863F, 0.0F, 0.0F, 0.0F, // IC,WH,RC,PY
-                    0.0F, 0.0F, 0.0F, 0.0F, // MD,GC,TA,CL
-                    0.0F, 0.0F, 0.018205398F, 0.015F, // BL,WO,BO,RA
-                    0.0F, 0.0F,                             // PD,WI
-                },
-                {
-                    -2.118026640F, -3.561438261F, -3.557300286F, 0.0F, // DF,GW,PP,SP
-                    -3.178123293F, -4.602668157F, -4.74019F, -1.729453975F, // IC,WH,RC,PY
-                    -3.208265570F, 0.0F, -1.049353753F, 0.0F, // MD,GC,TA,CL
-                    -6.223250962F, -0.99541909F, -4.584655216F, -3.0F, // BL,WO,BO,RA
-                    -8.467882343F, 0.0F,                             // PD,WI
-                },
-                {
-                    0.025499430F, 0.014644689F, 0.003971638F, 0.0F, // DF,GW,PP,SP
-                    0.0F, 0.0F, 0.0119587F, 0.0F, // IC,WH,RC,PY
-                    0.033348079F, 0.004861355F, 0.008845583F, 0.0F, // MD,GC,TA,CL
-                    0.0F, 0.00912739F, 0.014926170F, 0.015F, // BL,WO,BO,RA
-                    0.013966388F, 0.0F,                             // PD,WI
-                },
-                {
-                    0.003361340F, 0.0F, 0.005573601F, 0.0F, // DF,GW,PP,SP
-                    0.004684133F, 0.0F, 0.00756365F, 0.012525642F, // IC,WH,RC,PY
-                    0.013571319F, 0.00998129F, 0.0F, 0.002884840F, // MD,GC,TA,CL
-                    0.0F, 0.87115652F, 0.012419026F, 0.01F, // BL,WO,BO,RA
-                    0.009461545F, 0.0F,                             // PD,WI
-                },
-                {
-                    0.013553950F, 0.0F, 0.0F, 0.0F, // DF,GW,PP,SP
-                    0.0F, 0.0F, 0.0F, 0.0F, // IC,WH,RC,PY
-                    0.0F, 0.0F, 0.0F, 0.0F, // MD,GC,TA,CL
-                    0.0F, 0.0F, 0.0F, 0.0F, // BL,WO,BO,RA
-                    0.0F, 0.0F,                             // PD,WI
-                },
-                {
-                    -2.723470950F, 0.0F, 0.0F, 0.0F, // DF,GW,PP,SP
-                    0.0F, 0.0F, 0.0F, 0.0F, // IC,WH,RC,PY
-                    0.0F, 0.0F, 0.0F, 0.0F, // MD,GC,TA,CL
-                    0.0F, 0.0F, 0.0F, 0.0F, // BL,WO,BO,RA
-                    0.0F, 0.0F,                             // PD,WI
-                },
-                {
-                    1.0F, 1.0F, 1.0F, 1.0F, // DF,GW,PP,SP
-                    1.0F, 1.0F, 1.0F, 1.0F, // IC,WH,RC,PY
-                    1.0F, 1.0F, 1.0F, 1.0F, // MD,GC,TA,CL
-                    1.0F, 1.0F, 1.0F, 1.0F, // BL,WO,BO,RA
-                    1.0F, 1.0F } // PD,WI
-            };
-
-            float B0 = MPAR[0, ISPGRP];
-            float B1 = MPAR[1, ISPGRP];
-            float B2 = MPAR[2, ISPGRP];
-            float B3 = MPAR[3, ISPGRP];
-            float B4 = MPAR[4, ISPGRP];
-            float B5 = MPAR[5, ISPGRP];
-            float B6 = MPAR[6, ISPGRP];
-            float B7 = MPAR[7, ISPGRP];
-            POW = MPAR[8, ISPGRP];
-            if (ISPGRP == 13)
-            {
-                // Oregon White Oak
-                PM = B0 + B1 * DBH + B2 * DBH * DBH + B3 * CR + B4 * (SI_1 + 4.5F) + B5 * (float)Math.Log(BAL + 5.0);
-            }
-            else
-            {
-                PM = B0 + B1 * DBH + B2 * DBH * DBH + B3 * CR + B4 * (SI_1 + 4.5F) + B5 * BAL + B6 * BAL * (float)Math.Exp(B7 * OG);
-            }
-        }
-
         private static void PM_NWO(int ISPGRP, float DBH, float CR, float SI_1, float SI_2, float BAL, out float POW, out float PM)
         {
             // NWO MORTALITY(6 parameters - all species)
@@ -539,37 +432,37 @@ namespace Osu.Cof.Organon
             // PD Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
             // WI Coefficients from Best Guess
             float[,] MPAR = {
-                {
+                { // B0
                     -4.13142F, -7.60159F, -0.761609F, -0.761609F, // DF,GF,WH,RC
                     -4.072781265F, -6.089598985F, -2.976822456F, -6.00031085F, // PY,MD,BL,WO
                     -2.0F, -3.020345211F, -1.386294361F,               // RA,PD,WI
                 },
-                {
+                { // B1
                     -1.13736F, -0.200523F, -0.529366F, -0.529366F, // DF,GF,WH,RC
                     -0.176433475F, -0.245615070F, 0.0F, -0.10490823F, // PY,MD,BL,WO
                     -0.5F, 0.0F, 0.0F,               // RA,PD,WI
                 },
-                {
+                { // B2
                     0.0F, 0.0F, 0.0F, 0.0F, // DF,GF,WH,RC
                     0.0F, 0.0F, 0.0F, 0.0F, // PY,MD,BL,WO
                     0.015F, 0.0F, 0.0F,               // RA,PD,WI
                 },
-                {
+                { // B3
                     -0.823305F, 0.0F, -4.74019F, -4.74019F, // DF,GF,WH,RC
                     -1.729453975F, -3.208265570F, -6.223250962F, -0.99541909F, // PY,MD,BL,WO
                     -3.0F, -8.467882343F, 0.0F,               // RA,PD,WI
                 },
-                {
+                { // B4
                     0.0307749F, 0.0441333F, 0.0119587F, 0.0119587F, // DF,GF,WH,RC
                     0.0F, 0.033348079F, 0.0F, 0.00912739F, // PY,MD,BL,WO
                     0.015F, 0.013966388F, 0.0F,               // RA,PD,WI
                 },
-                {
+                { // B5
                     0.00991005F, 0.00063849F, 0.00756365F, 0.00756365F, // DF,GF,WH,RC
                     0.012525642F, 0.013571319F, 0.0F, 0.87115652F, // PY,MD,BL,WO
                     0.01F, 0.009461545F, 0.0F,               // RA,PD,WI
                 },
-                {
+                { // POW
                     1.0F, 1.0F, 1.0F, 1.0F, // DF,GF,WH,RC
                     1.0F, 1.0F, 1.0F, 1.0F, // PY,MD,BL,WO
                     1.0F, 1.0F, 1.0F  // RA,PD,WI
@@ -765,6 +658,112 @@ namespace Osu.Cof.Organon
             PM = B0 + B1 * DBH + B2 * DBH * DBH + B3 * CR + B4 * SITE + B5 * BAL;
         }
 
+        private static void PM_SWO(int ISPGRP, float DBH, float CR, float SI_1, float BAL, float OG, out float POW, out float PM)
+        {
+            // NEW SWO MORTALITY WITH REVISED CLO PARAMETERS(8 parameters - all species)
+            // DF Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // GW Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // PP Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // SP Coefficients from Unpublished Equation on File at OSU Dept.Forest Resources
+            // IC Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // WH Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // RC Coefficients from WH of Hann, Marshall, Hanus(2003) FRL Research Contribution 40
+            // PY Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // MD Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // GC Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // TA Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // CL Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // BL Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // WO Coefficients from Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
+            // BO Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // RA Coefficients from Best Guess
+            // PD Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+            // WI Coefficients from Best Guess
+            float[,] MPAR = {
+                { // B0
+                    -4.648483270F, -2.215777201F, -1.050000682F, -1.531051304F, // DF,GW,PP,SP
+                    -1.922689902F, -1.166211991F, -0.761609F, -4.072781265F, // IC,WH,RC,PY
+                    -6.089598985F, -4.317549852F, -2.410756914F, -2.990451960F, // MD,GC,TA,CL
+                    -2.976822456F, -6.00031085F, -3.108619921F, -2.0F, // BL,WO,BO,RA
+                    -3.020345211F, -1.386294361F,                             // PD,WI
+                },
+                { // B1
+                    -0.266558690F, -0.162895666F, -0.194363402F, 0.0F, // DF,GW,PP,SP
+                    -0.136081990F, 0.0F, -0.529366F, -0.176433475F, // IC,WH,RC,PY
+                    -0.245615070F, -0.057696253F, 0.0F, 0.0F, // MD,GC,TA,CL
+                    0.0F, -0.10490823F, -0.570366764F, -0.5F, // BL,WO,BO,RA
+                    0.0F, 0.0F,                             // PD,WI
+                },
+                { // B2
+                    0.003699110F, 0.003317290F, 0.003803100F, 0.0F, // DF,GW,PP,SP
+                    0.002479863F, 0.0F, 0.0F, 0.0F, // IC,WH,RC,PY
+                    0.0F, 0.0F, 0.0F, 0.0F, // MD,GC,TA,CL
+                    0.0F, 0.0F, 0.018205398F, 0.015F, // BL,WO,BO,RA
+                    0.0F, 0.0F,                             // PD,WI
+                },
+                { // B3
+                    -2.118026640F, -3.561438261F, -3.557300286F, 0.0F, // DF,GW,PP,SP
+                    -3.178123293F, -4.602668157F, -4.74019F, -1.729453975F, // IC,WH,RC,PY
+                    -3.208265570F, 0.0F, -1.049353753F, 0.0F, // MD,GC,TA,CL
+                    -6.223250962F, -0.99541909F, -4.584655216F, -3.0F, // BL,WO,BO,RA
+                    -8.467882343F, 0.0F,                             // PD,WI
+                },
+                { // B4
+                    0.025499430F, 0.014644689F, 0.003971638F, 0.0F, // DF,GW,PP,SP
+                    0.0F, 0.0F, 0.0119587F, 0.0F, // IC,WH,RC,PY
+                    0.033348079F, 0.004861355F, 0.008845583F, 0.0F, // MD,GC,TA,CL
+                    0.0F, 0.00912739F, 0.014926170F, 0.015F, // BL,WO,BO,RA
+                    0.013966388F, 0.0F,                             // PD,WI
+                },
+                { // B5
+                    0.003361340F, 0.0F, 0.005573601F, 0.0F, // DF,GW,PP,SP
+                    0.004684133F, 0.0F, 0.00756365F, 0.012525642F, // IC,WH,RC,PY
+                    0.013571319F, 0.00998129F, 0.0F, 0.002884840F, // MD,GC,TA,CL
+                    0.0F, 0.87115652F, 0.012419026F, 0.01F, // BL,WO,BO,RA
+                    0.009461545F, 0.0F,                             // PD,WI
+                },
+                { // B6
+                    0.013553950F, 0.0F, 0.0F, 0.0F, // DF,GW,PP,SP
+                    0.0F, 0.0F, 0.0F, 0.0F, // IC,WH,RC,PY
+                    0.0F, 0.0F, 0.0F, 0.0F, // MD,GC,TA,CL
+                    0.0F, 0.0F, 0.0F, 0.0F, // BL,WO,BO,RA
+                    0.0F, 0.0F,                             // PD,WI
+                },
+                { // B7
+                    -2.723470950F, 0.0F, 0.0F, 0.0F, // DF,GW,PP,SP
+                    0.0F, 0.0F, 0.0F, 0.0F, // IC,WH,RC,PY
+                    0.0F, 0.0F, 0.0F, 0.0F, // MD,GC,TA,CL
+                    0.0F, 0.0F, 0.0F, 0.0F, // BL,WO,BO,RA
+                    0.0F, 0.0F,                             // PD,WI
+                },
+                { // POW
+                    1.0F, 1.0F, 1.0F, 1.0F, // DF,GW,PP,SP
+                    1.0F, 1.0F, 1.0F, 1.0F, // IC,WH,RC,PY
+                    1.0F, 1.0F, 1.0F, 1.0F, // MD,GC,TA,CL
+                    1.0F, 1.0F, 1.0F, 1.0F, // BL,WO,BO,RA
+                    1.0F, 1.0F } // PD,WI
+            };
+
+            float B0 = MPAR[0, ISPGRP];
+            float B1 = MPAR[1, ISPGRP];
+            float B2 = MPAR[2, ISPGRP];
+            float B3 = MPAR[3, ISPGRP];
+            float B4 = MPAR[4, ISPGRP];
+            float B5 = MPAR[5, ISPGRP];
+            float B6 = MPAR[6, ISPGRP];
+            float B7 = MPAR[7, ISPGRP];
+            POW = MPAR[8, ISPGRP];
+            if (ISPGRP == 13)
+            {
+                // Oregon White Oak
+                PM = B0 + B1 * DBH + B2 * DBH * DBH + B3 * CR + B4 * (SI_1 + 4.5F) + B5 * (float)Math.Log(BAL + 5.0);
+            }
+            else
+            {
+                PM = B0 + B1 * DBH + B2 * DBH * DBH + B3 * CR + B4 * (SI_1 + 4.5F) + B5 * BAL + B6 * BAL * (float)Math.Exp(B7 * OG);
+            }
+        }
+
         /// <summary>
         /// Computes old growth index?
         /// </summary>
@@ -791,14 +790,13 @@ namespace Osu.Cof.Organon
                 TRCL[I] = 0.0F;
             }
 
-            float treeCountAsFloat = (float)stand.TreeRecordCount;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 if (stand.IsBigSixSpecies(treeIndex))
                 {
                     float heightInFeet = stand.Height[treeIndex] + XIND * stand.HeightGrowth[treeIndex];
                     float dbhInInches = stand.Dbh[treeIndex] + XIND * stand.DbhGrowth[treeIndex];
-                    float expansionFactor = (stand.LiveExpansionFactor[treeIndex] - XIND * stand.DeadExpansionFactor[treeIndex]) / treeCountAsFloat;
+                    float expansionFactor = stand.LiveExpansionFactor[treeIndex] - XIND * stand.DeadExpansionFactor[treeIndex];
                     Debug.Assert(expansionFactor >= 0.0F);
                     Debug.Assert(expansionFactor <= 1000.0F);
 

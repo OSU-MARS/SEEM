@@ -125,7 +125,7 @@ namespace Osu.Cof.Organon
                     continue;
                 }
 
-                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                FiaCode species = stand.Species[treeIndex];
                 float growthEffectiveAge = 0.0F; // BUGBUG not intitialized on all Fortran paths
                 float IDXAGE;
                 float SITE;
@@ -134,16 +134,16 @@ namespace Osu.Cof.Organon
                     case Variant.Swo:
                         // GROWTH EFFECTIVE AGE FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
                         bool treatAsDouglasFir = false;
-                        if (speciesGroup == 3)
+                        if (species == FiaCode.TsugaHeterophylla)
                         {
-                            SITE = stand.MortalitySiteIndex - 4.5F;
+                            SITE = stand.HemlockSiteIndex - 4.5F;
                         }
                         else
                         {
-                            SITE = stand.PrimarySiteIndex - 4.5F;
-                            if (speciesGroup == 5)
+                            SITE = stand.SiteIndex - 4.5F;
+                            if (species == FiaCode.PinusLambertiana)
                             {
-                                SITE = stand.PrimarySiteIndex * 0.66F - 4.5F;
+                                SITE = stand.SiteIndex * 0.66F - 4.5F;
                             }
                             treatAsDouglasFir = true;
                         }
@@ -152,41 +152,41 @@ namespace Osu.Cof.Organon
                         break;
                     case Variant.Nwo:
                         float GP = 5.0F;
-                        if (speciesGroup == 3)
+                        if (species == FiaCode.TsugaHeterophylla)
                         {
                             // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQATION
-                            SITE = stand.MortalitySiteIndex;
+                            SITE = stand.HemlockSiteIndex;
                             HeightGrowth.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
                         }
                         else
                         {
                             // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
-                            SITE = stand.PrimarySiteIndex;
+                            SITE = stand.SiteIndex;
                             HeightGrowth.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
                         }
                         IDXAGE = 120.0F;
                         break;
                     case Variant.Smc:
                         GP = 5.0F;
-                        if (speciesGroup == 3)
+                        if (species == FiaCode.TsugaHeterophylla)
                         {
                             // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
-                            SITE = stand.MortalitySiteIndex;
+                            SITE = stand.HemlockSiteIndex;
                             HeightGrowth.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
                         }
                         else
                         {
                             // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOP DOUGLAS-FIR AND GRAND FIR
-                            SITE = stand.PrimarySiteIndex;
+                            SITE = stand.SiteIndex;
                             HeightGrowth.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
                         }
                         IDXAGE = 120.0F;
                         break;
                     case Variant.Rap:
-                        if (speciesGroup == 1)
+                        if (species == FiaCode.AlnusRubra)
                         {
                             // GROWTH EFFECTIVE AGE FROM WEISKITTEL ET AL.'S (2009) RED ALDER DOMINANT HEIGHT GROWTH EQUATION
-                            SITE = stand.PrimarySiteIndex;
+                            SITE = stand.SiteIndex;
                             RedAlder.WHHLB_SI_UC(SITE, configuration.PDEN, out float SI_UC);
                             RedAlder.WHHLB_GEA(treeHeightInFeet, SI_UC, out growthEffectiveAge);
                         }
@@ -197,7 +197,7 @@ namespace Osu.Cof.Organon
                 }
 
                 // BUGBUG inconsistent use of < IB rather than <= IB
-                if ((speciesGroup < stand.MaxBigSixSpeciesGroupIndex) && (growthEffectiveAge > IDXAGE))
+                if (stand.IsBigSixSpecies(treeIndex) && (growthEffectiveAge > IDXAGE))
                 {
                     OLD += 1.0F;
                 }
@@ -275,8 +275,8 @@ namespace Osu.Cof.Organon
             // ROUTINE TO CALCULATE MISSING CROWN RATIOS
             // BUGBUG: does this duplicate site index code elsewhere?
             // NINGRO = NUMBER OF TREES ADDED
-            float SITE_1 = stand.PrimarySiteIndex;
-            float SITE_2 = stand.MortalitySiteIndex;
+            float SITE_1 = stand.SiteIndex;
+            float SITE_2 = stand.HemlockSiteIndex;
             float SI_1;
             if (variant.Variant == Variant.Swo)
             {
@@ -418,13 +418,13 @@ namespace Osu.Cof.Organon
             {
                 throw new ArgumentOutOfRangeException(nameof(stand.NumberOfPlots));
             }
-            if ((stand.PrimarySiteIndex <= 0.0F) || (stand.PrimarySiteIndex > Constant.Maximum.SiteIndexInFeet))
+            if ((stand.SiteIndex <= 0.0F) || (stand.SiteIndex > Constant.Maximum.SiteIndexInFeet))
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.PrimarySiteIndex));
+                throw new ArgumentOutOfRangeException(nameof(stand.SiteIndex));
             }
-            if ((stand.MortalitySiteIndex <= 0.0F) || (stand.MortalitySiteIndex > Constant.Maximum.SiteIndexInFeet))
+            if ((stand.HemlockSiteIndex <= 0.0F) || (stand.HemlockSiteIndex > Constant.Maximum.SiteIndexInFeet))
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.MortalitySiteIndex));
+                throw new ArgumentOutOfRangeException(nameof(stand.HemlockSiteIndex));
             }
 
             if (configuration.IsEvenAge)
@@ -581,9 +581,9 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            if ((configuration.Variant.Variant >= Variant.Rap) && (stand.PrimarySiteIndex < 0.0F))
+            if ((configuration.Variant.Variant >= Variant.Rap) && (stand.SiteIndex < 0.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.PrimarySiteIndex));
+                throw new ArgumentOutOfRangeException(nameof(stand.SiteIndex));
             }
             if ((configuration.Variant.Variant >= Variant.Rap) && (configuration.PDEN < 0.0F))
             {
@@ -597,9 +597,9 @@ namespace Osu.Cof.Organon
             // TODO: is it desirable to clear existing stand warnings?
             stand.Warnings.BigSixHeightAbovePotential = false;
             stand.Warnings.LessThan50TreeRecords = false;
-            stand.Warnings.MortalitySiteIndexOutOfRange = false;
+            stand.Warnings.HemlockSiteIndexOutOfRange = false;
             stand.Warnings.OtherSpeciesBasalAreaTooHigh = false;
-            stand.Warnings.PrimarySiteIndexOutOfRange = false;
+            stand.Warnings.SiteIndexOutOfRange = false;
             stand.Warnings.TreesOld = false;
             stand.Warnings.TreesYoung = false;
 
@@ -812,34 +812,34 @@ namespace Osu.Cof.Organon
             switch (configuration.Variant.Variant)
             {
                 case Variant.Swo:
-                    if ((stand.PrimarySiteIndex > 0.0F) && ((stand.PrimarySiteIndex < 40.0F) || (stand.PrimarySiteIndex > 150.0F)))
+                    if ((stand.SiteIndex > 0.0F) && ((stand.SiteIndex < 40.0F) || (stand.SiteIndex > 150.0F)))
                     {
-                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
+                        stand.Warnings.SiteIndexOutOfRange = true;
                     }
-                    if ((stand.MortalitySiteIndex > 0.0F) && ((stand.MortalitySiteIndex < 50.0F) || (stand.MortalitySiteIndex > 140.0F)))
+                    if ((stand.HemlockSiteIndex > 0.0F) && ((stand.HemlockSiteIndex < 50.0F) || (stand.HemlockSiteIndex > 140.0F)))
                     {
-                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
+                        stand.Warnings.HemlockSiteIndexOutOfRange = true;
                     }
                     break;
                 case Variant.Nwo:
                 case Variant.Smc:
-                    if ((stand.PrimarySiteIndex > 0.0F) && ((stand.PrimarySiteIndex < 90.0F) || (stand.PrimarySiteIndex > 142.0F)))
+                    if ((stand.SiteIndex > 0.0F) && ((stand.SiteIndex < 90.0F) || (stand.SiteIndex > 142.0F)))
                     {
-                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
+                        stand.Warnings.SiteIndexOutOfRange = true;
                     }
-                    if ((stand.MortalitySiteIndex > 0.0F) && ((stand.MortalitySiteIndex < 90.0F) || (stand.MortalitySiteIndex > 142.0F)))
+                    if ((stand.HemlockSiteIndex > 0.0F) && ((stand.HemlockSiteIndex < 90.0F) || (stand.HemlockSiteIndex > 142.0F)))
                     {
-                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
+                        stand.Warnings.HemlockSiteIndexOutOfRange = true;
                     }
                     break;
                 case Variant.Rap:
-                    if ((stand.PrimarySiteIndex < 20.0F) || (stand.PrimarySiteIndex > 125.0F))
+                    if ((stand.SiteIndex < 20.0F) || (stand.SiteIndex > 125.0F))
                     {
-                        stand.Warnings.PrimarySiteIndexOutOfRange = true;
+                        stand.Warnings.SiteIndexOutOfRange = true;
                     }
-                    if ((stand.MortalitySiteIndex > 0.0F) && (stand.MortalitySiteIndex < 90.0F || stand.MortalitySiteIndex > 142.0F))
+                    if ((stand.HemlockSiteIndex > 0.0F) && (stand.HemlockSiteIndex < 90.0F || stand.HemlockSiteIndex > 142.0F))
                     {
-                        stand.Warnings.MortalitySiteIndexOutOfRange = true;
+                        stand.Warnings.HemlockSiteIndexOutOfRange = true;
                     }
                     break;
             }
@@ -851,7 +851,7 @@ namespace Osu.Cof.Organon
                 case Variant.Swo:
                     if (maxPonderosaHeight > 0.0F)
                     {
-                        float MAXHT = (stand.MortalitySiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.164985 * (stand.MortalitySiteIndex - 4.5), 0.288169)))) + 4.5F;
+                        float MAXHT = (stand.HemlockSiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.164985 * (stand.HemlockSiteIndex - 4.5), 0.288169)))) + 4.5F;
                         if (maxPonderosaHeight > MAXHT)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
@@ -859,7 +859,7 @@ namespace Osu.Cof.Organon
                     }
                     if (maxIncenseCedarHeight > 0.0F)
                     {
-                        float ICSI = (0.66F * stand.PrimarySiteIndex) - 4.5F;
+                        float ICSI = (0.66F * stand.SiteIndex) - 4.5F;
                         float MAXHT = ICSI * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * ICSI, 0.281176)))) + 4.5F;
                         if (maxIncenseCedarHeight > MAXHT)
                         {
@@ -868,7 +868,7 @@ namespace Osu.Cof.Organon
                     }
                     if (maxDouglasFirHeight > 0.0F)
                     {
-                        float MAXHT = (stand.PrimarySiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * (stand.PrimarySiteIndex - 4.5), 0.281176)))) + 4.5F;
+                        float MAXHT = (stand.SiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * (stand.SiteIndex - 4.5), 0.281176)))) + 4.5F;
                         if (maxDouglasFirHeight > MAXHT)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
@@ -879,7 +879,7 @@ namespace Osu.Cof.Organon
                 case Variant.Smc:
                     if (maxDouglasFirHeight > 0.0F)
                     {
-                        float Z50 = 2500.0F / (stand.PrimarySiteIndex - 4.5F);
+                        float Z50 = 2500.0F / (stand.SiteIndex - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
                         if (maxDouglasFirHeight > MAXHT)
                         {
@@ -888,7 +888,7 @@ namespace Osu.Cof.Organon
                     }
                     if (maxGrandFirHeight > 0.0F)
                     {
-                        float Z50 = 2500.0F / (stand.PrimarySiteIndex - 4.5F);
+                        float Z50 = 2500.0F / (stand.SiteIndex - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
                         if (maxGrandFirHeight > MAXHT)
                         {
@@ -897,7 +897,7 @@ namespace Osu.Cof.Organon
                     }
                     if (maxWesternHemlockHeight > 0.0F)
                     {
-                        float Z50 = 2500.0F / (stand.MortalitySiteIndex - 4.5F);
+                        float Z50 = 2500.0F / (stand.HemlockSiteIndex - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (0.00192F + 0.00007F * Z50);
                         if (maxWesternHemlockHeight > MAXHT)
                         {
@@ -908,7 +908,7 @@ namespace Osu.Cof.Organon
                 case Variant.Rap:
                     if (maxRedAlderHeight > 0.0F)
                     {
-                        RedAlder.WHHLB_H40(stand.PrimarySiteIndex, 20.0F, 150.0F, out float MAXHT);
+                        RedAlder.WHHLB_H40(stand.SiteIndex, 20.0F, 150.0F, out float MAXHT);
                         if (maxRedAlderHeight > MAXHT)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;

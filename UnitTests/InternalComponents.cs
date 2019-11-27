@@ -49,25 +49,25 @@ namespace Osu.Cof.Organon.Test
                         switch (variant.Variant)
                         {
                             case Variant.Nwo:
-                                CrownGrowth.HCB_NWO(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.PrimarySiteIndex, stand.MortalitySiteIndex, OG, out heightToCrownBaseInFeet);
+                                CrownGrowth.HCB_NWO(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG, out heightToCrownBaseInFeet);
                                 CrownGrowth.HLCW_NWO(speciesGroup, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
                                 CrownGrowth.MCW_NWO(speciesGroup, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
                                 CrownGrowth.LCW_NWO(speciesGroup, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
                                 break;
                             case Variant.Rap:
-                                CrownGrowth.HCB_RAP(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.PrimarySiteIndex, stand.MortalitySiteIndex, OG, out heightToCrownBaseInFeet);
+                                CrownGrowth.HCB_RAP(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG, out heightToCrownBaseInFeet);
                                 CrownGrowth.HLCW_RAP(speciesGroup, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
                                 CrownGrowth.MCW_RAP(speciesGroup, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
                                 CrownGrowth.LCW_RAP(speciesGroup, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
                                 break;
                             case Variant.Smc:
-                                CrownGrowth.HCB_SMC(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.PrimarySiteIndex, stand.MortalitySiteIndex, OG, out heightToCrownBaseInFeet);
+                                CrownGrowth.HCB_SMC(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG, out heightToCrownBaseInFeet);
                                 CrownGrowth.HLCW_SMC(speciesGroup, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
                                 CrownGrowth.MCW_SMC(speciesGroup, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
                                 CrownGrowth.LCW_SMC(speciesGroup, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
                                 break;
                             case Variant.Swo:
-                                CrownGrowth.HCB_SWO(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.PrimarySiteIndex, stand.MortalitySiteIndex, OG, out heightToCrownBaseInFeet);
+                                CrownGrowth.HCB_SWO(speciesGroup, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG, out heightToCrownBaseInFeet);
                                 CrownGrowth.HLCW_SWO(speciesGroup, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
                                 CrownGrowth.MCW_SWO(speciesGroup, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
                                 CrownGrowth.LCW_SWO(speciesGroup, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
@@ -102,7 +102,7 @@ namespace Osu.Cof.Organon.Test
                     Assert.IsTrue(densityEndOfStep.CrownCompetitionFactor > 0.0F);
                     Assert.IsTrue(densityEndOfStep.TreesPerAcre > 0.0F);
 
-                    CrownGrowth.CrowGro(variant, stand, densityStartOfStep, densityEndOfStep, stand.PrimarySiteIndex, stand.MortalitySiteIndex, CALIB, CCH);
+                    CrownGrowth.CrowGro(variant, stand, densityStartOfStep, densityEndOfStep, stand.SiteIndex, stand.HemlockSiteIndex, CALIB, CCH);
                     this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
                     this.Verify(CALIB);
                 }
@@ -131,8 +131,8 @@ namespace Osu.Cof.Organon.Test
                     StandDensity treeCompetition = new StandDensity(stand, variant);
                     for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                     {
-                        DiameterGrowth.DIAMGRO(variant, treeIndex, simulationStep, stand, stand.PrimarySiteIndex, 
-                                               stand.MortalitySiteIndex, treeCompetition, CALIB, 
+                        DiameterGrowth.DIAMGRO(variant, treeIndex, simulationStep, stand, stand.SiteIndex, 
+                                               stand.HemlockSiteIndex, treeCompetition, CALIB, 
                                                PN, YF, BABT, BART, YT);
                         float dbhInInches = stand.Dbh[treeIndex];
                         float previousDbhInInches = previousTreeDiameters[treeIndex];
@@ -151,10 +151,10 @@ namespace Osu.Cof.Organon.Test
                 {
                     float basalAreaLarger = densityForLookup.GetBasalAreaLarger(dbhInInches);
                     Assert.IsTrue(basalAreaLarger >= 0.0F);
-                    Assert.IsTrue(basalAreaLarger <= 1.0F);
+                    Assert.IsTrue(basalAreaLarger <= densityForLookup.BasalAreaPerAcre);
                     float crownCompetitionLarger = densityForLookup.GetCrownCompetitionFactorLarger(dbhInInches);
                     Assert.IsTrue(crownCompetitionLarger >= 0.0F);
-                    Assert.IsTrue(crownCompetitionLarger <= 1.0F);
+                    Assert.IsTrue(crownCompetitionLarger <= densityForLookup.CrownCompetitionFactor);
                 }
             }
         }
@@ -278,11 +278,11 @@ namespace Osu.Cof.Organon.Test
                     {
                         if (species == FiaCode.TsugaHeterophylla)
                         {
-                            HeightGrowth.F_HG(stand.PrimarySiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                            HeightGrowth.F_HG(stand.SiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out growthEffectiveAgeInYears, out potentialHeightGrowth);
                         }
                         else
                         {
-                            HeightGrowth.BrucePsmeAbgrGrowthEffectiveAge(stand.PrimarySiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                            HeightGrowth.BrucePsmeAbgrGrowthEffectiveAge(stand.SiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out growthEffectiveAgeInYears, out potentialHeightGrowth);
                         }
                         verifyAgeAndHeight = true;
                     }
@@ -290,7 +290,7 @@ namespace Osu.Cof.Organon.Test
                     {
                         if ((species == FiaCode.PinusPonderosa) || (species == FiaCode.PseudotsugaMenziesii))
                         {
-                            HeightGrowth.HS_HG(species == FiaCode.PseudotsugaMenziesii, stand.PrimarySiteIndex, heightInFeet, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                            HeightGrowth.HS_HG(species == FiaCode.PseudotsugaMenziesii, stand.SiteIndex, heightInFeet, out growthEffectiveAgeInYears, out potentialHeightGrowth);
                             verifyAgeAndHeight = true;
                         }
                     }
@@ -310,7 +310,7 @@ namespace Osu.Cof.Organon.Test
                     {
                         if (stand.IsBigSixSpecies(treeIndex))
                         {
-                            HeightGrowth.GrowBigSixSpecies(treeIndex, variant, simulationStep, stand, stand.PrimarySiteIndex, stand.MortalitySiteIndex, 
+                            HeightGrowth.GrowBigSixSpecies(treeIndex, variant, simulationStep, stand, stand.SiteIndex, stand.HemlockSiteIndex, 
                                                 CCH, PN, YF, TestConstant.Default.BABT, BART, YT, ref OLD, TestConstant.Default.PDEN);
                         }
                         else
@@ -350,8 +350,8 @@ namespace Osu.Cof.Organon.Test
                 float RAAGE = TestConstant.Default.RAAGE;
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    Mortality.MORTAL(configuration, simulationStep, stand, density, stand.PrimarySiteIndex, 
-                                     stand.MortalitySiteIndex, PN, YF, ref RAAGE);
+                    Mortality.MORTAL(configuration, simulationStep, stand, density, stand.SiteIndex, 
+                                     stand.HemlockSiteIndex, PN, YF, ref RAAGE);
                     this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                     // TODO: xind -1.0 case

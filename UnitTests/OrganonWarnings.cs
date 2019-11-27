@@ -7,6 +7,6 @@ namespace Osu.Cof.Organon.Test
     {
         None = 0x0,
         LessThan50TreeRecords = 0x1,
-        MortalitySiteIndex = 0x2
+        HemlockSiteIndex = 0x2
     }
 }
