@@ -27,7 +27,7 @@ namespace Osu.Cof.Organon.Test
                 FiaCode.QuercusGarryana,
 
                 FiaCode.AbiesConcolor,
-                FiaCode.LithocarpusDensiflorus,
+                FiaCode.NotholithocarpusDensiflorus,
                 FiaCode.PinusLambertiana,
                 FiaCode.QuercusChrysolepis,
                 FiaCode.QuercusKelloggii

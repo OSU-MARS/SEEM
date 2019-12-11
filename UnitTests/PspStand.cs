@@ -129,13 +129,12 @@ namespace Osu.Cof.Organon.Test
                 }
                 stand.Tag[treeIndex] = tree.Tag;
                 stand.Species[treeIndex] = species;
-                stand.SpeciesGroup[treeIndex] = variant.GetSpeciesGroup(species);
                 stand.Dbh[treeIndex] = dbhInCentimeters / 2.54F;
                 stand.Height[treeIndex] = 3.048F * tree.EstimateInitialHeightInMeters();
                 stand.CrownRatio[treeIndex] = TestConstant.Default.CrownRatio;
                 stand.LiveExpansionFactor[treeIndex] = expansionFactor;
 
-                if (stand.SpeciesGroup[treeIndex] < 0)
+                if (variant.IsSpeciesSupported(species) == false)
                 {
                     if (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla)
                     {
@@ -147,8 +146,6 @@ namespace Osu.Cof.Organon.Test
                     }
 
                     stand.Species[treeIndex] = species;
-                    stand.SpeciesGroup[treeIndex] = variant.GetSpeciesGroup(species);
-                    Debug.Assert(stand.SpeciesGroup[treeIndex] >= 0);
                 }
 
                 ++treeIndex;

@@ -29,7 +29,7 @@ namespace Osu.Cof.Organon.Test
                 case FiaCode.AbiesConcolor:
                 case FiaCode.AbiesGrandis:
                 case FiaCode.CalocedrusDecurrens:
-                case FiaCode.LithocarpusDensiflorus:
+                case FiaCode.NotholithocarpusDensiflorus:
                 case FiaCode.PinusLambertiana:
                 case FiaCode.PinusPonderosa:
                 case FiaCode.PseudotsugaMenziesii:

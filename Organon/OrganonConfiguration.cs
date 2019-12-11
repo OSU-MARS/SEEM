@@ -23,15 +23,12 @@
         // hint for error checking and triggers TCYCLE count
         public bool Thin { get; set; }
 
-        // RVARS[2] maximum SDI for Douglas-fir?, only used by Submax()
-        // If less than or equal to zero. (DOUG? also, what species?)</param>
-        public float MSDI_1 { get; set; }
-        // RVARS[3] maximum SDI for true firs?, only used by Submax() for calculation of TFMOD
-        // Maximum? stand density index for calculating TFMOD, ignored if less than or equal to zero. (DOUG?)
-        public float MSDI_2 { get; set; }
-        // RVARS[4] maximum SDI for OC?, only used by Submax() for calculation of OCMOD
-        // Maximum? stand density index for calculating OCMOD, ignored if less than or equal to zero. (DOUG?)
-        public float MSDI_3 { get; set; }
+        // Ignored if less than or equal to zero.</param>
+        public float DefaultMaximumSdi { get; set; }
+        // Maximum stand density index for Abies species, ignored if less than or equal to zero.
+        public float TrueFirMaximumSdi { get; set; }
+        // Maximum stand density index for western hemblock, ignored if less than or equal to zero.
+        public float HemlockMaximumSdi { get; set; }
         // RVARS[5] genetic diameter growth modifier (requires Genetics = true)
         public float GWDG { get; set; }
         // RVARS[6] genetic height growth modifier (requires Genetics = true)

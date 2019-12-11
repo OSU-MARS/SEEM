@@ -1,37 +1,13 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 
 namespace Osu.Cof.Organon.Test
 {
     public class OrganonTest
     {
-        protected float[,] CreateCalibrationArray()
-        {
-            // (DOUG? figure out relation to ACALIB array and CALC, CALD, and CALH flags and equations)
-            return new float[18, 6] {
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-                { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F },
-            };
-        }
-
         protected TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
             List<TreeRecord> trees = new List<TreeRecord>();
@@ -83,7 +59,7 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.TaxusBrevifolia, 0.1F, 1.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.ArbutusMenziesii, 0.1F, 1.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.ChrysolepisChrysophyllaVarChrysophylla, 0.1F, 1.0F, 0.5F));
-                    trees.Add(new TreeRecord(FiaCode.LithocarpusDensiflorus, 0.1F, 1.0F, 0.5F));
+                    trees.Add(new TreeRecord(FiaCode.NotholithocarpusDensiflorus, 0.1F, 1.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.QuercusChrysolepis, 0.1F, 1.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.AcerMacrophyllum, 0.1F, 1.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.QuercusGarryana, 0.1F, 1.0F, 0.5F));
@@ -100,9 +76,7 @@ namespace Osu.Cof.Organon.Test
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 TreeRecord tree = trees[treeIndex];
-                int speciesGroup = this.GetSpeciesGroup(configuration.Variant, tree.Species);
                 stand.Species[treeIndex] = tree.Species;
-                stand.SpeciesGroup[treeIndex] = speciesGroup;
                 stand.Dbh[treeIndex] = tree.DbhInInches;
                 stand.Height[treeIndex] = tree.HeightInFeet;
                 stand.CrownRatio[treeIndex] = tree.CrownRatio;
@@ -117,34 +91,39 @@ namespace Osu.Cof.Organon.Test
         {
             OrganonConfiguration configuration = new OrganonConfiguration(variant)
             {
-                MSDI_1 = TestConstant.Default.MaximumReinekeStandDensityIndex,
-                MSDI_2 = TestConstant.Default.MaximumReinekeStandDensityIndex,
-                MSDI_3 = TestConstant.Default.MaximumReinekeStandDensityIndex,
+                DefaultMaximumSdi = TestConstant.Default.MaximumReinekeStandDensityIndex,
+                TrueFirMaximumSdi = TestConstant.Default.MaximumReinekeStandDensityIndex,
+                HemlockMaximumSdi = TestConstant.Default.MaximumReinekeStandDensityIndex,
             };
 
             return configuration;
         }
 
-        private int GetSpeciesGroup(OrganonVariant variant, FiaCode species)
+        protected Dictionary<FiaCode, float[]> CreateSpeciesCalibration(OrganonVariant variant)
         {
-            // copy of OrganonVariant.GetSpeciesGroup()
+            ReadOnlyCollection<FiaCode> speciesList;
             switch (variant.Variant)
             {
                 case Variant.Nwo:
                 case Variant.Smc:
-                    return Constant.NwoSmcSpecies.IndexOf(species);
+                    speciesList = Constant.NwoSmcSpecies;
+                    break;
                 case Variant.Rap:
-                    return Constant.RapSpecies.IndexOf(species);
+                    speciesList = Constant.RapSpecies;
+                    break;
                 case Variant.Swo:
-                    int speciesGroup = Constant.SwoSpecies.IndexOf(species);
-                    if (speciesGroup > 1)
-                    {
-                        --speciesGroup;
-                    }
-                    return speciesGroup;
+                    speciesList = Constant.SwoSpecies;
+                    break;
                 default:
-                    throw Organon.OrganonVariant.CreateUnhandledVariantException(variant.Variant);
+                    throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
             }
+
+            Dictionary<FiaCode, float[]> calibration = new Dictionary<FiaCode, float[]>();
+            foreach (FiaCode species in speciesList)
+            {
+                calibration.Add(species, new float[] { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F });
+            }
+            return calibration;
         }
 
         protected void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
@@ -155,7 +134,7 @@ namespace Osu.Cof.Organon.Test
 
             float BABT = 0.0F;
             float[] BART = new float[5];
-            float[,] CALIB = this.CreateCalibrationArray();
+            Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
             float[] PN = new float[5];
             if (configuration.IsEvenAge)
             {
@@ -174,37 +153,37 @@ namespace Osu.Cof.Organon.Test
             {
                 StandGrowth.EXECUTE(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
-
                 huffmanPeak.AddIngrowth(year, stand, density);
+                stand.SetSdiMax(configuration);
+                this.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
+
                 density = new TestStandDensity(stand, variant);
                 density.WriteToCsv(densityWriter, variant, year);
                 quantiles = new TreeQuantiles(stand);
                 quantiles.WriteToCsv(quantileWriter, variant, year);
                 stand.WriteTreesToCsv(treeGrowthWriter, variant, year);
-                this.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
             }
 
             this.Verify(ExpectedTreeChanges.ExpansionFactorConservedOrIncreased | ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, treeGrowth, initialTreeData, stand);
             this.Verify(CALIB);
         }
 
-        protected void Verify(float[,] calibration)
+        protected void Verify(Dictionary<FiaCode, float[]> calibration)
         {
-            int speciesGroupCount = calibration.GetLength(0);
-            for (int speciesGroupIndex = 0; speciesGroupIndex < speciesGroupCount; ++speciesGroupIndex)
+            foreach (KeyValuePair<FiaCode, float[]> species in calibration)
             {
-                Assert.IsTrue(calibration[speciesGroupIndex, 0] == 1.0F);
-                Assert.IsTrue(calibration[speciesGroupIndex, 1] == 1.0F);
-                Assert.IsTrue(calibration[speciesGroupIndex, 2] == 1.0F);
+                Assert.IsTrue(species.Value[0] == 1.0F);
+                Assert.IsTrue(species.Value[1] == 1.0F);
+                Assert.IsTrue(species.Value[2] == 1.0F);
             }
         }
 
-        protected void Verify(ExpectedTreeChanges expectedGrowth, TestStand stand, OrganonVariant variantCapabilities)
+        protected void Verify(ExpectedTreeChanges expectedGrowth, TestStand stand, OrganonVariant variant)
         {
-            this.Verify(expectedGrowth, OrganonWarnings.None, stand, variantCapabilities);
+            this.Verify(expectedGrowth, OrganonWarnings.None, stand, variant);
         }
 
-        protected void Verify(ExpectedTreeChanges expectedGrowth, OrganonWarnings expectedWarnings, TestStand stand, OrganonVariant variantCapabilities)
+        protected void Verify(ExpectedTreeChanges expectedGrowth, OrganonWarnings expectedWarnings, TestStand stand, OrganonVariant variant)
         {
             Assert.IsTrue(stand.AgeInYears >= 0);
             Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
@@ -218,9 +197,8 @@ namespace Osu.Cof.Organon.Test
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 // primary tree data
-                float deadExpansionFactor = stand.DeadExpansionFactor[treeIndex];
-                Assert.IsTrue(deadExpansionFactor >= 0.0F);
-                Assert.IsTrue(deadExpansionFactor <= TestConstant.Maximum.ExpansionFactor);
+                FiaCode species = stand.Species[treeIndex];
+                Assert.IsTrue(Enum.IsDefined(typeof(FiaCode), species));
 
                 float crownRatio = stand.CrownRatio[treeIndex];
                 Assert.IsTrue(crownRatio >= 0.0F);
@@ -235,13 +213,16 @@ namespace Osu.Cof.Organon.Test
                 Assert.IsTrue(heightInFeet >= 0.0F);
                 Assert.IsTrue(heightInFeet <= TestConstant.Maximum.HeightInFeet);
 
+                float deadExpansionFactor = stand.DeadExpansionFactor[treeIndex];
+                Assert.IsTrue(deadExpansionFactor >= 0.0F);
+                Assert.IsTrue(deadExpansionFactor <= TestConstant.Maximum.ExpansionFactor);
                 Assert.IsTrue(expansionFactor + deadExpansionFactor <= TestConstant.Maximum.ExpansionFactor);
 
                 // diameter and height growth
                 float diameterGrowthInInches = stand.DbhGrowth[treeIndex];
                 if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowth))
                 {
-                    Assert.IsTrue(diameterGrowthInInches > 0.0F);
+                    Assert.IsTrue(diameterGrowthInInches > 0.0F, "{0}: {1} {2} did not grow in diameter.", variant.Variant, stand.Species[treeIndex], treeIndex);
                     Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DbhInInches);
                 }
                 else if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowthOrNoChange))
@@ -256,24 +237,18 @@ namespace Osu.Cof.Organon.Test
                 float heightGrowthInFeet = stand.HeightGrowth[treeIndex];
                 if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowth))
                 {
-                    Assert.IsTrue(heightGrowthInFeet > 0.0F, "{0}: {1} {2} did not grow in height.", variantCapabilities.Variant, stand.Species[treeIndex], treeIndex);
+                    Assert.IsTrue(heightGrowthInFeet > 0.0F, "{0}: {1} {2} did not grow in height.", variant.Variant, stand.Species[treeIndex], treeIndex);
                     Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
                 }
                 else if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowthOrNoChange))
                 {
-                    Assert.IsTrue(heightGrowthInFeet >= 0.0F, "{0}: {1} {2} decreased in height.", variantCapabilities.Variant, stand.Species[treeIndex], treeIndex);
+                    Assert.IsTrue(heightGrowthInFeet >= 0.0F, "{0}: {1} {2} decreased in height.", variant.Variant, stand.Species[treeIndex], treeIndex);
                     Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
                 }
                 else
                 {
                     Assert.IsTrue(heightGrowthInFeet == 0.0F);
                 }
-
-                FiaCode species = stand.Species[treeIndex];
-                Assert.IsTrue(Enum.IsDefined(typeof(FiaCode), species));
-                int speciesGroup = stand.SpeciesGroup[treeIndex];
-                Assert.IsTrue(speciesGroup >= 0);
-                Assert.IsTrue(speciesGroup < variantCapabilities.SpeciesGroupCount);
 
                 // for now, ignore warnings on height exceeding potential height
                 // Assert.IsTrue(stand.TreeWarnings[treeWarningIndex] == 0);
@@ -284,7 +259,7 @@ namespace Osu.Cof.Organon.Test
             Assert.IsTrue(stand.Warnings.HemlockSiteIndexOutOfRange == expectedWarnings.HasFlag(OrganonWarnings.HemlockSiteIndex));
             Assert.IsTrue(stand.Warnings.OtherSpeciesBasalAreaTooHigh == false);
             Assert.IsTrue(stand.Warnings.SiteIndexOutOfRange == false);
-            if (variantCapabilities.Variant != Variant.Smc)
+            if (variant.Variant != Variant.Smc)
             {
                 // for now, ignore SMC warning for breast height age < 10
                 Assert.IsTrue(stand.Warnings.TreesOld == false);

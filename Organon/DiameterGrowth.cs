@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Organon
@@ -6,7 +7,7 @@ namespace Osu.Cof.Organon
     internal class DiameterGrowth
     {
         public static void DIAMGRO(OrganonVariant variant, int treeIndex, int simulationStep, Stand stand, float SI_1, float SI_2, 
-                                   StandDensity densityBeforeGrowth, float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
+                                   StandDensity densityBeforeGrowth, Dictionary<FiaCode, float[]> CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
         {
             // CALCULATES FIVE-YEAR DIAMETER GROWTH RATE OF THE K-TH TREE
             // CALCULATE BASAL AREA IN LARGER TREES
@@ -47,21 +48,20 @@ namespace Osu.Cof.Organon
 
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED TREES
             float crownRatio = stand.CrownRatio[treeIndex];
-            int speciesGroup = stand.SpeciesGroup[treeIndex];
             float dbhGrowthInInches;
             switch(variant.Variant)
             {
                 case Variant.Swo:
-                    DG_SWO(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth.BasalAreaPerAcre, out dbhGrowthInInches);
+                    DG_SWO(species, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth.BasalAreaPerAcre, out dbhGrowthInInches);
                     break;
                 case Variant.Nwo:
-                    DG_NWO(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth.BasalAreaPerAcre, out dbhGrowthInInches);
+                    DG_NWO(species, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth.BasalAreaPerAcre, out dbhGrowthInInches);
                     break;
                 case Variant.Smc:
-                    DG_SMC(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth.BasalAreaPerAcre, out dbhGrowthInInches);
+                    DG_SMC(species, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth.BasalAreaPerAcre, out dbhGrowthInInches);
                     break;
                 case Variant.Rap:
-                    DG_RAP(speciesGroup, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth.BasalAreaPerAcre, out dbhGrowthInInches);
+                    DG_RAP(species, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth.BasalAreaPerAcre, out dbhGrowthInInches);
                     break;
                 default:
                     throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
@@ -72,127 +72,312 @@ namespace Osu.Cof.Organon
             // CALCULATE THINNING ADJUSTMENT
             DG_THIN(species, variant, simulationStep, BABT, BART, YT, out float THINADJ);
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED OR TREATED TREES
-            dbhGrowthInInches *= CALIB[speciesGroup, 2] * FERTADJ * THINADJ;
+            dbhGrowthInInches *= CALIB[species][2] * FERTADJ * THINADJ;
             stand.DbhGrowth[treeIndex] = dbhGrowthInInches;
         }
 
-        private static void DG_NWO(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
+        private static void DG_NWO(FiaCode species, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
         {
-            // DIAMETER GROWTH(11 parameters - all species)
-            //
-            // DF Coefficients from Zumrawi and Hann(1993) FRL Research Contribution 4
-            // GF Coefficients from Zumrawi and Hann(1993) FRL Research Contribution 4
-            // WH Coefficients from Johnson(2002) Willamette Industries Report
-            // RC Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-            // PY Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // MD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // BL Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // WO Coefficients from Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-            // RA Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-            // PD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // WI Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            //
-            float[,] DGPAR = {
-                { // B0
-                    -4.69624F, -2.34619F, -4.49867F, // DF,GF,WH
-                    -11.45456097F, -9.15835863F, -8.84531757F, // RC,PY,MD
-                    -3.41449922F, -7.81267986F, -4.39082007F, // BL,WO,RA
-                    -8.08352683F, -8.08352683F,                    // PD,WI
-                },
-                { // B1
-                    0.339513F, 0.594640F, 0.362369F, // DF,GF,WH
-                    0.784133664F, 1.0F, 1.5F, // RC,PY,MD
-                    1.0F, 1.405616529F, 1.0F, // BL,WO,RA
-                    1.0F, 1.0F,                    // PD,WI
-                },
-                { // B2
-                    -0.000428261F, -0.000976092F, -0.00153907F, // DF,GF,WH
-                    -0.0261377888F, -0.00000035F, -0.0006F, // RC,PY,MD
-                    -0.05F, -0.0603105850F, -0.0945057147F, // BL,WO,RA
-                    -0.00000035F, -0.00000035F,                    // PD,WI
-                },
-                { // B3
-                    1.19952F, 1.12712F, 1.1557F, // DF,GF,WH
-                    0.70174783F, 1.16688474F, 0.51225596F, // RC,PY,MD
-                    0.0F, 0.64286007F, 1.06867026F, // BL,WO,RA
-                    0.31176647F, 0.31176647F,                    // PD,WI
-                },
-                { // B4
-                    1.15612F, 0.555333F, 1.12154F, // DF,GF,WH
-                    2.057236260F, 0.0F, 0.418129153F, // RC,PY,MD
-                    0.324349277F, 1.037687142F, 0.685908029F, // BL,WO,RA
-                    0.0F, 0.0F,                    // PD,WI
-                },
-                { // B5
-                    -0.0000446327F, -0.0000290672F, -0.0000201041F, // DF,GF,WH
-                    -0.00415440257F, 0.0F, -0.00355254593F, // RC,PY,MD
-                    0.0F, 0.0F, -0.00586331028F, // BL,WO,RA
-                    0.0F, 0.0F,                    // PD,WI
-                },
-                { // B6
-                    -0.0237003F, -0.0470848F, -0.0417388F, // DF,GF,WH
-                    0.0F, -0.02F, -0.0321315389F, // RC,PY,MD
-                    -0.0989519477F, -0.0787012218F, 0.0F, // BL,WO,RA
-                    -0.0730788052F, -0.0730788052F,                    // PD,WI
-                },
-                { // K1
-                    1.0F, 1.0F, 1.0F, // DF,GF,WH
-                    5.0F, 4000.0F, 110.0F, // RC,PY,MD
-                    10.0F, 5.0F, 5.0F, // BL,WO,RA
-                    4000.0F, 4000.0F,                    // PD,WI
-                },
-                { // K2
-                    2.0F, 2.0F, 2.0F, // DF,GF,WH
-                    1.0F, 4.0F, 2.0F, // RC,PY,MD
-                    1.0F, 1.0F, 1.0F, // BL,WO,RA
-                    4.0F, 4.0F,                    // PD,WI
-                },
-                { // K3
-                    2.0F, 2.0F, 2.0F, // DF,GF,WH
-                    1.0F, 1.0F, 1.0F, // RC,PY,MD
-                    1.0F, 1.0F, 1.0F, // BL,WO,RA
-                    1.0F, 1.0F,                    // PD,WI
-                },
-                { // K4
-                    5.0F, 5.0F, 5.0F, // DF,GF,WH
-                    2.7F, 2.7F, 2.7F, // RC,PY,MD
-                    2.7F, 2.7F, 2.7F, // BL,WO,RA
-                    2.7F, 2.7F                               // PD,WI
-                }
-            };
-
-            float B0 = DGPAR[0, ISPGRP];
-            float B1 = DGPAR[1, ISPGRP];
-            float B2 = DGPAR[2, ISPGRP];
-            float B3 = DGPAR[3, ISPGRP];
-            float B4 = DGPAR[4, ISPGRP];
-            float B5 = DGPAR[5, ISPGRP];
-            float B6 = DGPAR[6, ISPGRP];
-            float K1 = DGPAR[7, ISPGRP];
-            float K2 = DGPAR[8, ISPGRP];
-            float K3 = DGPAR[9, ISPGRP];
-            float K4 = DGPAR[10, ISPGRP];
+            float B0;
+            float B1;
+            float B2;
+            float B3;
+            float B4;
+            float B5;
+            float B6;
+            float K1;
+            float K2;
+            float K3;
+            float K4;
+            switch (species)
+            {
+                // Zumrawi and Hann(1993) FRL Research Contribution 4
+                case FiaCode.PseudotsugaMenziesii:
+                    B0 = -4.69624F;
+                    B1 = 0.339513F;
+                    B2 = -0.000428261F;
+                    B3 = 1.19952F;
+                    B4 = 1.15612F;
+                    B5 = -0.0000446327F;
+                    B6 = -0.0237003F;
+                    K1 = 1.0F;
+                    K2 = 2.0F;
+                    K3 = 2.0F;
+                    K4 = 5.0F;
+                    break;
+                // Zumrawi and Hann(1993) FRL Research Contribution 4
+                case FiaCode.AbiesGrandis:
+                    B0 = -2.34619F;
+                    B1 = 0.594640F;
+                    B2 = -0.000976092F;
+                    B3 = 1.12712F;
+                    B4 = 0.555333F;
+                    B5 = -0.0000290672F;
+                    B6 = -0.0470848F;
+                    K1 = 1.0F;
+                    K2 = 2.0F;
+                    K3 = 2.0F;
+                    K4 = 5.0F;
+                    break;
+                // Johnson(2002) Willamette Industries Report
+                case FiaCode.TsugaHeterophylla:
+                    B0 = -4.49867F;
+                    B1 = 0.362369F;
+                    B2 = -0.00153907F;
+                    B3 = 1.1557F;
+                    B4 = 1.12154F;
+                    B5 = -0.0000201041F;
+                    B6 = -0.0417388F;
+                    K1 = 1.0F;
+                    K2 = 2.0F;
+                    K3 = 2.0F;
+                    K4 = 5.0F;
+                    break;
+                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
+                case FiaCode.ThujaPlicata:
+                    B0 = -11.45456097F;
+                    B1 = 0.784133664F;
+                    B2 = -0.0261377888F;
+                    B3 = 0.70174783F;
+                    B4 = 2.057236260F;
+                    B5 = -0.00415440257F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.TaxusBrevifolia:
+                    B0 = -9.15835863F;
+                    B1 = 1.0F;
+                    B2 = -0.00000035F;
+                    B3 = 1.16688474F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.02F;
+                    K1 = 4000.0F;
+                    K2 = 4.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.ArbutusMenziesii:
+                    B0 = -8.84531757F;
+                    B1 = 1.5F;
+                    B2 = -0.0006F;
+                    B3 = 0.51225596F;
+                    B4 = 0.418129153F;
+                    B5 = -0.00355254593F;
+                    B6 = -0.0321315389F;
+                    K1 = 110.0F;
+                    K2 = 2.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.AcerMacrophyllum:
+                    B0 = -3.41449922F;
+                    B1 = 1.0F;
+                    B2 = -0.05F;
+                    B3 = 0.0F;
+                    B4 = 0.324349277F;
+                    B5 = 0.0F;
+                    B6 = -0.0989519477F;
+                    K1 = 10.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23:26-33
+                case FiaCode.QuercusGarryana:
+                    B0 = -7.81267986F;
+                    B1 = 1.405616529F;
+                    B2 = -0.0603105850F;
+                    B3 = 0.64286007F;
+                    B4 = 1.037687142F;
+                    B5 = 0.0F;
+                    B6 = -0.0787012218F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
+                case FiaCode.AlnusRubra:
+                    B0 = -4.39082007F;
+                    B1 = 1.0F;
+                    B2 = -0.0945057147F;
+                    B3 = 1.06867026F;
+                    B4 = 0.685908029F;
+                    B5 = -0.00586331028F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.CornusNuttallii:
+                case FiaCode.Salix:
+                    B0 = -8.08352683F;
+                    B1 = 1.0F;
+                    B2 = -0.00000035F;
+                    B3 = 0.31176647F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.0730788052F;
+                    K1 = 4000.0F;
+                    K2 = 4.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                default:
+                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+            }
             float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
 
-            // CROWN RATIO ADJUSTMENT
+            // TODO: source of these adjustment factors unknown
             float ADJ;
-            if (ISPGRP == 0)
+            if (species == FiaCode.PseudotsugaMenziesii)
             {
                 ADJ = 0.7011014F;
             }
-            else if (ISPGRP == 1)
+            else if (species == FiaCode.AbiesGrandis)
             {
                 ADJ = 0.8722F;
             }
-            else if (ISPGRP == 2)
+            else if (species == FiaCode.TsugaHeterophylla)
             {
                 ADJ = 0.7163F;
             }
-            else if (ISPGRP == 5)
+            else if (species == FiaCode.ArbutusMenziesii)
             {
                 ADJ = 0.7928F;
             }
-            else if (ISPGRP == 7)
+            else if (species == FiaCode.AlnusRubra)
+            {
+                ADJ = 1.0F;
+            }
+            else 
+            {
+                ADJ = 0.8F;
+            }
+
+            // CROWN RATIO ADJUSTMENT
+            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
+            DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
+            Debug.Assert(DG > 0.0F);
+        }
+
+        private static void DG_RAP(FiaCode species, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
+        {
+            // These species were annualized by adding ln(0.2) to the intercept terms: DF, WH, RC, ACMA3, Cornus, Salix
+            float B0;
+            float B1;
+            float B2;
+            float B3;
+            float B4;
+            float B5;
+            float B6;
+            float K1;
+            float K2;
+            float K3;
+            float K4;
+            switch (species)
+            {
+                // Hann, Bluhm, and Hibbs Red Alder Plantation Analysis
+                case FiaCode.AlnusRubra:
+                    B0 = -4.622849554F;
+                    B1 = 0.5112200516F;
+                    B2 = -0.1040194568F;
+                    B3 = 0.9536538143F;
+                    B4 = 1.0659344724F;
+                    B5 = -0.0193047405F;
+                    B6 = -0.0773539455F;
+                    K1 = 1.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 1.0F;
+                    break;
+                // Hann, Marshall, and Hanus(2006) FRL Research Contribution ??
+                case FiaCode.PseudotsugaMenziesii:
+                    B0 = -6.95196910F;
+                    B1 = 1.098406840F;
+                    B2 = -0.05218621F;
+                    B3 = 1.01380810F;
+                    B4 = 0.91202025F;
+                    B5 = -0.01756220F;
+                    B6 = -0.05168923F;
+                    K1 = 6.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Unpublished equation on file at OSU Deptartment of Forest Resources
+                case FiaCode.TsugaHeterophylla:
+                    B0 = -6.48391203F;
+                    B1 = 0.4150723209F;
+                    B2 = -0.023744997F;
+                    B3 = 0.907837299F;
+                    B4 = 1.1346766989F;
+                    B5 = -0.015333503F;
+                    B6 = -0.03309787F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
+                case FiaCode.ThujaPlicata:
+                    B0 = -13.06399888F;
+                    B1 = 0.784133664F;
+                    B2 = -0.0261377888F;
+                    B3 = 0.70174783F;
+                    B4 = 2.057236260F;
+                    B5 = -0.00415440257F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.AcerMacrophyllum:
+                    B0 = -5.02393713F;
+                    B1 = 1.0F;
+                    B2 = -0.05F;
+                    B3 = 0.0F;
+                    B4 = 0.324349277F;
+                    B5 = 0.0F;
+                    B6 = -0.0989519477F;
+                    K1 = 10.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.CornusNuttallii:
+                case FiaCode.Salix:
+                    B0 = -9.69296474F;
+                    B1 = 1.0F;
+                    B2 = -0.00000035F;
+                    B3 = 0.31176647F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.0730788052F;
+                    K1 = 4000.0F;
+                    K2 = 4.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                default:
+                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+            }
+            float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
+
+            float ADJ;
+            if ((species == FiaCode.AlnusRubra) || (species == FiaCode.PseudotsugaMenziesii) || (species == FiaCode.TsugaHeterophylla))
             {
                 ADJ = 1.0F;
             }
@@ -206,224 +391,185 @@ namespace Osu.Cof.Organon
             Debug.Assert(DG > 0.0F);
         }
 
-        private static void DG_RAP(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
+        private static void DG_SMC(FiaCode species, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
         {
-            // DIAMETER GROWTH PARAMETERS(11 parameters - all species)
-            //
-            // RA Coefficients from Hann, Bluhm, and Hibbs Red Alder Plantation Analysis
-            //
-            // The following species were annualized by adding ln(0.2) to the intercept terms
-            //
-            // DF Coefficients from Hann, Marshall, and Hanus(2006) FRL Research Contribution ??
-            // WH Coefficients from Unpublished Equation on File at OSU Dept.Forest Resources
-            // RC Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-            // BL Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // PD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // WI Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            //
-            float[,] DGPAR = {
-                { // B0
-                    -4.622849554F,     -6.95196910F,     -6.48391203F   ,// RA,DF,WH
-                    -13.06399888F,     -5.02393713F,     -9.69296474F   ,// RC,BL,PD
-                    -9.69296474F,                                        // WI
-                },
-                { // B1
-                    0.5112200516F,      1.098406840F,      0.4150723209F,// RA,DF,WH
-                    0.784133664F,      1.0F,       1.0F          ,// RC,BL,PD
-                    1.0F,                                         // WI
-                },
-                { // B2
-                    -0.1040194568F,     -0.05218621F,     -0.023744997F,// RA,DF,WH
-                    -0.0261377888F,     -0.05F,     -0.00000035F   ,// RC,BL,PD
-                    -0.00000035F,                                        // WI
-                },
-                { // B3
-                    0.9536538143F,      1.01380810F,      0.907837299F  ,// RA,DF,WH
-                    0.70174783F,      0.0F,       0.31176647F   ,// RC,BL,PD
-                    0.31176647F,                                        // WI
-                },
-                { // B4
-                    1.0659344724F,      0.91202025F,      1.1346766989F,// RA,DF,WH
-                    2.057236260F,      0.324349277F,      0.0F         ,// RC,BL,PD
-                    0.0F,                                         // WI
-                },
-                { // B5
-                    -0.0193047405F,     -0.01756220F,     -0.015333503F,// RA,DF,WH
-                    -0.00415440257F,      0.0F,       0.0F          ,// RC,BL,PD
-                    0.0F,                                         // WI
-                },
-                { // B6
-                    -0.0773539455F,     -0.05168923F,     -0.03309787F   ,// RA,DF,WH
-                    0.0F,      -0.0989519477F,     -0.0730788052F,// RC,BL,PD
-                    -0.0730788052F,                                        // WI
-                },
-                { // K1
-                    1.0F,       6.0F,       5.0F          ,// RA,DF,WH
-                    5.0F,      10.0F,    4000.0F          ,// RC,BL,PD
-                    4000.0F,                                         // WI
-                },
-                { // K1
-                    1.0F,       1.0F,       1.0F          ,// RA,DF,WH
-                    1.0F,       1.0F,       4.0F          ,// RC,BL,PD
-                    4.0F,                                         // BL
-                },
-                { // K2
-                    1.0F,       1.0F,       1.0F          ,// RA,DF,WH
-                    1.0F,       1.0F,       1.0F          ,// RC,BL,PD
-                    1.0F,                                         // WI
-                },
-                { // K3
-                    1.0F,       2.7F,       2.7F          ,// RA,DF,WH
-                    2.7F,       2.7F,       2.7F          ,// RC,BL,PD
-                    2.7F                                   // WI
-                }
-            };
-
-            float B0 = DGPAR[0, ISPGRP];
-            float B1 = DGPAR[1, ISPGRP];
-            float B2 = DGPAR[2, ISPGRP];
-            float B3 = DGPAR[3, ISPGRP];
-            float B4 = DGPAR[4, ISPGRP];
-            float B5 = DGPAR[5, ISPGRP];
-            float B6 = DGPAR[6, ISPGRP];
-            float K1 = DGPAR[7, ISPGRP];
-            float K2 = DGPAR[8, ISPGRP];
-            float K3 = DGPAR[9, ISPGRP];
-            float K4 = DGPAR[10, ISPGRP];
+            float B0;
+            float B1;
+            float B2;
+            float B3;
+            float B4;
+            float B5;
+            float B6;
+            float K1;
+            float K2;
+            float K3;
+            float K4;
+            switch (species)
+            {
+                // Hann, Marshall, and Hanus(2006) FRL Research Contribution 49
+                case FiaCode.PseudotsugaMenziesii:
+                    B0 = -5.34253119F;
+                    B1 = 1.098406840F;
+                    B2 = -0.05218621F;
+                    B3 = 1.01380810F;
+                    B4 = 0.91202025F;
+                    B5 = -0.01756220F;
+                    B6 = -0.05168923F;
+                    K1 = 6.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Zumrawi and Hann(1993) FRL Research Contribution 4
+                case FiaCode.AbiesGrandis:
+                    B0 = -2.34619F;
+                    B1 = 0.594640F;
+                    B2 = -0.000976092F;
+                    B3 = 1.12712F;
+                    B4 = 0.555333F;
+                    B5 = -0.0000290672F;
+                    B6 = -0.0470848F;
+                    K1 = 1.0F;
+                    K2 = 2.0F;
+                    K3 = 2.0F;
+                    K4 = 5.0F;
+                    break;
+                // Unpublished Equation on File at OSU Dept.Forest Resources
+                case FiaCode.TsugaHeterophylla:
+                    B0 = -4.87447412F;
+                    B1 = 0.4150723209F;
+                    B2 = -0.023744997F;
+                    B3 = 0.907837299F;
+                    B4 = 1.1346766989F;
+                    B5 = -0.015333503F;
+                    B6 = -0.03309787F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
+                case FiaCode.ThujaPlicata:
+                    B0 = -11.45456097F;
+                    B1 = 0.784133664F;
+                    B2 = -0.0261377888F;
+                    B3 = 0.70174783F;
+                    B4 = 2.057236260F;
+                    B5 = -0.00415440257F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.TaxusBrevifolia:
+                    B0 = -9.15835863F;
+                    B1 = 1.0F;
+                    B2 = -0.00000035F;
+                    B3 = 1.16688474F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.02F;
+                    K1 = 4000.0F;
+                    K2 = 4.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.ArbutusMenziesii:
+                    B0 = -8.84531757F;
+                    B1 = 1.5F;
+                    B2 = -0.0006F;
+                    B3 = 0.51225596F;
+                    B4 = 0.418129153F;
+                    B5 = -0.00355254593F;
+                    B6 = -0.0321315389F;
+                    K1 = 110.0F;
+                    K2 = 2.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.AcerMacrophyllum:
+                    B0 = -3.41449922F;
+                    B1 = 1.0F;
+                    B2 = -0.05F;
+                    B3 = 0.0F;
+                    B4 = 0.324349277F;
+                    B5 = 0.0F;
+                    B6 = -0.0989519477F;
+                    K1 = 10.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
+                case FiaCode.QuercusGarryana:
+                    B0 = -7.81267986F;
+                    B1 = 1.405616529F;
+                    B2 = -0.0603105850F;
+                    B3 = 0.64286007F;
+                    B4 = 1.037687142F;
+                    B5 = 0.0F;
+                    B6 = -0.0787012218F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
+                case FiaCode.AlnusRubra:
+                    B0 = -4.39082007F;
+                    B1 = 1.0F;
+                    B2 = -0.0945057147F;
+                    B3 = 1.06867026F;
+                    B4 = 0.685908029F;
+                    B5 = -0.00586331028F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.CornusNuttallii:
+                case FiaCode.Salix:
+                    B0 = -8.08352683F;
+                    B1 = 1.0F;
+                    B2 = -0.00000035F;
+                    B3 = 0.31176647F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.0730788052F;
+                    K1 = 4000.0F;
+                    K2 = 4.0F;
+                    K3 = 1.0F;
+                    K4 = 2.7F;
+                    break;
+                default:
+                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+            }
             float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
 
-            // CROWN RATIO ADJUSTMENT
             float ADJ;
-            if (ISPGRP <= 2)
+            if (species == FiaCode.PseudotsugaMenziesii)
             {
                 ADJ = 1.0F;
             }
-            else 
-            {
-                ADJ = 0.8F;
-            }
-
-            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
-            DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
-            Debug.Assert(DG > 0.0F);
-        }
-
-        private static void DG_SMC(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
-        {
-            // DIAMETER GROWTH PARAMETERS(11 parameters - all species)
-            //
-            // DF Coefficients from Hann, Marshall, and Hanus(2006) FRL Research Contribution 49
-            // GF Coefficients from Zumrawi and Hann(1993) FRL Research Contribution 4
-            // WH Coefficients from Unpublished Equation on File at OSU Dept.Forest Resources
-            // RC Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-            // PY Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // MD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // BL Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // WO Coefficients from Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-            // RA Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-            // PD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // WI Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            float[,] DGPAR = {
-                { // B0
-                    -5.34253119F, -2.34619F, -4.87447412F, // DF,GF,WH
-                    -11.45456097F, -9.15835863F, -8.84531757F, // RC,PY,MD
-                    -3.41449922F, -7.81267986F, -4.39082007F, // BL,WO,RA
-                    -8.08352683F, -8.08352683F,                    // PD,WI
-                },
-                { // B1
-                    1.098406840F, 0.594640F, 0.4150723209F, // DF,GF,WH
-                    0.784133664F, 1.0F, 1.5F, // RC,PY,MD
-                    1.0F, 1.405616529F, 1.0F, // BL,WO,RA
-                    1.0F, 1.0F,                    // PD,WI
-                },
-                { // B3
-                    -0.05218621F, -0.000976092F, -0.023744997F, // DF,GF,WH
-                    -0.0261377888F, -0.00000035F, -0.0006F, // RC,PY,MD
-                    -0.05F, -0.0603105850F, -0.0945057147F, // BL,WO,RA
-                    -0.00000035F, -0.00000035F,                    // PD,WI
-                },
-                { // B4
-                    1.01380810F, 1.12712F, 0.907837299F, // DF,GF,WH
-                    0.70174783F, 1.16688474F, 0.51225596F, // RC,PY,MD
-                    0.0F, 0.64286007F, 1.06867026F, // BL,WO,RA
-                    0.31176647F, 0.31176647F,                    // PD,WI
-                },
-                { // B4
-                    0.91202025F, 0.555333F, 1.1346766989F, // DF,GF,WH
-                    2.057236260F, 0.0F, 0.418129153F, // RC,PY,MD
-                    0.324349277F, 1.037687142F, 0.685908029F, // BL,WO,RA
-                    0.0F, 0.0F,                    // PD,WI
-                },
-                { // B5
-                    -0.01756220F, -0.0000290672F, -0.015333503F, // DF,GF,WH
-                    -0.00415440257F, 0.0F, -0.00355254593F, // RC,PY,MD
-                    0.0F, 0.0F, -0.00586331028F, // BL,WO,RA
-                    0.0F, 0.0F,                    // PD,WI
-                },
-                { // B6
-                    -0.05168923F, -0.0470848F, -0.03309787F, // DF,GF,WH
-                    0.0F, -0.02F, -0.0321315389F, // RC,PY,MD
-                    -0.0989519477F, -0.0787012218F, 0.0F, // BL,WO,RA
-                    -0.0730788052F, -0.0730788052F,                    // PD,WI
-                },
-                { // K1
-                    6.0F, 1.0F, 5.0F, // DF,GF,WH
-                    5.0F, 4000.0F, 110.0F, // RC,PY,MD
-                    10.0F, 5.0F, 5.0F, // BL,WO,RA
-                    4000.0F, 4000.0F,  // PD,WI
-                },
-                { // K2
-                    1.0F, 2.0F, 1.0F, // DF,GF,WH
-                    1.0F, 4.0F, 2.0F, // RC,PY,MD
-                    1.0F, 1.0F, 1.0F, // BL,WO,RA
-                    4.0F, 4.0F,       // PD,WI
-                },
-                { // K3
-                    1.0F, 2.0F, 1.0F, // DF,GF,WH
-                    1.0F, 1.0F, 1.0F, // RC,PY,MD
-                    1.0F, 1.0F, 1.0F, // BL,WO,RA
-                    1.0F, 1.0F,       // PD,WI
-                },
-                { // K4
-                    2.7F, 5.0F, 2.7F, // DF,GF,WH
-                    2.7F, 2.7F, 2.7F, // RC,PY,MD
-                    2.7F, 2.7F, 2.7F, // BL,WO,RA
-                    2.7F, 2.7F        // PD,WI
-                }
-            };
-
-            float B0 = DGPAR[0, ISPGRP];
-            float B1 = DGPAR[1, ISPGRP];
-            float B2 = DGPAR[2, ISPGRP];
-            float B3 = DGPAR[3, ISPGRP];
-            float B4 = DGPAR[4, ISPGRP];
-            float B5 = DGPAR[5, ISPGRP];
-            float B6 = DGPAR[6, ISPGRP];
-            float K1 = DGPAR[7, ISPGRP];
-            float K2 = DGPAR[8, ISPGRP];
-            float K3 = DGPAR[9, ISPGRP];
-            float K4 = DGPAR[10, ISPGRP];
-            float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
-
-            // CROWN RATIO ADJUSTMENT
-            float ADJ;
-            if (ISPGRP == 0)
-            {
-                ADJ = 1.0F;
-            }
-            else if (ISPGRP == 1)
+            else if (species == FiaCode.AbiesGrandis)
             {
                 ADJ = 0.8722F;
             }
-            else if (ISPGRP == 2)
+            else if (species == FiaCode.TsugaHeterophylla)
             {
                 ADJ = 1.0F;
             }
-            else if (ISPGRP == 5)
+            else if (species == FiaCode.ArbutusMenziesii)
             {
                 ADJ = 0.7928F;
             }
-            else if (ISPGRP == 7)
+            else if (species == FiaCode.QuercusGarryana)
             {
                 ADJ = 1.0F;
             }
@@ -437,159 +583,259 @@ namespace Osu.Cof.Organon
             Debug.Assert(DG > 0.0F);
         }
 
-        private static void DG_SWO(int ISPGRP, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
+        private static void DG_SWO(FiaCode species, float DBH, float CR, float SITE, float SBAL1, float SBA1, out float DG)
         {
-            // DIAMETER GROWTH PARAMETERS FOR SOUTHWEST OREGON(11 parameters - all species)
-            //
-            // DF Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // GW Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // PP Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // SP Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // IC Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // WH Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // RC Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-            // PY Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // MD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // GC Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // TA Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // CL Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // BL Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // WO Coefficients from Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-            // BO Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // RA Coefficients from Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-            // PD Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            // WI Coefficients from Hann and Hanus(2002) FRL Research Contribution 39
-            float[,] DGPAR = {
-                { // B0
-                    -5.35558894F, -5.84904111F, -4.51958940F,      // DF,GW,PP
-                    -4.12342552F, -2.08551255F, -5.70052255F,      // SP,IC,WH
-                    -11.45456097F, -9.15835863F, -8.84531757F,      // RC,PY,MD
-                    -7.78451344F, -3.36821750F, -3.59333060F,      // GC,TA,CL
-                    -3.41449922F, -7.81267986F, -4.43438109F,      // BL,WO,BO
-                    -4.39082007F, -8.08352683F, -8.08352683F,      // RA,PD,WI
-                },
-                { // B1: DBH
-                    0.840528547F, 1.668196109F, 0.813998712F,     // DF,GW,PP
-                    0.734988422F, 0.596043703F, 0.865087036F,     // SP,IC,WH
-                    0.784133664F, 1.0F, 1.5F,     // RC,PY,MD
-                    1.2F, 1.2F, 1.2F,     // GC,TA,CL
-                    1.0F, 1.405616529F, 0.930930363F,     // BL,WO,BO
-                    1.0F, 1.0F, 1.0F,     // RA,PD,WI
-                },
-                { // B2: DBH
-                    -0.0427481848F, -0.0853271265F, -0.0493858858F,    // DF,GW,PP
-                    -0.0425469735F, -0.0215223077F, -0.0432543518F,    // SP,IC,WH
-                    -0.0261377888F, -0.00000035F, -0.0006F,    // RC,PY,MD
-                    -0.07F, -0.07F, -0.07F,    // GC,TA,CL
-                    -0.05F, -0.0603105850F, -0.0465947242F,    // BL,WO,BO
-                    -0.0945057147F, -0.00000035F, -0.00000035F,    // RA,PD,WI
-                },
-                { // B3: CR
-                    1.15950313F, 1.21222176F, 1.10249641F,    // DF,GW,PP
-                    1.05942163F, 1.02734556F, 1.10859727F,    // SP,IC,WH
-                    0.70174783F, 1.16688474F, 0.51225596F,    // RC,PY,MD
-                    0.0F, 0.0F, 0.51637418F,    // GC,TA,CL
-                    0.0F, 0.64286007F, 0.0F,    // BL,WO,BO
-                    1.06867026F, 0.31176647F, 0.31176647F,    // RA,PD,WI
-                },
-                { // B4: SI
-                    0.954711126F, 0.679346647F, 0.879440023F,    // DF,GW,PP
-                    0.808656390F, 0.383450822F, 0.977332597F,    // SP,IC,WH
-                    2.057236260F, 0.0F, 0.418129153F,    // RC,PY,MD
-                    1.01436101F, 0.0F, 0.0F,    // GC,TA,CL
-                    0.324349277F, 1.037687142F, 0.510717175F,    // BL,WO,BO
-                    0.685908029F, 0.0F, 0.0F,    // RA,PD,WI
-                },
-                { // B5: SBAL1
-                    -0.00894779670F, -0.00809965733F, -0.0108521667F,    // DF,GW,PP
-                    -0.0107837565F, -0.00489046624F, 0.0F,    // SP,IC,WH
-                    -0.00415440257F, 0.0F, -0.00355254593F,   // RC,PY,MD
-                    -0.00834323811F, 0.0F, 0.0F,   // GC,TA,CL
-                    0.0F, 0.0F, 0.0F,   // BL,WO,BO
-                    -0.00586331028F, 0.0F, 0.0F,   // RA,PD,WI
-                },
-                { // B6: SBA1
-                    0.0F, 0.0F, -0.0333706948F,    // DF,GW,PP
-                    0.0F, -0.0609024782F, -0.0526263229F,    // SP,IC,WH
-                    0.0F, -0.02F, -0.0321315389F,    // RC,PY,MD
-                    0.0F, -0.0339813575F, -0.02F,    // GC,TA,CL
-                    -0.0989519477F, -0.0787012218F, -0.0688832423F,    // BL,WO,BO
-                    0.0F, -0.0730788052F, -0.0730788052F,    // RA,PD,WI
-                },
-                { // K1: DBH
-                    5.0F, 5.0F, 5.0F,    // DF,GW,PP
-                    5.0F, 5.0F, 5.0F,    // SP,IC,WH
-                    5.0F, 4000.0F, 110.0F,    // RC,PY,MD
-                    10.0F, 10.0F, 10.0F,    // GC,TA,CL
-                    10.0F, 5.0F, 5.0F,    // BL,WO,BO
-                    5.0F, 4000.0F, 4000.0F,    // RA,PD,WI
-                },
-                { // K2: DBH
-                    1.0F, 1.0F, 1.0F,    // DF,GW,PP
-                    1.0F, 1.0F, 1.0F,    // SP,IC,WH
-                    1.0F, 4.0F, 2.0F,    // RC,PY,MD
-                    1.0F, 1.0F, 1.0F,    // GC,TA,CL
-                    1.0F, 1.0F, 1.0F,    // BL,WO,BO
-                    1.0F, 4.0F, 4.0F,    // RA,PD,WI
-                },
-                { // K3: SBAL1
-                    1.0F, 1.0F, 1.0F,    // DF,GW,PP
-                    1.0F, 1.0F, 1.0F,    // SP,IC,WH
-                    1.0F, 1.0F, 1.0F,    // RC,PY,MD
-                    1.0F, 1.0F, 1.0F,    // GC,TA,CL
-                    1.0F, 1.0F, 1.0F,    // BL,WO,BO
-                    1.0F, 1.0F, 1.0F,    // RA,PD,WI
-                },
-                { // K4
-                    2.7F, 2.7F, 2.7F,    // DF,GW,PP
-                    2.7F, 2.7F, 2.7F,    // SP,IC,WH
-                    2.7F, 2.7F, 2.7F,    // RC,PY,MD
-                    2.7F, 2.7F, 2.7F,    // GC,TA,CL
-                    2.7F, 2.7F, 2.7F,    // BL,WO,BO
-                    2.7F, 2.7F, 2.7F     // RA,PD,WI
-                }
-            };
-
-            float B0 = DGPAR[0, ISPGRP];
-            float B1 = DGPAR[1, ISPGRP];
-            float B2 = DGPAR[2, ISPGRP];
-            float B3 = DGPAR[3, ISPGRP];
-            float B4 = DGPAR[4, ISPGRP];
-            float B5 = DGPAR[5, ISPGRP];
-            float B6 = DGPAR[6, ISPGRP];
-            float K1 = DGPAR[7, ISPGRP];
-            float K2 = DGPAR[8, ISPGRP];
-            float K3 = DGPAR[9, ISPGRP];
-            float K4 = DGPAR[10, ISPGRP];
+            float B0;
+            float B1; // DBH
+            float B2; // DBH
+            float B3; // CR
+            float B4; // SI
+            float B5; // SBAL1
+            float B6; // SBA1
+            float K1; // DBH
+            float K2; // DBH
+            float K3 = 1.0F; // SBAL1
+            float K4 = 2.7F;
+            switch (species)
+            {
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.PseudotsugaMenziesii:
+                    B0 = -5.35558894F;
+                    B1 = 0.840528547F;
+                    B2 = -0.0427481848F;
+                    B3 = 1.15950313F;
+                    B4 = 0.954711126F;
+                    B5 = -0.00894779670F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.AbiesConcolor:
+                case FiaCode.AbiesGrandis:
+                    B0 = -5.84904111F;
+                    B1 = 1.668196109F;
+                    B2 = -0.0853271265F;
+                    B3 = 1.21222176F;
+                    B4 = 0.679346647F;
+                    B5 = -0.00809965733F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.PinusPonderosa:
+                    B0 = -4.51958940F;
+                    B1 = 0.813998712F;
+                    B2 = -0.0493858858F;
+                    B3 = 1.10249641F;
+                    B4 = 0.879440023F;
+                    B5 = -0.0108521667F;
+                    B6 = 0.0333706948F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.PinusLambertiana:
+                    B0 = -4.12342552F;
+                    B1 = 0.734988422F;
+                    B2 = -0.0425469735F;
+                    B3 = 1.05942163F;
+                    B4 = 0.808656390F;
+                    B5 = -0.0107837565F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.CalocedrusDecurrens:
+                    B0 = -2.08551255F;
+                    B1 = 0.596043703F;
+                    B2 = -0.0215223077F;
+                    B3 = 1.02734556F;
+                    B4 = 0.383450822F;
+                    B5 = -0.00489046624F;
+                    B6 = -0.0609024782F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.TsugaHeterophylla:
+                    B0 = -5.70052255F;
+                    B1 = 0.865087036F;
+                    B2 = -0.0432543518F;
+                    B3 = 1.10859727F;
+                    B4 = 0.977332597F;
+                    B5 = 0.0F;
+                    B6 = -0.0526263229F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
+                case FiaCode.ThujaPlicata:
+                    B0 = -11.45456097F;
+                    B1 = 0.784133664F;
+                    B2 = -0.0261377888F;
+                    B3 = 0.70174783F;
+                    B4 = 2.057236260F;
+                    B5 = -0.00415440257F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.TaxusBrevifolia:
+                    B0 = -9.15835863F;
+                    B1 = 1.0F;
+                    B2 = -0.00000035F;
+                    B3 = 1.16688474F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.02F;
+                    K1 = 4000.0F;
+                    K2 = 4.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.ArbutusMenziesii:
+                    B0 = -8.84531757F;
+                    B1 = 1.5F;
+                    B2 = -0.0006F;
+                    B3 = 0.51225596F;
+                    B4 = 0.418129153F;
+                    B5 = -0.00355254593F;
+                    B6 = -0.0321315389F;
+                    K1 = 110.0F;
+                    K2 = 2.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.ChrysolepisChrysophyllaVarChrysophylla:
+                    B0 = -7.78451344F;
+                    B1 = 1.2F;
+                    B2 = -0.07F;
+                    B3 = 0.0F;
+                    B4 = 1.01436101F;
+                    B5 = -0.00834323811F;
+                    B6 = 0.0F;
+                    K1 = 10.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.NotholithocarpusDensiflorus:
+                    B0 = -3.36821750F;
+                    B1 = 1.2F;
+                    B2 = -0.07F;
+                    B3 = 0.0F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.0339813575F;
+                    K1 = 10.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.QuercusChrysolepis:
+                    B0 = -3.59333060F;
+                    B1 = 1.2F;
+                    B2 = -0.07F;
+                    B3 = 0.51637418F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.02F;
+                    K1 = 10.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.AcerMacrophyllum:
+                    B0 = -3.41449922F;
+                    B1 = 1.0F;
+                    B2 = -0.05F;
+                    B3 = 0.0F;
+                    B4 = 0.324349277F;
+                    B5 = 0.0F;
+                    B6 = -0.0989519477F;
+                    K1 = 10.0F;
+                    K2 = 1.0F;
+                    break;
+                // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
+                case FiaCode.QuercusGarryana:
+                    B0 = -7.81267986F;
+                    B1 = 1.405616529F;
+                    B2 = -0.0603105850F;
+                    B3 = 0.64286007F;
+                    B4 = 1.037687142F;
+                    B5 = 0.0F;
+                    B6 = -0.0787012218F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.QuercusKelloggii:
+                    B0 = -4.43438109F;
+                    B1 = 0.930930363F;
+                    B2 = -0.0465947242F;
+                    B3 = 0.0F;
+                    B4 = 0.510717175F;
+                    B5 = 0.0F;
+                    B6 = -0.0688832423F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
+                case FiaCode.AlnusRubra:
+                    B0 = -4.39082007F;
+                    B1 = 1.0F;
+                    B2 = -0.0945057147F;
+                    B3 = 1.06867026F;
+                    B4 = 0.685908029F;
+                    B5 = -0.00586331028F;
+                    B6 = 0.0F;
+                    K1 = 5.0F;
+                    K2 = 1.0F;
+                    break;
+                // Hann and Hanus(2002) FRL Research Contribution 39
+                case FiaCode.CornusNuttallii:
+                case FiaCode.Salix:
+                    B0 = -8.08352683F;
+                    B1 = 1.0F;
+                    B2 = -0.00000035F;
+                    B3 = 0.31176647F;
+                    B4 = 0.0F;
+                    B5 = 0.0F;
+                    B6 = -0.0730788052F;
+                    K1 = 4000.0F;
+                    K2 = 4.0F;
+                    break;
+                default:
+                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+            }
             float LNDG = (float)(B0 + B1 * Math.Log(DBH + K1) + B2 * Math.Pow(DBH, K2) + B3 * Math.Log((CR + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBAL1, K3) / Math.Log(DBH + K4)) + B6 * Math.Sqrt(SBA1));
 
             // FULL ADJUSTMENTS
             float ADJ;
-            if (ISPGRP == 0)
+            if (species == FiaCode.PseudotsugaMenziesii)
             {
                 ADJ = 0.8938F;
             }
-            else if (ISPGRP == 1)
+            else if ((species == FiaCode.AbiesConcolor) || (species == FiaCode.AbiesGrandis))
             {
                 ADJ = 0.8722F;
             }
-            else if (ISPGRP == 3)
+            else if (species == FiaCode.PinusLambertiana)
             {
                 ADJ = 0.7903F;
             }
-            else if (ISPGRP == 8)
+            else if (species == FiaCode.ArbutusMenziesii)
             {
                 ADJ = 0.7928F;
             }
-            else if (ISPGRP == 9)
+            else if (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla)
             {
                 ADJ = 0.7259F;
             }
-            else if (ISPGRP == 13)
+            else if (species == FiaCode.QuercusGarryana)
             {
                 ADJ = 1.0F;
             }
-            else if (ISPGRP == 14)
+            else if (species == FiaCode.QuercusKelloggii)
             {
                 ADJ = 0.7667F;
             }
@@ -602,6 +848,7 @@ namespace Osu.Cof.Organon
             float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
             DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
             Debug.Assert(DG > 0.0F);
+            Debug.Assert(DG < 5.0F);
         }
 
         /// <summary>

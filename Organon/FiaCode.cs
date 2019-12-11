@@ -20,7 +20,7 @@
         CalocedrusDecurrens = 81,
         ChrysolepisChrysophyllaVarChrysophylla = 431,
         CornusNuttallii = 492,
-        LithocarpusDensiflorus = 631,
+        NotholithocarpusDensiflorus = 631,
         PiceaSitchensis = 98,
         PinusLambertiana = 117,
         PinusPonderosa = 122,

@@ -35,7 +35,6 @@ namespace Osu.Cof.Organon
 
         public static void RAMORT(Stand stand, float RAAGE, float RAN, float[] PMK)
         {
-            float KB = 0.005454154F;
             float RAMORT1 = 0.0F;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
@@ -51,8 +50,8 @@ namespace Osu.Cof.Organon
             float RABAN1 = -26.1467F + 5.31482F * RAAGE - 0.037466F * RAAGE * RAAGE;
             float RAQMDN2 = 3.313F + 0.18769F * (RAAGE + 5.0F) - 0.000198F * (float)Math.Pow(RAAGE + Constant.DefaultTimeStepInYears, 2.0);
             float RABAN2 = -26.1467F + 5.31482F * (RAAGE + 5.0F) - 0.037466F * (float)Math.Pow(RAAGE + Constant.DefaultTimeStepInYears, 2.0);
-            float RATPAN1 = RABAN1 / (KB * RAQMDN1 * RAQMDN1);
-            float RATPAN2 = RABAN2 / (KB * RAQMDN2 * RAQMDN2);
+            float RATPAN1 = RABAN1 / (Constant.ForestersEnglish * RAQMDN1 * RAQMDN1);
+            float RATPAN2 = RABAN2 / (Constant.ForestersEnglish * RAQMDN2 * RAQMDN2);
             float RAMORT2;
             if ((RATPAN1 > 0.0F) && (RATPAN2 > 0.0F))
             {

@@ -20,9 +20,6 @@ namespace Osu.Cof.Organon
         // also used for ponderosa (SWO) and western redcedar (NWO)
         public float HemlockSiteIndex { get; private set; }
 
-        // IB, sometimes also named IIB
-        public int MaxBigSixSpeciesGroupIndex { get; private set; }
-
         // STOR[0]
         public float NO { get; set; }
 
@@ -42,13 +39,12 @@ namespace Osu.Cof.Organon
 
         public bool[] TreeHeightWarning { get; private set; }
 
-        protected Stand(int ageInYears, int treeRecordCount, float primarySiteIndex, int maxBigSixSpeciesGroupIndex)
+        protected Stand(int ageInYears, int treeRecordCount, float primarySiteIndex)
             : base(treeRecordCount)
         {
             this.AgeInYears = ageInYears;
             this.BreastHeightAgeInYears = ageInYears;
             this.HemlockSiteIndex = -1.0F;
-            this.MaxBigSixSpeciesGroupIndex = maxBigSixSpeciesGroupIndex;
             this.NumberOfPlots = 1;
             this.SiteIndex = primarySiteIndex;
             this.RedAlderSiteIndex = -1.0F;
@@ -57,7 +53,7 @@ namespace Osu.Cof.Organon
         }
 
         protected Stand(Stand other)
-            : this(other.AgeInYears, other.TreeRecordCount, other.SiteIndex, other.MaxBigSixSpeciesGroupIndex)
+            : this(other.AgeInYears, other.TreeRecordCount, other.SiteIndex)
         {
             this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
 
@@ -72,14 +68,15 @@ namespace Osu.Cof.Organon
             this.NumberOfPlots = other.NumberOfPlots;
             this.RedAlderSiteIndex = other.RedAlderSiteIndex;
             other.Species.CopyTo(this.Species, 0);
-            other.SpeciesGroup.CopyTo(this.SpeciesGroup, 0);
             other.TreeHeightWarning.CopyTo(this.TreeHeightWarning, 0);
             this.Warnings = new StandWarnings(other.Warnings);
         }
 
-        public bool IsBigSixSpecies(int treeIndex)
+        public float GetBasalArea(int treeIndex)
         {
-            return this.SpeciesGroup[treeIndex] <= this.MaxBigSixSpeciesGroupIndex;
+            float dbhInInches = this.Dbh[treeIndex];
+            float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
+            return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
         }
 
         public void SetDefaultAndMortalitySiteIndices(OrganonVariant variant)
@@ -161,7 +158,6 @@ namespace Osu.Cof.Organon
         /// Finds SDImax line. Sets A1 (constant of SDImax line) and A2 (exponent of SDImax line, dimensionless).
         /// </summary>
         /// <param name="configuration">Organon configuration.</param>
-        /// <param name="stand">Stand data.</param>
         public void SetSdiMax(OrganonConfiguration configuration)
         {
             // CALCULATE THE MAXIMUM SIZE-DENISTY LINE
@@ -181,11 +177,10 @@ namespace Osu.Cof.Organon
                     throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
             }
 
-            float KB = 0.005454154F;
             float TEMPA1;
-            if (configuration.MSDI_1 > 0.0F)
+            if (configuration.DefaultMaximumSdi > 0.0F)
             {
-                TEMPA1 = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.MSDI_1));
+                TEMPA1 = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.DefaultMaximumSdi));
             }
             else
             {
@@ -213,145 +208,109 @@ namespace Osu.Cof.Organon
             }
 
             // BUGBUG need API with maximum species group ID to safely allocate BAGRP
-            float[] BAGRP = new float[18];
+            float douglasFirBasalArea = 0.0F;
+            float hemlockBasalArea = 0.0F;
+            float ponderosaBasalArea = 0.0F;
+            float totalBasalArea = 0.0F;
+            float trueFirBasalArea = 0.0F;
             for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
             {
-                int speciesGroup = this.SpeciesGroup[treeIndex];
-                float DBH = this.Dbh[treeIndex];
-                float EX1 = this.LiveExpansionFactor[treeIndex];
-                BAGRP[speciesGroup] = BAGRP[speciesGroup] + KB * DBH * DBH * EX1;
+                float basalArea = this.GetBasalArea(treeIndex);
+                totalBasalArea += basalArea;
+
+                switch (this.Species[treeIndex])
+                {
+                    case FiaCode.AbiesAmabalis:
+                    case FiaCode.AbiesConcolor:
+                    case FiaCode.AbiesGrandis:
+                    case FiaCode.AbiesProcera:
+                        trueFirBasalArea += basalArea;
+                        break;
+                    case FiaCode.PinusPonderosa:
+                        ponderosaBasalArea += basalArea;
+                        break;
+                    case FiaCode.PseudotsugaMenziesii:
+                        douglasFirBasalArea += basalArea;
+                        break;
+                    case FiaCode.TsugaHeterophylla:
+                        hemlockBasalArea += basalArea;
+                        break;
+                }
             }
 
-            float TOTBA = 0.0F;
-            for (int I = 0; I < 3; ++I)
+            float douglasFirProportion = 0.0F;
+            float hemlockProportion = 0.0F;
+            float ponderosaProportion = 0.0F;
+            float trueFirProportion = 0.0F;
+            if (totalBasalArea > 0.0F)
             {
-                TOTBA += BAGRP[I];
-            }
-
-            float PDF;
-            float PTF = 0.0F; // BUGBUG not intialized in Fortran code
-            if (TOTBA > 0.0F)
-            {
-                if (configuration.Variant.Variant != Variant.Rap)
-                {
-                    PDF = BAGRP[0] / TOTBA;
-                    PTF = BAGRP[1] / TOTBA;
-                }
-                else
-                {
-                    // (DOUG? typo for PTF?)
-                    // PRA = BAGRP[0] / TOTBA;
-                    PDF = BAGRP[1] / TOTBA;
-                }
-            }
-            else
-            {
-                if (configuration.Variant.Variant != Variant.Rap)
-                {
-                    PDF = 0.0F;
-                    PTF = 0.0F;
-                }
-                else
-                {
-                    // (DOUG? typo for PTF?)
-                    // PRA = 0.0F;
-                    PDF = 0.0F;
-                }
+                douglasFirProportion /= totalBasalArea;
+                hemlockProportion /= totalBasalArea;
+                ponderosaProportion /= totalBasalArea;
+                trueFirProportion /= totalBasalArea;
             }
 
             float A1MOD;
-            float OCMOD;
-            float PPP;
-            float TFMOD;
             switch (configuration.Variant.Variant)
             {
                 case Variant.Swo:
-                    if (configuration.MSDI_2 > 0.0F)
+                    float trueFirModifier = 1.03481817F;
+                    if (configuration.TrueFirMaximumSdi > 0.0F)
                     {
-                        TFMOD = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.MSDI_2)) / TEMPA1;
+                        trueFirModifier = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.TrueFirMaximumSdi)) / TEMPA1;
                     }
-                    else
+                    float hemlockModifier = 0.9943501F;
+                    if (configuration.HemlockMaximumSdi > 0.0F)
                     {
-                        TFMOD = 1.03481817F;
-                    }
-                    if (configuration.MSDI_3 > 0.0F)
-                    {
-                        OCMOD = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.MSDI_3)) / TEMPA1;
-                    }
-                    else
-                    {
-                        OCMOD = 0.9943501F;
-                    }
-                    if (TOTBA > 0.0F)
-                    {
-                        PPP = BAGRP[2] / TOTBA;
-                    }
-                    else
-                    {
-                        PPP = 0.0F;
+                        hemlockModifier = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.HemlockMaximumSdi)) / TEMPA1;
                     }
 
-                    if (PDF >= 0.5F)
+                    if (douglasFirProportion >= 0.5F)
                     {
                         A1MOD = 1.0F;
                     }
-                    else if (PTF >= 0.6666667F)
+                    else if (trueFirProportion >= 0.6666667F)
                     {
-                        A1MOD = TFMOD;
+                        A1MOD = trueFirModifier;
                     }
-                    else if (PPP >= 0.6666667F)
+                    else if (ponderosaProportion >= 0.6666667F)
                     {
-                        A1MOD = OCMOD;
+                        A1MOD = hemlockModifier;
                     }
                     else
                     {
-                        A1MOD = PDF + TFMOD * PTF + OCMOD * PPP;
+                        A1MOD = douglasFirProportion + trueFirModifier * trueFirProportion + hemlockModifier * ponderosaProportion;
                     }
                     break;
                 case Variant.Nwo:
                 case Variant.Smc:
-                    if (configuration.MSDI_2 > 0.0F)
+                    trueFirModifier = 1.03481817F;
+                    if (configuration.TrueFirMaximumSdi > 0.0F)
                     {
-                        TFMOD = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.MSDI_2)) / TEMPA1;
+                        trueFirModifier = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.TrueFirMaximumSdi)) / TEMPA1;
                     }
-                    else
+                    // Based on Johnson's (2000) analysis of Max. SDI for western hemlock
+                    hemlockModifier = 1.014293245F;
+                    if (configuration.HemlockMaximumSdi > 0.0F)
                     {
-                        TFMOD = 1.03481817F;
-                    }
-                    if (configuration.MSDI_3 > 0.0F)
-                    {
-                        OCMOD = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.MSDI_3)) / TEMPA1;
-                    }
-                    else
-                    {
-                        // Based on Johnson's (2000) analysis of Max. SDI for western hemlock
-                        OCMOD = 1.014293245F;
+                        hemlockModifier = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.HemlockMaximumSdi)) / TEMPA1;
                     }
 
-                    float PWH;
-                    if (TOTBA > 0.0F)
-                    {
-                        PWH = BAGRP[2] / TOTBA;
-                    }
-                    else
-                    {
-                        PWH = 0.0F;
-                    }
-                    if (PDF >= 0.5F)
+                    if (douglasFirProportion >= 0.5F)
                     {
                         A1MOD = 1.0F;
                     }
-                    else if (PWH >= 0.5F)
+                    else if (hemlockProportion >= 0.5F)
                     {
-                        A1MOD = OCMOD;
+                        A1MOD = hemlockModifier;
                     }
-                    else if (PTF >= 0.6666667)
+                    else if (trueFirProportion >= 0.6666667)
                     {
-                        A1MOD = TFMOD;
+                        A1MOD = trueFirModifier;
                     }
                     else
                     {
-                        A1MOD = PDF + OCMOD * PWH + TFMOD * PTF;
+                        A1MOD = douglasFirProportion + hemlockModifier * hemlockProportion + trueFirModifier * trueFirProportion;
                     }
                     break;
                 case Variant.Rap:
@@ -363,6 +322,7 @@ namespace Osu.Cof.Organon
             if (A1MOD <= 0.0F)
             {
                 // BUGBUG: silently ignores error condition
+                //Debug.Assert(A1MOD > 0.0F);
                 A1MOD = 1.0F;
             }
 

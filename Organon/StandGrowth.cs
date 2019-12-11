@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Organon
@@ -16,11 +17,11 @@ namespace Osu.Cof.Organon
         /// <param name="BABT"></param>
         /// <param name="BART"></param>
         /// <param name="YST">Years thinning performed?</param>
-        public static void EXECUTE(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, 
+        public static void EXECUTE(int simulationStep, OrganonConfiguration configuration, Stand stand, Dictionary<FiaCode, float[]> ACALIB, float[] PN, float[] YSF, 
                                    float BABT, float[] BART, float[] YST)
         {
             // BUGBUG: simulationStep largely duplicates stand age
-            ValidateArguments(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int NSPN, out int BIG6, out int BNXT);
+            ValidateArguments(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int BIG6, out int BNXT);
 
             // BUGBUG: 5 * simulationStep is incorrect for RAP
             int simulationYear = Constant.DefaultTimeStepInYears * simulationStep;
@@ -31,32 +32,35 @@ namespace Osu.Cof.Organon
                 FCYCLE = 1;
             }
 
-            float[,] CALIB = new float[NSPN, 3];
-            for (int speciesGroupIndex = 0; speciesGroupIndex < NSPN; ++speciesGroupIndex)
+            Dictionary<FiaCode, float[]> CALIB = new Dictionary<FiaCode, float[]>(ACALIB.Count);
+            foreach (KeyValuePair<FiaCode, float[]> species in ACALIB)
             {
+                float[] speciesCalibration = new float[6];
+                CALIB.Add(species.Key, speciesCalibration);
+
                 if (configuration.CalibrateHeight)
                 {
-                    CALIB[speciesGroupIndex, 0] = (1.0F + ACALIB[speciesGroupIndex, 0]) / 2.0F + (float)Math.Pow(0.5, 0.5 * simulationStep) * ((ACALIB[speciesGroupIndex, 0] - 1.0F) / 2.0F);
+                    speciesCalibration[0] = (1.0F + ACALIB[species.Key][0]) / 2.0F + (float)Math.Pow(0.5, 0.5 * simulationStep) * ((ACALIB[species.Key][0] - 1.0F) / 2.0F);
                 }
                 else 
                 {
-                    CALIB[speciesGroupIndex, 0] = 1.0F;
+                    speciesCalibration[0] = 1.0F;
                 }
                 if (configuration.CalibrateCrownRatio)
                 {
-                    CALIB[speciesGroupIndex, 1] = (1.0F + ACALIB[speciesGroupIndex, 1]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[speciesGroupIndex, 1] - 1.0F) / 2.0F);
+                    speciesCalibration[1] = (1.0F + ACALIB[species.Key][1]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][1] - 1.0F) / 2.0F);
                 }
                 else 
                 {
-                    CALIB[speciesGroupIndex, 1] = 1.0F;
+                    speciesCalibration[1] = 1.0F;
                 }
                 if (configuration.CalibrateDiameter)
                 {
-                    CALIB[speciesGroupIndex, 2] = (1.0F + ACALIB[speciesGroupIndex, 2]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[speciesGroupIndex, 2] - 1.0F) / 2.0F);
+                    speciesCalibration[2] = (1.0F + ACALIB[species.Key][2]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][2] - 1.0F) / 2.0F);
                 }
                 else 
                 {
-                    CALIB[speciesGroupIndex, 2] = 1.0F;
+                    speciesCalibration[2] = 1.0F;
                 }
             }
 
@@ -78,7 +82,7 @@ namespace Osu.Cof.Organon
             float[] CCH = new float[41];
             CrownGrowth.CRNCLO(configuration.Variant, stand, CCH, out float _);
             float OLD = 0.0F;
-            TreeGrowth.GROW(ref simulationStep, configuration, stand, NSPN, ref TCYCLE, ref FCYCLE, densityBeforeGrowth, CALIB, PN, YF, BABT, BART,
+            TreeGrowth.GROW(ref simulationStep, configuration, stand, ref TCYCLE, ref FCYCLE, densityBeforeGrowth, CALIB, PN, YF, BABT, BART,
                             YT, CCH, ref OLD, redAlderAge, out StandDensity _);
 
             if (configuration.IsEvenAge == false)
@@ -197,14 +201,14 @@ namespace Osu.Cof.Organon
                 }
 
                 // BUGBUG inconsistent use of < IB rather than <= IB
-                if (stand.IsBigSixSpecies(treeIndex) && (growthEffectiveAge > IDXAGE))
+                if (configuration.Variant.IsBigSixSpecies(species) && (growthEffectiveAge > IDXAGE))
                 {
                     OLD += 1.0F;
                 }
             }
         }
 
-        public static void CROWN_CLOSURE(OrganonVariant variant, Stand stand, int NPTS, out float CC)
+        public static void CROWN_CLOSURE(OrganonVariant variant, Stand stand, out float CC)
         {
             float[] CCH = new float[41];
             CCH[40] = stand.Height[0];
@@ -219,7 +223,7 @@ namespace Osu.Cof.Organon
 
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                FiaCode species = stand.Species[treeIndex];
                 float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 float dbhInInches = stand.Dbh[treeIndex];
                 float heightInFeet  = stand.Height[treeIndex];
@@ -227,32 +231,32 @@ namespace Osu.Cof.Organon
 
                 float CL = crownRatio * heightInFeet;
                 float HCB = heightInFeet - CL;
-                float EXPFAC = expansionFactor / (float)NPTS;
+                float EXPFAC = expansionFactor / (float)stand.NumberOfPlots;
                 switch (variant.Variant)
                 {
                     case Variant.Swo:
-                        CrownGrowth.MCW_SWO(speciesGroup, dbhInInches, heightInFeet, out float MCW);
-                        CrownGrowth.LCW_SWO(speciesGroup, MCW, crownRatio, dbhInInches, heightInFeet, out float LCW);
-                        CrownGrowth.HLCW_SWO(speciesGroup, heightInFeet, crownRatio, out float HLCW);
-                        CrownGrowth.CALC_CC(variant, speciesGroup, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
+                        CrownGrowth.MCW_SWO(species, dbhInInches, heightInFeet, out float MCW);
+                        CrownGrowth.LCW_SWO(species, MCW, crownRatio, dbhInInches, heightInFeet, out float LCW);
+                        CrownGrowth.HLCW_SWO(species, heightInFeet, crownRatio, out float HLCW);
+                        CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
                         break;
                     case Variant.Nwo:
-                        CrownGrowth.MCW_NWO(speciesGroup, dbhInInches, heightInFeet, out MCW);
-                        CrownGrowth.LCW_NWO(speciesGroup, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
-                        CrownGrowth.HLCW_NWO(speciesGroup, heightInFeet, crownRatio, out HLCW);
-                        CrownGrowth.CALC_CC(variant, speciesGroup, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
+                        CrownGrowth.MCW_NWO(species, dbhInInches, heightInFeet, out MCW);
+                        CrownGrowth.LCW_NWO(species, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
+                        CrownGrowth.HLCW_NWO(species, heightInFeet, crownRatio, out HLCW);
+                        CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
                         break;
                     case Variant.Smc:
-                        CrownGrowth.MCW_SMC(speciesGroup, dbhInInches, heightInFeet, out MCW);
-                        CrownGrowth.LCW_SMC(speciesGroup, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
-                        CrownGrowth.HLCW_SMC(speciesGroup, heightInFeet, crownRatio, out HLCW);
-                        CrownGrowth.CALC_CC(variant, speciesGroup, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
+                        CrownGrowth.MCW_SMC(species, dbhInInches, heightInFeet, out MCW);
+                        CrownGrowth.LCW_SMC(species, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
+                        CrownGrowth.HLCW_SMC(species, heightInFeet, crownRatio, out HLCW);
+                        CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
                         break;
                     case Variant.Rap:
-                        CrownGrowth.MCW_RAP(speciesGroup, dbhInInches, heightInFeet, out MCW);
-                        CrownGrowth.LCW_RAP(speciesGroup, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
-                        CrownGrowth.HLCW_RAP(speciesGroup, heightInFeet, crownRatio, out HLCW);
-                        CrownGrowth.CALC_CC(variant, speciesGroup, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
+                        CrownGrowth.MCW_RAP(species, dbhInInches, heightInFeet, out MCW);
+                        CrownGrowth.LCW_RAP(species, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
+                        CrownGrowth.HLCW_RAP(species, heightInFeet, crownRatio, out HLCW);
+                        CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
                         break;
                     default:
                         throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
@@ -270,7 +274,7 @@ namespace Osu.Cof.Organon
         /// <param name="stand">Stand data.</param>
         /// <param name="NINGRO"></param>
         /// <param name="ACALIB"></param>
-        public static void INGRO_FILL(OrganonVariant variant, Stand stand, int NINGRO, float[,] ACALIB)
+        public static void INGRO_FILL(OrganonVariant variant, Stand stand, int NINGRO, Dictionary<FiaCode, float[]> ACALIB)
         {
             // ROUTINE TO CALCULATE MISSING CROWN RATIOS
             // BUGBUG: does this duplicate site index code elsewhere?
@@ -321,30 +325,30 @@ namespace Osu.Cof.Organon
                     continue;
                 }
 
-                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                FiaCode species = stand.Species[treeIndex];
                 float dbhInInches = stand.Dbh[treeIndex];
                 float RHT;
                 switch (variant.Variant)
                 {
                     case Variant.Swo:
-                        HeightGrowth.HD_SWO(speciesGroup, dbhInInches, out RHT);
+                        HeightGrowth.HD_SWO(species, dbhInInches, out RHT);
                         break;
                     case Variant.Nwo:
-                        HeightGrowth.HD_NWO(speciesGroup, dbhInInches, out RHT);
+                        HeightGrowth.HD_NWO(species, dbhInInches, out RHT);
                         break;
                     case Variant.Smc:
-                        HeightGrowth.HD_SMC(speciesGroup, dbhInInches, out RHT);
+                        HeightGrowth.HD_SMC(species, dbhInInches, out RHT);
                         break;
                     case Variant.Rap:
-                        HeightGrowth.HD_RAP(speciesGroup, dbhInInches, out RHT);
+                        HeightGrowth.HD_RAP(species, dbhInInches, out RHT);
                         break;
                     default:
                         throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
                 }
-                stand.Height[treeIndex] = 4.5F + ACALIB[speciesGroup, 0] * (RHT - 4.5F);
+                stand.Height[treeIndex] = 4.5F + ACALIB[species][0] * (RHT - 4.5F);
             }
 
-            Mortality.OldGro(stand, 0.0F, out float OG);
+            Mortality.OldGro(variant, stand, 0.0F, out float OG);
             StandDensity standDensity = new StandDensity(stand, variant);
             for (int treeIndex = stand.TreeRecordCount - NINGRO; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
@@ -355,7 +359,7 @@ namespace Osu.Cof.Organon
                 }
 
                 // CALCULATE HCB
-                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                FiaCode species = stand.Species[treeIndex];
                 float dbhInInches = stand.Dbh[treeIndex];
                 float heightInFeet = stand.Height[treeIndex];
                 float SCCFL = standDensity.GetCrownCompetitionFactorLarger(dbhInInches);
@@ -363,16 +367,16 @@ namespace Osu.Cof.Organon
                 switch (variant.Variant)
                 {
                     case Variant.Swo:
-                        CrownGrowth.HCB_SWO(speciesGroup, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
+                        CrownGrowth.HCB_SWO(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
                         break;
                     case Variant.Nwo:
-                        CrownGrowth.HCB_NWO(speciesGroup, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
+                        CrownGrowth.HCB_NWO(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
                         break;
                     case Variant.Smc:
-                        CrownGrowth.HCB_SMC(speciesGroup, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
+                        CrownGrowth.HCB_SMC(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
                         break;
                     case Variant.Rap:
-                        CrownGrowth.HCB_RAP(speciesGroup, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
+                        CrownGrowth.HCB_RAP(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
                         break;
                     default:
                         throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
@@ -385,7 +389,7 @@ namespace Osu.Cof.Organon
                 {
                     HCB = 0.95F * heightInFeet;
                 }
-                stand.CrownRatio[treeIndex] = (1.0F - (HCB / heightInFeet)) * ACALIB[speciesGroup, 1];
+                stand.CrownRatio[treeIndex] = (1.0F - (HCB / heightInFeet)) * ACALIB[species][1];
             }
         }
 
@@ -393,18 +397,19 @@ namespace Osu.Cof.Organon
         /// Does argument checking and raises error flags if problems are found.
         /// </summary>
         /// <param name="simulationStep"></param>
+        /// <param name="variant"></param>
         /// <param name="configuration">Organon configuration settings.</param>
+        /// <param name="stand"></param>
         /// <param name="ACALIB"></param>
         /// <param name="PN"></param>
         /// <param name="YSF"></param>
         /// <param name="BABT"></param>
         /// <param name="BART"></param>
         /// <param name="YST"></param>
-        /// <param name="NSPN">Number of species groups supported by specified Organon variant.</param>
         /// <param name="BIG6"></param>
         /// <param name="BNXT"></param>
-        private static void ValidateArguments(int simulationStep, OrganonConfiguration configuration, Stand stand, float[,] ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
-                                 out int NSPN, out int BIG6, out int BNXT)
+        private static void ValidateArguments(int simulationStep, OrganonConfiguration configuration, Stand stand, Dictionary<FiaCode, float[]> ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
+                                              out int BIG6, out int BNXT)
         {
             if (stand.TreeRecordCount < 1)
             {
@@ -514,17 +519,17 @@ namespace Osu.Cof.Organon
                 throw new ArgumentOutOfRangeException(nameof(simulationStep));
             }
 
-            if (configuration.MSDI_1 > Constant.Maximum.MSDI)
+            if (configuration.DefaultMaximumSdi > Constant.Maximum.Sdi)
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_1));
+                throw new ArgumentOutOfRangeException(nameof(configuration.DefaultMaximumSdi));
             }
-            if (configuration.MSDI_2 > Constant.Maximum.MSDI)
+            if (configuration.TrueFirMaximumSdi > Constant.Maximum.Sdi)
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_2));
+                throw new ArgumentOutOfRangeException(nameof(configuration.TrueFirMaximumSdi));
             }
-            if (configuration.MSDI_3 > Constant.Maximum.MSDI)
+            if (configuration.HemlockMaximumSdi > Constant.Maximum.Sdi)
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.MSDI_3));
+                throw new ArgumentOutOfRangeException(nameof(configuration.HemlockMaximumSdi));
             }
 
             if (configuration.Genetics)
@@ -603,37 +608,14 @@ namespace Osu.Cof.Organon
             stand.Warnings.TreesOld = false;
             stand.Warnings.TreesYoung = false;
 
-            // BUGBUG: move NSPN into Stand and OrganonConfiguration
-            switch (configuration.Variant.Variant)
+            foreach (float[] speciesCalibration in ACALIB.Values)
             {
-                case Variant.Swo:
-                    NSPN = 18;
-                    break;
-                case Variant.Nwo:
-                case Variant.Smc:
-                    NSPN = 11;
-                    break;
-                case Variant.Rap:
-                    NSPN = 7;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
-            }
-
-            // BUGBUG should check against species group count from variant configuration
-            int speciesGroupCount = ACALIB.GetLength(0);
-            if ((speciesGroupCount < NSPN) || (ACALIB.GetLength(0) < 3))
-            {
-                throw new ArgumentOutOfRangeException(nameof(ACALIB));
-            }
-            for (int speciesGroupIndex = 0; speciesGroupIndex < speciesGroupCount; ++speciesGroupIndex)
-            {
-                for (int I = 0; I < 3; ++I)
+                if ((speciesCalibration.Length != 6) ||
+                    (speciesCalibration[0] < 0.5F) || (speciesCalibration[0] > 2.0F) ||
+                    (speciesCalibration[1] < 0.5F) || (speciesCalibration[1] > 2.0F) ||
+                    (speciesCalibration[2] < 0.5F) || (speciesCalibration[2] > 2.0F))
                 {
-                    if ((ACALIB[speciesGroupIndex, I] > 2.0F) || (ACALIB[speciesGroupIndex, I] < 0.5F))
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(ACALIB));
-                    }
+                    throw new ArgumentOutOfRangeException(nameof(ACALIB));
                 }
             }
 
@@ -675,7 +657,6 @@ namespace Osu.Cof.Organon
             float maxPonderosaHeight = 0.0F;
             float maxIncenseCedarHeight = 0.0F;
             float maxRedAlderHeight = 0.0F;
-            int IIB = stand.MaxBigSixSpeciesGroupIndex;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 FiaCode speciesCode = stand.Species[treeIndex];
@@ -733,14 +714,7 @@ namespace Osu.Cof.Organon
                         break;
                 }
 
-                int speciesGroup = configuration.Variant.GetSpeciesGroup(speciesCode);
-                stand.SpeciesGroup[treeIndex] = speciesGroup;
-                if (configuration.Variant.Variant == Variant.Rap)
-                {
-                    // BUGBUG: encapsulation violation - move this into variant configuration
-                    IIB = 1;
-                }
-                if (speciesGroup < IIB)
+                if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]))
                 {
                     ++BIG6;
                     if (stand.LiveExpansionFactor[treeIndex] < 0.0F)
@@ -766,14 +740,13 @@ namespace Osu.Cof.Organon
                 float basalArea = expansionFactor * dbhInInches * dbhInInches;
                 standBasalArea += basalArea;
 
-                int speciesGroup = stand.SpeciesGroup[treeIndex];
-                if (speciesGroup < IIB)
+                FiaCode species = stand.Species[treeIndex];
+                if (configuration.Variant.IsBigSixSpecies(species))
                 {
                     standBigSixBasalArea += basalArea;
                 }
                 if (configuration.Variant.Variant == Variant.Swo)
                 {
-                    FiaCode species = stand.Species[treeIndex];
                     if ((species == FiaCode.ArbutusMenziesii) || (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla) || (species == FiaCode.QuercusKelloggii))
                     {
                         standHardwoodBasalArea += basalArea;
@@ -781,8 +754,8 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            standBasalArea *= 0.005454154F / stand.NumberOfPlots;
-            standBigSixBasalArea *= 0.005454154F / stand.NumberOfPlots;
+            standBasalArea *= Constant.ForestersEnglish / stand.NumberOfPlots;
+            standBigSixBasalArea *= Constant.ForestersEnglish / stand.NumberOfPlots;
             if (standBigSixBasalArea < 0.0F)
             {
                 throw new NotSupportedException("Total basal area big six species is negative.");

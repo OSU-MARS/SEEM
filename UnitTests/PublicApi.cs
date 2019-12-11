@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Osu.Cof.Organon.Test
@@ -46,13 +47,13 @@ namespace Osu.Cof.Organon.Test
                 // get crown closure
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
-                StandGrowth.CROWN_CLOSURE(variant, stand, variant.SpeciesGroupCount, out float crownClosure);
+                StandGrowth.CROWN_CLOSURE(variant, stand, out float crownClosure);
                 Assert.IsTrue(crownClosure >= 0.0F);
                 Assert.IsTrue(crownClosure <= TestConstant.Maximum.CrownClosure);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // recalculate heights and crown ratios for all trees
-                float[,] CALIB = this.CreateCalibrationArray();
+                Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
                 StandGrowth.INGRO_FILL(variant, stand, stand.TreeRecordCount, CALIB);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
@@ -77,8 +78,10 @@ namespace Osu.Cof.Organon.Test
                 {
                     StandGrowth.EXECUTE(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
-                    stand.WriteTreesAsCsv(this.TestContext, variant, variant.GetEndYear(simulationStep), false);
+                    stand.SetSdiMax(configuration);
                     this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
+
+                    stand.WriteTreesAsCsv(this.TestContext, variant, variant.GetEndYear(simulationStep), false);
                 }
 
                 this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, treeGrowth, initialTreeData, stand);

@@ -6,6 +6,7 @@ namespace Osu.Cof.Organon
     internal static class Constant
     {
         public const int DefaultTimeStepInYears = 5;
+        public const float ForestersEnglish = 0.005454154F;
 
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
         {
@@ -44,7 +45,7 @@ namespace Osu.Cof.Organon
             FiaCode.TaxusBrevifolia,
             FiaCode.ArbutusMenziesii,
             FiaCode.ChrysolepisChrysophyllaVarChrysophylla,
-            FiaCode.LithocarpusDensiflorus,
+            FiaCode.NotholithocarpusDensiflorus,
             FiaCode.QuercusChrysolepis,
             FiaCode.AcerMacrophyllum,
             FiaCode.QuercusGarryana,
@@ -56,7 +57,7 @@ namespace Osu.Cof.Organon
 
         public static class Maximum
         {
-            public const float MSDI = 1000.0F;
+            public const float Sdi = 1000.0F;
             public const float SiteIndexInFeet = 300.0F;
         }
 

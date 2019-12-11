@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Osu.Cof.Organon
 {
@@ -15,7 +16,6 @@ namespace Osu.Cof.Organon
         /// <param name="simulationStep"></param>
         /// <param name="configuration">Organon configuration settings.</param>
         /// <param name="stand">Stand data.</param>
-        /// <param name="NSPN"></param>
         /// <param name="TCYCLE"></param>
         /// <param name="FCYCLE"></param>
         /// <param name="CALIB"></param>
@@ -27,9 +27,9 @@ namespace Osu.Cof.Organon
         /// <param name="CCH"></param>
         /// <param name="OLD"></param>
         /// <param name="RAAGE"></param>
-        public static void GROW(ref int simulationStep, OrganonConfiguration configuration, Stand stand, int NSPN,
+        public static void GROW(ref int simulationStep, OrganonConfiguration configuration, Stand stand,
                                 ref int TCYCLE, ref int FCYCLE, StandDensity densityBeforeGrowth,
-                                float[,] CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, 
+                                Dictionary<FiaCode, float[]> CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, 
                                 float[] CCH, ref float OLD, float RAAGE, out StandDensity densityAfterGrowth)
         {
             float DGMOD_GG = 1.0F;
@@ -54,7 +54,7 @@ namespace Osu.Cof.Organon
                 if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
                 {
                     ++treeRecordsWithExpansionFactorZero;
-                    if (stand.IsBigSixSpecies(treeIndex))
+                    if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]))
                     {
                         ++bigSixRecordsWithExpansionFactorZero;
                     }
@@ -87,7 +87,7 @@ namespace Osu.Cof.Organon
             // height growth for big six species
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                if (stand.IsBigSixSpecies(treeIndex))
+                if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]))
                 {
                     if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
                     {
@@ -121,7 +121,7 @@ namespace Osu.Cof.Organon
             // CALCULATE HTGRO FOR 'OTHER' & CROWN ALL SPECIES
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
-                if (stand.IsBigSixSpecies(treeIndex) == false)
+                if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]) == false)
                 {
                     if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
                     {
@@ -164,14 +164,14 @@ namespace Osu.Cof.Organon
             }
 
             // reduce calibration ratios
-            for (int speciesGroupIndex = 0; speciesGroupIndex < NSPN; ++speciesGroupIndex)
+            foreach (float[] speciesCalibration in CALIB.Values)
             {
-                for (int I = 0; I < 3; ++I)
+                for (int index = 0; index < 3; ++index)
                 {
-                    if (CALIB[speciesGroupIndex, I] < 1.0F || CALIB[speciesGroupIndex, I] > 1.0F)
+                    if (speciesCalibration[index] != 1.0F)
                     {
-                        float MCALIB = (1.0F + CALIB[speciesGroupIndex, I + 2]) / 2.0F;
-                        CALIB[speciesGroupIndex, I] = MCALIB + (float)Math.Sqrt(0.5) * (CALIB[speciesGroupIndex, I] - MCALIB);
+                        float MCALIB = (1.0F + speciesCalibration[index + 2]) / 2.0F;
+                        speciesCalibration[index] = MCALIB + (float)Math.Sqrt(0.5) * (speciesCalibration[index] - MCALIB);
                     }
                 }
             }

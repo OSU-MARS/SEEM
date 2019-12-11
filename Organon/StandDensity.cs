@@ -53,25 +53,25 @@
 
                 float dbhInInches = stand.Dbh[treeIndex];
                 float heightInFeet = stand.Height[treeIndex];
-                float basalArea = expansionFactor * 0.005454154F * dbhInInches * dbhInInches;
+                float basalArea = stand.GetBasalArea(treeIndex);
                 this.BasalAreaPerAcre += basalArea;
                 this.TreesPerAcre += expansionFactor;
 
-                int speciesGroup = stand.SpeciesGroup[treeIndex];
+                FiaCode species = stand.Species[treeIndex];
                 float maxCrownWidth;
                 switch (variant.Variant)
                 {
                     case Variant.Swo:
-                        CrownGrowth.MCW_SWO(speciesGroup, dbhInInches, heightInFeet, out maxCrownWidth);
+                        CrownGrowth.MCW_SWO(species, dbhInInches, heightInFeet, out maxCrownWidth);
                         break;
                     case Variant.Nwo:
-                        CrownGrowth.MCW_NWO(speciesGroup, dbhInInches, heightInFeet, out maxCrownWidth);
+                        CrownGrowth.MCW_NWO(species, dbhInInches, heightInFeet, out maxCrownWidth);
                         break;
                     case Variant.Smc:
-                        CrownGrowth.MCW_SMC(speciesGroup, dbhInInches, heightInFeet, out maxCrownWidth);
+                        CrownGrowth.MCW_SMC(species, dbhInInches, heightInFeet, out maxCrownWidth);
                         break;
                     case Variant.Rap:
-                        CrownGrowth.MCW_RAP(speciesGroup, dbhInInches, heightInFeet, out maxCrownWidth);
+                        CrownGrowth.MCW_RAP(species, dbhInInches, heightInFeet, out maxCrownWidth);
                         break;
                     default:
                         throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
