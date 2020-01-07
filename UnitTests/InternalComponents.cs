@@ -43,39 +43,10 @@ namespace Osu.Cof.Organon.Test
                         Assert.IsTrue(crownCompetitionFactorLarger >= 0.0F);
                         Assert.IsTrue(crownCompetitionFactorLarger < TestConstant.Maximum.StandCrownCompetitionFactor);
 
-                        float heightToCrownBaseInFeet;
-                        float heightToLargestCrownWidthInFeet;
-                        float largestCrownWidthInFeet;
-                        float maximumCrownWidthInFeet;
-                        switch (variant.Variant)
-                        {
-                            case Variant.Nwo:
-                                CrownGrowth.HCB_NWO(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG, out heightToCrownBaseInFeet);
-                                CrownGrowth.HLCW_NWO(species, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
-                                CrownGrowth.MCW_NWO(species, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
-                                CrownGrowth.LCW_NWO(species, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
-                                break;
-                            case Variant.Rap:
-                                CrownGrowth.HCB_RAP(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG, out heightToCrownBaseInFeet);
-                                CrownGrowth.HLCW_RAP(species, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
-                                CrownGrowth.MCW_RAP(species, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
-                                CrownGrowth.LCW_RAP(species, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
-                                break;
-                            case Variant.Smc:
-                                CrownGrowth.HCB_SMC(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG, out heightToCrownBaseInFeet);
-                                CrownGrowth.HLCW_SMC(species, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
-                                CrownGrowth.MCW_SMC(species, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
-                                CrownGrowth.LCW_SMC(species, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
-                                break;
-                            case Variant.Swo:
-                                CrownGrowth.HCB_SWO(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG, out heightToCrownBaseInFeet);
-                                CrownGrowth.HLCW_SWO(species, heightInFeet, crownRatio, out heightToLargestCrownWidthInFeet);
-                                CrownGrowth.MCW_SWO(species, dbhInInches, heightInFeet, out maximumCrownWidthInFeet);
-                                CrownGrowth.LCW_SWO(species, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet, out largestCrownWidthInFeet);
-                                break;
-                            default:
-                                throw Organon.OrganonVariant.CreateUnhandledVariantException(variant.Variant);
-                        }
+                        float maximumCrownWidthInFeet = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
+                        float largestCrownWidthInFeet = variant.GetLargestCrownWidth(species, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet);
+                        float heightToCrownBaseInFeet = variant.GetHeightToCrownBase(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG);
+                        float heightToLargestCrownWidthInFeet = variant.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
                         // (DOUG? can height to largest crown width be less than height to crown base?)
                         Assert.IsTrue(heightToCrownBaseInFeet >= 0.0F);
                         Assert.IsTrue(heightToCrownBaseInFeet <= heightInFeet);
@@ -248,24 +219,7 @@ namespace Osu.Cof.Organon.Test
                     FiaCode species = stand.Species[treeIndex];
                     float dbhInInches = stand.Dbh[treeIndex];
                     float heightInFeet = stand.Height[treeIndex];
-                    float predictedHeightInFeet;
-                    switch (variant.Variant)
-                    {
-                        case Variant.Nwo:
-                            HeightGrowth.HD_NWO(species, dbhInInches, out predictedHeightInFeet);
-                            break;
-                        case Variant.Rap:
-                            HeightGrowth.HD_RAP(species, dbhInInches, out predictedHeightInFeet);
-                            break;
-                        case Variant.Smc:
-                            HeightGrowth.HD_SMC(species, dbhInInches, out predictedHeightInFeet);
-                            break;
-                        case Variant.Swo:
-                            HeightGrowth.HD_SWO(species, dbhInInches, out predictedHeightInFeet);
-                            break;
-                        default:
-                            throw Organon.OrganonVariant.CreateUnhandledVariantException(variant.Variant);
-                    }
+                    float predictedHeightInFeet = variant.GetPredictedHeight(species, dbhInInches);
                     Assert.IsTrue(predictedHeightInFeet >= 0.0F);
                     // TODO: make upper limit of height species specific
                     Assert.IsTrue(predictedHeightInFeet < TestConstant.Maximum.HeightInFeet);

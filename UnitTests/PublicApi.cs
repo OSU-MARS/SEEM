@@ -20,7 +20,7 @@ namespace Osu.Cof.Organon.Test
             string plotFileName = "HPNF.xlsx";
             //string plotFileName = "HPNF plot 1.xlsx";
             PspStand huffmanPeak = new PspStand(plotFileName, "HPNF", 0.2F);
-            OrganonVariant variant = new OrganonVariant(Variant.Swo); // SWO allows mapping ABAM -> ABGR and ABPR -> ABCO
+            OrganonVariant variant = new OrganonVariantSwo(); // SWO allows mapping ABAM -> ABGR and ABPR -> ABCO
             TestStand stand = huffmanPeak.ToOrganonStand(variant, 80.0F);
             int startYear = 1980;
             stand.WriteCompetitionAsCsv("HPNF initial competition.csv", variant, startYear);
@@ -95,7 +95,7 @@ namespace Osu.Cof.Organon.Test
         {
             string plotFileName = "RS39 lower half.xlsx";
             PspStand rs39 = new PspStand(plotFileName, "RS39 lower half", 0.154441F);
-            OrganonVariant variant = new OrganonVariant(Variant.Nwo);
+            OrganonVariant variant = new OrganonVariantNwo();
             TestStand stand = rs39.ToOrganonStand(variant, 105.0F);
             int startYear = 1992;
             stand.WriteCompetitionAsCsv("RS39 lower half initial competition.csv", variant, startYear);

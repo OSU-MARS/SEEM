@@ -58,24 +58,7 @@
                 this.TreesPerAcre += expansionFactor;
 
                 FiaCode species = stand.Species[treeIndex];
-                float maxCrownWidth;
-                switch (variant.Variant)
-                {
-                    case Variant.Swo:
-                        CrownGrowth.MCW_SWO(species, dbhInInches, heightInFeet, out maxCrownWidth);
-                        break;
-                    case Variant.Nwo:
-                        CrownGrowth.MCW_NWO(species, dbhInInches, heightInFeet, out maxCrownWidth);
-                        break;
-                    case Variant.Smc:
-                        CrownGrowth.MCW_SMC(species, dbhInInches, heightInFeet, out maxCrownWidth);
-                        break;
-                    case Variant.Rap:
-                        CrownGrowth.MCW_RAP(species, dbhInInches, heightInFeet, out maxCrownWidth);
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
-                }
+                float maxCrownWidth = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
 
                 // 0.001803 = 100 * pi / (4 * 42560) from definition of crown competition factor
                 float crownCompetitionFactor = 0.001803F * maxCrownWidth * maxCrownWidth * expansionFactor;

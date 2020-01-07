@@ -87,135 +87,6 @@ namespace Osu.Cof.Organon
         }
 
         /// <summary>
-        /// Predict height from DBH for southwest Oregon species.
-        /// </summary>
-        /// <param name="species">Tree's species.</param>
-        /// <param name="dbhInInches">Diameter at breast height (inches).</param>
-        /// <param name="predictedHeight">Predicted height (feet).</param>
-        public static void HD_SWO(FiaCode species, float dbhInInches, out float predictedHeight)
-        {
-            // NEW HEIGHT/DIAMETER PARAMETERS FOR UNDAMAGED TREES.EXCEPT RC, WO, AND RA(3 parameters - all species)
-            float B0;
-            float B1;
-            float B2;
-            switch(species)
-            {
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.PseudotsugaMenziesii:
-                    B0 = 7.133682298F;
-                    B1 = -5.433744897F;
-                    B2 = -0.266398088F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.AbiesConcolor:
-                case FiaCode.AbiesGrandis:
-                    B0 = 6.75286569F;
-                    B1 = -5.52614439F;
-                    B2 = -0.33012156F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.PinusPonderosa:
-                    B0 = 6.27233557F;
-                    B1 = -5.57306985F;
-                    B2 = -0.40384171F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.PinusLambertiana:
-                    B0 = 5.81876360F;
-                    B1 = -5.31082668F;
-                    B2 = -0.47349388F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.CalocedrusDecurrens:
-                    B0 = 10.04621768F;
-                    B1 = -8.72915115F;
-                    B2 = -0.14040106F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.TsugaHeterophylla:
-                    B0 = 6.58804F;
-                    B1 = -5.25312496F;
-                    B2 = -0.31895401F;
-                    break;
-                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-                case FiaCode.ThujaPlicata:
-                    B0 = 6.14817441F;
-                    B1 = -5.40092761F;
-                    B2 = -0.38922036F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.TaxusBrevifolia:
-                    B0 = 5.10707208F;
-                    B1 = -3.28638769F;
-                    B2 = -0.24016101F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.ArbutusMenziesii:
-                    B0 = 6.53558288F;
-                    B1 = -4.69059053F;
-                    B2 = -0.24934807F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.ChrysolepisChrysophyllaVarChrysophylla:
-                    B0 = 9.2251518F;
-                    B1 = -7.65310387F;
-                    B2 = -0.15480725F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.NotholithocarpusDensiflorus:
-                    B0 = 8.49655416F;
-                    B1 = -6.68904033F;
-                    B2 = -0.16105112F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.QuercusChrysolepis:
-                    B0 = 9.01612971F;
-                    B1 = -7.34813829F;
-                    B2 = -0.134025626F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.AcerMacrophyllum:
-                    B0 = 5.20018445F;
-                    B1 = -2.86671078F;
-                    B2 = -0.42255220F;
-                    break;
-                // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-                case FiaCode.QuercusGarryana:
-                    B0 = 4.69753118F;
-                    B1 = -3.51586969F;
-                    B2 = -0.57665068F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.QuercusKelloggii:
-                    B0 = 5.04832439F;
-                    B1 = -3.32715915F;
-                    B2 = -0.43456034F;
-                    break;
-                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-                case FiaCode.AlnusRubra:
-                    B0 = 5.59759126F;
-                    B1 = -3.19942952F;
-                    B2 = -0.38783403F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.CornusNuttallii:
-                    B0 = 7.49095931F;
-                    B1 = -5.40872209F;
-                    B2 = -0.16874962F;
-                    break;
-                // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
-                case FiaCode.Salix:
-                    B0 = 3.26840527F;
-                    B1 = -0.95270859F;
-                    B2 = -0.98015696F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
-            predictedHeight = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
-        }
-
-        /// <summary>
         /// 
         /// </summary>
         /// <param name="treeIndex">Index of tree to grow in tree data.</param>
@@ -263,8 +134,8 @@ namespace Osu.Cof.Organon
             // BUGBUG: move old index age to variant capabilities
             FiaCode species = stand.Species[treeIndex];
             float growthEffectiveAge;
+            float potentialHeightGrowth;
             float oldIndexAge;
-            float heightGrowthInFeet;
             switch (variant.Variant)
             {
                 case Variant.Swo:
@@ -283,9 +154,8 @@ namespace Osu.Cof.Organon
                         }
                         treatAsDouglasFir = true;
                     }
-                    HS_HG(treatAsDouglasFir, siteIndexFromGround, stand.Height[treeIndex], out growthEffectiveAge, out float PHTGRO);
+                    HS_HG(treatAsDouglasFir, siteIndexFromGround, stand.Height[treeIndex], out growthEffectiveAge, out potentialHeightGrowth);
                     oldIndexAge = 500.0F;
-                    HG_SWO(species, PHTGRO, CR, TCCH, out heightGrowthInFeet);
                     break;
                 case Variant.Nwo:
                     float GP = 5.0F;
@@ -293,16 +163,15 @@ namespace Osu.Cof.Organon
                     {
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                         siteIndexFromGround = SI_2 + 4.5F;
-                        F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
+                        F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     else
                     {
                         // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                         siteIndexFromGround = SI_1 + 4.5F;
-                        BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
+                        BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     oldIndexAge = 120.0F;
-                    HG_NWO(species, PHTGRO, CR, TCCH, out heightGrowthInFeet);
                     break;
                 case Variant.Smc:
                     GP = 5.0F;
@@ -311,16 +180,15 @@ namespace Osu.Cof.Organon
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK
                         // DOMINANT HEIGHT GROWTH
                         siteIndexFromGround = SI_2 + 4.5F;
-                        F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
+                        F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     else
                     {
                         // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                         siteIndexFromGround = SI_1 + 4.5F;
-                        BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
+                        BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     oldIndexAge = 120.0F;
-                    HG_SMC(species, PHTGRO, CR, TCCH, out heightGrowthInFeet);
                     break;
                 case Variant.Rap:
                     GP = 1.0F;
@@ -328,26 +196,27 @@ namespace Osu.Cof.Organon
                     {
                         // POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM(2009) RED ALDER TOP HEIGHT GROWTH
                         siteIndexFromGround = SI_1 + 4.5F;
-                        RedAlder.WHHLB_HG(siteIndexFromGround, PDEN, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
+                        RedAlder.WHHLB_HG(siteIndexFromGround, PDEN, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     else if (species == FiaCode.TsugaHeterophylla)
                     {
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                         siteIndexFromGround = -0.432F + 0.899F * (SI_2 + 4.5F);
-                        F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
+                        F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     else
                     {
                         // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                         siteIndexFromGround = SI_2 + 4.5F;
-                        BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out PHTGRO);
+                        BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     oldIndexAge = 30.0F;
-                    HG_RAP(species, PHTGRO, CR, TCCH, out heightGrowthInFeet);
                     break;
                 default:
                     throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
             }
+
+            float heightGrowthInFeet = variant.GrowHeightBigSix(species, potentialHeightGrowth, CR, TCCH);
             if (variant.IsBigSixSpecies(species) && (growthEffectiveAge > oldIndexAge))
             {
                 OLD += 1.0F;
@@ -366,29 +235,8 @@ namespace Osu.Cof.Organon
             Debug.Assert(variant.IsBigSixSpecies(species) == false);
 
             float previousDbhInInches = dbhInInches - stand.DbhGrowth[treeIndex];
-            float PRDHT1;
-            float PRDHT2;
-            switch (variant.Variant)
-            {
-                case Variant.Swo:
-                    HD_SWO(species, previousDbhInInches, out PRDHT1);
-                    HD_SWO(species, dbhInInches, out PRDHT2);
-                    break;
-                case Variant.Nwo:
-                    HD_NWO(species, previousDbhInInches, out PRDHT1);
-                    HD_NWO(species, dbhInInches, out PRDHT2);
-                    break;
-                case Variant.Smc:
-                    HD_SMC(species, previousDbhInInches, out PRDHT1);
-                    HD_SMC(species, dbhInInches, out PRDHT2);
-                    break;
-                case Variant.Rap:
-                    HD_RAP(species, previousDbhInInches, out PRDHT1);
-                    HD_RAP(species, dbhInInches, out PRDHT2);
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
-            }
+            float PRDHT1 = variant.GetPredictedHeight(species, previousDbhInInches);
+            float PRDHT2 = variant.GetPredictedHeight(species, dbhInInches);
             PRDHT1 = 4.5F + CALIB[species][0] * (PRDHT1 - 4.5F);
             PRDHT2 = 4.5F + CALIB[species][0] * (PRDHT2 - 4.5F);
             float PRDHT = (PRDHT2 / PRDHT1) * stand.Height[treeIndex];
@@ -414,222 +262,6 @@ namespace Osu.Cof.Organon
             {
                 stand.HeightGrowth[treeIndex] = PRDHT - stand.Height[treeIndex];
             }
-        }
-
-        public static void HD_NWO(FiaCode species, float dbhInInches, out float predictedHeightInFeet)
-        {
-            // HEIGHT/DIAMETER PARAMETERS(3 parameters - all species)
-            float B0;
-            float B1;
-            float B2;
-            switch (species)
-            {
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.PseudotsugaMenziesii:
-                    B0 = 7.04524F;
-                    B1 = -5.16836F;
-                    B2 = -0.253869F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.AbiesGrandis:
-                    B0 = 7.42808F;
-                    B1 = -5.80832F;
-                    B2 = -0.240317F;
-                    break;
-                // Johnson(2000) Willamette Industries Report
-                case FiaCode.TsugaHeterophylla:
-                    B0 = 5.93792F;
-                    B1 = -4.43822F;
-                    B2 = -0.411373F;
-                    break;
-                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-                case FiaCode.ThujaPlicata:
-                    B0 = 6.14817441F;
-                    B1 = -5.40092761F;
-                    B2 = -0.38922036F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.TaxusBrevifolia:
-                    B0 = 9.30172F;
-                    B1 = -7.50951F;
-                    B2 = -0.100000F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.ArbutusMenziesii:
-                    B0 = 5.84487F;
-                    B1 = -3.84795F;
-                    B2 = -0.289213F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.AcerMacrophyllum:
-                    B0 = 5.21462F;
-                    B1 = -2.70252F;
-                    B2 = -0.354756F;
-                    break;
-                // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-                case FiaCode.QuercusGarryana:
-                    B0 = 4.69753118F;
-                    B1 = -3.51586969F;
-                    B2 = -0.57665068F;
-                    break;
-                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-                case FiaCode.AlnusRubra:
-                    B0 = 5.59759126F;
-                    B1 = -3.19942952F;
-                    B2 = -0.38783403F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.CornusNuttallii:
-                    B0 = 4.49727F;
-                    B1 = -2.07667F;
-                    B2 = -0.388650F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.Salix:
-                    B0 = 4.88361F;
-                    B1 = -2.47605F;
-                    B2 = -0.309050F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
-            predictedHeightInFeet = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
-        }
-
-        public static void HD_RAP(FiaCode species, float dbhInInches, out float predictedHeightInFeet)
-        {
-            // HEIGHT/DIAMETER PARAMETERS(3 parameters - all species)
-            float B0;
-            float B1;
-            float B2;
-            switch (species)
-            {
-                // Hann, Bluhm, and Hibbs(2011) Forest Biometrics Research Paper 1
-                case FiaCode.AlnusRubra:
-                    B0 = 6.75650139F;
-                    B1 = -4.6252377F;
-                    B2 = -0.23208200F;
-                    break;
-                // Hanus, Marshall, and Hann(1999) FRL Research Contribution 25
-                case FiaCode.PseudotsugaMenziesii:
-                    B0 = 7.262195456F;
-                    B1 = -5.899759104F;
-                    B2 = -0.287207389F;
-                    break;
-                // Hanus, Marshall, and Hann(1999) FRL Research Contribution 25
-                case FiaCode.TsugaHeterophylla:
-                    B0 = 6.555344622F;
-                    B1 = -5.137174162F;
-                    B2 = -0.364550800F;
-                    break;
-                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-                case FiaCode.ThujaPlicata:
-                    B0 = 6.14817441F;
-                    B1 = -5.40092761F;
-                    B2 = -0.38922036F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.AcerMacrophyllum:
-                    B0 = 5.21462F;
-                    B1 = -2.70252F;
-                    B2 = -0.354756F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.CornusNuttallii:
-                    B0 = 4.49727F;
-                    B1 = -2.07667F;
-                    B2 = -0.388650F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.Salix:
-                    B0 = 4.88361F;
-                    B1 = -2.47605F;
-                    B2 = -0.309050F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
-            predictedHeightInFeet = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
-        }
-
-        public static void HD_SMC(FiaCode species, float dbhInInches, out float predictedHeightInFeet)
-        {
-            // HEIGHT/DIAMETER PARAMETERS(3 parameters - all species)
-            float B0;
-            float B1;
-            float B2;
-            switch (species)
-            {
-                // Hanus, Marshall, and Hann(1999) FRL Research Contribution 25
-                case FiaCode.PseudotsugaMenziesii:
-                    B0 = 7.262195456F;
-                    B1 = -5.899759104F;
-                    B2 = -0.287207389F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.AbiesGrandis:
-                    B0 = 7.42808F;
-                    B1 = -5.80832F;
-                    B2 = -0.240317F;
-                    break;
-                // Hanus, Marshall, and Hann(1999) FRL Research Contribution 25
-                case FiaCode.TsugaHeterophylla:
-                    B0 = 6.555344622F;
-                    B1 = -5.137174162F;
-                    B2 = -0.364550800F;
-                    break;
-                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
-                case FiaCode.ThujaPlicata:
-                    B0 = 6.14817441F;
-                    B1 = -5.40092761F;
-                    B2 = -0.38922036F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.TaxusBrevifolia:
-                    B0 = 9.30172F;
-                    B1 = -7.50951F;
-                    B2 = -0.100000F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.ArbutusMenziesii:
-                    B0 = 5.84487F;
-                    B1 = -3.84795F;
-                    B2 = -0.289213F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.AcerMacrophyllum:
-                    B0 = 5.21462F;
-                    B1 = -2.70252F;
-                    B2 = -0.354756F;
-                    break;
-                // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
-                case FiaCode.QuercusGarryana:
-                    B0 = 4.69753118F;
-                    B1 = -3.51586969F;
-                    B2 = -0.57665068F;
-                    break;
-                // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
-                case FiaCode.AlnusRubra:
-                    B0 = 5.59759126F;
-                    B1 = -3.19942952F;
-                    B2 = -0.38783403F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.CornusNuttallii:
-                    B0 = 4.49727F;
-                    B1 = -2.07667F;
-                    B2 = -0.388650F;
-                    break;
-                // Wang and Hann(1988) FRL Research Paper 51
-                case FiaCode.Salix:
-                    B0 = 4.88361F;
-                    B1 = -2.47605F;
-                    B2 = -0.309050F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
-            predictedHeightInFeet = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
         }
 
         private static void HG_FERT(int simulationStep, OrganonVariant variant, FiaCode species, float siteIndexFromBreastHeight, float[] PN, float[] YF, out float FERTADJ)
@@ -677,260 +309,6 @@ namespace Osu.Cof.Organon
             float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[0]) + PF4 * Math.Pow(siteIndexFromBreastHeight / 100.0, PF5));
             FERTADJ = 1.0F + PF1 * (float)(Math.Pow(PN[0] / 800.0 + FERTX1, PF2) * FERTX2) * FALDWN;
             Debug.Assert(FERTADJ >= 1.0F);
-        }
-
-        private static void HG_NWO(FiaCode species, float potentialHeightGrowth, float CR, float TCCH, out float HG)
-        {
-            float P1;
-            float P2;
-            float P3;
-            float P4;
-            float P5;
-            float P6;
-            float P7;
-            float P8;
-            switch (species)
-            {
-                // Hann, Marshall, and Hanus(2006) FRL Research Contribution ??
-                case FiaCode.PseudotsugaMenziesii:
-                    P1 = 0.655258886F;
-                    P2 = -0.006322913F;
-                    P3 = -0.039409636F;
-                    P4 = 0.5F;
-                    P5 = 0.597617316F;
-                    P6 = 2.0F;
-                    P7 = 0.631643636F;
-                    P8 = 1.010018427F;
-                    break;
-                // Ritchie and Hann(1990) FRL Research Paper 54
-                case FiaCode.AbiesGrandis:
-                    P1 = 1.0F;
-                    P2 = -0.0328142F;
-                    P3 = -0.0127851F;
-                    P4 = 1.0F;
-                    P5 = 6.19784F;
-                    P6 = 2.0F;
-                    P7 = 0.0F;
-                    P8 = 1.01F;
-                    break;
-                // Johnson(2002) Willamette Industries Report
-                case FiaCode.TsugaHeterophylla:
-                    P1 = 1.0F;
-                    P2 = -0.0384415F;
-                    P3 = -0.0144139F;
-                    P4 = 0.5F;
-                    P5 = 1.04409F;
-                    P6 = 2.0F;
-                    P7 = 0.0F;
-                    P8 = 1.03F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
-            float FCR = (float)(-P5 * Math.Pow(1.0F - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
-            float B0 = P1 * (float)Math.Exp(P2 * TCCH);
-            float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
-            float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
-            HG = potentialHeightGrowth * MODIFER * CRADJ;
-            Debug.Assert(HG > 0.0F);
-        }
-
-        private static void HG_RAP(FiaCode species, float potentialHeightGrowth, float CR, float TCCH, out float HG)
-        {
-            // WEIGHTED CENTRAL PAI PROCEDURE PARAMETERS FOR RED ALDER
-            // float[,] HGPAR = {
-            // 0.775118127 ,  0.655258886 ,  1.0         ,   // RA,DF,WH
-            // -0.0128743358, -0.006322913 , -0.0384415   ,   // RA,DF,WH
-            // -0.070294082 , -0.039409636 , -0.0144139   ,   // RA,DF,WH
-            // 0.5         ,  0.5         ,  0.5         ,   // RA,DF,WH
-            // 1.0         ,  0.597617316 ,  1.04409     ,   // RA,DF,WH
-            // 2.0         ,  2.0         ,  2.0         ,   // RA,DF,WH
-            // 0.120539836 ,  0.631643636 ,  0.0         ,   // RA,DF,WH
-            // 1.07563185  ,  1.010018427 ,  1.03        /   // RA,DF,WH
-            // };
-            float P1;
-            float P2;
-            float P3;
-            float P4;
-            float P5;
-            float P6;
-            float P7;
-            float P8;
-            switch(species)
-            {
-                // Hann, Bluhm, and Hibbs Red Alder Plantation Analysis
-                case FiaCode.AlnusRubra:
-                    P1 = 0.809837005F;
-                    P2 = -0.0134163653F;
-                    P3 = -0.0609398629F;
-                    P4 = 0.5F;
-                    P5 = 1.0F;
-                    P6 = 2.0F;
-                    P7 = 0.1469442410F;
-                    P8 = 1.0476380753F;
-                    break;
-                // Hann, Marshall, and Hanus(2006) FRL Research Contribution ??
-                case FiaCode.PseudotsugaMenziesii:
-                    P1 = 0.655258886F;
-                    P2 = -0.006322913F;
-                    P3 = -0.039409636F;
-                    P4 = 0.5F;
-                    P5 = 0.597617316F;
-                    P6 = 2.0F;
-                    P7 = 0.631643636F;
-                    P8 = 1.010018427F;
-                    break;
-                // Johnson(2002) Willamette Industries Report
-                case FiaCode.TsugaHeterophylla:
-                    P1 = 1.0F;
-                    P2 = -0.0384415F;
-                    P3 = -0.0144139F;
-                    P4 = 0.5F;
-                    P5 = 1.04409F;
-                    P6 = 2.0F;
-                    P7 = 0.0F;
-                    P8 = 1.03F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
-            float FCR = (float)(-P5 * Math.Pow(1.0 - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
-            float B0 = P1 * (float)Math.Exp(P2 * TCCH);
-            float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
-            float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
-            HG = potentialHeightGrowth * MODIFER * CRADJ;
-            Debug.Assert(HG > 0.0F);
-        }
-
-        private static void HG_SMC(FiaCode species, float potentialHeightGrowth, float CR, float TCCH, out float HG)
-        {
-            // DATA HGPAR/
-            // 1           0.655258886,  1.0      ,  1.0         ,               // DF,GF,WH
-            // 2          -0.006322913, -0.0328142, -0.0056949357,               // DF,GF,WH
-            // 3          -0.039409636, -0.0127851, -0.0018047267,               // DF,GF,WH
-            // 4           0.5        ,  1.0      ,  0.5         ,               // DF,GF,WH
-            // 5           0.597617316,  6.19784  ,  6.1978      ,               // DF,GF,WH
-            // 6           2.0        ,  2.0      ,  2.0         ,               // DF,GF,WH
-            // 7           0.631643636,  0.0      ,  0.0         ,               // DF,GF,WH
-            // 8           1.010018427,  1.01     ,  1.03        /               // DF,GF,WH
-            float P1;
-            float P2;
-            float P3;
-            float P4;
-            float P5;
-            float P6;
-            float P7;
-            float P8;
-            switch(species)
-            {
-                // Ritchie and Hann(1990) FRL Research Paper 54
-                case FiaCode.AbiesGrandis:
-                    P1 = 1.0F;
-                    P2 = -0.0328142F;
-                    P3 = -0.0127851F;
-                    P4 = 1.0F;
-                    P5 = 6.19784F;
-                    P6 = 2.0F;
-                    P7 = 0.0F;
-                    P8 = 1.01F;
-                    break;
-                case FiaCode.PseudotsugaMenziesii:
-                    P1 = 0.655258886F;
-                    P2 = -0.006322913F;
-                    P3 = -0.039409636F;
-                    P4 = 0.5F;
-                    P5 = 0.597617316F;
-                    P6 = 2.0F;
-                    P7 = 0.631643636F;
-                    P8 = 1.010018427F;
-                    break;
-                case FiaCode.TsugaHeterophylla:
-                    P1 = 1.0F;
-                    P2 = -0.0384415F;
-                    P3 = -0.0144139F;
-                    P4 = 0.5F;
-                    P5 = 1.04409F;
-                    P6 = 2.0F;
-                    P7 = 0.0F;
-                    P8 = 1.03F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
-            float FCR = (float)(-P5 * Math.Pow(1.0 - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
-            float B0 = P1 * (float)Math.Exp(P2 * TCCH);
-            float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
-            float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
-            HG = potentialHeightGrowth * MODIFER * CRADJ;
-            Debug.Assert(HG > 0.0F);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="species"></param>
-        /// <param name="potentialHeightGrowth"></param>
-        /// <param name="CR">Crown ratio.</param>
-        /// <param name="SCCH">Percent stand level crown closure at height.</param>
-        /// <param name="HG">Height growth in feet.</param>
-        private static void HG_SWO(FiaCode species, float potentialHeightGrowth, float CR, float SCCH, out float HG)
-        {
-            // Hann DW, Hanus ML. 2002. Enhanced height growth rate equations for SWO trees. FRL Research Contribution 41.
-            // https://ir.library.oregonstate.edu/concern/technical_reports/08612q05c
-            float a1 = 1.0F;
-            float a2;
-            float a3;
-            float k1 = 1.0F;
-            float k2;
-            float k3 = 2.0F;
-            float a5 = 0.0F;
-            float a0 = 1.0F;
-            switch (species)
-            {
-                case FiaCode.AbiesConcolor: // Tables 8 + 9 + other BUGBUG?
-                case FiaCode.AbiesGrandis:
-                    a2 = -0.14889850F;
-                    a3 = -0.00407303F;
-                    k2 = 7.69023575F;
-                    break;
-                case FiaCode.CalocedrusDecurrens: // other + other + other BUGBUG?
-                    a2 = -0.01453250F;
-                    a3 = -0.00637434F;
-                    k2 = 1.27228638F;
-                    break;
-                case FiaCode.PinusLambertiana: // Table 9 + other BUGBUG?
-                    a2 = -0.14889850F;
-                    a3 = -0.00678955F;
-                    k2 = 0.92071847F;
-                    break;
-                case FiaCode.PinusPonderosa: // Table 9 6.1
-                    a2 = -0.14889850F;
-                    a3 = -0.00322752F;
-                    k2 = 0.92071847F;
-                    break;
-                case FiaCode.PseudotsugaMenziesii: // Table 8 5.1
-                    a2 = -0.02457621F;
-                    a3 = -0.00407303F;
-                    k2 = 2.89556338F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
-            // Hann 2002 Equation 2 (p17) as reduced to Eq 5.1 (p19), 5.2 (p20), 5.3 (p20) by setting a1 = 1, k1 = 1, k3 = 2, a5 = 0
-            //                                             5.x forms are identical: 5.1 uses SCCH, 5.2 scaled PCCH, and 5.3 PCCH
-            // a1    a2            a3           k1    k2           k3    a5    a0
-            //       b1            b2                 b3                       b0
-            // Note: Equation 2 has SCCH^k1, not SCCH^0.5
-            float FCR = (float)(-k2 * Math.Pow(1.0 - CR, k3) * Math.Exp(a5 * Math.Pow(SCCH, 0.5)));
-            float B0 = a1 * (float)Math.Exp(a2 * SCCH);
-            float B1 = (float)Math.Exp(a3 * Math.Pow(SCCH, k1));
-            float MODIFER = a0 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
-            HG = potentialHeightGrowth * MODIFER * CRADJ;
-            Debug.Assert(HG >= 0.0F);
         }
 
         private static void HG_THIN(int simulationStep, OrganonVariant variant, FiaCode species, float BABT, float[] BART, float[] YT, out float THINADJ)

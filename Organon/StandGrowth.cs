@@ -232,35 +232,10 @@ namespace Osu.Cof.Organon
                 float CL = crownRatio * heightInFeet;
                 float HCB = heightInFeet - CL;
                 float EXPFAC = expansionFactor / (float)stand.NumberOfPlots;
-                switch (variant.Variant)
-                {
-                    case Variant.Swo:
-                        CrownGrowth.MCW_SWO(species, dbhInInches, heightInFeet, out float MCW);
-                        CrownGrowth.LCW_SWO(species, MCW, crownRatio, dbhInInches, heightInFeet, out float LCW);
-                        CrownGrowth.HLCW_SWO(species, heightInFeet, crownRatio, out float HLCW);
-                        CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
-                        break;
-                    case Variant.Nwo:
-                        CrownGrowth.MCW_NWO(species, dbhInInches, heightInFeet, out MCW);
-                        CrownGrowth.LCW_NWO(species, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
-                        CrownGrowth.HLCW_NWO(species, heightInFeet, crownRatio, out HLCW);
-                        CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
-                        break;
-                    case Variant.Smc:
-                        CrownGrowth.MCW_SMC(species, dbhInInches, heightInFeet, out MCW);
-                        CrownGrowth.LCW_SMC(species, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
-                        CrownGrowth.HLCW_SMC(species, heightInFeet, crownRatio, out HLCW);
-                        CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
-                        break;
-                    case Variant.Rap:
-                        CrownGrowth.MCW_RAP(species, dbhInInches, heightInFeet, out MCW);
-                        CrownGrowth.LCW_RAP(species, MCW, crownRatio, dbhInInches, heightInFeet, out LCW);
-                        CrownGrowth.HLCW_RAP(species, heightInFeet, crownRatio, out HLCW);
-                        CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
-                }
+                float MCW = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
+                float LCW = variant.GetLargestCrownWidth(species, MCW, crownRatio, dbhInInches, heightInFeet);
+                float HLCW = variant.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
+                CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
             }
             CC = CCH[0];
             Debug.Assert(CC >= 0.0F);
@@ -327,24 +302,7 @@ namespace Osu.Cof.Organon
 
                 FiaCode species = stand.Species[treeIndex];
                 float dbhInInches = stand.Dbh[treeIndex];
-                float RHT;
-                switch (variant.Variant)
-                {
-                    case Variant.Swo:
-                        HeightGrowth.HD_SWO(species, dbhInInches, out RHT);
-                        break;
-                    case Variant.Nwo:
-                        HeightGrowth.HD_NWO(species, dbhInInches, out RHT);
-                        break;
-                    case Variant.Smc:
-                        HeightGrowth.HD_SMC(species, dbhInInches, out RHT);
-                        break;
-                    case Variant.Rap:
-                        HeightGrowth.HD_RAP(species, dbhInInches, out RHT);
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
-                }
+                float RHT = variant.GetPredictedHeight(species, dbhInInches);
                 stand.Height[treeIndex] = 4.5F + ACALIB[species][0] * (RHT - 4.5F);
             }
 
@@ -363,24 +321,7 @@ namespace Osu.Cof.Organon
                 float dbhInInches = stand.Dbh[treeIndex];
                 float heightInFeet = stand.Height[treeIndex];
                 float SCCFL = standDensity.GetCrownCompetitionFactorLarger(dbhInInches);
-                float HCB;
-                switch (variant.Variant)
-                {
-                    case Variant.Swo:
-                        CrownGrowth.HCB_SWO(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
-                        break;
-                    case Variant.Nwo:
-                        CrownGrowth.HCB_NWO(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
-                        break;
-                    case Variant.Smc:
-                        CrownGrowth.HCB_SMC(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
-                        break;
-                    case Variant.Rap:
-                        CrownGrowth.HCB_RAP(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG, out HCB);
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
-                }
+                float HCB = variant.GetHeightToCrownBase(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG);
                 if (HCB < 0.0F)
                 {
                     HCB = 0.0F;

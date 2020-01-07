@@ -35,10 +35,10 @@ namespace Osu.Cof.Organon.Test
 
         public static readonly OrganonVariant[] Variants = new OrganonVariant[] 
         { 
-            new OrganonVariant(Variant.Nwo),
-            new OrganonVariant(Variant.Swo),
-            new OrganonVariant(Variant.Smc),
-            new OrganonVariant(Variant.Rap)
+            new OrganonVariantNwo(),
+            new OrganonVariantSwo(),
+            new OrganonVariantSmc(),
+            new OrganonVariantRap()
         };
 
         public static class Default
