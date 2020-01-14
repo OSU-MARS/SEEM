@@ -40,7 +40,7 @@ namespace Osu.Cof.Organon.Test
                 float[] quantileLiveExpansionFactor = new float[TestConstant.DbhQuantiles];
                 float[] quantileMaxDbh = new float[TestConstant.DbhQuantiles];
                 float[] quantileMeanDbh = new float[TestConstant.DbhQuantiles];
-                float[] quantileMinDbh = Enumerable.Repeat(TestConstant.CmPerInch * TestConstant.Maximum.DbhInInches, TestConstant.DbhQuantiles).ToArray();
+                float[] quantileMinDbh = Enumerable.Repeat(TestConstant.CmPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
 
                 for (int speciesIndex = 0; speciesIndex < treeIndices.Count; ++speciesIndex)
                 {
@@ -96,7 +96,7 @@ namespace Osu.Cof.Organon.Test
                 float[] quantileMeanCrownRatio = new float[TestConstant.DbhQuantiles];
                 float[] quantileMeanDbh = new float[TestConstant.DbhQuantiles];
                 float[] quantileMeanHeight = new float[TestConstant.DbhQuantiles];
-                float[] quantileMinDbh = Enumerable.Repeat(TestConstant.CmPerInch * TestConstant.Maximum.DbhInInches, TestConstant.DbhQuantiles).ToArray();
+                float[] quantileMinDbh = Enumerable.Repeat(TestConstant.CmPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
                 for (int speciesIndex = 0; speciesIndex < treeIndices.Count; ++speciesIndex)
                 {
                     int treeIndex = treeIndices[speciesIndex];

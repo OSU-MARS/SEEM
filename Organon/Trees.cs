@@ -63,5 +63,12 @@
             other.Species.CopyTo(this.Species, 0);
             other.Tag.CopyTo(this.Tag, 0);
         }
+
+        public float GetBasalArea(int treeIndex)
+        {
+            float dbhInInches = this.Dbh[treeIndex];
+            float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
+            return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
+        }
     }
 }

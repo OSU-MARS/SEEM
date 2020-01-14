@@ -2,6 +2,7 @@
 {
     public class OrganonConfiguration
     {
+        public Bucking Bucking { get; private set; }
         public OrganonVariant Variant { get; private set; }
 
         // switches to if() clause in Mortality.MORTAL()
@@ -40,6 +41,7 @@
 
         public OrganonConfiguration(OrganonVariant variant)
         {
+            this.Bucking = new Bucking();
             this.Variant = variant;
             if (this.Variant.Variant == Organon.Variant.Rap)
             {

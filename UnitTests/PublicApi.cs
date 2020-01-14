@@ -14,11 +14,9 @@ namespace Osu.Cof.Organon.Test
 
         [TestMethod]
         [DeploymentItem("HPNF.xlsx")]
-        //[DeploymentItem("HPNF plot 1.xlsx")]
         public void HuffmanPeakNobleFir()
         {
             string plotFileName = "HPNF.xlsx";
-            //string plotFileName = "HPNF plot 1.xlsx";
             PspStand huffmanPeak = new PspStand(plotFileName, "HPNF", 0.2F);
             OrganonVariant variant = new OrganonVariantSwo(); // SWO allows mapping ABAM -> ABGR and ABPR -> ABCO
             TestStand stand = huffmanPeak.ToOrganonStand(variant, 80.0F);

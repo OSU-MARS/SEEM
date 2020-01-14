@@ -33,9 +33,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Organon\LegacyVolume.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Organon.UnitTests</_Parameter1>
     </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Organon\LegacyVolume.cs" />
   </ItemGroup>
   
 </Project>

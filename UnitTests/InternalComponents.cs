@@ -113,7 +113,7 @@ namespace Osu.Cof.Organon.Test
                         float dbhInInches = stand.Dbh[treeIndex];
                         float previousDbhInInches = previousTreeDiameters[treeIndex];
                         Assert.IsTrue(dbhInInches >= previousDbhInInches);
-                        Assert.IsTrue(dbhInInches <= TestConstant.Maximum.DbhInInches);
+                        Assert.IsTrue(dbhInInches <= TestConstant.Maximum.DiameterInInches);
 
                         previousDbhInInches = dbhInInches;
                     }
@@ -394,6 +394,20 @@ namespace Osu.Cof.Organon.Test
                 Assert.IsTrue(stand.A2 < 0.65F);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
             }
+        }
+
+        [TestMethod]
+        public void TreeVolumeApi()
+        {
+            OrganonVariant variant = new OrganonVariantNwo();
+            OrganonConfiguration configuration = new OrganonConfiguration(variant);
+            Trees trees = new Trees(1);
+            trees.Species[0] = FiaCode.PseudotsugaMenziesii;
+            trees.Dbh[0] = 20.0F;
+            trees.Height[0] = 120.0F;
+            trees.CrownRatio[0] = 0.5F;
+            trees.LiveExpansionFactor[0] = 1.0F;
+            // TreeVolume.LOG_TABLE(configuration, stand, 40.0F, out float[,] NL, out float[,] LVOL);
         }
 
         [TestMethod]

@@ -57,9 +57,10 @@ namespace Osu.Cof.Organon.Test
         {
             // TODO: make DBH, height, and crown limits species specific
             public const float CrownCompetitionFactor = 1000.0F;
-            public const float DbhInInches = 120.0F;
+            // for want of a better option, allow trees larger than the ~100 cm upper bound of Poudel 2018's dataset
+            public const float DiameterInInches = 60.0F;
             public const float ExpansionFactor = 100.0F;
-            public const float HeightInFeet = 380.0F;
+            public const float HeightInFeet = 380.0F; // SESE Hyperion
             public const float LargestCrownWidthInFeet = 300.0F;
             public const float TreeBasalAreaLarger = 1000.0F;
             public const float MaximumCrownWidthInFeet = 300.0F;

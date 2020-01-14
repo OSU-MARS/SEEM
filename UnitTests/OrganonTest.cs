@@ -205,7 +205,7 @@ namespace Osu.Cof.Organon.Test
                 Assert.IsTrue(crownRatio <= 1.0F);
                 float dbhInInches = stand.Dbh[treeIndex];
                 Assert.IsTrue(dbhInInches >= 0.0F);
-                Assert.IsTrue(dbhInInches <= TestConstant.Maximum.DbhInInches);
+                Assert.IsTrue(dbhInInches <= TestConstant.Maximum.DiameterInInches);
                 float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                 Assert.IsTrue(expansionFactor >= 0.0F);
                 Assert.IsTrue(expansionFactor <= TestConstant.Maximum.ExpansionFactor);
@@ -223,12 +223,12 @@ namespace Osu.Cof.Organon.Test
                 if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowth))
                 {
                     Assert.IsTrue(diameterGrowthInInches > 0.0F, "{0}: {1} {2} did not grow in diameter.", variant.Variant, stand.Species[treeIndex], treeIndex);
-                    Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DbhInInches);
+                    Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DiameterInInches);
                 }
                 else if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowthOrNoChange))
                 {
                     Assert.IsTrue(diameterGrowthInInches >= 0.0F);
-                    Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DbhInInches);
+                    Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DiameterInInches);
                 }
                 else
                 {
@@ -276,12 +276,12 @@ namespace Osu.Cof.Organon.Test
                 if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowth))
                 {
                     Assert.IsTrue(totalDbhGrowth > 0.0F);
-                    Assert.IsTrue(totalDbhGrowth <= TestConstant.Maximum.DbhInInches);
+                    Assert.IsTrue(totalDbhGrowth <= TestConstant.Maximum.DiameterInInches);
                 }
                 else if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowthOrNoChange))
                 {
                     Assert.IsTrue(totalDbhGrowth >= 0.0F);
-                    Assert.IsTrue(totalDbhGrowth <= TestConstant.Maximum.DbhInInches);
+                    Assert.IsTrue(totalDbhGrowth <= TestConstant.Maximum.DiameterInInches);
                 }
                 else
                 {

@@ -72,13 +72,6 @@ namespace Osu.Cof.Organon
             this.Warnings = new StandWarnings(other.Warnings);
         }
 
-        public float GetBasalArea(int treeIndex)
-        {
-            float dbhInInches = this.Dbh[treeIndex];
-            float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
-            return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
-        }
-
         public void SetDefaultAndMortalitySiteIndices(OrganonVariant variant)
         {
             switch (variant.Variant)
