@@ -56,7 +56,7 @@ namespace Osu.Cof.Organon.Test
         public static class Maximum
         {
             // TODO: make DBH, height, and crown limits species specific
-            public const float CrownClosure = 1000.0F;
+            public const float CrownCompetitionFactor = 1000.0F;
             public const float DbhInInches = 120.0F;
             public const float ExpansionFactor = 100.0F;
             public const float HeightInFeet = 380.0F;

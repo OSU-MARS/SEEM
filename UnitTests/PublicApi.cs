@@ -47,14 +47,14 @@ namespace Osu.Cof.Organon.Test
                 // get crown closure
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
-                StandGrowth.CROWN_CLOSURE(variant, stand, out float crownClosure);
-                Assert.IsTrue(crownClosure >= 0.0F);
-                Assert.IsTrue(crownClosure <= TestConstant.Maximum.CrownClosure);
+                float crownCompetitionFactor = StandDensity.GetCrownCompetition(variant, stand);
+                Assert.IsTrue(crownCompetitionFactor >= 0.0F);
+                Assert.IsTrue(crownCompetitionFactor <= TestConstant.Maximum.CrownCompetitionFactor);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // recalculate heights and crown ratios for all trees
                 Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
-                StandGrowth.INGRO_FILL(variant, stand, stand.TreeRecordCount, CALIB);
+                StandGrowth.SetIngrowthHeightAndCrownRatio(variant, stand, stand.TreeRecordCount, CALIB);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // run Organon growth simulation
@@ -76,7 +76,7 @@ namespace Osu.Cof.Organon.Test
                 stand.WriteTreesAsCsv(this.TestContext, variant, 0, false);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    StandGrowth.EXECUTE(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
+                    StandGrowth.Grow(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
                     stand.SetSdiMax(configuration);
                     this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);

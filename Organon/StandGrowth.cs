@@ -1,11 +1,100 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Osu.Cof.Organon
 {
     public class StandGrowth
     {
+        private static void CheckTreeAges(OrganonConfiguration configuration, Stand stand, out float OLD)
+        {
+            OLD = 0.0F;
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                float treeHeightInFeet = stand.Height[treeIndex];
+                if (treeHeightInFeet < 4.5F)
+                {
+                    continue;
+                }
+
+                FiaCode species = stand.Species[treeIndex];
+                float growthEffectiveAge = 0.0F; // BUGBUG not intitialized on all Fortran paths
+                float IDXAGE;
+                float SITE;
+                switch (configuration.Variant.Variant)
+                {
+                    case Variant.Swo:
+                        // GROWTH EFFECTIVE AGE FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
+                        bool treatAsDouglasFir = false;
+                        if (species == FiaCode.TsugaHeterophylla)
+                        {
+                            SITE = stand.HemlockSiteIndex - 4.5F;
+                        }
+                        else
+                        {
+                            SITE = stand.SiteIndex - 4.5F;
+                            if (species == FiaCode.PinusLambertiana)
+                            {
+                                SITE = stand.SiteIndex * 0.66F - 4.5F;
+                            }
+                            treatAsDouglasFir = true;
+                        }
+                        DouglasFir.DouglasFirPonderosaHeightGrowth(treatAsDouglasFir, SITE, treeHeightInFeet, out growthEffectiveAge, out _);
+                        IDXAGE = 500.0F;
+                        break;
+                    case Variant.Nwo:
+                        float GP = 5.0F;
+                        if (species == FiaCode.TsugaHeterophylla)
+                        {
+                            // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQATION
+                            SITE = stand.HemlockSiteIndex;
+                            WesternHemlock.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                        }
+                        else
+                        {
+                            // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
+                            SITE = stand.SiteIndex;
+                            DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                        }
+                        IDXAGE = 120.0F;
+                        break;
+                    case Variant.Smc:
+                        GP = 5.0F;
+                        if (species == FiaCode.TsugaHeterophylla)
+                        {
+                            // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
+                            SITE = stand.HemlockSiteIndex;
+                            WesternHemlock.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                        }
+                        else
+                        {
+                            // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOP DOUGLAS-FIR AND GRAND FIR
+                            SITE = stand.SiteIndex;
+                            DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                        }
+                        IDXAGE = 120.0F;
+                        break;
+                    case Variant.Rap:
+                        if (species == FiaCode.AlnusRubra)
+                        {
+                            // GROWTH EFFECTIVE AGE FROM WEISKITTEL ET AL.'S (2009) RED ALDER DOMINANT HEIGHT GROWTH EQUATION
+                            SITE = stand.SiteIndex;
+                            RedAlder.WHHLB_SI_UC(SITE, configuration.PDEN, out float SI_UC);
+                            RedAlder.WHHLB_GEA(treeHeightInFeet, SI_UC, out growthEffectiveAge);
+                        }
+                        IDXAGE = 30.0F;
+                        break;
+                    default:
+                        throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                }
+
+                // BUGBUG inconsistent use of < IB rather than <= IB
+                if (configuration.Variant.IsBigSixSpecies(species) && (growthEffectiveAge > IDXAGE))
+                {
+                    OLD += 1.0F;
+                }
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -17,8 +106,8 @@ namespace Osu.Cof.Organon
         /// <param name="BABT"></param>
         /// <param name="BART"></param>
         /// <param name="YST">Years thinning performed?</param>
-        public static void EXECUTE(int simulationStep, OrganonConfiguration configuration, Stand stand, Dictionary<FiaCode, float[]> ACALIB, float[] PN, float[] YSF, 
-                                   float BABT, float[] BART, float[] YST)
+        public static void Grow(int simulationStep, OrganonConfiguration configuration, Stand stand, Dictionary<FiaCode, float[]> ACALIB, float[] PN, float[] YSF, 
+                                float BABT, float[] BART, float[] YST)
         {
             // BUGBUG: simulationStep largely duplicates stand age
             ValidateArguments(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int BIG6, out int BNXT);
@@ -79,11 +168,11 @@ namespace Osu.Cof.Organon
             StandDensity densityBeforeGrowth = new StandDensity(stand, configuration.Variant);
 
             // CCH and crown closure at start of growth
-            float[] CCH = new float[41];
-            CrownGrowth.CRNCLO(configuration.Variant, stand, CCH, out float _);
+            float[] CCH = StandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
             float OLD = 0.0F;
-            TreeGrowth.GROW(ref simulationStep, configuration, stand, ref TCYCLE, ref FCYCLE, densityBeforeGrowth, CALIB, PN, YF, BABT, BART,
-                            YT, CCH, ref OLD, redAlderAge, out StandDensity _);
+            TreeGrowth treeGrowth = new TreeGrowth();
+            treeGrowth.Grow(ref simulationStep, configuration, stand, ref TCYCLE, ref FCYCLE, densityBeforeGrowth, CALIB, PN, YF, BABT, BART,
+                            YT, ref CCH, ref OLD, redAlderAge, out StandDensity _);
 
             if (configuration.IsEvenAge == false)
             {
@@ -118,130 +207,6 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void CKAGE(OrganonConfiguration configuration, Stand stand, out float OLD)
-        {
-            OLD = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                float treeHeightInFeet = stand.Height[treeIndex];
-                if (treeHeightInFeet < 4.5F)
-                {
-                    continue;
-                }
-
-                FiaCode species = stand.Species[treeIndex];
-                float growthEffectiveAge = 0.0F; // BUGBUG not intitialized on all Fortran paths
-                float IDXAGE;
-                float SITE;
-                switch (configuration.Variant.Variant)
-                {
-                    case Variant.Swo:
-                        // GROWTH EFFECTIVE AGE FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
-                        bool treatAsDouglasFir = false;
-                        if (species == FiaCode.TsugaHeterophylla)
-                        {
-                            SITE = stand.HemlockSiteIndex - 4.5F;
-                        }
-                        else
-                        {
-                            SITE = stand.SiteIndex - 4.5F;
-                            if (species == FiaCode.PinusLambertiana)
-                            {
-                                SITE = stand.SiteIndex * 0.66F - 4.5F;
-                            }
-                            treatAsDouglasFir = true;
-                        }
-                        HeightGrowth.HS_HG(treatAsDouglasFir, SITE, treeHeightInFeet, out growthEffectiveAge, out _);
-                        IDXAGE = 500.0F;
-                        break;
-                    case Variant.Nwo:
-                        float GP = 5.0F;
-                        if (species == FiaCode.TsugaHeterophylla)
-                        {
-                            // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQATION
-                            SITE = stand.HemlockSiteIndex;
-                            HeightGrowth.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
-                        }
-                        else
-                        {
-                            // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
-                            SITE = stand.SiteIndex;
-                            HeightGrowth.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
-                        }
-                        IDXAGE = 120.0F;
-                        break;
-                    case Variant.Smc:
-                        GP = 5.0F;
-                        if (species == FiaCode.TsugaHeterophylla)
-                        {
-                            // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
-                            SITE = stand.HemlockSiteIndex;
-                            HeightGrowth.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
-                        }
-                        else
-                        {
-                            // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOP DOUGLAS-FIR AND GRAND FIR
-                            SITE = stand.SiteIndex;
-                            HeightGrowth.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
-                        }
-                        IDXAGE = 120.0F;
-                        break;
-                    case Variant.Rap:
-                        if (species == FiaCode.AlnusRubra)
-                        {
-                            // GROWTH EFFECTIVE AGE FROM WEISKITTEL ET AL.'S (2009) RED ALDER DOMINANT HEIGHT GROWTH EQUATION
-                            SITE = stand.SiteIndex;
-                            RedAlder.WHHLB_SI_UC(SITE, configuration.PDEN, out float SI_UC);
-                            RedAlder.WHHLB_GEA(treeHeightInFeet, SI_UC, out growthEffectiveAge);
-                        }
-                        IDXAGE = 30.0F;
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
-                }
-
-                // BUGBUG inconsistent use of < IB rather than <= IB
-                if (configuration.Variant.IsBigSixSpecies(species) && (growthEffectiveAge > IDXAGE))
-                {
-                    OLD += 1.0F;
-                }
-            }
-        }
-
-        public static void CROWN_CLOSURE(OrganonVariant variant, Stand stand, out float CC)
-        {
-            float[] CCH = new float[41];
-            CCH[40] = stand.Height[0];
-            for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                float heightInFeet = stand.Height[treeIndex];
-                if (heightInFeet > CCH[40])
-                {
-                    CCH[40] = heightInFeet;
-                }
-            }
-
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                FiaCode species = stand.Species[treeIndex];
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                float dbhInInches = stand.Dbh[treeIndex];
-                float heightInFeet  = stand.Height[treeIndex];
-                float crownRatio = stand.CrownRatio[treeIndex];
-
-                float CL = crownRatio * heightInFeet;
-                float HCB = heightInFeet - CL;
-                float EXPFAC = expansionFactor / (float)stand.NumberOfPlots;
-                float MCW = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
-                float LCW = variant.GetLargestCrownWidth(species, MCW, crownRatio, dbhInInches, heightInFeet);
-                float HLCW = variant.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
-                CrownGrowth.CALC_CC(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, CCH);
-            }
-            CC = CCH[0];
-            Debug.Assert(CC >= 0.0F);
-            Debug.Assert(CC <= 100.0F);
-        }
-
         /// <summary>
         /// Sets height and crown ratio of last NINGRO tree records in stand.
         /// </summary>
@@ -249,7 +214,7 @@ namespace Osu.Cof.Organon
         /// <param name="stand">Stand data.</param>
         /// <param name="NINGRO"></param>
         /// <param name="ACALIB"></param>
-        public static void INGRO_FILL(OrganonVariant variant, Stand stand, int NINGRO, Dictionary<FiaCode, float[]> ACALIB)
+        public static void SetIngrowthHeightAndCrownRatio(OrganonVariant variant, Stand stand, int NINGRO, Dictionary<FiaCode, float[]> ACALIB)
         {
             // ROUTINE TO CALCULATE MISSING CROWN RATIOS
             // BUGBUG: does this duplicate site index code elsewhere?
@@ -863,7 +828,7 @@ namespace Osu.Cof.Organon
                 stand.Warnings.LessThan50TreeRecords = true;
             }
 
-            CKAGE(configuration, stand, out float OLD);
+            CheckTreeAges(configuration, stand, out float OLD);
 
             float X = 100.0F * (OLD / (BIG6 - BNXT));
             if (X >= 50.0F)

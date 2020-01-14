@@ -1,4 +1,6 @@
-﻿namespace Osu.Cof.Organon
+﻿using System.Diagnostics;
+
+namespace Osu.Cof.Organon
 {
     public class StandDensity
     {
@@ -112,6 +114,104 @@
 
             int smallTreeIndex = (int)(dbhInInches * 10.0F + 0.5F);
             return this.SmallTreeBasalAreaLarger[smallTreeIndex];
+        }
+
+        public static float GetCrownCompetition(OrganonVariant variant, Stand stand)
+        {
+            float[] crownCompetitionFactorByHeight = new float[41];
+            crownCompetitionFactorByHeight[40] = stand.Height[0];
+            for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                float heightInFeet = stand.Height[treeIndex];
+                if (heightInFeet > crownCompetitionFactorByHeight[40])
+                {
+                    crownCompetitionFactorByHeight[40] = heightInFeet;
+                }
+            }
+
+            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                FiaCode species = stand.Species[treeIndex];
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
+                float dbhInInches = stand.Dbh[treeIndex];
+                float heightInFeet = stand.Height[treeIndex];
+                float crownRatio = stand.CrownRatio[treeIndex];
+
+                float CL = crownRatio * heightInFeet;
+                float HCB = heightInFeet - CL;
+                float EXPFAC = expansionFactor / (float)stand.NumberOfPlots;
+                float MCW = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
+                float LCW = variant.GetLargestCrownWidth(species, MCW, crownRatio, dbhInInches, heightInFeet);
+                float HLCW = variant.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
+                StandDensity.GetCrownCompetitionByHeight(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, crownCompetitionFactorByHeight);
+            }
+            float crownCompetitionFactor = crownCompetitionFactorByHeight[0];
+            Debug.Assert(crownCompetitionFactor >= 0.0F);
+            Debug.Assert(crownCompetitionFactor <= 100.0F);
+            return crownCompetitionFactor;
+        }
+
+
+        public static void GetCrownCompetitionByHeight(OrganonVariant variant, FiaCode species, float heightToLargestCrownWidth, float largestCrownWidth, float HT, float DBH, float heightToCrownBase, float EXPAN, float[] crownCompetitionByHeight)
+        {
+            float XHLCW = heightToLargestCrownWidth;
+            float XLCW = largestCrownWidth;
+            if (heightToCrownBase > heightToLargestCrownWidth)
+            {
+                XHLCW = heightToCrownBase;
+                XLCW = variant.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, HT, DBH, XHLCW);
+            }
+
+            for (int heightIndex = crownCompetitionByHeight.Length - 2; heightIndex >= 0; --heightIndex)
+            {
+                float relativeHeight = (float)(heightIndex - 1) * (crownCompetitionByHeight[crownCompetitionByHeight.Length - 1] / 40.0F);
+                float crownWidth = 0.0F;
+                if (relativeHeight <= XHLCW)
+                {
+                    crownWidth = XLCW;
+                }
+                else if (relativeHeight > XHLCW && relativeHeight < HT)
+                {
+                    crownWidth = variant.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, HT, DBH, relativeHeight);
+                }
+                float crownCompetitionFactor = 0.001803F * EXPAN * crownWidth * crownWidth;
+                crownCompetitionByHeight[heightIndex] = crownCompetitionByHeight[heightIndex] + crownCompetitionFactor;
+            }
+        }
+
+        /// <summary>
+        /// Find crown closure.
+        /// </summary>
+        /// <param name="variant">Organon variant.</param>
+        /// <param name="stand">Stand data.</param>
+        /// <returns>Array indicating crown closure at height relative to tallest tree in stand with last value being height of tallest tree.</returns>
+        public static float[] GetCrownCompetitionByHeight(OrganonVariant variant, Stand stand)
+        {
+            float[] crownClosureByRelativeHeight = new float[41];
+            crownClosureByRelativeHeight[40] = stand.Height[0];
+            for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                if (stand.Height[treeIndex] > crownClosureByRelativeHeight[40])
+                {
+                    crownClosureByRelativeHeight[40] = stand.Height[treeIndex];
+                }
+            }
+
+            for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            {
+                FiaCode species = stand.Species[treeIndex];
+                float dbhInInches = stand.Dbh[treeIndex];
+                float heightInFeet = stand.Height[treeIndex];
+                float crownRatio = stand.CrownRatio[treeIndex];
+                float crownLengthInFeet = crownRatio * heightInFeet;
+                float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
+                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
+                float MCW = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
+                float LCW = variant.GetLargestCrownWidth(species, MCW, crownRatio, dbhInInches, heightInFeet);
+                float HLCW = variant.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
+                GetCrownCompetitionByHeight(variant, species, HLCW, LCW, heightInFeet, dbhInInches, heightToCrownBaseInFeet, expansionFactor, crownClosureByRelativeHeight);
+            }
+            return crownClosureByRelativeHeight;
         }
 
         /// <summary>
