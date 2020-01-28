@@ -6,7 +6,7 @@ namespace Osu.Cof.Organon
     public class OrganonVariantRap : OrganonVariant
     {
         public OrganonVariantRap()
-            : base(Variant.Rap)
+            : base(TreeModel.OrganonRap)
         {
         }
 

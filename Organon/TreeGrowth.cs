@@ -21,7 +21,7 @@ namespace Osu.Cof.Organon
             float PF3;
             float PF4;
             float PF5;
-            if (variant.Variant != Variant.Rap)
+            if (variant.TreeModel != TreeModel.OrganonRap)
             {
                 if (species == FiaCode.TsugaHeterophylla)
                 {
@@ -105,7 +105,7 @@ namespace Osu.Cof.Organon
                 PT2 = 1.0F;
                 PT3 = -0.2644085320F;
             }
-            else if ((variant.Variant == Variant.Rap) && (species == FiaCode.AlnusRubra))
+            else if ((variant.TreeModel == TreeModel.OrganonRap) && (species == FiaCode.AlnusRubra))
             {
                 PT1 = 0.0F;
                 PT2 = 1.0F;
@@ -153,7 +153,7 @@ namespace Osu.Cof.Organon
             float PF3;
             float PF4;
             float PF5;
-            if (variant.Variant != Variant.Rap)
+            if (variant.TreeModel != TreeModel.OrganonRap)
             {
                 if (species == FiaCode.PseudotsugaMenziesii)
                 {
@@ -199,7 +199,7 @@ namespace Osu.Cof.Organon
             float PT1;
             float PT2;
             float PT3;
-            if (variant.Variant != Variant.Rap)
+            if (variant.TreeModel != TreeModel.OrganonRap)
             {
                 if (species == FiaCode.PseudotsugaMenziesii)
                 {
@@ -291,7 +291,7 @@ namespace Osu.Cof.Organon
             {
                 GrowthModifiers.GG_MODS((float)stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMOD_GG, out HGMOD_GG);
             }
-            if (configuration.SwissNeedleCast && (configuration.Variant.Variant == Variant.Nwo || configuration.Variant.Variant == Variant.Smc))
+            if (configuration.SwissNeedleCast && (configuration.Variant.TreeModel == TreeModel.OrganonNwo || configuration.Variant.TreeModel == TreeModel.OrganonSmc))
             {
                 GrowthModifiers.SNC_MODS(configuration.FR, out DGMOD_SNC, out HGMOD_SNC);
             }
@@ -390,7 +390,7 @@ namespace Osu.Cof.Organon
             CCH = this.GrowCrown(configuration.Variant, stand, densityBeforeGrowth, densityAfterGrowth, SI_1, SI_2, CALIB);
 
             // update stand variables
-            if (configuration.Variant.Variant != Variant.Rap)
+            if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
             {
                 stand.AgeInYears += 5;
                 stand.BreastHeightAgeInYears += 5;
@@ -445,7 +445,7 @@ namespace Osu.Cof.Organon
                 float SCCFL1 = densityBeforeGrowth.GetCrownCompetitionFactorLarger(PDBH);
                 float HCB1 = variant.GetHeightToCrownBase(species, PHT, PDBH, SCCFL1, densityBeforeGrowth.BasalAreaPerAcre, SI_1, SI_2, OG1);
                 float PCR1 = 1.0F - HCB1 / PHT;
-                if (variant.Variant == Variant.Nwo)
+                if (variant.TreeModel == TreeModel.OrganonNwo)
                 {
                     PCR1 = CALIB[species][1] * (1.0F - HCB1 / PHT);
                 }
@@ -459,7 +459,7 @@ namespace Osu.Cof.Organon
                 float HCB2 = variant.GetHeightToCrownBase(species, HT, DBH, SCCFL2, densityAfterGrowth.BasalAreaPerAcre, SI_1, SI_2, OG2);
                 float MAXHCB = variant.GetMaximumHeightToCrownBase(species, HT, SCCFL2);
                 float PCR2 = 1.0F - HCB2 / HT;
-                if (variant.Variant == Variant.Nwo)
+                if (variant.TreeModel == TreeModel.OrganonNwo)
                 {
                     PCR2 = CALIB[species][1] * (1.0F - HCB2 / HT);
                 }
@@ -504,13 +504,13 @@ namespace Osu.Cof.Organon
 
             FiaCode species = stand.Species[treeIndex];
             float SITE;
-            switch (variant.Variant)
+            switch (variant.TreeModel)
             {
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     SITE = SI_1;
                     break;
-                case Variant.Nwo:
-                case Variant.Smc:
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
                     if (species == FiaCode.TsugaHeterophylla)
                     {
                         SITE = SI_2;
@@ -520,7 +520,7 @@ namespace Osu.Cof.Organon
                         SITE = SI_1;
                     }
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     if (species == FiaCode.TsugaHeterophylla)
                     {
                         SITE = SI_2;
@@ -531,7 +531,7 @@ namespace Osu.Cof.Organon
                     }
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
+                    throw OrganonVariant.CreateUnhandledModelException(variant.TreeModel);
             }
 
             // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED TREES
@@ -597,9 +597,9 @@ namespace Osu.Cof.Organon
             float growthEffectiveAge;
             float potentialHeightGrowth;
             float oldIndexAge;
-            switch (variant.Variant)
+            switch (variant.TreeModel)
             {
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     float siteIndexFromGround = SI_1;
                     bool treatAsDouglasFir = false;
                     // POTENTIAL HEIGHT GROWTH FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
@@ -618,7 +618,7 @@ namespace Osu.Cof.Organon
                     DouglasFir.DouglasFirPonderosaHeightGrowth(treatAsDouglasFir, siteIndexFromGround, stand.Height[treeIndex], out growthEffectiveAge, out potentialHeightGrowth);
                     oldIndexAge = 500.0F;
                     break;
-                case Variant.Nwo:
+                case TreeModel.OrganonNwo:
                     float GP = 5.0F;
                     if (species == FiaCode.TsugaHeterophylla)
                     {
@@ -634,7 +634,7 @@ namespace Osu.Cof.Organon
                     }
                     oldIndexAge = 120.0F;
                     break;
-                case Variant.Smc:
+                case TreeModel.OrganonSmc:
                     GP = 5.0F;
                     if (species == FiaCode.TsugaHeterophylla)
                     {
@@ -651,7 +651,7 @@ namespace Osu.Cof.Organon
                     }
                     oldIndexAge = 120.0F;
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     GP = 1.0F;
                     if (species == FiaCode.AlnusRubra)
                     {
@@ -674,7 +674,7 @@ namespace Osu.Cof.Organon
                     oldIndexAge = 30.0F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
+                    throw OrganonVariant.CreateUnhandledModelException(variant.TreeModel);
             }
 
             float heightGrowthInFeet = variant.GrowHeightBigSix(species, potentialHeightGrowth, CR, TCCH);
@@ -703,7 +703,7 @@ namespace Osu.Cof.Organon
             float PRDHT = (PRDHT2 / PRDHT1) * stand.Height[treeIndex];
 
             // RED ALDER HEIGHT GROWTH
-            if ((species == FiaCode.AlnusRubra) && (variant.Variant != Variant.Rap))
+            if ((species == FiaCode.AlnusRubra) && (variant.TreeModel != TreeModel.OrganonRap))
             {
                 float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(stand.Height[treeIndex], stand.RedAlderSiteIndex);
                 if (growthEffectiveAge <= 0.0F)
@@ -728,7 +728,7 @@ namespace Osu.Cof.Organon
         private void LimitHeightGrowth(OrganonVariant variant, FiaCode species, float DBH, float HT, float DG, ref float HG)
         {
             FiaCode speciesWithSwoTsheOptOut = species;
-            if ((species == FiaCode.TsugaHeterophylla) && (variant.Variant == Variant.Swo))
+            if ((species == FiaCode.TsugaHeterophylla) && (variant.TreeModel == TreeModel.OrganonSwo))
             {
                 // BUGBUG: not clear why SWO uses default coefficients for hemlock
                 speciesWithSwoTsheOptOut = FiaCode.NotholithocarpusDensiflorus;

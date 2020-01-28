@@ -74,10 +74,10 @@ namespace Osu.Cof.Organon
 
         public void SetDefaultAndMortalitySiteIndices(OrganonVariant variant)
         {
-            switch (variant.Variant)
+            switch (variant.TreeModel)
             {
-                case Variant.Nwo:
-                case Variant.Smc:
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
                     // Site index equation from Nigh(1995, Forest Science 41:84-98)
                     if ((this.SiteIndex < 0.0F) && (this.HemlockSiteIndex > 0.0F))
                     {
@@ -88,7 +88,7 @@ namespace Osu.Cof.Organon
                         this.HemlockSiteIndex = -0.432F + (0.899F * this.SiteIndex);
                     }
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     if (this.HemlockSiteIndex < 0.0F)
                     {
                         // Fortran code sets SITE_2 from an uninitialized value of SI_1. It's unclear what the Fortran equation was intended
@@ -99,7 +99,7 @@ namespace Osu.Cof.Organon
                         this.HemlockSiteIndex = this.SiteIndex;
                     }
                     break;
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     if ((this.SiteIndex < 0.0F) && (this.HemlockSiteIndex > 0.0F))
                     {
                         this.SiteIndex = 1.062934F * this.HemlockSiteIndex;
@@ -154,20 +154,20 @@ namespace Osu.Cof.Organon
         public void SetSdiMax(OrganonConfiguration configuration)
         {
             // CALCULATE THE MAXIMUM SIZE-DENISTY LINE
-            switch (configuration.Variant.Variant)
+            switch (configuration.Variant.TreeModel)
             {
-                case Variant.Swo:
-                case Variant.Nwo:
-                case Variant.Smc:
+                case TreeModel.OrganonSwo:
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
                     // REINEKE (1933): 1.605^-1 = 0.623053
                     this.A2 = 0.62305F;
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     // PUETTMANN ET AL. (1993)
                     this.A2 = 0.64F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                    throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
 
             float TEMPA1;
@@ -177,26 +177,26 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                switch (configuration.Variant.Variant)
+                switch (configuration.Variant.TreeModel)
                 {
-                    case Variant.Swo:
+                    case TreeModel.OrganonSwo:
                         // ORIGINAL SWO-ORGANON - Max.SDI = 530.2
                         TEMPA1 = 6.21113F;
                         break;
-                    case Variant.Nwo:
+                    case TreeModel.OrganonNwo:
                         // ORIGINAL WWV-ORGANON - Max.SDI = 520.5
                         TEMPA1 = 6.19958F;
                         break;
-                    case Variant.Smc:
+                    case TreeModel.OrganonSmc:
                         // ORIGINAL WWV-ORGANON
                         TEMPA1 = 6.19958F;
                         break;
-                    case Variant.Rap:
+                    case TreeModel.OrganonRap:
                         // PUETTMANN ET AL. (1993)
                         TEMPA1 = 5.96F;
                         break;
                     default:
-                        throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                        throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
                 }
             }
 
@@ -244,9 +244,9 @@ namespace Osu.Cof.Organon
             }
 
             float A1MOD;
-            switch (configuration.Variant.Variant)
+            switch (configuration.Variant.TreeModel)
             {
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     float trueFirModifier = 1.03481817F;
                     if (configuration.TrueFirMaximumSdi > 0.0F)
                     {
@@ -275,8 +275,8 @@ namespace Osu.Cof.Organon
                         A1MOD = douglasFirProportion + trueFirModifier * trueFirProportion + hemlockModifier * ponderosaProportion;
                     }
                     break;
-                case Variant.Nwo:
-                case Variant.Smc:
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
                     trueFirModifier = 1.03481817F;
                     if (configuration.TrueFirMaximumSdi > 0.0F)
                     {
@@ -306,11 +306,11 @@ namespace Osu.Cof.Organon
                         A1MOD = douglasFirProportion + hemlockModifier * hemlockProportion + trueFirModifier * trueFirProportion;
                     }
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     A1MOD = 1.0F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                    throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
             if (A1MOD <= 0.0F)
             {

@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Osu.Cof.Organon.Test
 {
@@ -232,7 +233,7 @@ namespace Osu.Cof.Organon.Test
                     bool verifyAgeAndHeight = false;
                     float growthEffectiveAgeInYears = -1.0F;
                     float potentialHeightGrowth = -1.0F;
-                    if ((variant.Variant == Variant.Nwo) || (variant.Variant == Variant.Smc))
+                    if ((variant.TreeModel == TreeModel.OrganonNwo) || (variant.TreeModel == TreeModel.OrganonSmc))
                     {
                         if (species == FiaCode.TsugaHeterophylla)
                         {
@@ -244,7 +245,7 @@ namespace Osu.Cof.Organon.Test
                         }
                         verifyAgeAndHeight = true;
                     }
-                    else if (variant.Variant == Variant.Swo)
+                    else if (variant.TreeModel == TreeModel.OrganonSwo)
                     {
                         if ((species == FiaCode.PinusPonderosa) || (species == FiaCode.PseudotsugaMenziesii))
                         {
@@ -399,15 +400,49 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void TreeVolumeApi()
         {
-            OrganonVariant variant = new OrganonVariantNwo();
-            OrganonConfiguration configuration = new OrganonConfiguration(variant);
-            Trees trees = new Trees(1);
-            trees.Species[0] = FiaCode.PseudotsugaMenziesii;
-            trees.Dbh[0] = 20.0F;
-            trees.Height[0] = 120.0F;
-            trees.CrownRatio[0] = 0.5F;
-            trees.LiveExpansionFactor[0] = 1.0F;
-            // TreeVolume.LOG_TABLE(configuration, stand, 40.0F, out float[,] NL, out float[,] LVOL);
+            FiaVolume fiaVolume = new FiaVolume();
+            OsuVolume osuVolume = new OsuVolume();
+            Trees trees = new Trees(40);
+            float[] fiaMerchantableCvtsByTreeInCubicMeters = new float[trees.TreeRecordCount];
+            float[] osuCvtsByTreeInCubicMeters = new float[trees.TreeRecordCount];
+            bool isDouglasFir = true;
+            float cvtsPerHa = 0.0F;
+            float merchantableCvtsPerHa = 0.0F;
+            float totalCylinderVolume = 0.0F;
+            for (int treeIndex = 0; treeIndex < trees.TreeRecordCount; ++treeIndex)
+            {
+                FiaCode species = isDouglasFir ? FiaCode.PseudotsugaMenziesii : FiaCode.TsugaHeterophylla;
+                TreeRecord tree = new TreeRecord(species, (float)treeIndex, 1.0F, 1.0F - 3.0F * (float)trees.TreeRecordCount / (float)treeIndex);
+                trees.Species[treeIndex] = tree.Species;
+                trees.Dbh[treeIndex] = tree.DbhInInches;
+                trees.Height[treeIndex] = tree.HeightInFeet;
+                trees.CrownRatio[treeIndex] = tree.CrownRatio;
+                trees.LiveExpansionFactor[treeIndex] = tree.ExpansionFactor;
+                float dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
+                float heightInMeters = Constant.MetersPerFoot * tree.HeightInFeet;
+                float treeSizedCylinderVolume = (float)Math.PI * dbhInMeters * dbhInMeters * heightInMeters;
+
+                fiaMerchantableCvtsByTreeInCubicMeters[treeIndex] = fiaVolume.GetMerchantableCubicVolumePerHectare(trees, treeIndex);
+                merchantableCvtsPerHa += fiaMerchantableCvtsByTreeInCubicMeters[treeIndex];
+
+                osuCvtsByTreeInCubicMeters[treeIndex] = osuVolume.GetCubicVolumePerHectare(trees, treeIndex);
+                cvtsPerHa += osuCvtsByTreeInCubicMeters[treeIndex];
+
+                // taper coefficient should be in the vicinity of 0.3 for larger trees, but this is not well defined for small trees
+                // Lower bound can be made more stringent if necessary.
+                Debug.Assert(fiaMerchantableCvtsByTreeInCubicMeters[treeIndex] >= 0.0F);
+                Debug.Assert(fiaMerchantableCvtsByTreeInCubicMeters[treeIndex] <= 0.35 * treeSizedCylinderVolume);
+                totalCylinderVolume += treeSizedCylinderVolume;
+            }
+
+            Debug.Assert(merchantableCvtsPerHa >= 0.05 * totalCylinderVolume);
+            Debug.Assert(merchantableCvtsPerHa <= 0.35 * totalCylinderVolume);
+            Debug.Assert(merchantableCvtsPerHa <= cvtsPerHa);
+            Debug.Assert(cvtsPerHa <= 0.35 * totalCylinderVolume);
+
+            float standCvtsRatio = merchantableCvtsPerHa / fiaVolume.GetMerchantableCubicVolumePerHectare(trees);
+            Debug.Assert(standCvtsRatio >= 0.999);
+            Debug.Assert(standCvtsRatio <= 1.001);
         }
 
         [TestMethod]

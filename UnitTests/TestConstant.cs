@@ -5,9 +5,10 @@ namespace Osu.Cof.Organon.Test
     internal static class TestConstant
     {
         public const float AcresPerHectare = 2.47105F;
-        public const float CmPerInch = 2.54F;
         public const int DbhQuantiles = 5;
-        public const float MetersPerFoot = 0.3048F;
+        public const float FeetPerMeter = 3.28084F;
+        public const float InchesPerCm = 0.393701F;
+        public const float MetersPerInch = 0.0254F;
         public const float SquareMetersPerSquareFoot = 0.092903F;
 
         public static ReadOnlyCollection<FiaCode> TreeSpeciesList = new ReadOnlyCollection<FiaCode>(new FiaCode[] {
@@ -57,7 +58,7 @@ namespace Osu.Cof.Organon.Test
         {
             // TODO: make DBH, height, and crown limits species specific
             public const float CrownCompetitionFactor = 1000.0F;
-            // for want of a better option, allow trees larger than the ~100 cm upper bound of Poudel 2018's dataset
+            // for want of a better option, allow trees larger than the ~100 cm upper bound (<65 cm preferred) of Poudel 2018's dataset
             public const float DiameterInInches = 60.0F;
             public const float ExpansionFactor = 100.0F;
             public const float HeightInFeet = 380.0F; // SESE Hyperion

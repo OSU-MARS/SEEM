@@ -21,7 +21,7 @@ namespace Osu.Cof.Organon.Test
         public void WriteToCsv(StreamWriter writer, OrganonVariant variant, int year)
         {
             writer.WriteLine("{0},{1},{2},{3},{4}",
-                             variant.Variant, year, 2.47105F * this.TreesPerAcre, 2.47105F * 0.092903F * this.BasalAreaPerAcre,
+                             variant.TreeModel, year, 2.47105F * this.TreesPerAcre, 2.47105F * 0.092903F * this.BasalAreaPerAcre,
                              this.CrownCompetitionFactor);
         }
     }

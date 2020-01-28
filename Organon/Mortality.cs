@@ -15,14 +15,14 @@ namespace Osu.Cof.Organon
             {
                 POW[treeIndex] = 1.0F;
                 FiaCode species = stand.Species[treeIndex];
-                if ((configuration.Variant.Variant == Variant.Rap) && (species != FiaCode.AlnusRubra))
+                if ((configuration.Variant.TreeModel == TreeModel.OrganonRap) && (species != FiaCode.AlnusRubra))
                 {
                     POW[treeIndex] = 0.2F;
                 }
             }
 
             float A3;
-            if (configuration.Variant.Variant != Variant.Rap)
+            if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
             {
                 A3 = 14.39533971F;
             }
@@ -31,7 +31,7 @@ namespace Osu.Cof.Organon
                 A3 = 3.88F;
             }
             float RDCC;
-            if (configuration.Variant.Variant != Variant.Rap)
+            if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
             {
                 RDCC = 0.60F;
             }
@@ -50,7 +50,7 @@ namespace Osu.Cof.Organon
                 standTreesPerAcre += expansionFactor;
 
                 FiaCode species = stand.Species[treeIndex];
-                if ((species == FiaCode.AlnusRubra) && (configuration.Variant.Variant != Variant.Rap))
+                if ((species == FiaCode.AlnusRubra) && (configuration.Variant.TreeModel != TreeModel.OrganonRap))
                 {
                     alnusRubraExpansionFactor += expansionFactor;
                 }
@@ -85,11 +85,11 @@ namespace Osu.Cof.Organon
                 float SBAL1 = densityGrowth.GetBasalAreaLarger(DBH);
                 float CR = stand.CrownRatio[treeIndex];
                 configuration.Variant.GetMortalityCoefficients(species, DBH, CR, SI_1, SI_2, SBAL1, OG1, out POW[treeIndex], out PMK[treeIndex]);
-                PM_FERT(species, configuration.Variant.Variant, simulationStep, PN, YF, out float FERTADJ);
+                PM_FERT(species, configuration.Variant.TreeModel, simulationStep, PN, YF, out float FERTADJ);
                 PMK[treeIndex] = PMK[treeIndex] + FERTADJ;
             }
 
-            if (configuration.Variant.Variant != Variant.Rap)
+            if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
             {
                 if (RAAGE >= 55.0)
                 {
@@ -137,7 +137,7 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        if (configuration.Variant.Variant != Variant.Rap)
+                        if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
                         {
                             if (RD > RDCC)
                             {
@@ -182,7 +182,7 @@ namespace Osu.Cof.Organon
                                 else
                                 {
                                     IND = 0;
-                                    if (configuration.Variant.Variant != Variant.Rap)
+                                    if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
                                     {
                                         if ((RD > RDCC) && (stand.NO <= 0.0F))
                                         {
@@ -200,7 +200,7 @@ namespace Osu.Cof.Organon
                                 float QMDP;
                                 if ((IND == 0) && (stand.NO > 0.0F))
                                 {
-                                    if (configuration.Variant.Variant != Variant.Rap)
+                                    if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
                                     {
                                         QMDP = QUAD1(NA, stand.NO, RDCC, stand.A1);
                                     }
@@ -261,7 +261,7 @@ namespace Osu.Cof.Organon
                                         QMDA = (float)Math.Sqrt(BAAA / (Constant.ForestersEnglish * NAA));
                                         if (IND == 0)
                                         {
-                                            if (configuration.Variant.Variant != Variant.Rap)
+                                            if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
                                             {
                                                 QMDP = QUAD1(NAA, stand.NO, RDCC, stand.A1);
                                             }
@@ -417,12 +417,12 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void PM_FERT(FiaCode species, Variant variant, int simulationStep, float[] PN, float[] yearsSinceFertilization, out float FERTADJ)
+        private static void PM_FERT(FiaCode species, TreeModel treeModel, int simulationStep, float[] PN, float[] yearsSinceFertilization, out float FERTADJ)
         {
             float c5;
             float PF2;
             float PF3;
-            if (variant != Variant.Rap)
+            if (treeModel != TreeModel.OrganonRap)
             {
                 // Hann 2003 Research Contribution 40, Table 37: Parameters for predicting fertlization response of 5-year mortality
                 if (species == FiaCode.PseudotsugaMenziesii)

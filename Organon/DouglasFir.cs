@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Osu.Cof.Organon
 {
@@ -44,10 +45,14 @@ namespace Osu.Cof.Organon
         /// <param name="PHTGRO">Potential height growth increment in feet.</param>
         /// <remarks>
         /// Derived from the code in appendix 2 of Hann and Scrivani 1987 (FRL Research Bulletin 59). Growth effective age is introduced in 
-        /// Hann and Ritchie 1988 (Height Growth Rate of Douglas-Fir: A Comparison of Model Forms. Forest Science 34(1): 165–175.).
+        /// Hann and Ritchie 1988 (Height Growth Rate of Douglas-Fir: A Comparison of Model Forms. Forest Science 34(1):165–175).
         /// </remarks>
         public static void DouglasFirPonderosaHeightGrowth(bool isDouglasFir, float SI, float HT, out float GEAGE, out float PHTGRO)
         {
+            // range of regression validity is undocumented, assume at least Organon 2.2.4 minimum height is required
+            // Shorter trees can cause the growth effective age to become imaginary.
+            Debug.Assert(HT >= 4.5F);
+
             // BUGBUG these are a0, a1, and a2 in the paper
             float B0;
             float B1;
@@ -77,10 +82,10 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                GEAGE = (float)Math.Pow((-1.0F * Math.Log(A1A)) / (Math.Exp(B0) * Math.Pow(SI, B1)), (1.0F / B2));
+                GEAGE = (float)Math.Pow(-1.0F * Math.Log(A1A) / (Math.Exp(B0) * Math.Pow(SI, B1)), 1.0F / B2);
                 float XAI = 1.0F - (float)Math.Exp(-1.0 * Math.Exp(BBC + B2 * Math.Log(GEAGE)));
                 float XAI5 = 1.0F - (float)Math.Exp(-1.0 * Math.Exp(BBC + B2 * Math.Log(GEAGE + 5.0)));
-                PHTGRO = (4.5F + (HT - 4.5F) * (XAI5 / XAI)) - HT;
+                PHTGRO = 4.5F + (HT - 4.5F) * (XAI5 / XAI) - HT;
             }
         }
     }

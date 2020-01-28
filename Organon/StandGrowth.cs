@@ -20,9 +20,9 @@ namespace Osu.Cof.Organon
                 float growthEffectiveAge = 0.0F; // BUGBUG not intitialized on all Fortran paths
                 float IDXAGE;
                 float SITE;
-                switch (configuration.Variant.Variant)
+                switch (configuration.Variant.TreeModel)
                 {
-                    case Variant.Swo:
+                    case TreeModel.OrganonSwo:
                         // GROWTH EFFECTIVE AGE FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
                         bool treatAsDouglasFir = false;
                         if (species == FiaCode.TsugaHeterophylla)
@@ -41,7 +41,7 @@ namespace Osu.Cof.Organon
                         DouglasFir.DouglasFirPonderosaHeightGrowth(treatAsDouglasFir, SITE, treeHeightInFeet, out growthEffectiveAge, out _);
                         IDXAGE = 500.0F;
                         break;
-                    case Variant.Nwo:
+                    case TreeModel.OrganonNwo:
                         float GP = 5.0F;
                         if (species == FiaCode.TsugaHeterophylla)
                         {
@@ -57,7 +57,7 @@ namespace Osu.Cof.Organon
                         }
                         IDXAGE = 120.0F;
                         break;
-                    case Variant.Smc:
+                    case TreeModel.OrganonSmc:
                         GP = 5.0F;
                         if (species == FiaCode.TsugaHeterophylla)
                         {
@@ -73,7 +73,7 @@ namespace Osu.Cof.Organon
                         }
                         IDXAGE = 120.0F;
                         break;
-                    case Variant.Rap:
+                    case TreeModel.OrganonRap:
                         if (species == FiaCode.AlnusRubra)
                         {
                             // GROWTH EFFECTIVE AGE FROM WEISKITTEL ET AL.'S (2009) RED ALDER DOMINANT HEIGHT GROWTH EQUATION
@@ -84,7 +84,7 @@ namespace Osu.Cof.Organon
                         IDXAGE = 30.0F;
                         break;
                     default:
-                        throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                        throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
                 }
 
                 // BUGBUG inconsistent use of < IB rather than <= IB
@@ -184,14 +184,14 @@ namespace Osu.Cof.Organon
             {
                 stand.Warnings.TreesOld = true;
             }
-            if (configuration.Variant.Variant == Variant.Swo)
+            if (configuration.Variant.TreeModel == TreeModel.OrganonSwo)
             {
                 if (configuration.IsEvenAge && (stand.BreastHeightAgeInYears > 500.0F))
                 {
                     stand.Warnings.TreesOld = true;
                 }
             }
-            else if ((configuration.Variant.Variant == Variant.Nwo) || (configuration.Variant.Variant == Variant.Smc))
+            else if ((configuration.Variant.TreeModel == TreeModel.OrganonNwo) || (configuration.Variant.TreeModel == TreeModel.OrganonSmc))
             {
                 if (configuration.IsEvenAge && (stand.BreastHeightAgeInYears > 120.0F))
                 {
@@ -222,7 +222,7 @@ namespace Osu.Cof.Organon
             float SITE_1 = stand.SiteIndex;
             float SITE_2 = stand.HemlockSiteIndex;
             float SI_1;
-            if (variant.Variant == Variant.Swo)
+            if (variant.TreeModel == TreeModel.OrganonSwo)
             {
                 if ((SITE_1 < 0.0F) && (SITE_2 > 0.0F))
                 {
@@ -233,7 +233,7 @@ namespace Osu.Cof.Organon
                     SITE_2 = 0.940792F * SITE_1;
                 }
             }
-            else if ((variant.Variant == Variant.Nwo) || (variant.Variant == Variant.Smc))
+            else if ((variant.TreeModel == TreeModel.OrganonNwo) || (variant.TreeModel == TreeModel.OrganonSmc))
             {
                 if ((SITE_1 < 0.0F) && (SITE_2 > 0.0F))
                 {
@@ -321,7 +321,7 @@ namespace Osu.Cof.Organon
             {
                 throw new ArgumentOutOfRangeException(nameof(stand.TreeRecordCount));
             }
-            if (Enum.IsDefined(typeof(Variant), configuration.Variant.Variant) == false)
+            if (Enum.IsDefined(typeof(TreeModel), configuration.Variant.TreeModel) == false)
             {
                 throw new ArgumentOutOfRangeException(nameof(configuration.Variant));
             }
@@ -467,7 +467,7 @@ namespace Osu.Cof.Organon
 
             if (configuration.SwissNeedleCast)
             {
-                if ((configuration.Variant.Variant == Variant.Swo) || (configuration.Variant.Variant == Variant.Rap))
+                if ((configuration.Variant.TreeModel == TreeModel.OrganonSwo) || (configuration.Variant.TreeModel == TreeModel.OrganonRap))
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration.Variant), "Swiss needle cast is not supported by the SWO and RAP variants.");
                 }
@@ -492,15 +492,15 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            if ((configuration.Variant.Variant >= Variant.Rap) && (stand.SiteIndex < 0.0F))
+            if ((configuration.Variant.TreeModel >= TreeModel.OrganonRap) && (stand.SiteIndex < 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(stand.SiteIndex));
             }
-            if ((configuration.Variant.Variant >= Variant.Rap) && (configuration.PDEN < 0.0F))
+            if ((configuration.Variant.TreeModel >= TreeModel.OrganonRap) && (configuration.PDEN < 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(configuration.PDEN));
             }
-            if (!configuration.IsEvenAge && (configuration.Variant.Variant >= Variant.Rap))
+            if (!configuration.IsEvenAge && (configuration.Variant.TreeModel >= TreeModel.OrganonRap))
             {
                 throw new ArgumentOutOfRangeException(nameof(configuration.IsEvenAge));
             }
@@ -531,7 +531,7 @@ namespace Osu.Cof.Organon
                 FiaCode species = stand.Species[treeIndex];
                 if (configuration.Variant.IsSpeciesSupported(species) == false)
                 {
-                    throw new NotSupportedException(String.Format("{0} does not support {1} (tree {2}).", configuration.Variant.Variant, species, treeIndex));
+                    throw new NotSupportedException(String.Format("{0} does not support {1} (tree {2}).", configuration.Variant.TreeModel, species, treeIndex));
                 }
                 float dbhInInches = stand.Dbh[treeIndex];
                 if (dbhInInches < 0.09F)
@@ -567,10 +567,10 @@ namespace Osu.Cof.Organon
             {
                 FiaCode speciesCode = stand.Species[treeIndex];
                 float heightInFeet = stand.Height[treeIndex];
-                switch (configuration.Variant.Variant)
+                switch (configuration.Variant.TreeModel)
                 {
                     // SWO BIG SIX
-                    case Variant.Swo:
+                    case TreeModel.OrganonSwo:
                         if ((speciesCode == FiaCode.PinusPonderosa) && (heightInFeet > maxPonderosaHeight))
                         {
                             maxPonderosaHeight = heightInFeet;
@@ -597,8 +597,8 @@ namespace Osu.Cof.Organon
                             maxDouglasFirHeight = heightInFeet;
                         }
                         break;
-                    case Variant.Nwo:
-                    case Variant.Smc:
+                    case TreeModel.OrganonNwo:
+                    case TreeModel.OrganonSmc:
                         if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > maxGrandFirHeight))
                         {
                             maxGrandFirHeight = heightInFeet;
@@ -612,7 +612,7 @@ namespace Osu.Cof.Organon
                             maxWesternHemlockHeight = heightInFeet;
                         }
                         break;
-                    case Variant.Rap:
+                    case TreeModel.OrganonRap:
                         if ((speciesCode == FiaCode.AlnusRubra) && (heightInFeet > maxRedAlderHeight))
                         {
                             maxRedAlderHeight = heightInFeet;
@@ -651,7 +651,7 @@ namespace Osu.Cof.Organon
                 {
                     standBigSixBasalArea += basalArea;
                 }
-                if (configuration.Variant.Variant == Variant.Swo)
+                if (configuration.Variant.TreeModel == TreeModel.OrganonSwo)
                 {
                     if ((species == FiaCode.ArbutusMenziesii) || (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla) || (species == FiaCode.QuercusKelloggii))
                     {
@@ -667,7 +667,7 @@ namespace Osu.Cof.Organon
                 throw new NotSupportedException("Total basal area big six species is negative.");
             }
 
-            if (configuration.Variant.Variant >= Variant.Rap)
+            if (configuration.Variant.TreeModel >= TreeModel.OrganonRap)
             {
                 float PRA;
                 if (standBasalArea > 0.0F)
@@ -688,9 +688,9 @@ namespace Osu.Cof.Organon
 
             // DETERMINE WARNINGS (IF ANY)
             // BUGBUG move maximum site indices to variant capabilities
-            switch (configuration.Variant.Variant)
+            switch (configuration.Variant.TreeModel)
             {
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     if ((stand.SiteIndex > 0.0F) && ((stand.SiteIndex < 40.0F) || (stand.SiteIndex > 150.0F)))
                     {
                         stand.Warnings.SiteIndexOutOfRange = true;
@@ -700,8 +700,8 @@ namespace Osu.Cof.Organon
                         stand.Warnings.HemlockSiteIndexOutOfRange = true;
                     }
                     break;
-                case Variant.Nwo:
-                case Variant.Smc:
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
                     if ((stand.SiteIndex > 0.0F) && ((stand.SiteIndex < 90.0F) || (stand.SiteIndex > 142.0F)))
                     {
                         stand.Warnings.SiteIndexOutOfRange = true;
@@ -711,7 +711,7 @@ namespace Osu.Cof.Organon
                         stand.Warnings.HemlockSiteIndexOutOfRange = true;
                     }
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     if ((stand.SiteIndex < 20.0F) || (stand.SiteIndex > 125.0F))
                     {
                         stand.Warnings.SiteIndexOutOfRange = true;
@@ -725,9 +725,9 @@ namespace Osu.Cof.Organon
 
             // check tallest trees in stand against maximum height for big six species
             // BUGBUG: need an API for maximum heights rather than inline code here
-            switch (configuration.Variant.Variant)
+            switch (configuration.Variant.TreeModel)
             {
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     if (maxPonderosaHeight > 0.0F)
                     {
                         float MAXHT = (stand.HemlockSiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.164985 * (stand.HemlockSiteIndex - 4.5), 0.288169)))) + 4.5F;
@@ -754,8 +754,8 @@ namespace Osu.Cof.Organon
                         }
                     }
                     break;
-                case Variant.Nwo:
-                case Variant.Smc:
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
                     if (maxDouglasFirHeight > 0.0F)
                     {
                         float Z50 = 2500.0F / (stand.SiteIndex - 4.5F);
@@ -784,7 +784,7 @@ namespace Osu.Cof.Organon
                         }
                     }
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     if (maxRedAlderHeight > 0.0F)
                     {
                         RedAlder.WHHLB_H40(stand.SiteIndex, 20.0F, 150.0F, out float MAXHT);
@@ -796,28 +796,28 @@ namespace Osu.Cof.Organon
                     break;
             }
 
-            if (configuration.IsEvenAge && (configuration.Variant.Variant != Variant.Smc))
+            if (configuration.IsEvenAge && (configuration.Variant.TreeModel != TreeModel.OrganonSmc))
             {
                 stand.Warnings.TreesYoung = stand.BreastHeightAgeInYears < 10;
             }
 
             float requiredWellKnownSpeciesBasalAreaFraction;
-            switch (configuration.Variant.Variant)
+            switch (configuration.Variant.TreeModel)
             {
-                case Variant.Nwo:
+                case TreeModel.OrganonNwo:
                     requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     requiredWellKnownSpeciesBasalAreaFraction = 0.8F;
                     break;
-                case Variant.Smc:
+                case TreeModel.OrganonSmc:
                     requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
                     break;
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     requiredWellKnownSpeciesBasalAreaFraction = 0.2F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                    throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
             if ((standBigSixBasalArea + standHardwoodBasalArea) < (requiredWellKnownSpeciesBasalAreaFraction * standBasalArea))
             {
@@ -835,14 +835,14 @@ namespace Osu.Cof.Organon
             {
                 stand.Warnings.TreesOld = true;
             }
-            if (configuration.Variant.Variant == Variant.Swo)
+            if (configuration.Variant.TreeModel == TreeModel.OrganonSwo)
             {
                 if (configuration.IsEvenAge && stand.BreastHeightAgeInYears > 500)
                 {
                     stand.Warnings.TreesOld = true;
                 }
             }
-            else if (configuration.Variant.Variant == Variant.Nwo || configuration.Variant.Variant == Variant.Smc)
+            else if (configuration.Variant.TreeModel == TreeModel.OrganonNwo || configuration.Variant.TreeModel == TreeModel.OrganonSmc)
             {
                 if (configuration.IsEvenAge && stand.BreastHeightAgeInYears > 120)
                 {
@@ -861,38 +861,38 @@ namespace Osu.Cof.Organon
             int standAgeBudgetAvailableAtNextTimeStep;
             if (configuration.IsEvenAge)
             {
-                switch (configuration.Variant.Variant)
+                switch (configuration.Variant.TreeModel)
                 {
-                    case Variant.Swo:
+                    case TreeModel.OrganonSwo:
                         standAgeBudgetAvailableAtNextTimeStep = 500 - stand.AgeInYears - 5;
                         break;
-                    case Variant.Nwo:
-                    case Variant.Smc:
+                    case TreeModel.OrganonNwo:
+                    case TreeModel.OrganonSmc:
                         standAgeBudgetAvailableAtNextTimeStep = 120 - stand.AgeInYears - 5;
                         break;
-                    case Variant.Rap:
+                    case TreeModel.OrganonRap:
                         standAgeBudgetAvailableAtNextTimeStep = 30 - stand.AgeInYears - 1;
                         break;
                     default:
-                        throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                        throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
                 }
             }
             else
             {
-                switch (configuration.Variant.Variant)
+                switch (configuration.Variant.TreeModel)
                 {
-                    case Variant.Swo:
+                    case TreeModel.OrganonSwo:
                         standAgeBudgetAvailableAtNextTimeStep = 500 - (simulationStep + 1) * 5;
                         break;
-                    case Variant.Nwo:
-                    case Variant.Smc:
+                    case TreeModel.OrganonNwo:
+                    case TreeModel.OrganonSmc:
                         standAgeBudgetAvailableAtNextTimeStep = 120 - (simulationStep + 1) * 5;
                         break;
-                    case Variant.Rap:
+                    case TreeModel.OrganonRap:
                         standAgeBudgetAvailableAtNextTimeStep = 30 - (simulationStep + 1) * 1;
                         break;
                     default:
-                        throw OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                        throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
                 }
             }
 
@@ -912,11 +912,11 @@ namespace Osu.Cof.Organon
                         B0 = 19.04942539F;
                         break;
                     case FiaCode.TsugaHeterophylla:
-                        if ((configuration.Variant.Variant == Variant.Nwo) || (configuration.Variant.Variant == Variant.Smc))
+                        if ((configuration.Variant.TreeModel == TreeModel.OrganonNwo) || (configuration.Variant.TreeModel == TreeModel.OrganonSmc))
                         {
                             B0 = 19.04942539F;
                         }
-                        else if (configuration.Variant.Variant == Variant.Rap)
+                        else if (configuration.Variant.TreeModel == TreeModel.OrganonRap)
                         {
                             B0 = 19.04942539F;
                         }

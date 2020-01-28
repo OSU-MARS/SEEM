@@ -43,7 +43,7 @@
         {
             this.Bucking = new Bucking();
             this.Variant = variant;
-            if (this.Variant.Variant == Organon.Variant.Rap)
+            if (this.Variant.TreeModel == Organon.TreeModel.OrganonRap)
             {
                 // only even age red alder plantations more than 10 years old are supported
                 this.IsEvenAge = true;

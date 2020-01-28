@@ -6,7 +6,7 @@ namespace Osu.Cof.Organon
     public class OrganonVariantSmc : OrganonVariant
     {
         public OrganonVariantSmc()
-            : base(Variant.Smc)
+            : base(TreeModel.OrganonSmc)
         {
         }
 

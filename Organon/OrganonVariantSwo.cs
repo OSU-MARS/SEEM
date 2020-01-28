@@ -6,7 +6,7 @@ namespace Osu.Cof.Organon
     public class OrganonVariantSwo : OrganonVariant
     {
         public OrganonVariantSwo()
-            : base(Variant.Swo)
+            : base(TreeModel.OrganonSwo)
         {
         }
 

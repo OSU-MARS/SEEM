@@ -11,10 +11,10 @@ namespace Osu.Cof.Organon.Test
         protected TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
             List<TreeRecord> trees = new List<TreeRecord>();
-            switch (configuration.Variant.Variant)
+            switch (configuration.Variant.TreeModel)
             {
-                case Variant.Nwo:
-                case Variant.Smc:
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
                     trees.Add(new TreeRecord(FiaCode.PseudotsugaMenziesii, 0.1F, 10.0F, 0.4F));
                     trees.Add(new TreeRecord(FiaCode.PseudotsugaMenziesii, 0.2F, 20.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.PseudotsugaMenziesii, 0.3F, 10.0F, 0.6F));
@@ -34,7 +34,7 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.CornusNuttallii, 0.1F, 2.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.Salix, 0.1F, 2.0F, 0.5F));
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     trees.Add(new TreeRecord(FiaCode.AlnusRubra, 0.1F, 30.0F, 0.3F));
                     trees.Add(new TreeRecord(FiaCode.AlnusRubra, 0.2F, 40.0F, 0.4F));
                     trees.Add(new TreeRecord(FiaCode.AlnusRubra, 0.3F, 30.0F, 0.5F));
@@ -46,7 +46,7 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.CornusNuttallii, 0.1F, 1.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.Salix, 0.1F, 1.0F, 0.5F));
                     break;
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     trees.Add(new TreeRecord(FiaCode.PseudotsugaMenziesii, 0.1F, 5.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.AbiesConcolor, 0.1F, 5.0F, 0.5F));
                     trees.Add(new TreeRecord(FiaCode.AbiesGrandis, 0.1F, 5.0F, 0.5F));
@@ -69,7 +69,7 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.Salix, 0.1F, 1.0F, 0.5F));
                     break;
                 default:
-                    throw Organon.OrganonVariant.CreateUnhandledVariantException(configuration.Variant.Variant);
+                    throw Organon.OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
 
             TestStand stand = new TestStand(configuration.Variant, 0, trees.Count, TestConstant.Default.SiteIndex);
@@ -102,20 +102,20 @@ namespace Osu.Cof.Organon.Test
         protected Dictionary<FiaCode, float[]> CreateSpeciesCalibration(OrganonVariant variant)
         {
             ReadOnlyCollection<FiaCode> speciesList;
-            switch (variant.Variant)
+            switch (variant.TreeModel)
             {
-                case Variant.Nwo:
-                case Variant.Smc:
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
                     speciesList = Constant.NwoSmcSpecies;
                     break;
-                case Variant.Rap:
+                case TreeModel.OrganonRap:
                     speciesList = Constant.RapSpecies;
                     break;
-                case Variant.Swo:
+                case TreeModel.OrganonSwo:
                     speciesList = Constant.SwoSpecies;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledVariantException(variant.Variant);
+                    throw OrganonVariant.CreateUnhandledModelException(variant.TreeModel);
             }
 
             Dictionary<FiaCode, float[]> calibration = new Dictionary<FiaCode, float[]>();
@@ -222,7 +222,7 @@ namespace Osu.Cof.Organon.Test
                 float diameterGrowthInInches = stand.DbhGrowth[treeIndex];
                 if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowth))
                 {
-                    Assert.IsTrue(diameterGrowthInInches > 0.0F, "{0}: {1} {2} did not grow in diameter.", variant.Variant, stand.Species[treeIndex], treeIndex);
+                    Assert.IsTrue(diameterGrowthInInches > 0.0F, "{0}: {1} {2} did not grow in diameter.", variant.TreeModel, stand.Species[treeIndex], treeIndex);
                     Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DiameterInInches);
                 }
                 else if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowthOrNoChange))
@@ -237,12 +237,12 @@ namespace Osu.Cof.Organon.Test
                 float heightGrowthInFeet = stand.HeightGrowth[treeIndex];
                 if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowth))
                 {
-                    Assert.IsTrue(heightGrowthInFeet > 0.0F, "{0}: {1} {2} did not grow in height.", variant.Variant, stand.Species[treeIndex], treeIndex);
+                    Assert.IsTrue(heightGrowthInFeet > 0.0F, "{0}: {1} {2} did not grow in height.", variant.TreeModel, stand.Species[treeIndex], treeIndex);
                     Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
                 }
                 else if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowthOrNoChange))
                 {
-                    Assert.IsTrue(heightGrowthInFeet >= 0.0F, "{0}: {1} {2} decreased in height.", variant.Variant, stand.Species[treeIndex], treeIndex);
+                    Assert.IsTrue(heightGrowthInFeet >= 0.0F, "{0}: {1} {2} decreased in height.", variant.TreeModel, stand.Species[treeIndex], treeIndex);
                     Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
                 }
                 else
@@ -259,7 +259,7 @@ namespace Osu.Cof.Organon.Test
             Assert.IsTrue(stand.Warnings.HemlockSiteIndexOutOfRange == expectedWarnings.HasFlag(OrganonWarnings.HemlockSiteIndex));
             Assert.IsTrue(stand.Warnings.OtherSpeciesBasalAreaTooHigh == false);
             Assert.IsTrue(stand.Warnings.SiteIndexOutOfRange == false);
-            if (variant.Variant != Variant.Smc)
+            if (variant.TreeModel != TreeModel.OrganonSmc)
             {
                 // for now, ignore SMC warning for breast height age < 10
                 Assert.IsTrue(stand.Warnings.TreesOld == false);

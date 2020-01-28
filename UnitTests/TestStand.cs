@@ -84,14 +84,14 @@ namespace Osu.Cof.Organon.Test
                 int id = this.Tag[treeIndex] > 0 ? this.Tag[treeIndex] : treeIndex;
                 FiaCode species = this.Species[treeIndex];
                 float dbhInInches = this.Dbh[treeIndex];
-                float heightInMeters = TestConstant.MetersPerFoot * this.Height[treeIndex];
+                float heightInMeters = Constant.MetersPerFoot * this.Height[treeIndex];
                 float crownRatio = this.CrownRatio[treeIndex];
                 float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
 
                 float basalAreaLarger = TestConstant.AcresPerHectare * TestConstant.SquareMetersPerSquareFoot * density.GetBasalAreaLarger(dbhInInches);
                 float ccfLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
                 writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}", 
-                                 variant.Variant, year, id, species, basalAreaLarger, ccfLarger, TestConstant.CmPerInch * dbhInInches, 
+                                 variant.TreeModel, year, id, species, basalAreaLarger, ccfLarger, Constant.CmPerInch * dbhInInches, 
                                  heightInMeters, liveExpansionFactor, crownRatio);
             }
         }
@@ -116,7 +116,7 @@ namespace Osu.Cof.Organon.Test
                 float heightGrowth = this.HeightGrowth[treeIndex];
                 int quantile = this.QuantileByInitialDbh[treeIndex];
                 testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
-                                      variant.Variant, year, id, species, 
+                                      variant.TreeModel, year, id, species, 
                                       dbhInInches, heightInFeet, expansionFactor, deadExpansionFactor,
                                       crownRatio, dbhGrowth, heightGrowth, quantile);
             }
@@ -148,15 +148,15 @@ namespace Osu.Cof.Organon.Test
 
                 int id = this.Tag[treeIndex] > 0 ? this.Tag[treeIndex] : treeIndex;
                 FiaCode species = this.Species[treeIndex];
-                float dbhInCentimeters = TestConstant.CmPerInch * this.Dbh[treeIndex];
-                float heightInMeters = TestConstant.MetersPerFoot * this.Height[treeIndex];
+                float dbhInCentimeters = Constant.CmPerInch * this.Dbh[treeIndex];
+                float heightInMeters = Constant.MetersPerFoot * this.Height[treeIndex];
                 float crownRatio = this.CrownRatio[treeIndex];
                 float deadExpansionFactor = TestConstant.AcresPerHectare * this.DeadExpansionFactor[treeIndex];
-                float dbhGrowth = TestConstant.CmPerInch * this.DbhGrowth[treeIndex];
-                float heightGrowth = TestConstant.MetersPerFoot * this.HeightGrowth[treeIndex];
+                float dbhGrowth = Constant.CmPerInch * this.DbhGrowth[treeIndex];
+                float heightGrowth = Constant.MetersPerFoot * this.HeightGrowth[treeIndex];
                 int quantile = this.QuantileByInitialDbh[treeIndex];
                 writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
-                                 variant.Variant, year, id, species, dbhInCentimeters, heightInMeters, 
+                                 variant.TreeModel, year, id, species, dbhInCentimeters, heightInMeters, 
                                  expansionFactor, deadExpansionFactor, crownRatio, dbhGrowth, heightGrowth, quantile);
             }
         }

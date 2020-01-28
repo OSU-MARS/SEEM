@@ -38,8 +38,8 @@ namespace Osu.Cof.Organon.Test
                     if ((ingrowthYear != firstMeasurementYear) && (ingrowthYear <= year))
                     {
                         float dbhInCentimeters = tree.DbhInCentimetersByYear.Values[0];
-                        stand.Dbh[treeIndex] = dbhInCentimeters / TestConstant.CmPerInch;
-                        stand.Height[treeIndex] = tree.EstimateInitialHeightInMeters() / TestConstant.MetersPerFoot;
+                        stand.Dbh[treeIndex] = dbhInCentimeters / Constant.CmPerInch;
+                        stand.Height[treeIndex] = TestConstant.FeetPerMeter * TreeRecord.EstimateHeightInMeters(tree.Species, stand.Dbh[treeIndex]);
                         stand.CrownRatio[treeIndex] = tree.EstimateInitialCrownRatio(standDensity);
                         stand.LiveExpansionFactor[treeIndex] = fixedPlotExpansionFactor;
                     }
@@ -129,8 +129,8 @@ namespace Osu.Cof.Organon.Test
                 }
                 stand.Tag[treeIndex] = tree.Tag;
                 stand.Species[treeIndex] = species;
-                stand.Dbh[treeIndex] = dbhInCentimeters / 2.54F;
-                stand.Height[treeIndex] = 3.048F * tree.EstimateInitialHeightInMeters();
+                stand.Dbh[treeIndex] = TestConstant.InchesPerCm * dbhInCentimeters;
+                stand.Height[treeIndex] = TreeRecord.EstimateHeightInFeet(species, stand.Dbh[treeIndex]);
                 stand.CrownRatio[treeIndex] = TestConstant.Default.CrownRatio;
                 stand.LiveExpansionFactor[treeIndex] = expansionFactor;
 
