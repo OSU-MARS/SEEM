@@ -1,6 +1,6 @@
 ﻿namespace Osu.Cof.Organon
 {
-    public class StandWarnings
+    public class OrganonWarnings
     {
         // 2
         public bool BigSixHeightAbovePotential { get; set; }
@@ -17,7 +17,7 @@
         // 5
         public bool TreesYoung { get; set; }
 
-        public StandWarnings()
+        public OrganonWarnings()
         {
             this.BigSixHeightAbovePotential = false;
             this.LessThan50TreeRecords = false;
@@ -28,7 +28,7 @@
             this.TreesYoung = false;
         }
 
-        public StandWarnings(StandWarnings other)
+        public OrganonWarnings(OrganonWarnings other)
         {
             this.BigSixHeightAbovePotential = other.BigSixHeightAbovePotential;
             this.LessThan50TreeRecords = other.LessThan50TreeRecords;

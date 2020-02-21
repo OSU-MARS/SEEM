@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -13,16 +14,15 @@ namespace Osu.Cof.Organon.Test
         public TestContext TestContext { get; set; }
 
         [TestMethod]
-        [DeploymentItem("HPNF.xlsx")]
         public void HuffmanPeakNobleFir()
         {
-            string plotFileName = "HPNF.xlsx";
-            PspStand huffmanPeak = new PspStand(plotFileName, "HPNF", 0.2F);
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "HPNF.xlsx");
+            PspStand huffmanPeak = new PspStand(plotFilePath, "HPNF", 0.2F);
             OrganonVariant variant = new OrganonVariantSwo(); // SWO allows mapping ABAM -> ABGR and ABPR -> ABCO
             TestStand stand = huffmanPeak.ToOrganonStand(variant, 80.0F);
             int startYear = 1980;
             stand.WriteCompetitionAsCsv("HPNF initial competition.csv", variant, startYear);
-            this.GrowPspStand(huffmanPeak, stand, variant, startYear, 2015, Path.GetFileNameWithoutExtension(plotFileName));
+            this.GrowPspStand(huffmanPeak, stand, variant, startYear, 2015, Path.GetFileNameWithoutExtension(plotFilePath));
 
             TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, huffmanPeak, startYear);
             using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("HPNF measured quantiles.csv", variant, startYear);
@@ -52,7 +52,7 @@ namespace Osu.Cof.Organon.Test
 
                 // recalculate heights and crown ratios for all trees
                 Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
-                StandGrowth.SetIngrowthHeightAndCrownRatio(variant, stand, stand.TreeRecordCount, CALIB);
+                Organon.SetIngrowthHeightAndCrownRatio(variant, stand, stand.TreeRecordCount, CALIB);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // run Organon growth simulation
@@ -74,7 +74,7 @@ namespace Osu.Cof.Organon.Test
                 stand.WriteTreesAsCsv(this.TestContext, variant, 0, false);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    StandGrowth.Grow(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
+                    Organon.Grow(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
                     stand.SetSdiMax(configuration);
                     this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
@@ -88,16 +88,15 @@ namespace Osu.Cof.Organon.Test
         }
 
         [TestMethod]
-        [DeploymentItem("RS39 lower half.xlsx")]
         public void RS39()
         {
-            string plotFileName = "RS39 lower half.xlsx";
-            PspStand rs39 = new PspStand(plotFileName, "RS39 lower half", 0.154441F);
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "RS39 lower half.xlsx");
+            PspStand rs39 = new PspStand(plotFilePath, "RS39 lower half", 0.154441F);
             OrganonVariant variant = new OrganonVariantNwo();
             TestStand stand = rs39.ToOrganonStand(variant, 105.0F);
             int startYear = 1992;
             stand.WriteCompetitionAsCsv("RS39 lower half initial competition.csv", variant, startYear);
-            this.GrowPspStand(rs39, stand, variant, startYear, 2019, Path.GetFileNameWithoutExtension(plotFileName));
+            this.GrowPspStand(rs39, stand, variant, startYear, 2019, Path.GetFileNameWithoutExtension(plotFilePath));
 
             TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, rs39, startYear);
             using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("RS39 lower half measured quantiles.csv", variant, startYear);

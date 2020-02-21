@@ -936,7 +936,7 @@ namespace Osu.Cof.Organon
             }
 
             // CROWN RATIO ADJUSTMENT
-            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(crownRatio);
+            float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
             float DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
             Debug.Assert(DG > 0.0F);
             return DG;
@@ -994,7 +994,7 @@ namespace Osu.Cof.Organon
             float B0 = P1 * (float)Math.Exp(P2 * TCCH);
             float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
             float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
-            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
+            float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
             float HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG > 0.0F);
             return HG;

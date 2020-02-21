@@ -35,7 +35,7 @@ namespace Osu.Cof.Organon
         // STOR[1]
         public float RD0 { get; set; }
 
-        public StandWarnings Warnings { get; private set; }
+        public OrganonWarnings Warnings { get; private set; }
 
         public bool[] TreeHeightWarning { get; private set; }
 
@@ -49,7 +49,7 @@ namespace Osu.Cof.Organon
             this.SiteIndex = primarySiteIndex;
             this.RedAlderSiteIndex = -1.0F;
             this.TreeHeightWarning = new bool[treeRecordCount];
-            this.Warnings = new StandWarnings();
+            this.Warnings = new OrganonWarnings();
         }
 
         protected Stand(Stand other)
@@ -69,7 +69,7 @@ namespace Osu.Cof.Organon
             this.RedAlderSiteIndex = other.RedAlderSiteIndex;
             other.Species.CopyTo(this.Species, 0);
             other.TreeHeightWarning.CopyTo(this.TreeHeightWarning, 0);
-            this.Warnings = new StandWarnings(other.Warnings);
+            this.Warnings = new OrganonWarnings(other.Warnings);
         }
 
         public void SetDefaultAndMortalitySiteIndices(OrganonVariant variant)

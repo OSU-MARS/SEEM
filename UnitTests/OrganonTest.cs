@@ -69,7 +69,7 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.Salix, 0.1F, 1.0F, 0.5F));
                     break;
                 default:
-                    throw Organon.OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
+                    throw Cof.Organon.OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
 
             TestStand stand = new TestStand(configuration.Variant, 0, trees.Count, TestConstant.Default.SiteIndex);
@@ -151,7 +151,7 @@ namespace Osu.Cof.Organon.Test
             using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
             for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)
             {
-                StandGrowth.Grow(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
+                Organon.Grow(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
                 stand.SetSdiMax(configuration);

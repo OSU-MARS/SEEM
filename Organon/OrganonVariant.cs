@@ -126,7 +126,7 @@ namespace Osu.Cof.Organon
                            (species == FiaCode.CalocedrusDecurrens) || (species == FiaCode.PinusLambertiana) ||
                            (species == FiaCode.PinusPonderosa) || (species == FiaCode.PseudotsugaMenziesii);
                 default:
-                    throw Organon.OrganonVariant.CreateUnhandledModelException(this.TreeModel);
+                    throw Cof.Organon.OrganonVariant.CreateUnhandledModelException(this.TreeModel);
             }
         }
 
@@ -142,7 +142,7 @@ namespace Osu.Cof.Organon
                 case TreeModel.OrganonSwo:
                     return Constant.SwoSpecies.Contains(species);
                 default:
-                    throw Organon.OrganonVariant.CreateUnhandledModelException(this.TreeModel);
+                    throw Cof.Organon.OrganonVariant.CreateUnhandledModelException(this.TreeModel);
             }
         }
     }

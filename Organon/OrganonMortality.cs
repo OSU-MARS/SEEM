@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Organon
 {
-    internal class Mortality
+    internal class OrganonMortality
     {
         // ROUTINE FOR SETTING TREE MORTALITY
         public static void MORTAL(OrganonConfiguration configuration, int simulationStep, Stand stand, 
@@ -101,7 +101,7 @@ namespace Osu.Cof.Organon
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 float CR = stand.CrownRatio[treeIndex];
-                float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
+                float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
                 float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
                 float PS = (float)Math.Pow(1.0F - XPM, POW[treeIndex]);
                 float PM = 1.0F - PS * CRADJ;
@@ -220,7 +220,7 @@ namespace Osu.Cof.Organon
                                     for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                                     {
                                         float CR = stand.CrownRatio[treeIndex];
-                                        float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
+                                        float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
                                         float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
                                         float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                                         float PM = 1.0F - PS * CRADJ;
@@ -249,7 +249,7 @@ namespace Osu.Cof.Organon
                                             }
 
                                             float CR = stand.CrownRatio[treeIndex];
-                                            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
+                                            float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
                                             float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
                                             float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
@@ -294,7 +294,7 @@ namespace Osu.Cof.Organon
                                         else
                                         {
                                             float CR = stand.CrownRatio[treeIndex];
-                                            float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
+                                            float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
                                             float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
                                             float PS = (float)Math.Pow(1.0F - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
@@ -316,7 +316,7 @@ namespace Osu.Cof.Organon
                 for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
                     float CR = stand.CrownRatio[treeIndex];
-                    float CRADJ = TreeGrowth.GetCrownRatioAdjustment(CR);
+                    float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
                     float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
                     float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
                     float PM = 1.0F - PS * CRADJ;

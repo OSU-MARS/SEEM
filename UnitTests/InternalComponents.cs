@@ -13,7 +13,7 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void CrownGrowthApi()
         {
-            TreeGrowth treeGrowth = new TreeGrowth();
+            OrganonGrowth treeGrowth = new OrganonGrowth();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
@@ -86,7 +86,7 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void DiameterGrowthApi()
         {
-            TreeGrowth treeGrowth = new TreeGrowth();
+            OrganonGrowth treeGrowth = new OrganonGrowth();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
@@ -139,7 +139,7 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void GrowApi()
         {
-            TreeGrowth treeGrowth = new TreeGrowth();
+            OrganonGrowth treeGrowth = new OrganonGrowth();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 float BABT = 0.0F; // (DOUG?)
@@ -180,7 +180,7 @@ namespace Osu.Cof.Organon.Test
                 {
                     for (float heightGeneticFactor = 0.0F; heightGeneticFactor <= 25.0F; heightGeneticFactor += 5.0F)
                     {
-                        GrowthModifiers.GG_MODS(treeAgeInYears, diameterGeneticFactor, heightGeneticFactor, out float diameterGrowthModifier, out float heightGrowthModifier);
+                        OrganonGrowthModifiers.GG_MODS(treeAgeInYears, diameterGeneticFactor, heightGeneticFactor, out float diameterGrowthModifier, out float heightGrowthModifier);
                         this.TestContext.WriteLine("{0},{1},{2},{3},{4}", treeAgeInYears, diameterGeneticFactor, heightGeneticFactor, diameterGrowthModifier, heightGrowthModifier);
                         Assert.IsTrue(diameterGrowthModifier >= 1.0F);
                         Assert.IsTrue(diameterGrowthModifier < 2.0F);
@@ -193,7 +193,7 @@ namespace Osu.Cof.Organon.Test
             this.TestContext.WriteLine("FR, diameter growth modifier, height growth modifier");
             for (float FR = 0.5F; FR <= 5.0F; FR += 0.5F)
             {
-                GrowthModifiers.SNC_MODS(FR, out float diameterGrowthModifier, out float heightGrowthModifier);
+                OrganonGrowthModifiers.SNC_MODS(FR, out float diameterGrowthModifier, out float heightGrowthModifier);
                 this.TestContext.WriteLine("{0},{1},{2}", FR, diameterGrowthModifier, heightGrowthModifier);
                 Assert.IsTrue(diameterGrowthModifier >= 0.0F);
                 Assert.IsTrue(diameterGrowthModifier <= 1.0F);
@@ -209,7 +209,7 @@ namespace Osu.Cof.Organon.Test
             float[] CCH = new float[41]; // (DOUG? why is this different from the other competition arrays?)
             float OLD = 0.0F; // (DOUG?)
             float[] PN = new float[5]; // (DOUG?)
-            TreeGrowth treeGrowth = new TreeGrowth();
+            OrganonGrowth treeGrowth = new OrganonGrowth();
             float[] YF = new float[5]; // (DOUG?)
             float[] YT = new float[5]; // (DOUG?)
             foreach (OrganonVariant variant in TestConstant.Variants)
@@ -310,14 +310,14 @@ namespace Osu.Cof.Organon.Test
                 float RAAGE = TestConstant.Default.RAAGE;
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    Mortality.MORTAL(configuration, simulationStep, stand, density, stand.SiteIndex, 
+                    OrganonMortality.MORTAL(configuration, simulationStep, stand, density, stand.SiteIndex, 
                                      stand.HemlockSiteIndex, PN, YF, ref RAAGE);
                     stand.SetSdiMax(configuration);
                     this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                     // TODO: xind -1.0 case
                     float xind = 0.0F;
-                    Mortality.OldGro(variant, stand, xind, out float OG);
+                    OrganonMortality.OldGro(variant, stand, xind, out float OG);
                     Assert.IsTrue(OG >= 0.0F);
                     Assert.IsTrue(OG <= 2.0F);
                 }

@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Organon
 {
-    internal class TreeGrowth
+    internal class OrganonGrowth
     {
         public static float GetCrownRatioAdjustment(float crownRatio)
         {
@@ -289,11 +289,11 @@ namespace Osu.Cof.Organon
             float HGMOD_SNC = 1.0F;
             if ((stand.AgeInYears > 0) && configuration.Genetics)
             {
-                GrowthModifiers.GG_MODS((float)stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMOD_GG, out HGMOD_GG);
+                OrganonGrowthModifiers.GG_MODS((float)stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMOD_GG, out HGMOD_GG);
             }
             if (configuration.SwissNeedleCast && (configuration.Variant.TreeModel == TreeModel.OrganonNwo || configuration.Variant.TreeModel == TreeModel.OrganonSmc))
             {
-                GrowthModifiers.SNC_MODS(configuration.FR, out DGMOD_SNC, out HGMOD_SNC);
+                OrganonGrowthModifiers.SNC_MODS(configuration.FR, out DGMOD_SNC, out HGMOD_SNC);
             }
 
             // diameter growth
@@ -358,7 +358,7 @@ namespace Osu.Cof.Organon
 
             // determine mortality
             // Sets configuration.NO.
-            Mortality.MORTAL(configuration, simulationStep, stand, densityBeforeGrowth, SI_1, SI_2, PN, YF, ref RAAGE);
+            OrganonMortality.MORTAL(configuration, simulationStep, stand, densityBeforeGrowth, SI_1, SI_2, PN, YF, ref RAAGE);
 
             // grow tree diameters
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -432,8 +432,8 @@ namespace Osu.Cof.Organon
                                    float SI_1, float SI_2, Dictionary<FiaCode, float[]> CALIB)
         {
             // DETERMINE 5-YR CROWN RECESSION
-            Mortality.OldGro(variant, stand, -1.0F, out float OG1);
-            Mortality.OldGro(variant, stand, 0.0F, out float OG2);
+            OrganonMortality.OldGro(variant, stand, -1.0F, out float OG1);
+            OrganonMortality.OldGro(variant, stand, 0.0F, out float OG2);
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 // CALCULATE HCB START OF GROWTH

@@ -2,7 +2,7 @@
 
 namespace Osu.Cof.Organon
 {
-    internal class GrowthModifiers
+    internal class OrganonGrowthModifiers
     {
         /// <summary>
         /// Get genetic diameter and height growth modifiers.

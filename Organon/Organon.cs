@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Osu.Cof.Organon
 {
-    public class StandGrowth
+    public class Organon
     {
         private static void CheckTreeAges(OrganonConfiguration configuration, Stand stand, out float OLD)
         {
@@ -170,7 +170,7 @@ namespace Osu.Cof.Organon
             // CCH and crown closure at start of growth
             float[] CCH = StandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
             float OLD = 0.0F;
-            TreeGrowth treeGrowth = new TreeGrowth();
+            OrganonGrowth treeGrowth = new OrganonGrowth();
             treeGrowth.Grow(ref simulationStep, configuration, stand, ref TCYCLE, ref FCYCLE, densityBeforeGrowth, CALIB, PN, YF, BABT, BART,
                             YT, ref CCH, ref OLD, redAlderAge, out StandDensity _);
 
@@ -271,7 +271,7 @@ namespace Osu.Cof.Organon
                 stand.Height[treeIndex] = 4.5F + ACALIB[species][0] * (RHT - 4.5F);
             }
 
-            Mortality.OldGro(variant, stand, 0.0F, out float OG);
+            OrganonMortality.OldGro(variant, stand, 0.0F, out float OG);
             StandDensity standDensity = new StandDensity(stand, variant);
             for (int treeIndex = stand.TreeRecordCount - NINGRO; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
