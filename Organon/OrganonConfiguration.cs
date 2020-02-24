@@ -1,4 +1,7 @@
-﻿namespace Osu.Cof.Organon
+﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+
+namespace Osu.Cof.Organon
 {
     public class OrganonConfiguration
     {
@@ -48,6 +51,33 @@
                 // only even age red alder plantations more than 10 years old are supported
                 this.IsEvenAge = true;
             }
+        }
+
+        public Dictionary<FiaCode, float[]> CreateSpeciesCalibration()
+        {
+            ReadOnlyCollection<FiaCode> speciesList;
+            switch (this.Variant.TreeModel)
+            {
+                case TreeModel.OrganonNwo:
+                case TreeModel.OrganonSmc:
+                    speciesList = Constant.NwoSmcSpecies;
+                    break;
+                case TreeModel.OrganonRap:
+                    speciesList = Constant.RapSpecies;
+                    break;
+                case TreeModel.OrganonSwo:
+                    speciesList = Constant.SwoSpecies;
+                    break;
+                default:
+                    throw OrganonVariant.CreateUnhandledModelException(this.Variant.TreeModel);
+            }
+
+            Dictionary<FiaCode, float[]> calibration = new Dictionary<FiaCode, float[]>();
+            foreach (FiaCode species in speciesList)
+            {
+                calibration.Add(species, new float[] { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F });
+            }
+            return calibration;
         }
     }
 }

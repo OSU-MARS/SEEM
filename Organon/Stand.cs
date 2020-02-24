@@ -39,7 +39,7 @@ namespace Osu.Cof.Organon
 
         public bool[] TreeHeightWarning { get; private set; }
 
-        protected Stand(int ageInYears, int treeRecordCount, float primarySiteIndex)
+        public Stand(int ageInYears, int treeRecordCount, float primarySiteIndex)
             : base(treeRecordCount)
         {
             this.AgeInYears = ageInYears;
@@ -52,7 +52,7 @@ namespace Osu.Cof.Organon
             this.Warnings = new OrganonWarnings();
         }
 
-        protected Stand(Stand other)
+        public Stand(Stand other)
             : this(other.AgeInYears, other.TreeRecordCount, other.SiteIndex)
         {
             this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
@@ -72,9 +72,30 @@ namespace Osu.Cof.Organon
             this.Warnings = new OrganonWarnings(other.Warnings);
         }
 
-        public void SetDefaultAndMortalitySiteIndices(OrganonVariant variant)
+        public Stand Clone()
         {
-            switch (variant.TreeModel)
+            return new Stand(this);
+        }
+
+        public void CopyTreeGrowth(Trees trees)
+        {
+            if (trees.TreeRecordCount != this.TreeRecordCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(trees));
+            }
+
+            Array.Copy(trees.CrownRatio, 0, this.CrownRatio, 0, this.CrownRatio.Length);
+            Array.Copy(trees.Dbh, 0, this.Dbh, 0, this.Dbh.Length);
+            Array.Copy(trees.DbhGrowth, 0, this.DbhGrowth, 0, this.DbhGrowth.Length);
+            Array.Copy(trees.DeadExpansionFactor, 0, this.DeadExpansionFactor, 0, this.DeadExpansionFactor.Length);
+            Array.Copy(trees.Height, 0, this.Height, 0, this.Height.Length);
+            Array.Copy(trees.HeightGrowth, 0, this.HeightGrowth, 0, this.HeightGrowth.Length);
+            Array.Copy(trees.LiveExpansionFactor, 0, this.LiveExpansionFactor, 0, this.LiveExpansionFactor.Length);
+        }
+
+        public void SetDefaultAndMortalitySiteIndices(TreeModel treeModel)
+        {
+            switch (treeModel)
             {
                 case TreeModel.OrganonNwo:
                 case TreeModel.OrganonSmc:
@@ -110,7 +131,7 @@ namespace Osu.Cof.Organon
                     }
                     break;
                 default:
-                    throw new NotSupportedException(String.Format("Unhandled Organon variant {0}.", variant));
+                    throw OrganonVariant.CreateUnhandledModelException(treeModel);
             }
         }
 
@@ -177,27 +198,14 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                switch (configuration.Variant.TreeModel)
+                TEMPA1 = configuration.Variant.TreeModel switch
                 {
-                    case TreeModel.OrganonSwo:
-                        // ORIGINAL SWO-ORGANON - Max.SDI = 530.2
-                        TEMPA1 = 6.21113F;
-                        break;
-                    case TreeModel.OrganonNwo:
-                        // ORIGINAL WWV-ORGANON - Max.SDI = 520.5
-                        TEMPA1 = 6.19958F;
-                        break;
-                    case TreeModel.OrganonSmc:
-                        // ORIGINAL WWV-ORGANON
-                        TEMPA1 = 6.19958F;
-                        break;
-                    case TreeModel.OrganonRap:
-                        // PUETTMANN ET AL. (1993)
-                        TEMPA1 = 5.96F;
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
-                }
+                    TreeModel.OrganonSwo => 6.21113F,
+                    TreeModel.OrganonNwo => 6.19958F,
+                    TreeModel.OrganonSmc => 6.19958F,
+                    TreeModel.OrganonRap => 5.96F,
+                    _ => throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel),
+                };
             }
 
             // BUGBUG need API with maximum species group ID to safely allocate BAGRP

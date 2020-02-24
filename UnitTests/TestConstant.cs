@@ -68,33 +68,5 @@ namespace Osu.Cof.Organon.Test
             public const int StandAgeInYears = 500;
             public const float StandCrownCompetitionFactor = 10000.0F;
         }
-
-        public static class OpenXml
-        {
-            public const string Namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
-
-            public static class Attribute
-            {
-                public const string CellReference = "r";
-                public const string CellType = "t";
-                public const string Reference = "ref";
-            }
-
-            public static class CellType
-            {
-                public const string SharedString = "s";
-            }
-
-            public static class Element
-            {
-                public const string Cell = "c";
-                public const string CellValue = "v";
-                public const string Dimension = "dimension";
-                public const string Row = "row";
-                public const string SharedString = "si";
-                public const string SharedStringText = "t";
-                public const string SheetData = "sheetData";
-            }
-        }
     }
 }

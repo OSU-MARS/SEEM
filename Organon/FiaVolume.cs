@@ -43,23 +43,17 @@ namespace Osu.Cof.Organon
 
             double logDbhInInches = Math.Log10(dbhInInches);
             double logHeightInFeet = Math.Log10(heightInFeet);
-            double cvtsl;
-            switch (species)
+            double cvtsl = species switch
             {
                 // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
                 //   Volume estimation for PNW Databases NIMS and FIADB. https://ww3.arb.ca.gov/cc/capandtrade/offsets/copupdatereferences/qm_volume_equations_pnw_updated_091914.pdf
                 // Equation 1: western Oregon and Washington (Brackett 1973)
-                case FiaCode.PseudotsugaMenziesii:
-                    cvtsl = -3.21809 + 0.04948 * logHeightInFeet * logDbhInInches - 0.15664 * logDbhInInches * logDbhInInches +
-                             2.02132 * logDbhInInches + 1.63408 * logHeightInFeet - 0.16184 * logHeightInFeet * logHeightInFeet;
-                    break;
+                FiaCode.PseudotsugaMenziesii => -3.21809 + 0.04948 * logHeightInFeet * logDbhInInches - 0.15664 * logDbhInInches * logDbhInInches +
+                                                 2.02132 * logDbhInInches + 1.63408 * logHeightInFeet - 0.16184 * logHeightInFeet * logHeightInFeet,
                 // FIA Equation 6: all of Oregon and California (Chambers 1979)
-                case FiaCode.TsugaHeterophylla:
-                    cvtsl = -2.72170 + 2.00857 * logDbhInInches + 1.08620 * logHeightInFeet - 0.00568 * dbhInInches;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
-            }
+                FiaCode.TsugaHeterophylla => -2.72170 + 2.00857 * logDbhInInches + 1.08620 * logHeightInFeet - 0.00568 * dbhInInches,
+                _ => throw OrganonVariant.CreateUnhandledSpeciesException(species)
+            };
             float treeCvtsInCubicM = Constant.CubicMetersPerCubicFoot * (float)Math.Pow(10.0, cvtsl);
 
             float treesPerHectare = Constant.HectaresPerAcre * trees.LiveExpansionFactor[treeIndex];
@@ -73,12 +67,12 @@ namespace Osu.Cof.Organon
         /// <returns>Cubic volume including top and stump in m³/ha.</returns>
         public float GetMerchantableCubicVolumePerHectare(Trees trees)
         {
-            float cvts = 0.0F;
+            float cvts4 = 0.0F;
             for (int treeIndex = 0; treeIndex < trees.TreeRecordCount; ++treeIndex)
             {
-                cvts += this.GetMerchantableCubicVolumePerHectare(trees, treeIndex);
+                cvts4 += this.GetMerchantableCubicVolumePerHectare(trees, treeIndex);
             }
-            return cvts;
+            return cvts4;
         }
 
         /// <summary>

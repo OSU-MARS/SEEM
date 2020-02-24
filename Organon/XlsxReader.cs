@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Organon
 {
     internal class XlsxReader
     {
@@ -42,9 +42,9 @@ namespace Osu.Cof.Organon.Test
                 {
                     sharedStringReader.Read();
                 }
-                else if (String.Equals(sharedStringReader.LocalName, TestConstant.OpenXml.Element.SharedString, StringComparison.Ordinal))
+                else if (String.Equals(sharedStringReader.LocalName, Constant.OpenXml.Element.SharedString, StringComparison.Ordinal))
                 {
-                    if (sharedStringReader.ReadToDescendant(TestConstant.OpenXml.Element.SharedStringText, TestConstant.OpenXml.Namespace) == false)
+                    if (sharedStringReader.ReadToDescendant(Constant.OpenXml.Element.SharedStringText, Constant.OpenXml.Namespace) == false)
                     {
                         throw new XmlException("Value of shared string not found.");
                     }
@@ -70,11 +70,11 @@ namespace Osu.Cof.Organon.Test
             using XmlReader worksheetReader = XmlReader.Create(worksheetStream);
             // match the length of the pre-populated Excel row to the current worksheet
             worksheetReader.MoveToContent();
-            if (worksheetReader.ReadToDescendant(TestConstant.OpenXml.Element.Dimension, TestConstant.OpenXml.Namespace) == false)
+            if (worksheetReader.ReadToDescendant(Constant.OpenXml.Element.Dimension, Constant.OpenXml.Namespace) == false)
             {
                 throw new XmlException("Worksheet dimension element not found.");
             }
-            string dimension = worksheetReader.GetAttribute(TestConstant.OpenXml.Attribute.Reference);
+            string dimension = worksheetReader.GetAttribute(Constant.OpenXml.Attribute.Reference);
             if (dimension == null)
             {
                 throw new XmlException("Worksheet dimension reference not found.");
@@ -86,7 +86,7 @@ namespace Osu.Cof.Organon.Test
             }
             int maximumColumnIndex = this.GetExcelColumnIndex(range[1]);
 
-            worksheetReader.ReadToNextSibling(TestConstant.OpenXml.Element.SheetData, TestConstant.OpenXml.Namespace);
+            worksheetReader.ReadToNextSibling(Constant.OpenXml.Element.SheetData, Constant.OpenXml.Namespace);
             int rowIndex = 0;
             string[] rowAsStrings = new string[maximumColumnIndex + 1];
             while (worksheetReader.EOF == false)
@@ -95,7 +95,7 @@ namespace Osu.Cof.Organon.Test
                 {
                     worksheetReader.Read();
                 }
-                else if (String.Equals(worksheetReader.LocalName, TestConstant.OpenXml.Element.Row, StringComparison.Ordinal))
+                else if (String.Equals(worksheetReader.LocalName, Constant.OpenXml.Element.Row, StringComparison.Ordinal))
                 {
                     // read data in row
                     using (XmlReader rowReader = worksheetReader.ReadSubtree())
@@ -106,9 +106,9 @@ namespace Osu.Cof.Organon.Test
                             {
                                 rowReader.Read();
                             }
-                            else if (String.Equals(rowReader.LocalName, TestConstant.OpenXml.Element.Cell, StringComparison.Ordinal))
+                            else if (String.Equals(rowReader.LocalName, Constant.OpenXml.Element.Cell, StringComparison.Ordinal))
                             {
-                                string cellReference = rowReader.GetAttribute(TestConstant.OpenXml.Attribute.CellReference);
+                                string cellReference = rowReader.GetAttribute(Constant.OpenXml.Attribute.CellReference);
 
                                 // get cell's column
                                 // The XML is sparse in the sense empty cells are omitted, so this is required to correctly output
@@ -116,8 +116,8 @@ namespace Osu.Cof.Organon.Test
                                 int column = this.GetExcelColumnIndex(cellReference);
 
                                 // get cell's value
-                                bool isSharedString = String.Equals(rowReader.GetAttribute(TestConstant.OpenXml.Attribute.CellType), TestConstant.OpenXml.CellType.SharedString, StringComparison.Ordinal);
-                                if (rowReader.ReadToDescendant(TestConstant.OpenXml.Element.CellValue, TestConstant.OpenXml.Namespace))
+                                bool isSharedString = String.Equals(rowReader.GetAttribute(Constant.OpenXml.Attribute.CellType), Constant.OpenXml.CellType.SharedString, StringComparison.Ordinal);
+                                if (rowReader.ReadToDescendant(Constant.OpenXml.Element.CellValue, Constant.OpenXml.Namespace))
                                 {
                                     string value = rowReader.ReadElementContentAsString();
 

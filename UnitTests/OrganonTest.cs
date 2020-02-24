@@ -72,7 +72,7 @@ namespace Osu.Cof.Organon.Test
                     throw Cof.Organon.OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
 
-            TestStand stand = new TestStand(configuration.Variant, 0, trees.Count, TestConstant.Default.SiteIndex);
+            TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, trees.Count, TestConstant.Default.SiteIndex);
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 TreeRecord tree = trees[treeIndex];
@@ -99,33 +99,6 @@ namespace Osu.Cof.Organon.Test
             return configuration;
         }
 
-        protected Dictionary<FiaCode, float[]> CreateSpeciesCalibration(OrganonVariant variant)
-        {
-            ReadOnlyCollection<FiaCode> speciesList;
-            switch (variant.TreeModel)
-            {
-                case TreeModel.OrganonNwo:
-                case TreeModel.OrganonSmc:
-                    speciesList = Constant.NwoSmcSpecies;
-                    break;
-                case TreeModel.OrganonRap:
-                    speciesList = Constant.RapSpecies;
-                    break;
-                case TreeModel.OrganonSwo:
-                    speciesList = Constant.SwoSpecies;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledModelException(variant.TreeModel);
-            }
-
-            Dictionary<FiaCode, float[]> calibration = new Dictionary<FiaCode, float[]>();
-            foreach (FiaCode species in speciesList)
-            {
-                calibration.Add(species, new float[] { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F });
-            }
-            return calibration;
-        }
-
         protected void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
         {
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
@@ -134,7 +107,7 @@ namespace Osu.Cof.Organon.Test
 
             float BABT = 0.0F;
             float[] BART = new float[5];
-            Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
+            Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
             float[] PN = new float[5];
             if (configuration.IsEvenAge)
             {

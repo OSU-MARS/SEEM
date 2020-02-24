@@ -495,7 +495,7 @@ namespace Osu.Cof.Organon
         }
 
         public void GrowDiameter(OrganonVariant variant, int treeIndex, int simulationStep, Stand stand, float SI_1, float SI_2,
-                                StandDensity densityBeforeGrowth, Dictionary<FiaCode, float[]> CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
+                                 StandDensity densityBeforeGrowth, Dictionary<FiaCode, float[]> CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
         {
             // CALCULATES FIVE-YEAR DIAMETER GROWTH RATE OF THE K-TH TREE
             // CALCULATE BASAL AREA IN LARGER TREES

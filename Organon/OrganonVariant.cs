@@ -13,6 +13,18 @@ namespace Osu.Cof.Organon
             this.TreeModel = treeModel;
         }
 
+        public static OrganonVariant Create(TreeModel treeModel)
+        {
+            return treeModel switch
+            {
+                TreeModel.OrganonNwo => new OrganonVariantNwo(),
+                TreeModel.OrganonSwo => new OrganonVariantSwo(),
+                TreeModel.OrganonSmc => new OrganonVariantSmc(),
+                TreeModel.OrganonRap => new OrganonVariantRap(),
+                _ => throw OrganonVariant.CreateUnhandledModelException(treeModel),
+            };
+        }
+
         public static NotSupportedException CreateUnhandledModelException(TreeModel treeModel)
         {
             return new NotSupportedException(String.Format("Unhandled model {0}.", treeModel));
@@ -110,24 +122,19 @@ namespace Osu.Cof.Organon
 
         public bool IsBigSixSpecies(FiaCode species)
         {
-            switch (this.TreeModel)
+            return this.TreeModel switch
             {
-                case TreeModel.OrganonNwo:
-                    return (species == FiaCode.PseudotsugaMenziesii) || (species == FiaCode.AbiesGrandis) ||
-                           (species == FiaCode.TsugaHeterophylla);
-                case TreeModel.OrganonSmc:
-                    return (species == FiaCode.PseudotsugaMenziesii) || (species == FiaCode.AbiesConcolor) ||
-                           (species == FiaCode.AbiesGrandis) || (species == FiaCode.TsugaHeterophylla);
-                case TreeModel.OrganonRap:
-                    return (species == FiaCode.AlnusRubra) || (species == FiaCode.PseudotsugaMenziesii) ||
-                           (species == FiaCode.TsugaHeterophylla);
-                case TreeModel.OrganonSwo:
-                    return (species == FiaCode.AbiesConcolor) || (species == FiaCode.AbiesGrandis) ||
-                           (species == FiaCode.CalocedrusDecurrens) || (species == FiaCode.PinusLambertiana) ||
-                           (species == FiaCode.PinusPonderosa) || (species == FiaCode.PseudotsugaMenziesii);
-                default:
-                    throw Cof.Organon.OrganonVariant.CreateUnhandledModelException(this.TreeModel);
-            }
+                TreeModel.OrganonNwo => (species == FiaCode.PseudotsugaMenziesii) || (species == FiaCode.AbiesGrandis) ||
+                                        (species == FiaCode.TsugaHeterophylla),
+                TreeModel.OrganonSmc => (species == FiaCode.PseudotsugaMenziesii) || (species == FiaCode.AbiesConcolor) ||
+                                        (species == FiaCode.AbiesGrandis) || (species == FiaCode.TsugaHeterophylla),
+                TreeModel.OrganonRap => (species == FiaCode.AlnusRubra) || (species == FiaCode.PseudotsugaMenziesii) ||
+                                        (species == FiaCode.TsugaHeterophylla),
+                TreeModel.OrganonSwo => (species == FiaCode.AbiesConcolor) || (species == FiaCode.AbiesGrandis) ||
+                                        (species == FiaCode.CalocedrusDecurrens) || (species == FiaCode.PinusLambertiana) ||
+                                        (species == FiaCode.PinusPonderosa) || (species == FiaCode.PseudotsugaMenziesii),
+                _ => throw OrganonVariant.CreateUnhandledModelException(this.TreeModel),
+            };
         }
 
         public bool IsSpeciesSupported(FiaCode species)
@@ -142,7 +149,7 @@ namespace Osu.Cof.Organon
                 case TreeModel.OrganonSwo:
                     return Constant.SwoSpecies.Contains(species);
                 default:
-                    throw Cof.Organon.OrganonVariant.CreateUnhandledModelException(this.TreeModel);
+                    throw OrganonVariant.CreateUnhandledModelException(this.TreeModel);
             }
         }
     }

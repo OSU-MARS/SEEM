@@ -11,13 +11,13 @@ namespace Osu.Cof.Organon.Test
         public int[] QuantileByInitialDbh { get; private set; }
         public Dictionary<FiaCode, List<int>> TreeIndicesBySpecies { get; private set; }
 
-        public TestStand(OrganonVariant variant, int ageInYears, int treeCount, float primarySiteIndex)
+        public TestStand(TreeModel treeModel, int ageInYears, int treeCount, float primarySiteIndex)
             : base(ageInYears, treeCount, primarySiteIndex)
         {
             this.QuantileByInitialDbh = new int[this.TreeRecordCount];
             this.TreeIndicesBySpecies = new Dictionary<FiaCode, List<int>>(this.TreeRecordCount);
 
-            this.SetDefaultAndMortalitySiteIndices(variant);
+            this.SetDefaultAndMortalitySiteIndices(treeModel);
         }
 
         protected TestStand(TestStand other)
@@ -25,7 +25,7 @@ namespace Osu.Cof.Organon.Test
         {
         }
 
-        public TestStand Clone()
+        public new TestStand Clone()
         {
             return new TestStand(this);
         }

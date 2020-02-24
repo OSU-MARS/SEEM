@@ -5,12 +5,17 @@ namespace Osu.Cof.Organon
 {
     internal static class Constant
     {
-        public const float CmPerInch = 2.54F;
+        public const float CmPerInch = 2.54000F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
         public const int DefaultTimeStepInYears = 5;
+        public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
         public const float HectaresPerAcre = 2.47105F;
+        public const float InchesPerCm = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
+        // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
+        // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
+        public const float RoundToZeroTolerance = 0.001F;
 
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
         {
@@ -72,6 +77,45 @@ namespace Osu.Cof.Organon
             // range.
             public const float HeightForVolumeInM = 1.37F;
             public const float DiameterForVolumeInCm = 1.0F;
+        }
+
+        public static class Nelder
+        {
+            public static class ColumnIndex
+            {
+                public static int DbhInMillimeters = 3;
+                public static int HeightInDecimeters = 4;
+                public static int Species = 0;
+                public static int Tree = 2;
+            }
+        }
+
+        public static class OpenXml
+        {
+            public const string Namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+
+            public static class Attribute
+            {
+                public const string CellReference = "r";
+                public const string CellType = "t";
+                public const string Reference = "ref";
+            }
+
+            public static class CellType
+            {
+                public const string SharedString = "s";
+            }
+
+            public static class Element
+            {
+                public const string Cell = "c";
+                public const string CellValue = "v";
+                public const string Dimension = "dimension";
+                public const string Row = "row";
+                public const string SharedString = "si";
+                public const string SharedStringText = "t";
+                public const string SheetData = "sheetData";
+            }
         }
 
         public static class Psp

@@ -99,14 +99,14 @@ namespace Osu.Cof.Organon.Test
             this.MeasurementYears.Add(year);
         }
 
-        public TestStand ToOrganonStand(OrganonVariant variant, float siteIndex)
+        public TestStand ToStand(OrganonVariant variant, float siteIndex)
         {
             int firstMeasurementYear = this.GetFirstMeasurementYear();
 
             // populate Organon version of stand
             // Currently, PSP stands are assumed to have IsEvenAge = false, which causes Organon to require a stand age of
             // zero years be passed.
-            TestStand stand = new TestStand(variant, 0, this.MeasurementsByTag.Count, siteIndex)
+            TestStand stand = new TestStand(variant.TreeModel, 0, this.MeasurementsByTag.Count, siteIndex)
             {
                 NumberOfPlots = this.plotCount
             };

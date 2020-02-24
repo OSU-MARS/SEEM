@@ -19,7 +19,7 @@ namespace Osu.Cof.Organon.Test
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
 
-                Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
+                Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 float OG = 0.0F; // (DOUG?)
 
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
@@ -94,7 +94,7 @@ namespace Osu.Cof.Organon.Test
 
                 float BABT = 0.0F; // (DOUG?)
                 float[] BART = new float[5]; // (DOUG?)
-                Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
+                Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 float[] CCH = new float[41]; // (DOUG?)
                 float[] PN = new float[5]; // (DOUG?)
                 float[] YF = new float[5]; // (DOUG?)
@@ -142,9 +142,12 @@ namespace Osu.Cof.Organon.Test
             OrganonGrowth treeGrowth = new OrganonGrowth();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
+                OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
+                TestStand stand = this.CreateDefaultStand(configuration);
+
                 float BABT = 0.0F; // (DOUG?)
                 float[] BART = new float[5]; // (DOUG?)
-                Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
+                Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 float[] CCH = new float[41]; // (DOUG?)
                 int fertlizerCycle = 0;
                 float OLD = 0.0F; // (DOUG?)
@@ -152,9 +155,6 @@ namespace Osu.Cof.Organon.Test
                 int thinningCycle = 0;
                 float[] YF = new float[5]; // (DOUG?)
                 float[] YT = new float[5]; // (DOUG?)
-
-                OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
-                TestStand stand = this.CreateDefaultStand(configuration);
 
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; /* incremented by GROW() */)
                 {
@@ -215,7 +215,7 @@ namespace Osu.Cof.Organon.Test
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
-                Dictionary<FiaCode, float[]> CALIB = this.CreateSpeciesCalibration(variant);
+                Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 TestStand stand = this.CreateDefaultStand(configuration);
 
                 for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
