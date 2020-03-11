@@ -13,6 +13,10 @@ namespace Osu.Cof.Organon.Cmdlets
 
         [Parameter]
         [ValidateRange(0.0, float.MaxValue)]
+        public Nullable<float> InitialWaterLevel { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0, float.MaxValue)]
         public Nullable<float> RainRate { get; set; }
 
         [Parameter]
@@ -29,10 +33,14 @@ namespace Osu.Cof.Organon.Cmdlets
         protected override Heuristic CreateHeuristic()
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods);
+            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
             if (this.FinalWaterLevel.HasValue)
             {
                 deluge.FinalWaterLevel = this.FinalWaterLevel.Value;
+            }
+            if (this.InitialWaterLevel.HasValue)
+            {
+                deluge.InitialWaterLevel = this.InitialWaterLevel.Value;
             }
             if (this.RainRate.HasValue)
             {

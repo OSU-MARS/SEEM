@@ -30,7 +30,7 @@ namespace Osu.Cof.Organon.Cmdlets
         protected override Heuristic CreateHeuristic()
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods);
+            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
             if (this.EndStandardDeviation.HasValue)
             {
                 genetic.EndStandardDeviation = this.EndStandardDeviation.Value;

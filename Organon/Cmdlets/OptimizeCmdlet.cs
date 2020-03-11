@@ -30,6 +30,9 @@ namespace Osu.Cof.Organon.Cmdlets
         [Parameter]
         public SwitchParameter UniformHarvestProbability { get; set; }
 
+        [Parameter]
+        public VolumeUnits VolumeUnits { get; set; }
+
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
@@ -38,6 +41,7 @@ namespace Osu.Cof.Organon.Cmdlets
             this.PlanningPeriods = 9;
             this.TreeModel = TreeModel.OrganonNwo;
             this.UniformHarvestProbability = false;
+            this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
         }
 
         protected abstract Heuristic CreateHeuristic();

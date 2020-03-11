@@ -46,14 +46,14 @@ namespace Osu.Cof.Organon.Test
 
             int harvestPeriods = 1;
             int planningPeriods = 9;
-            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, harvestPeriods, planningPeriods)
+            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.ScribnerBoardFeetPerAcre)
             {
                 PopulationSize = 5,
                 MaximumGenerations = 10
             };
             genetic.Run();
 
-            GreatDeluge deluge = new GreatDeluge(stand, configuration, harvestPeriods, planningPeriods)
+            GreatDeluge deluge = new GreatDeluge(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.CubicMetersPerHectare)
             {
                 RainRate = 5,
                 StopAfter = 10
@@ -61,28 +61,28 @@ namespace Osu.Cof.Organon.Test
             deluge.RandomizeSchedule();
             deluge.Run();
 
-            RecordToRecordTravel recordTravel = new RecordToRecordTravel(stand, configuration, harvestPeriods, planningPeriods)
+            RecordToRecordTravel recordTravel = new RecordToRecordTravel(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.ScribnerBoardFeetPerAcre)
             {
                 StopAfter = 10
             };
             recordTravel.RandomizeSchedule();
             recordTravel.Run();
 
-            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, harvestPeriods, planningPeriods)
+            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.CubicMetersPerHectare)
             {
                 Alpha = 0.9F
             };
             annealer.RandomizeSchedule();
             annealer.Run();
 
-            TabuSearch tabu = new TabuSearch(stand, configuration, harvestPeriods, planningPeriods)
+            TabuSearch tabu = new TabuSearch(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.ScribnerBoardFeetPerAcre)
             {
                 Iterations = 5
             };
             tabu.RandomizeSchedule();
             tabu.Run();
 
-            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, harvestPeriods, planningPeriods)
+            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.CubicMetersPerHectare)
             {
                 IterationsPerThreshold = 10
             };

@@ -18,7 +18,7 @@ namespace Osu.Cof.Organon.Cmdlets
         protected override Heuristic CreateHeuristic()
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods);
+            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
             if (this.Iterations.HasValue)
             {
                 tabu.Iterations = this.Iterations.Value;

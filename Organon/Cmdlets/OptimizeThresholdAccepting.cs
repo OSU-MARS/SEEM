@@ -24,7 +24,7 @@ namespace Osu.Cof.Organon.Cmdlets
         protected override Heuristic CreateHeuristic()
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods);
+            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
             if (this.IterationsPerThreshold.HasValue)
             {
                 acceptor.IterationsPerThreshold = this.IterationsPerThreshold.Value;

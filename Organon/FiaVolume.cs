@@ -5,40 +5,23 @@ namespace Osu.Cof.Organon
     public class FiaVolume
     {
         /// <summary>
-        /// Find CVTS of stand.
-        /// </summary>
-        /// <param name="trees">Trees in stand.</param>
-        /// <returns>Cubic volume including top and stump in m³/ha.</returns>
-        public float GetCubicVolumePerHectare(Trees trees)
-        {
-            float cvts = 0.0F;
-            for (int treeIndex = 0; treeIndex < trees.TreeRecordCount; ++treeIndex)
-            {
-                cvts += this.GetCubicVolumePerHectare(trees, treeIndex);
-            }
-            return cvts;
-        }
-
-        /// <summary>
-        /// Find CVTS of tree per hectare.
+        /// Find CVTS of tree.
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
-        /// <returns>Cubic volume including top and stump in m³/ha.</returns>
-        public float GetCubicVolumePerHectare(Trees trees, int treeIndex)
+        /// <returns>Cubic volume including top and stump in ft³/ac.</returns>
+        public double GetCubicFeet(Trees trees, int treeIndex)
         {
             FiaCode species = trees.Species[treeIndex];
             float dbhInInches = trees.Dbh[treeIndex];
-            float dbhInCm = Constant.CmPerInch * dbhInInches;
-            if (dbhInCm < Constant.Minimum.DiameterForVolumeInCm)
+            if (dbhInInches < Constant.Minimum.DiameterForVolumeInInches)
             {
-                return 0.0F;
+                return 0.0;
             }
             float heightInFeet = trees.Height[treeIndex];
-            float heightInM = Constant.MetersPerFoot * heightInFeet;
-            if (heightInM < Constant.Minimum.HeightForVolumeInM)
+            if (heightInFeet < Constant.Minimum.HeightForVolumeInFeet)
             {
-                return 0.0F;
+                return 0.0;
             }
 
             double logDbhInInches = Math.Log10(dbhInInches);
@@ -54,50 +37,34 @@ namespace Osu.Cof.Organon
                 FiaCode.TsugaHeterophylla => -2.72170 + 2.00857 * logDbhInInches + 1.08620 * logHeightInFeet - 0.00568 * dbhInInches,
                 _ => throw OrganonVariant.CreateUnhandledSpeciesException(species)
             };
-            float treeCvtsInCubicM = Constant.CubicMetersPerCubicFoot * (float)Math.Pow(10.0, cvtsl);
 
-            float treesPerHectare = Constant.HectaresPerAcre * trees.LiveExpansionFactor[treeIndex];
-            return treesPerHectare * treeCvtsInCubicM;
+            return Math.Pow(10.0, cvtsl);
         }
 
         /// <summary>
-        /// Get cubic volume to a four inch top.
-        /// </summary>
-        /// <param name="trees">Trees in stand.</param>
-        /// <returns>Cubic volume including top and stump in m³/ha.</returns>
-        public float GetMerchantableCubicVolumePerHectare(Trees trees)
-        {
-            float cvts4 = 0.0F;
-            for (int treeIndex = 0; treeIndex < trees.TreeRecordCount; ++treeIndex)
-            {
-                cvts4 += this.GetMerchantableCubicVolumePerHectare(trees, treeIndex);
-            }
-            return cvts4;
-        }
-
-        /// <summary>
-        /// Get cubic volume to a four inch top.
+        /// Get cubic volume to a 10 centimeter (four inch) top.
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
         /// <returns>Cubic volume in m³/ha.</returns>
-        public float GetMerchantableCubicVolumePerHectare(Trees trees, int treeIndex)
+        public double GetMerchantableCubicFeet(Trees trees, int treeIndex)
         {
             float dbhInInches = trees.Dbh[treeIndex];
             if (dbhInInches < 4.0F)
             {
                 // CV4 regression goes negative, unsurprisingly, for trees less than four inches in diameter
-                return 0.0F;
+                return 0.0;
             }
 
-            float cvtsInCubicMeters = this.GetCubicVolumePerHectare(trees, treeIndex);
-            if (cvtsInCubicMeters == 0.0F)
+            double cvts = this.GetCubicFeet(trees, treeIndex);
+            if (cvts <= 0.0)
             {
                 return 0.0F;
             }
 
-            FiaCode species = trees.Species[treeIndex]; 
-            float basalAreaInSquareFeet = Constant.ForestersEnglish * dbhInInches * dbhInInches;
+            FiaCode species = trees.Species[treeIndex];
+            double basalAreaInSquareFeet = Constant.ForestersEnglish * dbhInInches * dbhInInches;
+            double tarif;
             switch (species)
             {
                 // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
@@ -107,11 +74,68 @@ namespace Osu.Cof.Organon
                 // FIA Equation 6: all of Oregon and California (Chambers 1979)
                 case FiaCode.PseudotsugaMenziesii:
                 case FiaCode.TsugaHeterophylla:
-                    double tarif = 0.912733 * cvtsInCubicMeters / (1.033 * (1.0 + 1.382937 * Math.Exp(-4.015292 * dbhInInches / 10.0)) * (basalAreaInSquareFeet + 0.087266) - 0.174533);
-                    return (float)(tarif * (basalAreaInSquareFeet - 0.087266) / 0.912733);
+                    tarif = 0.912733 * cvts / (1.033 * (1.0 + 1.382937 * Math.Exp(-4.015292 * dbhInInches / 10.0)) * (basalAreaInSquareFeet + 0.087266) - 0.174533);
+                    break;
                 default:
                     throw OrganonVariant.CreateUnhandledSpeciesException(species);
             }
+
+            return tarif * (basalAreaInSquareFeet - 0.087266) / 0.912733;
+        }
+
+        /// <summary>
+        /// Get Scribner board foot volume for 32 foot logs to a six inch top.
+        /// </summary>
+        /// <param name="trees">Trees in stand.</param>
+        /// <param name="treeIndex">Tree.</param>
+        /// <returns>Scribner board feet per acre</returns>
+        public double GetScribnerBoardFeet(Trees trees, int treeIndex)
+        {
+            float dbhInInches = trees.Dbh[treeIndex];
+            if (dbhInInches < 6.0F)
+            {
+                return 0.0;
+            }
+            double cubicFeet = this.GetMerchantableCubicFeet(trees, treeIndex);
+            if (cubicFeet <= 0.0)
+            {
+                return 0.0;
+            }
+
+            FiaCode species = trees.Species[treeIndex];
+            double basalAreaInSquareFeet = Constant.ForestersEnglish * dbhInInches * dbhInInches;
+            double tarif;
+            switch (species)
+            {
+                // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
+                //   Volume estimation for PNW Databases NIMS and FIADB. https://ww3.arb.ca.gov/cc/capandtrade/offsets/copupdatereferences/qm_volume_equations_pnw_updated_091914.pdf
+                // Douglas-fir and western hemlock use the same tarif and CV4 regressions
+                // FIA Equation 1: western Oregon and Washington (Brackett 1973)
+                // FIA Equation 6: all of Oregon and California (Chambers 1979)
+                case FiaCode.PseudotsugaMenziesii:
+                case FiaCode.TsugaHeterophylla:
+                    tarif = 0.912733 * cubicFeet / (1.033 * (1.0 + 1.382937 * Math.Exp(-4.015292 * dbhInInches / 10.0)) * (basalAreaInSquareFeet + 0.087266) - 0.174533);
+                    break;
+                default:
+                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+            }
+            double cv4 = tarif * (basalAreaInSquareFeet - 0.087266) / 0.912733;
+
+            // conversion to Scribner volumes for 32 foot trees
+            // Waddell 2014:32
+            double cv6 = cv4;
+            double rc6 = 0.993 * (1.0 - Math.Pow(0.62, dbhInInches - 6.0)) * tarif;
+            if (rc6 < 1.0)
+            {
+                cv6 *= rc6;
+            }
+            double b4 = tarif / 0.912733;
+            double logB4 = Math.Log10(b4);
+            double rs616 = Math.Pow(10.0, 0.174439 + 0.117594 * Math.Log(dbhInInches) * logB4 - 8.210585 / (dbhInInches * dbhInInches) + 0.236693 * logB4 - 0.00001345 * b4 * b4 - 0.00001937 * dbhInInches * dbhInInches);
+            double sv616 = rs616 * cv6; // Scribner board foot volume to a 6 inch top for 16 foot logs
+            double rs632 = 1.001491 - 6.924097 / tarif + 0.00001351 * dbhInInches * dbhInInches;
+            double sv632 = rs632 * sv616; // Scribner board foot volume to a 6 inch top for 32 foot logs
+            return sv632;
         }
     }
 }

@@ -10,10 +10,10 @@ namespace Osu.Cof.Organon.Heuristics
         public StandTrajectory CurrentTrajectory { get; protected set; }
         public List<float> ObjectiveFunctionByIteration { get; protected set; }
 
-        protected Heuristic(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods)
+        protected Heuristic(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
         {
-            this.BestTrajectory = new StandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods);
-            this.CurrentTrajectory = new StandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods);
+            this.BestTrajectory = new StandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits);
+            this.CurrentTrajectory = new StandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits);
 
             this.BestTrajectory.Simulate();
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.BestTrajectory);
@@ -28,12 +28,17 @@ namespace Osu.Cof.Organon.Heuristics
         public float GetObjectiveFunction(StandTrajectory trajectory)
         {
             // find objective function value
+            // Volume objective functions are in m³/ha or MBF/ac
             float objectiveFunction = 0.0F;
             for (int periodIndex = 1; periodIndex < trajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
             {
                 objectiveFunction += trajectory.HarvestVolumesByPeriod[periodIndex];
             }
             objectiveFunction += trajectory.StandingVolumeByPeriod[trajectory.StandingVolumeByPeriod.Length - 1];
+            if (trajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
+            {
+                objectiveFunction *= 0.001F;
+            }
             return objectiveFunction;
         }
 

@@ -54,12 +54,19 @@ namespace Osu.Cof.Organon.Data
             Stand stand = new Stand(20, treesInStand, siteIndex);
             for (int treeIndex = 0; treeIndex < treesInStand; ++treeIndex)
             {
-                stand.CrownRatio[treeIndex] = 0.75F;
                 stand.Dbh[treeIndex] = Constant.InchesPerCm * this.DbhInCentimeters[treeIndex];
                 stand.Height[treeIndex] = Constant.FeetPerMeter * this.HeightInMeters[treeIndex];
                 stand.LiveExpansionFactor[treeIndex] = 0.6F;
                 stand.Species[treeIndex] = this.Species[treeIndex];
                 stand.Tag[treeIndex] = this.TreeID[treeIndex];
+
+                // rough crown length estimate assuming 400 TPA (10.4 x 10.4 feet) from the linear regressions of
+                // Curtis RO, Reukema DL. 1970. Crown Development and Site Estimates in a Douglas-Fir Plantation Spacing Test. 
+                //   Forest Science 16(3):287-301.
+                // TODO: These regressions are problematic as it has a negative, rather than positive intercept at zero DBH for spacings
+                // of 10x10 feet and closer. They are also specific to Wind River.
+                double crownLengthInFeet = 3.20 * stand.Dbh[treeIndex] + 1.0;
+                stand.CrownRatio[treeIndex] = (float)(crownLengthInFeet / stand.Height[treeIndex]);
             }
             return stand;
         }

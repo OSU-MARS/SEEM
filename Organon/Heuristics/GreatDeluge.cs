@@ -7,13 +7,15 @@ namespace Osu.Cof.Organon.Heuristics
     public class GreatDeluge : Heuristic
     {
         public float FinalWaterLevel { get; set; }
+        public float InitialWaterLevel { get; set; }
         public float RainRate { get; set; }
         public int StopAfter { get; set; }
 
-        public GreatDeluge(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods)
+        public GreatDeluge(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
+            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits)
         {
             this.FinalWaterLevel = 100.0F;
+            this.InitialWaterLevel = 0.0F;
             this.RainRate = this.FinalWaterLevel / (10 * 1000);
             this.StopAfter = 1000;
 
@@ -25,7 +27,7 @@ namespace Osu.Cof.Organon.Heuristics
 
         public override TimeSpan Run()
         {
-            if (this.FinalWaterLevel <= 0.0)
+            if (this.FinalWaterLevel <= this.InitialWaterLevel)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.FinalWaterLevel));
             }
@@ -47,7 +49,7 @@ namespace Osu.Cof.Organon.Heuristics
             float treeIndexScalingFactor = ((float)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
 
             StandTrajectory candidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
-            for (double waterLevel = 0; waterLevel < this.FinalWaterLevel; waterLevel += this.RainRate)
+            for (double waterLevel = this.InitialWaterLevel; waterLevel < this.FinalWaterLevel; waterLevel += this.RainRate)
             {
                 int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                 int currentHarvestPeriod = this.CurrentTrajectory.IndividualTreeSelection[treeIndex];

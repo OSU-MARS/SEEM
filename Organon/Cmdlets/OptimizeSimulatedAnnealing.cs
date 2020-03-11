@@ -34,7 +34,7 @@ namespace Osu.Cof.Organon.Cmdlets
         protected override Heuristic CreateHeuristic()
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods);
+            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;

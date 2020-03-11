@@ -5,12 +5,14 @@ namespace Osu.Cof.Organon
 {
     internal static class Constant
     {
+        public const float AcresPerHectare = 2.47105F;
         public const float CmPerInch = 2.54000F;
+        public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
         public const int DefaultTimeStepInYears = 5;
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
-        public const float HectaresPerAcre = 2.47105F;
+        public const float HectaresPerAcre = 0.404685F;
         public const float InchesPerCm = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
@@ -75,8 +77,8 @@ namespace Osu.Cof.Organon
             // volume thresholds are debatable as smallest trees used in forming Poudel 2018's regressions were 15 cm DBH
             // However, ignoring biomass in trees less than 15 cm is probably a larger error than extending the regression beyond its fitting
             // range.
-            public const float HeightForVolumeInM = 1.37F;
-            public const float DiameterForVolumeInCm = 1.0F;
+            public const float HeightForVolumeInFeet = 4.5F;
+            public const float DiameterForVolumeInInches = 4.0F;
         }
 
         public static class Nelder

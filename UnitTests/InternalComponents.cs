@@ -403,12 +403,14 @@ namespace Osu.Cof.Organon.Test
             FiaVolume fiaVolume = new FiaVolume();
             OsuVolume osuVolume = new OsuVolume();
             Trees trees = new Trees(40);
-            float[] fiaMerchantableCvtsByTreeInCubicMeters = new float[trees.TreeRecordCount];
-            float[] osuCvtsByTreeInCubicMeters = new float[trees.TreeRecordCount];
+            double[] fiaMerchantableCubicFeetPerAcre = new double[trees.TreeRecordCount];
+            double[] fiaScribnerBoardFeetPerAcre = new double[trees.TreeRecordCount];
+            float[] osuMerchantableCubicMetersPerHectare = new float[trees.TreeRecordCount];
             bool isDouglasFir = true;
-            float cvtsPerHa = 0.0F;
-            float merchantableCvtsPerHa = 0.0F;
-            float totalCylinderVolume = 0.0F;
+            double merchantableCubicFeetPerAcre = 0.0;
+            double merchantableCubicMetersPerHectare = 0.0;
+            double totalCylinderCubicMeterVolumePerAcre = 0.0;
+            double totalScribnerBoardFeetPerAcre = 0.0;
             for (int treeIndex = 0; treeIndex < trees.TreeRecordCount; ++treeIndex)
             {
                 FiaCode species = isDouglasFir ? FiaCode.PseudotsugaMenziesii : FiaCode.TsugaHeterophylla;
@@ -418,31 +420,38 @@ namespace Osu.Cof.Organon.Test
                 trees.Height[treeIndex] = tree.HeightInFeet;
                 trees.CrownRatio[treeIndex] = tree.CrownRatio;
                 trees.LiveExpansionFactor[treeIndex] = tree.ExpansionFactor;
-                float dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
-                float heightInMeters = Constant.MetersPerFoot * tree.HeightInFeet;
-                float treeSizedCylinderVolume = (float)Math.PI * dbhInMeters * dbhInMeters * heightInMeters;
+                double dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
+                double heightInMeters = Constant.MetersPerFoot * tree.HeightInFeet;
+                double treeSizedCylinderCubicMeterVolumePerAcre = tree.ExpansionFactor * 0.25 * Math.PI * dbhInMeters * dbhInMeters * heightInMeters;
 
-                fiaMerchantableCvtsByTreeInCubicMeters[treeIndex] = fiaVolume.GetMerchantableCubicVolumePerHectare(trees, treeIndex);
-                merchantableCvtsPerHa += fiaMerchantableCvtsByTreeInCubicMeters[treeIndex];
+                fiaMerchantableCubicFeetPerAcre[treeIndex] = tree.ExpansionFactor * fiaVolume.GetMerchantableCubicFeet(trees, treeIndex);
+                merchantableCubicFeetPerAcre += fiaMerchantableCubicFeetPerAcre[treeIndex];
+                fiaScribnerBoardFeetPerAcre[treeIndex] = tree.ExpansionFactor * fiaVolume.GetScribnerBoardFeet(trees, treeIndex);
+                totalScribnerBoardFeetPerAcre += fiaScribnerBoardFeetPerAcre[treeIndex];
 
-                osuCvtsByTreeInCubicMeters[treeIndex] = osuVolume.GetCubicVolumePerHectare(trees, treeIndex);
-                cvtsPerHa += osuCvtsByTreeInCubicMeters[treeIndex];
+                osuMerchantableCubicMetersPerHectare[treeIndex] = Constant.HectaresPerAcre * tree.ExpansionFactor * osuVolume.GetCubicVolume(trees, treeIndex);
+                merchantableCubicMetersPerHectare += osuMerchantableCubicMetersPerHectare[treeIndex];
 
                 // taper coefficient should be in the vicinity of 0.3 for larger trees, but this is not well defined for small trees
                 // Lower bound can be made more stringent if necessary.
-                Debug.Assert(fiaMerchantableCvtsByTreeInCubicMeters[treeIndex] >= 0.0F);
-                Debug.Assert(fiaMerchantableCvtsByTreeInCubicMeters[treeIndex] <= 0.35 * treeSizedCylinderVolume);
-                totalCylinderVolume += treeSizedCylinderVolume;
+                Debug.Assert(fiaMerchantableCubicFeetPerAcre[treeIndex] >= 0.0);
+                Debug.Assert(fiaMerchantableCubicFeetPerAcre[treeIndex] <= 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
+
+                Debug.Assert(fiaScribnerBoardFeetPerAcre[treeIndex] >= 0.0);
+                Debug.Assert(fiaScribnerBoardFeetPerAcre[treeIndex] <= 10.5 * 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
+                totalCylinderCubicMeterVolumePerAcre += treeSizedCylinderCubicMeterVolumePerAcre;
             }
 
-            Debug.Assert(merchantableCvtsPerHa >= 0.05 * totalCylinderVolume);
-            Debug.Assert(merchantableCvtsPerHa <= 0.35 * totalCylinderVolume);
-            Debug.Assert(merchantableCvtsPerHa <= cvtsPerHa);
-            Debug.Assert(cvtsPerHa <= 0.35 * totalCylinderVolume);
+            // FIA (Waddell 2014) volume equations approach 10.5 board feet per cubic foot
+            double totalCylinderCubicFeetVolumePerAcre = Constant.CubicFeetPerCubicMeter * totalCylinderCubicMeterVolumePerAcre;
+            Debug.Assert(merchantableCubicFeetPerAcre >= 0.05 * totalCylinderCubicFeetVolumePerAcre);
+            Debug.Assert(merchantableCubicFeetPerAcre <= 0.35 * totalCylinderCubicFeetVolumePerAcre);
+            Debug.Assert(merchantableCubicFeetPerAcre >= 0.5 * Constant.AcresPerHectare * Constant.CubicFeetPerCubicMeter * merchantableCubicMetersPerHectare);
 
-            float standCvtsRatio = merchantableCvtsPerHa / fiaVolume.GetMerchantableCubicVolumePerHectare(trees);
-            Debug.Assert(standCvtsRatio >= 0.999);
-            Debug.Assert(standCvtsRatio <= 1.001);
+            Debug.Assert(merchantableCubicMetersPerHectare <= 0.35 * Constant.AcresPerHectare * totalCylinderCubicMeterVolumePerAcre);
+
+            Debug.Assert(totalScribnerBoardFeetPerAcre >= 1.75 * 0.35 * totalCylinderCubicFeetVolumePerAcre);
+            Debug.Assert(totalScribnerBoardFeetPerAcre <= 10.5 * 0.40 * totalCylinderCubicFeetVolumePerAcre);
         }
 
         [TestMethod]

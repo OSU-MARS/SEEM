@@ -9,8 +9,8 @@ namespace Osu.Cof.Organon.Heuristics
         public int Iterations { get; set; }
         public int Tenure { get; set; }
 
-        public TabuSearch(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods)
-            :  base(stand, organonConfiguration, harvestPeriods, planningPeriods)
+        public TabuSearch(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
+            :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits)
         {
             this.Iterations = stand.TreeRecordCount;
             this.Tenure = (int)(0.3 * stand.TreeRecordCount);
