@@ -1,8 +1,10 @@
 ﻿using Osu.Cof.Organon.Heuristics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Management.Automation;
+using System.Threading.Tasks;
 
 namespace Osu.Cof.Organon.Cmdlets
 {
@@ -11,6 +13,9 @@ namespace Osu.Cof.Organon.Cmdlets
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
         public int BestOf { get; set; }
+        [Parameter]
+        public int Cores { get; set; }
+
         [Parameter]
         [ValidateRange(0, 100)]
         public int HarvestPeriods { get; set; }
@@ -28,6 +33,7 @@ namespace Osu.Cof.Organon.Cmdlets
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
+            this.Cores = 1;
             this.HarvestPeriods = 1;
             this.PlanningPeriods = 9;
             this.TreeModel = TreeModel.OrganonNwo;
@@ -38,31 +44,49 @@ namespace Osu.Cof.Organon.Cmdlets
 
         protected override void ProcessRecord()
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            
             Heuristic bestHeuristic = null;
             int totalIterations = 0;
-            TimeSpan totalRunTime = TimeSpan.Zero;
+            TimeSpan computeTime = TimeSpan.Zero;
             List<double> objectiveFunctionValues = new List<double>();
-            for (int iteration = 0; iteration < this.BestOf; ++iteration)
+            ParallelOptions parallelOptions = new ParallelOptions()
             {
+                MaxDegreeOfParallelism = this.Cores
+            };
+            Parallel.For(0, this.BestOf, parallelOptions, (int iteration, ParallelLoopState loopState) => 
+            {
+                if (loopState.ShouldExitCurrentIteration)
+                {
+                    return;
+                }
+
                 Heuristic currentHeuristic = this.CreateHeuristic();
                 if (this.UniformHarvestProbability)
                 {
                     currentHeuristic.RandomizeSchedule();
                 }
-                totalRunTime += currentHeuristic.Run();
-                totalIterations += currentHeuristic.ObjectiveFunctionByIteration.Count;
-                objectiveFunctionValues.Add(currentHeuristic.BestObjectiveFunction);
+                TimeSpan runTime = currentHeuristic.Run();
 
-                if ((bestHeuristic == null) || (currentHeuristic.BestObjectiveFunction < bestHeuristic.BestObjectiveFunction))
+                lock (parallelOptions)
                 {
-                    bestHeuristic = currentHeuristic;
+                    computeTime += runTime;
+                    totalIterations += currentHeuristic.ObjectiveFunctionByIteration.Count;
+                    objectiveFunctionValues.Add(currentHeuristic.BestObjectiveFunction);
+
+                    if ((bestHeuristic == null) || (currentHeuristic.BestObjectiveFunction > bestHeuristic.BestObjectiveFunction))
+                    {
+                        bestHeuristic = currentHeuristic;
+                    }
                 }
 
                 if (this.Stopping)
                 {
-                    break;
+                    loopState.Stop();
                 }
-            }
+            });
+            stopwatch.Stop();
 
             this.WriteObject(bestHeuristic);
             if (this.BestOf > 1)
@@ -70,10 +94,10 @@ namespace Osu.Cof.Organon.Cmdlets
                 this.WriteObject(objectiveFunctionValues);
             }
 
-            this.WriteHeuristicRun(bestHeuristic, objectiveFunctionValues, totalIterations, totalRunTime);
+            this.WriteHeuristicRun(bestHeuristic, objectiveFunctionValues, totalIterations, computeTime, stopwatch.Elapsed);
         }
 
-        private void WriteHeuristicRun(Heuristic heuristic, List<double> objectiveFunctionValues, int totalIterations, TimeSpan runTime)
+        private void WriteHeuristicRun(Heuristic heuristic, List<double> objectiveFunctionValues, int totalIterations, TimeSpan computeTime, TimeSpan elapsedTime)
         {
             int movesAccepted = 0;
             int movesRejected = 0;
@@ -115,10 +139,10 @@ namespace Osu.Cof.Organon.Cmdlets
             this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.BestObjectiveFunction, objectiveFunctionValues.Average(), heuristic.ObjectiveFunctionByIteration.Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 
-            double iterationsPerSecond = (double)totalIterations / runTime.TotalSeconds;
+            double iterationsPerSecond = (double)totalIterations / computeTime.TotalSeconds;
             double iterationsPerSecondMultiplier = iterationsPerSecond > 1E3 ? 1E-3 : 1.0;
             string iterationsPerSecondScale = iterationsPerSecond > 1E3 ? "k" : String.Empty;
-            this.WriteVerbose("{0} iterations in {1:0.000}s ({2:0.00} {3}iterations/s).", totalIterations, runTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
+            this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", totalIterations, computeTime.TotalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
         }
 
         protected void WriteVerbose(string format, params object[] args)
