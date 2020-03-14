@@ -30,10 +30,10 @@ namespace Osu.Cof.Organon.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic CreateHeuristic()
+        protected override Heuristic CreateHeuristic(Objective objective)
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
+            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
             if (this.FinalWaterLevel.HasValue)
             {
                 deluge.FinalWaterLevel = this.FinalWaterLevel.Value;

@@ -37,9 +37,8 @@ namespace Osu.Cof.Organon.Cmdlets
             int maxIteration = 0;
             for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
             {
-                line.AppendFormat(CultureInfo.InvariantCulture, ",H{0}", heuristicIndex);
-
                 Heuristic heuristic = this.Heuristics[heuristicIndex];
+                line.Append("," + heuristic.GetColumnName());
                 maxIteration = Math.Max(maxIteration, heuristic.ObjectiveFunctionByIteration.Count);
             }
             writer.WriteLine(line);
@@ -51,11 +50,12 @@ namespace Osu.Cof.Organon.Cmdlets
 
                 for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
                 {
+                    line.Append(",");
+
                     Heuristic heuristic = this.Heuristics[heuristicIndex];
                     if (heuristic.ObjectiveFunctionByIteration.Count > iteration)
                     {
                         double objectiveFunction = heuristic.ObjectiveFunctionByIteration[iteration];
-                        line.Append(",");
                         line.Append(objectiveFunction.ToString(CultureInfo.InvariantCulture));
                     }
                 }

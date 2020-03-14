@@ -21,10 +21,10 @@ namespace Osu.Cof.Organon.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic CreateHeuristic()
+        protected override Heuristic CreateHeuristic(Objective objective)
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            RecordToRecordTravel recordTravel = new RecordToRecordTravel(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
+            RecordToRecordTravel recordTravel = new RecordToRecordTravel(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
             if (this.Deviation.HasValue)
             {
                 recordTravel.Deviation = this.Deviation.Value;

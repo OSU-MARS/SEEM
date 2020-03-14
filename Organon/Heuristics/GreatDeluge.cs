@@ -11,8 +11,8 @@ namespace Osu.Cof.Organon.Heuristics
         public float RainRate { get; set; }
         public int StopAfter { get; set; }
 
-        public GreatDeluge(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits)
+        public GreatDeluge(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.FinalWaterLevel = 100.0F;
             this.InitialWaterLevel = 0.0F;
@@ -23,6 +23,11 @@ namespace Osu.Cof.Organon.Heuristics
             {
                 this.BestObjectiveFunction
             };
+        }
+
+        public override string GetColumnName()
+        {
+            return "Deluge";
         }
 
         public override TimeSpan Run()

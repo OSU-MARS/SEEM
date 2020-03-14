@@ -9,8 +9,8 @@ namespace Osu.Cof.Organon.Heuristics
         public int Iterations { get; set; }
         public int Tenure { get; set; }
 
-        public TabuSearch(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
-            :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits)
+        public TabuSearch(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+            :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.Iterations = stand.TreeRecordCount;
             this.Tenure = (int)(0.3 * stand.TreeRecordCount);
@@ -19,6 +19,11 @@ namespace Osu.Cof.Organon.Heuristics
             {
                 this.BestObjectiveFunction
             };
+        }
+
+        public override string GetColumnName()
+        {
+            return "Tabu";
         }
 
         public override TimeSpan Run()

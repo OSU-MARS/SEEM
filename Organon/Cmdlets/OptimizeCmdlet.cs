@@ -20,6 +20,8 @@ namespace Osu.Cof.Organon.Cmdlets
         [ValidateRange(0, 100)]
         public int HarvestPeriods { get; set; }
         [Parameter]
+        public SwitchParameter NetPresentValue { get; set; }
+        [Parameter]
         [ValidateRange(0, 100)]
         public int PlanningPeriods { get; set; }
 
@@ -44,13 +46,19 @@ namespace Osu.Cof.Organon.Cmdlets
             this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
         }
 
-        protected abstract Heuristic CreateHeuristic();
+        protected abstract Heuristic CreateHeuristic(Objective objective);
 
         protected override void ProcessRecord()
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            
+
+            Objective objective = new Objective()
+            {
+                IsNetPresentValue = this.NetPresentValue,
+                VolumeUnits = this.VolumeUnits
+            };
+
             Heuristic bestHeuristic = null;
             int totalIterations = 0;
             TimeSpan computeTime = TimeSpan.Zero;
@@ -66,7 +74,7 @@ namespace Osu.Cof.Organon.Cmdlets
                     return;
                 }
 
-                Heuristic currentHeuristic = this.CreateHeuristic();
+                Heuristic currentHeuristic = this.CreateHeuristic(objective);
                 if (this.UniformHarvestProbability)
                 {
                     currentHeuristic.RandomizeSchedule();
@@ -122,24 +130,31 @@ namespace Osu.Cof.Organon.Cmdlets
 
             double maximumHarvest = Double.MinValue;
             double minimumHarvest = Double.MaxValue;
-            double sum = 0.0;
-            double sumOfSquares = 0.0;
+            double harvestSum = 0.0;
+            double harvestSumOfSquares = 0.0;
             for (int periodIndex = 1; periodIndex < heuristic.BestTrajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
             {
                 double harvest = heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex];
                 maximumHarvest = Math.Max(harvest, maximumHarvest);
-                sum += harvest;
-                sumOfSquares += harvest * harvest;
+                harvestSum += harvest;
+                harvestSumOfSquares += harvest * harvest;
                 minimumHarvest = Math.Min(harvest, minimumHarvest);
             }
             double periods = (double)(heuristic.BestTrajectory.HarvestVolumesByPeriod.Length - 1);
-            double meanHarvest = sum / periods;
-            double variance = sumOfSquares / periods - meanHarvest * meanHarvest;
+            double meanHarvest = harvestSum / periods;
+            double variance = harvestSumOfSquares / periods - meanHarvest * meanHarvest;
             double standardDeviation = Math.Sqrt(variance);
             double flowEvenness = Math.Max(maximumHarvest - meanHarvest, meanHarvest - minimumHarvest) / meanHarvest;
+            if (heuristic.BestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
+            {
+                // convert from BF to MBF
+                meanHarvest *= 0.001;
+                // variance *= 0.001 * 0.001;
+                standardDeviation *= 0.001;
+            }
 
             int totalMoves = movesAccepted + movesRejected;
-            this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", heuristic.GetType().Name, totalMoves, movesAccepted, (double)movesAccepted / (double)totalMoves, movesRejected, (double)movesRejected / (double)totalMoves);
+            this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", heuristic.GetColumnName(), totalMoves, movesAccepted, (double)movesAccepted / (double)totalMoves, movesRejected, (double)movesRejected / (double)totalMoves);
             this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.BestObjectiveFunction, objectiveFunctionValues.Average(), heuristic.ObjectiveFunctionByIteration.Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 

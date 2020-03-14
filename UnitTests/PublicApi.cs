@@ -44,16 +44,24 @@ namespace Osu.Cof.Organon.Test
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             Stand stand = nelder.ToStand(130.0F, 10);
 
-            int harvestPeriods = 1;
-            int planningPeriods = 9;
-            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.ScribnerBoardFeetPerAcre)
+            Objective netPresentValue = new Objective()
             {
+                IsNetPresentValue = true,
+                VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
+            };
+            Objective volume = new Objective();
+
+            int harvestPeriods = 2;
+            int planningPeriods = 9;
+            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
+            {
+                EndStandardDeviation = 0.01F, // US$ 10 NPV
                 PopulationSize = 5,
-                MaximumGenerations = 10
+                MaximumGenerations = 10,
             };
             genetic.Run();
 
-            GreatDeluge deluge = new GreatDeluge(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.CubicMetersPerHectare)
+            GreatDeluge deluge = new GreatDeluge(stand, configuration, harvestPeriods, planningPeriods, volume)
             {
                 RainRate = 5,
                 StopAfter = 10
@@ -61,28 +69,28 @@ namespace Osu.Cof.Organon.Test
             deluge.RandomizeSchedule();
             deluge.Run();
 
-            RecordToRecordTravel recordTravel = new RecordToRecordTravel(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.ScribnerBoardFeetPerAcre)
+            RecordToRecordTravel recordTravel = new RecordToRecordTravel(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
             {
                 StopAfter = 10
             };
             recordTravel.RandomizeSchedule();
             recordTravel.Run();
 
-            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.CubicMetersPerHectare)
+            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, harvestPeriods, planningPeriods, volume)
             {
                 Alpha = 0.9F
             };
             annealer.RandomizeSchedule();
             annealer.Run();
 
-            TabuSearch tabu = new TabuSearch(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.ScribnerBoardFeetPerAcre)
+            TabuSearch tabu = new TabuSearch(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
             {
                 Iterations = 5
             };
             tabu.RandomizeSchedule();
             tabu.Run();
 
-            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, harvestPeriods, planningPeriods, VolumeUnits.CubicMetersPerHectare)
+            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, harvestPeriods, planningPeriods, volume)
             {
                 IterationsPerThreshold = 10
             };
@@ -186,6 +194,8 @@ namespace Osu.Cof.Organon.Test
 
             Assert.IsTrue(bestObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);
+            // currently, this check can fail for genetic algorithms when the best individual doesn't breed and disimprovement results
+            // TODO: either change GA to guarantee best individual breeds or relax this check in the GA case
             Assert.IsTrue(endObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(endObjectiveFunctionRatio < 1.00001);
         }

@@ -27,10 +27,10 @@ namespace Osu.Cof.Organon.Cmdlets
         [ValidateRange(0.0, 1.0)]
         public Nullable<float> ReservedPopulationProportion { get; set; }
 
-        protected override Heuristic CreateHeuristic()
+        protected override Heuristic CreateHeuristic(Objective objective)
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
+            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
             if (this.EndStandardDeviation.HasValue)
             {
                 genetic.EndStandardDeviation = this.EndStandardDeviation.Value;

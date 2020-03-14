@@ -9,8 +9,8 @@ namespace Osu.Cof.Organon.Heuristics
         public float Deviation { get; set; }
         public int StopAfter { get; set; }
 
-        public RecordToRecordTravel(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits)
+        public RecordToRecordTravel(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.Deviation = 100.0F;
             this.StopAfter = 1000;
@@ -19,6 +19,11 @@ namespace Osu.Cof.Organon.Heuristics
             {
                 this.BestObjectiveFunction
             };
+        }
+
+        public override string GetColumnName()
+        {
+            return "RecordTravel";
         }
 
         public override TimeSpan Run()

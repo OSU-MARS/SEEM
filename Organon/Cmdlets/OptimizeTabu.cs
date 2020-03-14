@@ -15,10 +15,10 @@ namespace Osu.Cof.Organon.Cmdlets
         [ValidateRange(0, Int32.MaxValue)]
         public Nullable<int> Tenure { get; set; }
 
-        protected override Heuristic CreateHeuristic()
+        protected override Heuristic CreateHeuristic(Objective objective)
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
+            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
             if (this.Iterations.HasValue)
             {
                 tabu.Iterations = this.Iterations.Value;

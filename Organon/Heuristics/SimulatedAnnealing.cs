@@ -11,8 +11,8 @@ namespace Osu.Cof.Organon.Heuristics
         public float InitialTemperature { get; set; }
         public int IterationsPerTemperature { get; set; }
 
-        public SimulatedAnnealing(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
-            :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits)
+        public SimulatedAnnealing(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+            :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.FinalTemperature = 100.0F;
             this.InitialTemperature = 10000.0F;
@@ -26,6 +26,11 @@ namespace Osu.Cof.Organon.Heuristics
             {
                 this.BestObjectiveFunction
             };
+        }
+
+        public override string GetColumnName()
+        {
+            return "SimulatedAnnealing";
         }
 
         public override TimeSpan Run()

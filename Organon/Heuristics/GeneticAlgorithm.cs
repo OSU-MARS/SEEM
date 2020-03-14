@@ -12,16 +12,21 @@ namespace Osu.Cof.Organon.Heuristics
         public int PopulationSize { get; set; }
         public float ReservedPopulationProportion { get; set; }
 
-        public GeneticAlgorithm(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits)
+        public GeneticAlgorithm(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
-            this.EndStandardDeviation = 0.1F;
+            this.EndStandardDeviation = 0.01F;
             this.MaximumGenerations = 50;
             this.MutationProbability = 0.3F;
             this.PopulationSize = 30;
             this.ReservedPopulationProportion = 0.3F;
 
             this.ObjectiveFunctionByIteration = new List<float>(this.MaximumGenerations);
+        }
+
+        public override string GetColumnName()
+        {
+            return "Genetic";
         }
 
         private double GetMaximumFitnessAndVariance(GeneticPopulation generation)

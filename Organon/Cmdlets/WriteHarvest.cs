@@ -25,29 +25,56 @@ namespace Osu.Cof.Organon.Cmdlets
             using StreamWriter writer = new StreamWriter(stream);
 
             StringBuilder line = new StringBuilder("period");
-            int maxPeriod = 0;
+            // harvest volume headers
             for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
             {
-                line.AppendFormat(CultureInfo.InvariantCulture, ",H{0}", heuristicIndex);
-
                 Heuristic heuristic = this.Heuristics[heuristicIndex];
-                maxPeriod = Math.Max(maxPeriod, heuristic.BestTrajectory.HarvestVolumesByPeriod.Length);
+                line.Append("," + heuristic.GetColumnName() + "H");
+            }
+            // standing volume headers
+            int maxPlanningPeriod = 0;
+            for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
+            {
+                Heuristic heuristic = this.Heuristics[heuristicIndex];
+                line.Append("," + heuristic.GetColumnName() + "S");
+                maxPlanningPeriod = Math.Max(maxPlanningPeriod, heuristic.BestTrajectory.StandingVolumeByPeriod.Length);
             }
             writer.WriteLine(line);
 
-            for (int period = 0; period < maxPeriod; ++period)
+            for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
             {
                 line.Clear();
-                line.Append(period);
+                line.Append(periodIndex);
 
                 for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
                 {
+                    line.Append(",");
+
                     Heuristic heuristic = this.Heuristics[heuristicIndex];
-                    if (heuristic.ObjectiveFunctionByIteration.Count > period)
+                    if (heuristic.BestTrajectory.HarvestVolumesByPeriod.Length > periodIndex)
                     {
-                        double objectiveFunction = heuristic.BestTrajectory.HarvestVolumesByPeriod[period];
-                        line.Append(",");
-                        line.Append(objectiveFunction.ToString(CultureInfo.InvariantCulture));
+                        double harvestVolume = heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex];
+                        if (heuristic.BestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
+                        {
+                            harvestVolume *= 0.001;
+                        }
+                        line.Append(harvestVolume.ToString(CultureInfo.InvariantCulture));
+                    }
+                }
+
+                for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
+                {
+                    line.Append(",");
+
+                    Heuristic heuristic = this.Heuristics[heuristicIndex];
+                    if (heuristic.BestTrajectory.StandingVolumeByPeriod.Length > periodIndex)
+                    {
+                        double standingVolume = heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex];
+                        if (heuristic.BestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
+                        {
+                            standingVolume *= 0.001;
+                        }
+                        line.Append(standingVolume.ToString(CultureInfo.InvariantCulture));
                     }
                 }
 

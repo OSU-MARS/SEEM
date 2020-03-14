@@ -9,8 +9,8 @@ namespace Osu.Cof.Organon.Heuristics
         public int IterationsPerThreshold { get; set; }
         public List<float> Thresholds { get; private set; }
 
-        public ThresholdAccepting(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, volumeUnits)
+        public ThresholdAccepting(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.IterationsPerThreshold = 5 * stand.TreeRecordCount;
             this.Thresholds = new List<float>() { 0.90F, 0.92F, 0.95F, 0.97F, 0.99F, 1.0F };
@@ -19,6 +19,11 @@ namespace Osu.Cof.Organon.Heuristics
             {
                 this.BestObjectiveFunction
             };
+        }
+
+        public override string GetColumnName()
+        {
+            return "ThresholdAccepting";
         }
 
         // similar to SimulatedAnnealing.Run(), differences are in move acceptance

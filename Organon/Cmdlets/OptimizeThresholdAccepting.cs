@@ -21,10 +21,10 @@ namespace Osu.Cof.Organon.Cmdlets
             this.Thresholds = null;
         }
 
-        protected override Heuristic CreateHeuristic()
+        protected override Heuristic CreateHeuristic(Objective objective)
         {
             OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, this.VolumeUnits);
+            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
             if (this.IterationsPerThreshold.HasValue)
             {
                 acceptor.IterationsPerThreshold = this.IterationsPerThreshold.Value;
