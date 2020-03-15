@@ -20,18 +20,10 @@ namespace Osu.Cof.Organon.Heuristics
             this.IndividualTreeSelections = new int[populationSize][];
             this.reservedPopulationProportion = reservedPopulationProportion;
 
-            double harvestPeriodScalingFactor = ((float)harvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             for (int individualIndex = 0; individualIndex < populationSize; ++individualIndex)
             {
-                float[] harvestByPeriod = new float[harvestPeriods];
-                this.HarvestVolumesByPeriod[individualIndex] = harvestByPeriod;
-
-                int[] schedule = new int[harvestUnits];
-                for (int unitIndex = 0; unitIndex < harvestUnits; ++unitIndex)
-                {
-                    schedule[unitIndex] = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
-                }
-                this.IndividualTreeSelections[individualIndex] = schedule;
+                this.HarvestVolumesByPeriod[individualIndex] = new float[harvestPeriods];
+                this.IndividualTreeSelections[individualIndex] = new int[harvestUnits];
             }
         }
 
@@ -90,6 +82,39 @@ namespace Osu.Cof.Organon.Heuristics
                     secondParentIndex = individualIndex;
                     break;
                 }
+            }
+        }
+
+        public void RandomizeSchedule(HarvestPeriodSelection periodSelection)
+        {
+            if (periodSelection == HarvestPeriodSelection.All)
+            {
+                double harvestPeriodScalingFactor = ((double)this.HarvestPeriods - Constant.RoundToZeroTolerance) / (double)byte.MaxValue;
+                for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
+                {
+                    int[] schedule = this.IndividualTreeSelections[individualIndex];
+                    for (int unitIndex = 0; unitIndex < this.HarvestUnits; ++unitIndex)
+                    {
+                        schedule[unitIndex] = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
+                    }
+                }
+            }
+            else if (periodSelection == HarvestPeriodSelection.NoneOrLast)
+            {
+                double unityScalingFactor = 1.0 / (double)byte.MaxValue;
+                for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
+                {
+                    int[] schedule = this.IndividualTreeSelections[individualIndex];
+                    for (int unitIndex = 0; unitIndex < this.HarvestUnits; ++unitIndex)
+                    {
+                        bool thinTree = (unityScalingFactor * this.GetPseudorandomByteAsFloat()) > 0.5;
+                        schedule[unitIndex] = thinTree ? this.HarvestPeriods - 1: 0;
+                    }
+                }
+            }
+            else
+            {
+                throw new NotSupportedException(String.Format("Unhandled harvest period selection {0}.", periodSelection));
             }
         }
 

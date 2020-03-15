@@ -86,11 +86,27 @@ namespace Osu.Cof.Organon.Heuristics
 
         public void RandomizeSchedule()
         {
-            float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
-            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.All)
             {
-                int harvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
-                this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
+                double harvestPeriodScalingFactor = ((double)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (double)byte.MaxValue;
+                for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+                {
+                    int harvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
+                    this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
+                }
+            }
+            else if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.NoneOrLast)
+            {
+                double unityScalingFactor = 1.0 / (double)byte.MaxValue;
+                for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+                {
+                    int harvestPeriod = unityScalingFactor * this.GetPseudorandomByteAsFloat() > 0.5 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                    this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException(String.Format("Unhandled harvest period selection {0}.", this.Objective.HarvestPeriodSelection));
             }
 
             this.CurrentTrajectory.Simulate();

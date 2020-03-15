@@ -17,9 +17,9 @@ namespace Osu.Cof.Organon.Heuristics
         {
             this.EndStandardDeviation = 0.01F;
             this.MaximumGenerations = 50;
-            this.MutationProbability = 0.3F;
+            this.MutationProbability = 0.5F;
             this.PopulationSize = 30;
-            this.ReservedPopulationProportion = 0.3F;
+            this.ReservedPopulationProportion = 0.5F;
 
             this.ObjectiveFunctionByIteration = new List<float>(this.MaximumGenerations);
         }
@@ -80,6 +80,7 @@ namespace Osu.Cof.Organon.Heuristics
             // begin with population of random harvest schedules
             // TODO: should incoming schedule on this.CurrentSolution be one of the individuals in the population?
             GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.TreeRecordCount, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion);
+            currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection);
             StandTrajectory individualTrajectory = new StandTrajectory(this.CurrentTrajectory);
             this.BestObjectiveFunction = float.MinValue;
             for (int individualIndex = 0; individualIndex < this.PopulationSize; ++individualIndex)

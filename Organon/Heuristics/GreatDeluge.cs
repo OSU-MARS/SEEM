@@ -40,6 +40,10 @@ namespace Osu.Cof.Organon.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.RainRate));
             }
+            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
+            {
+                throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
+            }
             if (this.StopAfter < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.StopAfter));
@@ -49,7 +53,7 @@ namespace Osu.Cof.Organon.Heuristics
             stopwatch.Start();
 
             float currentObjectiveFunction = this.BestObjectiveFunction;
-            float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
+            //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
             float treeIndexScalingFactor = ((float)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
 
@@ -58,11 +62,12 @@ namespace Osu.Cof.Organon.Heuristics
             {
                 int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                 int currentHarvestPeriod = this.CurrentTrajectory.IndividualTreeSelection[treeIndex];
-                int candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
-                while (candidateHarvestPeriod == currentHarvestPeriod)
-                {
-                    candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
-                }
+                int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                //int candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
+                //while (candidateHarvestPeriod == currentHarvestPeriod)
+                //{
+                //    candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
+                //}
                 Debug.Assert(candidateHarvestPeriod >= 0);
 
                 candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);

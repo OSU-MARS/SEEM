@@ -55,9 +55,9 @@ namespace Osu.Cof.Organon.Test
             int planningPeriods = 9;
             GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
             {
-                EndStandardDeviation = 0.01F, // US$ 10 NPV
-                PopulationSize = 5,
-                MaximumGenerations = 10,
+                EndStandardDeviation = 0.001F, // US$ 1 NPV
+                PopulationSize = 6,
+                MaximumGenerations = 8,
             };
             genetic.Run();
 
@@ -97,11 +97,15 @@ namespace Osu.Cof.Organon.Test
             thresholdAcceptor.RandomizeSchedule();
             thresholdAcceptor.Run();
 
-            this.VerifyObjectiveFunction(genetic);
+            // heuristics assigned to volume optimization
             this.VerifyObjectiveFunction(deluge);
-            this.VerifyObjectiveFunction(recordTravel);
             this.VerifyObjectiveFunction(annealer);
             this.VerifyObjectiveFunction(thresholdAcceptor);
+
+            // heuristics assigned to net present value optimization
+            this.VerifyObjectiveFunction(genetic);
+            this.VerifyObjectiveFunction(recordTravel);
+            this.VerifyObjectiveFunction(tabu);
         }
 
         [TestMethod]
