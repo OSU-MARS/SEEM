@@ -97,6 +97,13 @@ namespace Osu.Cof.Organon.Test
             thresholdAcceptor.RandomizeSchedule();
             thresholdAcceptor.Run();
 
+            Hero hero = new Hero(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
+            {
+                Iterations = 10
+            };
+            hero.RandomizeSchedule();
+            hero.Run();
+
             // heuristics assigned to volume optimization
             this.VerifyObjectiveFunction(deluge);
             this.VerifyObjectiveFunction(annealer);
@@ -106,6 +113,7 @@ namespace Osu.Cof.Organon.Test
             this.VerifyObjectiveFunction(genetic);
             this.VerifyObjectiveFunction(recordTravel);
             this.VerifyObjectiveFunction(tabu);
+            this.VerifyObjectiveFunction(hero);
         }
 
         [TestMethod]
@@ -194,7 +202,7 @@ namespace Osu.Cof.Organon.Test
 
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
             Assert.IsTrue(heuristic.BestObjectiveFunction >= endObjectiveFunction);
-            Assert.IsTrue(heuristic.ObjectiveFunctionByIteration.Count > 4);
+            Assert.IsTrue(heuristic.ObjectiveFunctionByIteration.Count >= 3);
 
             Assert.IsTrue(bestObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);
