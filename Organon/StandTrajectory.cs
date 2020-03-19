@@ -158,7 +158,7 @@ namespace Osu.Cof.Organon
                 double cvts4perAcre = 0.0F;
                 for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
-                    if ((this.IndividualTreeSelection[treeIndex] == 0) || (this.IndividualTreeSelection[treeIndex] < periodIndex))
+                    if ((this.IndividualTreeSelection[treeIndex] == 0) || (periodIndex < this.IndividualTreeSelection[treeIndex]))
                     {
                         double treesPerAcre = stand.LiveExpansionFactor[treeIndex];
                         cvts4perAcre += treesPerAcre * this.fiaVolume.GetMerchantableCubicFeet(stand, treeIndex);
@@ -176,7 +176,7 @@ namespace Osu.Cof.Organon
                 double scribner6x32footLogPerAcre = 0.0F;
                 for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
-                    if ((this.IndividualTreeSelection[treeIndex] == 0) || (this.IndividualTreeSelection[treeIndex] < periodIndex))
+                    if ((this.IndividualTreeSelection[treeIndex] == 0) || (periodIndex < this.IndividualTreeSelection[treeIndex]))
                     {
                         double treesPerAcre = stand.LiveExpansionFactor[treeIndex];
                         scribner6x32footLogPerAcre += treesPerAcre * this.fiaVolume.GetScribnerBoardFeet(stand, treeIndex);
@@ -240,8 +240,8 @@ namespace Osu.Cof.Organon
             switch (this.VolumeUnits)
             {
                 case VolumeUnits.CubicMetersPerHectare:
-                this.GetHarvestedCubicMetersPerHectare(this.HarvestVolumesByPeriod);
-                this.GetStandingCubicMetersPerHectare(this.StandingVolumeByPeriod);
+                    this.GetHarvestedCubicMetersPerHectare(this.HarvestVolumesByPeriod);
+                    this.GetStandingCubicMetersPerHectare(this.StandingVolumeByPeriod);
                     break;
                 case VolumeUnits.ScribnerBoardFeetPerAcre:
                     this.GetHarvestedScribnerBoardFeetPerAcre(this.HarvestVolumesByPeriod);

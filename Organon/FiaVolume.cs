@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Osu.Cof.Organon
 {
@@ -96,12 +97,12 @@ namespace Osu.Cof.Organon
             {
                 return 0.0;
             }
-            double cubicFeet = this.GetMerchantableCubicFeet(trees, treeIndex);
+            double cubicFeet = this.GetCubicFeet(trees, treeIndex);
             if (cubicFeet <= 0.0)
             {
                 return 0.0;
             }
-
+            
             FiaCode species = trees.Species[treeIndex];
             double basalAreaInSquareFeet = Constant.ForestersEnglish * dbhInInches * dbhInInches;
             double tarif;
@@ -123,18 +124,23 @@ namespace Osu.Cof.Organon
 
             // conversion to Scribner volumes for 32 foot trees
             // Waddell 2014:32
-            double cv6 = cv4;
-            double rc6 = 0.993 * (1.0 - Math.Pow(0.62, dbhInInches - 6.0)) * tarif;
-            if (rc6 < 1.0)
-            {
-                cv6 *= rc6;
-            }
+            double rc6 = 0.993 * (1.0 - Math.Pow(0.62, dbhInInches - 6.0));
+            double cv6 = rc6 * cv4;
             double b4 = tarif / 0.912733;
             double logB4 = Math.Log10(b4);
-            double rs616 = Math.Pow(10.0, 0.174439 + 0.117594 * Math.Log(dbhInInches) * logB4 - 8.210585 / (dbhInInches * dbhInInches) + 0.236693 * logB4 - 0.00001345 * b4 * b4 - 0.00001937 * dbhInInches * dbhInInches);
+            double rs616 = Math.Pow(10.0, 0.174439 + 0.117594 * Math.Log10(dbhInInches) * logB4 - 8.210585 / (dbhInInches * dbhInInches) + 0.236693 * logB4 - 0.00001345 * b4 * b4 - 0.00001937 * dbhInInches * dbhInInches);
             double sv616 = rs616 * cv6; // Scribner board foot volume to a 6 inch top for 16 foot logs
             double rs632 = 1.001491 - 6.924097 / tarif + 0.00001351 * dbhInInches * dbhInInches;
             double sv632 = rs632 * sv616; // Scribner board foot volume to a 6 inch top for 32 foot logs
+
+            Debug.Assert(rc6 >= 0.0);
+            Debug.Assert(rc6 <= 1.0);
+            Debug.Assert(rs616 >= 1.0);
+            Debug.Assert(rs616 <= 6.8);
+            Debug.Assert(rs632 >= 0.0);
+            Debug.Assert(rs632 <= 1.0);
+            Debug.Assert(sv632 >= 0.0);
+            Debug.Assert(sv632 <= 10.0 * 1000.0);
             return sv632;
         }
     }

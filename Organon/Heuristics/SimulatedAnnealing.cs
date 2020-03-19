@@ -88,7 +88,7 @@ namespace Osu.Cof.Organon.Heuristics
                     if (acceptMove == false)
                     {
                         double candidateObjectiveFunctionChange = candidateObjectiveFunction - currentObjectiveFunction;
-                        double exponent = candidateObjectiveFunctionChange / temperature;
+                        double exponent = -candidateObjectiveFunctionChange / temperature;
                         if (exponent < 10.0F)
                         {
                             // exponent is small enough not to round acceptance probabilities down to zero

@@ -51,7 +51,7 @@ namespace Osu.Cof.Organon.Test
             };
             Objective volume = new Objective();
 
-            int harvestPeriods = 2;
+            int harvestPeriods = 4;
             int planningPeriods = 9;
             GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
             {
