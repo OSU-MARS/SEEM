@@ -102,20 +102,16 @@ namespace Osu.Cof.Organon.Test
         protected void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
         {
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
+            OrganonTreatments treatments = new OrganonTreatments();
             TestStand initialTreeData = stand.Clone();
             TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath(stand.TreeRecordCount);
 
-            float BABT = 0.0F;
-            float[] BART = new float[5];
             Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
-            float[] PN = new float[5];
             if (configuration.IsEvenAge)
             {
                 // stand error if less than one year to grow to breast height
                 stand.AgeInYears = stand.BreastHeightAgeInYears + 2;
             }
-            float[] YSF = new float[5];
-            float[] YST = new float[5];
 
             TestStandDensity density = new TestStandDensity(stand, variant);
             using StreamWriter densityWriter = density.WriteToCsv(baseFileName + " density.csv", variant, startYear);
@@ -124,7 +120,7 @@ namespace Osu.Cof.Organon.Test
             using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
             for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)
             {
-                Organon.Grow(simulationStep, configuration, stand, CALIB, PN, YSF, BABT, BART, YST);
+                Organon.Grow(simulationStep, configuration, stand, CALIB, treatments);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
                 stand.SetSdiMax(configuration);

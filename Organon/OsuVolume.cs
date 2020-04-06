@@ -28,8 +28,8 @@ namespace Osu.Cof.Organon
                 // Poudel K, Temesgen H, Gray AN. 2018. Estimating upper stem diameters and volume of Douglas-fir and Western hemlock
                 //   trees in the Pacific northwest. Forest Ecosystems 5:16. https://doi.org/10.1186/s40663-018-0134-2
                 // Table 8
-                FiaCode.PseudotsugaMenziesii => (float)Math.Exp(-9.70405 + 1.61812 * Math.Log(dbhInCm) + 1.21071 * Math.Log(heightInM)),
-                FiaCode.TsugaHeterophylla => (float)Math.Exp(-9.98200 + 1.37228 * Math.Log(dbhInCm) + 1.57319 * Math.Log(heightInM)),
+                FiaCode.PseudotsugaMenziesii => MathV.Exp(-9.70405F + 1.61812F * MathV.Ln(dbhInCm) + 1.21071F * MathV.Ln(heightInM)),
+                FiaCode.TsugaHeterophylla => MathV.Exp(-9.98200F + 1.37228F * MathV.Ln(dbhInCm) + 1.57319F * MathV.Ln(heightInM)),
                 _ => throw OrganonVariant.CreateUnhandledSpeciesException(species),
             };
             return cvtsPerTreeInCubicM;

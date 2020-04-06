@@ -1,4 +1,6 @@
-﻿namespace Osu.Cof.Organon
+﻿using System;
+
+namespace Osu.Cof.Organon
 {
     public class Trees
     {
@@ -38,15 +40,18 @@
 
         public Trees(int treeRecordCount)
         {
-            this.CrownRatio = new float[treeRecordCount];
-            this.Dbh = new float[treeRecordCount];
-            this.DbhGrowth = new float[treeRecordCount];
-            this.DeadExpansionFactor = new float[treeRecordCount];
-            this.LiveExpansionFactor = new float[treeRecordCount];
-            this.Height = new float[treeRecordCount];
-            this.HeightGrowth = new float[treeRecordCount];
-            this.Species = new FiaCode[treeRecordCount];
-            this.Tag = new int[treeRecordCount];
+            // ensure array lengths are an exact multiple of the SIMD width
+            int treeArrayLength = Constant.SimdWidthInSingles * (int)MathF.Ceiling((float)treeRecordCount / (float)Constant.SimdWidthInSingles);
+
+            this.CrownRatio = new float[treeArrayLength];
+            this.Dbh = new float[treeArrayLength];
+            this.DbhGrowth = new float[treeArrayLength];
+            this.DeadExpansionFactor = new float[treeArrayLength];
+            this.LiveExpansionFactor = new float[treeArrayLength];
+            this.Height = new float[treeArrayLength];
+            this.HeightGrowth = new float[treeArrayLength];
+            this.Species = new FiaCode[treeArrayLength];
+            this.Tag = new int[treeArrayLength];
             this.TreeRecordCount = treeRecordCount;
         }
 

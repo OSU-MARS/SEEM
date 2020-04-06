@@ -65,8 +65,8 @@ namespace Osu.Cof.Organon.Data
                 //   Forest Science 16(3):287-301.
                 // TODO: These regressions are problematic as it has a negative, rather than positive intercept at zero DBH for spacings
                 // of 10x10 feet and closer. They are also specific to Wind River.
-                double crownLengthInFeet = 3.20 * stand.Dbh[treeIndex] + 1.0;
-                stand.CrownRatio[treeIndex] = (float)(crownLengthInFeet / stand.Height[treeIndex]);
+                float crownLengthInFeet = 3.20F * stand.Dbh[treeIndex] + 1.0F;
+                stand.CrownRatio[treeIndex] = crownLengthInFeet / stand.Height[treeIndex];
             }
             return stand;
         }

@@ -20,18 +20,18 @@ namespace Osu.Cof.Organon
         {
             float X1 = 13.25F - siteIndexFromGround / 20.0F;
             float X2 = 63.25F - siteIndexFromGround / 20.0F;
-            float B2 = -0.447762F - 0.894427F * siteIndexFromGround / 100.0F + 0.793548F * (float)Math.Pow(siteIndexFromGround / 100.0, 2.0) - 0.171666F * (float)Math.Pow(siteIndexFromGround / 100.0, 3.0);
-            float B1 = (float)(Math.Log(4.5 / siteIndexFromGround) / (Math.Pow(X1, B2) - Math.Pow(X2, B2)));
-            float XX1 = (float)(Math.Log(treeHeight / siteIndexFromGround) / B1 + Math.Pow(X2, B2));
+            float B2 = -0.447762F - 0.894427F * siteIndexFromGround / 100.0F + 0.793548F * (siteIndexFromGround / 100.0F) * (siteIndexFromGround / 100.0F) - 0.171666F * (siteIndexFromGround / 100.0F) * (siteIndexFromGround / 100.0F) * (siteIndexFromGround / 100.0F);
+            float B1 = MathV.Ln(4.5F / siteIndexFromGround) / (MathV.Pow(X1, B2) - MathV.Pow(X2, B2));
+            float XX1 = MathV.Ln(treeHeight / siteIndexFromGround) / B1 + MathV.Pow(X2, B2);
             if (XX1 > 0.0F)
             {
-                growthEffectiveAge = (float)Math.Pow(XX1, 1.0 / B2) - X1;
+                growthEffectiveAge = MathF.Pow(XX1, 1.0F / B2) - X1;
             }
             else
             {
                 growthEffectiveAge = 500.0F;
             }
-            float potentialHeight = siteIndexFromGround * (float)Math.Exp(B1 * (Math.Pow(growthEffectiveAge + GP + X1, B2) - Math.Pow(X2, B2)));
+            float potentialHeight = siteIndexFromGround * MathV.Exp(B1 * (MathF.Pow(growthEffectiveAge + GP + X1, B2) - MathF.Pow(X2, B2)));
             potentialHeightGrowth = potentialHeight - treeHeight;
         }
 
@@ -72,8 +72,8 @@ namespace Osu.Cof.Organon
                 B2 = 1.21297F;
             }
 
-            float BBC = B0 + B1 * (float)Math.Log(SI);
-            float X50 = 1.0F - (float)Math.Exp(-1.0 * Math.Exp(BBC + B2 * 3.912023F));
+            float BBC = B0 + B1 * MathV.Ln(SI);
+            float X50 = 1.0F - MathV.Exp(-1.0F * MathV.Exp(BBC + B2 * 3.912023F));
             float A1A = 1.0F - (HT - 4.5F) * (X50 / SI);
             if (A1A <= 0.0F)
             {
@@ -82,9 +82,9 @@ namespace Osu.Cof.Organon
             }
             else
             {
-                GEAGE = (float)Math.Pow(-1.0F * Math.Log(A1A) / (Math.Exp(B0) * Math.Pow(SI, B1)), 1.0F / B2);
-                float XAI = 1.0F - (float)Math.Exp(-1.0 * Math.Exp(BBC + B2 * Math.Log(GEAGE)));
-                float XAI5 = 1.0F - (float)Math.Exp(-1.0 * Math.Exp(BBC + B2 * Math.Log(GEAGE + 5.0)));
+                GEAGE = MathF.Pow(-1.0F * MathV.Ln(A1A) / (MathV.Exp(B0) * MathF.Pow(SI, B1)), 1.0F / B2);
+                float XAI = 1.0F - MathV.Exp(-1.0F * MathV.Exp(BBC + B2 * MathV.Ln(GEAGE)));
+                float XAI5 = 1.0F - MathV.Exp(-1.0F * MathV.Exp(BBC + B2 * MathV.Ln(GEAGE + 5.0F)));
                 PHTGRO = 4.5F + (HT - 4.5F) * (XAI5 / XAI) - HT;
             }
         }

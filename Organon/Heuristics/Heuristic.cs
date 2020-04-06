@@ -33,7 +33,7 @@ namespace Osu.Cof.Organon.Heuristics
         {
             // find objective function value
             // Volume objective functions are in m³/ha or MBF/ac.
-            double objectiveFunction = 0.0F;
+            float objectiveFunction = 0.0F;
             if (this.Objective.IsNetPresentValue)
             {
                 if (trajectory.VolumeUnits == VolumeUnits.CubicMetersPerHectare)
@@ -46,26 +46,26 @@ namespace Osu.Cof.Organon.Heuristics
                 // net present value
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
                 // TODO: support per species pricing
-                double appreciatedPricePerMbf;
-                double discountFactor;
+                float appreciatedPricePerMbf;
+                float discountFactor;
                 for (int periodIndex = 1; periodIndex < trajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
                 {
-                    double thinVolumeInMbf = 0.001 * trajectory.HarvestVolumesByPeriod[periodIndex];
+                    float thinVolumeInMbf = 0.001F * trajectory.HarvestVolumesByPeriod[periodIndex];
                     if (thinVolumeInMbf > 0.0)
                     {
-                        appreciatedPricePerMbf = this.Objective.DouglasFirPricePerMbf * Math.Pow(1.0 + this.Objective.TimberAppreciationRate, Constant.DefaultTimeStepInYears * (periodIndex - 1) + 0.5 * Constant.DefaultTimeStepInYears);
-                        discountFactor = 1.0 / Math.Pow(1.0 + this.Objective.DiscountRate, Constant.DefaultTimeStepInYears * (periodIndex - 1) + 0.5 * Constant.DefaultTimeStepInYears);
+                        appreciatedPricePerMbf = this.Objective.DouglasFirPricePerMbf * MathF.Pow(1.0F + this.Objective.TimberAppreciationRate, Constant.DefaultTimeStepInYears * (periodIndex - 1) + 0.5F * Constant.DefaultTimeStepInYears);
+                        discountFactor = 1.0F / MathF.Pow(1.0F + this.Objective.DiscountRate, Constant.DefaultTimeStepInYears * (periodIndex - 1) + 0.5F * Constant.DefaultTimeStepInYears);
                         objectiveFunction += discountFactor * (appreciatedPricePerMbf * thinVolumeInMbf - this.Objective.FixedThinningCostPerAcre);
                     }
                 }
 
-                appreciatedPricePerMbf = this.Objective.DouglasFirPricePerMbf * Math.Pow(1.0 + this.Objective.TimberAppreciationRate, Constant.DefaultTimeStepInYears * (trajectory.StandingVolumeByPeriod.Length - 1) + 0.5 * Constant.DefaultTimeStepInYears);
-                discountFactor = 1.0 / Math.Pow(1.0 + this.Objective.DiscountRate, Constant.DefaultTimeStepInYears * (trajectory.StandingVolumeByPeriod.Length - 1) + 0.5 * Constant.DefaultTimeStepInYears);
-                double endStandingVolumeInMbf = 0.001 * trajectory.StandingVolumeByPeriod[trajectory.StandingVolumeByPeriod.Length - 1];
+                appreciatedPricePerMbf = this.Objective.DouglasFirPricePerMbf * MathF.Pow(1.0F + this.Objective.TimberAppreciationRate, Constant.DefaultTimeStepInYears * (trajectory.StandingVolumeByPeriod.Length - 1) + 0.5F * Constant.DefaultTimeStepInYears);
+                discountFactor = 1.0F / MathF.Pow(1.0F + this.Objective.DiscountRate, Constant.DefaultTimeStepInYears * (trajectory.StandingVolumeByPeriod.Length - 1) + 0.5F * Constant.DefaultTimeStepInYears);
+                float endStandingVolumeInMbf = 0.001F * trajectory.StandingVolumeByPeriod[^1];
                 objectiveFunction += discountFactor * (appreciatedPricePerMbf * endStandingVolumeInMbf - this.Objective.FixedRegenerationHarvestCostPerAcre);
 
                 // convert from US$/ac to k$/ac
-                objectiveFunction *= 0.001;
+                objectiveFunction *= 0.001F;
             }
             else
             {
@@ -74,7 +74,7 @@ namespace Osu.Cof.Organon.Heuristics
                 {
                     objectiveFunction += trajectory.HarvestVolumesByPeriod[periodIndex];
                 }
-                objectiveFunction += trajectory.StandingVolumeByPeriod[trajectory.StandingVolumeByPeriod.Length - 1];
+                objectiveFunction += trajectory.StandingVolumeByPeriod[^1];
                 if (trajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
                 {
                     objectiveFunction *= 0.001F;
@@ -88,7 +88,7 @@ namespace Osu.Cof.Organon.Heuristics
         {
             if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.All)
             {
-                double harvestPeriodScalingFactor = ((double)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (double)byte.MaxValue;
+                float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
                 for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
                 {
                     int harvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
@@ -97,7 +97,7 @@ namespace Osu.Cof.Organon.Heuristics
             }
             else if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.NoneOrLast)
             {
-                double unityScalingFactor = 1.0 / (double)byte.MaxValue;
+                float unityScalingFactor = 1.0F / (float)byte.MaxValue;
                 for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
                 {
                     int harvestPeriod = unityScalingFactor * this.GetPseudorandomByteAsFloat() > 0.5 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;

@@ -8,65 +8,39 @@ namespace Osu.Cof.Organon
     {
         public static float GetCrownRatioAdjustment(float crownRatio)
         {
-            return 1.0F - (float)Math.Exp(-(25.0 * 25.0 * crownRatio * crownRatio));
+            if (crownRatio > 0.15F)
+            {
+                return 1.0F; // accurate within 1 ppm
+            }
+            return 1.0F - MathV.Exp(-(25.0F * 25.0F * crownRatio * crownRatio));
         }
 
-        private float GetDiameterFertilizationAdjustment(FiaCode species, OrganonVariant variant, int simulationStep, float SI_1, float[] PN, float[] YF)
+        private float GetDiameterFertilizationAdjustment(FiaCode species, OrganonVariant variant, int simulationStep, float SI_1, OrganonTreatments treatments)
         {
-            // CALCULATE FERTILIZER ADJUSTMENT FOR DIAMETER GROWTH RATE
-            // FROM HANN ET AL.(2003) FRL RESEARCH CONTRIBUTION 40
-            // SET PARAMETERS FOR ADJUSTMENT
-            float PF1;
-            float PF2;
-            float PF3;
-            float PF4;
-            float PF5;
-            if (variant.TreeModel != TreeModel.OrganonRap)
+            // fertilization diameter effects currently supported only for non-RAP Douglas-fir
+            if ((species != FiaCode.PseudotsugaMenziesii) || (variant.TreeModel != TreeModel.OrganonRap))
             {
-                if (species == FiaCode.TsugaHeterophylla)
-                {
-                    PF1 = 0.0F;
-                    PF2 = 1.0F;
-                    PF3 = 0.0F;
-                    PF4 = 0.0F;
-                    PF5 = 1.0F;
-                }
-                else if (species == FiaCode.PseudotsugaMenziesii)
-                {
-                    PF1 = 1.368661121F;
-                    PF2 = 0.741476964F;
-                    PF3 = -0.214741684F;
-                    PF4 = -0.851736558F;
-                    PF5 = 2.0F;
-                }
-                else
-                {
-                    PF1 = 0.0F;
-                    PF2 = 1.0F;
-                    PF3 = 0.0F;
-                    PF4 = 0.0F;
-                    PF5 = 1.0F;
-                }
+                return 1.0F;
             }
-            else
-            {
-                PF1 = 0.0F;
-                PF2 = 1.0F;
-                PF3 = 0.0F;
-                PF4 = 0.0F;
-                PF5 = 1.0F;
-            }
+
+            // non-RAP Douglas-fir
+            // HANN ET AL.(2003) FRL RESEARCH CONTRIBUTION 40
+            float PF1 = 1.368661121F;
+            float PF2 = 0.741476964F;
+            float PF3 = -0.214741684F;
+            float PF4 = -0.851736558F;
+            float PF5 = 2.0F;
 
             float FALDWN = 1.0F;
             float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
             float FERTX1 = 0.0F;
-            for (int I = 1; I < 5; ++I)
+            for (int treatmentIndex = 1; treatmentIndex < 5; ++treatmentIndex)
             {
-                FERTX1 += (PN[I] / 800.0F) * (float)Math.Exp((PF3 / PF2) * (YF[1] - YF[I]));
+                FERTX1 += treatments.PoundsOfNitrogenPerAcre[treatmentIndex] / 800.0F * MathV.Exp(PF3 / PF2 * (treatments.FertilizationYears[1] - treatments.FertilizationYears[treatmentIndex]));
             }
 
-            float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[1]) + Math.Pow(PF4 * (SI_1 / 100.0), PF5));
-            float FERTADJ = 1.0F + (float)(PF1 * Math.Pow((PN[1] / 800.0) + FERTX1, PF2) * FERTX2) * FALDWN;
+            float FERTX2 = MathV.Exp(PF3 * (XTIME - treatments.FertilizationYears[1]) + MathF.Pow(PF4 * (SI_1 / 100.0F), PF5));
+            float FERTADJ = 1.0F + PF1 * MathV.Pow((treatments.PoundsOfNitrogenPerAcre[1] / 800.0F) + FERTX1, PF2) * FERTX2 * FALDWN;
             Debug.Assert(FERTADJ >= 1.0F);
             return FERTADJ;
         }
@@ -77,55 +51,50 @@ namespace Osu.Cof.Organon
         /// <param name="species">FIA species code.</param>
         /// <param name="variant">Organon variant.</param>
         /// <param name="simulationStep">Simulation cycle.</param>
-        /// <param name="BABT">Basal area before thinning? (DOUG?)</param>
-        /// <param name="BART">Basal area removed by thinning? (DOUG?)</param>
-        /// <param name="YT">Thinning year data? (DOUG?)</param>
-        /// <param name="THINADJ">Thinning adjustment. (DOUG?)</param>
+        /// <param name="treatments"></param>
         /// <remarks>
         /// Has special cases for Douglas-fir, western hemlock, and red alder (only for RAP).
         /// </remarks>
-        private float GetDiameterThinningAdjustment(FiaCode species, OrganonVariant variant, int simulationStep, float BABT, float[] BART, float[] YT)
+        private float GetDiameterThinningAdjustment(FiaCode species, OrganonVariant variant, int simulationStep, OrganonTreatments treatments)
         {
-            // CALCULATE THINNING ADJUSTMENT FOR DIAMETER GROWTH RATE FROM
-            // HANN ET AL.(2003) FRL RESEARCH CONTRIBUTION 40
-            //
-            // SET PARAMETERS FOR ADJUSTMENT
-            float PT1;
+            // Hann DW, Marshall DD, Hanus ML. 2003. Equations for predicting height-to-crown-base, 5-year diameter-growth-rate, 5-year height-growth rate,
+            //   5-year mortality-rate, and maximum size-density trajectory for Douglas-fir and western hemlock in the coasta region of the Pacific
+            //   Northwest. FRL Research Contribution 40. https://ir.library.oregonstate.edu/concern/technical_reports/jd472x893
+            // table 21
+            float a8;
             float PT2;
-            float PT3;
+            float ag;
             if (species == FiaCode.TsugaHeterophylla)
             {
-                PT1 = 0.723095045F;
+                a8 = 0.723095045F;
                 PT2 = 1.0F;
-                PT3 = -0.2644085320F;
+                ag = -0.2644085320F;
             }
             else if (species == FiaCode.PseudotsugaMenziesii)
             {
-                PT1 = 0.6203827985F;
+                a8 = 0.6203827985F;
                 PT2 = 1.0F;
-                PT3 = -0.2644085320F;
+                ag = -0.2644085320F;
             }
             else if ((variant.TreeModel == TreeModel.OrganonRap) && (species == FiaCode.AlnusRubra))
             {
-                PT1 = 0.0F;
-                PT2 = 1.0F;
-                PT3 = 0.0F;
+                // thinning effects not supported
+                return 1.0F;
             }
             else
             {
-                PT1 = 0.6203827985F;
+                a8 = 0.6203827985F;
                 PT2 = 1.0F;
-                PT3 = -0.2644085320F;
+                ag = -0.2644085320F;
             }
 
-            float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
             float THINX1 = 0.0F;
-            for (int I = 1; I < 5; ++I)
+            for (int treatmentIndex = 1; treatmentIndex < treatments.BasalAreaRemovedByThin.Length; ++treatmentIndex)
             {
-                THINX1 += BART[I] * (float)Math.Exp((PT3 / PT2) * (YT[1] - YT[I]));
+                THINX1 += treatments.BasalAreaRemovedByThin[treatmentIndex] * MathV.Exp(ag / PT2 * (treatments.ThinningYears[0] - treatments.ThinningYears[treatmentIndex]));
             }
-            float THINX2 = THINX1 + BART[0];
-            float THINX3 = THINX1 + BABT;
+            float THINX2 = THINX1 + treatments.BasalAreaRemovedByThin[0];
+            float THINX3 = THINX1 + treatments.BasalAreaBeforeThin;
 
             float PREM;
             if (THINX3 <= 0.0F)
@@ -141,60 +110,41 @@ namespace Osu.Cof.Organon
                 PREM = 0.75F;
             }
 
-            float THINADJ = 1.0F + (float)(PT1 * Math.Pow(PREM, PT2) * Math.Exp(PT3 * (XTIME - YT[1])));
+            float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
+            float THINADJ = 1.0F + a8 * MathF.Pow(PREM, PT2) * MathV.Exp(ag * (XTIME - treatments.FertilizationYears[1]));
             Debug.Assert(THINADJ >= 1.0F);
             return THINADJ;
         }
 
-        private float GetHeightFertilizationAdjustment(int simulationStep, OrganonVariant variant, FiaCode species, float siteIndexFromBreastHeight, float[] PN, float[] YF)
+        private float GetHeightFertilizationAdjustment(int simulationStep, OrganonVariant variant, FiaCode species, float siteIndexFromBreastHeight, OrganonTreatments treatments)
         {
-            float PF1;
-            float PF2;
-            float PF3;
-            float PF4;
-            float PF5;
-            if (variant.TreeModel != TreeModel.OrganonRap)
+            // fertilization height effects currently supported only for non-RAP Douglas-fir
+            if ((species != FiaCode.PseudotsugaMenziesii) || (variant.TreeModel != TreeModel.OrganonRap))
             {
-                if (species == FiaCode.PseudotsugaMenziesii)
-                {
-                    PF1 = 1.0F;
-                    PF2 = 0.333333333F;
-                    PF3 = -1.107409443F;
-                    PF4 = -2.133334346F;
-                    PF5 = 1.5F;
-                }
-                else
-                {
-                    PF1 = 0.0F;
-                    PF2 = 1.0F;
-                    PF3 = 0.0F;
-                    PF4 = 0.0F;
-                    PF5 = 1.0F;
-                }
+                return 1.0F;
             }
-            else
-            {
-                PF1 = 0.0F;
-                PF2 = 1.0F;
-                PF3 = 0.0F;
-                PF4 = 0.0F;
-                PF5 = 1.0F;
-            }
+
+            // non-RAP Douglas-fir
+            float PF1 = 1.0F;
+            float PF2 = 0.333333333F;
+            float PF3 = -1.107409443F;
+            float PF4 = -2.133334346F;
+            float PF5 = 1.5F;
 
             float FALDWN = 1.0F;
             float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
             float FERTX1 = 0.0F;
-            for (int I = 1; I < 5; ++I)
+            for (int index = 1; index < 5; ++index)
             {
-                FERTX1 += (PN[I] / 800.0F) * (float)Math.Exp((PF3 / PF2) * (YF[0] - YF[I]));
+                FERTX1 += treatments.PoundsOfNitrogenPerAcre[index] / 800.0F * MathV.Exp((PF3 / PF2) * (treatments.FertilizationYears[0] - treatments.FertilizationYears[index]));
             }
-            float FERTX2 = (float)Math.Exp(PF3 * (XTIME - YF[0]) + PF4 * Math.Pow(siteIndexFromBreastHeight / 100.0, PF5));
-            float FERTADJ = 1.0F + PF1 * (float)(Math.Pow(PN[0] / 800.0 + FERTX1, PF2) * FERTX2) * FALDWN;
+            float FERTX2 = MathV.Exp(PF3 * (XTIME - treatments.FertilizationYears[0]) + PF4 * MathV.Pow(siteIndexFromBreastHeight / 100.0F, PF5));
+            float FERTADJ = 1.0F + PF1 * MathV.Pow(treatments.PoundsOfNitrogenPerAcre[0] / 800.0F + FERTX1, PF2) * FERTX2 * FALDWN;
             Debug.Assert(FERTADJ >= 1.0F);
             return FERTADJ;
         }
 
-        private float GetHeightThinningAdjustment(int simulationStep, OrganonVariant variant, FiaCode species, float BABT, float[] BART, float[] YT)
+        private float GetHeightThinningAdjustment(int simulationStep, OrganonVariant variant, FiaCode species, OrganonTreatments treatments)
         {
             float PT1;
             float PT2;
@@ -209,9 +159,8 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    PT1 = 0.0F;
-                    PT2 = 1.0F;
-                    PT3 = 0.0F;
+                    // thinning effects not supported: avoid subsequent calculation costs
+                    return 1.0F;
                 }
             }
             else
@@ -230,19 +179,19 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    PT1 = 0.0F;
-                    PT2 = 1.0F;
-                    PT3 = 0.0F;
+                    // thinning effects not supported
+                    return 1.0F;
                 }
             }
+
             float XTIME = 5.0F * (float)simulationStep;
             float THINX1 = 0.0F;
-            for (int I = 1; I < 5; ++I)
+            for (int treatmentIndex = 1; treatmentIndex < 5; ++treatmentIndex)
             {
-                THINX1 += BART[I] * (float)Math.Exp((PT3 / PT2) * (YT[0] - YT[0]));
+                THINX1 += treatments.BasalAreaRemovedByThin[treatmentIndex] * MathV.Exp((PT3 / PT2) * (treatments.ThinningYears[0] - treatments.ThinningYears[0]));
             }
-            float THINX2 = THINX1 + BART[0];
-            float THINX3 = THINX1 + BABT;
+            float THINX2 = THINX1 + treatments.BasalAreaRemovedByThin[0];
+            float THINX3 = THINX1 + treatments.BasalAreaBeforeThin;
             float PREM;
             if (THINX3 <= 0.0F)
             {
@@ -256,7 +205,7 @@ namespace Osu.Cof.Organon
             {
                 PREM = 0.75F;
             }
-            float THINADJ = 1.0F + PT1 * (float)(Math.Pow(PREM, PT2) * Math.Exp(PT3 * (XTIME - YT[0])));
+            float THINADJ = 1.0F + PT1 * MathF.Pow(PREM, PT2) * MathV.Exp(PT3 * (XTIME - treatments.ThinningYears[0]));
             Debug.Assert(THINADJ >= 0.0F);
             return THINADJ;
         }
@@ -267,33 +216,25 @@ namespace Osu.Cof.Organon
         /// <param name="simulationStep"></param>
         /// <param name="configuration">Organon configuration settings.</param>
         /// <param name="stand">Stand data.</param>
-        /// <param name="TCYCLE"></param>
-        /// <param name="FCYCLE"></param>
         /// <param name="CALIB"></param>
-        /// <param name="PN"></param>
-        /// <param name="YF"></param>
-        /// <param name="BABT"></param>
-        /// <param name="BART"></param>
-        /// <param name="YT"></param>
         /// <param name="CCH"></param>
         /// <param name="OLD"></param>
         /// <param name="RAAGE"></param>
-        public void Grow(ref int simulationStep, OrganonConfiguration configuration, Stand stand,
-                         ref int TCYCLE, ref int FCYCLE, StandDensity densityBeforeGrowth,
-                         Dictionary<FiaCode, float[]> CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, 
-                         ref float[] CCH, ref float OLD, float RAAGE, out StandDensity densityAfterGrowth)
+        public void Grow(ref int simulationStep, OrganonConfiguration configuration, Stand stand, StandDensity densityBeforeGrowth,
+                         Dictionary<FiaCode, float[]> CALIB, OrganonTreatments treatments, ref float[] CCH, ref float OLD, float RAAGE, 
+                         out StandDensity densityAfterGrowth)
         {
-            float DGMOD_GG = 1.0F;
-            float HGMOD_GG = 1.0F;
-            float DGMOD_SNC = 1.0F;
-            float HGMOD_SNC = 1.0F;
+            float DGMODgenetic = 1.0F;
+            float HGMODgenetic = 1.0F;
+            float DGMODSwissNeedleCast = 1.0F;
+            float HGMODSwissNeedleCast = 1.0F;
             if ((stand.AgeInYears > 0) && configuration.Genetics)
             {
-                OrganonGrowthModifiers.GG_MODS((float)stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMOD_GG, out HGMOD_GG);
+                OrganonGrowthModifiers.GG_MODS((float)stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMODgenetic, out HGMODgenetic);
             }
             if (configuration.SwissNeedleCast && (configuration.Variant.TreeModel == TreeModel.OrganonNwo || configuration.Variant.TreeModel == TreeModel.OrganonSmc))
             {
-                OrganonGrowthModifiers.SNC_MODS(configuration.FR, out DGMOD_SNC, out HGMOD_SNC);
+                OrganonGrowthModifiers.SNC_MODS(configuration.FR, out DGMODSwissNeedleCast, out HGMODSwissNeedleCast);
             }
 
             // diameter growth
@@ -327,10 +268,10 @@ namespace Osu.Cof.Organon
                 }
                 else
                 {
-                    this.GrowDiameter(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, densityBeforeGrowth, CALIB, PN, YF, BABT, BART, YT);
+                    this.GrowDiameter(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, densityBeforeGrowth, CALIB, treatments);
                     if (stand.Species[treeIndex] == FiaCode.PseudotsugaMenziesii)
                     {
-                        stand.DbhGrowth[treeIndex] = stand.DbhGrowth[treeIndex] * DGMOD_GG * DGMOD_SNC;
+                        stand.DbhGrowth[treeIndex] = stand.DbhGrowth[treeIndex] * DGMODgenetic * DGMODSwissNeedleCast;
                     }
                 }
             }
@@ -346,11 +287,11 @@ namespace Osu.Cof.Organon
                     }
                     else
                     {
-                        this.GrowHeightBigSixSpecies(treeIndex, configuration.Variant, simulationStep, stand, SI_1, SI_2, CCH, PN, YF, BABT, BART, YT, ref OLD, configuration.PDEN);
+                        this.GrowHeightBigSixSpecies(treeIndex, configuration.Variant, simulationStep, stand, SI_1, SI_2, CCH, treatments, ref OLD, configuration.PDEN);
                         FiaCode species = stand.Species[treeIndex];
                         if (species == FiaCode.PseudotsugaMenziesii)
                         {
-                            stand.HeightGrowth[treeIndex] = stand.HeightGrowth[treeIndex] * HGMOD_GG * HGMOD_SNC;
+                            stand.HeightGrowth[treeIndex] = stand.HeightGrowth[treeIndex] * HGMODgenetic * HGMODSwissNeedleCast;
                         }
                     }
                 }
@@ -358,7 +299,7 @@ namespace Osu.Cof.Organon
 
             // determine mortality
             // Sets configuration.NO.
-            OrganonMortality.MORTAL(configuration, simulationStep, stand, densityBeforeGrowth, SI_1, SI_2, PN, YF, ref RAAGE);
+            OrganonMortality.MORTAL(configuration, simulationStep, stand, densityBeforeGrowth, SI_1, SI_2, treatments, ref RAAGE);
 
             // grow tree diameters
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -369,7 +310,7 @@ namespace Osu.Cof.Organon
             // CALC EOG SBA, CCF/TREE, CCF IN LARGER TREES AND STAND CCF
             densityAfterGrowth = new StandDensity(stand, configuration.Variant);
 
-            // CALCULATE HTGRO FOR 'OTHER' & CROWN ALL SPECIES
+            // height growth for non-big six species
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
             {
                 if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]) == false)
@@ -401,17 +342,17 @@ namespace Osu.Cof.Organon
                 ++stand.BreastHeightAgeInYears;
             }
             ++simulationStep;
-            if (FCYCLE > 2)
+            if (treatments.FertilizationCycle > 2)
             {
-                FCYCLE = 0;
+                treatments.FertilizationCycle = 0;
             }
-            else if (FCYCLE > 0)
+            else if (treatments.FertilizationCycle > 0)
             {
-                ++FCYCLE;
+                ++treatments.FertilizationCycle;
             }
-            if (TCYCLE > 0)
+            if (treatments.ThinningCycle > 0)
             {
-                ++TCYCLE;
+                ++treatments.ThinningCycle;
             }
 
             // reduce calibration ratios
@@ -422,14 +363,14 @@ namespace Osu.Cof.Organon
                     if (speciesCalibration[index] != 1.0F)
                     {
                         float MCALIB = (1.0F + speciesCalibration[index + 2]) / 2.0F;
-                        speciesCalibration[index] = MCALIB + (float)Math.Sqrt(0.5) * (speciesCalibration[index] - MCALIB);
+                        speciesCalibration[index] = MCALIB + 0.7071067812F * (speciesCalibration[index] - MCALIB); // 0.7071067812 = MathF.Sqrt(0.5F)
                     }
                 }
             }
         }
 
         public float[] GrowCrown(OrganonVariant variant, Stand stand, StandDensity densityBeforeGrowth, StandDensity densityAfterGrowth,
-                                   float SI_1, float SI_2, Dictionary<FiaCode, float[]> CALIB)
+                                 float SI_1, float SI_2, Dictionary<FiaCode, float[]> CALIB)
         {
             // DETERMINE 5-YR CROWN RECESSION
             OrganonMortality.OldGro(variant, stand, -1.0F, out float OG1);
@@ -495,7 +436,7 @@ namespace Osu.Cof.Organon
         }
 
         public void GrowDiameter(OrganonVariant variant, int treeIndex, int simulationStep, Stand stand, float SI_1, float SI_2,
-                                 StandDensity densityBeforeGrowth, Dictionary<FiaCode, float[]> CALIB, float[] PN, float[] YF, float BABT, float[] BART, float[] YT)
+                                 StandDensity densityBeforeGrowth, Dictionary<FiaCode, float[]> CALIB, OrganonTreatments treatments)
         {
             // CALCULATES FIVE-YEAR DIAMETER GROWTH RATE OF THE K-TH TREE
             // CALCULATE BASAL AREA IN LARGER TREES
@@ -534,16 +475,19 @@ namespace Osu.Cof.Organon
                     throw OrganonVariant.CreateUnhandledModelException(variant.TreeModel);
             }
 
-            // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED TREES
+            // diameter growth
             float crownRatio = stand.CrownRatio[treeIndex];
-            float dbhGrowthInInches = variant.GrowDiameter(species, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth);
-
-            // CALCULATE FERTILIZER ADJUSTMENT
-            float FERTADJ = GetDiameterFertilizationAdjustment(species, variant, simulationStep, SI_1, PN, YF);
-            // CALCULATE THINNING ADJUSTMENT
-            float THINADJ = GetDiameterThinningAdjustment(species, variant, simulationStep, BABT, BART, YT);
-            // CALCULATE DIAMETER GROWTH RATE FOR UNTREATED OR TREATED TREES
-            dbhGrowthInInches *= CALIB[species][2] * FERTADJ * THINADJ;
+            float dbhGrowthInInches = CALIB[species][2] * variant.GrowDiameter(species, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth);
+            if (treatments.HasFertilization)
+            {
+                float FERTADJ = GetDiameterFertilizationAdjustment(species, variant, simulationStep, SI_1, treatments);
+                dbhGrowthInInches *= FERTADJ;
+            }
+            if (treatments.HasThinning)
+            {
+                float THINADJ = GetDiameterThinningAdjustment(species, variant, simulationStep, treatments);
+                dbhGrowthInInches *= THINADJ;
+            }
             stand.DbhGrowth[treeIndex] = dbhGrowthInInches;
         }
 
@@ -557,15 +501,11 @@ namespace Osu.Cof.Organon
         /// <param name="SI_1">Primary site index from breast height.</param>
         /// <param name="SI_2">Secondary site index from breast height.</param>
         /// <param name="CCH">Canopy height? (DOUG?)</param>
-        /// <param name="PN"></param>
-        /// <param name="YF"></param>
-        /// <param name="BABT">Thinning?</param>
-        /// <param name="BART">Thinning?</param>
-        /// <param name="YT">Thinning?</param>
+        /// <param name="treatments"></param>
         /// <param name="OLD">Obsolete?</param>
         /// <param name="PDEN">(DOUG?)</param>
         public void GrowHeightBigSixSpecies(int treeIndex, OrganonVariant variant, int simulationStep, Stand stand, float SI_1, float SI_2,
-                                                   float[] CCH, float[] PN, float[] YF, float BABT, float[] BART, float[] YT, ref float OLD, float PDEN)
+                                            float[] CCH, OrganonTreatments treatments, ref float OLD, float PDEN)
         {
             Debug.Assert(variant.IsBigSixSpecies(stand.Species[treeIndex]));
             // BUGBUG remove M and ON
@@ -683,9 +623,17 @@ namespace Osu.Cof.Organon
                 OLD += 1.0F;
             }
 
-            float FERTADJ = GetHeightFertilizationAdjustment(simulationStep, variant, species, SI_1, PN, YF);
-            float THINADJ = GetHeightThinningAdjustment(simulationStep, variant, species, BABT, BART, YT);
-            stand.HeightGrowth[treeIndex] = heightGrowthInFeet * THINADJ * FERTADJ;
+            if (treatments.HasFertilization)
+            {
+                float FERTADJ = this.GetHeightFertilizationAdjustment(simulationStep, variant, species, SI_1, treatments);
+                heightGrowthInFeet *= FERTADJ;
+            }
+            if (treatments.HasThinning)
+            {
+                float THINADJ = this.GetHeightThinningAdjustment(simulationStep, variant, species, treatments);
+                heightGrowthInFeet *= THINADJ;
+            }
+            stand.HeightGrowth[treeIndex] = heightGrowthInFeet;
             this.LimitHeightGrowth(variant, species, stand.Dbh[treeIndex], stand.Height[treeIndex], stand.DbhGrowth[treeIndex], ref stand.HeightGrowth[treeIndex]);
         }
 
@@ -779,9 +727,9 @@ namespace Osu.Cof.Organon
             float DBH1 = DBH;
             float DBH2 = DBH1 + DG;
             float DBH3 = DBH2 + DG;
-            float PHT1 = A0 * DBH1 / (1.0F - A1 * (float)Math.Pow(DBH1, A2));
-            float PHT2 = A0 * DBH2 / (1.0F - A1 * (float)Math.Pow(DBH2, A2));
-            float PHT3 = A0 * DBH3 / (1.0F - A1 * (float)Math.Pow(DBH3, A2));
+            float PHT1 = A0 * DBH1 / (1.0F - A1 * MathV.Pow(DBH1, A2));
+            float PHT2 = A0 * DBH2 / (1.0F - A1 * MathV.Pow(DBH2, A2));
+            float PHT3 = A0 * DBH3 / (1.0F - A1 * MathV.Pow(DBH3, A2));
             float PHGR1 = (PHT2 - PHT1 + HG) / 2.0F;
             float PHGR2 = PHT2 - HT1;
             if (HT2 > PHT2)

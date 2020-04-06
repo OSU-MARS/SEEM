@@ -181,7 +181,7 @@ namespace Osu.Cof.Organon
 
             for (int heightIndex = crownCompetitionByHeight.Length - 2; heightIndex >= 0; --heightIndex)
             {
-                float relativeHeight = (float)(heightIndex - 1) * (crownCompetitionByHeight[crownCompetitionByHeight.Length - 1] / 40.0F);
+                float relativeHeight = (float)(heightIndex - 1) * (crownCompetitionByHeight[^1] / 40.0F);
                 float crownWidth = 0.0F;
                 if (relativeHeight <= XHLCW)
                 {

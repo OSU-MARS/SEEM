@@ -19,8 +19,8 @@ namespace Osu.Cof.Organon.Heuristics
             this.IterationsPerTemperature = 10;
 
             int defaultIterations = 1000 * 1000;
-            double temperatureSteps = (double)(defaultIterations / this.IterationsPerTemperature);
-            this.Alpha = 1.0F / (float)Math.Pow(this.InitialTemperature / this.FinalTemperature, 1.0F / temperatureSteps);
+            float temperatureSteps = (float)(defaultIterations / this.IterationsPerTemperature);
+            this.Alpha = 1.0F / MathF.Pow(this.InitialTemperature / this.FinalTemperature, 1.0F / temperatureSteps);
 
             this.ObjectiveFunctionByIteration = new List<float>(defaultIterations)
             {
@@ -87,14 +87,14 @@ namespace Osu.Cof.Organon.Heuristics
                     bool acceptMove = candidateObjectiveFunction > currentObjectiveFunction;
                     if (acceptMove == false)
                     {
-                        double candidateObjectiveFunctionChange = candidateObjectiveFunction - currentObjectiveFunction;
-                        double exponent = -candidateObjectiveFunctionChange / temperature;
+                        float candidateObjectiveFunctionChange = candidateObjectiveFunction - currentObjectiveFunction;
+                        float exponent = -candidateObjectiveFunctionChange / temperature;
                         if (exponent < 10.0F)
                         {
                             // exponent is small enough not to round acceptance probabilities down to zero
                             // 1/e^10 accepts 1 in 22,026 moves.
-                            double acceptanceProbability = 1.0F / (double)Math.Exp(exponent);
-                            double moveProbability = acceptanceProbabilityScalingFactor * this.GetPseudorandomByteAsFloat();
+                            float acceptanceProbability = 1.0F / MathV.Exp(exponent);
+                            float moveProbability = acceptanceProbabilityScalingFactor * this.GetPseudorandomByteAsFloat();
                             if (moveProbability < acceptanceProbability)
                             {
                                 acceptMove = true;

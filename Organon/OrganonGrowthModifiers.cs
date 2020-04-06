@@ -103,9 +103,9 @@ namespace Osu.Cof.Organon
             float B2 = 1.2801740F;
 
             // SWISS NEEDLE CAST DIAMETER GROWTH RATE MODIFIER
-            DGMOD = 1.0F - (float)Math.Exp(A1 * Math.Pow(XFR, A2));
+            DGMOD = 1.0F - MathV.Exp(A1 * MathF.Pow(XFR, A2));
             // SWISS NEEDLE CAST HEIGHT GROWTH RATE MODIFIER
-            HGMOD = 1.0F - (float)Math.Exp(B1 * Math.Pow(XFR, B2));
+            HGMOD = 1.0F - MathV.Exp(B1 * MathF.Pow(XFR, B2));
         }
     }
 }

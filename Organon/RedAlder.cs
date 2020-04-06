@@ -33,75 +33,6 @@ namespace Osu.Cof.Organon
             return SI / (0.60924F + 19.538F / A);
         }
 
-        // call commented out in Fortran
-        //private static float RA_CFV(float DBH, float HT, float CR, float SH, float TD)
-        //{
-        //    float FC = 0.005454154F;
-        //    float MH = HT;
-        //    if (TD > 0.0F)
-        //    {
-        //        MH = RA_MH(DBH, HT, CR, TD);
-        //    }
-        //    if (MH == 0.0F || MH <= SH)
-        //    {
-        //        return 0.0F;
-        //    }
-        //    float DIFF = MH - SH;
-        //    float REMAIN = DIFF % 1.0F;
-        //    int NSEC = (int)Math.Round(DIFF - REMAIN);
-        //    if (TD <= 0.0F && DIFF <= 0.0F)
-        //    {
-        //        --NSEC;
-        //    }
-        //    int NSECDIFF = NSEC % 2;
-        //    int NSEC2 = (NSEC - NSECDIFF) / 2;
-        //    float CFV = 0.0F;
-        //    float HI = SH;
-        //    float D1 = TAPER_RA(DBH, HT, CR, HI);
-        //    for (int I = 0; I < NSEC2; ++I)
-        //    {
-        //        ++HI;
-        //        float D2 = TAPER_RA(DBH, HT, CR, HI);
-        //        ++HI;
-        //        float D3 = TAPER_RA(DBH, HT, CR, HI);
-        //        float LOGV = 2.0F * FC * (D1 * D1 + 4.0F * D2 * D2 + D3 * D3) / 6.0F;
-        //        CFV += LOGV;
-        //        D1 = D3;
-        //    }
-        //    if (NSECDIFF > 0)
-        //    {
-        //        ++HI;
-        //        float D2 = TAPER_RA(DBH, HT, CR, HI);
-        //        float LOGV = FC * (D1 * D1 + D2 * D2) / 2.0F;
-        //        CFV += LOGV;
-        //        D1 = D2;
-        //    }
-        //    if (TD <= 0.0F)
-        //    {
-        //        float LOGL;
-        //        if (REMAIN <= 0.0F)
-        //        {
-        //            LOGL = 1.0F;
-        //        }
-        //        else
-        //        {
-        //            LOGL = REMAIN;
-        //        }
-        //        float LOGV = LOGL * FC * D1 * D1 / 3.0F;
-        //        CFV += LOGV;
-        //    }
-        //    else
-        //    {
-        //        if (REMAIN > 0.0F)
-        //        {
-        //            float D2 = TAPER_RA(DBH, HT, CR, MH);
-        //            float LOGV = REMAIN * FC * ((D1 * D1 + D2 * D2) / 2.0F);
-        //            CFV += LOGV;
-        //        }
-        //    }
-        //    return CFV;
-        //}
-
         public static float RA_MH(float DBH, float HT, float CR, float TD)
         {
             if (TD <= 0.0F)
@@ -146,7 +77,7 @@ namespace Osu.Cof.Organon
             }
 
             // CALCULATE LOG VOLUMES
-            int NW = (int)Math.Round((MH - LOGSH) / ((float)LOGLL + LOGTA));
+            int NW = (int)MathF.Round((MH - LOGSH) / ((float)LOGLL + LOGTA));
             if (NW < 0)
             {
                 NW = 0;
@@ -268,15 +199,15 @@ namespace Osu.Cof.Organon
                 FiaCode species = stand.Species[treeIndex];
                 if (species == FiaCode.AlnusRubra)
                 {
-                    float PM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
+                    float PM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
                     RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex];
                 }
             }
 
             float RAQMDN1 = 3.313F + 0.18769F * RAAGE - 0.000198F * RAAGE * RAAGE;
             float RABAN1 = -26.1467F + 5.31482F * RAAGE - 0.037466F * RAAGE * RAAGE;
-            float RAQMDN2 = 3.313F + 0.18769F * (RAAGE + 5.0F) - 0.000198F * (float)Math.Pow(RAAGE + Constant.DefaultTimeStepInYears, 2.0);
-            float RABAN2 = -26.1467F + 5.31482F * (RAAGE + 5.0F) - 0.037466F * (float)Math.Pow(RAAGE + Constant.DefaultTimeStepInYears, 2.0);
+            float RAQMDN2 = 3.313F + 0.18769F * (RAAGE + 5.0F) - 0.000198F * (RAAGE + Constant.DefaultTimeStepInYears) * (RAAGE + Constant.DefaultTimeStepInYears);
+            float RABAN2 = -26.1467F + 5.31482F * (RAAGE + 5.0F) - 0.037466F * (RAAGE + Constant.DefaultTimeStepInYears) * (RAAGE + Constant.DefaultTimeStepInYears);
             float RATPAN1 = RABAN1 / (Constant.ForestersEnglish * RAQMDN1 * RAQMDN1);
             float RATPAN2 = RABAN2 / (Constant.ForestersEnglish * RAQMDN2 * RAQMDN2);
             float RAMORT2;
@@ -302,7 +233,7 @@ namespace Osu.Cof.Organon
                 float KR1 = 0.0F;
                 for (int KK = 0; KK < 7; ++KK)
                 {
-                    float NK = 10.0F / (float)Math.Pow(10.0, KK);
+                    float NK = 10.0F / MathV.Exp10(KK);
                 kr1: KR1 += NK;
                     RAMORT1 = 0.0F;
                     for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -310,7 +241,7 @@ namespace Osu.Cof.Organon
                         FiaCode species = stand.Species[treeIndex];
                         if (species == FiaCode.AlnusRubra)
                         {
-                            float PM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
+                            float PM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[treeIndex])));
                             RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex];
                         }
                     }
@@ -346,9 +277,9 @@ namespace Osu.Cof.Organon
             float D140 = 0.000585F + 0.997212F * DBH;
             float Z = HI / HT;
             float P = 4.5F / HT;
-            float X = (1.0F - (float)Math.Sqrt(Z)) / (1.0F - (float)Math.Sqrt(P));
-            float C = A3 * (1.364409F * (float)Math.Pow(D140, 0.3333333F) * (float)Math.Exp(A4 * Z) + (float)Math.Exp(A5 * (float)Math.Pow(CR, A6) * (float)Math.Pow(D140 / HT, A7) * Z));
-            float DI = A1 * (float)Math.Pow(D140, A2) * (float)Math.Pow(X, C);
+            float X = (1.0F - MathF.Sqrt(Z)) / (1.0F - MathF.Sqrt(P));
+            float C = A3 * (1.364409F * MathV.Pow(D140, 0.3333333F) * MathV.Exp(A4 * Z) + MathV.Exp(A5 * MathV.Pow(CR, A6) * MathV.Pow(D140 / HT, A7) * Z));
+            float DI = A1 * MathV.Pow(D140, A2) * MathF.Pow(X, C);
             return DI;
         }
 
@@ -358,12 +289,12 @@ namespace Osu.Cof.Organon
             // THE WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH EQUATION
             float B1 = -4.481266F;
             float B2 = -0.658884F;
-            float X = (1.0F / B1) * (float)(Math.Log(H / SI_UC) + Math.Pow(20.0, B2));
+            float X = (1.0F / B1) * MathV.Ln(H / SI_UC) + MathV.Exp2(4.3219280949F * B2); // MathV.Exp2(4.3219280949F, B2) = MathF.Pow(20.0F, B2)
             if (X < 0.03F)
             {
                 X = 0.03F;
             }
-            GEA = (float)Math.Pow(X, 1.0 / B2);
+            GEA = MathV.Pow(X, 1.0F / B2);
         }
 
         public static void WHHLB_H40(float H40M, float TAGEM, float TAGEP, out float PH40P)
@@ -371,7 +302,7 @@ namespace Osu.Cof.Organon
             // WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH EQUATION FOR RED ALDER
             float B1 = -4.481266F;
             float B2 = -0.658884F;
-            PH40P = H40M * (float)Math.Exp(B1 * (Math.Pow(TAGEP, B2) - Math.Pow(TAGEM, B2)));
+            PH40P = H40M * MathV.Exp(B1 * (MathV.Pow(TAGEP, B2) - MathV.Pow(TAGEM, B2)));
         }
 
         public static void WHHLB_HG(float SI_C, float PDEN, float HT, float GP, out float GEA, out float POTHGRO)
@@ -388,7 +319,7 @@ namespace Osu.Cof.Organon
         {
             // UNCORRECTS THE DENSITY INPACT UPON THE WEISKITTEL, HANN, HIBBS, LAM, AND BLUHN SITE INDEX FOR RED ALDER
             // SITE INDEX UNCORRECTED FOR DENSITY EFFECT
-            SI_UC = SI_C * (1.0F - 0.326480904F * (float)Math.Exp(-0.000400268678 * Math.Pow(PDEN, 1.5)));
+            SI_UC = SI_C * (1.0F - 0.326480904F * MathV.Exp(-0.000400268678F * MathF.Pow(PDEN, 1.5F)));
         }
     }
 }

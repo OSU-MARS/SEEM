@@ -52,9 +52,9 @@ namespace Osu.Cof.Organon.Test
                     {
                         quantileCounts[quantile] += 1;
                         quantileLiveExpansionFactor[quantile] += perTreeExpansionFactor;
-                        quantileMaxDbh[quantile] = Math.Max(quantileMaxDbh[quantile], dbh);
+                        quantileMaxDbh[quantile] = MathF.Max(quantileMaxDbh[quantile], dbh);
                         quantileMeanDbh[quantile] += dbh;
-                        quantileMinDbh[quantile] = Math.Min(quantileMinDbh[quantile], dbh);
+                        quantileMinDbh[quantile] = MathF.Min(quantileMinDbh[quantile], dbh);
                     }
                 }
 
@@ -109,11 +109,11 @@ namespace Osu.Cof.Organon.Test
                         quantileCounts[quantile] += 1;
                         quantileDeadExpansionFactor[quantile] += stand.DeadExpansionFactor[treeIndex];
                         quantileLiveExpansionFactor[quantile] += liveExpansionFactor;
-                        quantileMaxDbh[quantile] = Math.Max(quantileMaxDbh[quantile], stand.Dbh[treeIndex]);
+                        quantileMaxDbh[quantile] = MathF.Max(quantileMaxDbh[quantile], stand.Dbh[treeIndex]);
                         quantileMeanCrownRatio[quantile] += liveExpansionFactor * stand.CrownRatio[treeIndex];
                         quantileMeanDbh[quantile] += liveExpansionFactor * stand.Dbh[treeIndex];
                         quantileMeanHeight[quantile] += liveExpansionFactor * stand.Height[treeIndex];
-                        quantileMinDbh[quantile] = Math.Min(quantileMinDbh[quantile], stand.Dbh[treeIndex]);
+                        quantileMinDbh[quantile] = MathF.Min(quantileMinDbh[quantile], stand.Dbh[treeIndex]);
                     }
                 }
 

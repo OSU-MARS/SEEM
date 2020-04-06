@@ -2,8 +2,8 @@
   "profiles": {
     "Organon": {
       "commandName": "Executable",
-      "executablePath": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell_ise.exe",
-      "commandLineArgs": "\"C:\\Users\\westjoh\\OSU\\FE 640\\project\\FE640_project_20.ps1\""
+      "executablePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "commandLineArgs": "\"C:\\Users\\westjoh\\source\\repos\\Organon\\UnitTests\\performanceProfile.ps1\""
     }
   }
 }

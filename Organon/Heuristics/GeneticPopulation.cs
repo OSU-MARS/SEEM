@@ -126,6 +126,11 @@ namespace Osu.Cof.Organon.Heuristics
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
                 float individualFitness = this.IndividualFitness[individualIndex];
+                if (individualFitness <= 0.0F)
+                {
+                    // TODO: support negative objective functions
+                    throw new NotSupportedException();
+                }
                 totalFitness += individualFitness;
             }
 

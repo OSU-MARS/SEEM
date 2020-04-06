@@ -7,6 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Organon", "Organon\Organon.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B220CCC3-D88D-4CAD-A3F4-C827BD647CC9}"
 	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
 		LICENSE.md = LICENSE.md
 		Organon.runsettings = Organon.runsettings
 		README.md = README.md

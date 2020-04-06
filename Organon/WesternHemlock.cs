@@ -59,11 +59,11 @@ namespace Osu.Cof.Organon
             // find growth effective age within precision of 0.01 years
             float HTOP;
             float AGE = 1.0F;
-            for (int I = 0; I < 4; ++I)
+            for (int index = 0; index < 4; ++index)
             {
                 do
                 {
-                    AGE += 100.0F / (float)Math.Pow(10.0, I);
+                    AGE += 100.0F / MathV.Exp10(index);
                     if (AGE > 500.0F)
                     {
                         growthEffectiveAge = 500.0F;
@@ -75,7 +75,7 @@ namespace Osu.Cof.Organon
                     WesternHemlock.SITECV_F(SIM, AGE, out HTOP);
                 }
                 while (HTOP < HTM);
-                AGE -= 100.0F / (float)Math.Pow(10.0, I);
+                AGE -= 100.0F / MathV.Exp10(index);
             }
             growthEffectiveAge = AGE;
 
@@ -107,12 +107,12 @@ namespace Osu.Cof.Organon
             float X = AGE - 1.0F;
             if (X < XK)
             {
-                HTOP = H1 + PPSI * X + (1.0F - B1) * PPSI * XK / (C + 1.0F) * ((float)Math.Pow((XK - X) / XK, C + 1.0) - 1.0F);
+                HTOP = H1 + PPSI * X + (1.0F - B1) * PPSI * XK / (C + 1.0F) * (MathF.Pow((XK - X) / XK, C + 1.0F) - 1.0F);
             }
             else
             {
                 float Z = X - XK;
-                HTOP = YK + ALPHA * (1.0F - (float)Math.Exp(-BETA * Z));
+                HTOP = YK + ALPHA * (1.0F - MathV.Exp(-BETA * Z));
             }
         }
 
@@ -125,8 +125,8 @@ namespace Osu.Cof.Organon
             //
             // psi input REAL productivity index (m/yr)
             WesternHemlock.PPSI = PSI;
-            WesternHemlock.XK = 128.326F * (float)Math.Exp(-2.54871 * PSI);
-            WesternHemlock.B1 = 0.2F + 0.8F / (1.0F + (float)Math.Exp(5.33208 - 9.00622 * PSI));
+            WesternHemlock.XK = 128.326F * MathV.Exp(-2.54871F * PSI);
+            WesternHemlock.B1 = 0.2F + 0.8F / (1.0F + MathV.Exp(5.33208F - 9.00622F * PSI));
             WesternHemlock.C = 1.0F + 1.2F * PSI;
             WesternHemlock.ALPHA = 52.7948F * PSI;
             WesternHemlock.H1 = 1.3F + (B1 * PSI) / 2.0F;

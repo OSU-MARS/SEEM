@@ -72,7 +72,7 @@ namespace Osu.Cof.Organon
                     RATIO = 31.0F;
                 }
             }
-            float CW = (float)(LCW * Math.Pow(RP, B1 + B2 * Math.Sqrt(RP) + B3 * (RATIO)));
+            float CW = LCW * MathV.Pow(RP, B1 + B2 * MathF.Sqrt(RP) + B3 * (RATIO));
             return CW;
         }
 
@@ -195,11 +195,11 @@ namespace Osu.Cof.Organon
             float HCB;
             if (species == FiaCode.TsugaHeterophylla)
             {
-                HCB = (float)(HT / (1.0 + Math.Exp(B0 + B1 * HT + B2 * CCFL + B3 * Math.Log(BA) + B4 * (DBH / HT) + B5 * SI_2 + B6 * OG * OG)));
+                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_2 + B6 * OG * OG));
             }
             else
             {
-                HCB = (float)(HT / (1.0 + Math.Exp(B0 + B1 * HT + B2 * CCFL + B3 * Math.Log(BA) + B4 * (DBH / HT) + B5 * SI_1 + B6 * OG * OG)));
+                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_1 + B6 * OG * OG));
             }
             Debug.Assert(HCB >= 0.0F);
             Debug.Assert(HCB <= HT);
@@ -319,7 +319,7 @@ namespace Osu.Cof.Organon
                     throw OrganonVariant.CreateUnhandledSpeciesException(species);
             }
             float CL = CR * HT;
-            float LCW = (float)(MCW * Math.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT)));
+            float LCW = MCW * MathV.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT));
             return LCW;
         }
 
@@ -514,7 +514,7 @@ namespace Osu.Cof.Organon
                     throw OrganonVariant.CreateUnhandledSpeciesException(species);
             }
 
-            float MAXBR = (float)(B0 - B1 * Math.Exp(B2 * Math.Pow(CCFL / 100.0, B3)));
+            float MAXBR = B0 - B1 * MathV.Exp(B2 * MathV.Pow(CCFL / 100.0F, B3));
             if (MAXBR > LIMIT)
             {
                 MAXBR = LIMIT;
@@ -638,11 +638,11 @@ namespace Osu.Cof.Organon
                 default:
                     throw OrganonVariant.CreateUnhandledSpeciesException(species);
             }
-            float SQDBH = (float)Math.Sqrt(DBH);
-            float CR25 = (float)Math.Pow(CR, 0.25);
             if (species == FiaCode.PseudotsugaMenziesii)
             {
                 // Douglas fir
+                float CR25 = MathV.Pow(CR, 0.25F);
+                float SQDBH = MathF.Sqrt(DBH);
                 PM = B0 + B1 * SQDBH + B3 * CR25 + B4 * (SI_1 + 4.5F) + B5 * BAL;
             }
             else if (species == FiaCode.AbiesGrandis)
@@ -658,7 +658,7 @@ namespace Osu.Cof.Organon
             else if (species == FiaCode.QuercusGarryana)
             {
                 // Oregon White Oak
-                PM = B0 + B1 * DBH + B2 * DBH * DBH + B3 * CR + B4 * (SI_1 + 4.5F) + B5 * (float)Math.Log(BAL + 5.0);
+                PM = B0 + B1 * DBH + B2 * DBH * DBH + B3 * CR + B4 * (SI_1 + 4.5F) + B5 * MathV.Ln(BAL + 5.0F);
             }
             else
             {
@@ -743,7 +743,7 @@ namespace Osu.Cof.Organon
                 default:
                     throw OrganonVariant.CreateUnhandledSpeciesException(species);
             }
-            float predictedHeightInFeet = 4.5F + (float)Math.Exp(B0 + B1 * Math.Pow(dbhInInches, B2));
+            float predictedHeightInFeet = 4.5F + MathV.Exp(B0 + B1 * MathV.Pow(dbhInInches, B2));
             return predictedHeightInFeet;
         }
 
@@ -906,7 +906,7 @@ namespace Osu.Cof.Organon
                 default:
                     throw OrganonVariant.CreateUnhandledSpeciesException(species);
             }
-            float LNDG = (float)(B0 + B1 * Math.Log(dbhInInches + K1) + B2 * Math.Pow(dbhInInches, K2) + B3 * Math.Log((crownRatio + 0.2) / 1.2) + B4 * Math.Log(SITE) + B5 * (Math.Pow(SBA1, K3) / Math.Log(dbhInInches + K4)) + B6 * Math.Sqrt(SBA1));
+            float LNDG = B0 + B1 * MathV.Ln(dbhInInches + K1) + B2 * MathV.Pow(dbhInInches, K2) + B3 * MathV.Ln((crownRatio + 0.2F) / 1.2F) + B4 * MathV.Ln(SITE) + B5 * (MathV.Pow(SBA1, K3) / MathV.Ln(dbhInInches + K4)) + B6 * MathF.Sqrt(SBA1);
 
             // TODO: source of these adjustment factors unknown
             float ADJ;
@@ -937,7 +937,7 @@ namespace Osu.Cof.Organon
 
             // CROWN RATIO ADJUSTMENT
             float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
-            float DG = (float)Math.Exp(LNDG) * CRADJ * ADJ;
+            float DG = MathV.Exp(LNDG) * CRADJ * ADJ;
             Debug.Assert(DG > 0.0F);
             return DG;
         }
@@ -990,10 +990,10 @@ namespace Osu.Cof.Organon
                 default:
                     throw OrganonVariant.CreateUnhandledSpeciesException(species);
             }
-            float FCR = (float)(-P5 * Math.Pow(1.0F - CR, P6) * Math.Exp(P7 * Math.Pow(TCCH, 0.5)));
-            float B0 = P1 * (float)Math.Exp(P2 * TCCH);
-            float B1 = (float)Math.Exp(P3 * Math.Pow(TCCH, P4));
-            float MODIFER = P8 * (B0 + (B1 - B0) * (float)Math.Exp(FCR));
+            float FCR = -P5 * MathV.Pow(1.0F - CR, P6) * MathV.Exp(P7 * MathF.Sqrt(TCCH));
+            float B0 = P1 * MathV.Exp(P2 * TCCH);
+            float B1 = MathV.Exp(P3 * MathV.Pow(TCCH, P4));
+            float MODIFER = P8 * (B0 + (B1 - B0) * MathF.Exp(FCR));
             float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
             float HG = potentialHeightGrowth * MODIFER * CRADJ;
             Debug.Assert(HG > 0.0F);

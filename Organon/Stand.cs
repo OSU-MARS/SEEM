@@ -7,6 +7,7 @@ namespace Osu.Cof.Organon
         // STOR[2]
         public float A1 { get; private set; }
         // STOR[4] SDImax cap for mortality, overrides A1 if lower
+        // TODO: move to simulation state
         public float A1MAX { get; set; }
         // STOR[3] exponent for slope of SDImax line
         public float A2 { get; private set; }
@@ -114,7 +115,7 @@ namespace Osu.Cof.Organon
                     {
                         // Fortran code sets SITE_2 from an uninitialized value of SI_1. It's unclear what the Fortran equation was intended
                         // to accomplish as using SITE_1, which is initialized translates to
-                        //   this.MortalitySiteIndex = 4.776377F * (float)Math.Pow(this.PrimarySiteIndex, 0.763530587);
+                        //   this.MortalitySiteIndex = 4.776377F * MathF.Pow(this.PrimarySiteIndex, 0.763530587);
                         // which produces mortality site indices outside of the range supported for RAP.
                         // BUGBUG: clamp range to maximum and minimum once these constants are available from variant capabilities
                         this.HemlockSiteIndex = this.SiteIndex;
@@ -194,7 +195,7 @@ namespace Osu.Cof.Organon
             float TEMPA1;
             if (configuration.DefaultMaximumSdi > 0.0F)
             {
-                TEMPA1 = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.DefaultMaximumSdi));
+                TEMPA1 = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.DefaultMaximumSdi);
             }
             else
             {
@@ -258,12 +259,12 @@ namespace Osu.Cof.Organon
                     float trueFirModifier = 1.03481817F;
                     if (configuration.TrueFirMaximumSdi > 0.0F)
                     {
-                        trueFirModifier = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.TrueFirMaximumSdi)) / TEMPA1;
+                        trueFirModifier = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.TrueFirMaximumSdi) / TEMPA1;
                     }
                     float hemlockModifier = 0.9943501F;
                     if (configuration.HemlockMaximumSdi > 0.0F)
                     {
-                        hemlockModifier = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.HemlockMaximumSdi)) / TEMPA1;
+                        hemlockModifier = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.HemlockMaximumSdi) / TEMPA1;
                     }
 
                     if (douglasFirProportion >= 0.5F)
@@ -288,13 +289,13 @@ namespace Osu.Cof.Organon
                     trueFirModifier = 1.03481817F;
                     if (configuration.TrueFirMaximumSdi > 0.0F)
                     {
-                        trueFirModifier = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.TrueFirMaximumSdi)) / TEMPA1;
+                        trueFirModifier = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.TrueFirMaximumSdi) / TEMPA1;
                     }
                     // Based on Johnson's (2000) analysis of Max. SDI for western hemlock
                     hemlockModifier = 1.014293245F;
                     if (configuration.HemlockMaximumSdi > 0.0F)
                     {
-                        hemlockModifier = (float)(Math.Log(10.0) + this.A2 * Math.Log(configuration.HemlockMaximumSdi)) / TEMPA1;
+                        hemlockModifier = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.HemlockMaximumSdi) / TEMPA1;
                     }
 
                     if (douglasFirProportion >= 0.5F)

@@ -62,7 +62,7 @@ namespace Osu.Cof.Organon.Test
 
                         float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                         StandDensity.GetCrownCompetitionByHeight(variant, species, heightToLargestCrownWidthInFeet, largestCrownWidthInFeet, heightInFeet, 
-                                            dbhInInches, heightToCrownBaseInFeet, expansionFactor, CCH);
+                                                                 dbhInInches, heightToCrownBaseInFeet, expansionFactor, CCH);
                         for (int cchIndex = 0; cchIndex < CCH.Length; ++cchIndex)
                         {
                             float cch = CCH[cchIndex];
@@ -76,7 +76,9 @@ namespace Osu.Cof.Organon.Test
                     Assert.IsTrue(densityEndOfStep.CrownCompetitionFactor > 0.0F);
                     Assert.IsTrue(densityEndOfStep.TreesPerAcre > 0.0F);
 
+                    #pragma warning disable IDE0059 // Unnecessary assignment of a value
                     CCH = treeGrowth.GrowCrown(variant, stand, densityStartOfStep, densityEndOfStep, stand.SiteIndex, stand.HemlockSiteIndex, CALIB);
+                    #pragma warning restore IDE0059 // Unnecessary assignment of a value
                     this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
                     this.Verify(CALIB);
                 }
@@ -91,14 +93,8 @@ namespace Osu.Cof.Organon.Test
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
-
-                float BABT = 0.0F; // (DOUG?)
-                float[] BART = new float[5]; // (DOUG?)
+                OrganonTreatments treatments = new OrganonTreatments();
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
-                float[] CCH = new float[41]; // (DOUG?)
-                float[] PN = new float[5]; // (DOUG?)
-                float[] YF = new float[5]; // (DOUG?)
-                float[] YT = new float[5]; // (DOUG?)
 
                 float[] previousTreeDiameters = new float[stand.TreeRecordCount];
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
@@ -107,16 +103,13 @@ namespace Osu.Cof.Organon.Test
                     for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                     {
                         treeGrowth.GrowDiameter(variant, treeIndex, simulationStep, stand, stand.SiteIndex, 
-                                                stand.HemlockSiteIndex, treeCompetition, CALIB, 
-                                                PN, YF, BABT, BART, YT);
+                                                stand.HemlockSiteIndex, treeCompetition, CALIB, treatments);
                         stand.SetSdiMax(configuration);
 
                         float dbhInInches = stand.Dbh[treeIndex];
                         float previousDbhInInches = previousTreeDiameters[treeIndex];
                         Assert.IsTrue(dbhInInches >= previousDbhInInches);
                         Assert.IsTrue(dbhInInches <= TestConstant.Maximum.DiameterInInches);
-
-                        previousDbhInInches = dbhInInches;
                     }
 
                     this.Verify(ExpectedTreeChanges.DiameterGrowth, stand, variant);
@@ -144,24 +137,17 @@ namespace Osu.Cof.Organon.Test
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
+                OrganonTreatments treatments = new OrganonTreatments();
 
-                float BABT = 0.0F; // (DOUG?)
-                float[] BART = new float[5]; // (DOUG?)
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 float[] CCH = new float[41]; // (DOUG?)
-                int fertlizerCycle = 0;
                 float OLD = 0.0F; // (DOUG?)
-                float[] PN = new float[5]; // (DOUG?)
-                int thinningCycle = 0;
-                float[] YF = new float[5]; // (DOUG?)
-                float[] YT = new float[5]; // (DOUG?)
 
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; /* incremented by GROW() */)
                 {
                     StandDensity densityStartOfStep = new StandDensity(stand, variant);
-                    treeGrowth.Grow(ref simulationStep, configuration, stand, ref thinningCycle, ref fertlizerCycle,
-                                    densityStartOfStep, CALIB, PN, YF, 
-                                    BABT, BART, YT, ref CCH, ref OLD, TestConstant.Default.RAAGE, out StandDensity densityEndOfStep);
+                    treeGrowth.Grow(ref simulationStep, configuration, stand, densityStartOfStep, CALIB, treatments, ref CCH, ref OLD, 
+                                    TestConstant.Default.RAAGE, out StandDensity _);
                     stand.SetSdiMax(configuration);
 
                     this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, stand, variant);
@@ -205,18 +191,15 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void HeightGrowthApi()
         {
-            float[] BART = new float[5]; // (DOUG?)
             float[] CCH = new float[41]; // (DOUG? why is this different from the other competition arrays?)
             float OLD = 0.0F; // (DOUG?)
-            float[] PN = new float[5]; // (DOUG?)
             OrganonGrowth treeGrowth = new OrganonGrowth();
-            float[] YF = new float[5]; // (DOUG?)
-            float[] YT = new float[5]; // (DOUG?)
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 TestStand stand = this.CreateDefaultStand(configuration);
+                OrganonTreatments treatments = new OrganonTreatments();
 
                 for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
                 {
@@ -270,7 +253,7 @@ namespace Osu.Cof.Organon.Test
                         if (variant.IsBigSixSpecies(stand.Species[treeIndex]))
                         {
                             treeGrowth.GrowHeightBigSixSpecies(treeIndex, variant, simulationStep, stand, stand.SiteIndex, stand.HemlockSiteIndex, 
-                                                CCH, PN, YF, TestConstant.Default.BABT, BART, YT, ref OLD, TestConstant.Default.PDEN);
+                                                               CCH, treatments, ref OLD, TestConstant.Default.PDEN);
                         }
                         else
                         {
@@ -298,20 +281,17 @@ namespace Osu.Cof.Organon.Test
         [TestMethod]
         public void MortalityApi()
         {
-            float[] PN = new float[5]; // (DOUG?)
-            float[] YF = new float[5]; // (DOUG?)
-            
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
+                OrganonTreatments treatments = new OrganonTreatments();
 
                 TestStand stand = this.CreateDefaultStand(configuration);
                 StandDensity density = new StandDensity(stand, variant);
                 float RAAGE = TestConstant.Default.RAAGE;
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    OrganonMortality.MORTAL(configuration, simulationStep, stand, density, stand.SiteIndex, 
-                                     stand.HemlockSiteIndex, PN, YF, ref RAAGE);
+                    OrganonMortality.MORTAL(configuration, simulationStep, stand, density, stand.SiteIndex, stand.HemlockSiteIndex, treatments, ref RAAGE);
                     stand.SetSdiMax(configuration);
                     this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
@@ -395,63 +375,6 @@ namespace Osu.Cof.Organon.Test
                 Assert.IsTrue(stand.A2 < 0.65F);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
             }
-        }
-
-        [TestMethod]
-        public void TreeVolumeApi()
-        {
-            FiaVolume fiaVolume = new FiaVolume();
-            OsuVolume osuVolume = new OsuVolume();
-            Trees trees = new Trees(40);
-            double[] fiaMerchantableCubicFeetPerAcre = new double[trees.TreeRecordCount];
-            double[] fiaScribnerBoardFeetPerAcre = new double[trees.TreeRecordCount];
-            float[] osuMerchantableCubicMetersPerHectare = new float[trees.TreeRecordCount];
-            bool isDouglasFir = true;
-            double merchantableCubicFeetPerAcre = 0.0;
-            double merchantableCubicMetersPerHectare = 0.0;
-            double totalCylinderCubicMeterVolumePerAcre = 0.0;
-            double totalScribnerBoardFeetPerAcre = 0.0;
-            for (int treeIndex = 0; treeIndex < trees.TreeRecordCount; ++treeIndex)
-            {
-                FiaCode species = isDouglasFir ? FiaCode.PseudotsugaMenziesii : FiaCode.TsugaHeterophylla;
-                TreeRecord tree = new TreeRecord(species, (float)treeIndex, 1.0F, 1.0F - 3.0F * (float)trees.TreeRecordCount / (float)treeIndex);
-                trees.Species[treeIndex] = tree.Species;
-                trees.Dbh[treeIndex] = tree.DbhInInches;
-                trees.Height[treeIndex] = tree.HeightInFeet;
-                trees.CrownRatio[treeIndex] = tree.CrownRatio;
-                trees.LiveExpansionFactor[treeIndex] = tree.ExpansionFactor;
-                double dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
-                double heightInMeters = Constant.MetersPerFoot * tree.HeightInFeet;
-                double treeSizedCylinderCubicMeterVolumePerAcre = tree.ExpansionFactor * 0.25 * Math.PI * dbhInMeters * dbhInMeters * heightInMeters;
-
-                fiaMerchantableCubicFeetPerAcre[treeIndex] = tree.ExpansionFactor * fiaVolume.GetMerchantableCubicFeet(trees, treeIndex);
-                merchantableCubicFeetPerAcre += fiaMerchantableCubicFeetPerAcre[treeIndex];
-                fiaScribnerBoardFeetPerAcre[treeIndex] = tree.ExpansionFactor * fiaVolume.GetScribnerBoardFeet(trees, treeIndex);
-                totalScribnerBoardFeetPerAcre += fiaScribnerBoardFeetPerAcre[treeIndex];
-
-                osuMerchantableCubicMetersPerHectare[treeIndex] = Constant.HectaresPerAcre * tree.ExpansionFactor * osuVolume.GetCubicVolume(trees, treeIndex);
-                merchantableCubicMetersPerHectare += osuMerchantableCubicMetersPerHectare[treeIndex];
-
-                // taper coefficient should be in the vicinity of 0.3 for larger trees, but this is not well defined for small trees
-                // Lower bound can be made more stringent if necessary.
-                Debug.Assert(fiaMerchantableCubicFeetPerAcre[treeIndex] >= 0.0);
-                Debug.Assert(fiaMerchantableCubicFeetPerAcre[treeIndex] <= 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
-
-                Debug.Assert(fiaScribnerBoardFeetPerAcre[treeIndex] >= 0.0);
-                Debug.Assert(fiaScribnerBoardFeetPerAcre[treeIndex] <= 10.5 * 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
-                totalCylinderCubicMeterVolumePerAcre += treeSizedCylinderCubicMeterVolumePerAcre;
-            }
-
-            // FIA (Waddell 2014) volume equations approach 10.5 board feet per cubic foot
-            double totalCylinderCubicFeetVolumePerAcre = Constant.CubicFeetPerCubicMeter * totalCylinderCubicMeterVolumePerAcre;
-            Debug.Assert(merchantableCubicFeetPerAcre >= 0.05 * totalCylinderCubicFeetVolumePerAcre);
-            Debug.Assert(merchantableCubicFeetPerAcre <= 0.35 * totalCylinderCubicFeetVolumePerAcre);
-            Debug.Assert(merchantableCubicFeetPerAcre >= 0.5 * Constant.AcresPerHectare * Constant.CubicFeetPerCubicMeter * merchantableCubicMetersPerHectare);
-
-            Debug.Assert(merchantableCubicMetersPerHectare <= 0.35 * Constant.AcresPerHectare * totalCylinderCubicMeterVolumePerAcre);
-
-            Debug.Assert(totalScribnerBoardFeetPerAcre >= 1.75 * 0.35 * totalCylinderCubicFeetVolumePerAcre);
-            Debug.Assert(totalScribnerBoardFeetPerAcre <= 10.5 * 0.40 * totalCylinderCubicFeetVolumePerAcre);
         }
 
         [TestMethod]

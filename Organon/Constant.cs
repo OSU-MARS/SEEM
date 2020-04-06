@@ -15,9 +15,11 @@ namespace Osu.Cof.Organon
         public const float HectaresPerAcre = 0.404685F;
         public const float InchesPerCm = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
+        public const float NaturalLogOf10 = 2.3025850930F;
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
         public const float RoundToZeroTolerance = 0.001F;
+        public const int SimdWidthInSingles = 4;
 
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
         {

@@ -7,8 +7,7 @@ namespace Osu.Cof.Organon
     {
         // ROUTINE FOR SETTING TREE MORTALITY
         public static void MORTAL(OrganonConfiguration configuration, int simulationStep, Stand stand, 
-                                  StandDensity densityGrowth, float SI_1,
-                                  float SI_2, float[] PN, float[] YF, ref float RAAGE)
+                                  StandDensity densityGrowth, float SI_1, float SI_2, OrganonTreatments treatments, ref float RAAGE)
         {
             float[] POW = new float[stand.TreeRecordCount];
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -60,8 +59,8 @@ namespace Osu.Cof.Organon
             {
                 RAAGE = 0.0F;
             }
-            float SQMDA = (float)Math.Sqrt(standBasalArea / (Constant.ForestersEnglish * standTreesPerAcre));
-            float RD = standTreesPerAcre / (float)Math.Exp(stand.A1 / stand.A2 - Math.Log(SQMDA) / stand.A2);
+            float SQMDA = MathF.Sqrt(standBasalArea / (Constant.ForestersEnglish * standTreesPerAcre));
+            float RD = standTreesPerAcre / MathV.Exp(stand.A1 / stand.A2 - MathV.Ln(SQMDA) / stand.A2);
             if (simulationStep == 0)
             {
                 stand.RD0 = RD;
@@ -85,8 +84,11 @@ namespace Osu.Cof.Organon
                 float SBAL1 = densityGrowth.GetBasalAreaLarger(DBH);
                 float CR = stand.CrownRatio[treeIndex];
                 configuration.Variant.GetMortalityCoefficients(species, DBH, CR, SI_1, SI_2, SBAL1, OG1, out POW[treeIndex], out PMK[treeIndex]);
-                PM_FERT(species, configuration.Variant.TreeModel, simulationStep, PN, YF, out float FERTADJ);
-                PMK[treeIndex] = PMK[treeIndex] + FERTADJ;
+                if (treatments.HasFertilization)
+                {
+                    float FERTADJ = PM_FERT(species, configuration.Variant.TreeModel, simulationStep, treatments);
+                    PMK[treeIndex] += FERTADJ;
+                }
             }
 
             if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
@@ -102,8 +104,8 @@ namespace Osu.Cof.Organon
             {
                 float CR = stand.CrownRatio[treeIndex];
                 float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
-                float PS = (float)Math.Pow(1.0F - XPM, POW[treeIndex]);
+                float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
+                float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
                 float PM = 1.0F - PS * CRADJ;
 
                 float expansionFactor = stand.LiveExpansionFactor[treeIndex];
@@ -115,8 +117,8 @@ namespace Osu.Cof.Organon
             // DETERMINE IF ADDITIONAL MORTALITY MUST BE TAKEN
             if (configuration.AdditionalMortality)
             {
-                float QMDA = (float)Math.Sqrt(BAA / (Constant.ForestersEnglish * NA));
-                float RDA = NA / (float)Math.Exp(stand.A1 / stand.A2 - Math.Log(QMDA) / stand.A2);
+                float QMDA = MathF.Sqrt(BAA / (Constant.ForestersEnglish * NA));
+                float RDA = NA / MathV.Exp(stand.A1 / stand.A2 - MathV.Ln(QMDA) / stand.A2);
                 if (simulationStep == 0)
                 {
                     // INITALIZATIONS FOR FIRST GROWTH CYCLE
@@ -124,11 +126,11 @@ namespace Osu.Cof.Organon
                     {
                         if (RDA > RD)
                         {
-                            stand.A1MAX = (float)(Math.Log(SQMDA) + stand.A2 * Math.Log(standTreesPerAcre));
+                            stand.A1MAX = MathV.Ln(SQMDA) + stand.A2 * MathV.Ln(standTreesPerAcre);
                         }
                         else
                         {
-                            stand.A1MAX = (float)(Math.Log(QMDA) + stand.A2 * Math.Log(NA));
+                            stand.A1MAX = MathV.Ln(QMDA) + stand.A2 * MathV.Ln(NA);
                         }
                         if (stand.A1MAX < stand.A1)
                         {
@@ -142,7 +144,7 @@ namespace Osu.Cof.Organon
                             if (RD > RDCC)
                             {
                                 float XA3 = -1.0F / A3;
-                                stand.NO = standTreesPerAcre * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
+                                stand.NO = standTreesPerAcre * MathF.Pow(MathV.Ln(RD) / MathV.Ln(RDCC), XA3);
                             }
                             else
                             {
@@ -154,7 +156,7 @@ namespace Osu.Cof.Organon
                         {
                             if (stand.RD0 >= 1.0F)
                             {
-                                stand.A1MAX = (float)(Math.Log(QMDA) + stand.A2 * Math.Log(NA));
+                                stand.A1MAX = MathV.Ln(QMDA) + stand.A2 * MathV.Ln(NA);
                                 if (stand.A1MAX < stand.A1)
                                 {
                                     stand.A1MAX = stand.A1;
@@ -167,11 +169,11 @@ namespace Osu.Cof.Organon
                                 {
                                     if (RDA > RD)
                                     {
-                                        stand.A1MAX = (float)(Math.Log(SQMDA) + stand.A2 * Math.Log(standTreesPerAcre));
+                                        stand.A1MAX = MathV.Ln(SQMDA) + stand.A2 * MathV.Ln(standTreesPerAcre);
                                     }
                                     else
                                     {
-                                        stand.A1MAX = (float)(Math.Log(QMDA) + stand.A2 * Math.Log(NA));
+                                        stand.A1MAX = MathV.Ln(QMDA) + stand.A2 * MathV.Ln(NA);
                                     }
                                     IND = 1;
                                     if (stand.A1MAX < stand.A1)
@@ -187,7 +189,7 @@ namespace Osu.Cof.Organon
                                         if ((RD > RDCC) && (stand.NO <= 0.0F))
                                         {
                                             float XA3 = -1.0F / A3;
-                                            stand.NO = standTreesPerAcre * (float)Math.Pow(Math.Log(RD) / Math.Log(RDCC), XA3);
+                                            stand.NO = standTreesPerAcre * MathF.Pow(MathV.Ln(RD) / MathV.Ln(RDCC), XA3);
                                         }
                                         else
                                         {
@@ -211,7 +213,7 @@ namespace Osu.Cof.Organon
                                 }
                                 else
                                 {
-                                    QMDP = (float)Math.Exp(stand.A1MAX - stand.A2 * Math.Log(NA));
+                                    QMDP = MathV.Exp(stand.A1MAX - stand.A2 * MathV.Ln(NA));
                                 }
 
                                 if ((RD <= RDCC) || (QMDP > QMDA))
@@ -221,8 +223,8 @@ namespace Osu.Cof.Organon
                                     {
                                         float CR = stand.CrownRatio[treeIndex];
                                         float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                                        float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
-                                        float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
+                                        float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
+                                        float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
                                         float PM = 1.0F - PS * CRADJ;
                                         Debug.Assert(PM >= 0.0F);
                                         Debug.Assert(PM <= 1.0F);
@@ -237,7 +239,7 @@ namespace Osu.Cof.Organon
                                     float KR1 = 0.0F;
                                     for (int KK = 0; KK < 7; ++KK)
                                     {
-                                        float NK = 10.0F / (float)Math.Pow(10.0, KK);
+                                        float NK = 10.0F / MathV.Exp10(KK);
                                     kr1: KR1 += NK;
                                         float NAA = 0.0F;
                                         float BAAA = 0.0F;
@@ -250,15 +252,15 @@ namespace Osu.Cof.Organon
 
                                             float CR = stand.CrownRatio[treeIndex];
                                             float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                                            float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
-                                            float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
+                                            float XPM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[treeIndex])));
+                                            float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
 
                                             float expansionFactor = stand.LiveExpansionFactor[treeIndex];
                                             NAA += expansionFactor * (1.0F - PM);
-                                            BAAA += Constant.ForestersEnglish * (float)Math.Pow(stand.Dbh[treeIndex] + stand.DbhGrowth[treeIndex], 2.0) * expansionFactor * (1.0F - PM);
+                                            BAAA += Constant.ForestersEnglish * MathV.Pow(stand.Dbh[treeIndex] + stand.DbhGrowth[treeIndex], 2.0F) * expansionFactor * (1.0F - PM);
                                         }
-                                        QMDA = (float)Math.Sqrt(BAAA / (Constant.ForestersEnglish * NAA));
+                                        QMDA = MathF.Sqrt(BAAA / (Constant.ForestersEnglish * NAA));
                                         if (IND == 0)
                                         {
                                             if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
@@ -272,7 +274,7 @@ namespace Osu.Cof.Organon
                                         }
                                         else
                                         {
-                                            QMDP = (float)Math.Exp(stand.A1MAX - stand.A2 * Math.Log(NAA));
+                                            QMDP = MathV.Exp(stand.A1MAX - stand.A2 * MathV.Ln(NAA));
                                         }
                                         if (QMDP >= QMDA)
                                         {
@@ -295,8 +297,8 @@ namespace Osu.Cof.Organon
                                         {
                                             float CR = stand.CrownRatio[treeIndex];
                                             float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                                            float XPM = 1.0F / (1.0F + (float)Math.Exp(-(KR1 + PMK[treeIndex])));
-                                            float PS = (float)Math.Pow(1.0F - XPM, POW[treeIndex]);
+                                            float XPM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[treeIndex])));
+                                            float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
                                             Debug.Assert(PM >= 0.0F);
                                             Debug.Assert(PM <= 1.0F);
@@ -317,8 +319,8 @@ namespace Osu.Cof.Organon
                 {
                     float CR = stand.CrownRatio[treeIndex];
                     float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                    float XPM = 1.0F / (1.0F + (float)Math.Exp(-PMK[treeIndex]));
-                    float PS = (float)Math.Pow(1.0 - XPM, POW[treeIndex]);
+                    float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
+                    float PS = MathF.Pow(1.0F - XPM, POW[treeIndex]);
                     float PM = 1.0F - PS * CRADJ;
                     Debug.Assert(PM >= 0.0F);
                     Debug.Assert(PM <= 1.0F);
@@ -417,43 +419,29 @@ namespace Osu.Cof.Organon
             }
         }
 
-        private static void PM_FERT(FiaCode species, TreeModel treeModel, int simulationStep, float[] PN, float[] yearsSinceFertilization, out float FERTADJ)
+        private static float PM_FERT(FiaCode species, TreeModel treeModel, int simulationStep, OrganonTreatments treatments)
         {
-            float c5;
-            float PF2;
-            float PF3;
-            if (treeModel != TreeModel.OrganonRap)
+            // fertilization mortality effects currently supported only for non-RAP Douglas-fir
+            if ((species != FiaCode.PseudotsugaMenziesii) || (treeModel != TreeModel.OrganonRap))
             {
-                // Hann 2003 Research Contribution 40, Table 37: Parameters for predicting fertlization response of 5-year mortality
-                if (species == FiaCode.PseudotsugaMenziesii)
-                {
-                    c5 = 0.0000552859F;
-                    PF2 = 1.5F;
-                    PF3 = -0.5F;
-                }
-                else
-                {
-                    // all other species
-                    c5 = 0.0F;
-                    PF2 = 1.0F;
-                    PF3 = 0.0F;
-                }
+                return 1.0F;
             }
-            else
-            {
-                c5 = 0.0F;
-                PF2 = 1.0F;
-                PF3 = 0.0F;
-            }
+
+            // non-RAP Douglas-fir
+            // Hann 2003 Research Contribution 40, Table 37: Parameters for predicting fertlization response of 5-year mortality
+            float c5 = 0.0000552859F;
+            float PF2 = 1.5F;
+            float PF3 = -0.5F;
 
             float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
             float FERTX1 = 0.0F;
-            for (int II = 1; II < 5; ++II)
+            for (int treatmentIndex = 1; treatmentIndex < 5; ++treatmentIndex)
             {
                 // BUGBUG: summation range doesn't match 13 or 18 year periods given in Hann 2003 Table 3
-                FERTX1 += PN[II] * (float)Math.Exp((PF3 / PF2) * (yearsSinceFertilization[0] - yearsSinceFertilization[II]));
+                FERTX1 += treatments.PoundsOfNitrogenPerAcre[treatmentIndex] * MathV.Exp(PF3 / PF2 * (treatments.FertilizationYears[0] - treatments.FertilizationYears[treatmentIndex]));
             }
-            FERTADJ = c5 * (float)Math.Pow(PN[0] + FERTX1, PF2) * (float)Math.Exp(PF3 * (XTIME - yearsSinceFertilization[0]));
+            float FERTADJ = c5 * MathV.Pow(treatments.PoundsOfNitrogenPerAcre[0] + FERTX1, PF2) * MathV.Exp(PF3 * (XTIME - treatments.FertilizationYears[0]));
+            return FERTADJ;
         }
 
         private static float QUAD1(float ti, float t1, float RDCC, float A1)
@@ -464,9 +452,9 @@ namespace Osu.Cof.Organon
             // A1 = g1 + sum_j(g1_j) + g2 * log(ti)
             float g2 = 0.62305F;
             float g3 = 14.39533971F;
-            float A4 = -((float)Math.Log(RDCC) * g2 / A1);
-            float X = A1 - g2 * (float)Math.Log(ti) - (A1 * A4) * (float)Math.Exp(-g3 * (Math.Log(t1) - Math.Log(ti)));
-            return (float)Math.Exp(X);
+            float A4 = -(MathV.Ln(RDCC) * g2 / A1);
+            float X = A1 - g2 * MathV.Ln(ti) - (A1 * A4) * MathV.Exp(-g3 * (MathV.Ln(t1) - MathV.Ln(ti)));
+            return MathV.Exp(X);
         }
 
         private static float QUAD2(float NI, float NO, float A1)
@@ -474,8 +462,8 @@ namespace Osu.Cof.Organon
             float A2 = 0.64F;
             float A3 = 3.88F;
             float A4 = 0.07F;
-            float X = A1 - A2 * (float)Math.Log(NI) - (A1 * A4) * (float)Math.Exp(-A3 * (Math.Log(NO) - Math.Log(NI)));
-            return (float)Math.Exp(X);
+            float X = A1 - A2 * MathV.Ln(NI) - (A1 * A4) * MathV.Exp(-A3 * (MathV.Ln(NO) - MathV.Ln(NI)));
+            return MathV.Exp(X);
         }
     }
 }

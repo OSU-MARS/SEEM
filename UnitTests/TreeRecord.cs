@@ -42,22 +42,22 @@ namespace Osu.Cof.Organon.Test
             switch (species)
             {
                 case FiaCode.AbiesAmabalis:
-                    heightInM = 45.8F * (1.0F - (float)Math.Exp(-0.008 * Math.Pow(dbhInCm, 1.36)));
+                    heightInM = 45.8F * (1.0F - MathF.Exp(-0.008F * MathF.Pow(dbhInCm, 1.36F)));
                     break;
                 case FiaCode.AbiesProcera:
                     heightInM = dbhInCm / (0.6035F + 0.0095F * dbhInCm);
                     break;
                 case FiaCode.PseudotsugaMenziesii:
-                    heightInM = 60.1F * (1.0F - (float)Math.Exp(-0.007 * Math.Pow(dbhInCm, 1.25)));
+                    heightInM = 60.1F * (1.0F - MathF.Exp(-0.007F * MathF.Pow(dbhInCm, 1.25F)));
                     break;
                 case FiaCode.TaxusBrevifolia:
-                    heightInM = 50.0F * (1.0F - (float)Math.Exp(-0.025 * Math.Pow(dbhInCm, 0.71)));
+                    heightInM = 50.0F * (1.0F - MathF.Exp(-0.025F * MathF.Pow(dbhInCm, 0.71F)));
                     break;
                 case FiaCode.ThujaPlicata:
-                    heightInM = 68.5F * (1.0F - (float)Math.Exp(-0.009 * Math.Pow(dbhInCm, 1.04)));
+                    heightInM = 68.5F * (1.0F - MathF.Exp(-0.009F * MathF.Pow(dbhInCm, 1.04F)));
                     break;
                 case FiaCode.TsugaHeterophylla:
-                    heightInM = 56.9F * (1.0F - (float)Math.Exp(-0.007 * Math.Pow(dbhInCm, 1.29)));
+                    heightInM = 56.9F * (1.0F - MathF.Exp(-0.007F * MathF.Pow(dbhInCm, 1.29F)));
                     break;
 
                 // simple defaults for other conifers and willows

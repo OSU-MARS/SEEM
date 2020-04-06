@@ -24,7 +24,7 @@ namespace Osu.Cof.Organon
         public bool IsEvenAge { get; set; }
         // enables Swiss needle cast (Nothophaeocryptopus gaeumanii) growth modifiers, applies only to NWO and SMC variants
         public bool SwissNeedleCast { get; set; }
-        // hint for error checking and triggers TCYCLE count
+        // hint for error checking and triggers thinning cycle count
         public bool Thin { get; set; }
 
         // Ignored if less than or equal to zero.</param>

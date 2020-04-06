@@ -45,7 +45,6 @@ namespace Osu.Cof.Organon.Test
         public static class Default
         {
             public const float AgeToReachBreastHeightInYears = 5.0F;
-            public const float BABT = 0.0F; // (DOUG?)
             public const float CrownRatio = 0.5F;
             public const float MaximumReinekeStandDensityIndex = 600.0F;
             public const float PDEN = 1.0F; // (DOUG?)

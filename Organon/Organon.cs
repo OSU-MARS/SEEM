@@ -100,25 +100,19 @@ namespace Osu.Cof.Organon
         /// </summary>
         /// <param name="simulationStep"></param>
         /// <param name="configuration">Organon growth simulation options and site settings.</param>
+        /// <param name="stand"></param>
         /// <param name="ACALIB">Array of calibration coefficients. Values must be between 0.5 and 2.0.</param>
-        /// <param name="PN">Pounds of nitrogen per acre?</param>
-        /// <param name="YSF">Years fertilization performed?</param>
-        /// <param name="BABT"></param>
-        /// <param name="BART"></param>
-        /// <param name="YST">Years thinning performed?</param>
-        public static void Grow(int simulationStep, OrganonConfiguration configuration, Stand stand, Dictionary<FiaCode, float[]> ACALIB, float[] PN, float[] YSF, 
-                                float BABT, float[] BART, float[] YST)
+        /// <param name="treatments"></param>
+        public static void Grow(int simulationStep, OrganonConfiguration configuration, Stand stand, Dictionary<FiaCode, float[]> ACALIB, OrganonTreatments treatments)
         {
             // BUGBUG: simulationStep largely duplicates stand age
-            ValidateArguments(simulationStep, configuration, stand, ACALIB, PN, YSF, BABT, BART, YST, out int BIG6, out int BNXT);
+            ValidateArguments(simulationStep, configuration, stand, ACALIB, treatments, out int BIG6, out int BNXT);
 
             // BUGBUG: 5 * simulationStep is incorrect for RAP
             int simulationYear = Constant.DefaultTimeStepInYears * simulationStep;
-            int FCYCLE = 0;
-            int TCYCLE = 0;
-            if (configuration.Fertilizer && (YSF[0] == (float)simulationYear))
+            if (configuration.Fertilizer && (treatments.FertilizationYears[0] == (float)simulationYear))
             {
-                FCYCLE = 1;
+                treatments.FertilizationCycle = 1;
             }
 
             Dictionary<FiaCode, float[]> CALIB = new Dictionary<FiaCode, float[]>(ACALIB.Count);
@@ -129,7 +123,7 @@ namespace Osu.Cof.Organon
 
                 if (configuration.CalibrateHeight)
                 {
-                    speciesCalibration[0] = (1.0F + ACALIB[species.Key][0]) / 2.0F + (float)Math.Pow(0.5, 0.5 * simulationStep) * ((ACALIB[species.Key][0] - 1.0F) / 2.0F);
+                    speciesCalibration[0] = (1.0F + ACALIB[species.Key][0]) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][0] - 1.0F) / 2.0F);
                 }
                 else 
                 {
@@ -137,7 +131,7 @@ namespace Osu.Cof.Organon
                 }
                 if (configuration.CalibrateCrownRatio)
                 {
-                    speciesCalibration[1] = (1.0F + ACALIB[species.Key][1]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][1] - 1.0F) / 2.0F);
+                    speciesCalibration[1] = (1.0F + ACALIB[species.Key][1]) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][1] - 1.0F) / 2.0F);
                 }
                 else 
                 {
@@ -145,20 +139,12 @@ namespace Osu.Cof.Organon
                 }
                 if (configuration.CalibrateDiameter)
                 {
-                    speciesCalibration[2] = (1.0F + ACALIB[species.Key][2]) / 2.0F + (float)Math.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][2] - 1.0F) / 2.0F);
+                    speciesCalibration[2] = (1.0F + ACALIB[species.Key][2]) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][2] - 1.0F) / 2.0F);
                 }
                 else 
                 {
                     speciesCalibration[2] = 1.0F;
                 }
-            }
-
-            float[] YF = new float[5];
-            float[] YT = new float[5];
-            for (int I = 0; I < 5; ++I)
-            {
-                YF[I] = YSF[I];
-                YT[I] = YST[I];
             }
 
             // find red alder site index and growth effective age
@@ -171,8 +157,7 @@ namespace Osu.Cof.Organon
             float[] CCH = StandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
             float OLD = 0.0F;
             OrganonGrowth treeGrowth = new OrganonGrowth();
-            treeGrowth.Grow(ref simulationStep, configuration, stand, ref TCYCLE, ref FCYCLE, densityBeforeGrowth, CALIB, PN, YF, BABT, BART,
-                            YT, ref CCH, ref OLD, redAlderAge, out StandDensity _);
+            treeGrowth.Grow(ref simulationStep, configuration, stand, densityBeforeGrowth, CALIB, treatments, ref CCH, ref OLD, redAlderAge, out StandDensity _);
 
             if (configuration.IsEvenAge == false)
             {
@@ -250,7 +235,7 @@ namespace Osu.Cof.Organon
                 {
                     // BUGBUG: not initialized in Fortran code; should this be SITE_1?
                     SI_1 = 0.0F;
-                    SITE_2 = 4.776377F * (float)Math.Pow(SI_1, 0.763530587F);
+                    SITE_2 = 4.776377F * MathV.Pow(SI_1, 0.763530587F);
                 }
             }
 
@@ -303,18 +288,13 @@ namespace Osu.Cof.Organon
         /// Does argument checking and raises error flags if problems are found.
         /// </summary>
         /// <param name="simulationStep"></param>
-        /// <param name="variant"></param>
         /// <param name="configuration">Organon configuration settings.</param>
         /// <param name="stand"></param>
         /// <param name="ACALIB"></param>
-        /// <param name="PN"></param>
-        /// <param name="YSF"></param>
-        /// <param name="BABT"></param>
-        /// <param name="BART"></param>
-        /// <param name="YST"></param>
+        /// <param name="treatments"></param>
         /// <param name="BIG6"></param>
         /// <param name="BNXT"></param>
-        private static void ValidateArguments(int simulationStep, OrganonConfiguration configuration, Stand stand, Dictionary<FiaCode, float[]> ACALIB, float[] PN, float[] YSF, float BABT, float[] BART, float[] YST,
+        private static void ValidateArguments(int simulationStep, OrganonConfiguration configuration, Stand stand, Dictionary<FiaCode, float[]> ACALIB, OrganonTreatments treatments,
                                               out int BIG6, out int BNXT)
         {
             if (stand.TreeRecordCount < 1)
@@ -361,27 +341,27 @@ namespace Osu.Cof.Organon
                     throw new ArgumentException("If " + nameof(configuration.Fertilizer) + " is set " + nameof(configuration.IsEvenAge) + "must also be set.");
                 }
             }
-            for (int I = 0; I < 5; ++I)
+            for (int treatmentIndex = 0; treatmentIndex < 5; ++treatmentIndex)
             {
-                if (!configuration.Fertilizer && (YSF[I] != 0 || PN[I] != 0))
+                if (!configuration.Fertilizer && (treatments.FertilizationYears[treatmentIndex] != 0 || treatments.PoundsOfNitrogenPerAcre[treatmentIndex] != 0))
                 {
                     throw new ArgumentException();
                 }
                 if (configuration.Fertilizer)
                 {
-                    if ((YSF[I] > stand.AgeInYears) || (YSF[I] > 70.0F))
+                    if ((treatments.FertilizationYears[treatmentIndex] > stand.AgeInYears) || (treatments.FertilizationYears[treatmentIndex] > 70.0F))
                     {
                         throw new ArgumentException();
                     }
-                    if (I == 0)
+                    if (treatmentIndex == 0)
                     {
-                        if ((PN[I] < 0.0) || (PN[I] > 400.0F))
+                        if ((treatments.PoundsOfNitrogenPerAcre[treatmentIndex] < 0.0) || (treatments.PoundsOfNitrogenPerAcre[treatmentIndex] > 400.0F))
                         {
                             throw new ArgumentException();
                         }
                         else
                         {
-                            if (PN[I] > 400.0F)
+                            if (treatments.PoundsOfNitrogenPerAcre[treatmentIndex] > 400.0F)
                             {
                                 throw new ArgumentException();
                             }
@@ -390,30 +370,30 @@ namespace Osu.Cof.Organon
                 }
             }
 
-            if (configuration.Thin && (BART[0] >= BABT))
+            if (configuration.Thin && (treatments.BasalAreaRemovedByThin[0] >= treatments.BasalAreaBeforeThin))
             {
-                throw new ArgumentException("The first element of " + nameof(BART) + " must be less than " + nameof(BABT) + " when thinning response is enabled.");
+                throw new ArgumentException("The first element of " + nameof(treatments.BasalAreaRemovedByThin) + " must be less than " + nameof(treatments.BasalAreaBeforeThin) + " when thinning response is enabled.");
             }
-            for (int I = 0; I < 5; ++I)
+            for (int treatmentIndex = 0; treatmentIndex < 5; ++treatmentIndex)
             {
-                if (!configuration.Thin && (YST[I] != 0 || BART[I] != 0))
+                if (!configuration.Thin && (treatments.ThinningYears[treatmentIndex] != 0 || treatments.BasalAreaRemovedByThin[treatmentIndex] != 0))
                 {
                     throw new ArgumentException();
                 }
                 if (configuration.Thin)
                 {
-                    if (configuration.IsEvenAge && YST[I] > stand.AgeInYears)
+                    if (configuration.IsEvenAge && treatments.ThinningYears[treatmentIndex] > stand.AgeInYears)
                     {
                         throw new ArgumentException();
                     }
-                    if (I > 1)
+                    if (treatmentIndex > 1)
                     {
-                        if (YST[I] != 0.0F && BART[I] < 0.0F)
+                        if (treatments.ThinningYears[treatmentIndex] != 0.0F && treatments.BasalAreaRemovedByThin[treatmentIndex] < 0.0F)
                         {
                             throw new ArgumentException();
                         }
                     }
-                    if (BABT < 0.0F)
+                    if (treatments.BasalAreaBeforeThin < 0.0F)
                     {
                         throw new ArgumentException();
                     }
@@ -730,7 +710,7 @@ namespace Osu.Cof.Organon
                 case TreeModel.OrganonSwo:
                     if (maxPonderosaHeight > 0.0F)
                     {
-                        float MAXHT = (stand.HemlockSiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.164985 * (stand.HemlockSiteIndex - 4.5), 0.288169)))) + 4.5F;
+                        float MAXHT = (stand.HemlockSiteIndex - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.164985F * (stand.HemlockSiteIndex - 4.5F), 0.288169F)))) + 4.5F;
                         if (maxPonderosaHeight > MAXHT)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
@@ -739,7 +719,7 @@ namespace Osu.Cof.Organon
                     if (maxIncenseCedarHeight > 0.0F)
                     {
                         float ICSI = (0.66F * stand.SiteIndex) - 4.5F;
-                        float MAXHT = ICSI * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * ICSI, 0.281176)))) + 4.5F;
+                        float MAXHT = ICSI * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * ICSI, 0.281176F)))) + 4.5F;
                         if (maxIncenseCedarHeight > MAXHT)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
@@ -747,7 +727,7 @@ namespace Osu.Cof.Organon
                     }
                     if (maxDouglasFirHeight > 0.0F)
                     {
-                        float MAXHT = (stand.SiteIndex - 4.5F) * (1.0F / (1.0F - (float)Math.Exp(Math.Pow(-0.174929 * (stand.SiteIndex - 4.5), 0.281176)))) + 4.5F;
+                        float MAXHT = (stand.SiteIndex - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * (stand.SiteIndex - 4.5F), 0.281176F)))) + 4.5F;
                         if (maxDouglasFirHeight > MAXHT)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
@@ -801,24 +781,14 @@ namespace Osu.Cof.Organon
                 stand.Warnings.TreesYoung = stand.BreastHeightAgeInYears < 10;
             }
 
-            float requiredWellKnownSpeciesBasalAreaFraction;
-            switch (configuration.Variant.TreeModel)
+            float requiredWellKnownSpeciesBasalAreaFraction = configuration.Variant.TreeModel switch
             {
-                case TreeModel.OrganonNwo:
-                    requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
-                    break;
-                case TreeModel.OrganonRap:
-                    requiredWellKnownSpeciesBasalAreaFraction = 0.8F;
-                    break;
-                case TreeModel.OrganonSmc:
-                    requiredWellKnownSpeciesBasalAreaFraction = 0.5F;
-                    break;
-                case TreeModel.OrganonSwo:
-                    requiredWellKnownSpeciesBasalAreaFraction = 0.2F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
-            }
+                TreeModel.OrganonNwo => 0.5F,
+                TreeModel.OrganonRap => 0.8F,
+                TreeModel.OrganonSmc => 0.5F,
+                TreeModel.OrganonSwo => 0.2F,
+                _ => throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel),
+            };
             if ((standBigSixBasalArea + standHardwoodBasalArea) < (requiredWellKnownSpeciesBasalAreaFraction * standBasalArea))
             {
                 stand.Warnings.OtherSpeciesBasalAreaTooHigh = true;

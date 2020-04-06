@@ -62,12 +62,12 @@ namespace Osu.Cof.Organon.Test
                 Array.Sort(dbh, dbhIndices);
 
                 // assign trees to quantiles
-                double dbhQuantilesAsDouble = (double)TestConstant.DbhQuantiles;
-                double speciesCountAsDouble = (double)speciesIndices.Count;
+                float dbhQuantilesAsSingle = (float)TestConstant.DbhQuantiles;
+                float speciesCountAsSingle = (float)speciesIndices.Count;
                 for (int index = 0; index < speciesIndices.Count; ++index)
                 {
                     int treeIndex = speciesIndices[dbhIndices[index]];
-                    this.QuantileByInitialDbh[treeIndex] = (int)Math.Floor(dbhQuantilesAsDouble * (double)index / speciesCountAsDouble);
+                    this.QuantileByInitialDbh[treeIndex] = (int)MathF.Floor(dbhQuantilesAsSingle * (float)index / speciesCountAsSingle);
                 }
             }
         }

@@ -27,7 +27,7 @@ namespace Osu.Cof.Organon.Test
                 "TSHE" => 300.0F,
                 _ => 200.0F
             };
-            return TestConstant.Default.CrownRatio / (float)(1.0 + Math.Exp(0.015 * (crownCompetition - crownCompetitionMidpoint)));
+            return TestConstant.Default.CrownRatio / (1.0F + MathF.Exp(0.015F * (crownCompetition - crownCompetitionMidpoint)));
         }
 
         public int GetFirstMeasurementYear()
