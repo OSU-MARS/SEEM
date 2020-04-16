@@ -1,15 +1,16 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public class TabuSearch : Heuristic
     {
         public int Iterations { get; set; }
         public int Tenure { get; set; }
 
-        public TabuSearch(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.Iterations = stand.TreeRecordCount;
@@ -47,9 +48,9 @@ namespace Osu.Cof.Organon.Heuristics
             int[,] remainingTabuTenures = new int[this.TreeRecordCount, this.CurrentTrajectory.HarvestPeriods];
             float currentObjectiveFunction = this.BestObjectiveFunction;
 
-            StandTrajectory candidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
-            StandTrajectory bestCandidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
-            StandTrajectory bestNonTabuCandidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory bestCandidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory bestNonTabuCandidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             //double tenureScalingFactor = ((double)this.Tenure - Constant.RoundToZeroTolerance) / (double)byte.MaxValue;
             for (int neighborhoodEvaluation = 0; neighborhoodEvaluation < this.Iterations; ++neighborhoodEvaluation)
             {

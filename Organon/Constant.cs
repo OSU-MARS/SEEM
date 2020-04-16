@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm
 {
     internal static class Constant
     {

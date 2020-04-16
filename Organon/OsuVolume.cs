@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm
 {
     public class OsuVolume
     {

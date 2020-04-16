@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Organon
 {
     public class OrganonConfiguration
     {
@@ -46,7 +46,7 @@ namespace Osu.Cof.Organon
         {
             this.Bucking = new Bucking();
             this.Variant = variant;
-            if (this.Variant.TreeModel == Cof.Organon.TreeModel.OrganonRap)
+            if (this.Variant.TreeModel == TreeModel.OrganonRap)
             {
                 // only even age red alder plantations more than 10 years old are supported
                 this.IsEvenAge = true;

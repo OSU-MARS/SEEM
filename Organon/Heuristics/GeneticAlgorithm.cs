@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public class GeneticAlgorithm : Heuristic
     {
@@ -12,7 +13,7 @@ namespace Osu.Cof.Organon.Heuristics
         public int PopulationSize { get; set; }
         public float ReservedPopulationProportion { get; set; }
 
-        public GeneticAlgorithm(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.EndStandardDeviation = 0.01F;
@@ -81,7 +82,7 @@ namespace Osu.Cof.Organon.Heuristics
             // TODO: should incoming schedule on this.CurrentSolution be one of the individuals in the population?
             GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.TreeRecordCount, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion);
             currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection);
-            StandTrajectory individualTrajectory = new StandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             this.BestObjectiveFunction = float.MinValue;
             for (int individualIndex = 0; individualIndex < this.PopulationSize; ++individualIndex)
             {
@@ -102,8 +103,8 @@ namespace Osu.Cof.Organon.Heuristics
             double mutationScalingFactor = 1.0 / (double)UInt16.MaxValue;
             double variance = this.GetMaximumFitnessAndVariance(currentGeneration);
             GeneticPopulation nextGeneration = new GeneticPopulation(currentGeneration);
-            StandTrajectory firstChildTrajectory = individualTrajectory;
-            StandTrajectory secondChildTrajectory = new StandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory firstChildTrajectory = individualTrajectory;
+            OrganonStandTrajectory secondChildTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             for (int generationIndex = 1; (generationIndex < this.MaximumGenerations) && (variance > endVariance); ++generationIndex)
             {
                 currentGeneration.RecalculateMatingDistributionFunction();

@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     internal class TreeRecord
     {

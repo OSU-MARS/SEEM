@@ -1,6 +1,7 @@
-﻿using System.Collections.ObjectModel;
+﻿using Osu.Cof.Ferm.Organon;
+using System.Collections.ObjectModel;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     internal static class TestConstant
     {

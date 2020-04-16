@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Organon
 {
     internal class OrganonGrowthModifiers
     {

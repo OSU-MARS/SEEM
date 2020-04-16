@@ -1,4 +1,4 @@
-﻿namespace Osu.Cof.Organon
+﻿namespace Osu.Cof.Ferm
 {
     public class OrganonWarnings
     {

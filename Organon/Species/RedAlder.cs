@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Species
 {
     internal class RedAlder
     {
@@ -191,7 +192,7 @@ namespace Osu.Cof.Organon
             TOTS[1, SVOL] = TOTS[1, SVOL] + V;
         }
 
-        public static void RAMORT(Stand stand, float RAAGE, float RAN, float[] PMK)
+        public static void RAMORT(OrganonStand stand, float RAAGE, float RAN, float[] PMK)
         {
             float RAMORT1 = 0.0F;
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)

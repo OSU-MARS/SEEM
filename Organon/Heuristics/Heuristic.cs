@@ -1,20 +1,21 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public abstract class Heuristic : RandomNumberConsumer
     {
         public float BestObjectiveFunction { get; protected set; }
-        public StandTrajectory BestTrajectory { get; protected set; }
-        public StandTrajectory CurrentTrajectory { get; protected set; }
+        public OrganonStandTrajectory BestTrajectory { get; protected set; }
+        public OrganonStandTrajectory CurrentTrajectory { get; protected set; }
         public Objective Objective { get; protected set; }
         public List<float> ObjectiveFunctionByIteration { get; protected set; }
 
-        protected Heuristic(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
         {
-            this.BestTrajectory = new StandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, objective.VolumeUnits);
-            this.CurrentTrajectory = new StandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, objective.VolumeUnits);
+            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, objective.VolumeUnits);
+            this.CurrentTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, objective.VolumeUnits);
             this.Objective = objective;
 
             this.BestTrajectory.Simulate();
@@ -29,7 +30,7 @@ namespace Osu.Cof.Organon.Heuristics
 
         public abstract string GetColumnName();
 
-        public float GetObjectiveFunction(StandTrajectory trajectory)
+        public float GetObjectiveFunction(OrganonStandTrajectory trajectory)
         {
             // find objective function value
             // Volume objective functions are in m³/ha or MBF/ac.

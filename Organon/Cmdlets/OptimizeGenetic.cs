@@ -1,8 +1,9 @@
-﻿using Osu.Cof.Organon.Heuristics;
+﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Management.Automation;
 
-namespace Osu.Cof.Organon.Cmdlets
+namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "Genetic")]
     public class OptimizeGenetic : OptimizeCmdlet

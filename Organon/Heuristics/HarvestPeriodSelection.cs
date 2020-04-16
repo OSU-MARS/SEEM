@@ -1,4 +1,4 @@
-﻿namespace Osu.Cof.Organon.Heuristics
+﻿namespace Osu.Cof.Ferm.Heuristics
 {
     public enum HarvestPeriodSelection
     {

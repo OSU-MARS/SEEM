@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     public class PspStand
     {
@@ -24,7 +25,7 @@ namespace Osu.Cof.Organon.Test
             reader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
-        public void AddIngrowth(int year, Stand stand, StandDensity standDensity)
+        public void AddIngrowth(int year, OrganonStand stand, OrganonStandDensity standDensity)
         {
             int firstMeasurementYear = this.GetFirstMeasurementYear();
             float fixedPlotExpansionFactor = this.GetTreesPerAcreExpansionFactor();
@@ -155,7 +156,7 @@ namespace Osu.Cof.Organon.Test
             stand.SetQuantiles();
 
             // estimate crown ratios
-            StandDensity standDensity = new StandDensity(stand, variant);
+            OrganonStandDensity standDensity = new OrganonStandDensity(stand, variant);
             treeIndex = 0;
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {

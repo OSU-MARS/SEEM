@@ -1,10 +1,11 @@
-﻿using System.IO;
+﻿using Osu.Cof.Ferm.Organon;
+using System.IO;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
-    internal class TestStandDensity : StandDensity
+    internal class TestStandDensity : OrganonStandDensity
     {
-        public TestStandDensity(Stand stand, OrganonVariant variant)
+        public TestStandDensity(OrganonStand stand, OrganonVariant variant)
             : base(stand, variant)
         {
         }

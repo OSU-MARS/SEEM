@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Organon.Data
+namespace Osu.Cof.Ferm.Data
 {
     public class NelderPlot
     {
@@ -39,19 +40,19 @@ namespace Osu.Cof.Organon.Data
             this.TreeID.Add(Int32.Parse(rowAsStrings[Constant.Nelder.ColumnIndex.Tree]));
         }
 
-        public Stand ToStand(float siteIndex)
+        public OrganonStand ToStand(float siteIndex)
         {
             return this.ToStand(siteIndex, this.TreeID.Count);
         }
 
-        public Stand ToStand(float siteIndex, int treesInStand)
+        public OrganonStand ToStand(float siteIndex, int treesInStand)
         {
             if (treesInStand > this.TreeID.Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(treesInStand));
             }
 
-            Stand stand = new Stand(20, treesInStand, siteIndex);
+            OrganonStand stand = new OrganonStand(20, treesInStand, siteIndex);
             for (int treeIndex = 0; treeIndex < treesInStand; ++treeIndex)
             {
                 stand.Dbh[treeIndex] = Constant.InchesPerCm * this.DbhInCentimeters[treeIndex];

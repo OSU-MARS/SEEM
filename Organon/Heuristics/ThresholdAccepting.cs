@@ -1,15 +1,16 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public class ThresholdAccepting : Heuristic
     {
         public int IterationsPerThreshold { get; set; }
         public List<float> Thresholds { get; private set; }
 
-        public ThresholdAccepting(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.IterationsPerThreshold = 5 * stand.TreeRecordCount;
@@ -49,7 +50,7 @@ namespace Osu.Cof.Organon.Heuristics
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             float treeIndexScalingFactor = ((float)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
 
-            StandTrajectory candidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             foreach (double threshold in this.Thresholds)
             {
                 for (int iteration = 0; iteration < this.IterationsPerThreshold; ++iteration)

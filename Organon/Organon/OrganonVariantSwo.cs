@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Organon
 {
     public class OrganonVariantSwo : OrganonVariant
     {
@@ -1118,7 +1118,7 @@ namespace Osu.Cof.Organon
             return predictedHeightInFeet;
         }
 
-        public override float GrowDiameter(FiaCode species, float dbhInInches, float crownRatio, float SITE, float SBA1, StandDensity densityBeforeGrowth)
+        public override float GrowDiameter(FiaCode species, float dbhInInches, float crownRatio, float SITE, float SBA1, OrganonStandDensity densityBeforeGrowth)
         {
             float B0;
             float B1; // DBH

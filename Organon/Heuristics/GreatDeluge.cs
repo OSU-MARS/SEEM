@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public class GreatDeluge : Heuristic
     {
@@ -11,7 +12,7 @@ namespace Osu.Cof.Organon.Heuristics
         public float RainRate { get; set; }
         public int StopAfter { get; set; }
 
-        public GreatDeluge(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.FinalWaterLevel = 100.0F;
@@ -57,7 +58,7 @@ namespace Osu.Cof.Organon.Heuristics
             int iterationsSinceBestObjectiveImproved = 0;
             float treeIndexScalingFactor = ((float)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
 
-            StandTrajectory candidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             for (double waterLevel = this.InitialWaterLevel; waterLevel < this.FinalWaterLevel; waterLevel += this.RainRate)
             {
                 int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());

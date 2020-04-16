@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     internal class TreeQuantiles
     {

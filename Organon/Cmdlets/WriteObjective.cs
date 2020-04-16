@@ -1,4 +1,4 @@
-﻿using Osu.Cof.Organon.Heuristics;
+﻿using Osu.Cof.Ferm.Heuristics;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -6,7 +6,7 @@ using System.IO;
 using System.Management.Automation;
 using System.Text;
 
-namespace Osu.Cof.Organon.Cmdlets
+namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Objective")]
     public class WriteObjective : Cmdlet

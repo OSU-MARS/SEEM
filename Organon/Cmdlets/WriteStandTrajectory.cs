@@ -1,8 +1,9 @@
-﻿using System.IO;
+﻿using Osu.Cof.Ferm.Organon;
+using System.IO;
 using System.Management.Automation;
 using System.Text;
 
-namespace Osu.Cof.Organon.Cmdlets
+namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Units")]
     public class WriteStandTrajectory : Cmdlet
@@ -13,7 +14,7 @@ namespace Osu.Cof.Organon.Cmdlets
 
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public StandTrajectory Trajectory { get; set; }
+        public OrganonStandTrajectory Trajectory { get; set; }
 
         protected override void ProcessRecord()
         {

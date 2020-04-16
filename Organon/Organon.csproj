@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>Osu.Cof.Organon</RootNamespace>
+    <RootNamespace>Osu.Cof.Ferm</RootNamespace>
     <Version>9.1.0</Version>
     <Company>Oregon State University</Company>
     <Authors>Center for Intensive Planted-forest Silviculture and Management, Algorithms, and Remote Sensing group</Authors>

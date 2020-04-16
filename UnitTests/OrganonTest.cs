@@ -1,10 +1,10 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     public class OrganonTest
     {
@@ -69,7 +69,7 @@ namespace Osu.Cof.Organon.Test
                     trees.Add(new TreeRecord(FiaCode.Salix, 0.1F, 1.0F, 0.5F));
                     break;
                 default:
-                    throw Cof.Organon.OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
+                    throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
 
             TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, trees.Count, TestConstant.Default.SiteIndex);
@@ -120,7 +120,7 @@ namespace Osu.Cof.Organon.Test
             using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
             for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)
             {
-                Organon.Grow(simulationStep, configuration, stand, CALIB, treatments);
+                OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB, treatments);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
                 stand.SetSdiMax(configuration);

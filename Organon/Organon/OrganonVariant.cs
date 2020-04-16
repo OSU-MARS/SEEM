@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Organon
 {
     public abstract class OrganonVariant
     {
@@ -108,7 +108,7 @@ namespace Osu.Cof.Organon
         /// <returns>Predicted height in feet.</param>
         public abstract float GetPredictedHeight(FiaCode species, float dbhInInches);
 
-        public abstract float GrowDiameter(FiaCode species, float dbhInInches, float crownRatio, float SITE, float SBAL1, StandDensity densityBeforeGrowth);
+        public abstract float GrowDiameter(FiaCode species, float dbhInInches, float crownRatio, float SITE, float SBAL1, OrganonStandDensity densityBeforeGrowth);
 
         /// <summary>
         /// 

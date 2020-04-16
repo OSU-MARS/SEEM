@@ -1,8 +1,9 @@
-﻿using Osu.Cof.Organon.Data;
+﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Data;
 using System;
 using System.Management.Automation;
 
-namespace Osu.Cof.Organon.Cmdlets
+namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommon.Get, "StandFromNelderPlot")]
     public class GetStandFromNelderPlot : Cmdlet
@@ -33,7 +34,7 @@ namespace Osu.Cof.Organon.Cmdlets
         protected override void ProcessRecord()
         {
             NelderPlot plot = new NelderPlot(this.Xlsx, this.XlsxSheet);
-            Stand stand;
+            OrganonStand stand;
             if (this.Trees.HasValue)
             {
                 stand = plot.ToStand(this.SiteIndex, this.Trees.Value);

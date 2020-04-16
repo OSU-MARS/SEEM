@@ -2,7 +2,7 @@
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm
 {
     internal static class AvxExtensions
     {

@@ -1,9 +1,10 @@
-﻿using Osu.Cof.Organon.Heuristics;
+﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
 
-namespace Osu.Cof.Organon.Cmdlets
+namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "ThresholdAccepting")]
     public class OptimizeThresholdAccepting : OptimizeCmdlet

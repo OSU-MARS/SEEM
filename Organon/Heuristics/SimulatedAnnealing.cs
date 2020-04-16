@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public class SimulatedAnnealing : Heuristic
     {
@@ -11,7 +12,7 @@ namespace Osu.Cof.Organon.Heuristics
         public float InitialTemperature { get; set; }
         public int IterationsPerTemperature { get; set; }
 
-        public SimulatedAnnealing(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        public SimulatedAnnealing(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.FinalTemperature = 100.0F;
@@ -65,7 +66,7 @@ namespace Osu.Cof.Organon.Heuristics
             float temperature = this.InitialTemperature;
             float treeIndexScalingFactor = ((float)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
 
-            StandTrajectory candidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             for (double currentTemperature = this.InitialTemperature; currentTemperature > this.FinalTemperature; currentTemperature *= this.Alpha)
             {
                 for (int iterationAtTemperature = 0; iterationAtTemperature < this.IterationsPerTemperature; ++iterationAtTemperature)

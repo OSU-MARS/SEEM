@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Species;
+using System;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Organon
 {
     internal class OrganonMortality
     {
         // ROUTINE FOR SETTING TREE MORTALITY
-        public static void MORTAL(OrganonConfiguration configuration, int simulationStep, Stand stand, 
-                                  StandDensity densityGrowth, float SI_1, float SI_2, OrganonTreatments treatments, ref float RAAGE)
+        public static void MORTAL(OrganonConfiguration configuration, int simulationStep, OrganonStand stand, 
+                                  OrganonStandDensity densityGrowth, float SI_1, float SI_2, OrganonTreatments treatments, ref float RAAGE)
         {
             float[] POW = new float[stand.TreeRecordCount];
             for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
@@ -353,7 +354,7 @@ namespace Osu.Cof.Organon
         ///    1.0: ADD GROWTH VALUES AND SUBTRACT MORTALITY VALUES
         /// </remarks>
         // BUGBUG: supports only to 98 DBH
-        public static void OldGro(OrganonVariant variant, Stand stand, float XIND, out float OG)
+        public static void OldGro(OrganonVariant variant, OrganonStand stand, float XIND, out float OG)
         {
             float[] HTCL = new float[100];
             float[] DCL = new float[100];

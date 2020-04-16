@@ -2,7 +2,7 @@
 using System;
 using System.Runtime.Intrinsics;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     [TestClass]
     public class Mathematics

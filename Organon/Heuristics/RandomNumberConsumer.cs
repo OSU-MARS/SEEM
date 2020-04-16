@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public class RandomNumberConsumer
     {

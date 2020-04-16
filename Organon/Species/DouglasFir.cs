@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Species
 {
     internal class DouglasFir
     {

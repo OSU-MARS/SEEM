@@ -1,13 +1,14 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Osu.Cof.Organon.Data;
-using Osu.Cof.Organon.Heuristics;
+using Osu.Cof.Ferm.Data;
+using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     [TestClass]
     public class PublicApi : OrganonTest
@@ -43,7 +44,7 @@ namespace Osu.Cof.Organon.Test
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
             NelderPlot nelder = new NelderPlot(plotFilePath, "1");
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
-            Stand stand = nelder.ToStand(130.0F, 10);
+            OrganonStand stand = nelder.ToStand(130.0F, 10);
 
             Objective netPresentValue = new Objective()
             {
@@ -127,14 +128,14 @@ namespace Osu.Cof.Organon.Test
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
                 OrganonTreatments treatments = new OrganonTreatments();
-                float crownCompetitionFactor = StandDensity.GetCrownCompetition(variant, stand);
+                float crownCompetitionFactor = OrganonStandDensity.GetCrownCompetition(variant, stand);
                 Assert.IsTrue(crownCompetitionFactor >= 0.0F);
                 Assert.IsTrue(crownCompetitionFactor <= TestConstant.Maximum.CrownCompetitionFactor);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // recalculate heights and crown ratios for all trees
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
-                Organon.SetIngrowthHeightAndCrownRatio(variant, stand, stand.TreeRecordCount, CALIB);
+                OrganonGrowth.SetIngrowthHeightAndCrownRatio(variant, stand, stand.TreeRecordCount, CALIB);
                 this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // run Organon growth simulation
@@ -151,7 +152,7 @@ namespace Osu.Cof.Organon.Test
                 stand.WriteTreesAsCsv(this.TestContext, variant, 0, false);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    Organon.Grow(simulationStep, configuration, stand, CALIB, treatments);
+                    OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB, treatments);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
                     stand.SetSdiMax(configuration);
                     this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
@@ -201,7 +202,7 @@ namespace Osu.Cof.Organon.Test
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
             NelderPlot nelder = new NelderPlot(plotFilePath, "1");
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
-            Stand stand = nelder.ToStand(130.0F, trees);
+            OrganonStand stand = nelder.ToStand(130.0F, trees);
 
             Objective netPresentValue = new Objective()
             {

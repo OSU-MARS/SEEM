@@ -1,14 +1,15 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public class Hero : Heuristic
     {
         public int Iterations { get; set; }
 
-        public Hero(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.Iterations = 100;
@@ -40,7 +41,7 @@ namespace Osu.Cof.Organon.Heuristics
 
             float currentObjectiveFunction = this.BestObjectiveFunction;
             float previousObjectiveFunction = this.BestObjectiveFunction;
-            StandTrajectory candidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             for (int neighborhoodEvaluation = 0; neighborhoodEvaluation < this.Iterations; ++neighborhoodEvaluation)
             {
                 for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)

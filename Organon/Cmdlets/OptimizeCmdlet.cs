@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Organon.Heuristics;
+﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,7 +7,7 @@ using System.Linq;
 using System.Management.Automation;
 using System.Threading.Tasks;
 
-namespace Osu.Cof.Organon.Cmdlets
+namespace Osu.Cof.Ferm.Cmdlets
 {
     public abstract class OptimizeCmdlet : Cmdlet
     {
@@ -26,7 +27,7 @@ namespace Osu.Cof.Organon.Cmdlets
         public int PlanningPeriods { get; set; }
 
         [Parameter(Mandatory = true)]
-        public Stand Stand { get; set; }
+        public OrganonStand Stand { get; set; }
         [Parameter]
         public TreeModel TreeModel { get; set; }
         [Parameter]

@@ -1,12 +1,13 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
-    public class TestStand : Stand
+    public class TestStand : OrganonStand
     {
         public int[] QuantileByInitialDbh { get; private set; }
         public Dictionary<FiaCode, List<int>> TreeIndicesBySpecies { get; private set; }
@@ -74,7 +75,7 @@ namespace Osu.Cof.Organon.Test
 
         public void WriteCompetitionAsCsv(string filePath, OrganonVariant variant, int year)
         {
-            StandDensity density = new StandDensity(this, variant);
+            OrganonStandDensity density = new OrganonStandDensity(this, variant);
 
             FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter writer = new StreamWriter(stream);

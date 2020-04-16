@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
     <AssemblyName>Organon.UnitTests</AssemblyName>
-    <RootNamespace>Osu.Cof.Organon.Test</RootNamespace>
+    <RootNamespace>Osu.Cof.Ferm.Test</RootNamespace>
     <Platforms>x64</Platforms>
   </PropertyGroup>
 

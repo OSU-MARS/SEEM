@@ -1,15 +1,16 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon.Heuristics
+namespace Osu.Cof.Ferm.Heuristics
 {
     public class RecordToRecordTravel : Heuristic
     {
         public float Deviation { get; set; }
         public int StopAfter { get; set; }
 
-        public RecordToRecordTravel(Stand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        public RecordToRecordTravel(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
             this.Deviation = 100.0F;
@@ -49,7 +50,7 @@ namespace Osu.Cof.Organon.Heuristics
             double minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - this.Deviation;
             float treeIndexScalingFactor = ((float)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
 
-            StandTrajectory candidateTrajectory = new StandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             while (iterationsSinceBestObjectiveImproved < this.StopAfter)
             {
                 int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());

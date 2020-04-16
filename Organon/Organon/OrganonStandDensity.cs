@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Organon
 {
-    public class StandDensity
+    public class OrganonStandDensity
     {
         /// <summary>
         /// Basal area in square feet per acre.
@@ -33,7 +33,7 @@ namespace Osu.Cof.Organon
 
         public float TreesPerAcre { get; set; }
 
-        public StandDensity(StandDensity other)
+        public OrganonStandDensity(OrganonStandDensity other)
         {
             this.BasalAreaPerAcre = other.BasalAreaPerAcre;
             this.CrownCompetitionFactor = other.CrownCompetitionFactor;
@@ -52,7 +52,7 @@ namespace Osu.Cof.Organon
         /// <remarks>
         /// Trees of DBH larger than 100 inches are treated as if their diameter was 100 inches.
         /// </remarks>
-        public StandDensity(Stand stand, OrganonVariant variant)
+        public OrganonStandDensity(OrganonStand stand, OrganonVariant variant)
         {
             this.BasalAreaPerAcre = 0.0F;
             this.CrownCompetitionFactor = 0.0F;
@@ -133,7 +133,7 @@ namespace Osu.Cof.Organon
             return this.SmallTreeBasalAreaLarger[smallTreeIndex];
         }
 
-        public static float GetCrownCompetition(OrganonVariant variant, Stand stand)
+        public static float GetCrownCompetition(OrganonVariant variant, OrganonStand stand)
         {
             float[] crownCompetitionFactorByHeight = new float[41];
             crownCompetitionFactorByHeight[40] = stand.Height[0];
@@ -160,7 +160,7 @@ namespace Osu.Cof.Organon
                 float MCW = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
                 float LCW = variant.GetLargestCrownWidth(species, MCW, crownRatio, dbhInInches, heightInFeet);
                 float HLCW = variant.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
-                StandDensity.GetCrownCompetitionByHeight(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, crownCompetitionFactorByHeight);
+                OrganonStandDensity.GetCrownCompetitionByHeight(variant, species, HLCW, LCW, heightInFeet, dbhInInches, HCB, EXPFAC, crownCompetitionFactorByHeight);
             }
             float crownCompetitionFactor = crownCompetitionFactorByHeight[0];
             Debug.Assert(crownCompetitionFactor >= 0.0F);
@@ -202,7 +202,7 @@ namespace Osu.Cof.Organon
         /// <param name="variant">Organon variant.</param>
         /// <param name="stand">Stand data.</param>
         /// <returns>Array indicating crown closure at height relative to tallest tree in stand with last value being height of tallest tree.</returns>
-        public static float[] GetCrownCompetitionByHeight(OrganonVariant variant, Stand stand)
+        public static float[] GetCrownCompetitionByHeight(OrganonVariant variant, OrganonStand stand)
         {
             float[] crownClosureByRelativeHeight = new float[41];
             crownClosureByRelativeHeight[40] = stand.Height[0];

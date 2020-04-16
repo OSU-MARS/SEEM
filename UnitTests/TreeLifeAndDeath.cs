@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     public class TreeLifeAndDeath
     {
@@ -15,7 +16,7 @@ namespace Osu.Cof.Organon.Test
             this.TotalHeightGrowthInFeet = new float[treeRecordCount];
         }
 
-        public void AccumulateGrowthAndMortality(Stand stand)
+        public void AccumulateGrowthAndMortality(OrganonStand stand)
         {
             int treeRecords = this.TotalDbhGrowthInInches.Length;
             if (stand.TreeRecordCount != treeRecords)

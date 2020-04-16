@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     internal static class FiaCodeExtensions
     {

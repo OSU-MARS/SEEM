@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Species;
+using System;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Organon
 {
-    public class Stand : Trees
+    public class OrganonStand : Trees
     {
         // STOR[2]
         public float A1 { get; private set; }
@@ -40,7 +41,7 @@ namespace Osu.Cof.Organon
 
         public bool[] TreeHeightWarning { get; private set; }
 
-        public Stand(int ageInYears, int treeRecordCount, float primarySiteIndex)
+        public OrganonStand(int ageInYears, int treeRecordCount, float primarySiteIndex)
             : base(treeRecordCount)
         {
             this.AgeInYears = ageInYears;
@@ -53,7 +54,7 @@ namespace Osu.Cof.Organon
             this.Warnings = new OrganonWarnings();
         }
 
-        public Stand(Stand other)
+        public OrganonStand(OrganonStand other)
             : this(other.AgeInYears, other.TreeRecordCount, other.SiteIndex)
         {
             this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
@@ -73,9 +74,9 @@ namespace Osu.Cof.Organon
             this.Warnings = new OrganonWarnings(other.Warnings);
         }
 
-        public Stand Clone()
+        public OrganonStand Clone()
         {
-            return new Stand(this);
+            return new OrganonStand(this);
         }
 
         public void CopyTreeGrowth(Trees trees)

@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm
 {
     internal class XlsxReader
     {

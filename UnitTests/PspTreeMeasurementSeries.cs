@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Organon.Test
+namespace Osu.Cof.Ferm.Test
 {
     public class PspTreeMeasurementSeries
     {
@@ -16,7 +17,7 @@ namespace Osu.Cof.Organon.Test
             this.Tag = tag;
         }
 
-        public float EstimateInitialCrownRatio(StandDensity density)
+        public float EstimateInitialCrownRatio(OrganonStandDensity density)
         {
             float initialDiameterInInches = this.GetInitialDiameter() / Constant.CmPerInch;
             float crownCompetition = density.GetCrownCompetitionFactorLarger(initialDiameterInInches);

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Osu.Cof.Organon
+namespace Osu.Cof.Ferm.Species
 {
     // Subroutines required for the calculation of
     // height growth using the western hemlock top height curves of
