@@ -13,7 +13,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
-            this.IterationsPerThreshold = 5 * stand.TreeRecordCount;
+            this.IterationsPerThreshold = 5 * stand.GetTreeRecordCount();
             this.Thresholds = new List<float>() { 0.90F, 0.92F, 0.95F, 0.97F, 0.99F, 1.0F };
 
             this.ObjectiveFunctionByIteration = new List<float>(this.Thresholds.Count * this.IterationsPerThreshold)
@@ -48,7 +48,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             float currentObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
-            float treeIndexScalingFactor = ((float)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
+            float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             foreach (double threshold in this.Thresholds)
@@ -56,7 +56,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 for (int iteration = 0; iteration < this.IterationsPerThreshold; ++iteration)
                 {
                     int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                    int currentHarvestPeriod = this.CurrentTrajectory.IndividualTreeSelection[treeIndex];
+                    int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
                     int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
                     //int candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
                     //while (candidateHarvestPeriod == currentHarvestPeriod)
@@ -65,7 +65,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     //}
                     Debug.Assert(candidateHarvestPeriod >= 0);
 
-                    candidateTrajectory.IndividualTreeSelection[treeIndex] = candidateHarvestPeriod;
+                    candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
                     candidateTrajectory.Simulate();
 
                     float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);

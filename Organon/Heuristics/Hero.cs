@@ -42,12 +42,13 @@ namespace Osu.Cof.Ferm.Heuristics
             float currentObjectiveFunction = this.BestObjectiveFunction;
             float previousObjectiveFunction = this.BestObjectiveFunction;
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            for (int neighborhoodEvaluation = 0; neighborhoodEvaluation < this.Iterations; ++neighborhoodEvaluation)
+            int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+            for (int iteration = 0; iteration < this.Iterations; ++iteration)
             {
-                for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
                     // evaluate other cut option
-                    int currentHarvestPeriod = this.CurrentTrajectory.IndividualTreeSelection[treeIndex];
+                    int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
                     int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
                     candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
                     candidateTrajectory.Simulate();

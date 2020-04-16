@@ -56,13 +56,13 @@ namespace Osu.Cof.Ferm.Heuristics
             float currentObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
-            float treeIndexScalingFactor = ((float)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
+            float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             for (double waterLevel = this.InitialWaterLevel; waterLevel < this.FinalWaterLevel; waterLevel += this.RainRate)
             {
                 int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                int currentHarvestPeriod = this.CurrentTrajectory.IndividualTreeSelection[treeIndex];
+                int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
                 int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
                 //int candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
                 //while (candidateHarvestPeriod == currentHarvestPeriod)

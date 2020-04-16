@@ -10,17 +10,6 @@ namespace Osu.Cof.Ferm.Organon
         public static void MORTAL(OrganonConfiguration configuration, int simulationStep, OrganonStand stand, 
                                   OrganonStandDensity densityGrowth, float SI_1, float SI_2, OrganonTreatments treatments, ref float RAAGE)
         {
-            float[] POW = new float[stand.TreeRecordCount];
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                POW[treeIndex] = 1.0F;
-                FiaCode species = stand.Species[treeIndex];
-                if ((configuration.Variant.TreeModel == TreeModel.OrganonRap) && (species != FiaCode.AlnusRubra))
-                {
-                    POW[treeIndex] = 0.2F;
-                }
-            }
-
             float A3;
             if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
             {
@@ -43,16 +32,19 @@ namespace Osu.Cof.Ferm.Organon
             float standBasalArea = 0.0F;
             float standTreesPerAcre = 0.0F;
             float alnusRubraExpansionFactor = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                standBasalArea += stand.GetBasalArea(treeIndex);
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                standTreesPerAcre += expansionFactor;
-
-                FiaCode species = stand.Species[treeIndex];
-                if ((species == FiaCode.AlnusRubra) && (configuration.Variant.TreeModel != TreeModel.OrganonRap))
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    alnusRubraExpansionFactor += expansionFactor;
+                    standBasalArea += treesOfSpecies.GetBasalArea(treeIndex);
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    standTreesPerAcre += expansionFactor;
+
+                    if ((treesOfSpecies.Species == FiaCode.AlnusRubra) && (configuration.Variant.TreeModel != TreeModel.OrganonRap))
+                    {
+                        // TODO: use species sum
+                        alnusRubraExpansionFactor += expansionFactor;
+                    }
                 }
             }
 
@@ -73,110 +65,94 @@ namespace Osu.Cof.Ferm.Organon
             OldGro(configuration.Variant, stand, 0.0F, out float OG1);
 
             // INDIVIDUAL TREE MORTALITY EQUATIONS
-            float[] PMK = new float[stand.TreeRecordCount];
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
+                FiaCode species = treesOfSpecies.Species;
+                float[] PMK = new float[treesOfSpecies.Count];
+                float[] POW = new float[treesOfSpecies.Count];
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    continue;
-                }
-                FiaCode species = stand.Species[treeIndex];
-                float DBH = stand.Dbh[treeIndex];
-                float SBAL1 = densityGrowth.GetBasalAreaLarger(DBH);
-                float CR = stand.CrownRatio[treeIndex];
-                configuration.Variant.GetMortalityCoefficients(species, DBH, CR, SI_1, SI_2, SBAL1, OG1, out POW[treeIndex], out PMK[treeIndex]);
-                if (treatments.HasFertilization)
-                {
-                    float FERTADJ = PM_FERT(species, configuration.Variant.TreeModel, simulationStep, treatments);
-                    PMK[treeIndex] += FERTADJ;
-                }
-            }
-
-            if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
-            {
-                if (RAAGE >= 55.0)
-                {
-                    RedAlder.RAMORT(stand, RAAGE, alnusRubraExpansionFactor, PMK);
-                }
-                RAAGE += Constant.DefaultTimeStepInYears;
-            }
-
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                float CR = stand.CrownRatio[treeIndex];
-                float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
-                float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
-                float PM = 1.0F - PS * CRADJ;
-
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                NA += expansionFactor * (1.0F - PM);
-                float dbhAfterGrowth = stand.Dbh[treeIndex] + stand.DbhGrowth[treeIndex];
-                BAA += Constant.ForestersEnglish * dbhAfterGrowth * dbhAfterGrowth * expansionFactor * (1.0F - PM);
-            }
-
-            // DETERMINE IF ADDITIONAL MORTALITY MUST BE TAKEN
-            if (configuration.AdditionalMortality)
-            {
-                float QMDA = MathF.Sqrt(BAA / (Constant.ForestersEnglish * NA));
-                float RDA = NA / MathV.Exp(stand.A1 / stand.A2 - MathV.Ln(QMDA) / stand.A2);
-                if (simulationStep == 0)
-                {
-                    // INITALIZATIONS FOR FIRST GROWTH CYCLE
-                    if (RD >= 1.0)
+                    if (treesOfSpecies.LiveExpansionFactor[treeIndex] <= 0.0F)
                     {
-                        if (RDA > RD)
-                        {
-                            stand.A1MAX = MathV.Ln(SQMDA) + stand.A2 * MathV.Ln(standTreesPerAcre);
-                        }
-                        else
-                        {
-                            stand.A1MAX = MathV.Ln(QMDA) + stand.A2 * MathV.Ln(NA);
-                        }
-                        if (stand.A1MAX < stand.A1)
-                        {
-                            stand.A1MAX = stand.A1;
-                        }
+                        continue;
                     }
-                    else
+                    float DBH = treesOfSpecies.Dbh[treeIndex];
+                    float SBAL1 = densityGrowth.GetBasalAreaLarger(DBH);
+                    float CR = treesOfSpecies.CrownRatio[treeIndex];
+                    configuration.Variant.GetMortalityCoefficients(species, DBH, CR, SI_1, SI_2, SBAL1, OG1, out POW[treeIndex], out PMK[treeIndex]);
+                    if (treatments.HasFertilization)
                     {
-                        if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
+                        float FERTADJ = PM_FERT(species, configuration.Variant.TreeModel, simulationStep, treatments);
+                        PMK[treeIndex] += FERTADJ;
+                    }
+                }
+
+                if ((species == FiaCode.AlnusRubra) && (configuration.Variant.TreeModel != TreeModel.OrganonRap))
+                {
+                    if (RAAGE >= 55.0)
+                    {
+                        RedAlder.RAMORT(treesOfSpecies, RAAGE, alnusRubraExpansionFactor, PMK);
+                    }
+                    RAAGE += Constant.DefaultTimeStepInYears;
+                }
+
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    float CR = treesOfSpecies.CrownRatio[treeIndex];
+                    float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
+                    float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
+                    float PS = POW[treeIndex] == 1.0 ? 1.0F - XPM : MathV.Pow(1.0F - XPM, POW[treeIndex]); // RAP is the only variant using POW != 1
+                    float PM = 1.0F - PS * CRADJ;
+
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    NA += expansionFactor * (1.0F - PM);
+                    float dbhAfterGrowth = treesOfSpecies.Dbh[treeIndex] + treesOfSpecies.DbhGrowth[treeIndex];
+                    BAA += Constant.ForestersEnglish * dbhAfterGrowth * dbhAfterGrowth * expansionFactor * (1.0F - PM);
+                }
+
+                // DETERMINE IF ADDITIONAL MORTALITY MUST BE TAKEN
+                if (configuration.AdditionalMortality)
+                {
+                    float QMDA = MathF.Sqrt(BAA / (Constant.ForestersEnglish * NA));
+                    float RDA = NA / MathV.Exp(stand.A1 / stand.A2 - MathV.Ln(QMDA) / stand.A2);
+                    if (simulationStep == 0)
+                    {
+                        // INITALIZATIONS FOR FIRST GROWTH CYCLE
+                        if (RD >= 1.0)
                         {
-                            if (RD > RDCC)
+                            if (RDA > RD)
                             {
-                                float XA3 = -1.0F / A3;
-                                stand.NO = standTreesPerAcre * MathF.Pow(MathV.Ln(RD) / MathV.Ln(RDCC), XA3);
+                                stand.A1MAX = MathV.Ln(SQMDA) + stand.A2 * MathV.Ln(standTreesPerAcre);
                             }
                             else
-                            {
-                                stand.NO = configuration.PDEN;
-                            }
-                        }
-                        // INITIALIZATIONS FOR SUBSEQUENT GROWTH CYCLES
-                        else
-                        {
-                            if (stand.RD0 >= 1.0F)
                             {
                                 stand.A1MAX = MathV.Ln(QMDA) + stand.A2 * MathV.Ln(NA);
-                                if (stand.A1MAX < stand.A1)
+                            }
+                            if (stand.A1MAX < stand.A1)
+                            {
+                                stand.A1MAX = stand.A1;
+                            }
+                        }
+                        else
+                        {
+                            if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
+                            {
+                                if (RD > RDCC)
                                 {
-                                    stand.A1MAX = stand.A1;
+                                    float XA3 = -1.0F / A3;
+                                    stand.NO = standTreesPerAcre * MathF.Pow(MathV.Ln(RD) / MathV.Ln(RDCC), XA3);
+                                }
+                                else
+                                {
+                                    stand.NO = configuration.PDEN;
                                 }
                             }
+                            // INITIALIZATIONS FOR SUBSEQUENT GROWTH CYCLES
                             else
                             {
-                                int IND;
-                                if ((RD >= 1.0F) && (stand.NO <= 0.0F))
+                                if (stand.RD0 >= 1.0F)
                                 {
-                                    if (RDA > RD)
-                                    {
-                                        stand.A1MAX = MathV.Ln(SQMDA) + stand.A2 * MathV.Ln(standTreesPerAcre);
-                                    }
-                                    else
-                                    {
-                                        stand.A1MAX = MathV.Ln(QMDA) + stand.A2 * MathV.Ln(NA);
-                                    }
-                                    IND = 1;
+                                    stand.A1MAX = MathV.Ln(QMDA) + stand.A2 * MathV.Ln(NA);
                                     if (stand.A1MAX < stand.A1)
                                     {
                                         stand.A1MAX = stand.A1;
@@ -184,128 +160,149 @@ namespace Osu.Cof.Ferm.Organon
                                 }
                                 else
                                 {
-                                    IND = 0;
-                                    if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
+                                    int IND;
+                                    if ((RD >= 1.0F) && (stand.NO <= 0.0F))
                                     {
-                                        if ((RD > RDCC) && (stand.NO <= 0.0F))
+                                        if (RDA > RD)
                                         {
-                                            float XA3 = -1.0F / A3;
-                                            stand.NO = standTreesPerAcre * MathF.Pow(MathV.Ln(RD) / MathV.Ln(RDCC), XA3);
+                                            stand.A1MAX = MathV.Ln(SQMDA) + stand.A2 * MathV.Ln(standTreesPerAcre);
                                         }
                                         else
                                         {
-                                            stand.NO = configuration.PDEN;
+                                            stand.A1MAX = MathV.Ln(QMDA) + stand.A2 * MathV.Ln(NA);
                                         }
-                                    }
-                                }
-
-                                // COMPUTATION OF ADDITIONAL MORTALITY IF NECESSARY
-                                float QMDP;
-                                if ((IND == 0) && (stand.NO > 0.0F))
-                                {
-                                    if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
-                                    {
-                                        QMDP = QUAD1(NA, stand.NO, RDCC, stand.A1);
+                                        IND = 1;
+                                        if (stand.A1MAX < stand.A1)
+                                        {
+                                            stand.A1MAX = stand.A1;
+                                        }
                                     }
                                     else
                                     {
-                                        QMDP = QUAD2(NA, stand.NO, stand.A1);
-                                    }
-                                }
-                                else
-                                {
-                                    QMDP = MathV.Exp(stand.A1MAX - stand.A2 * MathV.Ln(NA));
-                                }
-
-                                if ((RD <= RDCC) || (QMDP > QMDA))
-                                {
-                                    // NO ADDITIONAL MORTALITY NECESSARY
-                                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-                                    {
-                                        float CR = stand.CrownRatio[treeIndex];
-                                        float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                                        float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
-                                        float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
-                                        float PM = 1.0F - PS * CRADJ;
-                                        Debug.Assert(PM >= 0.0F);
-                                        Debug.Assert(PM <= 1.0F);
-
-                                        stand.DeadExpansionFactor[treeIndex] = PM * stand.LiveExpansionFactor[treeIndex];
-                                        stand.LiveExpansionFactor[treeIndex] -= stand.DeadExpansionFactor[treeIndex];
-                                    }
-                                }
-                                else
-                                {
-                                    // ADJUSTMENT TO MORTALITY NECESSARY
-                                    float KR1 = 0.0F;
-                                    for (int KK = 0; KK < 7; ++KK)
-                                    {
-                                        float NK = 10.0F / MathV.Exp10(KK);
-                                    kr1: KR1 += NK;
-                                        float NAA = 0.0F;
-                                        float BAAA = 0.0F;
-                                        for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                                        IND = 0;
+                                        if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
                                         {
-                                            if (stand.LiveExpansionFactor[treeIndex] < 0.001F)
+                                            if ((RD > RDCC) && (stand.NO <= 0.0F))
                                             {
-                                                continue;
-                                            }
-
-                                            float CR = stand.CrownRatio[treeIndex];
-                                            float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                                            float XPM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[treeIndex])));
-                                            float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
-                                            float PM = 1.0F - PS * CRADJ;
-
-                                            float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                                            NAA += expansionFactor * (1.0F - PM);
-                                            BAAA += Constant.ForestersEnglish * MathV.Pow(stand.Dbh[treeIndex] + stand.DbhGrowth[treeIndex], 2.0F) * expansionFactor * (1.0F - PM);
-                                        }
-                                        QMDA = MathF.Sqrt(BAAA / (Constant.ForestersEnglish * NAA));
-                                        if (IND == 0)
-                                        {
-                                            if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
-                                            {
-                                                QMDP = QUAD1(NAA, stand.NO, RDCC, stand.A1);
+                                                float XA3 = -1.0F / A3;
+                                                stand.NO = standTreesPerAcre * MathF.Pow(MathV.Ln(RD) / MathV.Ln(RDCC), XA3);
                                             }
                                             else
                                             {
-                                                QMDP = QUAD2(NAA, stand.NO, stand.A1);
+                                                stand.NO = configuration.PDEN;
                                             }
-                                        }
-                                        else
-                                        {
-                                            QMDP = MathV.Exp(stand.A1MAX - stand.A2 * MathV.Ln(NAA));
-                                        }
-                                        if (QMDP >= QMDA)
-                                        {
-                                            KR1 -= NK;
-                                        }
-                                        else
-                                        {
-                                            goto kr1;
                                         }
                                     }
 
-                                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                                    // COMPUTATION OF ADDITIONAL MORTALITY IF NECESSARY
+                                    float QMDP;
+                                    if ((IND == 0) && (stand.NO > 0.0F))
                                     {
-                                        if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
+                                        if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
                                         {
-                                            stand.DeadExpansionFactor[treeIndex] = 0.0F;
-                                            stand.LiveExpansionFactor[treeIndex] = 0.0F;
+                                            QMDP = QUAD1(NA, stand.NO, RDCC, stand.A1);
                                         }
                                         else
                                         {
-                                            float CR = stand.CrownRatio[treeIndex];
+                                            QMDP = QUAD2(NA, stand.NO, stand.A1);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        QMDP = MathV.Exp(stand.A1MAX - stand.A2 * MathV.Ln(NA));
+                                    }
+
+                                    if ((RD <= RDCC) || (QMDP > QMDA))
+                                    {
+                                        // NO ADDITIONAL MORTALITY NECESSARY
+                                        for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                                        {
+                                            float CR = treesOfSpecies.CrownRatio[treeIndex];
                                             float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                                            float XPM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[treeIndex])));
+                                            float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
                                             float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
                                             float PM = 1.0F - PS * CRADJ;
                                             Debug.Assert(PM >= 0.0F);
                                             Debug.Assert(PM <= 1.0F);
 
-                                            stand.DeadExpansionFactor[treeIndex] = PM * stand.LiveExpansionFactor[treeIndex];
-                                            stand.LiveExpansionFactor[treeIndex] -= stand.DeadExpansionFactor[treeIndex];
+                                            treesOfSpecies.DeadExpansionFactor[treeIndex] = PM * treesOfSpecies.LiveExpansionFactor[treeIndex];
+                                            treesOfSpecies.LiveExpansionFactor[treeIndex] -= treesOfSpecies.DeadExpansionFactor[treeIndex];
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // ADJUSTMENT TO MORTALITY NECESSARY
+                                        float KR1 = 0.0F;
+                                        for (int KK = 0; KK < 7; ++KK)
+                                        {
+                                            float NK = 10.0F / MathV.Exp10(KK);
+                                        kr1: KR1 += NK;
+                                            float NAA = 0.0F;
+                                            float BAAA = 0.0F;
+                                            for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                                            {
+                                                if (treesOfSpecies.LiveExpansionFactor[treeIndex] < 0.001F)
+                                                {
+                                                    continue;
+                                                }
+
+                                                float CR = treesOfSpecies.CrownRatio[treeIndex];
+                                                float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
+                                                float XPM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[treeIndex])));
+                                                float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
+                                                float PM = 1.0F - PS * CRADJ;
+
+                                                float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                                                NAA += expansionFactor * (1.0F - PM);
+                                                
+                                                BAAA += treesOfSpecies.GetBasalArea(treeIndex) * (1.0F - PM);
+                                            }
+                                            QMDA = MathF.Sqrt(BAAA / (Constant.ForestersEnglish * NAA));
+                                            if (IND == 0)
+                                            {
+                                                if (configuration.Variant.TreeModel != TreeModel.OrganonRap)
+                                                {
+                                                    QMDP = QUAD1(NAA, stand.NO, RDCC, stand.A1);
+                                                }
+                                                else
+                                                {
+                                                    QMDP = QUAD2(NAA, stand.NO, stand.A1);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                QMDP = MathV.Exp(stand.A1MAX - stand.A2 * MathV.Ln(NAA));
+                                            }
+                                            if (QMDP >= QMDA)
+                                            {
+                                                KR1 -= NK;
+                                            }
+                                            else
+                                            {
+                                                goto kr1;
+                                            }
+                                        }
+
+                                        for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                                        {
+                                            if (treesOfSpecies.LiveExpansionFactor[treeIndex] <= 0.0F)
+                                            {
+                                                treesOfSpecies.DeadExpansionFactor[treeIndex] = 0.0F;
+                                                treesOfSpecies.LiveExpansionFactor[treeIndex] = 0.0F;
+                                            }
+                                            else
+                                            {
+                                                float CR = treesOfSpecies.CrownRatio[treeIndex];
+                                                float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
+                                                float XPM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[treeIndex])));
+                                                float PS = MathV.Pow(1.0F - XPM, POW[treeIndex]);
+                                                float PM = 1.0F - PS * CRADJ;
+                                                Debug.Assert(PM >= 0.0F);
+                                                Debug.Assert(PM <= 1.0F);
+
+                                                treesOfSpecies.DeadExpansionFactor[treeIndex] = PM * treesOfSpecies.LiveExpansionFactor[treeIndex];
+                                                treesOfSpecies.LiveExpansionFactor[treeIndex] -= treesOfSpecies.DeadExpansionFactor[treeIndex];
+                                            }
                                         }
                                     }
                                 }
@@ -313,29 +310,30 @@ namespace Osu.Cof.Ferm.Organon
                         }
                     }
                 }
-            }
-            else
-            {
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                else
                 {
-                    float CR = stand.CrownRatio[treeIndex];
-                    float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
-                    float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
-                    float PS = MathF.Pow(1.0F - XPM, POW[treeIndex]);
-                    float PM = 1.0F - PS * CRADJ;
-                    Debug.Assert(PM >= 0.0F);
-                    Debug.Assert(PM <= 1.0F);
+                    for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                    {
+                        // TODO: avoid recalculation of PS?
+                        float CR = treesOfSpecies.CrownRatio[treeIndex];
+                        float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(CR);
+                        float XPM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
+                        float PS = POW[treeIndex] == 1.0 ? 1.0F - XPM : MathV.Pow(1.0F - XPM, POW[treeIndex]); // RAP is the only variant using POW != 1
+                        float PM = 1.0F - PS * CRADJ;
+                        Debug.Assert(PM >= 0.0F);
+                        Debug.Assert(PM <= 1.0F);
 
-                    stand.DeadExpansionFactor[treeIndex] = PM * stand.LiveExpansionFactor[treeIndex];
-                    stand.LiveExpansionFactor[treeIndex] -= stand.DeadExpansionFactor[treeIndex];
+                        treesOfSpecies.DeadExpansionFactor[treeIndex] = PM * treesOfSpecies.LiveExpansionFactor[treeIndex];
+                        treesOfSpecies.LiveExpansionFactor[treeIndex] -= treesOfSpecies.DeadExpansionFactor[treeIndex];
+                    }
                 }
-            }
 
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
-            {
-                if (stand.LiveExpansionFactor[treeIndex] < 0.00001F)
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    stand.LiveExpansionFactor[treeIndex] = 0.0F;
+                    if (treesOfSpecies.LiveExpansionFactor[treeIndex] < 0.00001F)
+                    {
+                        treesOfSpecies.LiveExpansionFactor[treeIndex] = 0.0F;
+                    }
                 }
             }
         }
@@ -366,13 +364,17 @@ namespace Osu.Cof.Ferm.Organon
                 TRCL[I] = 0.0F;
             }
 
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                if (variant.IsBigSixSpecies(stand.Species[treeIndex]))
+                if (variant.IsBigSixSpecies(treesOfSpecies.Species) == false)
                 {
-                    float heightInFeet = stand.Height[treeIndex] + XIND * stand.HeightGrowth[treeIndex];
-                    float dbhInInches = stand.Dbh[treeIndex] + XIND * stand.DbhGrowth[treeIndex];
-                    float expansionFactor = stand.LiveExpansionFactor[treeIndex] - XIND * stand.DeadExpansionFactor[treeIndex];
+                    continue;
+                }
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    float heightInFeet = treesOfSpecies.Height[treeIndex] + XIND * treesOfSpecies.HeightGrowth[treeIndex];
+                    float dbhInInches = treesOfSpecies.Dbh[treeIndex] + XIND * treesOfSpecies.DbhGrowth[treeIndex];
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex] - XIND * treesOfSpecies.DeadExpansionFactor[treeIndex];
                     Debug.Assert(expansionFactor >= 0.0F);
                     Debug.Assert(expansionFactor <= 1000.0F);
 

@@ -13,8 +13,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
             :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
         {
-            this.Iterations = stand.TreeRecordCount;
-            this.Tenure = (int)(0.3 * stand.TreeRecordCount);
+            this.Iterations = stand.GetTreeRecordCount();
+            this.Tenure = (int)(0.3 * this.Iterations);
 
             this.ObjectiveFunctionByIteration = new List<float>(1000)
             {
@@ -45,7 +45,8 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            int[,] remainingTabuTenures = new int[this.TreeRecordCount, this.CurrentTrajectory.HarvestPeriods];
+            int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+            int[,] remainingTabuTenures = new int[initialTreeRecordCount, this.CurrentTrajectory.HarvestPeriods];
             float currentObjectiveFunction = this.BestObjectiveFunction;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
@@ -55,15 +56,15 @@ namespace Osu.Cof.Ferm.Heuristics
             for (int neighborhoodEvaluation = 0; neighborhoodEvaluation < this.Iterations; ++neighborhoodEvaluation)
             {
                 // evaluate potential moves in neighborhood
-                float bestCandidateObjectiveFunction = float.MinValue;
+                float bestCandidateObjectiveFunction = Single.MinValue;
                 int bestTreeIndex = -1;
                 int bestHarvestPeriod = -1;
-                float bestNonTabuCandidateObjectiveFunction = float.MinValue;
+                float bestNonTabuCandidateObjectiveFunction = Single.MinValue;
                 int bestNonTabuUnitIndex = -1;
                 int bestNonTabuHarvestPeriod = -1;
-                for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
-                    int currentHarvestPeriod = this.CurrentTrajectory.IndividualTreeSelection[treeIndex];
+                    int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
                     // for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.CurrentTrajectory.HarvestPeriods; ++harvestPeriodIndex)
                     for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.CurrentTrajectory.HarvestPeriods; harvestPeriodIndex += this.CurrentTrajectory.HarvestPeriods - 1)
                     {

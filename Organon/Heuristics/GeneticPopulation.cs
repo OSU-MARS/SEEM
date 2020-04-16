@@ -12,7 +12,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public float[] IndividualFitness { get; private set; }
         public int[][] IndividualTreeSelections { get; private set; }
 
-        public GeneticPopulation(int populationSize, int harvestUnits, int harvestPeriods, float reservedPopulationProportion)
+        public GeneticPopulation(int populationSize, int harvestPeriods, float reservedPopulationProportion, int treeCapacity)
         {
             this.matingDistributionFunction = new float[populationSize];
             this.HarvestVolumesByPeriod = new float[populationSize][];
@@ -23,30 +23,25 @@ namespace Osu.Cof.Ferm.Heuristics
             for (int individualIndex = 0; individualIndex < populationSize; ++individualIndex)
             {
                 this.HarvestVolumesByPeriod[individualIndex] = new float[harvestPeriods];
-                this.IndividualTreeSelections[individualIndex] = new int[harvestUnits];
+                this.IndividualTreeSelections[individualIndex] = new int[treeCapacity];
             }
         }
 
         public GeneticPopulation(GeneticPopulation other)
-            : this(other.Size, other.HarvestUnits, other.HarvestPeriods, other.reservedPopulationProportion)
+            : this(other.Size, other.HarvestPeriods, other.reservedPopulationProportion, other.IndividualTreeSelections[0].Length)
         {
             Array.Copy(other.matingDistributionFunction, 0, this.matingDistributionFunction, 0, this.Size);
             Array.Copy(other.IndividualFitness, 0, this.IndividualFitness, 0, this.Size);
             for (int individualIndex = 0; individualIndex < other.Size; ++individualIndex)
             {
-                Array.Copy(other.HarvestVolumesByPeriod[individualIndex], 0, this.HarvestVolumesByPeriod[individualIndex], 0, this.HarvestPeriods);
-                Array.Copy(other.IndividualTreeSelections[individualIndex], 0, this.IndividualTreeSelections[individualIndex], 0, this.HarvestUnits);
+                other.HarvestVolumesByPeriod[individualIndex].CopyToExact(this.HarvestVolumesByPeriod[individualIndex]);
+                other.IndividualTreeSelections[individualIndex].CopyToExact(this.IndividualTreeSelections[individualIndex]);
             }
         }
 
-        public int HarvestPeriods
+        private int HarvestPeriods
         {
             get { return this.HarvestVolumesByPeriod[0].Length; }
-        }
-
-        public int HarvestUnits
-        {
-            get { return this.IndividualTreeSelections[0].Length; }
         }
 
         public int Size
@@ -93,9 +88,9 @@ namespace Osu.Cof.Ferm.Heuristics
                 for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
                 {
                     int[] schedule = this.IndividualTreeSelections[individualIndex];
-                    for (int unitIndex = 0; unitIndex < this.HarvestUnits; ++unitIndex)
+                    for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
                     {
-                        schedule[unitIndex] = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
+                        schedule[treeIndex] = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
                     }
                 }
             }
@@ -105,10 +100,10 @@ namespace Osu.Cof.Ferm.Heuristics
                 for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
                 {
                     int[] schedule = this.IndividualTreeSelections[individualIndex];
-                    for (int unitIndex = 0; unitIndex < this.HarvestUnits; ++unitIndex)
+                    for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
                     {
                         bool thinTree = (unityScalingFactor * this.GetPseudorandomByteAsFloat()) > 0.5;
-                        schedule[unitIndex] = thinTree ? this.HarvestPeriods - 1: 0;
+                        schedule[treeIndex] = thinTree ? this.HarvestPeriods - 1: 0;
                     }
                 }
             }

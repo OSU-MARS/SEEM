@@ -10,89 +10,91 @@ namespace Osu.Cof.Ferm.Organon
         private static void CheckTreeAges(OrganonConfiguration configuration, OrganonStand stand, out float OLD)
         {
             OLD = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                float treeHeightInFeet = stand.Height[treeIndex];
-                if (treeHeightInFeet < 4.5F)
+                FiaCode species = treesOfSpecies.Species;
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    continue;
-                }
+                    float treeHeightInFeet = treesOfSpecies.Height[treeIndex];
+                    if (treeHeightInFeet < 4.5F)
+                    {
+                        continue;
+                    }
 
-                FiaCode species = stand.Species[treeIndex];
-                float growthEffectiveAge = 0.0F; // BUGBUG not intitialized on all Fortran paths
-                float IDXAGE;
-                float SITE;
-                switch (configuration.Variant.TreeModel)
-                {
-                    case TreeModel.OrganonSwo:
-                        // GROWTH EFFECTIVE AGE FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
-                        bool treatAsDouglasFir = false;
-                        if (species == FiaCode.TsugaHeterophylla)
-                        {
-                            SITE = stand.HemlockSiteIndex - 4.5F;
-                        }
-                        else
-                        {
-                            SITE = stand.SiteIndex - 4.5F;
-                            if (species == FiaCode.PinusLambertiana)
+                    float growthEffectiveAge = 0.0F; // BUGBUG not intitialized on all Fortran paths
+                    float IDXAGE;
+                    float SITE;
+                    switch (configuration.Variant.TreeModel)
+                    {
+                        case TreeModel.OrganonSwo:
+                            // GROWTH EFFECTIVE AGE FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
+                            bool treatAsDouglasFir = false;
+                            if (species == FiaCode.TsugaHeterophylla)
                             {
-                                SITE = stand.SiteIndex * 0.66F - 4.5F;
+                                SITE = stand.HemlockSiteIndex - 4.5F;
                             }
-                            treatAsDouglasFir = true;
-                        }
-                        DouglasFir.DouglasFirPonderosaHeightGrowth(treatAsDouglasFir, SITE, treeHeightInFeet, out growthEffectiveAge, out _);
-                        IDXAGE = 500.0F;
-                        break;
-                    case TreeModel.OrganonNwo:
-                        float GP = 5.0F;
-                        if (species == FiaCode.TsugaHeterophylla)
-                        {
-                            // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQATION
-                            SITE = stand.HemlockSiteIndex;
-                            WesternHemlock.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
-                        }
-                        else
-                        {
-                            // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
-                            SITE = stand.SiteIndex;
-                            DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
-                        }
-                        IDXAGE = 120.0F;
-                        break;
-                    case TreeModel.OrganonSmc:
-                        GP = 5.0F;
-                        if (species == FiaCode.TsugaHeterophylla)
-                        {
-                            // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
-                            SITE = stand.HemlockSiteIndex;
-                            WesternHemlock.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
-                        }
-                        else
-                        {
-                            // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOP DOUGLAS-FIR AND GRAND FIR
-                            SITE = stand.SiteIndex;
-                            DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
-                        }
-                        IDXAGE = 120.0F;
-                        break;
-                    case TreeModel.OrganonRap:
-                        if (species == FiaCode.AlnusRubra)
-                        {
-                            // GROWTH EFFECTIVE AGE FROM WEISKITTEL ET AL.'S (2009) RED ALDER DOMINANT HEIGHT GROWTH EQUATION
-                            SITE = stand.SiteIndex;
-                            RedAlder.WHHLB_SI_UC(SITE, configuration.PDEN, out float SI_UC);
-                            RedAlder.WHHLB_GEA(treeHeightInFeet, SI_UC, out growthEffectiveAge);
-                        }
-                        IDXAGE = 30.0F;
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
-                }
+                            else
+                            {
+                                SITE = stand.SiteIndex - 4.5F;
+                                if (species == FiaCode.PinusLambertiana)
+                                {
+                                    SITE = stand.SiteIndex * 0.66F - 4.5F;
+                                }
+                                treatAsDouglasFir = true;
+                            }
+                            DouglasFir.DouglasFirPonderosaHeightGrowth(treatAsDouglasFir, SITE, treeHeightInFeet, out growthEffectiveAge, out _);
+                            IDXAGE = 500.0F;
+                            break;
+                        case TreeModel.OrganonNwo:
+                            float GP = 5.0F;
+                            if (species == FiaCode.TsugaHeterophylla)
+                            {
+                                // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQATION
+                                SITE = stand.HemlockSiteIndex;
+                                WesternHemlock.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                            }
+                            else
+                            {
+                                // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
+                                SITE = stand.SiteIndex;
+                                DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                            }
+                            IDXAGE = 120.0F;
+                            break;
+                        case TreeModel.OrganonSmc:
+                            GP = 5.0F;
+                            if (species == FiaCode.TsugaHeterophylla)
+                            {
+                                // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
+                                SITE = stand.HemlockSiteIndex;
+                                WesternHemlock.F_HG(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                            }
+                            else
+                            {
+                                // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOP DOUGLAS-FIR AND GRAND FIR
+                                SITE = stand.SiteIndex;
+                                DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(SITE, treeHeightInFeet, GP, out growthEffectiveAge, out _);
+                            }
+                            IDXAGE = 120.0F;
+                            break;
+                        case TreeModel.OrganonRap:
+                            if (species == FiaCode.AlnusRubra)
+                            {
+                                // GROWTH EFFECTIVE AGE FROM WEISKITTEL ET AL.'S (2009) RED ALDER DOMINANT HEIGHT GROWTH EQUATION
+                                SITE = stand.SiteIndex;
+                                RedAlder.WHHLB_SI_UC(SITE, configuration.PDEN, out float SI_UC);
+                                RedAlder.WHHLB_GEA(treeHeightInFeet, SI_UC, out growthEffectiveAge);
+                            }
+                            IDXAGE = 30.0F;
+                            break;
+                        default:
+                            throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
+                    }
 
-                // BUGBUG inconsistent use of < IB rather than <= IB
-                if (configuration.Variant.IsBigSixSpecies(species) && (growthEffectiveAge > IDXAGE))
-                {
-                    OLD += 1.0F;
+                    if (configuration.Variant.IsBigSixSpecies(species) && (growthEffectiveAge > IDXAGE))
+                    {
+                        OLD += 1.0F;
+                    }
                 }
             }
         }
@@ -429,18 +431,21 @@ namespace Osu.Cof.Ferm.Organon
             int treeRecordsWithExpansionFactorZero = 0;
             int bigSixRecordsWithExpansionFactorZero = 0;
             int otherSpeciesRecordsWithExpansionFactorZero = 0;
-            for (int treeIndex = 1; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    ++treeRecordsWithExpansionFactorZero;
-                    if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]))
+                    if (treesOfSpecies.LiveExpansionFactor[treeIndex] <= 0.0F)
                     {
-                        ++bigSixRecordsWithExpansionFactorZero;
-                    }
-                    else
-                    {
-                        ++otherSpeciesRecordsWithExpansionFactorZero;
+                        ++treeRecordsWithExpansionFactorZero;
+                        if (configuration.Variant.IsBigSixSpecies(treesOfSpecies.Species))
+                        {
+                            ++bigSixRecordsWithExpansionFactorZero;
+                        }
+                        else
+                        {
+                            ++otherSpeciesRecordsWithExpansionFactorZero;
+                        }
                     }
                 }
             }
@@ -448,39 +453,50 @@ namespace Osu.Cof.Ferm.Organon
             // BUGBUG no check that SITE_1 and SITE_2 indices are greater than 4.5 feet
             float SI_1 = stand.SiteIndex - 4.5F;
             float SI_2 = stand.HemlockSiteIndex - 4.5F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    stand.DbhGrowth[treeIndex] = 0.0F;
-                }
-                else
-                {
-                    this.GrowDiameter(configuration.Variant, treeIndex, simulationStep, stand, SI_1, SI_2, densityBeforeGrowth, CALIB, treatments);
-                    if (stand.Species[treeIndex] == FiaCode.PseudotsugaMenziesii)
+                    if (treesOfSpecies.LiveExpansionFactor[treeIndex] <= 0.0F)
                     {
-                        stand.DbhGrowth[treeIndex] = stand.DbhGrowth[treeIndex] * DGMODgenetic * DGMODSwissNeedleCast;
+                        treesOfSpecies.DbhGrowth[treeIndex] = 0.0F;
+                    }
+                    else
+                    {
+                        this.GrowDiameter(configuration.Variant, treeIndex, simulationStep, treesOfSpecies, SI_1, SI_2, densityBeforeGrowth, CALIB, treatments);
+                        if (treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii)
+                        {
+                            treesOfSpecies.DbhGrowth[treeIndex] = treesOfSpecies.DbhGrowth[treeIndex] * DGMODgenetic * DGMODSwissNeedleCast;
+                        }
                     }
                 }
             }
 
             // height growth for big six species
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]))
+                FiaCode species = treesOfSpecies.Species;
+                if (configuration.Variant.IsBigSixSpecies(species) == false)
                 {
-                    if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
+                    continue;
+                }
+
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    if (treesOfSpecies.LiveExpansionFactor[treeIndex] <= 0.0F)
                     {
-                        stand.HeightGrowth[treeIndex] = 0.0F;
+                        treesOfSpecies.HeightGrowth[treeIndex] = 0.0F;
                     }
                     else
                     {
-                        this.GrowHeightBigSixSpecies(treeIndex, configuration.Variant, simulationStep, stand, SI_1, SI_2, CCH, treatments, ref OLD, configuration.PDEN);
-                        FiaCode species = stand.Species[treeIndex];
+                        this.GrowHeightBigSixSpecies(treeIndex, configuration.Variant, simulationStep, treesOfSpecies, SI_1, SI_2, CCH, treatments, ref OLD, configuration.PDEN);
                         if (species == FiaCode.PseudotsugaMenziesii)
                         {
-                            stand.HeightGrowth[treeIndex] = stand.HeightGrowth[treeIndex] * HGMODgenetic * HGMODSwissNeedleCast;
+                            treesOfSpecies.HeightGrowth[treeIndex] = treesOfSpecies.HeightGrowth[treeIndex] * HGMODgenetic * HGMODSwissNeedleCast;
                         }
+                        Debug.Assert(treesOfSpecies.HeightGrowth[treeIndex] >= 0.0F);
+                        Debug.Assert(treesOfSpecies.HeightGrowth[treeIndex] < Constant.Maximum.HeightIncrementInFeet);
+                        treesOfSpecies.Height[treeIndex] += treesOfSpecies.HeightGrowth[treeIndex];
                     }
                 }
             }
@@ -490,29 +506,40 @@ namespace Osu.Cof.Ferm.Organon
             OrganonMortality.MORTAL(configuration, simulationStep, stand, densityBeforeGrowth, SI_1, SI_2, treatments, ref RAAGE);
 
             // grow tree diameters
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                stand.Dbh[treeIndex] += stand.DbhGrowth[treeIndex];
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    treesOfSpecies.Dbh[treeIndex] += treesOfSpecies.DbhGrowth[treeIndex];
+                }
             }
 
             // CALC EOG SBA, CCF/TREE, CCF IN LARGER TREES AND STAND CCF
             densityAfterGrowth = new OrganonStandDensity(stand, configuration.Variant);
 
             // height growth for non-big six species
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]) == false)
+                FiaCode species = treesOfSpecies.Species;
+                if (configuration.Variant.IsBigSixSpecies(species))
                 {
-                    if (stand.LiveExpansionFactor[treeIndex] <= 0.0F)
+                    continue;
+                }
+
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    if (treesOfSpecies.LiveExpansionFactor[treeIndex] <= 0.0F)
                     {
-                        stand.HeightGrowth[treeIndex] = 0.0F;
+                        treesOfSpecies.HeightGrowth[treeIndex] = 0.0F;
                     }
                     else
                     {
-                        this.GrowHeightMinorSpecies(treeIndex, configuration.Variant, stand, CALIB);
+                        this.GrowHeightMinorSpecies(treeIndex, configuration.Variant, stand, treesOfSpecies, CALIB);
                     }
+                    Debug.Assert(treesOfSpecies.HeightGrowth[treeIndex] >= 0.0F);
+                    Debug.Assert(treesOfSpecies.HeightGrowth[treeIndex] < Constant.Maximum.HeightIncrementInFeet);
+                    treesOfSpecies.Height[treeIndex] += treesOfSpecies.HeightGrowth[treeIndex];
                 }
-                stand.Height[treeIndex] += stand.HeightGrowth[treeIndex];
             }
 
             // grow crowns
@@ -563,75 +590,78 @@ namespace Osu.Cof.Ferm.Organon
             // DETERMINE 5-YR CROWN RECESSION
             OrganonMortality.OldGro(variant, stand, -1.0F, out float OG1);
             OrganonMortality.OldGro(variant, stand, 0.0F, out float OG2);
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                // CALCULATE HCB START OF GROWTH
-                // CALCULATE STARTING HEIGHT
-                float PHT = stand.Height[treeIndex] - stand.HeightGrowth[treeIndex];
-                // CALCULATE STARTING DBH
-                float PDBH = stand.Dbh[treeIndex] - stand.DbhGrowth[treeIndex];
-                FiaCode species = stand.Species[treeIndex];
-                float SCCFL1 = densityBeforeGrowth.GetCrownCompetitionFactorLarger(PDBH);
-                float HCB1 = variant.GetHeightToCrownBase(species, PHT, PDBH, SCCFL1, densityBeforeGrowth.BasalAreaPerAcre, SI_1, SI_2, OG1);
-                float PCR1 = 1.0F - HCB1 / PHT;
-                if (variant.TreeModel == TreeModel.OrganonNwo)
+                FiaCode species = treesOfSpecies.Species;
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    PCR1 = CALIB[species][1] * (1.0F - HCB1 / PHT);
-                }
+                    // CALCULATE HCB START OF GROWTH
+                    // CALCULATE STARTING HEIGHT
+                    float PHT = treesOfSpecies.Height[treeIndex] - treesOfSpecies.HeightGrowth[treeIndex];
+                    // CALCULATE STARTING DBH
+                    float PDBH = treesOfSpecies.Dbh[treeIndex] - treesOfSpecies.DbhGrowth[treeIndex];
+                    float SCCFL1 = densityBeforeGrowth.GetCrownCompetitionFactorLarger(PDBH);
+                    float HCB1 = variant.GetHeightToCrownBase(species, PHT, PDBH, SCCFL1, densityBeforeGrowth.BasalAreaPerAcre, SI_1, SI_2, OG1);
+                    float PCR1 = 1.0F - HCB1 / PHT;
+                    if (variant.TreeModel == TreeModel.OrganonNwo)
+                    {
+                        PCR1 = CALIB[species][1] * (1.0F - HCB1 / PHT);
+                    }
 
-                float PHCB1 = (1.0F - PCR1) * PHT;
+                    float PHCB1 = (1.0F - PCR1) * PHT;
 
-                // CALCULATE HCB END OF GROWTH
-                float HT = stand.Height[treeIndex];
-                float DBH = stand.Dbh[treeIndex];
-                float SCCFL2 = densityAfterGrowth.GetCrownCompetitionFactorLarger(DBH);
-                float HCB2 = variant.GetHeightToCrownBase(species, HT, DBH, SCCFL2, densityAfterGrowth.BasalAreaPerAcre, SI_1, SI_2, OG2);
-                float MAXHCB = variant.GetMaximumHeightToCrownBase(species, HT, SCCFL2);
-                float PCR2 = 1.0F - HCB2 / HT;
-                if (variant.TreeModel == TreeModel.OrganonNwo)
-                {
-                    PCR2 = CALIB[species][1] * (1.0F - HCB2 / HT);
-                }
+                    // CALCULATE HCB END OF GROWTH
+                    float HT = treesOfSpecies.Height[treeIndex];
+                    float DBH = treesOfSpecies.Dbh[treeIndex];
+                    float SCCFL2 = densityAfterGrowth.GetCrownCompetitionFactorLarger(DBH);
+                    float HCB2 = variant.GetHeightToCrownBase(species, HT, DBH, SCCFL2, densityAfterGrowth.BasalAreaPerAcre, SI_1, SI_2, OG2);
+                    float MAXHCB = variant.GetMaximumHeightToCrownBase(species, HT, SCCFL2);
+                    float PCR2 = 1.0F - HCB2 / HT;
+                    if (variant.TreeModel == TreeModel.OrganonNwo)
+                    {
+                        PCR2 = CALIB[species][1] * (1.0F - HCB2 / HT);
+                    }
 
-                float PHCB2 = (1.0F - PCR2) * HT;
+                    float PHCB2 = (1.0F - PCR2) * HT;
 
-                // DETERMINE CROWN GROWTH
-                float HCBG = PHCB2 - PHCB1;
-                if (HCBG < 0.0F)
-                {
-                    HCBG = 0.0F;
-                }
-                Debug.Assert(HCBG >= 0.0F); // catch NaNs
+                    // DETERMINE CROWN GROWTH
+                    float HCBG = PHCB2 - PHCB1;
+                    if (HCBG < 0.0F)
+                    {
+                        HCBG = 0.0F;
+                    }
+                    Debug.Assert(HCBG >= 0.0F); // catch NaNs
 
-                float AHCB1 = (1.0F - stand.CrownRatio[treeIndex]) * PHT;
-                float AHCB2 = AHCB1 + HCBG;
-                if (AHCB1 >= MAXHCB)
-                {
-                    stand.CrownRatio[treeIndex] = 1.0F - AHCB1 / HT;
+                    float AHCB1 = (1.0F - treesOfSpecies.CrownRatio[treeIndex]) * PHT;
+                    float AHCB2 = AHCB1 + HCBG;
+                    if (AHCB1 >= MAXHCB)
+                    {
+                        treesOfSpecies.CrownRatio[treeIndex] = 1.0F - AHCB1 / HT;
+                    }
+                    else if (AHCB2 >= MAXHCB)
+                    {
+                        treesOfSpecies.CrownRatio[treeIndex] = 1.0F - MAXHCB / HT;
+                    }
+                    else
+                    {
+                        treesOfSpecies.CrownRatio[treeIndex] = 1.0F - AHCB2 / HT;
+                    }
+                    Debug.Assert((treesOfSpecies.CrownRatio[treeIndex] >= 0.0F) && (treesOfSpecies.CrownRatio[treeIndex] <= 1.0F));
                 }
-                else if (AHCB2 >= MAXHCB)
-                {
-                    stand.CrownRatio[treeIndex] = 1.0F - MAXHCB / HT;
-                }
-                else
-                {
-                    stand.CrownRatio[treeIndex] = 1.0F - AHCB2 / HT;
-                }
-                Debug.Assert((stand.CrownRatio[treeIndex] >= 0.0F) && (stand.CrownRatio[treeIndex] <= 1.0F));
             }
 
             return OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
         }
 
-        public void GrowDiameter(OrganonVariant variant, int treeIndex, int simulationStep, OrganonStand stand, float SI_1, float SI_2,
+        public void GrowDiameter(OrganonVariant variant, int treeIndex, int simulationStep, Trees trees, float SI_1, float SI_2,
                                  OrganonStandDensity densityBeforeGrowth, Dictionary<FiaCode, float[]> CALIB, OrganonTreatments treatments)
         {
             // CALCULATES FIVE-YEAR DIAMETER GROWTH RATE OF THE K-TH TREE
             // CALCULATE BASAL AREA IN LARGER TREES
-            float dbhInInches = stand.Dbh[treeIndex];
+            float dbhInInches = trees.Dbh[treeIndex];
             float SBAL1 = densityBeforeGrowth.GetBasalAreaLarger(dbhInInches);
 
-            FiaCode species = stand.Species[treeIndex];
+            FiaCode species = trees.Species;
             float SITE;
             switch (variant.TreeModel)
             {
@@ -664,7 +694,7 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             // diameter growth
-            float crownRatio = stand.CrownRatio[treeIndex];
+            float crownRatio = trees.CrownRatio[treeIndex];
             float dbhGrowthInInches = CALIB[species][2] * variant.GrowDiameter(species, dbhInInches, crownRatio, SITE, SBAL1, densityBeforeGrowth);
             if (treatments.HasFertilization)
             {
@@ -676,7 +706,7 @@ namespace Osu.Cof.Ferm.Organon
                 float THINADJ = GetDiameterThinningAdjustment(species, variant, simulationStep, treatments);
                 dbhGrowthInInches *= THINADJ;
             }
-            stand.DbhGrowth[treeIndex] = dbhGrowthInInches;
+            trees.DbhGrowth[treeIndex] = dbhGrowthInInches;
         }
 
         /// <summary>
@@ -685,27 +715,27 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="treeIndex">Index of tree to grow in tree data.</param>
         /// <param name="variant">Organon variant.</param>
         /// <param name="simulationStep">Simulation cycle.</param>
-        /// <param name="stand">Stand data.</param>
+        /// <param name="trees">Stand data.</param>
         /// <param name="SI_1">Primary site index from breast height.</param>
         /// <param name="SI_2">Secondary site index from breast height.</param>
         /// <param name="CCH">Canopy height? (DOUG?)</param>
         /// <param name="treatments"></param>
         /// <param name="OLD">Obsolete?</param>
         /// <param name="PDEN">(DOUG?)</param>
-        public void GrowHeightBigSixSpecies(int treeIndex, OrganonVariant variant, int simulationStep, OrganonStand stand, float SI_1, float SI_2,
+        public void GrowHeightBigSixSpecies(int treeIndex, OrganonVariant variant, int simulationStep, Trees trees, float SI_1, float SI_2,
                                             float[] CCH, OrganonTreatments treatments, ref float OLD, float PDEN)
         {
-            Debug.Assert(variant.IsBigSixSpecies(stand.Species[treeIndex]));
+            Debug.Assert(variant.IsBigSixSpecies(trees.Species));
             // BUGBUG remove M and ON
             // CALCULATE 5-YEAR HEIGHT GROWTH
-            float CR = stand.CrownRatio[treeIndex];
+            float CR = trees.CrownRatio[treeIndex];
 
             // FOR MAJOR SPECIES
-            float XI = 40.0F * (stand.Height[treeIndex] / CCH[40]);
+            float XI = 40.0F * (trees.Height[treeIndex] / CCH[40]);
             int I = (int)XI + 2;
             float XXI = (float)I - 1.0F;
             float TCCH;
-            if (stand.Height[treeIndex] >= CCH[40])
+            if (trees.Height[treeIndex] >= CCH[40])
             {
                 TCCH = 0.0F;
             }
@@ -721,7 +751,7 @@ namespace Osu.Cof.Ferm.Organon
             // COMPUTE HEIGHT GROWTH OF UNTREATED TREES
             // IDXAGE index age? (DOUG?)
             // BUGBUG: move old index age to variant capabilities
-            FiaCode species = stand.Species[treeIndex];
+            FiaCode species = trees.Species;
             float growthEffectiveAge;
             float potentialHeightGrowth;
             float oldIndexAge;
@@ -743,7 +773,7 @@ namespace Osu.Cof.Ferm.Organon
                         }
                         treatAsDouglasFir = true;
                     }
-                    DouglasFir.DouglasFirPonderosaHeightGrowth(treatAsDouglasFir, siteIndexFromGround, stand.Height[treeIndex], out growthEffectiveAge, out potentialHeightGrowth);
+                    DouglasFir.DouglasFirPonderosaHeightGrowth(treatAsDouglasFir, siteIndexFromGround, trees.Height[treeIndex], out growthEffectiveAge, out potentialHeightGrowth);
                     oldIndexAge = 500.0F;
                     break;
                 case TreeModel.OrganonNwo:
@@ -752,13 +782,13 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                         siteIndexFromGround = SI_2 + 4.5F;
-                        WesternHemlock.F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
+                        WesternHemlock.F_HG(siteIndexFromGround, trees.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     else
                     {
                         // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                         siteIndexFromGround = SI_1 + 4.5F;
-                        DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
+                        DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, trees.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     oldIndexAge = 120.0F;
                     break;
@@ -769,13 +799,13 @@ namespace Osu.Cof.Ferm.Organon
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK
                         // DOMINANT HEIGHT GROWTH
                         siteIndexFromGround = SI_2 + 4.5F;
-                        WesternHemlock.F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
+                        WesternHemlock.F_HG(siteIndexFromGround, trees.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     else
                     {
                         // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                         siteIndexFromGround = SI_1 + 4.5F;
-                        DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
+                        DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, trees.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     oldIndexAge = 120.0F;
                     break;
@@ -785,19 +815,19 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         // POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM(2009) RED ALDER TOP HEIGHT GROWTH
                         siteIndexFromGround = SI_1 + 4.5F;
-                        RedAlder.WHHLB_HG(siteIndexFromGround, PDEN, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
+                        RedAlder.WHHLB_HG(siteIndexFromGround, PDEN, trees.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     else if (species == FiaCode.TsugaHeterophylla)
                     {
                         // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                         siteIndexFromGround = -0.432F + 0.899F * (SI_2 + 4.5F);
-                        WesternHemlock.F_HG(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
+                        WesternHemlock.F_HG(siteIndexFromGround, trees.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     else
                     {
                         // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
                         siteIndexFromGround = SI_2 + 4.5F;
-                        DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, stand.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
+                        DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, trees.Height[treeIndex], GP, out growthEffectiveAge, out potentialHeightGrowth);
                     }
                     oldIndexAge = 30.0F;
                     break;
@@ -821,30 +851,30 @@ namespace Osu.Cof.Ferm.Organon
                 float THINADJ = this.GetHeightThinningAdjustment(simulationStep, variant, species, treatments);
                 heightGrowthInFeet *= THINADJ;
             }
-            stand.HeightGrowth[treeIndex] = heightGrowthInFeet;
-            this.LimitHeightGrowth(variant, species, stand.Dbh[treeIndex], stand.Height[treeIndex], stand.DbhGrowth[treeIndex], ref stand.HeightGrowth[treeIndex]);
+            trees.HeightGrowth[treeIndex] = heightGrowthInFeet;
+            this.LimitHeightGrowth(variant, species, trees.Dbh[treeIndex], trees.Height[treeIndex], trees.DbhGrowth[treeIndex], ref trees.HeightGrowth[treeIndex]);
         }
 
-        public void GrowHeightMinorSpecies(int treeIndex, OrganonVariant variant, OrganonStand stand, Dictionary<FiaCode, float[]> CALIB)
+        public void GrowHeightMinorSpecies(int treeIndex, OrganonVariant variant, OrganonStand stand, Trees trees, Dictionary<FiaCode, float[]> CALIB)
         {
-            float dbhInInches = stand.Dbh[treeIndex];
-            FiaCode species = stand.Species[treeIndex];
+            float dbhInInches = trees.Dbh[treeIndex];
+            FiaCode species = trees.Species;
             Debug.Assert(variant.IsBigSixSpecies(species) == false);
 
-            float previousDbhInInches = dbhInInches - stand.DbhGrowth[treeIndex];
+            float previousDbhInInches = dbhInInches - trees.DbhGrowth[treeIndex];
             float PRDHT1 = variant.GetPredictedHeight(species, previousDbhInInches);
             float PRDHT2 = variant.GetPredictedHeight(species, dbhInInches);
             PRDHT1 = 4.5F + CALIB[species][0] * (PRDHT1 - 4.5F);
             PRDHT2 = 4.5F + CALIB[species][0] * (PRDHT2 - 4.5F);
-            float PRDHT = (PRDHT2 / PRDHT1) * stand.Height[treeIndex];
+            float PRDHT = (PRDHT2 / PRDHT1) * trees.Height[treeIndex];
 
             // RED ALDER HEIGHT GROWTH
             if ((species == FiaCode.AlnusRubra) && (variant.TreeModel != TreeModel.OrganonRap))
             {
-                float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(stand.Height[treeIndex], stand.RedAlderSiteIndex);
+                float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(trees.Height[treeIndex], stand.RedAlderSiteIndex);
                 if (growthEffectiveAge <= 0.0F)
                 {
-                    stand.HeightGrowth[treeIndex] = 0.0F;
+                    trees.HeightGrowth[treeIndex] = 0.0F;
                 }
                 else
                 {
@@ -852,12 +882,12 @@ namespace Osu.Cof.Ferm.Organon
                     float RAH1 = RedAlder.GetH50(growthEffectiveAge, stand.RedAlderSiteIndex);
                     float RAH2 = RedAlder.GetH50(growthEffectiveAge + Constant.DefaultTimeStepInYears, stand.RedAlderSiteIndex);
                     float redAlderHeightGrowth = RAH2 - RAH1;
-                    stand.HeightGrowth[treeIndex] = redAlderHeightGrowth;
+                    trees.HeightGrowth[treeIndex] = redAlderHeightGrowth;
                 }
             }
             else
             {
-                stand.HeightGrowth[treeIndex] = PRDHT - stand.Height[treeIndex];
+                trees.HeightGrowth[treeIndex] = PRDHT - trees.Height[treeIndex];
             }
         }
 
@@ -945,14 +975,19 @@ namespace Osu.Cof.Ferm.Organon
         }
 
         /// <summary>
-        /// Sets height and crown ratio of last NINGRO tree records in stand.
+        /// Sets height and crown ratio of ingrowth appended at the end of a list of trees.
         /// </summary>
         /// <param name="variant">Organon variant.</param>
         /// <param name="stand">Stand data.</param>
-        /// <param name="NINGRO"></param>
+        /// <param name="ingrowthCount">Number of new trees.</param>
         /// <param name="ACALIB"></param>
-        public static void SetIngrowthHeightAndCrownRatio(OrganonVariant variant, OrganonStand stand, int NINGRO, Dictionary<FiaCode, float[]> ACALIB)
+        public static void SetIngrowthHeightAndCrownRatio(OrganonVariant variant, OrganonStand stand, Trees treesOfSpecies, int ingrowthCount, Dictionary<FiaCode, float[]> ACALIB)
         {
+            if (ingrowthCount > treesOfSpecies.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(ingrowthCount));
+            }
+
             // ROUTINE TO CALCULATE MISSING CROWN RATIOS
             // BUGBUG: does this duplicate site index code elsewhere?
             // NINGRO = NUMBER OF TREES ADDED
@@ -993,35 +1028,33 @@ namespace Osu.Cof.Ferm.Organon
 
             SI_1 = SITE_1 - 4.5F;
             float SI_2 = SITE_2 - 4.5F;
-            // BUGBUG no check that NINGRO <= stand.TreeRecordsInUse
-            for (int treeIndex = stand.TreeRecordCount - NINGRO; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            for (int treeIndex = treesOfSpecies.Count - ingrowthCount; treeIndex < treesOfSpecies.Count; ++treeIndex)
             {
-                float heightInFeet = stand.Height[treeIndex];
+                float heightInFeet = treesOfSpecies.Height[treeIndex];
                 if (heightInFeet != 0.0F)
                 {
                     continue;
                 }
 
-                FiaCode species = stand.Species[treeIndex];
-                float dbhInInches = stand.Dbh[treeIndex];
-                float RHT = variant.GetPredictedHeight(species, dbhInInches);
-                stand.Height[treeIndex] = 4.5F + ACALIB[species][0] * (RHT - 4.5F);
+                float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                float predictedHeight = variant.GetPredictedHeight(treesOfSpecies.Species, dbhInInches);
+                treesOfSpecies.Height[treeIndex] = 4.5F + ACALIB[treesOfSpecies.Species][0] * (predictedHeight - 4.5F);
             }
 
             OrganonMortality.OldGro(variant, stand, 0.0F, out float OG);
             OrganonStandDensity standDensity = new OrganonStandDensity(stand, variant);
-            for (int treeIndex = stand.TreeRecordCount - NINGRO; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            FiaCode species = treesOfSpecies.Species;
+            for (int treeIndex = treesOfSpecies.Count - ingrowthCount; treeIndex < treesOfSpecies.Count; ++treeIndex)
             {
-                float crownRatio = stand.CrownRatio[treeIndex];
+                float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
                 if (crownRatio != 0.0F)
                 {
                     continue;
                 }
 
                 // CALCULATE HCB
-                FiaCode species = stand.Species[treeIndex];
-                float dbhInInches = stand.Dbh[treeIndex];
-                float heightInFeet = stand.Height[treeIndex];
+                float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                float heightInFeet = treesOfSpecies.Height[treeIndex];
                 float SCCFL = standDensity.GetCrownCompetitionFactorLarger(dbhInInches);
                 float HCB = variant.GetHeightToCrownBase(species, heightInFeet, dbhInInches, SCCFL, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG);
                 if (HCB < 0.0F)
@@ -1032,7 +1065,7 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     HCB = 0.95F * heightInFeet;
                 }
-                stand.CrownRatio[treeIndex] = (1.0F - (HCB / heightInFeet)) * ACALIB[species][1];
+                treesOfSpecies.CrownRatio[treeIndex] = (1.0F - (HCB / heightInFeet)) * ACALIB[species][1];
             }
         }
 
@@ -1049,9 +1082,9 @@ namespace Osu.Cof.Ferm.Organon
         private static void ValidateArguments(int simulationStep, OrganonConfiguration configuration, OrganonStand stand, Dictionary<FiaCode, float[]> ACALIB, OrganonTreatments treatments,
                                               out int BIG6, out int BNXT)
         {
-            if (stand.TreeRecordCount < 1)
+            if (stand.GetTreeRecordCount() < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.TreeRecordCount));
+                throw new ArgumentOutOfRangeException(nameof(stand.TreesBySpecies));
             }
             if (Enum.IsDefined(typeof(TreeModel), configuration.Variant.TreeModel) == false)
             {
@@ -1258,32 +1291,34 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             // check tree records for errors
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                FiaCode species = stand.Species[treeIndex];
-                if (configuration.Variant.IsSpeciesSupported(species) == false)
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    throw new NotSupportedException(String.Format("{0} does not support {1} (tree {2}).", configuration.Variant.TreeModel, species, treeIndex));
-                }
-                float dbhInInches = stand.Dbh[treeIndex];
-                if (dbhInInches < 0.09F)
-                {
-                    throw new NotSupportedException(String.Format("Diameter of tree {0} is less than 0.1 inches.", treeIndex));
-                }
-                float heightInFeet = stand.Height[treeIndex];
-                if (heightInFeet < 4.5F)
-                {
-                    throw new NotSupportedException(String.Format("Height of tree {0} is less than 4.5 feet.", treeIndex));
-                }
-                float crownRatio = stand.CrownRatio[treeIndex];
-                if ((crownRatio < 0.0F) || (crownRatio > 1.0F))
-                {
-                    throw new NotSupportedException(String.Format("Crown ratio of tree {0} is not between 0 and 1.", treeIndex));
-                }
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                if (expansionFactor < 0.0F)
-                {
-                    throw new NotSupportedException(String.Format("Expansion factor of tree {0} is negative.", treeIndex));
+                    if (configuration.Variant.IsSpeciesSupported(treesOfSpecies.Species) == false)
+                    {
+                        throw new NotSupportedException(String.Format("{0} does not support {1} (tree {2}).", configuration.Variant.TreeModel, treesOfSpecies.Species, treeIndex));
+                    }
+                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                    if (dbhInInches < 0.09F)
+                    {
+                        throw new NotSupportedException(String.Format("Diameter of tree {0} is less than 0.1 inches.", treeIndex));
+                    }
+                    float heightInFeet = treesOfSpecies.Height[treeIndex];
+                    if (heightInFeet < 4.5F)
+                    {
+                        throw new NotSupportedException(String.Format("Height of tree {0} is less than 4.5 feet.", treeIndex));
+                    }
+                    float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
+                    if ((crownRatio < 0.0F) || (crownRatio > 1.0F))
+                    {
+                        throw new NotSupportedException(String.Format("Crown ratio of tree {0} is not between 0 and 1.", treeIndex));
+                    }
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    if (expansionFactor < 0.0F)
+                    {
+                        throw new NotSupportedException(String.Format("Expansion factor of tree {0} is negative.", treeIndex));
+                    }
                 }
             }
 
@@ -1295,69 +1330,72 @@ namespace Osu.Cof.Ferm.Organon
             float maxPonderosaHeight = 0.0F;
             float maxIncenseCedarHeight = 0.0F;
             float maxRedAlderHeight = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                FiaCode speciesCode = stand.Species[treeIndex];
-                float heightInFeet = stand.Height[treeIndex];
-                switch (configuration.Variant.TreeModel)
+                FiaCode species = treesOfSpecies.Species;
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    // SWO BIG SIX
-                    case TreeModel.OrganonSwo:
-                        if ((speciesCode == FiaCode.PinusPonderosa) && (heightInFeet > maxPonderosaHeight))
-                        {
-                            maxPonderosaHeight = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.CalocedrusDecurrens) && (heightInFeet > maxIncenseCedarHeight))
-                        {
-                            maxIncenseCedarHeight = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.PseudotsugaMenziesii) && (heightInFeet > maxDouglasFirHeight))
-                        {
-                            maxDouglasFirHeight = heightInFeet;
-                        }
-                        // BUGBUG: why are true firs and sugar pine being assigned to Douglas-fir max height?
-                        else if ((speciesCode == FiaCode.AbiesConcolor) && (heightInFeet > maxDouglasFirHeight))
-                        {
-                            maxDouglasFirHeight = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > maxDouglasFirHeight))
-                        {
-                            maxDouglasFirHeight = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.PinusLambertiana) && (heightInFeet > maxDouglasFirHeight))
-                        {
-                            maxDouglasFirHeight = heightInFeet;
-                        }
-                        break;
-                    case TreeModel.OrganonNwo:
-                    case TreeModel.OrganonSmc:
-                        if ((speciesCode == FiaCode.AbiesGrandis) && (heightInFeet > maxGrandFirHeight))
-                        {
-                            maxGrandFirHeight = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.PseudotsugaMenziesii) && (heightInFeet > maxDouglasFirHeight))
-                        {
-                            maxDouglasFirHeight = heightInFeet;
-                        }
-                        else if ((speciesCode == FiaCode.TsugaHeterophylla) && (heightInFeet > maxWesternHemlockHeight))
-                        {
-                            maxWesternHemlockHeight = heightInFeet;
-                        }
-                        break;
-                    case TreeModel.OrganonRap:
-                        if ((speciesCode == FiaCode.AlnusRubra) && (heightInFeet > maxRedAlderHeight))
-                        {
-                            maxRedAlderHeight = heightInFeet;
-                        }
-                        break;
-                }
-
-                if (configuration.Variant.IsBigSixSpecies(stand.Species[treeIndex]))
-                {
-                    ++BIG6;
-                    if (stand.LiveExpansionFactor[treeIndex] < 0.0F)
+                    float heightInFeet = treesOfSpecies.Height[treeIndex];
+                    switch (configuration.Variant.TreeModel)
                     {
-                        ++BNXT;
+                        // SWO BIG SIX
+                        case TreeModel.OrganonSwo:
+                            if ((species == FiaCode.PinusPonderosa) && (heightInFeet > maxPonderosaHeight))
+                            {
+                                maxPonderosaHeight = heightInFeet;
+                            }
+                            else if ((species == FiaCode.CalocedrusDecurrens) && (heightInFeet > maxIncenseCedarHeight))
+                            {
+                                maxIncenseCedarHeight = heightInFeet;
+                            }
+                            else if ((species == FiaCode.PseudotsugaMenziesii) && (heightInFeet > maxDouglasFirHeight))
+                            {
+                                maxDouglasFirHeight = heightInFeet;
+                            }
+                            // BUGBUG: why are true firs and sugar pine being assigned to Douglas-fir max height?
+                            else if ((species == FiaCode.AbiesConcolor) && (heightInFeet > maxDouglasFirHeight))
+                            {
+                                maxDouglasFirHeight = heightInFeet;
+                            }
+                            else if ((species == FiaCode.AbiesGrandis) && (heightInFeet > maxDouglasFirHeight))
+                            {
+                                maxDouglasFirHeight = heightInFeet;
+                            }
+                            else if ((species == FiaCode.PinusLambertiana) && (heightInFeet > maxDouglasFirHeight))
+                            {
+                                maxDouglasFirHeight = heightInFeet;
+                            }
+                            break;
+                        case TreeModel.OrganonNwo:
+                        case TreeModel.OrganonSmc:
+                            if ((species == FiaCode.AbiesGrandis) && (heightInFeet > maxGrandFirHeight))
+                            {
+                                maxGrandFirHeight = heightInFeet;
+                            }
+                            else if ((species == FiaCode.PseudotsugaMenziesii) && (heightInFeet > maxDouglasFirHeight))
+                            {
+                                maxDouglasFirHeight = heightInFeet;
+                            }
+                            else if ((species == FiaCode.TsugaHeterophylla) && (heightInFeet > maxWesternHemlockHeight))
+                            {
+                                maxWesternHemlockHeight = heightInFeet;
+                            }
+                            break;
+                        case TreeModel.OrganonRap:
+                            if ((species == FiaCode.AlnusRubra) && (heightInFeet > maxRedAlderHeight))
+                            {
+                                maxRedAlderHeight = heightInFeet;
+                            }
+                            break;
+                    }
+
+                    if (configuration.Variant.IsBigSixSpecies(species))
+                    {
+                        ++BIG6;
+                        if (treesOfSpecies.LiveExpansionFactor[treeIndex] < 0.0F)
+                        {
+                            ++BNXT;
+                        }
                     }
                 }
             }
@@ -1366,28 +1404,31 @@ namespace Osu.Cof.Ferm.Organon
             float standBasalArea = 0.0F;
             float standBigSixBasalArea = 0.0F;
             float standHardwoodBasalArea = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                if (expansionFactor < 0.0F)
+                FiaCode species = treesOfSpecies.Species;
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    continue;
-                }
-
-                float dbhInInches = stand.Dbh[treeIndex];
-                float basalArea = expansionFactor * dbhInInches * dbhInInches;
-                standBasalArea += basalArea;
-
-                FiaCode species = stand.Species[treeIndex];
-                if (configuration.Variant.IsBigSixSpecies(species))
-                {
-                    standBigSixBasalArea += basalArea;
-                }
-                if (configuration.Variant.TreeModel == TreeModel.OrganonSwo)
-                {
-                    if ((species == FiaCode.ArbutusMenziesii) || (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla) || (species == FiaCode.QuercusKelloggii))
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    if (expansionFactor <= 0.0F)
                     {
-                        standHardwoodBasalArea += basalArea;
+                        continue;
+                    }
+
+                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                    float basalArea = expansionFactor * dbhInInches * dbhInInches;
+                    standBasalArea += basalArea;
+
+                    if (configuration.Variant.IsBigSixSpecies(species))
+                    {
+                        standBigSixBasalArea += basalArea;
+                    }
+                    if (configuration.Variant.TreeModel == TreeModel.OrganonSwo)
+                    {
+                        if ((species == FiaCode.ArbutusMenziesii) || (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla) || (species == FiaCode.QuercusKelloggii))
+                        {
+                            standHardwoodBasalArea += basalArea;
+                        }
                     }
                 }
             }
@@ -1545,7 +1586,7 @@ namespace Osu.Cof.Ferm.Organon
             {
                 stand.Warnings.OtherSpeciesBasalAreaTooHigh = true;
             }
-            if (stand.TreeRecordCount < 50)
+            if (stand.GetTreeRecordCount() < 50)
             {
                 stand.Warnings.LessThan50TreeRecords = true;
             }
@@ -1624,51 +1665,59 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             float B1 = -0.04484724F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                FiaCode species = stand.Species[treeIndex];
-                float B0;
-                switch (species)
+                FiaCode species = treesOfSpecies.Species;
+                bool[] heightWarnings = null;
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    case FiaCode.PseudotsugaMenziesii:
-                        B0 = 19.04942539F;
-                        break;
-                    case FiaCode.TsugaHeterophylla:
-                        if ((configuration.Variant.TreeModel == TreeModel.OrganonNwo) || (configuration.Variant.TreeModel == TreeModel.OrganonSmc))
-                        {
+                    float B0;
+                    switch (species)
+                    {
+                        case FiaCode.PseudotsugaMenziesii:
                             B0 = 19.04942539F;
-                        }
-                        else if (configuration.Variant.TreeModel == TreeModel.OrganonRap)
-                        {
-                            B0 = 19.04942539F;
-                        }
-                        else
-                        {
-                            // BUGBUG Fortran code leaves B0 unitialized in Version.Swo case but also always treats hemlock as Douglas-fir
-                            B0 = 19.04942539F;
-                        }
-                        break;
-                    case FiaCode.AbiesConcolor:
-                    case FiaCode.AbiesGrandis:
-                        B0 = 16.26279948F;
-                        break;
-                    case FiaCode.PinusPonderosa:
-                        B0 = 17.11482201F;
-                        break;
-                    case FiaCode.PinusLambertiana:
-                        B0 = 14.29011403F;
-                        break;
-                    default:
-                        B0 = 15.80319194F;
-                        break;
-                }
+                            break;
+                        case FiaCode.TsugaHeterophylla:
+                            if ((configuration.Variant.TreeModel == TreeModel.OrganonNwo) || (configuration.Variant.TreeModel == TreeModel.OrganonSmc))
+                            {
+                                B0 = 19.04942539F;
+                            }
+                            else if (configuration.Variant.TreeModel == TreeModel.OrganonRap)
+                            {
+                                B0 = 19.04942539F;
+                            }
+                            else
+                            {
+                                // BUGBUG Fortran code leaves B0 unitialized in Version.Swo case but also always treats hemlock as Douglas-fir
+                                B0 = 19.04942539F;
+                            }
+                            break;
+                        case FiaCode.AbiesConcolor:
+                        case FiaCode.AbiesGrandis:
+                            B0 = 16.26279948F;
+                            break;
+                        case FiaCode.PinusPonderosa:
+                            B0 = 17.11482201F;
+                            break;
+                        case FiaCode.PinusLambertiana:
+                            B0 = 14.29011403F;
+                            break;
+                        default:
+                            B0 = 15.80319194F;
+                            break;
+                    }
 
-                float dbhInInches = stand.Dbh[treeIndex];
-                float potentialHeight = 4.5F + B0 * dbhInInches / (1.0F - B1 * dbhInInches);
-                float heightInFeet = stand.Height[treeIndex];
-                if (heightInFeet > potentialHeight)
-                {
-                    stand.TreeHeightWarning[treeIndex] = true;
+                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                    float potentialHeight = 4.5F + B0 * dbhInInches / (1.0F - B1 * dbhInInches);
+                    float heightInFeet = treesOfSpecies.Height[treeIndex];
+                    if (heightInFeet > potentialHeight)
+                    {
+                        if (heightWarnings == null)
+                        {
+                            heightWarnings = stand.TreeHeightWarningBySpecies.GetOrAdd(species, treesOfSpecies.Capacity);
+                        }
+                        heightWarnings[treeIndex] = true;
+                    }
                 }
             }
         }

@@ -74,7 +74,7 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = 0.0F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
             float RP = (HT - XL) / (HT - HLCW);
             float RATIO = HT / DBH;
@@ -209,7 +209,7 @@ namespace Osu.Cof.Ferm.Organon
                     B6 = 0.0F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
 
             float HCB;
@@ -256,7 +256,7 @@ namespace Osu.Cof.Ferm.Organon
                     B1 = 0.0F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
             float CL = CR * HT;
             float HLCW = HT - (1.0F - B1) * CL;
@@ -334,7 +334,7 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = 1.61440F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
             float CL = CR * HT;
             float LCW = MCW * MathV.Pow(CR, B1 + B2 * CL + B3 * (DBH / HT));
@@ -421,7 +421,7 @@ namespace Osu.Cof.Ferm.Organon
                     PKDBH = 54.77F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
             float DBH = D;
             if (DBH > PKDBH)
@@ -528,7 +528,7 @@ namespace Osu.Cof.Ferm.Organon
                     LIMIT = 0.98F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
 
             float MAXBR = B0 - B1 * MathV.Exp(B2 * MathV.Pow(CCFL / 100.0F, B3));
@@ -652,7 +652,7 @@ namespace Osu.Cof.Ferm.Organon
                     B5 = 0.0F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
 
             if (species == FiaCode.AbiesGrandis)
@@ -751,7 +751,7 @@ namespace Osu.Cof.Ferm.Organon
                     B2 = -0.309050F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
             float predictedHeightInFeet = 4.5F + MathV.Exp(B0 + B1 * MathV.Pow(dbhInInches, B2));
             return predictedHeightInFeet;
@@ -914,7 +914,7 @@ namespace Osu.Cof.Ferm.Organon
                     K4 = 2.7F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
             float LNDG = B0 + B1 * MathV.Ln(dbhInInches + K1) + B2 * MathV.Pow(dbhInInches, K2) + B3 * MathV.Ln((crownRatio + 0.2F) / 1.2F) + B4 * MathV.Ln(SITE) + B5 * (MathV.Pow(SBA1, K3) / MathV.Ln(dbhInInches + K4)) + B6 * MathF.Sqrt(SBA1);
 
@@ -994,7 +994,7 @@ namespace Osu.Cof.Ferm.Organon
                     P8 = 1.03F;
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             }
             float FCR = -P5 * MathV.Pow(1.0F - CR, P6) * MathV.Exp(P7 * MathF.Sqrt(TCCH));
             float B0 = P1 * MathV.Exp(P2 * TCCH);

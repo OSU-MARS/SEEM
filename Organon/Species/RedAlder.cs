@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
+using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Species
 {
@@ -192,17 +193,19 @@ namespace Osu.Cof.Ferm.Species
             TOTS[1, SVOL] = TOTS[1, SVOL] + V;
         }
 
-        public static void RAMORT(OrganonStand stand, float RAAGE, float RAN, float[] PMK)
+        public static void RAMORT(Trees redAlders, float RAAGE, float RAN, float[] PMK)
         {
-            float RAMORT1 = 0.0F;
-            for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+            if (redAlders.Species != FiaCode.AlnusRubra)
             {
-                FiaCode species = stand.Species[treeIndex];
-                if (species == FiaCode.AlnusRubra)
-                {
-                    float PM = 1.0F / (1.0F + MathV.Exp(-PMK[treeIndex]));
-                    RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex];
-                }
+                throw new ArgumentOutOfRangeException(nameof(redAlders));
+            }
+
+            float RAMORT1 = 0.0F;
+            for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
+            {
+                // TODO: avoid exp() for large values of PMK
+                float PM = 1.0F / (1.0F + MathV.Exp(-PMK[alderIndex]));
+                RAMORT1 += PM * redAlders.LiveExpansionFactor[alderIndex];
             }
 
             float RAQMDN1 = 3.313F + 0.18769F * RAAGE - 0.000198F * RAAGE * RAAGE;
@@ -218,13 +221,9 @@ namespace Osu.Cof.Ferm.Species
             }
             else
             {
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
                 {
-                    FiaCode species = stand.Species[treeIndex];
-                    if (species == FiaCode.AlnusRubra)
-                    {
-                        PMK[treeIndex] = 1000.0F;
-                    }
+                    PMK[alderIndex] = 1000.0F;
                 }
                 return;
             }
@@ -234,17 +233,15 @@ namespace Osu.Cof.Ferm.Species
                 float KR1 = 0.0F;
                 for (int KK = 0; KK < 7; ++KK)
                 {
+                    // TODO: avoid exp() by calculating iteratively
                     float NK = 10.0F / MathV.Exp10(KK);
                 kr1: KR1 += NK;
                     RAMORT1 = 0.0F;
-                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                    for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
                     {
-                        FiaCode species = stand.Species[treeIndex];
-                        if (species == FiaCode.AlnusRubra)
-                        {
-                            float PM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[treeIndex])));
-                            RAMORT1 += PM * stand.LiveExpansionFactor[treeIndex];
-                        }
+                        // TODO: avoid exp() for large values of PMK
+                        float PM = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[alderIndex])));
+                        RAMORT1 += PM * redAlders.LiveExpansionFactor[alderIndex];
                     }
                     if (RAMORT1 > RAMORT2)
                     {
@@ -255,13 +252,10 @@ namespace Osu.Cof.Ferm.Species
                         goto kr1;
                     }
                 }
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+
+                for (int treeIndex = 0; treeIndex < redAlders.Count; ++treeIndex)
                 {
-                    FiaCode species = stand.Species[treeIndex];
-                    if (species == FiaCode.AlnusRubra)
-                    {
-                        PMK[treeIndex] = KR1 + PMK[treeIndex];
-                    }
+                    PMK[treeIndex] = KR1 + PMK[treeIndex];
                 }
             }
         }

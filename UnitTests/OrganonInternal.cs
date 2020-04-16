@@ -35,40 +35,42 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(crownCompetitionFactor >= 0.0F);
                     Assert.IsTrue(crownCompetitionFactor <= TestConstant.Maximum.CrownCompetitionFactor);
 
-                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                    foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                     {
-                        float crownRatio = stand.CrownRatio[treeIndex];
-                        float dbhInInches = stand.Dbh[treeIndex];
-                        float heightInFeet = stand.Height[treeIndex];
-                        FiaCode species = stand.Species[treeIndex];
-
-                        float crownCompetitionFactorLarger = densityStartOfStep.GetCrownCompetitionFactorLarger(dbhInInches);
-                        Assert.IsTrue(crownCompetitionFactorLarger >= 0.0F);
-                        Assert.IsTrue(crownCompetitionFactorLarger < TestConstant.Maximum.StandCrownCompetitionFactor);
-
-                        float maximumCrownWidthInFeet = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
-                        float largestCrownWidthInFeet = variant.GetLargestCrownWidth(species, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet);
-                        float heightToCrownBaseInFeet = variant.GetHeightToCrownBase(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG);
-                        float heightToLargestCrownWidthInFeet = variant.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
-                        // (DOUG? can height to largest crown width be less than height to crown base?)
-                        Assert.IsTrue(heightToCrownBaseInFeet >= 0.0F);
-                        Assert.IsTrue(heightToCrownBaseInFeet <= heightInFeet);
-                        Assert.IsTrue(heightToLargestCrownWidthInFeet >= 0.0F);
-                        Assert.IsTrue(heightToLargestCrownWidthInFeet <= heightInFeet);
-                        // (DOUG? bound largest or maximum crown width based on the other?)
-                        Assert.IsTrue(largestCrownWidthInFeet >= 0.0F);
-                        Assert.IsTrue(largestCrownWidthInFeet < TestConstant.Maximum.LargestCrownWidthInFeet);
-                        Assert.IsTrue(maximumCrownWidthInFeet >= 0.0F);
-                        Assert.IsTrue(maximumCrownWidthInFeet < TestConstant.Maximum.MaximumCrownWidthInFeet);
-
-                        float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                        OrganonStandDensity.GetCrownCompetitionByHeight(variant, species, heightToLargestCrownWidthInFeet, largestCrownWidthInFeet, heightInFeet, 
-                                                                        dbhInInches, heightToCrownBaseInFeet, expansionFactor, CCH);
-                        for (int cchIndex = 0; cchIndex < CCH.Length; ++cchIndex)
+                        for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                         {
-                            float cch = CCH[cchIndex];
-                            Assert.IsTrue(cch >= 0.0F);
-                            Assert.IsTrue(cch < 1000.0F);
+                            float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
+                            float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                            float heightInFeet = treesOfSpecies.Height[treeIndex];
+
+                            float crownCompetitionFactorLarger = densityStartOfStep.GetCrownCompetitionFactorLarger(dbhInInches);
+                            Assert.IsTrue(crownCompetitionFactorLarger >= 0.0F);
+                            Assert.IsTrue(crownCompetitionFactorLarger < TestConstant.Maximum.StandCrownCompetitionFactor);
+
+                            float maximumCrownWidthInFeet = variant.GetMaximumCrownWidth(treesOfSpecies.Species, dbhInInches, heightInFeet);
+                            float largestCrownWidthInFeet = variant.GetLargestCrownWidth(treesOfSpecies.Species, maximumCrownWidthInFeet, crownRatio, dbhInInches, heightInFeet);
+                            float heightToCrownBaseInFeet = variant.GetHeightToCrownBase(treesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, densityStartOfStep.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, OG);
+                            float heightToLargestCrownWidthInFeet = variant.GetHeightToLargestCrownWidth(treesOfSpecies.Species, heightInFeet, crownRatio);
+                            // (DOUG? can height to largest crown width be less than height to crown base?)
+                            Assert.IsTrue(heightToCrownBaseInFeet >= 0.0F);
+                            Assert.IsTrue(heightToCrownBaseInFeet <= heightInFeet);
+                            Assert.IsTrue(heightToLargestCrownWidthInFeet >= 0.0F);
+                            Assert.IsTrue(heightToLargestCrownWidthInFeet <= heightInFeet);
+                            // (DOUG? bound largest or maximum crown width based on the other?)
+                            Assert.IsTrue(largestCrownWidthInFeet >= 0.0F);
+                            Assert.IsTrue(largestCrownWidthInFeet < TestConstant.Maximum.LargestCrownWidthInFeet);
+                            Assert.IsTrue(maximumCrownWidthInFeet >= 0.0F);
+                            Assert.IsTrue(maximumCrownWidthInFeet < TestConstant.Maximum.MaximumCrownWidthInFeet);
+
+                            float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                            OrganonStandDensity.GetCrownCompetitionByHeight(variant, treesOfSpecies.Species, heightToLargestCrownWidthInFeet, largestCrownWidthInFeet, heightInFeet,
+                                                                            dbhInInches, heightToCrownBaseInFeet, expansionFactor, CCH);
+                            for (int cchIndex = 0; cchIndex < CCH.Length; ++cchIndex)
+                            {
+                                float cch = CCH[cchIndex];
+                                Assert.IsTrue(cch >= 0.0F);
+                                Assert.IsTrue(cch < 1000.0F);
+                            }
                         }
                     }
 
@@ -97,20 +99,29 @@ namespace Osu.Cof.Ferm.Test
                 OrganonTreatments treatments = new OrganonTreatments();
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
 
-                float[] previousTreeDiameters = new float[stand.TreeRecordCount];
+                Dictionary<FiaCode, float[]> previousTreeDiametersBySpecies = new Dictionary<FiaCode, float[]>();
+                foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
+                {
+                    previousTreeDiametersBySpecies.Add(treesOfSpecies.Species, new float[treesOfSpecies.Capacity]);
+                }
+
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     OrganonStandDensity treeCompetition = new OrganonStandDensity(stand, variant);
-                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                    foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                     {
-                        treeGrowth.GrowDiameter(variant, treeIndex, simulationStep, stand, stand.SiteIndex, 
-                                                stand.HemlockSiteIndex, treeCompetition, CALIB, treatments);
-                        stand.SetSdiMax(configuration);
+                        float[] previousTreeDiameters = previousTreeDiametersBySpecies[treesOfSpecies.Species];
+                        for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                        {
+                            treeGrowth.GrowDiameter(variant, treeIndex, simulationStep, treesOfSpecies, stand.SiteIndex,
+                                                    stand.HemlockSiteIndex, treeCompetition, CALIB, treatments);
+                            stand.SetSdiMax(configuration);
 
-                        float dbhInInches = stand.Dbh[treeIndex];
-                        float previousDbhInInches = previousTreeDiameters[treeIndex];
-                        Assert.IsTrue(dbhInInches >= previousDbhInInches);
-                        Assert.IsTrue(dbhInInches <= TestConstant.Maximum.DiameterInInches);
+                            float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                            float previousDbhInInches = previousTreeDiameters[treeIndex];
+                            Assert.IsTrue(dbhInInches >= previousDbhInInches);
+                            Assert.IsTrue(dbhInInches <= TestConstant.Maximum.DiameterInInches);
+                        }
                     }
 
                     this.Verify(ExpectedTreeChanges.DiameterGrowth, stand, variant);
@@ -202,72 +213,73 @@ namespace Osu.Cof.Ferm.Test
                 TestStand stand = this.CreateDefaultStand(configuration);
                 OrganonTreatments treatments = new OrganonTreatments();
 
-                for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
-                    // predicted heights
-                    FiaCode species = stand.Species[treeIndex];
-                    float dbhInInches = stand.Dbh[treeIndex];
-                    float heightInFeet = stand.Height[treeIndex];
-                    float predictedHeightInFeet = variant.GetPredictedHeight(species, dbhInInches);
-                    Assert.IsTrue(predictedHeightInFeet >= 0.0F);
-                    // TODO: make upper limit of height species specific
-                    Assert.IsTrue(predictedHeightInFeet < TestConstant.Maximum.HeightInFeet);
+                    for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                    {
+                        // predicted heights
+                        float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                        float heightInFeet = treesOfSpecies.Height[treeIndex];
+                        float predictedHeightInFeet = variant.GetPredictedHeight(treesOfSpecies.Species, dbhInInches);
+                        Assert.IsTrue(predictedHeightInFeet >= 0.0F);
+                        // TODO: make upper limit of height species specific
+                        Assert.IsTrue(predictedHeightInFeet < TestConstant.Maximum.HeightInFeet);
 
-                    // growth effective age and potential height growth
-                    bool verifyAgeAndHeight = false;
-                    float growthEffectiveAgeInYears = -1.0F;
-                    float potentialHeightGrowth = -1.0F;
-                    if ((variant.TreeModel == TreeModel.OrganonNwo) || (variant.TreeModel == TreeModel.OrganonSmc))
-                    {
-                        if (species == FiaCode.TsugaHeterophylla)
+                        // growth effective age and potential height growth
+                        bool verifyAgeAndHeight = false;
+                        float growthEffectiveAgeInYears = -1.0F;
+                        float potentialHeightGrowth = -1.0F;
+                        if ((variant.TreeModel == TreeModel.OrganonNwo) || (variant.TreeModel == TreeModel.OrganonSmc))
                         {
-                            WesternHemlock.F_HG(stand.SiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out growthEffectiveAgeInYears, out potentialHeightGrowth);
-                        }
-                        else
-                        {
-                            DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(stand.SiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out growthEffectiveAgeInYears, out potentialHeightGrowth);
-                        }
-                        verifyAgeAndHeight = true;
-                    }
-                    else if (variant.TreeModel == TreeModel.OrganonSwo)
-                    {
-                        if ((species == FiaCode.PinusPonderosa) || (species == FiaCode.PseudotsugaMenziesii))
-                        {
-                            DouglasFir.DouglasFirPonderosaHeightGrowth(species == FiaCode.PseudotsugaMenziesii, stand.SiteIndex, heightInFeet, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                            if (treesOfSpecies.Species == FiaCode.TsugaHeterophylla)
+                            {
+                                WesternHemlock.F_HG(stand.SiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                            }
+                            else
+                            {
+                                DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(stand.SiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                            }
                             verifyAgeAndHeight = true;
                         }
-                    }
-                    if (verifyAgeAndHeight)
-                    {
-                        Assert.IsTrue(growthEffectiveAgeInYears >= -2.0F);
-                        Assert.IsTrue(growthEffectiveAgeInYears <= 500.0F);
-                        Assert.IsTrue(potentialHeightGrowth >= 0.0F);
-                        Assert.IsTrue(potentialHeightGrowth < 20.0F);
+                        else if (variant.TreeModel == TreeModel.OrganonSwo)
+                        {
+                            if ((treesOfSpecies.Species == FiaCode.PinusPonderosa) || (treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii))
+                            {
+                                DouglasFir.DouglasFirPonderosaHeightGrowth(treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii, stand.SiteIndex, heightInFeet, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                                verifyAgeAndHeight = true;
+                            }
+                        }
+                        if (verifyAgeAndHeight)
+                        {
+                            Assert.IsTrue(growthEffectiveAgeInYears >= -2.0F);
+                            Assert.IsTrue(growthEffectiveAgeInYears <= 500.0F);
+                            Assert.IsTrue(potentialHeightGrowth >= 0.0F);
+                            Assert.IsTrue(potentialHeightGrowth < 20.0F);
+                        }
                     }
                 }
 
-                float[] previousTreeHeights = new float[stand.TreeRecordCount];
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    for (int treeIndex = 0; treeIndex < stand.TreeRecordCount; ++treeIndex)
+                    foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                     {
-                        if (variant.IsBigSixSpecies(stand.Species[treeIndex]))
+                        for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                         {
-                            treeGrowth.GrowHeightBigSixSpecies(treeIndex, variant, simulationStep, stand, stand.SiteIndex, stand.HemlockSiteIndex, 
-                                                               CCH, treatments, ref OLD, TestConstant.Default.PDEN);
-                        }
-                        else
-                        {
-                            treeGrowth.GrowHeightMinorSpecies(treeIndex, variant, stand, CALIB);
-                        }
-                        stand.SetSdiMax(configuration);
+                            if (variant.IsBigSixSpecies(treesOfSpecies.Species))
+                            {
+                                treeGrowth.GrowHeightBigSixSpecies(treeIndex, variant, simulationStep, treesOfSpecies, stand.SiteIndex, stand.HemlockSiteIndex,
+                                                                   CCH, treatments, ref OLD, TestConstant.Default.PDEN);
+                            }
+                            else
+                            {
+                                treeGrowth.GrowHeightMinorSpecies(treeIndex, variant, stand, treesOfSpecies, CALIB);
+                            }
+                            stand.SetSdiMax(configuration);
 
-                        float heightInFeet = stand.Height[treeIndex];
-                        float previousHeightInFeet = previousTreeHeights[treeIndex];
-                        // TODO: make upper limit of height species specific
-                        Assert.IsTrue(heightInFeet < TestConstant.Maximum.HeightInFeet);
-
-                        previousTreeHeights[treeIndex] = heightInFeet;
+                            float heightInFeet = treesOfSpecies.Height[treeIndex];
+                            // TODO: make upper limit of height species specific
+                            Assert.IsTrue(heightInFeet < TestConstant.Maximum.HeightInFeet);
+                        }
                     }
 
                     // since diameter growth is zero in this test any tree which is above its anticipated height for its current diameter 

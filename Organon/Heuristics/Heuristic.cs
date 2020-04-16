@@ -23,11 +23,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.CurrentTrajectory.Copy(this.BestTrajectory);
         }
         
-        protected int TreeRecordCount
-        {
-            get { return this.CurrentTrajectory.StandByPeriod[0].TreeRecordCount; }
-        }
-
         public abstract string GetColumnName();
 
         public float GetObjectiveFunction(OrganonStandTrajectory trajectory)
@@ -85,12 +80,18 @@ namespace Osu.Cof.Ferm.Heuristics
             return (float)objectiveFunction;
         }
 
+        protected int GetInitialTreeRecordCount()
+        {
+            return this.CurrentTrajectory.StandByPeriod[0].GetTreeRecordCount();
+        }
+
         public void RandomizeSchedule()
         {
+            int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.All)
             {
                 float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
-                for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
                     int harvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
                     this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
@@ -99,7 +100,7 @@ namespace Osu.Cof.Ferm.Heuristics
             else if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.NoneOrLast)
             {
                 float unityScalingFactor = 1.0F / (float)byte.MaxValue;
-                for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
                     int harvestPeriod = unityScalingFactor * this.GetPseudorandomByteAsFloat() > 0.5 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
                     this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);

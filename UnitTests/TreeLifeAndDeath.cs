@@ -1,34 +1,35 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Test
 {
     public class TreeLifeAndDeath
     {
-        public float[] TotalDbhGrowthInInches { get; private set; }
-        public float[] TotalDeadExpansionFactor { get; private set; }
-        public float[] TotalHeightGrowthInFeet { get; private set; }
+        public Dictionary<FiaCode, float[]> TotalDbhGrowthInInches { get; private set; }
+        public Dictionary<FiaCode, float[]> TotalDeadExpansionFactor { get; private set; }
+        public Dictionary<FiaCode, float[]> TotalHeightGrowthInFeet { get; private set; }
 
-        public TreeLifeAndDeath(int treeRecordCount)
+        public TreeLifeAndDeath()
         {
-            this.TotalDbhGrowthInInches = new float[treeRecordCount];
-            this.TotalDeadExpansionFactor = new float[treeRecordCount];
-            this.TotalHeightGrowthInFeet = new float[treeRecordCount];
+            this.TotalDbhGrowthInInches = new Dictionary<FiaCode, float[]>();
+            this.TotalDeadExpansionFactor = new Dictionary<FiaCode, float[]>();
+            this.TotalHeightGrowthInFeet = new Dictionary<FiaCode, float[]>();
         }
 
         public void AccumulateGrowthAndMortality(OrganonStand stand)
         {
-            int treeRecords = this.TotalDbhGrowthInInches.Length;
-            if (stand.TreeRecordCount != treeRecords)
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand));
-            }
-
-            for (int treeIndex = 0; treeIndex < treeRecords; ++treeIndex)
-            {
-                this.TotalDbhGrowthInInches[treeIndex] += stand.DbhGrowth[treeIndex];
-                this.TotalHeightGrowthInFeet[treeIndex] += stand.HeightGrowth[treeIndex];
-                this.TotalDeadExpansionFactor[treeIndex] += stand.DeadExpansionFactor[treeIndex];
+                float[] totalDbhGrowthInInches = this.TotalDbhGrowthInInches.GetOrAdd(treesOfSpecies.Species, treesOfSpecies.Capacity);
+                float[] totalHeightGrowthInFeet = this.TotalHeightGrowthInFeet.GetOrAdd(treesOfSpecies.Species, treesOfSpecies.Capacity);
+                float[] totalDeadExpansionFactor = this.TotalDeadExpansionFactor.GetOrAdd(treesOfSpecies.Species, treesOfSpecies.Capacity);
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    totalDbhGrowthInInches[treeIndex] += treesOfSpecies.DbhGrowth[treeIndex];
+                    totalHeightGrowthInFeet[treeIndex] += treesOfSpecies.HeightGrowth[treeIndex];
+                    totalDeadExpansionFactor[treeIndex] += treesOfSpecies.DeadExpansionFactor[treeIndex];
+                }
             }
         }
     }

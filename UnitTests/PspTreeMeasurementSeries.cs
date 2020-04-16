@@ -7,10 +7,10 @@ namespace Osu.Cof.Ferm.Test
     public class PspTreeMeasurementSeries
     {
         public SortedList<int, float> DbhInCentimetersByYear { get; private set; }
-        public string Species { get; private set; }
+        public FiaCode Species { get; private set; }
         public int Tag { get; private set; }
 
-        public PspTreeMeasurementSeries(int tag, string species)
+        public PspTreeMeasurementSeries(int tag, FiaCode species)
         {
             this.DbhInCentimetersByYear = new SortedList<int, float>(Constant.Psp.DefaultNumberOfStandMeasurements);
             this.Species = species;
@@ -23,9 +23,9 @@ namespace Osu.Cof.Ferm.Test
             float crownCompetition = density.GetCrownCompetitionFactorLarger(initialDiameterInInches);
             float crownCompetitionMidpoint = this.Species switch
             {
-                "PSME" => 125.0F,
-                "THPL" => 250.0F,
-                "TSHE" => 300.0F,
+                FiaCode.PseudotsugaMenziesii => 125.0F,
+                FiaCode.ThujaPlicata => 250.0F,
+                FiaCode.TsugaHeterophylla => 300.0F,
                 _ => 200.0F
             };
             return TestConstant.Default.CrownRatio / (1.0F + MathF.Exp(0.015F * (crownCompetition - crownCompetitionMidpoint)));

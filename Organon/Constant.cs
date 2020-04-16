@@ -70,6 +70,7 @@ namespace Osu.Cof.Ferm
 
         public static class Maximum
         {
+            public const float HeightIncrementInFeet = 20.0F;
             public const float Sdi = 1000.0F;
             public const float SiteIndexInFeet = 300.0F;
         }
@@ -79,7 +80,6 @@ namespace Osu.Cof.Ferm
             // volume thresholds are debatable as smallest trees used in forming Poudel 2018's regressions were 15 cm DBH
             // However, ignoring biomass in trees less than 15 cm is probably a larger error than extending the regression beyond its fitting
             // range.
-            public const float HeightForVolumeInFeet = 4.5F;
             public const float DiameterForVolumeInInches = 4.0F;
         }
 

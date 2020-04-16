@@ -30,11 +30,6 @@ namespace Osu.Cof.Ferm.Organon
             return new NotSupportedException(String.Format("Unhandled model {0}.", treeModel));
         }
 
-        public static NotSupportedException CreateUnhandledSpeciesException(FiaCode species)
-        {
-            return new NotSupportedException(String.Format("Unhandled species {0}.", species));
-        }
-
         /// <summary>
         /// 
         /// </summary>

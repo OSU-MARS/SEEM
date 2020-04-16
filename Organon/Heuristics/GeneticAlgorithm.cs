@@ -32,7 +32,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         private double GetMaximumFitnessAndVariance(GeneticPopulation generation)
         {
-            float highestFitness = float.MinValue;
+            float highestFitness = Single.MinValue;
             float sum = 0.0F;
             float sumOfSquares = 0.0F;
             for (int individualIndex = 0; individualIndex < generation.Size; ++individualIndex)
@@ -79,14 +79,21 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
 
             // begin with population of random harvest schedules
+            // TODO: CopyTreeSelectionFrom() for initializing tree selection?
             // TODO: should incoming schedule on this.CurrentSolution be one of the individuals in the population?
-            GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.TreeRecordCount, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion);
+            int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+            GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, initialTreeRecordCount);
             currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection);
             OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            this.BestObjectiveFunction = float.MinValue;
+            this.BestObjectiveFunction = Single.MinValue;
             for (int individualIndex = 0; individualIndex < this.PopulationSize; ++individualIndex)
             {
-                individualTrajectory.Simulate(currentGeneration.IndividualTreeSelections[individualIndex]);
+                int[] individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
+                for (int treeIndex = 0; treeIndex < individualTreeSelection.Length; ++treeIndex)
+                {
+                    individualTrajectory.SetTreeSelection(individualIndex, individualTreeSelection[treeIndex]);
+                }
+                individualTrajectory.Simulate();
                 float individualFitness = this.GetObjectiveFunction(individualTrajectory);
                 currentGeneration.IndividualFitness[individualIndex] = individualFitness;
                 if (individualFitness > this.BestObjectiveFunction)
@@ -99,7 +106,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             // for each generation of size n, perform n fertile matings
             double endVariance = this.EndStandardDeviation * this.EndStandardDeviation;
-            double treeScalingFactor = ((double)this.TreeRecordCount - Constant.RoundToZeroTolerance) / (double)UInt16.MaxValue;
+            double treeScalingFactor = ((double)initialTreeRecordCount - Constant.RoundToZeroTolerance) / (double)UInt16.MaxValue;
             double mutationScalingFactor = 1.0 / (double)UInt16.MaxValue;
             double variance = this.GetMaximumFitnessAndVariance(currentGeneration);
             GeneticPopulation nextGeneration = new GeneticPopulation(currentGeneration);
@@ -120,7 +127,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         firstChildTrajectory.SetTreeSelection(treeIndex, firstParentHarvestSchedule[treeIndex]);
                         secondChildTrajectory.SetTreeSelection(treeIndex, secondParentHarvestSchedule[treeIndex]);
                     }
-                    for (int treeIndex = crossoverPosition; treeIndex < this.TreeRecordCount; ++treeIndex)
+                    for (int treeIndex = crossoverPosition; treeIndex < initialTreeRecordCount; ++treeIndex)
                     {
                         firstChildTrajectory.SetTreeSelection(treeIndex, secondParentHarvestSchedule[treeIndex]);
                         secondChildTrajectory.SetTreeSelection(treeIndex, firstParentHarvestSchedule[treeIndex]);
@@ -133,8 +140,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     {
                         int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                         int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                        int harvestPeriod = firstChildTrajectory.IndividualTreeSelection[firstTreeIndex];
-                        firstChildTrajectory.SetTreeSelection(firstTreeIndex, firstChildTrajectory.IndividualTreeSelection[secondTreeIndex]);
+                        int harvestPeriod = firstChildTrajectory.GetTreeSelection(firstTreeIndex);
+                        firstChildTrajectory.SetTreeSelection(firstTreeIndex, firstChildTrajectory.GetTreeSelection(secondTreeIndex));
                         firstChildTrajectory.SetTreeSelection(secondTreeIndex, harvestPeriod);
                     }
                     double secondProbability = mutationScalingFactor * this.GetTwoPseudorandomBytesAsFloat();
@@ -143,7 +150,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                         int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                         int harvestPeriod = secondParentHarvestSchedule[firstTreeIndex];
-                        secondChildTrajectory.SetTreeSelection(firstTreeIndex, firstChildTrajectory.IndividualTreeSelection[secondTreeIndex]);
+                        secondChildTrajectory.SetTreeSelection(firstTreeIndex, firstChildTrajectory.GetTreeSelection(secondTreeIndex));
                         secondChildTrajectory.SetTreeSelection(secondTreeIndex, harvestPeriod);
                     }
 
@@ -169,7 +176,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         nextGeneration.IndividualFitness[matingIndex] = fittestChildFitness;
                         if (firstChildFittest)
                         {
-                            Array.Copy(firstChildTrajectory.IndividualTreeSelection, 0, nextGeneration.IndividualTreeSelections[matingIndex], 0, firstChildTrajectory.IndividualTreeSelection.Length);
+                            firstChildTrajectory.CopyTreeSelectionTo(nextGeneration.IndividualTreeSelections[matingIndex]);
                             Array.Copy(firstChildTrajectory.HarvestVolumesByPeriod, 0, nextGeneration.HarvestVolumesByPeriod[matingIndex], 0, firstChildTrajectory.HarvestVolumesByPeriod.Length);
                             if (firstChildFitness > this.BestObjectiveFunction)
                             {
@@ -179,7 +186,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         }
                         else
                         {
-                            Array.Copy(secondChildTrajectory.IndividualTreeSelection, 0, nextGeneration.IndividualTreeSelections[matingIndex], 0, secondChildTrajectory.IndividualTreeSelection.Length);
+                            secondChildTrajectory.CopyTreeSelectionTo(nextGeneration.IndividualTreeSelections[matingIndex]);
                             Array.Copy(secondChildTrajectory.HarvestVolumesByPeriod, 0, nextGeneration.HarvestVolumesByPeriod[matingIndex], 0, secondChildTrajectory.HarvestVolumesByPeriod.Length);
                             if (secondChildFitness > this.BestObjectiveFunction)
                             {

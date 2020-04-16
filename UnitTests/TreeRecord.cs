@@ -1,26 +1,32 @@
-﻿using Osu.Cof.Ferm.Organon;
-using System;
+﻿using System;
 
 namespace Osu.Cof.Ferm.Test
 {
-    internal class TreeRecord
+    public class TreeRecord
     {
         public float CrownRatio { get; private set; }
         public float DbhInInches { get; private set; }
-        public float ExpansionFactor { get; private set; }
         public float HeightInFeet { get; private set; }
+        public float LiveExpansionFactor { get; private set; }
         public FiaCode Species { get; private set; }
+        public int Tag { get; private set; }
 
-        public TreeRecord(FiaCode species, float dbhInInches, float expansionFactor, float crownRatio)
+        public TreeRecord(int tag, FiaCode species, float dbhInInches, float crownRatio, float expansionFactor)
         {
             this.CrownRatio = crownRatio;
             this.DbhInInches = dbhInInches;
-            this.ExpansionFactor = expansionFactor;
             this.HeightInFeet = TreeRecord.EstimateHeightInFeet(species, dbhInInches);
+            this.LiveExpansionFactor = expansionFactor;
             this.Species = species;
+            this.Tag = tag;
         }
 
         public static float EstimateHeightInFeet(FiaCode species, float dbhInInches)
+        {
+            return TestConstant.FeetPerMeter * TreeRecord.EstimateHeightInMeters(species, dbhInInches);
+        }
+
+        public static float EstimateHeightInMeters(FiaCode species, float dbhInInches)
         {
             // height-diameter equations from
             // Ishii H, Reynolds JH, Ford ED, Shaw DC. 2000. Height growth and vertical development of an old-growth
@@ -85,7 +91,7 @@ namespace Osu.Cof.Ferm.Test
                     break;
 
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(species);
             };
             if (heightInM < 1.372F)
             {
@@ -93,37 +99,7 @@ namespace Osu.Cof.Ferm.Test
                 // For now, and for simplicity, force these trees to satisfy legacy Organon height requirements.
                 heightInM = 1.372F;
             }
-            return TestConstant.FeetPerMeter * heightInM;
-        }
-
-        public static float EstimateHeightInMeters(string usdaSpeciesCode, float dbhInInches)
-        {
-            var species = usdaSpeciesCode switch
-            {
-                "ABAM" => FiaCode.AbiesAmabalis,
-                "ABCO" => FiaCode.AbiesConcolor,
-                "ABGR" => FiaCode.AbiesGrandis,
-                "ABPR" => FiaCode.AbiesProcera,
-                "ACGL" => FiaCode.AcerGlabrum,
-                "ACMA3" => FiaCode.AcerMacrophyllum,
-                "ALRU" => FiaCode.AlnusRubra,
-                "ARME" => FiaCode.ArbutusMenziesii,
-                "CADE" => FiaCode.CalocedrusDecurrens,
-                "CHCH" => FiaCode.ChrysolepisChrysophyllaVarChrysophylla,
-                "CONU" => FiaCode.CornusNuttallii,
-                "PISI" => FiaCode.PiceaSitchensis,
-                "PILA" => FiaCode.PinusLambertiana,
-                "PIPO" => FiaCode.PinusPonderosa,
-                "PSME" => FiaCode.PseudotsugaMenziesii,
-                "QUCH" => FiaCode.QuercusChrysolepis,
-                "QUGA" => FiaCode.QuercusGarryana,
-                "QUKE" => FiaCode.QuercusKelloggii,
-                "TABR" => FiaCode.TaxusBrevifolia,
-                "THPL" => FiaCode.ThujaPlicata,
-                "TSHE" => FiaCode.TsugaHeterophylla,
-                _ => throw new NotSupportedException(String.Format("Unhandled species code '{0}'.", usdaSpeciesCode)),
-            };
-            return TreeRecord.EstimateHeightInFeet(species, dbhInInches);
+            return heightInM;
         }
     }
 }

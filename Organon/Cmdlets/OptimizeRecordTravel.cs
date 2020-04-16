@@ -9,7 +9,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class OptimizeRecordTravel : OptimizeCmdlet
     {
         [Parameter]
-        [ValidateRange(0.0, float.MaxValue)]
+        [ValidateRange(0.0, Single.MaxValue)]
         public Nullable<float> Deviation { get; set; }
         
         [Parameter]

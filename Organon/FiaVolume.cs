@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Organon;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -21,16 +20,11 @@ namespace Osu.Cof.Ferm
             {
                 return 0.0F;
             }
-            float heightInFeet = trees.Height[treeIndex];
-            if (heightInFeet < Constant.Minimum.HeightForVolumeInFeet)
-            {
-                return 0.0F;
-            }
 
-            FiaCode species = trees.Species[treeIndex];
             float logDbhInInches = MathV.Log10(dbhInInches);
+            float heightInFeet = trees.Height[treeIndex];
             float logHeightInFeet = MathV.Log10(heightInFeet);
-            float cvtsl = species switch
+            float cvtsl = trees.Species switch
             {
                 // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
                 //   Volume estimation for PNW Databases NIMS and FIADB. https://ww3.arb.ca.gov/cc/capandtrade/offsets/copupdatereferences/qm_volume_equations_pnw_updated_091914.pdf
@@ -39,7 +33,7 @@ namespace Osu.Cof.Ferm
                                                  2.02132F * logDbhInInches + 1.63408F * logHeightInFeet - 0.16184F * logHeightInFeet * logHeightInFeet,
                 // FIA Equation 6: all of Oregon and California (Chambers 1979)
                 FiaCode.TsugaHeterophylla => -2.72170F + 2.00857F * logDbhInInches + 1.08620F * logHeightInFeet - 0.00568F * dbhInInches,
-                _ => throw OrganonVariant.CreateUnhandledSpeciesException(species)
+                _ => throw Trees.CreateUnhandledSpeciesException(trees.Species)
             };
 
             return MathV.Exp10(cvtsl);
@@ -66,10 +60,9 @@ namespace Osu.Cof.Ferm
                 return 0.0F;
             }
 
-            FiaCode species = trees.Species[treeIndex];
             float basalAreaInSquareFeet = Constant.ForestersEnglish * dbhInInches * dbhInInches;
             float tarif;
-            switch (species)
+            switch (trees.Species)
             {
                 // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
                 //   Volume estimation for PNW Databases NIMS and FIADB. https://ww3.arb.ca.gov/cc/capandtrade/offsets/copupdatereferences/qm_volume_equations_pnw_updated_091914.pdf
@@ -81,7 +74,7 @@ namespace Osu.Cof.Ferm
                     tarif = 0.912733F * cvts / (1.033F * (1.0F + 1.382937F * MathV.Exp(-4.015292F * dbhInInches / 10.0F)) * (basalAreaInSquareFeet + 0.087266F) - 0.174533F);
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(trees.Species);
             }
 
             return tarif * (basalAreaInSquareFeet - 0.087266F) / 0.912733F;
@@ -90,8 +83,7 @@ namespace Osu.Cof.Ferm
         public unsafe float GetScribnerBoardFeet(Trees trees)
         {
             // for now, assume all trees are of the same species
-            FiaCode species = trees.Species[0];
-            if (species != FiaCode.PseudotsugaMenziesii)
+            if (trees.Species != FiaCode.PseudotsugaMenziesii)
             {
                 throw new NotSupportedException();
             }
@@ -106,7 +98,6 @@ namespace Osu.Cof.Ferm
             Vector128<float> forestersEnglish = AvxExtensions.BroadcastScalarToVector128(Constant.ForestersEnglish);
             Vector128<float> one = AvxExtensions.BroadcastScalarToVector128(1.0F);
             Vector128<float> six = AvxExtensions.BroadcastScalarToVector128(6.0F);
-            Vector128<float> minHeightForVolume = AvxExtensions.BroadcastScalarToVector128(Constant.Minimum.HeightForVolumeInFeet);
 
             Vector128<float> vm3p21809 = AvxExtensions.BroadcastScalarToVector128(-3.21809F); // b4
             Vector128<float> v0p04948 = AvxExtensions.BroadcastScalarToVector128(0.04948F);
@@ -136,11 +127,10 @@ namespace Osu.Cof.Ferm
             fixed (float* dbh = &trees.Dbh[0], height = &trees.Height[0])
             {
                 Vector128<float> standBoardFeetPerAcre = Vector128<float>.Zero;
-                for (int treeIndex = 0; treeIndex < trees.TreeRecordCount; treeIndex += 4)
+                for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += 4)
                 {
                     Vector128<float> dbhInInches = Avx.LoadVector128(dbh + treeIndex);
                     Vector128<float> heightInFeet = Avx.LoadVector128(height + treeIndex);
-                    Vector128<float> zeroVolumeMask = Avx.Or(Avx.CompareLessThanOrEqual(dbhInInches, six), Avx.CompareLessThanOrEqual(heightInFeet, minHeightForVolume));
 
                     Vector128<float> logDbhInInches = MathV.Log10(dbhInInches);
                     Vector128<float> logHeightInFeet = MathV.Log10(heightInFeet);
@@ -181,6 +171,7 @@ namespace Osu.Cof.Ferm
                     // float rs632 = 1.001491F - 6.924097F / tarif + 0.00001351F * dbhInInches * dbhInInches;
                     Vector128<float> rs632 = Avx.Add(v1p001491, Avx.Divide(vm6p924097, Avx.Multiply(v0p912733, b4)));
                                      rs632 = Avx.Add(rs632, Avx.Multiply(v0p00001351, dbhSquared));
+                    Vector128<float> zeroVolumeMask = Avx.CompareLessThanOrEqual(dbhInInches, six);
                     Vector128<float> sv632 = Avx.Multiply(rs632, sv616); // Scribner board foot volume to a 6 inch top for 32 foot logs
                                      sv632 = Avx.BlendVariable(sv632, Vector128<float>.Zero, zeroVolumeMask);
 
@@ -217,16 +208,11 @@ namespace Osu.Cof.Ferm
             {
                 return 0.0F;
             }
-            float heightInFeet = trees.Height[treeIndex];
-            if (heightInFeet < Constant.Minimum.HeightForVolumeInFeet)
-            {
-                return 0.0F;
-            }
 
-            FiaCode species = trees.Species[treeIndex];
             float logDbhInInches = MathV.Log10(dbhInInches);
+            float heightInFeet = trees.Height[treeIndex];
             float logHeightInFeet = MathV.Log10(heightInFeet);
-            float cvtsl = species switch
+            float cvtsl = trees.Species switch
             {
                 // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
                 //   Volume estimation for PNW Databases NIMS and FIADB. https://ww3.arb.ca.gov/cc/capandtrade/offsets/copupdatereferences/qm_volume_equations_pnw_updated_091914.pdf
@@ -235,13 +221,13 @@ namespace Osu.Cof.Ferm
                                                  2.02132F * logDbhInInches + 1.63408F * logHeightInFeet - 0.16184F * logHeightInFeet * logHeightInFeet,
                 // FIA Equation 6: all of Oregon and California (Chambers 1979)
                 FiaCode.TsugaHeterophylla => -2.72170F + 2.00857F * logDbhInInches + 1.08620F * logHeightInFeet - 0.00568F * dbhInInches,
-                _ => throw OrganonVariant.CreateUnhandledSpeciesException(species)
+                _ => throw Trees.CreateUnhandledSpeciesException(trees.Species)
             };
             float cubicFeet = MathV.Exp10(cvtsl);
             
             float basalAreaInSquareFeet = Constant.ForestersEnglish * dbhInInches * dbhInInches;
             float tarif;
-            switch (species)
+            switch (trees.Species)
             {
                 // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
                 //   Volume estimation for PNW Databases NIMS and FIADB. https://ww3.arb.ca.gov/cc/capandtrade/offsets/copupdatereferences/qm_volume_equations_pnw_updated_091914.pdf
@@ -253,7 +239,7 @@ namespace Osu.Cof.Ferm
                     tarif = 0.912733F * cubicFeet / (1.033F * (1.0F + 1.382937F * MathV.Exp(-4.015292F * dbhInInches / 10.0F)) * (basalAreaInSquareFeet + 0.087266F) - 0.174533F);
                     break;
                 default:
-                    throw OrganonVariant.CreateUnhandledSpeciesException(species);
+                    throw Trees.CreateUnhandledSpeciesException(trees.Species);
             }
             float cv4 = tarif * (basalAreaInSquareFeet - 0.087266F) / 0.912733F;
 

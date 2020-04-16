@@ -1,63 +1,92 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Osu.Cof.Ferm
 {
     public class Trees
     {
+        /// <summary>
+        /// Maximum number of trees which can be stored in this set.
+        /// </summary>
+        public int Capacity { get; set; }
+
+        /// <summary>
+        /// Number of trees currently in this set.
+        /// </summary>
+        public int Count { get; private set; }
+
+        /// <summary>
+        /// Crown ratio.
+        /// </summary>
         public float[] CrownRatio { get; private set; }
 
         /// <summary>
-        /// DBH in inches.
+        /// DBH in inches or meters.
         /// </summary>
         public float[] Dbh { get; private set; }
 
         /// <summary>
-        /// DBH in inches at the most recent simulation step. 
+        /// DBH in inches or meters at the most recent simulation step. 
         /// </summary>
         public float[] DbhGrowth { get; private set; }
 
-        // accumulated expansion factor of dead trees from mortality chipping
+        /// <summary>
+        /// Accumulated expansion factor of dead trees from mortality in either TPA (trees per acre) or TPH (trees per hectare).
+        /// </summary>
         public float[] DeadExpansionFactor { get; private set; }
 
         /// <summary>
-        /// Height in feet.
+        /// Height in feet or meters.
         /// </summary>
         public float[] Height { get; private set; }
 
         /// <summary>
-        /// Height growth in feet at the most recent simulation step. 
+        /// Height growth in feet or meters at the most recent simulation step. 
         /// </summary>
         public float[] HeightGrowth { get; private set; }
 
+        /// <summary>
+        /// Expansion factor of live trees from mortality in either TPA (trees per acre) or TPH (trees per hectare).
+        /// </summary>
         public float[] LiveExpansionFactor { get; private set; }
 
-        public FiaCode[] Species { get; private set; }
+        /// <summary>
+        /// Species of this set of trees.
+        /// </summary>
+        public FiaCode Species { get; private set; }
 
-        // trees' tag numbers, if specified
+        /// <summary>
+        /// Trees' tag numbers, if specified.
+        /// </summary>
         public int[] Tag { get; private set; }
 
-        public int TreeRecordCount { get; private set; }
+        /// <summary>
+        /// Whether diameters, heights, and densities are in English or metric units.
+        /// </summary>
+        public Units Units { get; private set; }
 
-        public Trees(int treeRecordCount)
+        public Trees(FiaCode species, int minimumSize, Units units)
         {
             // ensure array lengths are an exact multiple of the SIMD width
-            int treeArrayLength = Constant.SimdWidthInSingles * (int)MathF.Ceiling((float)treeRecordCount / (float)Constant.SimdWidthInSingles);
-
-            this.CrownRatio = new float[treeArrayLength];
-            this.Dbh = new float[treeArrayLength];
-            this.DbhGrowth = new float[treeArrayLength];
-            this.DeadExpansionFactor = new float[treeArrayLength];
-            this.LiveExpansionFactor = new float[treeArrayLength];
-            this.Height = new float[treeArrayLength];
-            this.HeightGrowth = new float[treeArrayLength];
-            this.Species = new FiaCode[treeArrayLength];
-            this.Tag = new int[treeArrayLength];
-            this.TreeRecordCount = treeRecordCount;
+            this.Capacity = Constant.SimdWidthInSingles * (int)MathF.Ceiling((float)minimumSize / (float)Constant.SimdWidthInSingles);
+            this.Count = 0; // no trees assigned yet
+            this.CrownRatio = new float[this.Capacity];
+            this.Dbh = new float[this.Capacity];
+            this.DbhGrowth = new float[this.Capacity];
+            this.DeadExpansionFactor = new float[this.Capacity];
+            this.LiveExpansionFactor = new float[this.Capacity];
+            this.Height = new float[this.Capacity];
+            this.HeightGrowth = new float[this.Capacity];
+            this.Species = species;
+            this.Tag = new int[this.Capacity];
+            this.Units = units;
         }
 
         public Trees(Trees other)
-            : this(other.TreeRecordCount)
+            : this(other.Species, other.Capacity, other.Units)
         {
+            this.Count = other.Count;
+
             other.CrownRatio.CopyTo(this.CrownRatio, 0);
             other.Dbh.CopyTo(this.Dbh, 0);
             other.DbhGrowth.CopyTo(this.DbhGrowth, 0);
@@ -65,12 +94,53 @@ namespace Osu.Cof.Ferm
             other.LiveExpansionFactor.CopyTo(this.LiveExpansionFactor, 0);
             other.Height.CopyTo(this.Height, 0);
             other.HeightGrowth.CopyTo(this.HeightGrowth, 0);
-            other.Species.CopyTo(this.Species, 0);
             other.Tag.CopyTo(this.Tag, 0);
+        }
+
+        public static NotSupportedException CreateUnhandledSpeciesException(FiaCode species)
+        {
+            return new NotSupportedException(String.Format("Unhandled species {0}.", species));
+        }
+
+        public void Add(int tag, float dbh, float height, float crownRatio, float liveExpansionFactor)
+        {
+            Debug.Assert(dbh >= 0.0F);
+            Debug.Assert(dbh < 500.0F);
+            Debug.Assert(height >= 0.0F);
+            Debug.Assert(height < 380.0F);
+            Debug.Assert(crownRatio >= 0.0F);
+            Debug.Assert(crownRatio <= 1.0F);
+            Debug.Assert(liveExpansionFactor >= 0.0F);
+            Debug.Assert(liveExpansionFactor < 1000.0F);
+
+            if (this.Capacity == this.Count)
+            {
+                // for now, double in size like List<T>
+                this.Capacity *= 2;
+                this.CrownRatio = this.CrownRatio.Extend(this.Capacity);
+                this.Dbh = this.Dbh.Extend(this.Capacity);
+                this.DbhGrowth = this.DbhGrowth.Extend(this.Capacity);
+                this.DeadExpansionFactor = this.DeadExpansionFactor.Extend(this.Capacity);
+                this.LiveExpansionFactor = this.LiveExpansionFactor.Extend(this.Capacity);
+                this.Height = this.Height.Extend(this.Capacity);
+                this.HeightGrowth = this.HeightGrowth.Extend(this.Capacity);
+                this.Tag = this.Tag.Extend(this.Capacity);
+            }
+
+            this.Tag[this.Count] = tag;
+            this.Dbh[this.Count] = dbh;
+            this.Height[this.Count] = height;
+            this.CrownRatio[this.Count] = crownRatio;
+            this.LiveExpansionFactor[this.Count] = liveExpansionFactor;
+
+            ++this.Count;
         }
 
         public float GetBasalArea(int treeIndex)
         {
+            // TODO: support metric
+            Debug.Assert(this.Units == Units.English);
+
             float dbhInInches = this.Dbh[treeIndex];
             float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
             return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;

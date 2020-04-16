@@ -129,8 +129,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                 previousObjectiveFunction = currentObjectiveFunction;
             }
 
-            float maximumHarvest = float.MinValue;
-            float minimumHarvest = float.MaxValue;
+            float maximumHarvest = Single.MinValue;
+            float minimumHarvest = Single.MaxValue;
             float harvestSum = 0.0F;
             float harvestSumOfSquares = 0.0F;
             for (int periodIndex = 1; periodIndex < heuristic.BestTrajectory.HarvestVolumesByPeriod.Length; ++periodIndex)

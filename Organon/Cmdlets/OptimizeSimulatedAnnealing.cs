@@ -13,11 +13,11 @@ namespace Osu.Cof.Ferm.Cmdlets
         public Nullable<float> Alpha { get; set; }
 
         [Parameter]
-        [ValidateRange(0.0, float.MaxValue)]
+        [ValidateRange(0.0, Single.MaxValue)]
         public Nullable<float> FinalTemperature { get; set; }
         
         [Parameter]
-        [ValidateRange(0.0, float.MaxValue)]
+        [ValidateRange(0.0, Single.MaxValue)]
         public Nullable<float> InitialTemperature { get; set; }
         
         [Parameter]

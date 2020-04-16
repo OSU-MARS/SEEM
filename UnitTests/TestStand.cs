@@ -2,21 +2,19 @@
 using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace Osu.Cof.Ferm.Test
 {
     public class TestStand : OrganonStand
     {
-        public int[] QuantileByInitialDbh { get; private set; }
-        public Dictionary<FiaCode, List<int>> TreeIndicesBySpecies { get; private set; }
+        public SortedDictionary<FiaCode, int[]> InitialDbhQuantileBySpecies { get; private set; }
 
-        public TestStand(TreeModel treeModel, int ageInYears, int treeCount, float primarySiteIndex)
-            : base(ageInYears, treeCount, primarySiteIndex)
+        public TestStand(TreeModel treeModel, int ageInYears, float primarySiteIndex)
+            : base(ageInYears, primarySiteIndex)
         {
-            this.QuantileByInitialDbh = new int[this.TreeRecordCount];
-            this.TreeIndicesBySpecies = new Dictionary<FiaCode, List<int>>(this.TreeRecordCount);
+            this.InitialDbhQuantileBySpecies = new SortedDictionary<FiaCode, int[]>();
 
             this.SetDefaultAndMortalitySiteIndices(treeModel);
         }
@@ -24,6 +22,10 @@ namespace Osu.Cof.Ferm.Test
         protected TestStand(TestStand other)
             : base(other)
         {
+            // for now, assume DBH quantiles are fixed => shallow copy doesn't raise ownership or mutability concerns
+            this.InitialDbhQuantileBySpecies = other.InitialDbhQuantileBySpecies;
+
+            // don't need to call SetDefaultAndMortalitySiteIndices() as Stand's constructor copies site indicies
         }
 
         public new TestStand Clone()
@@ -31,44 +33,45 @@ namespace Osu.Cof.Ferm.Test
             return new TestStand(this);
         }
 
-        public void SetQuantiles()
+        public void Add(TreeRecord tree)
         {
-            // index trees by species
-            this.TreeIndicesBySpecies.Clear();
-            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            if (this.TreesBySpecies.TryGetValue(tree.Species, out Trees treesOfSpecies) == false)
             {
-                FiaCode species = this.Species[treeIndex];
-                if (this.TreeIndicesBySpecies.TryGetValue(species, out List<int> speciesIndices) == false)
-                {
-                    speciesIndices = new List<int>();
-                    this.TreeIndicesBySpecies.Add(species, speciesIndices);
-                }
-
-                speciesIndices.Add(treeIndex);
+                treesOfSpecies = new Trees(tree.Species, 1, Units.English);
+                this.TreesBySpecies.Add(tree.Species, treesOfSpecies);
             }
 
-            // find DBH sort order of trees in each species
-            // Since trees are entered by their initial diameter regardless of their ingrowth time, this includes ingrowth in quintiles
-            // even though it doesn't yet exist.
-            foreach (KeyValuePair<FiaCode, List<int>> treeIndicesForSpecies in this.TreeIndicesBySpecies)
+            Debug.Assert(treesOfSpecies.Units == Units.English);
+            treesOfSpecies.Add(tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
+        }
+
+        public void SetQuantiles()
+        {
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
-                // gather diameters of trees of this species and find their sort order
-                List<int> speciesIndices = treeIndicesForSpecies.Value;
-                float[] dbh = new float[speciesIndices.Count];
-                for (int index = 0; index < speciesIndices.Count; ++index)
+                // find DBH sort order of trees in each species
+                // Since trees are entered by their initial diameter regardless of their ingrowth time, this includes ingrowth in quintiles
+                // even though it doesn't yet exist.
+
+                // sort trees by DBH and capture the sort order to dbhSortIndices
+                float[] dbh = new float[treesOfSpecies.Count];
+                int[] dbhSortIndices = new int[treesOfSpecies.Count];
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    dbh[index] = this.Dbh[speciesIndices[index]];
+                    dbh[treeIndex] = treesOfSpecies.Dbh[treeIndex];
+                    dbhSortIndices[treeIndex] = treeIndex;
                 }
-                int[] dbhIndices = Enumerable.Range(0, speciesIndices.Count).ToArray();
-                Array.Sort(dbh, dbhIndices);
+                Array.Sort(dbh, dbhSortIndices);
 
                 // assign trees to quantiles
                 float dbhQuantilesAsSingle = (float)TestConstant.DbhQuantiles;
-                float speciesCountAsSingle = (float)speciesIndices.Count;
-                for (int index = 0; index < speciesIndices.Count; ++index)
+                float treeCountAsSingle = (float)treesOfSpecies.Count;
+
+                int[] initialDbhQuantileBySpecies = this.InitialDbhQuantileBySpecies.GetOrAdd(treesOfSpecies.Species, treesOfSpecies.Capacity);
+                for (int quantileAssignmentIndex = 0; quantileAssignmentIndex < treesOfSpecies.Count; ++quantileAssignmentIndex)
                 {
-                    int treeIndex = speciesIndices[dbhIndices[index]];
-                    this.QuantileByInitialDbh[treeIndex] = (int)MathF.Floor(dbhQuantilesAsSingle * (float)index / speciesCountAsSingle);
+                    int dbhSortIndex = dbhSortIndices[quantileAssignmentIndex];
+                    initialDbhQuantileBySpecies[dbhSortIndex] = (int)MathF.Floor(dbhQuantilesAsSingle * (float)quantileAssignmentIndex / treeCountAsSingle);
                 }
             }
         }
@@ -80,46 +83,51 @@ namespace Osu.Cof.Ferm.Test
             FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter writer = new StreamWriter(stream);
             writer.WriteLine("variant,year,tree,species,BAL,CCFL,DBH,height,expansion factor,crown ratio");
-            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
-                int id = this.Tag[treeIndex] > 0 ? this.Tag[treeIndex] : treeIndex;
-                FiaCode species = this.Species[treeIndex];
-                float dbhInInches = this.Dbh[treeIndex];
-                float heightInMeters = Constant.MetersPerFoot * this.Height[treeIndex];
-                float crownRatio = this.CrownRatio[treeIndex];
-                float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    int id = treesOfSpecies.Tag[treeIndex];
+                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                    float heightInMeters = Constant.MetersPerFoot * treesOfSpecies.Height[treeIndex];
+                    float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
+                    float liveExpansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
 
-                float basalAreaLarger = TestConstant.AcresPerHectare * TestConstant.SquareMetersPerSquareFoot * density.GetBasalAreaLarger(dbhInInches);
-                float ccfLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
-                writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}", 
-                                 variant.TreeModel, year, id, species, basalAreaLarger, ccfLarger, Constant.CmPerInch * dbhInInches, 
-                                 heightInMeters, liveExpansionFactor, crownRatio);
+                    float basalAreaLarger = TestConstant.AcresPerHectare * TestConstant.SquareMetersPerSquareFoot * density.GetBasalAreaLarger(dbhInInches);
+                    float ccfLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
+                    writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
+                                     variant.TreeModel, year, id, treesOfSpecies.Species, basalAreaLarger, ccfLarger, Constant.CmPerInch * dbhInInches,
+                                     heightInMeters, liveExpansionFactor, crownRatio);
+                }
             }
         }
 
         public void WriteTreesAsCsv(TestContext testContext, OrganonVariant variant, int year, bool omitExpansionFactorZeroTrees)
         {
-            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
-                float expansionFactor = this.LiveExpansionFactor[treeIndex];
-                if (omitExpansionFactorZeroTrees && (expansionFactor == 0))
+                int[] initialDbhQuantile = this.InitialDbhQuantileBySpecies[treesOfSpecies.Species];
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    continue;
-                }
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    if (omitExpansionFactorZeroTrees && (expansionFactor == 0))
+                    {
+                        continue;
+                    }
 
-                int id = this.Tag[treeIndex] > 0 ? this.Tag[treeIndex] : treeIndex;
-                FiaCode species = this.Species[treeIndex];
-                float dbhInInches = this.Dbh[treeIndex];
-                float heightInFeet = this.Height[treeIndex];
-                float crownRatio = this.CrownRatio[treeIndex];
-                float deadExpansionFactor = this.DeadExpansionFactor[treeIndex];
-                float dbhGrowth = this.DbhGrowth[treeIndex];
-                float heightGrowth = this.HeightGrowth[treeIndex];
-                int quantile = this.QuantileByInitialDbh[treeIndex];
-                testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
-                                      variant.TreeModel, year, id, species, 
-                                      dbhInInches, heightInFeet, expansionFactor, deadExpansionFactor,
-                                      crownRatio, dbhGrowth, heightGrowth, quantile);
+                    int id = treesOfSpecies.Tag[treeIndex];
+                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                    float heightInFeet = treesOfSpecies.Height[treeIndex];
+                    float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
+                    float deadExpansionFactor = treesOfSpecies.DeadExpansionFactor[treeIndex];
+                    float dbhGrowth = treesOfSpecies.DbhGrowth[treeIndex];
+                    float heightGrowth = treesOfSpecies.HeightGrowth[treeIndex];
+                    int quantile = initialDbhQuantile[treeIndex];
+                    testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
+                                          variant.TreeModel, year, id, treesOfSpecies.Species,
+                                          dbhInInches, heightInFeet, expansionFactor, deadExpansionFactor,
+                                          crownRatio, dbhGrowth, heightGrowth, quantile);
+                }
             }
         }
 
@@ -139,26 +147,29 @@ namespace Osu.Cof.Ferm.Test
 
         public void WriteTreesToCsv(StreamWriter writer, OrganonVariant variant, int year)
         {
-            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
-                float expansionFactor = TestConstant.AcresPerHectare * this.LiveExpansionFactor[treeIndex];
-                if (expansionFactor == 0)
+                int[] initialDbhQuantile = this.InitialDbhQuantileBySpecies[treesOfSpecies.Species];
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    continue;
-                }
+                    float expansionFactor = TestConstant.AcresPerHectare * treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    if (expansionFactor == 0)
+                    {
+                        continue;
+                    }
 
-                int id = this.Tag[treeIndex] > 0 ? this.Tag[treeIndex] : treeIndex;
-                FiaCode species = this.Species[treeIndex];
-                float dbhInCentimeters = Constant.CmPerInch * this.Dbh[treeIndex];
-                float heightInMeters = Constant.MetersPerFoot * this.Height[treeIndex];
-                float crownRatio = this.CrownRatio[treeIndex];
-                float deadExpansionFactor = TestConstant.AcresPerHectare * this.DeadExpansionFactor[treeIndex];
-                float dbhGrowth = Constant.CmPerInch * this.DbhGrowth[treeIndex];
-                float heightGrowth = Constant.MetersPerFoot * this.HeightGrowth[treeIndex];
-                int quantile = this.QuantileByInitialDbh[treeIndex];
-                writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
-                                 variant.TreeModel, year, id, species, dbhInCentimeters, heightInMeters, 
-                                 expansionFactor, deadExpansionFactor, crownRatio, dbhGrowth, heightGrowth, quantile);
+                    int id = treesOfSpecies.Tag[treeIndex];
+                    float dbhInCentimeters = Constant.CmPerInch * treesOfSpecies.Dbh[treeIndex];
+                    float heightInMeters = Constant.MetersPerFoot * treesOfSpecies.Height[treeIndex];
+                    float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
+                    float deadExpansionFactor = TestConstant.AcresPerHectare * treesOfSpecies.DeadExpansionFactor[treeIndex];
+                    float dbhGrowth = Constant.CmPerInch * treesOfSpecies.DbhGrowth[treeIndex];
+                    float heightGrowth = Constant.MetersPerFoot * treesOfSpecies.HeightGrowth[treeIndex];
+                    int quantile = initialDbhQuantile[treeIndex];
+                    writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
+                                     variant.TreeModel, year, id, treesOfSpecies.Species, dbhInCentimeters, heightInMeters,
+                                     expansionFactor, deadExpansionFactor, crownRatio, dbhGrowth, heightGrowth, quantile);
+                }
             }
         }
     }

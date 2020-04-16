@@ -10,16 +10,20 @@ namespace Osu.Cof.Ferm.Test
     {
         private readonly float plotAreaInAcres;
         private int plotCount;
+        private int yearOfMostRecentIngrowthAdded;
 
-        public SortedList<int, PspTreeMeasurementSeries> MeasurementsByTag { get; set; }
-        public HashSet<int> MeasurementYears { get; set; }
+        public SortedDictionary<int, List<PspTreeMeasurementSeries>> IngrowthByYear { get; private set; }
+        public SortedList<int, PspTreeMeasurementSeries> MeasurementsByTag { get; private set; }
+        public HashSet<int> MeasurementYears { get; private set; }
 
         public PspStand(string xlsxFilePath, string worksheetName, float plotAreaInAcres)
         {
+            this.IngrowthByYear = new SortedDictionary<int, List<PspTreeMeasurementSeries>>();
             this.MeasurementsByTag = new SortedList<int, PspTreeMeasurementSeries>();
             this.MeasurementYears = new HashSet<int>();
             this.plotAreaInAcres = plotAreaInAcres;
             this.plotCount = 0;
+            this.yearOfMostRecentIngrowthAdded = Int32.MinValue;
 
             XlsxReader reader = new XlsxReader();
             reader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
@@ -27,27 +31,44 @@ namespace Osu.Cof.Ferm.Test
 
         public void AddIngrowth(int year, OrganonStand stand, OrganonStandDensity standDensity)
         {
-            int firstMeasurementYear = this.GetFirstMeasurementYear();
+            List<int> remainingIngrowthYears = this.IngrowthByYear.Keys.Where(key => key > this.yearOfMostRecentIngrowthAdded).ToList();
+            if ((remainingIngrowthYears.Count < 1) || (remainingIngrowthYears[0] > year))
+            {
+                // no ingrowth in this simulation step
+                return;
+            }
+            int ingrowthYear = remainingIngrowthYears[0];
+            Debug.Assert((remainingIngrowthYears.Count == 1) || (remainingIngrowthYears[1] > year)); // for now, assume only one ingrowth measurement per simulation timestep
+
             float fixedPlotExpansionFactor = this.GetTreesPerAcreExpansionFactor();
-            int treeIndex = 0;
+            foreach (PspTreeMeasurementSeries tree in this.IngrowthByYear[ingrowthYear])
+            {
+                Trees treesOfSpecies = stand.TreesBySpecies[tree.Species];
+                Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
+
+                float dbhInInches = Constant.InchesPerCm * tree.DbhInCentimetersByYear.Values[0];
+                float heightInFeet = TestConstant.FeetPerMeter * TreeRecord.EstimateHeightInMeters(tree.Species, dbhInInches);
+                treesOfSpecies.Add(tree.Tag, dbhInInches, heightInFeet, tree.EstimateInitialCrownRatio(standDensity), fixedPlotExpansionFactor);
+            }
+
+            this.yearOfMostRecentIngrowthAdded = ingrowthYear;
+        }
+
+        private Dictionary<FiaCode, int> CountTreesBySpecies()
+        {
+            Dictionary<FiaCode, int> treeCountBySpecies = new Dictionary<FiaCode, int>();
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                if (expansionFactor == 0.0F)
+                if (treeCountBySpecies.TryGetValue(tree.Species, out int count) == false)
                 {
-                    int ingrowthYear = tree.GetFirstMeasurementYear();
-                    if ((ingrowthYear != firstMeasurementYear) && (ingrowthYear <= year))
-                    {
-                        float dbhInCentimeters = tree.DbhInCentimetersByYear.Values[0];
-                        stand.Dbh[treeIndex] = dbhInCentimeters / Constant.CmPerInch;
-                        stand.Height[treeIndex] = TestConstant.FeetPerMeter * TreeRecord.EstimateHeightInMeters(tree.Species, stand.Dbh[treeIndex]);
-                        stand.CrownRatio[treeIndex] = tree.EstimateInitialCrownRatio(standDensity);
-                        stand.LiveExpansionFactor[treeIndex] = fixedPlotExpansionFactor;
-                    }
+                    treeCountBySpecies.Add(tree.Species, 1);
                 }
-
-                ++treeIndex;
+                else
+                {
+                    treeCountBySpecies[tree.Species] = ++count;
+                }
             }
+            return treeCountBySpecies;
         }
 
         private int GetFirstMeasurementYear()
@@ -65,6 +86,23 @@ namespace Osu.Cof.Ferm.Test
             return TestConstant.AcresPerHectare * this.GetTreesPerAcreExpansionFactor();
         }
 
+        private FiaCode MaybeRemapToSupportedSpecies(FiaCode species, OrganonVariant variant)
+        {
+            if (variant.IsSpeciesSupported(species))
+            {
+                return species;
+            }
+
+            if (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla)
+            {
+                return FiaCode.CornusNuttallii;
+            }
+            else
+            {
+                throw Trees.CreateUnhandledSpeciesException(species);
+            }
+        }
+
         private void ParseRow(int rowIndex, string[] rowAsStrings)
         {
             if ((rowIndex == 0) || (rowAsStrings[Constant.Psp.ColumnIndex.Tag] == null))
@@ -78,7 +116,12 @@ namespace Osu.Cof.Ferm.Test
             int tag = Int32.Parse(rowAsStrings[Constant.Psp.ColumnIndex.Tag]);
             if (this.MeasurementsByTag.TryGetValue(tag, out PspTreeMeasurementSeries tree) == false)
             {
-                string species = rowAsStrings[Constant.Psp.ColumnIndex.Species];
+                FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[Constant.Psp.ColumnIndex.Species]);
+                if (species == FiaCode.Alnus)
+                {
+                    // remap Alnus viridis ssp sinuata to Alnus rubra as no Organon variant has support
+                    species = FiaCode.AlnusRubra;
+                }
                 tree = new PspTreeMeasurementSeries(tag, species);
                 this.MeasurementsByTag.Add(tag, tree);
             }
@@ -102,54 +145,40 @@ namespace Osu.Cof.Ferm.Test
 
         public TestStand ToStand(OrganonVariant variant, float siteIndex)
         {
-            int firstMeasurementYear = this.GetFirstMeasurementYear();
+            int firstPlotMeasurementYear = this.GetFirstMeasurementYear();
 
             // populate Organon version of stand
             // Currently, PSP stands are assumed to have IsEvenAge = false, which causes Organon to require a stand age of
             // zero years be passed.
-            TestStand stand = new TestStand(variant.TreeModel, 0, this.MeasurementsByTag.Count, siteIndex)
+            TestStand stand = new TestStand(variant.TreeModel, 0, siteIndex)
             {
                 NumberOfPlots = this.plotCount
             };
+            foreach (KeyValuePair<FiaCode, int> speciesCount in this.CountTreesBySpecies())
+            {
+                // metric PSP data is converted to English units for Organon below
+                stand.TreesBySpecies.Add(speciesCount.Key, new Trees(speciesCount.Key, speciesCount.Value, Units.English));
+            }
+
             float fixedPlotExpansionFactor = this.GetTreesPerAcreExpansionFactor();
-            int treeIndex = 0;
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
-                float expansionFactor = fixedPlotExpansionFactor;
-                if (tree.DbhInCentimetersByYear.TryGetValue(firstMeasurementYear, out float dbhInCentimeters) == false)
+                int firstTreeMeasurementYear = tree.GetFirstMeasurementYear();
+                Debug.Assert(firstTreeMeasurementYear >= firstPlotMeasurementYear);
+                if (firstTreeMeasurementYear != firstPlotMeasurementYear)
                 {
-                    dbhInCentimeters = tree.DbhInCentimetersByYear.Values[0];
-                    expansionFactor = 0.0F;
+                    // tree is ingrowth
+                    List<PspTreeMeasurementSeries> ingrowthForYear = this.IngrowthByYear.GetOrAdd(firstTreeMeasurementYear);
+                    ingrowthForYear.Add(tree);
+                    continue;
                 }
 
-                FiaCode species = FiaCodeExtensions.Parse(tree.Species);
-                if (species == FiaCode.Alnus)
-                {
-                    // remap Alnus viridis ssp sinuata to Alnus rubra as no Organon variant has support
-                    species = FiaCode.AlnusRubra;
-                }
-                stand.Tag[treeIndex] = tree.Tag;
-                stand.Species[treeIndex] = species;
-                stand.Dbh[treeIndex] = TestConstant.InchesPerCm * dbhInCentimeters;
-                stand.Height[treeIndex] = TreeRecord.EstimateHeightInFeet(species, stand.Dbh[treeIndex]);
-                stand.CrownRatio[treeIndex] = TestConstant.Default.CrownRatio;
-                stand.LiveExpansionFactor[treeIndex] = expansionFactor;
-
-                if (variant.IsSpeciesSupported(species) == false)
-                {
-                    if (species == FiaCode.ChrysolepisChrysophyllaVarChrysophylla)
-                    {
-                        species = FiaCode.CornusNuttallii;
-                    }
-                    else
-                    {
-                        throw new NotSupportedException(String.Format("Unsupported species {0}.", species));
-                    }
-
-                    stand.Species[treeIndex] = species;
-                }
-
-                ++treeIndex;
+                FiaCode species = this.MaybeRemapToSupportedSpecies(tree.Species, variant);
+                Trees treesOfSpecies = stand.TreesBySpecies[species];
+                Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
+                float dbhInInches = TestConstant.InchesPerCm * tree.DbhInCentimetersByYear[firstPlotMeasurementYear];
+                float heightInFeet = TreeRecord.EstimateHeightInFeet(species, dbhInInches);
+                treesOfSpecies.Add(tree.Tag, dbhInInches, heightInFeet, TestConstant.Default.CrownRatio, fixedPlotExpansionFactor);
             }
 
             // establish growth tracking quantiles
@@ -157,16 +186,25 @@ namespace Osu.Cof.Ferm.Test
 
             // estimate crown ratios
             OrganonStandDensity standDensity = new OrganonStandDensity(stand, variant);
-            treeIndex = 0;
+            Dictionary<FiaCode, int> indexBySpecies = new Dictionary<FiaCode, int>();
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
-                float expansionFactor = stand.LiveExpansionFactor[treeIndex];
-                if (expansionFactor > 0.0F)
+                int firstTreeMeasurementYear = tree.GetFirstMeasurementYear();
+                if (firstTreeMeasurementYear != firstPlotMeasurementYear)
                 {
-                    stand.CrownRatio[treeIndex] = tree.EstimateInitialCrownRatio(standDensity);
+                    continue;
                 }
 
-                ++treeIndex;
+                if (indexBySpecies.TryGetValue(tree.Species, out int treeIndex) == false)
+                {
+                    treeIndex = 0;
+                    indexBySpecies.Add(tree.Species, treeIndex);
+                }
+
+                FiaCode species = this.MaybeRemapToSupportedSpecies(tree.Species, variant);
+                Trees treesOfSpecies = stand.TreesBySpecies[species];
+                treesOfSpecies.CrownRatio[treeIndex] = tree.EstimateInitialCrownRatio(standDensity);
+                indexBySpecies[tree.Species] = ++treeIndex;
             }
 
             return stand;

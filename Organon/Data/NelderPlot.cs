@@ -1,6 +1,7 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Data
 {
@@ -31,11 +32,7 @@ namespace Osu.Cof.Ferm.Data
 
             this.DbhInCentimeters.Add(0.1F * float.Parse(rowAsStrings[Constant.Nelder.ColumnIndex.DbhInMillimeters]));
             this.HeightInMeters.Add(0.1F * float.Parse(rowAsStrings[Constant.Nelder.ColumnIndex.HeightInDecimeters]));
-            FiaCode species = (rowAsStrings[Constant.Nelder.ColumnIndex.Species]) switch
-            {
-                "PSME" => FiaCode.PseudotsugaMenziesii,
-                _ => throw new NotSupportedException(String.Format("Unhandled species '{0}'.", rowAsStrings[Constant.Nelder.ColumnIndex.Species])),
-            };
+            FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[Constant.Nelder.ColumnIndex.Species]);
             this.Species.Add(species);
             this.TreeID.Add(Int32.Parse(rowAsStrings[Constant.Nelder.ColumnIndex.Tree]));
         }
@@ -52,22 +49,44 @@ namespace Osu.Cof.Ferm.Data
                 throw new ArgumentOutOfRangeException(nameof(treesInStand));
             }
 
-            OrganonStand stand = new OrganonStand(20, treesInStand, siteIndex);
+            Dictionary<FiaCode, int> restrictedTreeCountBySpecies = new Dictionary<FiaCode, int>();
             for (int treeIndex = 0; treeIndex < treesInStand; ++treeIndex)
             {
-                stand.Dbh[treeIndex] = Constant.InchesPerCm * this.DbhInCentimeters[treeIndex];
-                stand.Height[treeIndex] = Constant.FeetPerMeter * this.HeightInMeters[treeIndex];
-                stand.LiveExpansionFactor[treeIndex] = 0.6F;
-                stand.Species[treeIndex] = this.Species[treeIndex];
-                stand.Tag[treeIndex] = this.TreeID[treeIndex];
+                FiaCode species = this.Species[treeIndex];
+                if (restrictedTreeCountBySpecies.TryGetValue(species, out int count) == false)
+                {
+                    restrictedTreeCountBySpecies.Add(species, 1);
+                }
+                else
+                {
+                    restrictedTreeCountBySpecies[species] = ++count;
+                }
+            }
+
+            // TODO: read tree ages from .csv and use them to set stand age
+            OrganonStand stand = new OrganonStand(20, siteIndex);
+            foreach (KeyValuePair<FiaCode, int> treesOfSpecies in restrictedTreeCountBySpecies)
+            {
+                stand.TreesBySpecies.Add(treesOfSpecies.Key, new Trees(treesOfSpecies.Key, treesOfSpecies.Value, Units.English));
+            }
+
+            for (int treeIndex = 0; treeIndex < treesInStand; ++treeIndex)
+            {
+                Trees treesOfSpecies = stand.TreesBySpecies[this.Species[treeIndex]];
+                Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
+                float dbhInInches = Constant.InchesPerCm * this.DbhInCentimeters[treeIndex];
+                float heightInFeet = Constant.FeetPerMeter * this.HeightInMeters[treeIndex];
+                float liveExpansionFactor = 0.6F;
 
                 // rough crown length estimate assuming 400 TPA (10.4 x 10.4 feet) from the linear regressions of
                 // Curtis RO, Reukema DL. 1970. Crown Development and Site Estimates in a Douglas-Fir Plantation Spacing Test. 
                 //   Forest Science 16(3):287-301.
                 // TODO: These regressions are problematic as it has a negative, rather than positive intercept at zero DBH for spacings
                 // of 10x10 feet and closer. They are also specific to Wind River.
-                float crownLengthInFeet = 3.20F * stand.Dbh[treeIndex] + 1.0F;
-                stand.CrownRatio[treeIndex] = crownLengthInFeet / stand.Height[treeIndex];
+                float crownLengthInFeet = 3.20F * dbhInInches + 1.0F;
+                float crownRatio = crownLengthInFeet / heightInFeet;
+
+                treesOfSpecies.Add(this.TreeID[treeIndex], dbhInInches, heightInFeet, crownRatio, liveExpansionFactor);
             }
             return stand;
         }

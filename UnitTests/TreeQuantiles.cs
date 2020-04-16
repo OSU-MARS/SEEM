@@ -9,23 +9,23 @@ namespace Osu.Cof.Ferm.Test
 {
     internal class TreeQuantiles
     {
-        public readonly Dictionary<FiaCode, float[]> DeadExpansionFactorBySpecies;
-        public readonly Dictionary<FiaCode, float[]> LiveExpansionFactorBySpecies;
-        public readonly Dictionary<FiaCode, float[]> MaxDbhInCmBySpecies;
-        public readonly Dictionary<FiaCode, float[]> MeanCrownRatioBySpecies;
-        public readonly Dictionary<FiaCode, float[]> MeanDbhInCmBySpecies;
-        public readonly Dictionary<FiaCode, float[]> MeanHeightInMetersBySpecies;
-        public readonly Dictionary<FiaCode, float[]> MinDbhInCmBySpecies;
+        public readonly SortedDictionary<FiaCode, float[]> DeadExpansionFactorBySpecies;
+        public readonly SortedDictionary<FiaCode, float[]> LiveExpansionFactorBySpecies;
+        public readonly SortedDictionary<FiaCode, float[]> MaxDbhInCmBySpecies;
+        public readonly SortedDictionary<FiaCode, float[]> MeanCrownRatioBySpecies;
+        public readonly SortedDictionary<FiaCode, float[]> MeanDbhInCmBySpecies;
+        public readonly SortedDictionary<FiaCode, float[]> MeanHeightInMetersBySpecies;
+        public readonly SortedDictionary<FiaCode, float[]> MinDbhInCmBySpecies;
 
         protected TreeQuantiles()
         {
-            this.DeadExpansionFactorBySpecies = new Dictionary<FiaCode, float[]>();
-            this.LiveExpansionFactorBySpecies = new Dictionary<FiaCode, float[]>();
-            this.MaxDbhInCmBySpecies = new Dictionary<FiaCode, float[]>();
-            this.MeanCrownRatioBySpecies = new Dictionary<FiaCode, float[]>();
-            this.MeanDbhInCmBySpecies = new Dictionary<FiaCode, float[]>();
-            this.MeanHeightInMetersBySpecies = new Dictionary<FiaCode, float[]>();
-            this.MinDbhInCmBySpecies = new Dictionary<FiaCode, float[]>();
+            this.DeadExpansionFactorBySpecies = new SortedDictionary<FiaCode, float[]>();
+            this.LiveExpansionFactorBySpecies = new SortedDictionary<FiaCode, float[]>();
+            this.MaxDbhInCmBySpecies = new SortedDictionary<FiaCode, float[]>();
+            this.MeanCrownRatioBySpecies = new SortedDictionary<FiaCode, float[]>();
+            this.MeanDbhInCmBySpecies = new SortedDictionary<FiaCode, float[]>();
+            this.MeanHeightInMetersBySpecies = new SortedDictionary<FiaCode, float[]>();
+            this.MinDbhInCmBySpecies = new SortedDictionary<FiaCode, float[]>();
         }
 
         public TreeQuantiles(TestStand stand, PspStand pspStand, int measurementYear)
@@ -33,63 +33,63 @@ namespace Osu.Cof.Ferm.Test
         {
             float perTreeExpansionFactor = pspStand.GetTreesPerHectareExpansionFactor();
 
-            foreach (KeyValuePair<FiaCode, List<int>> treeIndicesForSpecies in stand.TreeIndicesBySpecies)
+            foreach (KeyValuePair<FiaCode, int[]> initialDbhQuantile in stand.InitialDbhQuantileBySpecies)
             {
                 // accumulate stand state into quantiles
-                List<int> treeIndices = treeIndicesForSpecies.Value;
-                int[] quantileCounts = new int[TestConstant.DbhQuantiles];
-                float[] quantileLiveExpansionFactor = new float[TestConstant.DbhQuantiles];
-                float[] quantileMaxDbh = new float[TestConstant.DbhQuantiles];
-                float[] quantileMeanDbh = new float[TestConstant.DbhQuantiles];
-                float[] quantileMinDbh = Enumerable.Repeat(Constant.CmPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
+                int[] speciesQuantileCounts = new int[TestConstant.DbhQuantiles];
+                float[] speciesQuantileLiveExpansionFactor = new float[TestConstant.DbhQuantiles];
+                float[] speciesQuantileMaxDbh = new float[TestConstant.DbhQuantiles];
+                float[] speciesQuantileMeanDbh = new float[TestConstant.DbhQuantiles];
+                float[] speciesQuantileMinDbh = Enumerable.Repeat(Constant.CmPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
 
-                for (int speciesIndex = 0; speciesIndex < treeIndices.Count; ++speciesIndex)
+                Trees treesOfSpecies = stand.TreesBySpecies[initialDbhQuantile.Key];
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    int treeIndex = treeIndices[speciesIndex];
-                    int quantile = stand.QuantileByInitialDbh[treeIndex];
-                    int tag = stand.Tag[treeIndex];
+                    int quantile = initialDbhQuantile.Value[treeIndex];
+                    int tag = treesOfSpecies.Tag[treeIndex];
                     PspTreeMeasurementSeries measurementSeries = pspStand.MeasurementsByTag[tag];
                     if (measurementSeries.DbhInCentimetersByYear.TryGetValue(measurementYear, out float dbh))
                     {
-                        quantileCounts[quantile] += 1;
-                        quantileLiveExpansionFactor[quantile] += perTreeExpansionFactor;
-                        quantileMaxDbh[quantile] = MathF.Max(quantileMaxDbh[quantile], dbh);
-                        quantileMeanDbh[quantile] += dbh;
-                        quantileMinDbh[quantile] = MathF.Min(quantileMinDbh[quantile], dbh);
+                        speciesQuantileCounts[quantile] += 1;
+                        speciesQuantileLiveExpansionFactor[quantile] += perTreeExpansionFactor;
+                        speciesQuantileMaxDbh[quantile] = MathF.Max(speciesQuantileMaxDbh[quantile], dbh);
+                        speciesQuantileMeanDbh[quantile] += dbh;
+                        speciesQuantileMinDbh[quantile] = MathF.Min(speciesQuantileMinDbh[quantile], dbh);
                     }
                 }
 
                 for (int quantile = 0; quantile < TestConstant.DbhQuantiles; ++quantile)
                 {
-                    int quantileCount = quantileCounts[quantile];
+                    int quantileCount = speciesQuantileCounts[quantile];
                     if (quantileCount > 0)
                     {
-                        quantileMeanDbh[quantile] = quantileMeanDbh[quantile] / (float)quantileCount;
+                        speciesQuantileMeanDbh[quantile] = speciesQuantileMeanDbh[quantile] / (float)quantileCount;
 
-                        Debug.Assert(quantileMinDbh[quantile] / quantileMaxDbh[quantile] < 1.0001);
-                        Debug.Assert(quantileMinDbh[quantile] / quantileMeanDbh[quantile] < 1.0001);
-                        Debug.Assert(quantileMeanDbh[quantile] / quantileMaxDbh[quantile] < 1.0001);
+                        Debug.Assert(speciesQuantileMinDbh[quantile] / speciesQuantileMaxDbh[quantile] < 1.0001);
+                        Debug.Assert(speciesQuantileMinDbh[quantile] / speciesQuantileMeanDbh[quantile] < 1.0001);
+                        Debug.Assert(speciesQuantileMeanDbh[quantile] / speciesQuantileMaxDbh[quantile] < 1.0001);
                     }
                 }
 
-                FiaCode species = treeIndicesForSpecies.Key;
+                FiaCode species = initialDbhQuantile.Key;
                 this.DeadExpansionFactorBySpecies.Add(species, new float[TestConstant.DbhQuantiles]);
-                this.LiveExpansionFactorBySpecies.Add(species, quantileLiveExpansionFactor);
-                this.MaxDbhInCmBySpecies.Add(species, quantileMaxDbh);
+                this.LiveExpansionFactorBySpecies.Add(species, speciesQuantileLiveExpansionFactor);
+                this.MaxDbhInCmBySpecies.Add(species, speciesQuantileMaxDbh);
                 this.MeanCrownRatioBySpecies.Add(species, new float[TestConstant.DbhQuantiles]);
-                this.MeanDbhInCmBySpecies.Add(species, quantileMeanDbh);
+                this.MeanDbhInCmBySpecies.Add(species, speciesQuantileMeanDbh);
                 this.MeanHeightInMetersBySpecies.Add(species, new float[TestConstant.DbhQuantiles]);
-                this.MinDbhInCmBySpecies.Add(species, quantileMinDbh);
+                this.MinDbhInCmBySpecies.Add(species, speciesQuantileMinDbh);
             }
         }
 
         public TreeQuantiles(TestStand stand)
             : this()
         {
-            foreach (KeyValuePair<FiaCode, List<int>> treeIndicesForSpecies in stand.TreeIndicesBySpecies)
+            foreach (KeyValuePair<FiaCode, int[]> initialDbhQuantile in stand.InitialDbhQuantileBySpecies)
             {
                 // accumulate stand state into quantiles
-                List<int> treeIndices = treeIndicesForSpecies.Value;
+                Trees treesOfSpecies = stand.TreesBySpecies[initialDbhQuantile.Key];
+
                 int[] quantileCounts = new int[TestConstant.DbhQuantiles];
                 float[] quantileDeadExpansionFactor = new float[TestConstant.DbhQuantiles];
                 float[] quantileLiveExpansionFactor = new float[TestConstant.DbhQuantiles];
@@ -98,23 +98,20 @@ namespace Osu.Cof.Ferm.Test
                 float[] quantileMeanDbh = new float[TestConstant.DbhQuantiles];
                 float[] quantileMeanHeight = new float[TestConstant.DbhQuantiles];
                 float[] quantileMinDbh = Enumerable.Repeat(Constant.CmPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
-                for (int speciesIndex = 0; speciesIndex < treeIndices.Count; ++speciesIndex)
+                for (int treeIndex = 0; treeIndex < initialDbhQuantile.Value.Length; ++treeIndex)
                 {
-                    int treeIndex = treeIndices[speciesIndex];
-                    Debug.Assert(treeIndicesForSpecies.Key == stand.Species[treeIndex]);
-
-                    int quantile = stand.QuantileByInitialDbh[treeIndex];
-                    float liveExpansionFactor = stand.LiveExpansionFactor[treeIndex];
+                    int quantile = initialDbhQuantile.Value[treeIndex];
+                    float liveExpansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
                     if (liveExpansionFactor > 0.0F)
                     {
                         quantileCounts[quantile] += 1;
-                        quantileDeadExpansionFactor[quantile] += stand.DeadExpansionFactor[treeIndex];
+                        quantileDeadExpansionFactor[quantile] += treesOfSpecies.DeadExpansionFactor[treeIndex];
                         quantileLiveExpansionFactor[quantile] += liveExpansionFactor;
-                        quantileMaxDbh[quantile] = MathF.Max(quantileMaxDbh[quantile], stand.Dbh[treeIndex]);
-                        quantileMeanCrownRatio[quantile] += liveExpansionFactor * stand.CrownRatio[treeIndex];
-                        quantileMeanDbh[quantile] += liveExpansionFactor * stand.Dbh[treeIndex];
-                        quantileMeanHeight[quantile] += liveExpansionFactor * stand.Height[treeIndex];
-                        quantileMinDbh[quantile] = MathF.Min(quantileMinDbh[quantile], stand.Dbh[treeIndex]);
+                        quantileMaxDbh[quantile] = MathF.Max(quantileMaxDbh[quantile], treesOfSpecies.Dbh[treeIndex]);
+                        quantileMeanCrownRatio[quantile] += liveExpansionFactor * treesOfSpecies.CrownRatio[treeIndex];
+                        quantileMeanDbh[quantile] += liveExpansionFactor * treesOfSpecies.Dbh[treeIndex];
+                        quantileMeanHeight[quantile] += liveExpansionFactor * treesOfSpecies.Height[treeIndex];
+                        quantileMinDbh[quantile] = MathF.Min(quantileMinDbh[quantile], treesOfSpecies.Dbh[treeIndex]);
                     }
                 }
 
@@ -139,7 +136,7 @@ namespace Osu.Cof.Ferm.Test
                     }
                 }
 
-                FiaCode species = treeIndicesForSpecies.Key;
+                FiaCode species = initialDbhQuantile.Key;
                 this.DeadExpansionFactorBySpecies.Add(species, quantileDeadExpansionFactor);
                 this.LiveExpansionFactorBySpecies.Add(species, quantileLiveExpansionFactor);
                 this.MaxDbhInCmBySpecies.Add(species, quantileMaxDbh);

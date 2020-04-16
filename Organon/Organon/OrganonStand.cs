@@ -1,9 +1,10 @@
 ﻿using Osu.Cof.Ferm.Species;
 using System;
+using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Organon
 {
-    public class OrganonStand : Trees
+    public class OrganonStand : Stand
     {
         // STOR[2]
         public float A1 { get; private set; }
@@ -39,10 +40,9 @@ namespace Osu.Cof.Ferm.Organon
 
         public OrganonWarnings Warnings { get; private set; }
 
-        public bool[] TreeHeightWarning { get; private set; }
+        public SortedDictionary<FiaCode, bool[]> TreeHeightWarningBySpecies { get; private set; }
 
-        public OrganonStand(int ageInYears, int treeRecordCount, float primarySiteIndex)
-            : base(treeRecordCount)
+        public OrganonStand(int ageInYears, float primarySiteIndex)
         {
             this.AgeInYears = ageInYears;
             this.BreastHeightAgeInYears = ageInYears;
@@ -50,28 +50,29 @@ namespace Osu.Cof.Ferm.Organon
             this.NumberOfPlots = 1;
             this.SiteIndex = primarySiteIndex;
             this.RedAlderSiteIndex = -1.0F;
-            this.TreeHeightWarning = new bool[treeRecordCount];
+            this.TreeHeightWarningBySpecies = new SortedDictionary<FiaCode, bool[]>();
             this.Warnings = new OrganonWarnings();
         }
 
         public OrganonStand(OrganonStand other)
-            : this(other.AgeInYears, other.TreeRecordCount, other.SiteIndex)
+            : this(other.AgeInYears, other.SiteIndex)
         {
             this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
-
-            other.CrownRatio.CopyTo(this.CrownRatio, 0);
-            other.Dbh.CopyTo(this.Dbh, 0);
-            other.DbhGrowth.CopyTo(this.DbhGrowth, 0);
-            other.DeadExpansionFactor.CopyTo(this.DeadExpansionFactor, 0);
-            other.LiveExpansionFactor.CopyTo(this.LiveExpansionFactor, 0);
-            other.Height.CopyTo(this.Height, 0);
-            other.HeightGrowth.CopyTo(this.HeightGrowth, 0);
             this.HemlockSiteIndex = other.HemlockSiteIndex;
             this.NumberOfPlots = other.NumberOfPlots;
             this.RedAlderSiteIndex = other.RedAlderSiteIndex;
-            other.Species.CopyTo(this.Species, 0);
-            other.TreeHeightWarning.CopyTo(this.TreeHeightWarning, 0);
             this.Warnings = new OrganonWarnings(other.Warnings);
+
+            foreach (KeyValuePair<FiaCode, bool[]> species in other.TreeHeightWarningBySpecies)
+            {
+                bool[] heightWarnings = new bool[species.Value.Length];
+                species.Value.CopyTo(heightWarnings, 0);
+                this.TreeHeightWarningBySpecies.Add(species.Key, heightWarnings);
+            }
+            foreach (KeyValuePair<FiaCode, Trees> species in other.TreesBySpecies)
+            {
+                this.TreesBySpecies.Add(species.Key, new Trees(species.Value));
+            }
         }
 
         public OrganonStand Clone()
@@ -79,20 +80,34 @@ namespace Osu.Cof.Ferm.Organon
             return new OrganonStand(this);
         }
 
-        public void CopyTreeGrowth(Trees trees)
+        public void CopyTreeGrowth(OrganonStand other)
         {
-            if (trees.TreeRecordCount != this.TreeRecordCount)
+            foreach (Trees otherTreesOfSpecies in other.TreesBySpecies.Values)
             {
-                throw new ArgumentOutOfRangeException(nameof(trees));
-            }
+                Trees thisTreesOfSpecies = this.TreesBySpecies[otherTreesOfSpecies.Species];
+                if (otherTreesOfSpecies.Count > thisTreesOfSpecies.Capacity)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(other));
+                }
 
-            Array.Copy(trees.CrownRatio, 0, this.CrownRatio, 0, this.CrownRatio.Length);
-            Array.Copy(trees.Dbh, 0, this.Dbh, 0, this.Dbh.Length);
-            Array.Copy(trees.DbhGrowth, 0, this.DbhGrowth, 0, this.DbhGrowth.Length);
-            Array.Copy(trees.DeadExpansionFactor, 0, this.DeadExpansionFactor, 0, this.DeadExpansionFactor.Length);
-            Array.Copy(trees.Height, 0, this.Height, 0, this.Height.Length);
-            Array.Copy(trees.HeightGrowth, 0, this.HeightGrowth, 0, this.HeightGrowth.Length);
-            Array.Copy(trees.LiveExpansionFactor, 0, this.LiveExpansionFactor, 0, this.LiveExpansionFactor.Length);
+                Array.Copy(otherTreesOfSpecies.CrownRatio, 0, thisTreesOfSpecies.CrownRatio, 0, otherTreesOfSpecies.Count);
+                Array.Copy(otherTreesOfSpecies.Dbh, 0, thisTreesOfSpecies.Dbh, 0, otherTreesOfSpecies.Count);
+                Array.Copy(otherTreesOfSpecies.DbhGrowth, 0, thisTreesOfSpecies.DbhGrowth, 0, otherTreesOfSpecies.Count);
+                Array.Copy(otherTreesOfSpecies.DeadExpansionFactor, 0, thisTreesOfSpecies.DeadExpansionFactor, 0, otherTreesOfSpecies.Count);
+                Array.Copy(otherTreesOfSpecies.Height, 0, thisTreesOfSpecies.Height, 0, otherTreesOfSpecies.Count);
+                Array.Copy(otherTreesOfSpecies.HeightGrowth, 0, thisTreesOfSpecies.HeightGrowth, 0, otherTreesOfSpecies.Count);
+                Array.Copy(otherTreesOfSpecies.LiveExpansionFactor, 0, thisTreesOfSpecies.LiveExpansionFactor, 0, otherTreesOfSpecies.Count);
+            }
+        }
+
+        public int GetTreeRecordCount()
+        {
+            int treeRecords = 0;
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
+            {
+                treeRecords += treesOfSpecies.Count;
+            }
+            return treeRecords;
         }
 
         public void SetDefaultAndMortalitySiteIndices(TreeModel treeModel)
@@ -143,14 +158,14 @@ namespace Osu.Cof.Ferm.Organon
             // In CIPSR 2.2.4 these paths are disabled for SMC red alder even though it's a supported species, resulting in zero
             // height growth. In this fork the code's called regardless of variant.
             float heightOfTallestRedAlderInFeet = 0.0F;
-            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            if (this.TreesBySpecies.TryGetValue(FiaCode.AlnusRubra, out Trees redAlders))
             {
-                if (this.Species[treeIndex] == FiaCode.AlnusRubra)
+                for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
                 {
-                    float alderHeightInFeet = this.Height[treeIndex];
-                    if (alderHeightInFeet > heightOfTallestRedAlderInFeet)
+                    float heightInFeet = redAlders.Height[alderIndex];
+                    if (heightInFeet > heightOfTallestRedAlderInFeet)
                     {
-                        heightOfTallestRedAlderInFeet = alderHeightInFeet;
+                        heightOfTallestRedAlderInFeet = heightInFeet;
                     }
                 }
             }
@@ -216,29 +231,34 @@ namespace Osu.Cof.Ferm.Organon
             float ponderosaBasalArea = 0.0F;
             float totalBasalArea = 0.0F;
             float trueFirBasalArea = 0.0F;
-            for (int treeIndex = 0; treeIndex < this.TreeRecordCount; ++treeIndex)
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
-                float basalArea = this.GetBasalArea(treeIndex);
-                totalBasalArea += basalArea;
+                float speciesBasalArea = 0.0F;
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    float basalArea = treesOfSpecies.GetBasalArea(treeIndex);
+                    speciesBasalArea += speciesBasalArea;
+                }
 
-                switch (this.Species[treeIndex])
+                switch (treesOfSpecies.Species)
                 {
                     case FiaCode.AbiesAmabalis:
                     case FiaCode.AbiesConcolor:
                     case FiaCode.AbiesGrandis:
                     case FiaCode.AbiesProcera:
-                        trueFirBasalArea += basalArea;
+                        trueFirBasalArea += speciesBasalArea;
                         break;
                     case FiaCode.PinusPonderosa:
-                        ponderosaBasalArea += basalArea;
+                        ponderosaBasalArea += speciesBasalArea;
                         break;
                     case FiaCode.PseudotsugaMenziesii:
-                        douglasFirBasalArea += basalArea;
+                        douglasFirBasalArea += speciesBasalArea;
                         break;
                     case FiaCode.TsugaHeterophylla:
-                        hemlockBasalArea += basalArea;
+                        hemlockBasalArea += speciesBasalArea;
                         break;
                 }
+                totalBasalArea += speciesBasalArea;
             }
 
             float douglasFirProportion = 0.0F;

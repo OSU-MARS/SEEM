@@ -9,15 +9,15 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class OptimizeGreatDeluge : OptimizeCmdlet
     {
         [Parameter]
-        [ValidateRange(0.0, float.MaxValue)]
+        [ValidateRange(0.0, Single.MaxValue)]
         public Nullable<float> FinalWaterLevel { get; set; }
 
         [Parameter]
-        [ValidateRange(0.0, float.MaxValue)]
+        [ValidateRange(0.0, Single.MaxValue)]
         public Nullable<float> InitialWaterLevel { get; set; }
 
         [Parameter]
-        [ValidateRange(0.0, float.MaxValue)]
+        [ValidateRange(0.0, Single.MaxValue)]
         public Nullable<float> RainRate { get; set; }
 
         [Parameter]
