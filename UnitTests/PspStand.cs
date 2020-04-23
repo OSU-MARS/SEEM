@@ -156,6 +156,12 @@ namespace Osu.Cof.Ferm.Test
             };
             foreach (KeyValuePair<FiaCode, int> speciesCount in this.CountTreesBySpecies())
             {
+                // skip any unsupported species as they should be remapped in following loops
+                if (variant.IsSpeciesSupported(speciesCount.Key) == false)
+                {
+                    continue;
+                }
+
                 // metric PSP data is converted to English units for Organon below
                 stand.TreesBySpecies.Add(speciesCount.Key, new Trees(speciesCount.Key, speciesCount.Value, Units.English));
             }

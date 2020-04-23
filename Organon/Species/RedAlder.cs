@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Organon;
-using System;
+﻿using System;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Species
@@ -35,169 +34,27 @@ namespace Osu.Cof.Ferm.Species
             return SI / (0.60924F + 19.538F / A);
         }
 
-        public static float RA_MH(float DBH, float HT, float CR, float TD)
-        {
-            if (TD <= 0.0F)
-            {
-                return HT;
-            }
-
-            float D0 = TAPER_RA(DBH, HT, CR, 0.0F);
-            if (D0 <= TD)
-            {
-                return 0.0F;
-            }
-
-            int IHT = (int)(10.0F * HT) - 1;
-            for (int I = 0; I < IHT; ++I)
-            {
-                float HI = HT - 0.1F * (float)I;
-                float DI = TAPER_RA(DBH, HT, CR, HI);
-                if (DI >= TD)
-                {
-                    return HI;
-                }
-            }
-            return 0.0F;
-        }
-
-        public static float RA_SCRIB(int SVOL, int LOGLL, float LOGTD, float LOGSH, float LOGTA, float LOGML, float DOB, float HT, float CR)
-        {
-            // COMPUTE MERCHANTABLE HEIGHT
-            float MH;
-            if (LOGTD <= 0.0F)
-            {
-                MH = HT;
-            }
-            else
-            {
-                MH = RA_MH(DOB, HT, CR, LOGTD);
-            }
-            if (MH == 0.0F || MH <= LOGSH)
-            {
-                return 0.0F;
-            }
-
-            // CALCULATE LOG VOLUMES
-            int NW = (int)MathF.Round((MH - LOGSH) / ((float)LOGLL + LOGTA));
-            if (NW < 0)
-            {
-                NW = 0;
-            }
-            float TLL = MH - LOGSH - (float)NW * ((float)LOGLL + LOGTA);
-            float D = 1.0F;
-            float EX = 1.0F;
-            float H = LOGSH;
-            float VALU = 0;
-            float[,] NL = new float[40, 4];
-            float[,] LVOL = new float[40, 4];
-            float[,] TOTS = new float[2, 4];
-            for (int II = 0; II < NW; ++II)
-            {
-                H = H + (float)LOGLL + LOGTA;
-                RA_LOGVOL(3, DOB, HT, CR, SVOL, LOGLL, H, D, TLL, EX, out float _, out float VOLG, NL, LVOL, TOTS);
-                VALU += VOLG;
-            }
-
-            // COMPUTE VOLUME OF TOP LOG
-            if (TLL >= (LOGML + LOGTA))
-            {
-                int J = (int)(TLL - LOGTA);
-                TLL = (float)J + LOGTA;
-                D = TLL / (float)LOGLL;
-                H += TLL;
-                RA_LOGVOL(3, DOB, HT, CR, SVOL, LOGLL, H, D, TLL, EX, out float _, out float VOLG, NL, LVOL, TOTS);
-                VALU += VOLG;
-            }
-            if (VALU < 0.0F)
-            {
-                VALU = 0.0F;
-            }
-            return VALU;
-        }
-
-        public static void RA_LOGVOL(int N, float DBH, float HT, float CR, int SVOL, int LOGLL, float HI, float D, float TLL, float EX, out float DI, out float V, float[,] NL, float[,] LVOL, float[,] TOTS)
-        {
-            // ROUTINE TO CALCULATE LOG VOLUME AND ADD TO APPROPRIATE CELL
-            //
-            // N = TYPE OF CALCULATION
-            //       = 1  MERCHANTABLE HEIGHT
-            //       = 2  LOG VOLUME
-            //       = 3  TREE VOLUME
-            //       = 4  TOP DIAMETER CHECK
-            //
-            // SVOL = SPECIES GROUP FOR LOG REPORT
-            //     EX = TREE RESIDUAL OR CUT EXPANSION FACTOR
-            //     D = RATIO OF LOG LENGTH TO SPECIFIED LOG LENGTH
-
-            // USE TAPER EQUATION TO DETERMINE DIAMETER AT TOP OF LOG
-            V = 0.0F;
-            DI = TAPER_RA(DBH, HT, CR, HI);
-            if (N == 1 || N == 4)
-            {
-                return;
-            }
-
-            // EXTRACT VOLUME FROM VOLUME TABLES
-            int LEN;
-            if (D < 1.0F || D > 1.0F)
-            {
-                LEN = (int)TLL;
-            }
-            else
-            {
-                LEN = LOGLL;
-            }
-
-            float[] SVTBL = new float[] { 0.0F, 0.143F, 0.39F, 0.676F, 1.07F, 1.160F, 1.4F, 1.501F, 2.084F,
-                                          3.126F, 3.749F, 4.9F, 6.043F, 7.14F, 8.88F, 10.0F, 11.528F,
-                                          13.29F, 14.99F, 17.499F, 18.99F, 20.88F, 23.51F, 25.218F,
-                                          28.677F, 31.249F, 34.22F, 36.376F, 38.04F, 41.06F, 44.376F,
-                                          45.975F, 48.99F, 50.0F, 54.688F, 57.66F, 64.319F, 66.73F, 70.0F,
-                                          75.24F, 79.48F, 83.91F, 87.19F, 92.501F, 94.99F, 99.075F,
-                                          103.501F, 107.97F, 112.292F, 116.99F, 121.65F, 126.525F,
-                                          131.51F, 136.51F, 141.61F, 146.912F, 152.21F, 157.71F,
-                                          163.288F, 168.99F, 174.85F, 180.749F, 186.623F, 193.17F,
-                                          199.12F, 205.685F, 211.81F, 218.501F, 225.685F, 232.499F,
-                                          239.317F, 246.615F, 254.04F, 261.525F, 269.04F, 276.63F,
-                                          284.26F, 292.501F, 300.655F, 308.97F };
-            float[] SVTBL16 = new float[] { 1.249F, 1.608F, 1.854F, 2.410F, 3.542F, 4.167F };
-            float[] SVTBL32 = new float[] { 1.57F, 1.8F, 2.2F, 2.9F, 3.815F, 4.499F };
-            int DII = (int)DI - 1;
-            if (DII >= 5 && DII <= 10)
-            {
-                if (LEN >= 16 && LEN <= 31)
-                {
-                    V = SVTBL16[DII - 5] * (float)LEN * EX;
-                }
-                else if (LEN >= 32 && LEN <= 40)
-                {
-                    V = SVTBL32[DII - 5] * (float)LEN * EX;
-                }
-                else
-                {
-                    V = SVTBL[DII] * (float)LEN * EX;
-                }
-            }
-            else
-            {
-                V = SVTBL[DII] * (float)LEN * EX;
-            }
-            if (N == 3)
-            {
-                return;
-            }
-            DII /= 2;
-            NL[DII, SVOL] = NL[DII, SVOL] + EX;
-            LVOL[DII, SVOL] = LVOL[DII, SVOL] + V;
-            TOTS[1, SVOL] = TOTS[1, SVOL] + V;
-        }
-
-        public static void RAMORT(Trees redAlders, float RAAGE, float RAN, float[] PMK)
+        public static void ReduceExpansionFactor(Trees redAlders, float RAAGE, float RAN, float[] PMK)
         {
             if (redAlders.Species != FiaCode.AlnusRubra)
             {
                 throw new ArgumentOutOfRangeException(nameof(redAlders));
+            }
+
+            float RAQMDN1 = 3.313F + 0.18769F * RAAGE - 0.000198F * RAAGE * RAAGE;
+            float RABAN1 = -26.1467F + 5.31482F * RAAGE - 0.037466F * RAAGE * RAAGE;
+            float RAQMDN2 = 3.313F + 0.18769F * (RAAGE + 5.0F) - 0.000198F * (RAAGE + Constant.DefaultTimeStepInYears) * (RAAGE + Constant.DefaultTimeStepInYears);
+            float RABAN2 = -26.1467F + 5.31482F * (RAAGE + 5.0F) - 0.037466F * (RAAGE + Constant.DefaultTimeStepInYears) * (RAAGE + Constant.DefaultTimeStepInYears);
+            float RATPAN1 = RABAN1 / (Constant.ForestersEnglish * RAQMDN1 * RAQMDN1);
+            float RATPAN2 = RABAN2 / (Constant.ForestersEnglish * RAQMDN2 * RAQMDN2);
+            if ((RATPAN1 < 0.0F) || (RATPAN2 < 0.0F))
+            {
+                for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
+                {
+                    redAlders.DeadExpansionFactor[alderIndex] += redAlders.LiveExpansionFactor[alderIndex];
+                    redAlders.LiveExpansionFactor[alderIndex] = 0.0F;
+                }
+                return;
             }
 
             float RAMORT1 = 0.0F;
@@ -207,26 +64,7 @@ namespace Osu.Cof.Ferm.Species
                 float PM = 1.0F / (1.0F + MathV.Exp(-PMK[alderIndex]));
                 RAMORT1 += PM * redAlders.LiveExpansionFactor[alderIndex];
             }
-
-            float RAQMDN1 = 3.313F + 0.18769F * RAAGE - 0.000198F * RAAGE * RAAGE;
-            float RABAN1 = -26.1467F + 5.31482F * RAAGE - 0.037466F * RAAGE * RAAGE;
-            float RAQMDN2 = 3.313F + 0.18769F * (RAAGE + 5.0F) - 0.000198F * (RAAGE + Constant.DefaultTimeStepInYears) * (RAAGE + Constant.DefaultTimeStepInYears);
-            float RABAN2 = -26.1467F + 5.31482F * (RAAGE + 5.0F) - 0.037466F * (RAAGE + Constant.DefaultTimeStepInYears) * (RAAGE + Constant.DefaultTimeStepInYears);
-            float RATPAN1 = RABAN1 / (Constant.ForestersEnglish * RAQMDN1 * RAQMDN1);
-            float RATPAN2 = RABAN2 / (Constant.ForestersEnglish * RAQMDN2 * RAQMDN2);
-            float RAMORT2;
-            if ((RATPAN1 > 0.0F) && (RATPAN2 > 0.0F))
-            {
-                RAMORT2 = RAN * (1.0F - RATPAN2 / RATPAN1);
-            }
-            else
-            {
-                for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
-                {
-                    PMK[alderIndex] = 1000.0F;
-                }
-                return;
-            }
+            float RAMORT2 = RAN * (1.0F - RATPAN2 / RATPAN1);
 
             if (RAMORT1 < RAMORT2)
             {
@@ -253,32 +91,21 @@ namespace Osu.Cof.Ferm.Species
                     }
                 }
 
-                for (int treeIndex = 0; treeIndex < redAlders.Count; ++treeIndex)
+                for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
                 {
-                    PMK[treeIndex] = KR1 + PMK[treeIndex];
+                    float previouslyAppliedMortality = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[alderIndex])));
+                    float additionalAgeRelatedMortality = previouslyAppliedMortality - 1.0F / (1.0F + MathV.Exp(-PMK[alderIndex]));
+                    Debug.Assert(additionalAgeRelatedMortality >= 0.0F);
+                    Debug.Assert(additionalAgeRelatedMortality <= 1.0F - previouslyAppliedMortality);
+                    
+                    float liveExpansionFactorReduction = additionalAgeRelatedMortality * redAlders.LiveExpansionFactor[alderIndex];
+                    redAlders.DeadExpansionFactor[alderIndex] += liveExpansionFactorReduction;
+                    redAlders.LiveExpansionFactor[alderIndex] -= liveExpansionFactorReduction;
                 }
             }
         }
 
-        private static float TAPER_RA(float DBH, float HT, float CR, float HI)
-        {
-            float A1 = 0.9113F;
-            float A2 = 1.0160F;
-            float A3 = 0.2623F;
-            float A4 = -18.7695F;
-            float A5 = 3.1931F;
-            float A6 = 0.1631F;
-            float A7 = 0.4180F;
-            float D140 = 0.000585F + 0.997212F * DBH;
-            float Z = HI / HT;
-            float P = 4.5F / HT;
-            float X = (1.0F - MathF.Sqrt(Z)) / (1.0F - MathF.Sqrt(P));
-            float C = A3 * (1.364409F * MathV.Pow(D140, 0.3333333F) * MathV.Exp(A4 * Z) + MathV.Exp(A5 * MathV.Pow(CR, A6) * MathV.Pow(D140 / HT, A7) * Z));
-            float DI = A1 * MathV.Pow(D140, A2) * MathF.Pow(X, C);
-            return DI;
-        }
-
-        public static void WHHLB_GEA(float H, float SI_UC, out float GEA)
+        private static void WHHLB_GEA(float H, float SI_UC, out float GEA)
         {
             // RED ALDER GROWTH EFFECTIVE AGE EQUATION BASED ON H40 EQUATION FROM
             // THE WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH EQUATION
@@ -310,7 +137,7 @@ namespace Osu.Cof.Ferm.Species
             POTHGRO = PHT - HT;
         }
 
-        public static void WHHLB_SI_UC(float SI_C, float PDEN, out float SI_UC)
+        private static void WHHLB_SI_UC(float SI_C, float PDEN, out float SI_UC)
         {
             // UNCORRECTS THE DENSITY INPACT UPON THE WEISKITTEL, HANN, HIBBS, LAM, AND BLUHN SITE INDEX FOR RED ALDER
             // SITE INDEX UNCORRECTED FOR DENSITY EFFECT

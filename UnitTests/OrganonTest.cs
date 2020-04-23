@@ -72,7 +72,7 @@ namespace Osu.Cof.Ferm.Test
                     throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
 
-            stand.SetRedAlderSiteIndex();
+            stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
             stand.SetSdiMax(configuration);
             return stand;
         }

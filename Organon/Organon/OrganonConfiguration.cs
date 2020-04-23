@@ -8,8 +8,6 @@ namespace Osu.Cof.Ferm.Organon
         public Bucking Bucking { get; private set; }
         public OrganonVariant Variant { get; private set; }
 
-        // switches to if() clause in Mortality.MORTAL()
-        public bool AdditionalMortality { get; set; }
         // enable per species crown ratio growth multiplier used only for NWO
         public bool CalibrateCrownRatio { get; set; }
         // enable per species diameter growth multiplier for minor species

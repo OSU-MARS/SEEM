@@ -13,6 +13,7 @@ namespace Osu.Cof.Ferm
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
         public const float HectaresPerAcre = 0.404685F;
+        public const float HeightStrataAsFloat = 40.0F;
         public const float InchesPerCm = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
         public const float NaturalLogOf10 = 2.3025850930F;
@@ -70,6 +71,7 @@ namespace Osu.Cof.Ferm
 
         public static class Maximum
         {
+            public const float DiameterIncrementInInches = 4.0F;
             public const float HeightIncrementInFeet = 20.0F;
             public const float Sdi = 1000.0F;
             public const float SiteIndexInFeet = 300.0F;
@@ -143,17 +145,6 @@ namespace Osu.Cof.Ferm
                 public static readonly int Ingrowth = 2;
                 public static readonly int Live = 1;
                 public static readonly int NotFound = 9;
-            }
-        }
-
-        public static class TreeIndex
-        {
-            public static class Growth
-            {
-                public const int Height = 0;
-                public const int Diameter = 1;
-                public const int AccumulatedHeight = 2;
-                public const int AccumulatedDiameter = 3;
             }
         }
     }

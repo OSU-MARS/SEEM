@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -56,12 +55,18 @@ namespace Osu.Cof.Ferm.Organon
         {
             this.BasalAreaPerAcre = 0.0F;
             this.CrownCompetitionFactor = 0.0F;
-            this.LargeTreeBasalAreaLarger = new float[51];
-            this.LargeTreeCrownCompetition = new float[51];
-            this.SmallTreeBasalAreaLarger = new float[501];
-            this.SmallTreeCrownCompetition = new float[501];
+            this.LargeTreeBasalAreaLarger = new float[100 - 50 + 1];
+            this.LargeTreeCrownCompetition = new float[100 - 50 + 1];
+            this.SmallTreeBasalAreaLarger = new float[10 * 50 + 1];
+            this.SmallTreeCrownCompetition = new float[10 * 50 + 1];
             this.TreesPerAcre = 0.0F;
 
+            // find each tree's diameter class and add its CCF to its diameter class and all smaller diameter classes
+            // Trees less than 50 inches DBH are considered small and tracked by tenth inch diameter classes. Trees up to 100 inches DBH use one inch
+            // diameter classes from 50 to 100 inches. This is done in two passes to run in O(N trees + n diameter classes).
+            // 1) Accumulate each tree's BA and CCF in its diameter class.
+            // 2) Add the running BA and CCF sums of all larger diameter classes to all smaller ones.
+            // (The Fortran version of this used a single pass and therefore ran in O(Nn) time.)
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
@@ -71,54 +76,59 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         continue;
                     }
-
-                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
-                    float heightInFeet = treesOfSpecies.Height[treeIndex];
-                    float basalArea = treesOfSpecies.GetBasalArea(treeIndex);
-                    this.BasalAreaPerAcre += basalArea;
                     this.TreesPerAcre += expansionFactor;
 
-                    float maxCrownWidth = variant.GetMaximumCrownWidth(treesOfSpecies.Species, dbhInInches, heightInFeet);
-
                     // 0.001803 = 100 * pi / (4 * 42560) from definition of crown competition factor
+                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
+                    float heightInFeet = treesOfSpecies.Height[treeIndex];
+                    float basalAreaPerAcre = treesOfSpecies.GetBasalArea(treeIndex);
+                    float maxCrownWidth = variant.GetMaximumCrownWidth(treesOfSpecies.Species, dbhInInches, heightInFeet);
                     float crownCompetitionFactor = 0.001803F * maxCrownWidth * maxCrownWidth * expansionFactor;
-                    this.CrownCompetitionFactor += crownCompetitionFactor;
+
+                    // keep diameter class calculation in sync with GetBasalAreaLarger() and GetCrownCompetitionFactorLarger()
                     if (dbhInInches > 50.0F)
                     {
-                        int largeTreeLimit = (int)(dbhInInches - 50.0F);
-                        if (largeTreeLimit > 51)
+                        int largeTreeDiameterClass = (int)(dbhInInches - 50.0F);
+                        if (largeTreeDiameterClass > 50)
                         {
-                            largeTreeLimit = 51;
+                            largeTreeDiameterClass = 50;
                         }
 
-                        // add large tree to all competition diameter classes
-                        for (int smallTreeIndex = 0; smallTreeIndex < this.SmallTreeCrownCompetition.Length; ++smallTreeIndex)
-                        {
-                            // (PERF? this is O(500N), would run in O(N) + O(500) if moved to initialization)
-                            this.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
-                            this.SmallTreeBasalAreaLarger[smallTreeIndex] += basalArea;
-                        }
-                        for (int largeTreeIndex = 0; largeTreeIndex < largeTreeLimit - 1; ++largeTreeIndex)
-                        {
-                            this.LargeTreeCrownCompetition[largeTreeIndex] += crownCompetitionFactor;
-                            this.LargeTreeBasalAreaLarger[largeTreeIndex] += basalArea;
-                        }
+                        this.LargeTreeBasalAreaLarger[largeTreeDiameterClass] += basalAreaPerAcre;
+                        this.LargeTreeCrownCompetition[largeTreeDiameterClass] += crownCompetitionFactor;
+                        this.SmallTreeBasalAreaLarger[^1] += basalAreaPerAcre;
+                        this.SmallTreeCrownCompetition[^1] += crownCompetitionFactor;
                     }
                     else
                     {
-                        int smallTreeLimit = (int)(dbhInInches * 10.0F + 0.5F);
-                        for (int smallTreeIndex = 0; smallTreeIndex < smallTreeLimit - 1; ++smallTreeIndex)
-                        {
-                            this.SmallTreeCrownCompetition[smallTreeIndex] += crownCompetitionFactor;
-                            this.SmallTreeBasalAreaLarger[smallTreeIndex] += basalArea;
-                        }
+                        int smallTreeDiameterClass = (int)(10.0F * dbhInInches);
+                        this.SmallTreeBasalAreaLarger[smallTreeDiameterClass] += basalAreaPerAcre;
+                        this.SmallTreeCrownCompetition[smallTreeDiameterClass] += crownCompetitionFactor;
                     }
                 }
+            }
+
+            for (int largeDiameterClassIndex = this.LargeTreeBasalAreaLarger.Length - 1; largeDiameterClassIndex >= 0; --largeDiameterClassIndex)
+            {
+                this.LargeTreeBasalAreaLarger[largeDiameterClassIndex] += this.BasalAreaPerAcre;
+                this.LargeTreeCrownCompetition[largeDiameterClassIndex] += this.CrownCompetitionFactor;
+
+                this.BasalAreaPerAcre = this.LargeTreeBasalAreaLarger[largeDiameterClassIndex];
+                this.CrownCompetitionFactor = this.LargeTreeCrownCompetition[largeDiameterClassIndex];
+            }
+            for (int smallDiameterClassIndex = this.SmallTreeBasalAreaLarger.Length - 1; smallDiameterClassIndex >= 0; --smallDiameterClassIndex)
+            {
+                this.SmallTreeBasalAreaLarger[smallDiameterClassIndex] += this.BasalAreaPerAcre;
+                this.SmallTreeCrownCompetition[smallDiameterClassIndex] += this.CrownCompetitionFactor;
+
+                this.BasalAreaPerAcre = this.SmallTreeBasalAreaLarger[smallDiameterClassIndex];
+                this.CrownCompetitionFactor = this.SmallTreeCrownCompetition[smallDiameterClassIndex];
             }
         }
 
         public float GetBasalAreaLarger(float dbhInInches)
         {
+            // keep diameter class calculation in sync with GetBasalAreaLarger() and GetCrownCompetitionFactorLarger()
             if (dbhInInches > 100.0F)
             {
                 return 0.0F;
@@ -126,40 +136,12 @@ namespace Osu.Cof.Ferm.Organon
             
             if (dbhInInches >= 50.0F)
             {
-                // BUGBUG missing clamp to avoid lookups beyond end of BALL1
                 int largeTreeIndex = (int)(dbhInInches - 50.0F);
                 return this.LargeTreeBasalAreaLarger[largeTreeIndex];
             }
 
-            int smallTreeIndex = (int)(dbhInInches * 10.0F + 0.5F);
+            int smallTreeIndex = (int)(10.0F * dbhInInches);
             return this.SmallTreeBasalAreaLarger[smallTreeIndex];
-        }
-
-        public static void GetCrownCompetitionByHeight(OrganonVariant variant, FiaCode species, float heightToLargestCrownWidth, float largestCrownWidth, float HT, float DBH, float heightToCrownBase, float EXPAN, float[] crownCompetitionByHeight)
-        {
-            float XHLCW = heightToLargestCrownWidth;
-            float XLCW = largestCrownWidth;
-            if (heightToCrownBase > heightToLargestCrownWidth)
-            {
-                XHLCW = heightToCrownBase;
-                XLCW = variant.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, HT, DBH, XHLCW);
-            }
-
-            for (int heightIndex = crownCompetitionByHeight.Length - 2; heightIndex >= 0; --heightIndex)
-            {
-                float relativeHeight = (float)(heightIndex - 1) * (crownCompetitionByHeight[^1] / 40.0F);
-                float crownWidth = 0.0F;
-                if (relativeHeight <= XHLCW)
-                {
-                    crownWidth = XLCW;
-                }
-                else if (relativeHeight > XHLCW && relativeHeight < HT)
-                {
-                    crownWidth = variant.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, HT, DBH, relativeHeight);
-                }
-                float crownCompetitionFactor = 0.001803F * EXPAN * crownWidth * crownWidth;
-                crownCompetitionByHeight[heightIndex] = crownCompetitionByHeight[heightIndex] + crownCompetitionFactor;
-            }
         }
 
         /// <summary>
@@ -170,36 +152,23 @@ namespace Osu.Cof.Ferm.Organon
         /// <returns>Array indicating crown closure at height relative to tallest tree in stand with last value being height of tallest tree.</returns>
         public static float[] GetCrownCompetitionByHeight(OrganonVariant variant, OrganonStand stand)
         {
-            float[] crownClosureByRelativeHeight = new float[41];
-            crownClosureByRelativeHeight[40] = Single.MinValue;
+            // find tallest tree
+            float[] crownClosureByRelativeHeight = new float[(int)Constant.HeightStrataAsFloat + 1];
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
                     float heightInFeet = treesOfSpecies.Height[treeIndex];
-                    if (heightInFeet > crownClosureByRelativeHeight[40])
+                    if (heightInFeet > crownClosureByRelativeHeight[^1])
                     {
-                        crownClosureByRelativeHeight[40] = heightInFeet;
+                        crownClosureByRelativeHeight[^1] = heightInFeet;
                     }
                 }
             }
 
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                FiaCode species = treesOfSpecies.Species;
-                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
-                {
-                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
-                    float heightInFeet = treesOfSpecies.Height[treeIndex];
-                    float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
-                    float crownLengthInFeet = crownRatio * heightInFeet;
-                    float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
-                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
-                    float maxCrownWidth = variant.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
-                    float largestCrownWidth = variant.GetLargestCrownWidth(species, maxCrownWidth, crownRatio, dbhInInches, heightInFeet);
-                    float heightToLargestCrownWidth = variant.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
-                    OrganonStandDensity.GetCrownCompetitionByHeight(variant, species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, heightToCrownBaseInFeet, expansionFactor, crownClosureByRelativeHeight);
-                }
+                variant.AddCrownCompetitionByHeight(treesOfSpecies, crownClosureByRelativeHeight);
             }
             return crownClosureByRelativeHeight;
         }
@@ -208,11 +177,10 @@ namespace Osu.Cof.Ferm.Organon
         /// 
         /// </summary>
         /// <param name="dbhInInches">Tree's diameter at breast height (inches)</param>
-        /// <param name="CCFLL1">Stand crown competitition data.</param>
-        /// <param name="CCFL1">Stand crown competitition data.</param>
         /// <returns>Crown competition factor for specified DBH.</returns>
         public float GetCrownCompetitionFactorLarger(float dbhInInches)
         {
+            // keep diameter class calculation in sync with GetBasalAreaLarger() and GetCrownCompetitionFactorLarger()
             if (dbhInInches > 100.0F)
             {
                 return 0.0F;
@@ -220,12 +188,12 @@ namespace Osu.Cof.Ferm.Organon
 
             if (dbhInInches > 50.0F)
             {
-                int largeTreeIndex = (int)(dbhInInches - 49.0F) - 1;
-                return this.LargeTreeCrownCompetition[largeTreeIndex];
+                int largeTreeDiameterClass = (int)(dbhInInches - 50.0F);
+                return this.LargeTreeCrownCompetition[largeTreeDiameterClass];
             }
 
-            int smallTreeIndex = (int)(dbhInInches * 10.0 + 0.5) - 1;
-            return this.SmallTreeCrownCompetition[smallTreeIndex];
+            int smallTreeDiameterClass = (int)(10.0 * dbhInInches);
+            return this.SmallTreeCrownCompetition[smallTreeDiameterClass];
         }
     }
 }

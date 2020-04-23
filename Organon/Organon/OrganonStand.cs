@@ -6,11 +6,7 @@ namespace Osu.Cof.Ferm.Organon
 {
     public class OrganonStand : Stand
     {
-        // STOR[2]
         public float A1 { get; private set; }
-        // STOR[4] SDImax cap for mortality, overrides A1 if lower
-        // TODO: move to simulation state
-        public float A1MAX { get; set; }
         // STOR[3] exponent for slope of SDImax line
         public float A2 { get; private set; }
 
@@ -23,20 +19,15 @@ namespace Osu.Cof.Ferm.Organon
         // also used for ponderosa (SWO) and western redcedar (NWO)
         public float HemlockSiteIndex { get; private set; }
 
-        // STOR[0]
-        public float NO { get; set; }
-
         // number of plots tree data is from
         // If data is for entire stand use one plot.
         public float NumberOfPlots { get; set; }
 
-        // RVARS[0] site index from ground height in feet (internal variable SI_1 is from breast height), used for most species
+        // site index from ground height in feet (internal variable SI_1 is from breast height), used for most species
         public float SiteIndex { get; private set; }
 
         public float RedAlderSiteIndex { get; private set; }
-
-        // STOR[1]
-        public float RD0 { get; set; }
+        public float RedAlderGrowthEffectiveAge { get; set; }
 
         public OrganonWarnings Warnings { get; private set; }
 
@@ -50,6 +41,7 @@ namespace Osu.Cof.Ferm.Organon
             this.NumberOfPlots = 1;
             this.SiteIndex = primarySiteIndex;
             this.RedAlderSiteIndex = -1.0F;
+            this.RedAlderGrowthEffectiveAge = -1.0F;
             this.TreeHeightWarningBySpecies = new SortedDictionary<FiaCode, bool[]>();
             this.Warnings = new OrganonWarnings();
         }
@@ -152,7 +144,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public float SetRedAlderSiteIndex()
+        public void SetRedAlderSiteIndexAndGrowthEffectiveAge()
         {
             // find red alder site index and growth effective age
             // In CIPSR 2.2.4 these paths are disabled for SMC red alder even though it's a supported species, resulting in zero
@@ -171,18 +163,16 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             this.RedAlderSiteIndex = RedAlder.ConiferToRedAlderSiteIndex(this.SiteIndex);
-            float redAlderAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndex);
-            if (redAlderAge <= 0.0F)
+            this.RedAlderGrowthEffectiveAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndex);
+            if (this.RedAlderGrowthEffectiveAge <= 0.0F)
             {
-                redAlderAge = 55.0F;
-                this.RedAlderSiteIndex = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, redAlderAge);
+                this.RedAlderGrowthEffectiveAge = 55.0F;
+                this.RedAlderSiteIndex = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, this.RedAlderGrowthEffectiveAge);
             }
-            else if (redAlderAge > 55.0F)
+            else if (this.RedAlderGrowthEffectiveAge > 55.0F)
             {
-                redAlderAge = 55.0F;
+                this.RedAlderGrowthEffectiveAge = 55.0F;
             }
-
-            return redAlderAge;
         }
 
         /// <summary>

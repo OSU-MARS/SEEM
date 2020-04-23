@@ -295,8 +295,7 @@ namespace Osu.Cof.Ferm.Organon
             OrganonStandDensity standDensity = this.InitialDensity;
             OrganonTreatments treatments = new OrganonTreatments();
 
-            float[] CCH = new float[41];
-            float OLD = 0.0F;
+            float[] CCH = new float[(int)Constant.HeightStrataAsFloat + 1];
 
             int simulationStep = 0;
             // period 0 is the initial condition and therefore never needs to be simulated
@@ -335,7 +334,7 @@ namespace Osu.Cof.Ferm.Organon
                 if (standEnteredOrNotSimulated)
                 {
                     this.organonGrowth.Grow(ref simulationStep, this.organonConfiguration, simulationStand, standDensity, this.organonCalibration, treatments,
-                                            ref CCH, ref OLD, 0.0F, out OrganonStandDensity standDensityAfterGrowth);
+                                            ref CCH, out OrganonStandDensity standDensityAfterGrowth, out int _);
                     if (this.StandByPeriod[simulationPeriod] == null)
                     {
                         // lazy initialization

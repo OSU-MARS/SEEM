@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Species
         /// <param name="GP"></param>
         /// <param name="growthEffectiveAge">Growth effective age of tree.</param>
         /// <param name="potentialHeightGrowth">Potential height growth increment in feet.</param>
-        public static void F_HG(float siteIndexFromGround, float treeHeight, float GP, out float growthEffectiveAge, out float potentialHeightGrowth)
+        public static float F_HG(float siteIndexFromGround, float treeHeight, float GP, out float potentialHeightGrowth)
         {
             // For Western Hemlock compute Growth Effective Age and 5-year potential
             // or 1-year height growth using the western hemlock top height curves of
@@ -59,6 +59,7 @@ namespace Osu.Cof.Ferm.Species
             // find growth effective age within precision of 0.01 years
             float HTOP;
             float AGE = 1.0F;
+            float growthEffectiveAge;
             for (int index = 0; index < 4; ++index)
             {
                 do
@@ -70,7 +71,7 @@ namespace Osu.Cof.Ferm.Species
                         WesternHemlock.SITECV_F(SIM, growthEffectiveAge, out float XHTOP1);
                         WesternHemlock.SITECV_F(SIM, growthEffectiveAge + GP, out float XHTOP2);
                         potentialHeightGrowth = 3.2808F * (XHTOP2 - XHTOP1);
-                        return;
+                        return growthEffectiveAge;
                     }
                     WesternHemlock.SITECV_F(SIM, AGE, out HTOP);
                 }
@@ -83,6 +84,8 @@ namespace Osu.Cof.Ferm.Species
             WesternHemlock.SITECV_F(SIM, growthEffectiveAge + GP, out HTOP);
             float potentialTopHeightInFeet = HTOP * 3.2808F;
             potentialHeightGrowth = potentialTopHeightInFeet - treeHeight;
+
+            return growthEffectiveAge;
         }
 
         /// <summary>
