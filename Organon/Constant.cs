@@ -7,20 +7,22 @@ namespace Osu.Cof.Ferm
     {
         public const float AcresPerHectare = 2.47105F;
         public const float CmPerInch = 2.54000F;
+        // 100 * pi / (4 * 43560), from definition of crown competition factor
+        public const float CrownCompetionConstantEnglish = 0.001803026F;
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
         public const int DefaultTimeStepInYears = 5;
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
         public const float HectaresPerAcre = 0.404685F;
-        public const float HeightStrataAsFloat = 40.0F;
+        // must be multiple of SIMD width: multiples of 4 for VEX 128
+        public const int HeightStrata = 40;
         public const float InchesPerCm = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
         public const float NaturalLogOf10 = 2.3025850930F;
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
         public const float RoundToZeroTolerance = 0.001F;
-        public const int SimdWidthInSingles = 4;
 
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
         {
@@ -146,6 +148,16 @@ namespace Osu.Cof.Ferm
                 public static readonly int Live = 1;
                 public static readonly int NotFound = 9;
             }
+        }
+
+        public static class Simd128x4
+        {
+            public const int MaskAllTrue = 0xf;
+            public const byte Broadcast0toAll = 0; // 0 << 6  | 0 << 4 | 0 << 2 | 0
+            public const int ShuffleRotateLower1 = 0x39; // 0 << 6 | 3 << 4 | 2 << 2 | 1
+            public const int ShuffleRotateLower2 = 0x4e; // 1 << 6 | 0 << 4 | 3 << 2 | 2
+            public const int ShuffleRotateLower3 = 0x93; // 2 << 6 | 1 << 4 | 0 << 2 | 3
+            public const int Width = 4;
         }
     }
 }

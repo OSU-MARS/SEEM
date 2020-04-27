@@ -72,18 +72,17 @@ namespace Osu.Cof.Ferm.Organon
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
                     float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
-                    if (expansionFactor < 0.0001F)
+                    if (expansionFactor <= 0.0F)
                     {
                         continue;
                     }
                     this.TreesPerAcre += expansionFactor;
 
-                    // 0.001803 = 100 * pi / (4 * 42560) from definition of crown competition factor
                     float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = treesOfSpecies.Height[treeIndex];
                     float basalAreaPerAcre = treesOfSpecies.GetBasalArea(treeIndex);
                     float maxCrownWidth = variant.GetMaximumCrownWidth(treesOfSpecies.Species, dbhInInches, heightInFeet);
-                    float crownCompetitionFactor = 0.001803F * maxCrownWidth * maxCrownWidth * expansionFactor;
+                    float crownCompetitionFactor = Constant.CrownCompetionConstantEnglish * maxCrownWidth * maxCrownWidth * expansionFactor;
 
                     // keep diameter class calculation in sync with GetBasalAreaLarger() and GetCrownCompetitionFactorLarger()
                     if (dbhInInches > 50.0F)
@@ -153,7 +152,7 @@ namespace Osu.Cof.Ferm.Organon
         public static float[] GetCrownCompetitionByHeight(OrganonVariant variant, OrganonStand stand)
         {
             // find tallest tree
-            float[] crownClosureByRelativeHeight = new float[(int)Constant.HeightStrataAsFloat + 1];
+            float[] crownClosureByRelativeHeight = new float[Constant.HeightStrata + 1];
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)

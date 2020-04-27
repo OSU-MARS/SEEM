@@ -120,12 +120,8 @@ namespace Osu.Cof.Ferm.Heuristics
             float totalFitness = 0.0F;
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
-                float individualFitness = this.IndividualFitness[individualIndex];
-                if (individualFitness <= 0.0F)
-                {
-                    // TODO: support negative objective functions
-                    throw new NotSupportedException();
-                }
+                // for now, clam negative objective functions to zero
+                float individualFitness = Math.Max(this.IndividualFitness[individualIndex], 0.0F);
                 totalFitness += individualFitness;
             }
 
@@ -134,8 +130,9 @@ namespace Osu.Cof.Ferm.Heuristics
             this.matingDistributionFunction[0] = guaranteedProportion + fitnessProportion * this.IndividualFitness[0] / totalFitness;
             for (int individualIndex = 1; individualIndex < this.Size; ++individualIndex)
             {
+                float individualFitness = Math.Max(this.IndividualFitness[individualIndex], 0.0F);
                 this.matingDistributionFunction[individualIndex] = matingDistributionFunction[individualIndex - 1];
-                this.matingDistributionFunction[individualIndex] += guaranteedProportion + fitnessProportion * this.IndividualFitness[individualIndex] / totalFitness;
+                this.matingDistributionFunction[individualIndex] += guaranteedProportion + fitnessProportion * individualFitness / totalFitness;
 
                 Debug.Assert(this.matingDistributionFunction[individualIndex] > this.matingDistributionFunction[individualIndex - 1]);
                 Debug.Assert(this.matingDistributionFunction[individualIndex] <= 1.00001);

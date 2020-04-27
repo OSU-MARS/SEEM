@@ -9,13 +9,19 @@ namespace Osu.Cof.Ferm
         [Conditional("DEBUG")]
         public static void Assert(Vector128<float> condition)
         {
-            Debug.Assert(Avx.MoveMask(condition) == 0xf);
+            Debug.Assert(Avx.MoveMask(condition) == Constant.Simd128x4.MaskAllTrue);
+        }
+
+        [Conditional("DEBUG")]
+        public static void Assert(Vector128<int> condition)
+        {
+            Debug.Assert(Avx.MoveMask(condition.AsSingle()) == Constant.Simd128x4.MaskAllTrue);
         }
 
         [Conditional("DEBUG")]
         public static void Assert(Vector128<float> condition, string message)
         {
-            Debug.Assert(Avx.MoveMask(condition) == 0xf, message);
+            Debug.Assert(Avx.MoveMask(condition) == Constant.Simd128x4.MaskAllTrue, message);
         }
     }
 }

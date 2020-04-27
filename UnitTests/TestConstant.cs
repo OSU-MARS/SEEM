@@ -45,7 +45,6 @@ namespace Osu.Cof.Ferm.Test
 
         public static class Default
         {
-            public const float AgeToReachBreastHeightInYears = 5.0F;
             public const float CrownRatio = 0.5F;
             public const float MaximumReinekeStandDensityIndex = 600.0F;
             public const int SimulationCyclesToRun = 20; // 20 5 year time steps

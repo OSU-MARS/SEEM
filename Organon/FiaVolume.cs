@@ -12,7 +12,7 @@ namespace Osu.Cof.Ferm
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
-        /// <returns>Cubic volume including top and stump in ft³/ac.</returns>
+        /// <returns>Tree's volume including top and stump in ft³.</returns>
         public float GetCubicFeet(Trees trees, int treeIndex)
         {
             float dbhInInches = trees.Dbh[treeIndex];
@@ -44,7 +44,7 @@ namespace Osu.Cof.Ferm
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
-        /// <returns>Cubic volume in m³/ha.</returns>
+        /// <returns>Tree's volume in m³.</returns>
         public float GetMerchantableCubicFeet(Trees trees, int treeIndex)
         {
             float dbhInInches = trees.Dbh[treeIndex];
@@ -80,7 +80,7 @@ namespace Osu.Cof.Ferm
             return tarif * (basalAreaInSquareFeet - 0.087266F) / 0.912733F;
         }
 
-        public unsafe float GetScribnerBoardFeet(Trees trees)
+        public unsafe float GetScribnerBoardFeetPerAcre(Trees trees)
         {
             // for now, assume all trees are of the same species
             if (trees.Species != FiaCode.PseudotsugaMenziesii)
@@ -124,7 +124,7 @@ namespace Osu.Cof.Ferm
             Vector128<float> v0p912733 = AvxExtensions.BroadcastScalarToVector128(0.912733F);
             Vector128<float> v0p00001351 = AvxExtensions.BroadcastScalarToVector128(0.00001351F);
 
-            fixed (float* dbh = &trees.Dbh[0], height = &trees.Height[0])
+            fixed (float* dbh = &trees.Dbh[0], expansionFactors = &trees.LiveExpansionFactor[0], height = &trees.Height[0])
             {
                 Vector128<float> standBoardFeetPerAcre = Vector128<float>.Zero;
                 for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += 4)
@@ -185,7 +185,9 @@ namespace Osu.Cof.Ferm
                     DebugV.Assert(Avx.CompareGreaterThanOrEqual(Avx.BlendVariable(sv632, Vector128<float>.Zero, zeroVolumeMask), Vector128<float>.Zero));
                     DebugV.Assert(Avx.CompareLessThanOrEqual(Avx.BlendVariable(sv632, Vector128<float>.Zero, zeroVolumeMask), v10k));
                     #endif
-                    standBoardFeetPerAcre = Avx.Add(standBoardFeetPerAcre, sv632);
+
+                    Vector128<float> expansionFactor = Avx.LoadVector128(expansionFactors + treeIndex);
+                    standBoardFeetPerAcre = Avx.Add(standBoardFeetPerAcre, Avx.Multiply(expansionFactor, sv632));
                 }
 
                 standBoardFeetPerAcre = Avx.HorizontalAdd(standBoardFeetPerAcre, standBoardFeetPerAcre);
@@ -199,7 +201,7 @@ namespace Osu.Cof.Ferm
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
-        /// <returns>Scribner board feet per acre</returns>
+        /// <returns>Tree's volume in Scribner board feet</returns>
         public float GetScribnerBoardFeet(Trees trees, int treeIndex)
         {
             // repeat code of GetCubicFeet() as this provides about a 6% speedup

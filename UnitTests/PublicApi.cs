@@ -39,12 +39,46 @@ namespace Osu.Cof.Ferm.Test
         }
 
         [TestMethod]
-        public void Nelder()
+        public void NelderHero()
         {
+            int treeCount = 100;
+            #if DEBUG
+            treeCount = 48;
+            #endif
+
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
+            NelderPlot nelder = new NelderPlot(plotFilePath, "1");
+
+            OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
+            OrganonStand stand = nelder.ToStand(130.0F, treeCount);
+
+            Objective netPresentValue = new Objective()
+            {
+                IsNetPresentValue = true,
+                VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
+            };
+            Hero hero = new Hero(stand, configuration, 4, 9, netPresentValue)
+            {
+                Iterations = 10
+            };
+            hero.RandomizeSchedule();
+            hero.Run();
+
+            this.Verify(hero);
+        }
+
+        [TestMethod]
+        public void NelderOtherHeuristics()
+        {
+            int treeCount = 75;
+            #if DEBUG
+            treeCount = 25;
+            #endif
+
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
             NelderPlot nelder = new NelderPlot(plotFilePath, "1");
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToStand(130.0F, 20);
+            OrganonStand stand = nelder.ToStand(130.0F, treeCount);
 
             Objective netPresentValue = new Objective()
             {
@@ -99,23 +133,15 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.RandomizeSchedule();
             thresholdAcceptor.Run();
 
-            Hero hero = new Hero(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
-            {
-                Iterations = 10
-            };
-            hero.RandomizeSchedule();
-            hero.Run();
-
             // heuristics assigned to volume optimization
-            this.VerifyObjectiveFunction(deluge);
-            this.VerifyObjectiveFunction(annealer);
-            this.VerifyObjectiveFunction(thresholdAcceptor);
+            this.Verify(deluge);
+            this.Verify(annealer);
+            this.Verify(thresholdAcceptor);
 
             // heuristics assigned to net present value optimization
-            this.VerifyObjectiveFunction(genetic);
-            this.VerifyObjectiveFunction(recordTravel);
-            this.VerifyObjectiveFunction(tabu);
-            this.VerifyObjectiveFunction(hero);
+            this.Verify(genetic);
+            this.Verify(recordTravel);
+            this.Verify(tabu);
         }
 
         [TestMethod]
@@ -237,8 +263,9 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext.WriteLine(runtime.TotalSeconds.ToString());
         }
 
-        private void VerifyObjectiveFunction(Heuristic heuristic)
+        private void Verify(Heuristic heuristic)
         {
+            // check objective functions
             double beginObjectiveFunction = heuristic.ObjectiveFunctionByIteration.First();
             double endObjectiveFunction = heuristic.ObjectiveFunctionByIteration.Last();
             double recalculatedBestObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.BestTrajectory);
@@ -257,6 +284,50 @@ namespace Osu.Cof.Ferm.Test
             // TODO: either change GA to guarantee best individual breeds or relax this check in the GA case
             Assert.IsTrue(endObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(endObjectiveFunctionRatio < 1.00001);
+
+            // check harvest schedule
+            int harvestPeriod = heuristic.BestTrajectory.HarvestPeriods - 1;
+            foreach (KeyValuePair<FiaCode, int[]> selectionForSpecies in heuristic.BestTrajectory.IndividualTreeSelectionBySpecies)
+            {
+                int[] bestTreeSelection = selectionForSpecies.Value;
+                int[] currentTreeSelection = heuristic.CurrentTrajectory.IndividualTreeSelectionBySpecies[selectionForSpecies.Key];
+                Assert.IsTrue(bestTreeSelection.Length == currentTreeSelection.Length);
+                for (int treeIndex = 0; treeIndex < bestTreeSelection.Length; ++treeIndex)
+                {
+                    Assert.IsTrue((bestTreeSelection[treeIndex] == 0) || (bestTreeSelection[treeIndex] == harvestPeriod));
+                    Assert.IsTrue((currentTreeSelection[treeIndex] == 0) || (currentTreeSelection[treeIndex] == harvestPeriod));
+                }
+            }
+
+            // check volumes
+            Assert.IsTrue(harvestPeriod > 0);
+            for (int periodIndex = 0; periodIndex < heuristic.BestTrajectory.PlanningPeriods; ++periodIndex)
+            {
+                if (periodIndex < harvestPeriod)
+                {
+                    // for now, harvest should occur only in indicated period
+                    Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
+                }
+                else if (periodIndex == harvestPeriod)
+                {
+                    Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] <= heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
+
+                    Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] <= heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
+                }
+                // otherwise past end of harvest arrays
+
+                Assert.IsTrue(heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex] > 0.0F);
+                Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex] > 0.0F);
+                if ((periodIndex > 1) && (periodIndex != harvestPeriod))
+                {
+                    // for now, assume monotonic increase in standing volumes except in harvest periods
+                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex] > heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex] > heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
+                }
+            }
         }
 
         [TestMethod]
@@ -277,7 +348,9 @@ namespace Osu.Cof.Ferm.Test
             float totalScribnerBoardFeetPerAcre = 0.0F;
             for (int treeIndex = 0; treeIndex < treeCount; ++treeIndex)
             {
-                TreeRecord tree = new TreeRecord(treeIndex, trees.Species, (float)treeIndex, 1.0F - 0.75F * (float)treeIndex/(float)treeCount, 1.0F);
+                // create trees with a range of expansion factors to catch errors in expansion factor management
+                float treeRatio = (float)treeIndex / (float)treeCount;
+                TreeRecord tree = new TreeRecord(treeIndex, trees.Species, (float)treeIndex, 1.0F - 0.75F * treeRatio, 0.6F + treeIndex);
                 trees.Add(tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
 
                 float dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
@@ -313,9 +386,9 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(totalScribnerBoardFeetPerAcre <= 6.5 * 0.40 * totalCylinderCubicFeetVolumePerAcre);
 
             // check SIMD 128 result against scalar
-            float totalScribnerBoardFeetPerAcre128 = fiaVolume.GetScribnerBoardFeet(trees);
+            float totalScribnerBoardFeetPerAcre128 = fiaVolume.GetScribnerBoardFeetPerAcre(trees);
             float simdScalarScribnerDifference = totalScribnerBoardFeetPerAcre - totalScribnerBoardFeetPerAcre128;
-            Assert.IsTrue(MathF.Abs(simdScalarScribnerDifference) < 1E-7 * totalScribnerBoardFeetPerAcre);
+            Assert.IsTrue(MathF.Abs(simdScalarScribnerDifference) < 0.004 * totalScribnerBoardFeetPerAcre);
         }
 
         [TestMethod]
@@ -329,10 +402,11 @@ namespace Osu.Cof.Ferm.Test
             #endif
 
             Trees trees = new Trees(FiaCode.PseudotsugaMenziesii, treeCount, Units.English);
+            float expansionFactor = 0.5F;
             for (int treeIndex = 0; treeIndex < treeCount; ++treeIndex)
             {
                 float dbhInInches = (float)(treeIndex % 36 + 4);
-                trees.Add(treeIndex, dbhInInches, 16.0F * MathF.Sqrt(dbhInInches) + 4.5F, 0.01F * (float)(treeIndex % 100), 1.0F);
+                trees.Add(treeIndex, dbhInInches, 16.0F * MathF.Sqrt(dbhInInches) + 4.5F, 0.01F * (float)(treeIndex % 100), expansionFactor);
             }
             FiaVolume volume = new FiaVolume();
 
@@ -355,10 +429,10 @@ namespace Osu.Cof.Ferm.Test
                 //             internal loop:  7.785s -> 1.28M
                 //            single species:  7.619s -> 1.31M
                 //                   VEX 128:  2.063s -> 4.85M
-                float standBoardFeetPerAcre = volume.GetScribnerBoardFeet(trees);
+                float standBoardFeetPerAcre = volume.GetScribnerBoardFeetPerAcre(trees);
                 #if DEBUG
-                Assert.IsTrue(standBoardFeetPerAcre > 35.0F * 1000.0F);
-                Assert.IsTrue(standBoardFeetPerAcre < 40.0F * 1000.0F);
+                Assert.IsTrue(standBoardFeetPerAcre > 35.0F * 1000.0F * expansionFactor);
+                Assert.IsTrue(standBoardFeetPerAcre < 40.0F * 1000.0F * expansionFactor);
                 #endif
                 accumulatedBoardFeetPerAcre += standBoardFeetPerAcre;
             }

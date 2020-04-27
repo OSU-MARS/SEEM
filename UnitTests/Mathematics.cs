@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Osu.Cof.Ferm.Test
 {
@@ -150,6 +151,29 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(power == 0.0F);
                 }
             }
+        }
+
+        [TestMethod]
+        public void Simd()
+        {
+            Vector128<float> broadcastFloat = AvxExtensions.BroadcastScalarToVector128(Constant.ForestersEnglish);
+            Vector128<int> broadcastInt = AvxExtensions.BroadcastScalarToVector128(1);
+
+            AssertV.IsTrue(Avx.CompareEqual(broadcastFloat, Vector128.Create(Constant.ForestersEnglish)));
+            AssertV.IsTrue(Avx.CompareEqual(broadcastInt, Vector128.Create(1)));
+
+            Vector128<int> index = Vector128.Create(0, 1, 2, 3);
+            Vector128<int> shuffle1 = Avx.Shuffle(index, Constant.Simd128x4.ShuffleRotateLower1);
+            Vector128<int> shuffle2 = Avx.Shuffle(index, Constant.Simd128x4.ShuffleRotateLower2);
+            Vector128<int> shuffle3 = Avx.Shuffle(index, Constant.Simd128x4.ShuffleRotateLower3);
+
+            AssertV.IsTrue(Avx.CompareEqual(shuffle1, Vector128.Create(1, 2, 3, 0)));
+            AssertV.IsTrue(Avx.CompareEqual(shuffle2, Vector128.Create(2, 3, 0, 1)));
+            AssertV.IsTrue(Avx.CompareEqual(shuffle3, Vector128.Create(3, 0, 1, 2)));
+
+            Assert.IsTrue(shuffle1.ToScalar() == 1);
+            Assert.IsTrue(shuffle2.ToScalar() == 2);
+            Assert.IsTrue(shuffle3.ToScalar() == 3);
         }
     }
 }

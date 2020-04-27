@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -17,6 +19,19 @@ namespace Osu.Cof.Ferm.Organon
             // slowdowns typically measured with fifth order polynomial approximation in Douglas-fir benchmark
             // This appears associated with trees falling under the if statement above.
             return 1.0F - MathV.Exp(-(25.0F * 25.0F * crownRatio * crownRatio));
+        }
+
+        public static Vector128<float> GetCrownRatioAdjustment(Vector128<float> crownRatio)
+        {
+            Vector128<float> crownRatioAdjustment = AvxExtensions.BroadcastScalarToVector128(1.0F);
+            int exponentMask = Avx.MoveMask(Avx.CompareLessThan(crownRatio, AvxExtensions.BroadcastScalarToVector128(0.11F)));
+            if (exponentMask != 0)
+            {
+                Vector128<float> power = Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(-25.0F * 25.0F), Avx.Multiply(crownRatio, crownRatio));
+                Vector128<float> exponent = MathV.MaskExp(power, exponentMask);
+                crownRatioAdjustment = Avx.Subtract(crownRatioAdjustment, exponent);
+            }
+            return crownRatioAdjustment;
         }
 
         private float GetDiameterFertilizationAdjustment(FiaCode species, OrganonVariant variant, int simulationStep, float douglasFirSiteIndexFromDbh, OrganonTreatments treatments)
@@ -281,10 +296,10 @@ namespace Osu.Cof.Ferm.Organon
             stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
             OrganonStandDensity densityBeforeGrowth = new OrganonStandDensity(stand, configuration.Variant);
 
-            // CCH and crown closure at start of growth
-            float[] CCH = OrganonStandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
+            // crown competition at start of growth
+            float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
             OrganonGrowth treeGrowth = new OrganonGrowth();
-            treeGrowth.Grow(ref simulationStep, configuration, stand, densityBeforeGrowth, CALIB, treatments, ref CCH, out OrganonStandDensity _, out int oldTreeRecordCount);
+            treeGrowth.Grow(ref simulationStep, configuration, stand, densityBeforeGrowth, CALIB, treatments, ref crownCompetitionByHeight, out OrganonStandDensity _, out int oldTreeRecordCount);
 
             if (configuration.IsEvenAge == false)
             {

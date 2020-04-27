@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Organon
         {
         }
 
-        protected override float GetCrownWidth(FiaCode species, float HLCW, float LCW, float HT, float DBH, float XL)
+        protected override float GetCrownWidth(FiaCode species, float HLCW, float largestCrownWidth, float HT, float DBH, float XL)
         {
             float B1;
             float B2;
@@ -57,8 +57,13 @@ namespace Osu.Cof.Ferm.Organon
                     RATIO = 50.0F;
                 }
             }
-            float CW = LCW * MathV.Pow(RP, B1 + B2 * MathF.Sqrt(RP) + B3 * (RATIO));
-            return CW;
+
+            float crownWidthMultiplier = MathV.Pow(RP, B1 + B2 * MathF.Sqrt(RP) + B3 * RATIO);
+            Debug.Assert(crownWidthMultiplier >= 0.0F);
+            Debug.Assert(crownWidthMultiplier <= 3.5F); // BUGBUG: red alder coefficients inherited from Fortran lead to negative powers of RP
+
+            float crownWidth = largestCrownWidth * crownWidthMultiplier;
+            return crownWidth;
         }
 
         public override float GetGrowthEffectiveAge(OrganonConfiguration configuration, OrganonStand stand, Trees trees, int treeIndex, out float potentialHeightGrowth)
@@ -73,14 +78,15 @@ namespace Osu.Cof.Ferm.Organon
             else if (trees.Species == FiaCode.TsugaHeterophylla)
             {
                 // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
-                float siteIndexFromGround = -0.432F + 0.899F * (stand.HemlockSiteIndex + 4.5F);
-                growthEffectiveAge = WesternHemlock.F_HG(siteIndexFromGround, trees.Height[treeIndex], 1.0F, out potentialHeightGrowth);
+                float siteIndexFromGround = -0.432F + 0.899F * (stand.HemlockSiteIndex + 4.5F); // BUGBUG: why is this not just the hemlock site index/
+                WesternHemlock.SiteConstants tsheSite = new WesternHemlock.SiteConstants(siteIndexFromGround);
+                growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             else
             {
                 // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
-                float siteIndexFromGround = stand.HemlockSiteIndex + 4.5F;
-                growthEffectiveAge = DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(siteIndexFromGround, trees.Height[treeIndex], 1.0F, out potentialHeightGrowth);
+                DouglasFir.SiteConstants psmeSite = new DouglasFir.SiteConstants(stand.HemlockSiteIndex);
+                growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             return growthEffectiveAge;
         }
@@ -676,7 +682,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
 
                 float growthEffectiveAge = configuration.Variant.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
-                float crownCompetitionIncrement = this.GetCrownCompetitionIncrement(trees.Height[treeIndex], crownCompetitionByHeight);
+                float crownCompetitionIncrement = this.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
 
                 float crownRatio = trees.CrownRatio[treeIndex];
                 float FCR = -P5 * MathV.Pow(1.0F - crownRatio, P6) * MathV.Exp(P7 * MathF.Sqrt(crownCompetitionIncrement));

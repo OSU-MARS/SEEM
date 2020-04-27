@@ -28,20 +28,13 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(densityStartOfStep.CrownCompetitionFactor > 0.0F);
                     Assert.IsTrue(densityStartOfStep.TreesPerAcre > 0.0F);
 
-                    float[] CCH = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
-                    float crownCompetitionFactor = CCH[0];
-                    Assert.IsTrue(crownCompetitionFactor >= 0.0F);
-                    Assert.IsTrue(crownCompetitionFactor <= TestConstant.Maximum.CrownCompetitionFactor);
+                    float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
+                    this.Verify(crownCompetitionByHeight, variant);
 
                     foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                     {
-                        variant.AddCrownCompetitionByHeight(treesOfSpecies, CCH);
-                        for (int cchIndex = 0; cchIndex < CCH.Length; ++cchIndex)
-                        {
-                            float cch = CCH[cchIndex];
-                            Assert.IsTrue(cch >= 0.0F);
-                            Assert.IsTrue(cch < 1000.0F);
-                        }
+                        variant.AddCrownCompetitionByHeight(treesOfSpecies, crownCompetitionByHeight);
+                        this.Verify(crownCompetitionByHeight, variant);
                     }
 
                     OrganonStandDensity densityEndOfStep = new OrganonStandDensity(stand, variant);
@@ -50,7 +43,7 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(densityEndOfStep.TreesPerAcre > 0.0F);
 
                     #pragma warning disable IDE0059 // Unnecessary assignment of a value
-                    CCH = treeGrowth.GrowCrown(variant, stand, densityEndOfStep, CALIB);
+                    crownCompetitionByHeight = treeGrowth.GrowCrown(variant, stand, densityEndOfStep, CALIB);
                     #pragma warning restore IDE0059 // Unnecessary assignment of a value
                     this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
                     this.Verify(CALIB);
@@ -120,15 +113,18 @@ namespace Osu.Cof.Ferm.Test
                 OrganonTreatments treatments = new OrganonTreatments();
 
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
-                float[] CCH = new float[41];
+                OrganonStandDensity densityStartOfStep = new OrganonStandDensity(stand, variant);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; /* incremented by GROW() */)
                 {
-                    OrganonStandDensity densityStartOfStep = new OrganonStandDensity(stand, variant);
-                    treeGrowth.Grow(ref simulationStep, configuration, stand, densityStartOfStep, CALIB, treatments, ref CCH, out OrganonStandDensity _, out int _);
+                    float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
+                    treeGrowth.Grow(ref simulationStep, configuration, stand, densityStartOfStep, CALIB, treatments, ref crownCompetitionByHeight, 
+                                    out OrganonStandDensity densityEndOfStep, out int _);
                     stand.SetSdiMax(configuration);
 
                     this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, stand, variant);
                     this.Verify(CALIB);
+
+                    densityStartOfStep = densityEndOfStep;
                 }
             }
         }
@@ -168,7 +164,6 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void HeightGrowthApi()
         {
-            float[] CCH = new float[41];
             OrganonGrowth treeGrowth = new OrganonGrowth();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
@@ -176,6 +171,10 @@ namespace Osu.Cof.Ferm.Test
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 TestStand stand = this.CreateDefaultStand(configuration);
                 OrganonTreatments treatments = new OrganonTreatments();
+
+                float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
+                DouglasFir.SiteConstants psmeSite = new DouglasFir.SiteConstants(stand.SiteIndex);
+                WesternHemlock.SiteConstants tsheSite = new WesternHemlock.SiteConstants(stand.HemlockSiteIndex);
 
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
@@ -198,11 +197,11 @@ namespace Osu.Cof.Ferm.Test
                         {
                             if (treesOfSpecies.Species == FiaCode.TsugaHeterophylla)
                             {
-                                growthEffectiveAgeInYears = WesternHemlock.F_HG(stand.SiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out potentialHeightGrowth);
+                                growthEffectiveAgeInYears = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite, variant.TimeStepInYears, heightInFeet, out potentialHeightGrowth);
                             }
                             else
                             {
-                                growthEffectiveAgeInYears = DouglasFir.BrucePsmeAbgrGrowthEffectiveAge(stand.SiteIndex, heightInFeet, TestConstant.Default.AgeToReachBreastHeightInYears, out potentialHeightGrowth);
+                                growthEffectiveAgeInYears = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite, variant.TimeStepInYears, heightInFeet, out potentialHeightGrowth);
                             }
                             verifyAgeAndHeight = true;
                         }
@@ -210,7 +209,7 @@ namespace Osu.Cof.Ferm.Test
                         {
                             if ((treesOfSpecies.Species == FiaCode.PinusPonderosa) || (treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii))
                             {
-                                DouglasFir.DouglasFirPonderosaHeightGrowth(treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii, stand.SiteIndex, heightInFeet, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                                DouglasFir.GetDouglasFirPonderosaHeightGrowth(treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii, stand.SiteIndex, heightInFeet, out growthEffectiveAgeInYears, out potentialHeightGrowth);
                                 verifyAgeAndHeight = true;
                             }
                         }
@@ -230,7 +229,7 @@ namespace Osu.Cof.Ferm.Test
                     {
                         if (variant.IsBigSixSpecies(treesOfSpecies.Species))
                         {
-                            treeGrowth.GrowHeightBigSixSpecies(configuration, simulationStep, stand, treesOfSpecies, 1.0F, CCH, treatments, out _);
+                            treeGrowth.GrowHeightBigSixSpecies(configuration, simulationStep, stand, treesOfSpecies, 1.0F, crownCompetitionByHeight, treatments, out _);
                         }
                         else
                         {
@@ -356,10 +355,11 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext.WriteLine("siteIndex, age, topHeight");
             for (float siteIndexInMeters = 10.0F; siteIndexInMeters < 60.1F; siteIndexInMeters += 10.0F)
             {
+                WesternHemlock.SiteConstants tsheSite = new WesternHemlock.SiteConstants(Constant.FeetPerMeter * siteIndexInMeters);
                 float previousTopHeight = -1.0F;
                 for (float ageInYears = 0.0F; ageInYears < 100.1F; ++ageInYears)
                 {
-                    WesternHemlock.SITECV_F(siteIndexInMeters, ageInYears, out float topHeightInMeters);
+                    WesternHemlock.SITECV_F(tsheSite, ageInYears, out float topHeightInMeters);
                     this.TestContext.WriteLine("{0},{1},{2}", siteIndexInMeters, ageInYears, topHeightInMeters);
 
                     Assert.IsTrue(topHeightInMeters >= 0.0F);

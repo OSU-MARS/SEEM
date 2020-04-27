@@ -82,7 +82,8 @@ namespace Osu.Cof.Ferm.Heuristics
             // TODO: CopyTreeSelectionFrom() for initializing tree selection?
             // TODO: should incoming schedule on this.CurrentSolution be one of the individuals in the population?
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
-            GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, initialTreeRecordCount);
+            int treeSelectionCapacity = Constant.Simd128x4.Width * (initialTreeRecordCount / Constant.Simd128x4.Width + 1);
+            GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, treeSelectionCapacity);
             currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection);
             OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             this.BestObjectiveFunction = Single.MinValue;
@@ -91,7 +92,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 int[] individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
                 for (int treeIndex = 0; treeIndex < individualTreeSelection.Length; ++treeIndex)
                 {
-                    individualTrajectory.SetTreeSelection(individualIndex, individualTreeSelection[treeIndex]);
+                    individualTrajectory.SetTreeSelection(treeIndex, individualTreeSelection[treeIndex]);
                 }
                 individualTrajectory.Simulate();
                 float individualFitness = this.GetObjectiveFunction(individualTrajectory);

@@ -15,12 +15,11 @@ namespace Osu.Cof.Ferm.Heuristics
         protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
         {
             this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, objective.VolumeUnits);
-            this.CurrentTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, objective.VolumeUnits);
             this.Objective = objective;
 
             this.BestTrajectory.Simulate();
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.BestTrajectory);
-            this.CurrentTrajectory.Copy(this.BestTrajectory);
+            this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
         }
         
         public abstract string GetColumnName();

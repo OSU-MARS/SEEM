@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Organon
         {
         }
 
-        protected override float GetCrownWidth(FiaCode species, float HLCW, float LCW, float HT, float DBH, float XL)
+        protected override float GetCrownWidth(FiaCode species, float HLCW, float largestCrownWidth, float HT, float DBH, float XL)
         {
             float B1;
             float B2;
@@ -86,8 +86,13 @@ namespace Osu.Cof.Ferm.Organon
                     RATIO = 31.0F;
                 }
             }
-            float CW = LCW * MathF.Pow(RP, (B1 + B2 * MathF.Sqrt(RP) + B3 * (RATIO)));
-            return CW;
+
+            float crownWidthMultiplier = MathV.Pow(RP, B1 + B2 * MathF.Sqrt(RP) + B3 * RATIO);
+            Debug.Assert(crownWidthMultiplier >= 0.0F);
+            Debug.Assert(crownWidthMultiplier <= 1.0F);
+
+            float crownWidth = largestCrownWidth * crownWidthMultiplier;
+            return crownWidth;
         }
 
         public override float GetGrowthEffectiveAge(OrganonConfiguration configuration, OrganonStand stand, Trees trees, int treeIndex, out float potentialHeightGrowth)
@@ -108,7 +113,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
                 treatAsDouglasFir = true;
             }
-            DouglasFir.DouglasFirPonderosaHeightGrowth(treatAsDouglasFir, SITE, trees.Height[treeIndex], out float growthEffectiveAge, out potentialHeightGrowth);
+            DouglasFir.GetDouglasFirPonderosaHeightGrowth(treatAsDouglasFir, SITE, trees.Height[treeIndex], out float growthEffectiveAge, out potentialHeightGrowth);
             return growthEffectiveAge;
         }
 
@@ -1214,7 +1219,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
 
                 float growthEffectiveAge = configuration.Variant.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
-                float crownCompetitionIncrement = this.GetCrownCompetitionIncrement(trees.Height[treeIndex], crownCompetitionByHeight);
+                float crownCompetitionIncrement = this.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
 
                 // Hann 2002 Equation 2 (p17) as reduced to Eq 5.1 (p19), 5.2 (p20), 5.3 (p20) by setting a1 = 1, k1 = 1, k3 = 2, a5 = 0
                 //                                             5.x forms are identical: 5.1 uses SCCH, 5.2 scaled PCCH, and 5.3 PCCH

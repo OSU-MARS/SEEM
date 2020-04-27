@@ -88,6 +88,14 @@ namespace Osu.Cof.Ferm.Data
 
                 treesOfSpecies.Add(this.TreeID[treeIndex], dbhInInches, heightInFeet, crownRatio, liveExpansionFactor);
             }
+
+            // used for checking sensitivity to data order
+            // Ordering not currently advantageous, so disabled for now.
+            // foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
+            // {
+            //    treesOfSpecies.SortByDbh();
+            // }
+
             return stand;
         }
     }

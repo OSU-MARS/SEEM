@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Organon
         {
         }
 
-        protected override float GetCrownWidth(FiaCode species, float HLCW, float LCW, float HT, float DBH, float XL)
+        protected override float GetCrownWidth(FiaCode species, float HLCW, float largestCrownWidth, float HT, float DBH, float XL)
         {
             float B1;
             float B2;
@@ -93,8 +93,13 @@ namespace Osu.Cof.Ferm.Organon
                     RATIO = 31.0F;
                 }
             }
-            float CW = LCW * MathV.Pow(RP, B1 + B2 * MathF.Sqrt(RP) + B3 * (RATIO));
-            return CW;
+
+            float crownWidthMultiplier = MathV.Pow(RP, B1 + B2 * MathF.Sqrt(RP) + B3 * RATIO);
+            Debug.Assert(crownWidthMultiplier >= 0.0F);
+            Debug.Assert(crownWidthMultiplier <= 1.0F);
+
+            float crownWidth = largestCrownWidth * crownWidthMultiplier;
+            return crownWidth;
         }
 
         public override void GetHeightPredictionCoefficients(FiaCode species, out float B0, out float B1, out float B2)
@@ -858,13 +863,13 @@ namespace Osu.Cof.Ferm.Organon
                 }
 
                 float growthEffectiveAge = configuration.Variant.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
-                float crownCompetitionIncrement = this.GetCrownCompetitionIncrement(trees.Height[treeIndex], crownCompetitionByHeight);
+                float crownCompetitionIncrement = this.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
 
                 float crownRatio = trees.CrownRatio[treeIndex];
                 float FCR = -P5 * MathV.Pow(1.0F - crownRatio, P6) * MathV.Exp(P7 * MathF.Sqrt(crownCompetitionIncrement));
                 float B0 = P1 * MathV.Exp(P2 * crownCompetitionIncrement);
                 float B1 = MathV.Exp(P3 * MathV.Pow(crownCompetitionIncrement, P4));
-                float MODIFER = P8 * (B0 + (B1 - B0) * MathV.Exp(FCR));
+                float MODIFER = P8 * (B0 + (B1 - B0) * MathF.Exp(FCR)); // changed from MathV due to FCR of -91 being observed
                 float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
                 float heightGrowth = potentialHeightGrowth * MODIFER * CRADJ;
                 Debug.Assert(heightGrowth > 0.0F);

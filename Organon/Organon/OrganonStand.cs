@@ -16,6 +16,8 @@ namespace Osu.Cof.Ferm.Organon
         // time since oldest cohort of trees in the stand reached breast height (4.5 feet) (DOUG?)
         public int BreastHeightAgeInYears { get; set; }
 
+        public DouglasFir.SiteConstants DouglasFirSiteConstants { get; private set; }
+
         // also used for ponderosa (SWO) and western redcedar (NWO)
         public float HemlockSiteIndex { get; private set; }
 
@@ -37,6 +39,7 @@ namespace Osu.Cof.Ferm.Organon
         {
             this.AgeInYears = ageInYears;
             this.BreastHeightAgeInYears = ageInYears;
+            this.DouglasFirSiteConstants = new DouglasFir.SiteConstants(primarySiteIndex);
             this.HemlockSiteIndex = -1.0F;
             this.NumberOfPlots = 1;
             this.SiteIndex = primarySiteIndex;

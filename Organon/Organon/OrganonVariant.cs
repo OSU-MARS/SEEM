@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Species;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -23,12 +23,17 @@ namespace Osu.Cof.Ferm.Organon
             FiaCode species = trees.Species;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
+                float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+                if (expansionFactor <= 0.0F)
+                {
+                    continue;
+                }
+
                 float dbhInInches = trees.Dbh[treeIndex];
                 float heightInFeet = trees.Height[treeIndex];
                 float crownRatio = trees.CrownRatio[treeIndex];
                 float crownLengthInFeet = crownRatio * heightInFeet;
                 float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
-                float expansionFactor = trees.LiveExpansionFactor[treeIndex];
                 float maxCrownWidth = this.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
                 float largestCrownWidth = this.GetLargestCrownWidth(species, maxCrownWidth, crownRatio, dbhInInches, heightInFeet);
                 float heightToLargestCrownWidth = this.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
@@ -41,10 +46,10 @@ namespace Osu.Cof.Ferm.Organon
                     XLCW = this.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, XHLCW);
                 }
 
-                float strataThickness = crownCompetitionByHeight[^1] / Constant.HeightStrataAsFloat;
-                for (int heightIndex = crownCompetitionByHeight.Length - 2; heightIndex >= 0; --heightIndex)
+                float strataThickness = crownCompetitionByHeight[^1] / Constant.HeightStrata;
+                for (int strataIndex = crownCompetitionByHeight.Length - 1; strataIndex >= 0; --strataIndex)
                 {
-                    float relativeHeight = (float)heightIndex * strataThickness;
+                    float relativeHeight = (float)strataIndex * strataThickness;
                     float crownWidth = 0.0F;
                     if (relativeHeight <= XHLCW)
                     {
@@ -54,8 +59,8 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         crownWidth = this.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, relativeHeight);
                     }
-                    float crownCompetitionFactor = 0.001803F * expansionFactor * crownWidth * crownWidth;
-                    crownCompetitionByHeight[heightIndex] += crownCompetitionFactor;
+                    float crownCompetitionFactor = Constant.CrownCompetionConstantEnglish * expansionFactor * crownWidth * crownWidth;
+                    crownCompetitionByHeight[strataIndex] += crownCompetitionFactor;
                 }
             }
         }
@@ -77,21 +82,62 @@ namespace Osu.Cof.Ferm.Organon
             return new NotSupportedException(String.Format("Unhandled model {0}.", treeModel));
         }
 
-        protected float GetCrownCompetitionIncrement(float height, float[] crownCompetitionByHeight)
+        protected float GetCrownCompetitionFactorByHeight(float height, float[] crownCompetitionByHeight)
         {
             if (height >= crownCompetitionByHeight[^1])
             {
                 return 0.0F;
             }
 
-            Debug.Assert(crownCompetitionByHeight.Length == (int)Constant.HeightStrataAsFloat + 1);
-            float heightClassAsFloat = Constant.HeightStrataAsFloat * height / crownCompetitionByHeight[^1];
-            int heightClassAsInt = (int)heightClassAsFloat;
-            if (heightClassAsInt >= crownCompetitionByHeight.Length)
+            Debug.Assert(crownCompetitionByHeight.Length == Constant.HeightStrata + 1);
+            int strataIndex = (int)(Constant.HeightStrata * height / crownCompetitionByHeight[^1]);
+            if (strataIndex >= crownCompetitionByHeight.Length)
             {
-                return crownCompetitionByHeight[^2];
+                Debug.Fail("Strata index should not be greater than the length of the crown competition array. This case was previously checked for.");
+                return 0.0F;
             }
-            return crownCompetitionByHeight[heightClassAsInt + 1];
+            return crownCompetitionByHeight[strataIndex + 1];
+        }
+
+        protected unsafe Vector128<float> GetCrownCompetitionFactorByHeight(Vector128<float> height, float[] crownCompetitionByHeight)
+        {
+            // this is called during GrowHeight() with grown height but before crown competition has been recomputed for new heights
+            // As a result, indices well beyond the end of the crown competition array can be generated and must be clamped. If needed, the code 
+            // here can be made slightly more efficient by adding a guard strata whose competition factor is always zero and vectorizing the
+            // compare and clamp.
+            Debug.Assert(crownCompetitionByHeight[^1] > 4.5F);
+            Vector128<float> strataIndexAsFloat = Avx.Multiply(AvxExtensions.BroadcastScalarToVector128((float)Constant.HeightStrata / crownCompetitionByHeight[^1]), height);
+            Vector128<int> strataIndex = Avx.ConvertToVector128Int32WithTruncation(strataIndexAsFloat);
+            DebugV.Assert(Avx.CompareGreaterThan(strataIndex, AvxExtensions.BroadcastScalarToVector128(-1))); // no integer >=
+            DebugV.Assert(Avx.CompareLessThan(strataIndex, AvxExtensions.BroadcastScalarToVector128(2 * Constant.HeightStrata))); // factor of 2 empirically fitted to tests, likely fragile
+
+            // AVX implementation of Avx2.GatherVector128(&crownCompetitionByHeight[0], strataIndex, 1)
+            float crownCompetitionFactor0 = 0.0F;
+            int crownCompetitionIndex0 = strataIndex.ToScalar();
+            if (crownCompetitionIndex0 < Constant.HeightStrata)
+            {
+                crownCompetitionFactor0 = crownCompetitionByHeight[crownCompetitionIndex0];
+            }
+            float crownCompetitionFactor1 = 0.0F;
+            int crownCompetitionIndex1 = Avx.Shuffle(strataIndex, Constant.Simd128x4.ShuffleRotateLower1).ToScalar();
+            if (crownCompetitionIndex1 < Constant.HeightStrata)
+            {
+                crownCompetitionFactor1 = crownCompetitionByHeight[crownCompetitionIndex1];
+            }
+            float crownCompetitionFactor2 = 0.0F;
+            int crownCompetitionIndex2 = Avx.Shuffle(strataIndex, Constant.Simd128x4.ShuffleRotateLower2).ToScalar();
+            if (crownCompetitionIndex2 < Constant.HeightStrata)
+            {
+                crownCompetitionFactor2 = crownCompetitionByHeight[crownCompetitionIndex2];
+            }
+            float crownCompetitionFactor3 = 0.0F;
+            int crownCompetitionIndex3 = Avx.Shuffle(strataIndex, Constant.Simd128x4.ShuffleRotateLower3).ToScalar();
+            if (crownCompetitionIndex3 < Constant.HeightStrata)
+            {
+                crownCompetitionFactor3 = crownCompetitionByHeight[crownCompetitionIndex3];
+            }
+
+            return Vector128.Create(crownCompetitionFactor0, crownCompetitionFactor1, crownCompetitionFactor2, crownCompetitionFactor3);
         }
 
         /// <summary>

@@ -10,6 +10,7 @@ namespace Osu.Cof.Ferm.Test
     {
         protected TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
+            // TODO: cover cases with more than one SIMD width per species
             TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, TestConstant.Default.SiteIndex);
             switch (configuration.Variant.TreeModel)
             {
@@ -313,6 +314,32 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(finalTreesOfSpecies.HeightGrowth[treeIndex] == 0.0F);
                 }
             }
+        }
+
+        protected void Verify(float[] crownCompetitionByHeight, OrganonVariant variant)
+        {
+            float ccfInStrataImmediatelyBelow = TestConstant.Maximum.CrownCompetitionFactor;
+            for (int ccfIndex = 0; ccfIndex < crownCompetitionByHeight.Length - 1; ++ccfIndex)
+            {
+                float ccfAtHeight = crownCompetitionByHeight[ccfIndex];
+                Assert.IsTrue(ccfAtHeight >= 0.0F);
+                Assert.IsTrue(ccfAtHeight < TestConstant.Maximum.CrownCompetitionFactor);
+                if (variant.TreeModel == TreeModel.OrganonRap)
+                {
+                    // red alder coefficients in OrganonVariantRap.GetCrownWidth() result in nonmonotonic crown widths and therefore nonmonotonic CCF
+                    Assert.IsTrue(ccfAtHeight <= 2.0 * ccfInStrataImmediatelyBelow);
+                }
+                else
+                {
+                    Assert.IsTrue(ccfAtHeight <= ccfInStrataImmediatelyBelow);
+                }
+
+                ccfInStrataImmediatelyBelow = ccfAtHeight;
+            }
+
+            float tallestTreeHeight = crownCompetitionByHeight[^1];
+            Assert.IsTrue(tallestTreeHeight >= 0.0F);
+            Assert.IsTrue(tallestTreeHeight <= TestConstant.Maximum.HeightInFeet);
         }
     }
 }

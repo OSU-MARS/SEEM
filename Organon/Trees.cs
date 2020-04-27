@@ -68,7 +68,7 @@ namespace Osu.Cof.Ferm
         public Trees(FiaCode species, int minimumSize, Units units)
         {
             // ensure array lengths are an exact multiple of the SIMD width
-            this.Capacity = Constant.SimdWidthInSingles * (int)MathF.Ceiling((float)minimumSize / (float)Constant.SimdWidthInSingles);
+            this.Capacity = Constant.Simd128x4.Width * (int)MathF.Ceiling((float)minimumSize / (float)Constant.Simd128x4.Width);
             this.Count = 0; // no trees assigned yet
             this.CrownRatio = new float[this.Capacity];
             this.Dbh = new float[this.Capacity];
@@ -144,6 +144,38 @@ namespace Osu.Cof.Ferm
             float dbhInInches = this.Dbh[treeIndex];
             float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
             return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
+        }
+
+        public void SortByDbh()
+        {
+            int[] dbhSortIndices = new int[this.Capacity];
+            for (int treeIndex = 0; treeIndex < this.Capacity; ++treeIndex)
+            {
+                dbhSortIndices[treeIndex] = treeIndex;
+            }
+            Array.Sort(this.Dbh, dbhSortIndices);
+
+            float[] sortedCrownRatio = new float[this.Capacity];
+            float[] sortedDeadExpansionFactor = new float[this.Capacity];
+            float[] sortedDbhGrowth = new float[this.Capacity];
+            float[] sortedHeight = new float[this.Capacity];
+            float[] sortedHeightGrowth = new float[this.Capacity];
+            float[] sortedLiveExpansionFactor = new float[this.Capacity];
+            int unusedCapacity = this.Capacity - this.Count;
+            for (int destinationIndex = 0; destinationIndex < this.Count; ++destinationIndex)
+            {
+                // any unused trees have diameters of zero and therefore occur first in the sort array; skip over these
+                // This will behave improperly if tree records exist on the plot with zero diameters. If necessary, expansion factor can also
+                // be checked for zero.
+                int sourceIndex = dbhSortIndices[destinationIndex + unusedCapacity];
+
+                sortedCrownRatio[destinationIndex] = this.CrownRatio[sourceIndex];
+                sortedDeadExpansionFactor[destinationIndex] = this.DeadExpansionFactor[sourceIndex];
+                sortedDbhGrowth[destinationIndex] = this.DbhGrowth[sourceIndex];
+                sortedHeight[destinationIndex] = this.Height[sourceIndex];
+                sortedHeightGrowth[destinationIndex] = this.HeightGrowth[sourceIndex];
+                sortedLiveExpansionFactor[destinationIndex] = this.LiveExpansionFactor[sourceIndex];
+            }
         }
     }
 }

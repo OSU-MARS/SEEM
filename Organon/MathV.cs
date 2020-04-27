@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -18,7 +19,7 @@ namespace Osu.Cof.Ferm
         private const int FloatMantissaBits = 23;
         private const int FloatMantissaZero = 127;
         private const int FloatMantissaMask = 0x007FFFFF;
-        private const int FloatMaximumPower = 127;
+        private const float FloatMaximumPower = 127.0F;
 
         private const float Log2Beta1 = 1.441814292091611F;
         private const float Log2Beta2 = -0.708440969761796F;
@@ -84,6 +85,9 @@ namespace Osu.Cof.Ferm
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static Vector128<float> Exp2(Vector128<float> power)
         {
+            Debug.Assert(Avx.MoveMask(Avx.And(Avx.CompareGreaterThan(power, AvxExtensions.BroadcastScalarToVector128(MathV.FloatMaximumPower)), Avx.CompareOrdered(power, power))) == 0);
+
+            byte zeroMask = (byte)Avx.MoveMask(Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector128(-MathV.FloatMaximumPower)));
             Vector128<float> integerPart = Avx.RoundToNearestInteger(power);
             Vector128<float> integerExponent = Avx.ShiftLeftLogical(Avx.Add(Avx.ConvertToVector128Int32(integerPart), MathV.FloatMantissaZero128), MathV.FloatMantissaBits).AsSingle();
 
@@ -104,7 +108,14 @@ namespace Osu.Cof.Ferm
             fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta4, x4));
 
             // form exponent
-            return Avx.Multiply(integerExponent, fractionalExponent);
+            Vector128<float> exponent = Avx.Multiply(integerExponent, fractionalExponent);
+
+            // suppress exponent overflows by truncating values less than 2^-127 to zero
+            if (zeroMask != 0)
+            {
+                exponent = Avx.Blend(exponent, Vector128<float>.Zero, zeroMask);
+            }
+            return exponent;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -159,8 +170,8 @@ namespace Osu.Cof.Ferm
             Vector128<float> one = AvxExtensions.BroadcastScalarToVector128(MathV.One);
 
             Vector128<int> integerValue = value.AsInt32();
-            Vector128<float> exponent = Avx.ConvertToVector128Single(Avx.Subtract(Avx.ShiftRightLogical(Avx.And(integerValue, MathV.FloatExponentMask128), 
-                                                                                                        MathV.FloatMantissaBits), 
+            Vector128<float> exponent = Avx.ConvertToVector128Single(Avx.Subtract(Avx.ShiftRightLogical(Avx.And(integerValue, MathV.FloatExponentMask128),
+                                                                                                        MathV.FloatMantissaBits),
                                                                                   MathV.FloatMantissaZero128));
             Vector128<float> mantissa = Avx.Or(Avx.And(integerValue, MathV.FloatMantissaMask128).AsSingle(), one);
 
@@ -198,6 +209,14 @@ namespace Osu.Cof.Ferm
             return Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(MathV.Log2ToLog10), MathV.Log2(value));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> MaskExp(Vector128<float> power, int exponentMask)
+        {
+            Vector128<float> restrictedPower = Avx.Blend(power, AvxExtensions.BroadcastScalarToVector128(1.0F), (byte)exponentMask);
+            Vector128<float> exponent = Avx.Blend(MathV.Exp(restrictedPower), Vector128<float>.Zero, (byte)exponentMask);
+            return exponent;
+        }
+
         /// <summary>
         /// Faster but restricted implementation of MathF.Pow().
         /// </summary>
@@ -220,6 +239,12 @@ namespace Osu.Cof.Ferm
                 return 0.0F;
             }
             return MathV.Exp2(MathV.Log2(x) * y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Pow(Vector128<float> x, Vector128<float> y)
+        {
+            return MathV.Exp2(Avx.Multiply(MathV.Log2(x), y));
         }
     }
 }
