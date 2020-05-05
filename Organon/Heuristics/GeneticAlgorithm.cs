@@ -25,7 +25,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.ObjectiveFunctionByIteration = new List<float>(this.MaximumGenerations);
         }
 
-        public override string GetColumnName()
+        public override string GetName()
         {
             return "Genetic";
         }

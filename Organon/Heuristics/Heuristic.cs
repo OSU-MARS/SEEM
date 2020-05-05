@@ -1,6 +1,7 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
@@ -20,12 +21,18 @@ namespace Osu.Cof.Ferm.Heuristics
             this.BestTrajectory.Simulate();
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.BestTrajectory);
             this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
+
+            string name = this.GetName();
+            this.BestTrajectory.Name = name + this.BestTrajectory.Name + "Best";
+            this.CurrentTrajectory.Name = name + this.CurrentTrajectory.Name + "Current";
         }
-        
-        public abstract string GetColumnName();
+
+        public abstract string GetName();
 
         public float GetObjectiveFunction(OrganonStandTrajectory trajectory)
         {
+            Debug.Assert(trajectory.PeriodLengthInYears > 0);
+
             // find objective function value
             // Volume objective functions are in m³/ha or MBF/ac.
             float objectiveFunction = 0.0F;
@@ -33,7 +40,6 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 if (trajectory.VolumeUnits == VolumeUnits.CubicMetersPerHectare)
                 {
-                    // TODO
                     // TODO: also, check tree model is using a five year time step
                     throw new NotSupportedException();
                 }
@@ -41,23 +47,16 @@ namespace Osu.Cof.Ferm.Heuristics
                 // net present value
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
                 // TODO: support per species pricing
-                float appreciatedPricePerMbf;
-                float discountFactor;
                 for (int periodIndex = 1; periodIndex < trajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
                 {
-                    float thinVolumeInMbf = 0.001F * trajectory.HarvestVolumesByPeriod[periodIndex];
-                    if (thinVolumeInMbf > 0.0)
+                    float thinVolumeInBF = trajectory.HarvestVolumesByPeriod[periodIndex];
+                    if (thinVolumeInBF > 0.0)
                     {
-                        appreciatedPricePerMbf = this.Objective.DouglasFirPricePerMbf * MathF.Pow(1.0F + this.Objective.TimberAppreciationRate, Constant.DefaultTimeStepInYears * (periodIndex - 1) + 0.5F * Constant.DefaultTimeStepInYears);
-                        discountFactor = 1.0F / MathF.Pow(1.0F + this.Objective.DiscountRate, Constant.DefaultTimeStepInYears * (periodIndex - 1) + 0.5F * Constant.DefaultTimeStepInYears);
-                        objectiveFunction += discountFactor * (appreciatedPricePerMbf * thinVolumeInMbf - this.Objective.FixedThinningCostPerAcre);
+                        objectiveFunction += this.Objective.GetPresentValueOfThinScribner(thinVolumeInBF, periodIndex - 1, trajectory.PeriodLengthInYears);
                     }
                 }
 
-                appreciatedPricePerMbf = this.Objective.DouglasFirPricePerMbf * MathF.Pow(1.0F + this.Objective.TimberAppreciationRate, Constant.DefaultTimeStepInYears * (trajectory.StandingVolumeByPeriod.Length - 1) + 0.5F * Constant.DefaultTimeStepInYears);
-                discountFactor = 1.0F / MathF.Pow(1.0F + this.Objective.DiscountRate, Constant.DefaultTimeStepInYears * (trajectory.StandingVolumeByPeriod.Length - 1) + 0.5F * Constant.DefaultTimeStepInYears);
-                float endStandingVolumeInMbf = 0.001F * trajectory.StandingVolumeByPeriod[^1];
-                objectiveFunction += discountFactor * (appreciatedPricePerMbf * endStandingVolumeInMbf - this.Objective.FixedRegenerationHarvestCostPerAcre);
+                objectiveFunction += this.Objective.GetPresentValueOfFinalHarvestScribner(trajectory.StandingVolumeByPeriod[^1], trajectory.StandingVolumeByPeriod.Length - 1, trajectory.PeriodLengthInYears);
 
                 // convert from US$/ac to k$/ac
                 objectiveFunction *= 0.001F;
@@ -76,7 +75,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            return (float)objectiveFunction;
+            return objectiveFunction;
         }
 
         protected int GetInitialTreeRecordCount()

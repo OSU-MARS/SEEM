@@ -29,7 +29,7 @@ namespace Osu.Cof.Ferm.Heuristics
             };
         }
 
-        public override string GetColumnName()
+        public override string GetName()
         {
             return "SimulatedAnnealing";
         }

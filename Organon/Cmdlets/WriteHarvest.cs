@@ -29,14 +29,14 @@ namespace Osu.Cof.Ferm.Cmdlets
             for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
             {
                 Heuristic heuristic = this.Heuristics[heuristicIndex];
-                line.Append("," + heuristic.GetColumnName() + "H");
+                line.Append("," + heuristic.GetName() + "H");
             }
             // standing volume headers
             int maxPlanningPeriod = 0;
             for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
             {
                 Heuristic heuristic = this.Heuristics[heuristicIndex];
-                line.Append("," + heuristic.GetColumnName() + "S");
+                line.Append("," + heuristic.GetName() + "S");
                 maxPlanningPeriod = Math.Max(maxPlanningPeriod, heuristic.BestTrajectory.StandingVolumeByPeriod.Length);
             }
             writer.WriteLine(line);

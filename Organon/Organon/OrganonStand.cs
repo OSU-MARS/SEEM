@@ -54,6 +54,7 @@ namespace Osu.Cof.Ferm.Organon
         {
             this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
             this.HemlockSiteIndex = other.HemlockSiteIndex;
+            this.Name = other.Name;
             this.NumberOfPlots = other.NumberOfPlots;
             this.RedAlderSiteIndex = other.RedAlderSiteIndex;
             this.Warnings = new OrganonWarnings(other.Warnings);

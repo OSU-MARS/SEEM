@@ -15,6 +15,12 @@ namespace Osu.Cof.Ferm.Test
     {
         public TestContext TestContext { get; set; }
 
+        private NelderPlot GetNelder()
+        {
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
+            return new NelderPlot(plotFilePath, "1");
+        }
+
         [TestMethod]
         public void HuffmanPeakNobleFir()
         {
@@ -46,9 +52,7 @@ namespace Osu.Cof.Ferm.Test
             treeCount = 48;
             #endif
 
-            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
-            NelderPlot nelder = new NelderPlot(plotFilePath, "1");
-
+            NelderPlot nelder = this.GetNelder();
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToStand(130.0F, treeCount);
 
@@ -75,8 +79,7 @@ namespace Osu.Cof.Ferm.Test
             treeCount = 25;
             #endif
 
-            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
-            NelderPlot nelder = new NelderPlot(plotFilePath, "1");
+            NelderPlot nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToStand(130.0F, treeCount);
 
@@ -142,6 +145,39 @@ namespace Osu.Cof.Ferm.Test
             this.Verify(genetic);
             this.Verify(recordTravel);
             this.Verify(tabu);
+        }
+
+        [TestMethod]
+        public void NelderTrajectory()
+        {
+            int lastPeriod = 9;
+
+            NelderPlot nelder = this.GetNelder();
+            OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
+            OrganonStand stand = nelder.ToStand(130.0F);
+            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, lastPeriod, VolumeUnits.CubicMetersPerHectare);
+            trajectory.Simulate();
+
+            Assert.IsTrue(trajectory.HarvestPeriods == lastPeriod + 1);
+            Assert.IsTrue(trajectory.IndividualTreeExpansionFactor > 0.0F);
+            // trajectory.IndividualTreeSelectionBySpecies
+            Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
+            Assert.IsTrue(trajectory.PeriodLengthInYears == configuration.Variant.TimeStepInYears);
+            Assert.IsTrue(trajectory.PlanningPeriods == lastPeriod + 1);
+            Assert.IsTrue(trajectory.VolumeUnits == VolumeUnits.CubicMetersPerHectare);
+
+            //                                            0       1       2       3       4       5       6       7       8       9
+            float[] minimumExpectedVolume = new float[] { 103.0F, 198.0F, 307.0F, 412.0F, 507.0F, 589.0F, 660.0F, 722.0F, 776.0F, 824.0F }; // m³
+            float volumeTolerance = 1.01F;
+            for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
+            {
+                Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre > 0.0F);
+                Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
+                Assert.IsTrue(trajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
+                Assert.IsTrue(trajectory.StandingVolumeByPeriod[periodIndex] > minimumExpectedVolume[periodIndex]);
+                Assert.IsTrue(trajectory.StandingVolumeByPeriod[periodIndex] < volumeTolerance * minimumExpectedVolume[periodIndex]);
+                Assert.IsTrue(trajectory.StandByPeriod[periodIndex].Name.StartsWith(trajectory.Name));
+            }
         }
 
         [TestMethod]

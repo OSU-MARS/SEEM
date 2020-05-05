@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 
 namespace Osu.Cof.Ferm.Data
 {
@@ -9,6 +10,7 @@ namespace Osu.Cof.Ferm.Data
     {
         public List<float> DbhInCentimeters { get; private set; }
         public List<float> HeightInMeters { get; private set; }
+        public string Name { get; set; }
         public List<FiaCode> Species { get; private set; }
         public List<int> TreeID { get; private set; }
 
@@ -16,6 +18,7 @@ namespace Osu.Cof.Ferm.Data
         {
             this.DbhInCentimeters = new List<float>();
             this.HeightInMeters = new List<float>();
+            this.Name = Path.GetFileNameWithoutExtension(xlsxFilePath);
             this.Species = new List<FiaCode>();
             this.TreeID = new List<int>();
 
@@ -64,7 +67,10 @@ namespace Osu.Cof.Ferm.Data
             }
 
             // TODO: read tree ages from .csv and use them to set stand age
-            OrganonStand stand = new OrganonStand(20, siteIndex);
+            OrganonStand stand = new OrganonStand(20, siteIndex)
+            {
+                Name = this.Name
+            };
             foreach (KeyValuePair<FiaCode, int> treesOfSpecies in restrictedTreeCountBySpecies)
             {
                 stand.TreesBySpecies.Add(treesOfSpecies.Key, new Trees(treesOfSpecies.Key, treesOfSpecies.Value, Units.English));

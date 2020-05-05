@@ -45,7 +45,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
             {
                 Heuristic heuristic = this.Heuristics[heuristicIndex];
-                line.Append("," + heuristic.GetColumnName());
+                line.Append("," + heuristic.GetName());
             }
             writer.WriteLine(line);
 

@@ -12,46 +12,53 @@ namespace Osu.Cof.Ferm.Organon
         private readonly OrganonConfiguration organonConfiguration;
         private readonly OrganonGrowth organonGrowth;
 
+        public OrganonStandDensity[] DensityByPeriod { get; private set; }
         public float[] HarvestVolumesByPeriod { get; protected set; }
         public float IndividualTreeExpansionFactor { get; protected set; }
         // harvest periods by tree, 0 indicates no harvest
         public SortedDictionary<FiaCode, int[]> IndividualTreeSelectionBySpecies { get; private set; }
-        public OrganonStandDensity InitialDensity { get; protected set; }
+
+        public string Name { get; set; }
+        public int PeriodLengthInYears { get; set; }
 
         public OrganonStand[] StandByPeriod { get; private set; }
         public float[] StandingVolumeByPeriod { get; set; }
         public VolumeUnits VolumeUnits { get; set; }
 
-        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, VolumeUnits volumeUnits)
+        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, int lastHarvestPeriod, int lastPlanningPeriod, VolumeUnits volumeUnits)
         {
-            if (planningPeriods < 1)
+            if (lastPlanningPeriod < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(planningPeriods));
+                throw new ArgumentOutOfRangeException(nameof(lastPlanningPeriod));
             }
-            if (planningPeriods < harvestPeriods)
+            if (lastPlanningPeriod < lastHarvestPeriod)
             {
-                throw new ArgumentOutOfRangeException(nameof(harvestPeriods));
+                throw new ArgumentOutOfRangeException(nameof(lastHarvestPeriod));
             }
 
+            int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
+            this.DensityByPeriod = new OrganonStandDensity[maximumPlanningPeriodIndex];
             this.fiaVolume = new FiaVolume();
             this.organonCalibration = organonConfiguration.CreateSpeciesCalibration();
             this.organonConfiguration = organonConfiguration;
             this.organonGrowth = new OrganonGrowth();
-            this.HarvestVolumesByPeriod = new float[harvestPeriods + 1];
-            this.InitialDensity = new OrganonStandDensity(stand, organonConfiguration.Variant);
+            this.HarvestVolumesByPeriod = new float[lastHarvestPeriod + 1];
             // TODO: check all trees in stand have same expansion factor
             this.IndividualTreeExpansionFactor = stand.TreesBySpecies.First().Value.LiveExpansionFactor[0];
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
+            this.Name = stand.Name;
+            this.PeriodLengthInYears = organonConfiguration.Variant.TimeStepInYears;
+            this.StandByPeriod = new OrganonStand[maximumPlanningPeriodIndex];
+            this.StandingVolumeByPeriod = new float[maximumPlanningPeriodIndex];
+            this.VolumeUnits = volumeUnits;
+
+            this.DensityByPeriod[0] = new OrganonStandDensity(stand, organonConfiguration.Variant);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 this.IndividualTreeSelectionBySpecies.Add(treesOfSpecies.Species, new int[treesOfSpecies.Capacity]);
             }
-
-            int maximumPlanningPeriodIndex = planningPeriods + 1;
-            this.StandByPeriod = new OrganonStand[maximumPlanningPeriodIndex]; 
             this.StandByPeriod[0] = stand.Clone(); // subsequent periods initialized lazily in Simulate()
-            this.StandingVolumeByPeriod = new float[maximumPlanningPeriodIndex];
-            this.VolumeUnits = volumeUnits;
+            this.StandByPeriod[0].Name += 0;
 
             this.GetStandingAndHarvestedVolume(0);
         }
@@ -68,7 +75,8 @@ namespace Osu.Cof.Ferm.Organon
             this.HarvestVolumesByPeriod = new float[other.HarvestPeriods];
             this.IndividualTreeExpansionFactor = other.IndividualTreeExpansionFactor;
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
-            this.InitialDensity = new OrganonStandDensity(other.InitialDensity);
+            this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
+            this.Name = other.Name;
             this.StandingVolumeByPeriod = new float[other.PlanningPeriods];
             this.StandByPeriod = new OrganonStand[other.PlanningPeriods];
 
@@ -87,6 +95,12 @@ namespace Osu.Cof.Ferm.Organon
             Array.Copy(other.StandingVolumeByPeriod, 0, this.StandingVolumeByPeriod, 0, this.PlanningPeriods);
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
+                OrganonStandDensity otherDensity = other.DensityByPeriod[periodIndex];
+                if (otherDensity != null)
+                {
+                    this.DensityByPeriod[periodIndex] = new OrganonStandDensity(otherDensity);
+                }
+
                 OrganonStand otherStand = other.StandByPeriod[periodIndex];
                 if (otherStand != null)
                 {
@@ -308,7 +322,7 @@ namespace Osu.Cof.Ferm.Organon
 
         public void Simulate()
         {
-            OrganonStandDensity standDensity = this.InitialDensity;
+            OrganonStandDensity standDensity = this.DensityByPeriod[0];
             OrganonTreatments treatments = new OrganonTreatments();
 
             int simulationStep = 0;
@@ -356,10 +370,14 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     this.organonGrowth.Grow(ref simulationStep, this.organonConfiguration, simulationStand, standDensity, this.organonCalibration, treatments,
                                             ref crownCompetitionByHeight, out OrganonStandDensity standDensityAfterGrowth, out int _);
+
+                    this.DensityByPeriod[simulationPeriod] = standDensityAfterGrowth;
                     if (this.StandByPeriod[simulationPeriod] == null)
                     {
                         // lazy initialization
-                        this.StandByPeriod[simulationPeriod] = simulationStand.Clone();
+                        OrganonStand standForPeriod = simulationStand.Clone();
+                        standForPeriod.Name = standForPeriod.Name.Substring(0, standForPeriod.Name.Length - 1) + simulationPeriod;
+                        this.StandByPeriod[simulationPeriod] = standForPeriod;
                     }
                     else
                     {
