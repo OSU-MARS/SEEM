@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Management.Automation;
 using System.Text;
 
@@ -31,7 +32,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             // TODO: check for mixed units and support TBH
             // TODO: snags per acre or hectare, live and dead QMD?
-            StringBuilder line = new StringBuilder("stand,year,TPA,BA,standing,harvested,NPV");
+            StringBuilder line = new StringBuilder("stand,stand age,sim year,TPA,BA,standing,harvested,BA removed,NPV");
             writer.WriteLine(line);
 
             // rows for periods
@@ -54,6 +55,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     volumeUnitMultiplier = 0.001F;
                 }
 
+                int initialStandAge = trajectory.StandByPeriod[0].AgeInYears;
                 for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
                 {
                     line.Clear();
@@ -61,33 +63,35 @@ namespace Osu.Cof.Ferm.Cmdlets
                     // get density and volumes
                     OrganonStandDensity density = trajectory.DensityByPeriod[periodIndex];
                     float standingVolume = volumeUnitMultiplier * trajectory.StandingVolumeByPeriod[periodIndex];
-                    float harvestVolume = 0.0F;
+                    float harvestMbfPerAcre = 0.0F;
+                    float basalAreaRemoved = 0.0F;
                     if (trajectory.HarvestVolumesByPeriod.Length > periodIndex)
                     {
-                        harvestVolume = volumeUnitMultiplier * trajectory.HarvestVolumesByPeriod[periodIndex];
+                        harvestMbfPerAcre = volumeUnitMultiplier * trajectory.HarvestVolumesByPeriod[periodIndex];
+                        basalAreaRemoved = trajectory.BasalAreaRemoved[periodIndex];
                     }
 
                     // NPV
                     float netPresentValue = 0.0F;
-                    if (periodIndex > 0)
+                    int periodsFromPresent = Math.Max(periodIndex - 1, 0);
+                    if (harvestMbfPerAcre > 0.0F)
                     {
-                        float thinBoardFeetPerAcre = trajectory.HarvestVolumesByPeriod[periodIndex];
-                        if (thinBoardFeetPerAcre > 0.0F)
-                        {
-                            netPresentValue = timberValue.GetPresentValueOfThinScribner(thinBoardFeetPerAcre, periodIndex - 1, trajectory.PeriodLengthInYears);
-                        }
-                        else
-                        {
-                            netPresentValue = timberValue.GetPresentValueOfFinalHarvestScribner(trajectory.StandingVolumeByPeriod[periodIndex], periodIndex - 1, trajectory.PeriodLengthInYears);
-                        }
+                        netPresentValue = timberValue.GetPresentValueOfThinScribner(trajectory.HarvestVolumesByPeriod[periodIndex], periodsFromPresent, trajectory.PeriodLengthInYears);
+                    }
+                    else
+                    {
+                        netPresentValue = timberValue.GetPresentValueOfFinalHarvestScribner(trajectory.StandingVolumeByPeriod[periodIndex], periodsFromPresent, trajectory.PeriodLengthInYears);
                     }
 
+                    int simulationYear = trajectory.PeriodLengthInYears * periodIndex;
                     line.Append(trajectoryName + "," + 
-                                trajectory.PeriodLengthInYears * periodIndex + "," +
+                                (initialStandAge + simulationYear) + "," +
+                                simulationYear + "," +
                                 density.TreesPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 density.BasalAreaPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 standingVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," + 
-                                harvestVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                harvestMbfPerAcre.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 netPresentValue.ToString("0", CultureInfo.InvariantCulture));
                     writer.WriteLine(line);
                 }

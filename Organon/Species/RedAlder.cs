@@ -93,14 +93,14 @@ namespace Osu.Cof.Ferm.Species
 
                 for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
                 {
-                    float previouslyAppliedMortality = 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[alderIndex])));
-                    float additionalAgeRelatedMortality = previouslyAppliedMortality - 1.0F / (1.0F + MathV.Exp(-PMK[alderIndex]));
-                    Debug.Assert(additionalAgeRelatedMortality >= 0.0F);
-                    Debug.Assert(additionalAgeRelatedMortality <= 1.0F - previouslyAppliedMortality);
-                    
-                    float liveExpansionFactorReduction = additionalAgeRelatedMortality * redAlders.LiveExpansionFactor[alderIndex];
-                    redAlders.DeadExpansionFactor[alderIndex] += liveExpansionFactorReduction;
-                    redAlders.LiveExpansionFactor[alderIndex] -= liveExpansionFactorReduction;
+                    // TODO: pass previously applied mortality instead of performing fragile reconstruction from PMK
+                    float previouslyAppliedSurvivalProbability = 1.0F - 1.0F / (1.0F + MathV.Exp(-PMK[alderIndex]));
+                    float adjustedSurvivalProbability = 1.0F - 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[alderIndex])));
+                    float revisedLiveExpansionFactor = adjustedSurvivalProbability / previouslyAppliedSurvivalProbability * redAlders.LiveExpansionFactor[alderIndex];
+                    float deadExpansionFactorChange = redAlders.LiveExpansionFactor[alderIndex] - revisedLiveExpansionFactor;
+
+                    redAlders.DeadExpansionFactor[alderIndex] += deadExpansionFactorChange;
+                    redAlders.LiveExpansionFactor[alderIndex] = revisedLiveExpansionFactor;
                 }
             }
         }

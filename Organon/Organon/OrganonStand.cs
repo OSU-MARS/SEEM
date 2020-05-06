@@ -71,11 +71,6 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public OrganonStand Clone()
-        {
-            return new OrganonStand(this);
-        }
-
         public void CopyTreeGrowth(OrganonStand other)
         {
             foreach (Trees otherTreesOfSpecies in other.TreesBySpecies.Values)
@@ -170,12 +165,12 @@ namespace Osu.Cof.Ferm.Organon
             this.RedAlderGrowthEffectiveAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndex);
             if (this.RedAlderGrowthEffectiveAge <= 0.0F)
             {
-                this.RedAlderGrowthEffectiveAge = 55.0F;
+                this.RedAlderGrowthEffectiveAge = Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears;
                 this.RedAlderSiteIndex = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, this.RedAlderGrowthEffectiveAge);
             }
-            else if (this.RedAlderGrowthEffectiveAge > 55.0F)
+            else if (this.RedAlderGrowthEffectiveAge > Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears)
             {
-                this.RedAlderGrowthEffectiveAge = 55.0F;
+                this.RedAlderGrowthEffectiveAge = Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears;
             }
         }
 

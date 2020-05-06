@@ -146,6 +146,28 @@ namespace Osu.Cof.Ferm
             return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
         }
 
+        public int[] GetDbhSortOrder()
+        {
+            int[] dbhSortIndices = new int[this.Capacity];
+            for (int treeIndex = 0; treeIndex < this.Capacity; ++treeIndex)
+            {
+                dbhSortIndices[treeIndex] = treeIndex;
+            }
+            float[] dbhCloneWhichBecomesSorted = new float[this.Capacity];
+            this.Dbh.CopyTo(dbhCloneWhichBecomesSorted, 0);
+            Array.Sort(dbhCloneWhichBecomesSorted, dbhSortIndices);
+
+            int unusedCapacity = this.Capacity - this.Count;
+            if (unusedCapacity == 0)
+            {
+                return dbhSortIndices;
+            }
+
+            int[] trimmedSortIndices = new int[this.Count];
+            Array.Copy(dbhSortIndices, unusedCapacity, trimmedSortIndices, 0, this.Count - unusedCapacity);
+            return trimmedSortIndices;
+        }
+
         public void SortByDbh()
         {
             int[] dbhSortIndices = new int[this.Capacity];

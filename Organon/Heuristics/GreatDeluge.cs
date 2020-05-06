@@ -12,8 +12,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public float RainRate { get; set; }
         public int StopAfter { get; set; }
 
-        public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
+        public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
+            : base(stand, organonConfiguration, planningPeriods, objective)
         {
             this.FinalWaterLevel = 100.0F;
             this.InitialWaterLevel = 0.0F;

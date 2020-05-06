@@ -28,10 +28,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0, 1.0)]
         public Nullable<float> ReservedPopulationProportion { get; set; }
 
-        protected override Heuristic CreateHeuristic(Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
         {
-            OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
+            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
             if (this.EndStandardDeviation.HasValue)
             {
                 genetic.EndStandardDeviation = this.EndStandardDeviation.Value;

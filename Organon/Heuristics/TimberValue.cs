@@ -27,16 +27,18 @@ namespace Osu.Cof.Ferm.Heuristics
         // returns $/acre
         public float GetPresentValueOfFinalHarvestScribner(float finalHarvestVolumeInBoardFeetPerAcre, int periodsFromPresent, int periodLengthInYears)
         {
-            float appreciatedPricePerMbf = this.DouglasFirPricePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, periodLengthInYears * periodsFromPresent + 0.5F * periodLengthInYears);
-            float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, periodLengthInYears * periodsFromPresent + 0.5F * periodLengthInYears);
+            float yearsFromNow = periodLengthInYears * periodsFromPresent + 0.5F;
+            float appreciatedPricePerMbf = this.DouglasFirPricePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, yearsFromNow);
+            float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, yearsFromNow);
             return discountFactor * (appreciatedPricePerMbf * 0.001F * finalHarvestVolumeInBoardFeetPerAcre - this.FixedRegenerationHarvestCostPerAcre);
         }
 
         // returns $/acre
         public float GetPresentValueOfThinScribner(float thinVolumeInBoardFeetPerAcre, int periodsFromPresent, int periodLengthInYears)
         {
-            float appreciatedPricePerMbf = this.DouglasFirPricePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, periodLengthInYears * periodsFromPresent + 0.5F * periodLengthInYears);
-            float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, periodLengthInYears * periodsFromPresent + 0.5F * periodLengthInYears);
+            float yearsFromNow = periodLengthInYears * periodsFromPresent + 0.5F;
+            float appreciatedPricePerMbf = this.DouglasFirPricePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, yearsFromNow);
+            float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, yearsFromNow);
             return discountFactor * (appreciatedPricePerMbf * 0.001F * thinVolumeInBoardFeetPerAcre - this.FixedThinningCostPerAcre);
         }
     }

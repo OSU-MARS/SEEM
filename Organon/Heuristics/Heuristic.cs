@@ -13,9 +13,9 @@ namespace Osu.Cof.Ferm.Heuristics
         public Objective Objective { get; protected set; }
         public List<float> ObjectiveFunctionByIteration { get; protected set; }
 
-        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
+        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
         {
-            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, harvestPeriods, planningPeriods, objective.VolumeUnits);
+            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, planningPeriods, objective.VolumeUnits);
             this.Objective = objective;
 
             this.BestTrajectory.Simulate();
@@ -24,7 +24,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             string name = this.GetName();
             this.BestTrajectory.Name = name + this.BestTrajectory.Name + "Best";
-            this.CurrentTrajectory.Name = name + this.CurrentTrajectory.Name + "Current";
+            this.CurrentTrajectory.Name = name + this.CurrentTrajectory.Name + "Current" + planningPeriods;
         }
 
         public abstract string GetName();
@@ -49,14 +49,17 @@ namespace Osu.Cof.Ferm.Heuristics
                 // TODO: support per species pricing
                 for (int periodIndex = 1; periodIndex < trajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
                 {
-                    float thinVolumeInBF = trajectory.HarvestVolumesByPeriod[periodIndex];
-                    if (thinVolumeInBF > 0.0)
+                    float thinVolumeInBoardFeet = trajectory.HarvestVolumesByPeriod[periodIndex];
+                    if (thinVolumeInBoardFeet > 0.0)
                     {
-                        objectiveFunction += this.Objective.GetPresentValueOfThinScribner(thinVolumeInBF, periodIndex - 1, trajectory.PeriodLengthInYears);
+                        int thinPeriodsFromPresent = periodIndex - 1;
+                        objectiveFunction += this.Objective.GetPresentValueOfThinScribner(thinVolumeInBoardFeet, thinPeriodsFromPresent, trajectory.PeriodLengthInYears);
                     }
                 }
 
-                objectiveFunction += this.Objective.GetPresentValueOfFinalHarvestScribner(trajectory.StandingVolumeByPeriod[^1], trajectory.StandingVolumeByPeriod.Length - 1, trajectory.PeriodLengthInYears);
+                // TODO: check if earlier final harvest provides higher NPV
+                int finalHarvestPeriodsFromPresent = trajectory.PlanningPeriods - 2;
+                objectiveFunction += this.Objective.GetPresentValueOfFinalHarvestScribner(trajectory.StandingVolumeByPeriod[^1], finalHarvestPeriodsFromPresent, trajectory.PeriodLengthInYears);
 
                 // convert from US$/ac to k$/ac
                 objectiveFunction *= 0.001F;

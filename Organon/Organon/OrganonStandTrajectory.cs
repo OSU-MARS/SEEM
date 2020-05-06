@@ -7,11 +7,12 @@ namespace Osu.Cof.Ferm.Organon
 {
     public class OrganonStandTrajectory
     {
-        private readonly FiaVolume fiaVolume;
-        private readonly Dictionary<FiaCode, float[]> organonCalibration;
-        private readonly OrganonConfiguration organonConfiguration;
-        private readonly OrganonGrowth organonGrowth;
+        private FiaVolume fiaVolume;
+        private Dictionary<FiaCode, float[]> organonCalibration;
+        private OrganonConfiguration organonConfiguration;
+        private OrganonGrowth organonGrowth;
 
+        public float[] BasalAreaRemoved { get; protected set; }
         public OrganonStandDensity[] DensityByPeriod { get; private set; }
         public float[] HarvestVolumesByPeriod { get; protected set; }
         public float IndividualTreeExpansionFactor { get; protected set; }
@@ -25,24 +26,35 @@ namespace Osu.Cof.Ferm.Organon
         public float[] StandingVolumeByPeriod { get; set; }
         public VolumeUnits VolumeUnits { get; set; }
 
-        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, int lastHarvestPeriod, int lastPlanningPeriod, VolumeUnits volumeUnits)
+        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, int lastPlanningPeriod, VolumeUnits volumeUnits)
         {
             if (lastPlanningPeriod < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(lastPlanningPeriod));
             }
-            if (lastPlanningPeriod < lastHarvestPeriod)
+            if (organonConfiguration.Treatments.Harvests.Count > 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(lastHarvestPeriod));
+                throw new ArgumentOutOfRangeException(nameof(organonConfiguration));
+            }
+
+            int thinningPeriod = 0;
+            if (organonConfiguration.Treatments.Harvests.Count == 1)
+            {
+                thinningPeriod = organonConfiguration.Treatments.Harvests[0].Period;
+            }
+            if (lastPlanningPeriod < thinningPeriod)
+            {
+                throw new ArgumentOutOfRangeException(nameof(organonConfiguration));
             }
 
             int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
+            this.BasalAreaRemoved = new float[thinningPeriod + 1];
             this.DensityByPeriod = new OrganonStandDensity[maximumPlanningPeriodIndex];
             this.fiaVolume = new FiaVolume();
             this.organonCalibration = organonConfiguration.CreateSpeciesCalibration();
-            this.organonConfiguration = organonConfiguration;
+            this.organonConfiguration = new OrganonConfiguration(organonConfiguration);
             this.organonGrowth = new OrganonGrowth();
-            this.HarvestVolumesByPeriod = new float[lastHarvestPeriod + 1];
+            this.HarvestVolumesByPeriod = new float[thinningPeriod + 1];
             // TODO: check all trees in stand have same expansion factor
             this.IndividualTreeExpansionFactor = stand.TreesBySpecies.First().Value.LiveExpansionFactor[0];
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
@@ -57,7 +69,7 @@ namespace Osu.Cof.Ferm.Organon
             {
                 this.IndividualTreeSelectionBySpecies.Add(treesOfSpecies.Species, new int[treesOfSpecies.Capacity]);
             }
-            this.StandByPeriod[0] = stand.Clone(); // subsequent periods initialized lazily in Simulate()
+            this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
             this.StandByPeriod[0].Name += 0;
 
             this.GetStandingAndHarvestedVolume(0);
@@ -72,14 +84,17 @@ namespace Osu.Cof.Ferm.Organon
             this.organonConfiguration = other.organonConfiguration;
             this.organonGrowth = other.organonGrowth;
 
+            this.BasalAreaRemoved = new float[other.HarvestPeriods];
+            this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
             this.HarvestVolumesByPeriod = new float[other.HarvestPeriods];
             this.IndividualTreeExpansionFactor = other.IndividualTreeExpansionFactor;
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
-            this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
             this.Name = other.Name;
+            this.PeriodLengthInYears = other.PeriodLengthInYears;
             this.StandingVolumeByPeriod = new float[other.PlanningPeriods];
             this.StandByPeriod = new OrganonStand[other.PlanningPeriods];
 
+            Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.HarvestPeriods);
             Array.Copy(other.HarvestVolumesByPeriod, 0, this.HarvestVolumesByPeriod, 0, this.HarvestPeriods);
 
             foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
@@ -129,15 +144,35 @@ namespace Osu.Cof.Ferm.Organon
                 throw new ArgumentOutOfRangeException(nameof(other));
             }
 
+            // for now, shallow copies
+            this.fiaVolume = other.fiaVolume;
+            this.organonCalibration = other.organonCalibration;
+            this.organonConfiguration = other.organonConfiguration;
+            this.organonGrowth = other.organonGrowth;
+
+            Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.BasalAreaRemoved.Length);
             Array.Copy(other.HarvestVolumesByPeriod, 0, this.HarvestVolumesByPeriod, 0, this.HarvestVolumesByPeriod.Length);
             for (int periodIndex = 0; periodIndex < this.StandByPeriod.Length; ++periodIndex)
             {
+                OrganonStandDensity otherDensity = other.DensityByPeriod[periodIndex];
+                if (otherDensity != null)
+                {
+                    if (this.DensityByPeriod[periodIndex] == null)
+                    {
+                        this.DensityByPeriod[periodIndex] = new OrganonStandDensity(otherDensity);
+                    }
+                    else
+                    {
+                        this.DensityByPeriod[periodIndex].Copy(otherDensity);
+                    }
+                }
+
                 OrganonStand otherStand = other.StandByPeriod[periodIndex];
                 if (otherStand != null)
                 {
                     if (this.StandByPeriod[periodIndex] == null)
                     {
-                        this.StandByPeriod[periodIndex] = otherStand.Clone();
+                        this.StandByPeriod[periodIndex] = new OrganonStand(otherStand);
                     }
                     else
                     {
@@ -160,6 +195,8 @@ namespace Osu.Cof.Ferm.Organon
                 }
                 Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
             }
+
+            this.VolumeUnits = other.VolumeUnits;
         }
 
         public void CopyTreeSelectionTo(int[] allTreeSelection)
@@ -223,7 +260,16 @@ namespace Osu.Cof.Ferm.Organon
 
         private void GetStandingAndHarvestedVolume(int periodIndex)
         {
-            bool isHarvestPeriod = (periodIndex > 0) && ((this.HarvestPeriods - 1) == periodIndex);
+            bool isHarvestPeriod = false;
+            foreach (IHarvest harvest in this.organonConfiguration.Treatments.Harvests)
+            {
+                if (harvest.Period == periodIndex)
+                {
+                    isHarvestPeriod = true;
+                    break;
+                }
+            }
+
             switch (this.VolumeUnits)
             {
                 case VolumeUnits.CubicMetersPerHectare:
@@ -320,44 +366,57 @@ namespace Osu.Cof.Ferm.Organon
             throw new ArgumentOutOfRangeException(nameof(allSpeciesTreeIndex));
         }
 
+        public void SetTreeSelection(FiaCode species, int treeIndex, int harvestPeriod)
+        {
+            if ((harvestPeriod < 0) || (harvestPeriod >= this.HarvestPeriods))
+            {
+                throw new ArgumentOutOfRangeException(nameof(harvestPeriod));
+            }
+
+            this.IndividualTreeSelectionBySpecies[species][treeIndex] = harvestPeriod;
+        }
+
         public void Simulate()
         {
-            OrganonStandDensity standDensity = this.DensityByPeriod[0];
-            OrganonTreatments treatments = new OrganonTreatments();
+            // TODO: clear volumes and/or basal area?
+            this.organonConfiguration.Treatments.Reset();
 
-            int simulationStep = 0;
             // period 0 is the initial condition and therefore never needs to be simulated
             // Since simulation is computationally expensive, the current implementation is lazy and relies on triggers to simulate only on demand. In 
             // particular, in single entry cases no stand modification occurs before the target harvest period and, therefore, periods 1...entry - 1 need
             // to be simulated only once.
             Debug.Assert(this.StandByPeriod.Length > 1, "At least one simulation period expected.");
-            bool standEnteredOrNotSimulated = this.StandByPeriod[1] == null;
+            bool standEnteredOrNotSimulated = this.StandByPeriod[1] == null; // not simulated case, entry checked in loop below
             float[] crownCompetitionByHeight = null;
-            OrganonStand simulationStand = standEnteredOrNotSimulated ? this.StandByPeriod[0].Clone() : null;
-            for (int simulationPeriod = 1; simulationPeriod < this.PlanningPeriods; ++simulationPeriod)
+            OrganonStand simulationStand = standEnteredOrNotSimulated ? new OrganonStand(this.StandByPeriod[0]) : null;
+            for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
-                // mainline case: trigger stand resimulation due to harvest
-                bool recalculateStandDensity = false;
-                foreach (KeyValuePair<FiaCode, int[]> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
-                {
-                    for (int treeIndex = 0; treeIndex < individualTreeSelection.Value.Length; ++treeIndex) // assumes trailing capacity is set to zero and of insignificant length
-                    {
-                        // if needed, this loop can be changed to use either the simulation stand's tree count or a reference tree count rather than capacity
-                        if (individualTreeSelection.Value[treeIndex] == simulationPeriod)
-                        {
-                            if (simulationStand == null)
-                            {
-                                simulationStand = this.StandByPeriod[simulationPeriod - 1].Clone();
-                            }
-                            simulationStand.TreesBySpecies[individualTreeSelection.Key].LiveExpansionFactor[treeIndex] = 0.0F;
-                            recalculateStandDensity = true;
-                        }
-                    }
-                }
+                OrganonStandDensity standDensity = this.DensityByPeriod[periodIndex - 1];
+
+                // trigger stand resimulation due to harvest
+                float basalAreaRemoved = this.organonConfiguration.Treatments.EvaluateTriggers(periodIndex, this);
+                bool recalculateStandDensity = basalAreaRemoved > 0.0F;
                 if (recalculateStandDensity)
                 {
-                    standDensity = new OrganonStandDensity(simulationStand, this.organonConfiguration.Variant);
+                    foreach (KeyValuePair<FiaCode, int[]> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
+                    {
+                        for (int treeIndex = 0; treeIndex < individualTreeSelection.Value.Length; ++treeIndex) // assumes trailing capacity is set to zero and of insignificant length
+                        {
+                            // if needed, this loop can be changed to use either the simulation stand's tree count or a reference tree count rather than capacity
+                            if (individualTreeSelection.Value[treeIndex] == periodIndex)
+                            {
+                                if (simulationStand == null)
+                                {
+                                    simulationStand = new OrganonStand(this.StandByPeriod[periodIndex - 1]);
+                                }
+                                simulationStand.TreesBySpecies[individualTreeSelection.Key].LiveExpansionFactor[treeIndex] = 0.0F;
+                            }
+                        }
+                    }
+
+                    this.BasalAreaRemoved[periodIndex] = basalAreaRemoved;
                     crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(this.organonConfiguration.Variant, simulationStand);
+                    standDensity = new OrganonStandDensity(simulationStand, this.organonConfiguration.Variant);
                     standEnteredOrNotSimulated = true;
                 }
 
@@ -368,26 +427,25 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(this.organonConfiguration.Variant, simulationStand);
                     }
-                    this.organonGrowth.Grow(ref simulationStep, this.organonConfiguration, simulationStand, standDensity, this.organonCalibration, treatments,
+                    this.organonGrowth.Grow(periodIndex, this.organonConfiguration, simulationStand, standDensity, this.organonCalibration, 
                                             ref crownCompetitionByHeight, out OrganonStandDensity standDensityAfterGrowth, out int _);
 
-                    this.DensityByPeriod[simulationPeriod] = standDensityAfterGrowth;
-                    if (this.StandByPeriod[simulationPeriod] == null)
+                    this.DensityByPeriod[periodIndex] = standDensityAfterGrowth;
+                    if (this.StandByPeriod[periodIndex] == null)
                     {
                         // lazy initialization
-                        OrganonStand standForPeriod = simulationStand.Clone();
-                        standForPeriod.Name = standForPeriod.Name.Substring(0, standForPeriod.Name.Length - 1) + simulationPeriod;
-                        this.StandByPeriod[simulationPeriod] = standForPeriod;
+                        OrganonStand standForPeriod = new OrganonStand(simulationStand);
+                        standForPeriod.Name = standForPeriod.Name[0..^1] + periodIndex;
+                        this.StandByPeriod[periodIndex] = standForPeriod;
                     }
                     else
                     {
                         // update on resimulation
-                        this.StandByPeriod[simulationPeriod].CopyTreeGrowth(simulationStand);
+                        this.StandByPeriod[periodIndex].CopyTreeGrowth(simulationStand);
                     }
-                    standDensity = standDensityAfterGrowth;
 
                     // recalculate volume for this period
-                    this.GetStandingAndHarvestedVolume(simulationPeriod);
+                    this.GetStandingAndHarvestedVolume(periodIndex);
                 }
             }
         }

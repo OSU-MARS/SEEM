@@ -19,18 +19,13 @@ namespace Osu.Cof.Ferm.Test
             this.SetDefaultAndMortalitySiteIndices(treeModel);
         }
 
-        protected TestStand(TestStand other)
+        public TestStand(TestStand other)
             : base(other)
         {
             // for now, assume DBH quantiles are fixed => shallow copy doesn't raise ownership or mutability concerns
             this.InitialDbhQuantileBySpecies = other.InitialDbhQuantileBySpecies;
 
             // don't need to call SetDefaultAndMortalitySiteIndices() as Stand's constructor copies site indicies
-        }
-
-        public new TestStand Clone()
-        {
-            return new TestStand(this);
         }
 
         public void Add(TreeRecord tree)

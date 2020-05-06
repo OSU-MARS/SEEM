@@ -47,7 +47,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
         }
 
-        protected abstract Heuristic CreateHeuristic(Objective objective);
+        protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective);
 
         protected override void ProcessRecord()
         {
@@ -75,7 +75,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                     return;
                 }
 
-                Heuristic currentHeuristic = this.CreateHeuristic(objective);
+                OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
+                organonConfiguration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(this.HarvestPeriods));
+                Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, objective);
                 if (this.UniformHarvestProbability)
                 {
                     currentHeuristic.RandomizeSchedule();

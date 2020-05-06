@@ -2100,7 +2100,7 @@ namespace Osu.Cof.Ferm.Organon
 
             if ((trees.Species == FiaCode.AlnusRubra) && (this.TreeModel != TreeModel.OrganonRap))
             {
-                if (stand.RedAlderGrowthEffectiveAge >= 55.0)
+                if (stand.RedAlderGrowthEffectiveAge >= Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears)
                 {
                     Debug.Assert(trees.Units == Units.English);
                     float alnusRubraTreesPerAcre = 0.0F;
@@ -2113,7 +2113,6 @@ namespace Osu.Cof.Ferm.Organon
                         RedAlder.ReduceExpansionFactor(trees, stand.RedAlderGrowthEffectiveAge, alnusRubraTreesPerAcre, mortalityKforRedAlder);
                     }
                 }
-                stand.RedAlderGrowthEffectiveAge += this.TimeStepInYears;
             }
         }
     }

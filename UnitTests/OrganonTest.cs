@@ -93,8 +93,7 @@ namespace Osu.Cof.Ferm.Test
         protected void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
         {
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
-            OrganonTreatments treatments = new OrganonTreatments();
-            TestStand initialTreeData = stand.Clone();
+            TestStand initialTreeData = new TestStand(stand);
             TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath();
 
             Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
@@ -111,7 +110,7 @@ namespace Osu.Cof.Ferm.Test
             using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
             for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)
             {
-                OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB, treatments);
+                OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
                 stand.SetSdiMax(configuration);

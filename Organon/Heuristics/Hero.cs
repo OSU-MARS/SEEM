@@ -9,8 +9,8 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public int Iterations { get; set; }
 
-        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
+        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
+            : base(stand, organonConfiguration, planningPeriods, objective)
         {
             this.Iterations = 100;
 

@@ -12,10 +12,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0, Int32.MaxValue)]
         public Nullable<int> Iterations { get; set; }
 
-        protected override Heuristic CreateHeuristic(Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
         {
-            OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            Hero hero = new Hero(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
+            Hero hero = new Hero(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
             if (this.Iterations.HasValue)
             {
                 hero.Iterations = this.Iterations.Value;

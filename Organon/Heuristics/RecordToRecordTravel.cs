@@ -10,8 +10,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public float Deviation { get; set; }
         public int StopAfter { get; set; }
 
-        public RecordToRecordTravel(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
+        public RecordToRecordTravel(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
+            : base(stand, organonConfiguration, planningPeriods, objective)
         {
             this.Deviation = 100.0F;
             this.StopAfter = 1000;

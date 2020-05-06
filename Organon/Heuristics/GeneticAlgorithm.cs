@@ -13,8 +13,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public int PopulationSize { get; set; }
         public float ReservedPopulationProportion { get; set; }
 
-        public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
-            : base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
+        public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
+            : base(stand, organonConfiguration, planningPeriods, objective)
         {
             this.EndStandardDeviation = 0.01F;
             this.MaximumGenerations = 50;

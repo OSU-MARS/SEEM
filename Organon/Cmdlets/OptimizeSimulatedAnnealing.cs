@@ -32,10 +32,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.IterationsPerTemperature = null;
         }
 
-        protected override Heuristic CreateHeuristic(Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
         {
-            OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
+            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;

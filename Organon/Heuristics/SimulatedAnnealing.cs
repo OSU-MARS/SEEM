@@ -12,8 +12,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public float InitialTemperature { get; set; }
         public int IterationsPerTemperature { get; set; }
 
-        public SimulatedAnnealing(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
-            :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
+        public SimulatedAnnealing(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
+            :  base(stand, organonConfiguration, planningPeriods, objective)
         {
             this.FinalTemperature = 100.0F;
             this.InitialTemperature = 10000.0F;

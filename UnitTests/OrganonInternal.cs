@@ -59,7 +59,6 @@ namespace Osu.Cof.Ferm.Test
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
-                OrganonTreatments treatments = new OrganonTreatments();
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
 
                 Dictionary<FiaCode, float[]> previousTreeDiametersBySpecies = new Dictionary<FiaCode, float[]>();
@@ -74,7 +73,7 @@ namespace Osu.Cof.Ferm.Test
                     foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                     {
                         float[] previousTreeDiameters = previousTreeDiametersBySpecies[treesOfSpecies.Species];
-                        treeGrowth.GrowDiameter(variant, simulationStep, stand, treesOfSpecies, treeCompetition, CALIB[treesOfSpecies.Species][2], treatments);
+                        treeGrowth.GrowDiameter(configuration, simulationStep, stand, treesOfSpecies, treeCompetition, CALIB[treesOfSpecies.Species][2]);
                         stand.SetSdiMax(configuration);
                         for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                         {
@@ -110,14 +109,13 @@ namespace Osu.Cof.Ferm.Test
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 TestStand stand = this.CreateDefaultStand(configuration);
-                OrganonTreatments treatments = new OrganonTreatments();
 
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 OrganonStandDensity densityStartOfStep = new OrganonStandDensity(stand, variant);
-                for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; /* incremented by GROW() */)
+                for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
-                    treeGrowth.Grow(ref simulationStep, configuration, stand, densityStartOfStep, CALIB, treatments, ref crownCompetitionByHeight, 
+                    treeGrowth.Grow(simulationStep, configuration, stand, densityStartOfStep, CALIB, ref crownCompetitionByHeight, 
                                     out OrganonStandDensity densityEndOfStep, out int _);
                     stand.SetSdiMax(configuration);
 
@@ -170,7 +168,6 @@ namespace Osu.Cof.Ferm.Test
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
                 TestStand stand = this.CreateDefaultStand(configuration);
-                OrganonTreatments treatments = new OrganonTreatments();
 
                 float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
                 DouglasFir.SiteConstants psmeSite = new DouglasFir.SiteConstants(stand.SiteIndex);
@@ -229,7 +226,7 @@ namespace Osu.Cof.Ferm.Test
                     {
                         if (variant.IsBigSixSpecies(treesOfSpecies.Species))
                         {
-                            treeGrowth.GrowHeightBigSixSpecies(configuration, simulationStep, stand, treesOfSpecies, 1.0F, crownCompetitionByHeight, treatments, out _);
+                            treeGrowth.GrowHeightBigSixSpecies(configuration, simulationStep, stand, treesOfSpecies, 1.0F, crownCompetitionByHeight, out _);
                         }
                         else
                         {
@@ -260,13 +257,11 @@ namespace Osu.Cof.Ferm.Test
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
-                OrganonTreatments treatments = new OrganonTreatments();
-
                 TestStand stand = this.CreateDefaultStand(configuration);
                 OrganonStandDensity density = new OrganonStandDensity(stand, variant);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    OrganonMortality.ReduceExpansionFactors(configuration, simulationStep, stand, density, treatments);
+                    OrganonMortality.ReduceExpansionFactors(configuration, simulationStep, stand, density);
                     stand.SetSdiMax(configuration);
                     this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
                     float oldGrowthIndicator  = OrganonMortality.GetOldGrowthIndicator(variant, stand);

@@ -22,10 +22,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Thresholds = null;
         }
 
-        protected override Heuristic CreateHeuristic(Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
         {
-            OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, this.HarvestPeriods, this.PlanningPeriods, objective);
+            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
             if (this.IterationsPerThreshold.HasValue)
             {
                 acceptor.IterationsPerThreshold = this.IterationsPerThreshold.Value;

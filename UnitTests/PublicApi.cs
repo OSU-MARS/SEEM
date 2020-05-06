@@ -47,13 +47,18 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void NelderHero()
         {
+            int thinningPeriod = 4;
+            int planningPeriods = 9;
             int treeCount = 100;
+            float minObjectiveFunction = 3.65F;
             #if DEBUG
             treeCount = 48;
+            minObjectiveFunction = 2.10F;
             #endif
 
             NelderPlot nelder = this.GetNelder();
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
+            configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToStand(130.0F, treeCount);
 
             Objective netPresentValue = new Objective()
@@ -61,7 +66,7 @@ namespace Osu.Cof.Ferm.Test
                 IsNetPresentValue = true,
                 VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
             };
-            Hero hero = new Hero(stand, configuration, 4, 9, netPresentValue)
+            Hero hero = new Hero(stand, configuration, planningPeriods, netPresentValue)
             {
                 Iterations = 10
             };
@@ -69,11 +74,15 @@ namespace Osu.Cof.Ferm.Test
             hero.Run();
 
             this.Verify(hero);
+            Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunction);
+            Assert.IsTrue(hero.BestObjectiveFunction < 1.02F * minObjectiveFunction);
         }
 
         [TestMethod]
         public void NelderOtherHeuristics()
         {
+            int thinningPeriod = 4;
+            int planningPeriods = 9;
             int treeCount = 75;
             #if DEBUG
             treeCount = 25;
@@ -81,6 +90,7 @@ namespace Osu.Cof.Ferm.Test
 
             NelderPlot nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
+            configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToStand(130.0F, treeCount);
 
             Objective netPresentValue = new Objective()
@@ -90,9 +100,7 @@ namespace Osu.Cof.Ferm.Test
             };
             Objective volume = new Objective();
 
-            int harvestPeriods = 4;
-            int planningPeriods = 9;
-            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
+            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, planningPeriods, netPresentValue)
             {
                 EndStandardDeviation = 0.001F, // US$ 1 NPV
                 PopulationSize = 7,
@@ -100,7 +108,7 @@ namespace Osu.Cof.Ferm.Test
             };
             genetic.Run();
 
-            GreatDeluge deluge = new GreatDeluge(stand, configuration, harvestPeriods, planningPeriods, volume)
+            GreatDeluge deluge = new GreatDeluge(stand, configuration, planningPeriods, volume)
             {
                 RainRate = 5,
                 StopAfter = 10
@@ -108,28 +116,28 @@ namespace Osu.Cof.Ferm.Test
             deluge.RandomizeSchedule();
             deluge.Run();
 
-            RecordToRecordTravel recordTravel = new RecordToRecordTravel(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
+            RecordToRecordTravel recordTravel = new RecordToRecordTravel(stand, configuration, planningPeriods, netPresentValue)
             {
                 StopAfter = 10
             };
             recordTravel.RandomizeSchedule();
             recordTravel.Run();
 
-            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, harvestPeriods, planningPeriods, volume)
+            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, planningPeriods, volume)
             {
                 Alpha = 0.9F
             };
             annealer.RandomizeSchedule();
             annealer.Run();
 
-            TabuSearch tabu = new TabuSearch(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
+            TabuSearch tabu = new TabuSearch(stand, configuration, planningPeriods, netPresentValue)
             {
                 Iterations = 5
             };
             tabu.RandomizeSchedule();
             tabu.Run();
 
-            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, harvestPeriods, planningPeriods, volume)
+            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, planningPeriods, volume)
             {
                 IterationsPerThreshold = 10
             };
@@ -155,28 +163,38 @@ namespace Osu.Cof.Ferm.Test
             NelderPlot nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToStand(130.0F);
-            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, lastPeriod, VolumeUnits.CubicMetersPerHectare);
-            trajectory.Simulate();
 
-            Assert.IsTrue(trajectory.HarvestPeriods == lastPeriod + 1);
-            Assert.IsTrue(trajectory.IndividualTreeExpansionFactor > 0.0F);
-            // trajectory.IndividualTreeSelectionBySpecies
-            Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
-            Assert.IsTrue(trajectory.PeriodLengthInYears == configuration.Variant.TimeStepInYears);
-            Assert.IsTrue(trajectory.PlanningPeriods == lastPeriod + 1);
-            Assert.IsTrue(trajectory.VolumeUnits == VolumeUnits.CubicMetersPerHectare);
+            OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, VolumeUnits.CubicMetersPerHectare);
+            unthinnedTrajectory.Simulate();
 
-            //                                            0       1       2       3       4       5       6       7       8       9
-            float[] minimumExpectedVolume = new float[] { 103.0F, 198.0F, 307.0F, 412.0F, 507.0F, 589.0F, 660.0F, 722.0F, 776.0F, 824.0F }; // m³
-            float volumeTolerance = 1.01F;
-            for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
+            int thinPeriod = 3;
+            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod, 20.0F, 5.0F));
+            OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, VolumeUnits.CubicMetersPerHectare);
+            thinnedTrajectory.Simulate();
+
+            // verify untihnned trajectory
+            //                                             0       1       2       3       4       5       6       7       8       9
+            float[] minimumUnthinnedVolume = new float[] { 103.0F, 198.0F, 307.0F, 412.0F, 507.0F, 589.0F, 660.0F, 722.0F, 776.0F, 824.0F }; // m³
+            this.Verify(unthinnedTrajectory, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
+
+            // verify thinned trajectory
+            //                                           0       1       2       3       4       5       6       7       8       9
+            float[] minimumThinnedVolume = new float[] { 103.0F, 198.0F, 307.0F, 335.0F, 431.0F, 523.0F, 608.0F, 684.0F, 751.0F, 809.0F }; // m³ for 20+5% thin
+            this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
+            for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
             {
-                Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre > 0.0F);
-                Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
-                Assert.IsTrue(trajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
-                Assert.IsTrue(trajectory.StandingVolumeByPeriod[periodIndex] > minimumExpectedVolume[periodIndex]);
-                Assert.IsTrue(trajectory.StandingVolumeByPeriod[periodIndex] < volumeTolerance * minimumExpectedVolume[periodIndex]);
-                Assert.IsTrue(trajectory.StandByPeriod[periodIndex].Name.StartsWith(trajectory.Name));
+                if (periodIndex == thinPeriod)
+                {
+                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < thinnedTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre); // assume <50% thin by volume
+                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] < minimumThinnedVolume[periodIndex]);
+                }
+                else if (periodIndex < thinPeriod)
+                {
+                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
+                }
             }
         }
 
@@ -213,12 +231,11 @@ namespace Osu.Cof.Ferm.Test
                 stand.SetQuantiles();
                 stand.WriteTreesAsCsv(this.TestContext, variant, 0, false);
 
-                TestStand initialStand = stand.Clone();
-                OrganonTreatments treatments = new OrganonTreatments();
+                TestStand initialStand = new TestStand(stand);
                 TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath();
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB, treatments);
+                    OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
                     stand.SetSdiMax(configuration);
                     this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
@@ -258,6 +275,8 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void StandGrowthPerformance()
         {
+            int thinningPeriod = 4;
+            int planningPeriods = 9;
             int runs = 4; // 1 warmup run + measured runs
             int trees = 300;
             #if DEBUG
@@ -268,6 +287,7 @@ namespace Osu.Cof.Ferm.Test
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
             NelderPlot nelder = new NelderPlot(plotFilePath, "1");
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
+            configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToStand(130.0F, trees);
 
             Objective netPresentValue = new Objective()
@@ -276,16 +296,13 @@ namespace Osu.Cof.Ferm.Test
                 VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
             };
 
-            int harvestPeriods = 4;
-            int planningPeriods = 9;
-
             TimeSpan runtime = TimeSpan.Zero;
             for (int run = 0; run < runs; ++run)
             {
                 // 3 runs * 300 trees = 900 growth simulations on i7-3770 (4th gen, Sandy Bridge)
                 // .NET standard 2.0 + Math: 12.978s -> 69.3 sims/core-s       97.8% StandTrajectory.Simulate(): 89.5% Organon, 7.6% FIA Scribner volume
                 // .NET standard 2.0 + MathF: 9.670s -> 93.1 sims/core-s  +34% 
-                Hero hero = new Hero(stand, configuration, harvestPeriods, planningPeriods, netPresentValue)
+                Hero hero = new Hero(stand, configuration, planningPeriods, netPresentValue)
                 {
                     Iterations = 2
                 };
@@ -310,6 +327,7 @@ namespace Osu.Cof.Ferm.Test
             double bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
             double endObjectiveFunctionRatio = endObjectiveFunction / recalculatedEndObjectiveFunction;
 
+            Assert.IsTrue(heuristic.BestObjectiveFunction >= 0.0F);
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
             Assert.IsTrue(heuristic.BestObjectiveFunction >= endObjectiveFunction);
             Assert.IsTrue(heuristic.ObjectiveFunctionByIteration.Count >= 3);
@@ -342,14 +360,20 @@ namespace Osu.Cof.Ferm.Test
                 if (periodIndex < harvestPeriod)
                 {
                     // for now, harvest should occur only in indicated period
+                    Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
                     Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
                 }
                 else if (periodIndex == harvestPeriod)
                 {
+                    Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
                     Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
                     Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] <= heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
 
+                    Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] <= heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
                 }
@@ -364,6 +388,59 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex] > heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
                 }
             }
+        }
+
+        private void Verify(OrganonStandTrajectory trajectory, float[] minimumVolume, int thinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
+        {
+            Assert.IsTrue(trajectory.BasalAreaRemoved.Length == thinPeriod + 1);
+            Assert.IsTrue(trajectory.BasalAreaRemoved[0] == 0.0F);
+            Assert.IsTrue(trajectory.HarvestPeriods == thinPeriod + 1); // BUGBUG: clean off by one semantic
+            Assert.IsTrue(trajectory.HarvestVolumesByPeriod.Length == thinPeriod + 1);
+            Assert.IsTrue(trajectory.HarvestVolumesByPeriod[0] == 0.0F);
+            Assert.IsTrue(trajectory.IndividualTreeExpansionFactor > 0.0F);
+            this.Verify(trajectory.IndividualTreeSelectionBySpecies, thinPeriod, minTrees, maxTrees);
+            Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
+            Assert.IsTrue(trajectory.PeriodLengthInYears == timeStepInYears);
+            Assert.IsTrue(trajectory.PlanningPeriods == lastPeriod + 1); // BUGBUG: clean off by one semantic
+            Assert.IsTrue(trajectory.VolumeUnits == VolumeUnits.CubicMetersPerHectare);
+
+            float volumeTolerance = 1.01F;
+            for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
+            {
+                Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre > 0.0F);
+                Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
+                Assert.IsTrue(trajectory.StandingVolumeByPeriod[periodIndex] > minimumVolume[periodIndex]);
+                Assert.IsTrue(trajectory.StandingVolumeByPeriod[periodIndex] < volumeTolerance * minimumVolume[periodIndex]);
+                Assert.IsTrue(trajectory.StandByPeriod[periodIndex].Name.StartsWith(trajectory.Name));
+            }
+        }
+
+        private void Verify(SortedDictionary<FiaCode, int[]> individualTreeSelectionBySpecies, int harvestPeriod, int minimumTreesSelected, int maximumTreesSelected)
+        {
+            int outOfRangeTrees = 0;
+            int treesSelected = 0;
+            foreach (int[] individualTreeSelection in individualTreeSelectionBySpecies.Values)
+            {
+                for (int treeIndex = 0; treeIndex < individualTreeSelection.Length; ++treeIndex)
+                {
+                    int treeSelection = individualTreeSelection[treeIndex];
+                    bool isOutOfRange = (treeSelection != 0) && (treeSelection != harvestPeriod);
+                    if (isOutOfRange)
+                    {
+                        ++outOfRangeTrees;
+                    }
+
+                    bool isSelected = treeSelection != 0;
+                    if (isSelected)
+                    {
+                        ++treesSelected;
+                    }
+                }
+            }
+
+            Assert.IsTrue(outOfRangeTrees == 0);
+            Assert.IsTrue(treesSelected >= minimumTreesSelected);
+            Assert.IsTrue(treesSelected <= maximumTreesSelected);
         }
 
         [TestMethod]

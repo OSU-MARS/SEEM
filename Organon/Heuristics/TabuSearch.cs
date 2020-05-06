@@ -10,8 +10,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public int Iterations { get; set; }
         public int Tenure { get; set; }
 
-        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, int harvestPeriods, int planningPeriods, Objective objective)
-            :  base(stand, organonConfiguration, harvestPeriods, planningPeriods, objective)
+        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
+            :  base(stand, organonConfiguration, planningPeriods, objective)
         {
             this.Iterations = stand.GetTreeRecordCount();
             this.Tenure = (int)(0.3 * this.Iterations);

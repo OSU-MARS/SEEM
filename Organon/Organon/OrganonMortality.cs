@@ -1,6 +1,4 @@
-﻿using Osu.Cof.Ferm.Species;
-using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -9,7 +7,7 @@ namespace Osu.Cof.Ferm.Organon
         private static float GetMortalityFertilizationAdjustment(FiaCode species, TreeModel treeModel, int simulationStep, OrganonTreatments treatments)
         {
             // fertilization mortality effects currently supported only for non-RAP Douglas-fir
-            if ((treatments.HasFertilization == false) || (species != FiaCode.PseudotsugaMenziesii) || (treeModel == TreeModel.OrganonRap))
+            if ((treatments.FertilizationsPerformed < 1) || (species != FiaCode.PseudotsugaMenziesii) || (treeModel == TreeModel.OrganonRap))
             {
                 return 0.0F;
             }
@@ -25,9 +23,9 @@ namespace Osu.Cof.Ferm.Organon
             for (int treatmentIndex = 1; treatmentIndex < 5; ++treatmentIndex)
             {
                 // BUGBUG: summation range doesn't match 13 or 18 year periods given in Hann 2003 Table 3
-                FERTX1 += treatments.PoundsOfNitrogenPerAcre[treatmentIndex] * MathV.Exp(PF3 / PF2 * (treatments.FertilizationYears[0] - treatments.FertilizationYears[treatmentIndex]));
+                FERTX1 += treatments.PoundsOfNitrogenPerAcre[treatmentIndex] * MathV.Exp(PF3 / PF2 * (treatments.TimeStepsSinceFertilization[0] - treatments.TimeStepsSinceFertilization[treatmentIndex]));
             }
-            float FERTADJ = c5 * MathV.Pow(treatments.PoundsOfNitrogenPerAcre[0] + FERTX1, PF2) * MathV.Exp(PF3 * (XTIME - treatments.FertilizationYears[0]));
+            float FERTADJ = c5 * MathV.Pow(treatments.PoundsOfNitrogenPerAcre[0] + FERTX1, PF2) * MathV.Exp(PF3 * (XTIME - treatments.TimeStepsSinceFertilization[0]));
             return FERTADJ;
         }
 
@@ -102,13 +100,12 @@ namespace Osu.Cof.Ferm.Organon
             return oldGrowthIndicator;
         }
 
-        public static void ReduceExpansionFactors(OrganonConfiguration configuration, int simulationStep, OrganonStand stand,
-                                                  OrganonStandDensity densityBeforeGrowth, OrganonTreatments treatments)
+        public static void ReduceExpansionFactors(OrganonConfiguration configuration, int simulationStep, OrganonStand stand, OrganonStandDensity densityBeforeGrowth)
         {
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 FiaCode species = treesOfSpecies.Species;
-                float fertilizationExponent = OrganonMortality.GetMortalityFertilizationAdjustment(species, configuration.Variant.TreeModel, simulationStep, treatments);
+                float fertilizationExponent = OrganonMortality.GetMortalityFertilizationAdjustment(species, configuration.Variant.TreeModel, simulationStep, configuration.Treatments);
                 configuration.Variant.ReduceExpansionFactors(stand, densityBeforeGrowth, treesOfSpecies, fertilizationExponent);
             }
         }

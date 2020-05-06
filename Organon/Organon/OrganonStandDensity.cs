@@ -125,6 +125,17 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
+        public void Copy(OrganonStandDensity other)
+        {
+            this.BasalAreaPerAcre = other.BasalAreaPerAcre;
+            this.CrownCompetitionFactor = other.CrownCompetitionFactor;
+            Array.Copy(other.LargeTreeBasalAreaLarger, 0, this.LargeTreeBasalAreaLarger, 0, other.LargeTreeBasalAreaLarger.Length);
+            Array.Copy(other.LargeTreeCrownCompetition, 0, this.LargeTreeCrownCompetition, 0, other.LargeTreeCrownCompetition.Length);
+            Array.Copy(other.SmallTreeBasalAreaLarger, 0, this.SmallTreeBasalAreaLarger, 0, other.SmallTreeBasalAreaLarger.Length);
+            Array.Copy(other.SmallTreeCrownCompetition, 0, this.SmallTreeCrownCompetition, 0, other.SmallTreeCrownCompetition.Length);
+            this.TreesPerAcre = other.TreesPerAcre;
+        }
+
         public float GetBasalAreaLarger(float dbhInInches)
         {
             // keep diameter class calculation in sync with GetBasalAreaLarger() and GetCrownCompetitionFactorLarger()
