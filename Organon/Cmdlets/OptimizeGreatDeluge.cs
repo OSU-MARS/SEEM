@@ -31,9 +31,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
-            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
+            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.FinalWaterLevel.HasValue)
             {
                 deluge.FinalWaterLevel = this.FinalWaterLevel.Value;
@@ -51,6 +51,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 deluge.StopAfter = this.StopAfter.Value;
             }
             return deluge;
+        }
+
+        protected override string GetName()
+        {
+            return "Optimize-GreatDeluge";
         }
     }
 }

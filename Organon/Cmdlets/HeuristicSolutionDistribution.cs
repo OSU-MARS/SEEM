@@ -7,8 +7,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 {
     public class HeuristicSolutionDistribution
     {
-        public List<float> BestObjectiveFunctionByRun { get; private set; }
+        public List<float> BestObjectiveFunctionBySolution { get; private set; }
         public Heuristic BestSolution { get; private set; }
+        public float DefaultSelectionProbability { get; set; }
 
         public List<int> CountByMove { get; private set; }
         public List<float> MaximumObjectiveFunctionByMove { get; private set; }
@@ -16,18 +17,21 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> MinimumObjectiveFunctionByMove { get; private set; }
         public List<float> VarianceByMove { get; private set; }
 
+        public List<TimeSpan> RuntimeBySolution { get; private set; }
+
         public TimeSpan TotalCoreSeconds { get; private set; }
         public int TotalMoves { get; private set; }
         public int TotalRuns { get; private set; }
 
         public HeuristicSolutionDistribution()
         {
-            this.BestObjectiveFunctionByRun = new List<float>();
+            this.BestObjectiveFunctionBySolution = new List<float>();
             this.BestSolution = null;
             this.CountByMove = new List<int>();
             this.MaximumObjectiveFunctionByMove = new List<float>();
             this.MeanObjectiveFunctionByMove = new List<float>();
             this.MinimumObjectiveFunctionByMove = new List<float>();
+            this.RuntimeBySolution = new List<TimeSpan>();
             this.TotalCoreSeconds = TimeSpan.Zero;
             this.TotalMoves = 0;
             this.TotalRuns = 0;
@@ -36,7 +40,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public void AddRun(Heuristic heuristic, TimeSpan coreSeconds)
         {
-            this.BestObjectiveFunctionByRun.Add(heuristic.BestObjectiveFunction);
+            this.BestObjectiveFunctionBySolution.Add(heuristic.BestObjectiveFunction);
+            this.RuntimeBySolution.Add(coreSeconds);
 
             for (int moveIndex = 0; moveIndex < heuristic.ObjectiveFunctionByMove.Count; ++moveIndex)
             {

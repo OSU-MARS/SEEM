@@ -53,12 +53,12 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             // find first parent
             // TODO: check significance of quantization effects from use of two random bytes
-            double parentScalingFactor = 1.0 / (double)UInt16.MaxValue;
-            double firstParentCumlativeProbability = parentScalingFactor * this.GetTwoPseudorandomBytesAsFloat();
-            firstParentIndex = this.Size - 1;
+            float unityScaling = 1.0F / (float)UInt16.MaxValue;
+            float firstParentCumlativeProbability = unityScaling * this.GetTwoPseudorandomBytesAsFloat();
+            firstParentIndex = -1;
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
-                if (firstParentCumlativeProbability < matingDistributionFunction[individualIndex])
+                if (firstParentCumlativeProbability < this.matingDistributionFunction[individualIndex])
                 {
                     firstParentIndex = individualIndex;
                     break;
@@ -68,43 +68,78 @@ namespace Osu.Cof.Ferm.Heuristics
             // find second parent
             // TODO: check significance of allowing selfing
             // TOOD: investigate selection pressure effect of choosing second parent randomly
-            double secondParentCumlativeProbability = parentScalingFactor * this.GetTwoPseudorandomBytesAsFloat();
-            secondParentIndex = this.Size - 1;
+            float secondParentCumlativeProbability = unityScaling * this.GetTwoPseudorandomBytesAsFloat();
+            secondParentIndex = -1;
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
-                if (secondParentCumlativeProbability < matingDistributionFunction[individualIndex])
+                if (secondParentCumlativeProbability < this.matingDistributionFunction[individualIndex])
                 {
                     secondParentIndex = individualIndex;
                     break;
                 }
             }
+
+            Debug.Assert(firstParentIndex != -1);
+            Debug.Assert(secondParentIndex != -1);
         }
 
-        public void RandomizeSchedule(HarvestPeriodSelection periodSelection)
+        public void RandomizeSchedule(HarvestPeriodSelection periodSelection, float centralSelectionProbability, float selectionProbabilityWidth)
         {
+            if ((centralSelectionProbability < 0.0F) || (centralSelectionProbability > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(centralSelectionProbability));
+            }
+            if ((selectionProbabilityWidth < 0.0F) || (selectionProbabilityWidth > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(selectionProbabilityWidth));
+            }
+
+            float minSelectionProbability = centralSelectionProbability - 0.5F * selectionProbabilityWidth;
+            float maxSelectionProbability = centralSelectionProbability + 0.5F * selectionProbabilityWidth;
+            if ((minSelectionProbability < 0.0F) || (maxSelectionProbability > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(selectionProbabilityWidth));
+            }
+
+            float selectionProbability = minSelectionProbability;
+            float selectionProbabilityIncrement = selectionProbabilityWidth / (this.Size - 1);
+            float unityScalingFactor = 1.0F / byte.MaxValue;
             if (periodSelection == HarvestPeriodSelection.All)
             {
-                double harvestPeriodScalingFactor = ((double)this.HarvestPeriods - Constant.RoundToZeroTolerance) / (double)byte.MaxValue;
                 for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
                 {
+                    float harvestPeriodScalingFactor = (this.HarvestPeriods - Constant.RoundTowardsZeroTolerance) / selectionProbability;
                     int[] schedule = this.IndividualTreeSelections[individualIndex];
                     for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
                     {
-                        schedule[treeIndex] = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
+                        float treeProbability = unityScalingFactor * this.GetPseudorandomByteAsFloat();
+                        if (treeProbability < selectionProbability)
+                        {
+                            schedule[treeIndex] = (int)(harvestPeriodScalingFactor * treeProbability);
+                        }
+                        else
+                        {
+                            schedule[treeIndex] = 0;
+                        }
                     }
+
+                    Debug.Assert(selectionProbability <= 1.0F);
+                    selectionProbability += selectionProbabilityIncrement;
                 }
             }
             else if (periodSelection == HarvestPeriodSelection.NoneOrLast)
             {
-                double unityScalingFactor = 1.0 / (double)byte.MaxValue;
                 for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
                 {
                     int[] schedule = this.IndividualTreeSelections[individualIndex];
                     for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
                     {
-                        bool thinTree = (unityScalingFactor * this.GetPseudorandomByteAsFloat()) > 0.5;
-                        schedule[treeIndex] = thinTree ? this.HarvestPeriods - 1: 0;
+                        bool isSelected = (unityScalingFactor * this.GetPseudorandomByteAsFloat()) < selectionProbability;
+                        schedule[treeIndex] = isSelected ? this.HarvestPeriods - 1: 0;
                     }
+
+                    Debug.Assert(selectionProbability <= 1.0F);
+                    selectionProbability += selectionProbabilityIncrement;
                 }
             }
             else

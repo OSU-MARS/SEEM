@@ -11,6 +11,7 @@ namespace Osu.Cof.Ferm
         public const float CrownCompetionConstantEnglish = 0.001803026F;
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
+        public const string DefaultSelectionFormat = "0.00##";
         public const int DefaultTimeStepInYears = 5;
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
@@ -23,7 +24,7 @@ namespace Osu.Cof.Ferm
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
-        public const float RoundToZeroTolerance = 0.001F;
+        public const float RoundTowardsZeroTolerance = 0.001F;
 
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
         {

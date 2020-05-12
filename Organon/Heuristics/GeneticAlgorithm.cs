@@ -7,20 +7,26 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class GeneticAlgorithm : Heuristic
     {
+        public float CentralSelectionProbability { get; set; }
         public float EndStandardDeviation { get; set; }
+        public float ExchangeProbability { get; set; }
+        public float FlipProbability { get; set; }
         public int MaximumGenerations { get; set; }
-        public float MutationProbability { get; set; }
         public int PopulationSize { get; set; }
         public float ReservedPopulationProportion { get; set; }
+        public float SelectionProbabilityWidth { get; set; }
 
         public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
-            this.EndStandardDeviation = 0.01F;
-            this.MaximumGenerations = 50;
-            this.MutationProbability = 0.5F;
-            this.PopulationSize = 30;
+            this.CentralSelectionProbability = 0.5F;
+            this.EndStandardDeviation = 0.001F;
+            this.ExchangeProbability = 0.5F;
+            this.FlipProbability = 0.7F;
+            this.MaximumGenerations = 100;
+            this.PopulationSize = 40;
             this.ReservedPopulationProportion = 0.5F;
+            this.SelectionProbabilityWidth = 1.0F;
 
             this.ObjectiveFunctionByMove = new List<float>(this.MaximumGenerations);
         }
@@ -30,7 +36,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Genetic";
         }
 
-        private double GetMaximumFitnessAndVariance(GeneticPopulation generation)
+        private float GetMaximumFitnessAndVariance(GeneticPopulation generation)
         {
             float highestFitness = Single.MinValue;
             float sum = 0.0F;
@@ -49,7 +55,7 @@ namespace Osu.Cof.Ferm.Heuristics
             // TODO: guarantee best individual in population is included in breeding
             // Debug.Assert(highestFitness >= this.BestObjectiveFunction);
 
-            float n = (float)generation.Size;
+            float n = generation.Size;
             float meanHarvest = sum / n;
             float variance = sumOfSquares / n - meanHarvest * meanHarvest;
             return variance;
@@ -83,9 +89,10 @@ namespace Osu.Cof.Ferm.Heuristics
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             int treeSelectionCapacity = Constant.Simd128x4.Width * (initialTreeRecordCount / Constant.Simd128x4.Width + 1);
             GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, treeSelectionCapacity);
-            currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection);
+            currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection, this.CentralSelectionProbability, this.SelectionProbabilityWidth);
             OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             this.BestObjectiveFunction = Single.MinValue;
+            int bestIndividualIndex = -1;
             for (int individualIndex = 0; individualIndex < this.PopulationSize; ++individualIndex)
             {
                 int[] individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
@@ -100,15 +107,16 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     this.BestObjectiveFunction = individualFitness;
                     this.BestTrajectory.Copy(individualTrajectory);
+                    bestIndividualIndex = individualIndex;
                 }
                 this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             }
 
             // for each generation of size n, perform n fertile matings
-            double endVariance = this.EndStandardDeviation * this.EndStandardDeviation;
-            double treeScalingFactor = ((double)initialTreeRecordCount - Constant.RoundToZeroTolerance) / (double)UInt16.MaxValue;
-            double mutationScalingFactor = 1.0 / (double)UInt16.MaxValue;
-            double variance = this.GetMaximumFitnessAndVariance(currentGeneration);
+            float endVariance = this.EndStandardDeviation * this.EndStandardDeviation;
+            float treeScalingFactor = ((float)initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
+            float mutationScalingFactor = 1.0F / (float)UInt16.MaxValue;
+            float variance = this.GetMaximumFitnessAndVariance(currentGeneration);
             GeneticPopulation nextGeneration = new GeneticPopulation(currentGeneration);
             OrganonStandTrajectory firstChildTrajectory = individualTrajectory;
             OrganonStandTrajectory secondChildTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
@@ -119,6 +127,10 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // crossover parents' genetic material to create offsprings' genetic material
                     currentGeneration.FindParents(out int firstParentIndex, out int secondParentIndex);
+                    if (matingIndex == 0)
+                    {
+                        firstParentIndex = bestIndividualIndex; // special case to preserve best individual in poulation
+                    }
                     int crossoverPosition = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                     int[] firstParentHarvestSchedule = currentGeneration.IndividualTreeSelections[firstParentIndex];
                     int[] secondParentHarvestSchedule = currentGeneration.IndividualTreeSelections[secondParentIndex];
@@ -134,24 +146,46 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
 
                     // maybe perform mutations
-                    // TODO: investigate effect of mutations other than 2-opt exchange
-                    double firstProbability = mutationScalingFactor * this.GetTwoPseudorandomBytesAsFloat();
-                    if (firstProbability < this.MutationProbability)
+                    float firstExchangeProbability = mutationScalingFactor * this.GetPseudorandomByteAsFloat();
+                    if (firstExchangeProbability < this.ExchangeProbability)
                     {
+                        // 2-opt exchange
                         int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                         int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                         int harvestPeriod = firstChildTrajectory.GetTreeSelection(firstTreeIndex);
                         firstChildTrajectory.SetTreeSelection(firstTreeIndex, firstChildTrajectory.GetTreeSelection(secondTreeIndex));
                         firstChildTrajectory.SetTreeSelection(secondTreeIndex, harvestPeriod);
                     }
-                    double secondProbability = mutationScalingFactor * this.GetTwoPseudorandomBytesAsFloat();
-                    if (secondProbability < this.MutationProbability)
+
+                    float firstFlipProbability = mutationScalingFactor * this.GetPseudorandomByteAsFloat();
+                    if (firstFlipProbability < this.FlipProbability)
                     {
+                        // 1-opt for single thin
+                        int treeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                        int harvestPeriod = firstChildTrajectory.GetTreeSelection(treeIndex);
+                        int newHarvestPeriod = harvestPeriod == 0 ? firstChildTrajectory.HarvestPeriods - 1 : 0;
+                        firstChildTrajectory.SetTreeSelection(treeIndex, newHarvestPeriod);
+                    }
+
+                    float secondExchangeProbability = mutationScalingFactor * this.GetPseudorandomByteAsFloat();
+                    if (secondExchangeProbability < this.ExchangeProbability)
+                    {
+                        // 2-opt exchange
                         int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                         int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                         int harvestPeriod = secondParentHarvestSchedule[firstTreeIndex];
                         secondChildTrajectory.SetTreeSelection(firstTreeIndex, firstChildTrajectory.GetTreeSelection(secondTreeIndex));
                         secondChildTrajectory.SetTreeSelection(secondTreeIndex, harvestPeriod);
+                    }
+
+                    float secondFlipProbability = mutationScalingFactor * this.GetPseudorandomByteAsFloat();
+                    if (secondFlipProbability < this.FlipProbability)
+                    {
+                        // 1-opt for single thin
+                        int treeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                        int harvestPeriod = secondChildTrajectory.GetTreeSelection(treeIndex);
+                        int newHarvestPeriod = harvestPeriod == 0 ? secondChildTrajectory.HarvestPeriods - 1 : 0;
+                        secondChildTrajectory.SetTreeSelection(treeIndex, newHarvestPeriod);
                     }
 
                     // evaluate fitness of offspring
@@ -182,6 +216,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             {
                                 this.BestObjectiveFunction = firstChildFitness;
                                 this.BestTrajectory.Copy(firstChildTrajectory);
+                                bestIndividualIndex = matingIndex;
                             }
                         }
                         else
@@ -192,6 +227,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             {
                                 this.BestObjectiveFunction = secondChildFitness;
                                 this.BestTrajectory.Copy(secondChildTrajectory);
+                                bestIndividualIndex = matingIndex;
                             }
                         }
                     }

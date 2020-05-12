@@ -88,6 +88,19 @@ namespace Osu.Cof.Ferm.Organon
             return basalAreaRemovedInPeriod;
         }
 
+        public bool IsTriggerInPeriod(int periodJustBeginning)
+        {
+            foreach (IHarvest harvest in this.Harvests)
+            {
+                if (harvest.Period == periodJustBeginning)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public void Reset()
         {
             this.BasalAreaBeforeMostRecentHarvest = -1.0F;

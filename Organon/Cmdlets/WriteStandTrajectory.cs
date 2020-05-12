@@ -50,7 +50,12 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 line.Append(",runs,total moves,runtime");
             }
-            line.Append(",heuristic,thin age,rotation,stand age,sim year,TPA,BA,standing,harvested,BA removed,NPV");
+            line.Append(",heuristic");
+            if (runsSpecified)
+            {
+                line.Append(",default selection probability");
+            }
+            line.Append(",thin age,rotation,stand age,sim year,TPA,BA,standing,harvested,BA removed,NPV");
             writer.WriteLine(line);
 
             // rows for periods
@@ -58,16 +63,18 @@ namespace Osu.Cof.Ferm.Cmdlets
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
                 OrganonStandTrajectory bestTrajectory;
+                float defaultSelectionProbability = -1.0F;
                 int moves = -1;
                 int runs = -1;
                 string runtimeInSeconds = "-1";
                 if (runsSpecified)
                 {
-                    HeuristicSolutionDistribution run = this.Runs[runOrTrajectoryIndex];
-                    bestTrajectory = run.BestSolution.BestTrajectory;
-                    moves = run.TotalMoves;
-                    runs = run.TotalRuns;
-                    runtimeInSeconds = run.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
+                    HeuristicSolutionDistribution distribution = this.Runs[runOrTrajectoryIndex];
+                    bestTrajectory = distribution.BestSolution.BestTrajectory;
+                    defaultSelectionProbability = distribution.DefaultSelectionProbability;
+                    moves = distribution.TotalMoves;
+                    runs = distribution.TotalRuns;
+                    runtimeInSeconds = distribution.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
                 }
                 else
                 {
@@ -128,16 +135,17 @@ namespace Osu.Cof.Ferm.Cmdlets
                         line.Append("," + runs + "," + moves + "," + runtimeInSeconds);
                     }
                     line.Append("," + heuristic + "," +
-                                thinYear + "," +
-                                rotationLength + "," +
-                                (initialStandAge + simulationYear) + "," +
-                                simulationYear + "," +
+                                defaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture) + "," +
+                                thinYear.ToString(CultureInfo.InvariantCulture) + "," +
+                                rotationLength.ToString(CultureInfo.InvariantCulture) + "," +
+                                (initialStandAge + simulationYear).ToString(CultureInfo.InvariantCulture) + "," +
+                                simulationYear.ToString(CultureInfo.InvariantCulture) + "," +
                                 density.TreesPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 density.BasalAreaPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                standingVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," + 
+                                standingVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 harvestMbfPerAcre.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                netPresentValue.ToString("0", CultureInfo.InvariantCulture));
+                                netPresentValue.ToString("0", CultureInfo.InvariantCulture)); ;
                     writer.WriteLine(line);
                 }
             }

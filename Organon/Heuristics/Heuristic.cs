@@ -87,24 +87,37 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.CurrentTrajectory.StandByPeriod[0].GetTreeRecordCount();
         }
 
-        public void RandomizeSchedule()
+        public void RandomizeSelections(float selectionProbability)
         {
+            if ((selectionProbability < 0.0F) || (selectionProbability > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(selectionProbability));
+            }
+
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+            float unityScalingFactor = 1.0F / byte.MaxValue;
             if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.All)
             {
-                float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
+                float harvestPeriodScalingFactor = (this.CurrentTrajectory.HarvestPeriods - Constant.RoundTowardsZeroTolerance) / selectionProbability;
                 for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
-                    int harvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
-                    this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
+                    float treeProbability = unityScalingFactor * this.GetPseudorandomByteAsFloat();
+                    if (treeProbability < selectionProbability)
+                    {
+                        int harvestPeriod = (int)(harvestPeriodScalingFactor * treeProbability);
+                        this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
+                    }
+                    else
+                    {
+                        this.CurrentTrajectory.SetTreeSelection(treeIndex, 0);
+                    }
                 }
             }
             else if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.NoneOrLast)
             {
-                float unityScalingFactor = 1.0F / (float)byte.MaxValue;
                 for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
-                    int harvestPeriod = unityScalingFactor * this.GetPseudorandomByteAsFloat() > 0.5 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                    int harvestPeriod = unityScalingFactor * this.GetPseudorandomByteAsFloat() < selectionProbability ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
                     this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
                 }
             }

@@ -16,9 +16,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0, Int32.MaxValue)]
         public Nullable<int> Tenure { get; set; }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
-            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
+            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.Iterations.HasValue)
             {
                 tabu.Iterations = this.Iterations.Value;
@@ -28,6 +28,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 tabu.Tenure = this.Tenure.Value;
             }
             return tabu;
+        }
+
+        protected override string GetName()
+        {
+            return "Optimize-Tabu";
         }
     }
 }

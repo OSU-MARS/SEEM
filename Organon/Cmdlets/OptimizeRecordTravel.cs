@@ -22,9 +22,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
-            RecordToRecordTravel recordTravel = new RecordToRecordTravel(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
+            RecordToRecordTravel recordTravel = new RecordToRecordTravel(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.Deviation.HasValue)
             {
                 recordTravel.Deviation = this.Deviation.Value;
@@ -34,6 +34,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 recordTravel.StopAfter = this.StopAfter.Value;
             }
             return recordTravel;
+        }
+
+        protected override string GetName()
+        {
+            return "Optimize-RecordTravel";
         }
     }
 }

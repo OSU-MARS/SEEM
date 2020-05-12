@@ -1,9 +1,11 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Management.Automation;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Osu.Cof.Ferm.Cmdlets
@@ -17,20 +19,25 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int Cores { get; set; }
 
         [Parameter]
-        [ValidateRange(0, 100)]
-        public int HarvestPeriods { get; set; }
+        [ValidateNotNull]
+        [ValidateRange(1, 100)]
+        public List<int> HarvestPeriods { get; set; }
+
         [Parameter]
         public SwitchParameter NetPresentValue { get; set; }
         [Parameter]
-        [ValidateRange(0, 100)]
-        public int PlanningPeriods { get; set; }
+        [ValidateNotNull]
+        [ValidateRange(1, 100)]
+        public List<int> PlanningPeriods { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0F, 1.0F)]
+        public List<float> SelectionProbabilities { get; set; }
 
         [Parameter(Mandatory = true)]
         public OrganonStand Stand { get; set; }
         [Parameter]
         public TreeModel TreeModel { get; set; }
-        [Parameter]
-        public SwitchParameter UniformHarvestProbability { get; set; }
 
         [Parameter]
         public VolumeUnits VolumeUnits { get; set; }
@@ -39,18 +46,32 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.BestOf = 1;
             this.Cores = 4;
-            this.HarvestPeriods = 1;
+            this.HarvestPeriods = new List<int>() { 3 };
             this.NetPresentValue = false;
-            this.PlanningPeriods = 9;
+            this.PlanningPeriods = new List<int>() { 9 };
             this.TreeModel = TreeModel.OrganonNwo;
-            this.UniformHarvestProbability = true;
+            this.SelectionProbabilities = new List<float>() { 0.5F };
             this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
         }
 
-        protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective);
+        protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability);
+        protected abstract string GetName();
 
         protected override void ProcessRecord()
         {
+            if (this.HarvestPeriods.Count < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.HarvestPeriods));
+            }
+            if (this.PlanningPeriods.Count < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.PlanningPeriods));
+            }
+            if (this.SelectionProbabilities.Count < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.SelectionProbabilities));
+            }
+
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -60,47 +81,120 @@ namespace Osu.Cof.Ferm.Cmdlets
                 VolumeUnits = this.VolumeUnits
             };
 
-            HeuristicSolutionDistribution solutions = new HeuristicSolutionDistribution();
+            List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(this.SelectionProbabilities.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count);
+            for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
+            {
+                for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.HarvestPeriods.Count; ++harvestPeriodIndex)
+                {
+                    for (int selectionProbabilityIndex = 0; selectionProbabilityIndex < this.SelectionProbabilities.Count; ++selectionProbabilityIndex)
+                    {
+                        distributions.Add(new HeuristicSolutionDistribution());
+                    }
+                }
+            }
+
             ParallelOptions parallelOptions = new ParallelOptions()
             {
                 MaxDegreeOfParallelism = this.Cores
             };
-            Parallel.For(0, this.BestOf, parallelOptions, (int iteration, ParallelLoopState loopState) => 
+            int totalRuns = this.BestOf * this.SelectionProbabilities.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count;
+            int runsCompleted = 0;
+            Task runs = Task.Run(() =>
             {
-                if (loopState.ShouldExitCurrentIteration)
+                Parallel.For(0, totalRuns, parallelOptions, (int iteration, ParallelLoopState loopState) =>
                 {
-                    return;
-                }
+                    if (loopState.ShouldExitCurrentIteration)
+                    {
+                        return;
+                    }
 
-                OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-                organonConfiguration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(this.HarvestPeriods));
-                Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, objective);
-                if (this.UniformHarvestProbability)
-                {
-                    currentHeuristic.RandomizeSchedule();
-                }
-                TimeSpan runTime = currentHeuristic.Run();
+                    int selectionProbabilityIndex = (iteration / this.BestOf) % this.SelectionProbabilities.Count; // innermost "loop": tree selection probability
+                    int harvestPeriodIndex = (iteration / (this.BestOf * this.SelectionProbabilities.Count)) % this.HarvestPeriods.Count; // middle "loop": harvest timings
+                    int planningPeriodIndex = (iteration / (this.BestOf * this.HarvestPeriods.Count * this.SelectionProbabilities.Count)) % this.PlanningPeriods.Count; // outer "loop": rotation length
+                    int distributionIndex = selectionProbabilityIndex + harvestPeriodIndex * this.SelectionProbabilities.Count + planningPeriodIndex * this.HarvestPeriods.Count * this.SelectionProbabilities.Count;
 
-                lock (solutions)
-                {
-                    solutions.AddRun(currentHeuristic, runTime);
-                }
+                    OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
+                    organonConfiguration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(this.HarvestPeriods[harvestPeriodIndex]));
 
-                if (this.Stopping)
-                {
-                    loopState.Stop();
-                }
+                    float selectionProbability = this.SelectionProbabilities[selectionProbabilityIndex];
+                    Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, this.PlanningPeriods[planningPeriodIndex], objective, selectionProbability);
+                    if (selectionProbability > 0.0F)
+                    {
+                        currentHeuristic.RandomizeSelections(selectionProbability);
+                    }
+                    TimeSpan runTime = currentHeuristic.Run();
+
+                    lock (distributions)
+                    {
+                        HeuristicSolutionDistribution distribution = distributions[distributionIndex];
+                        distribution.AddRun(currentHeuristic, runTime);
+                        distribution.DefaultSelectionProbability = selectionProbability;
+                        ++runsCompleted;
+                    }
+
+                    if (this.Stopping)
+                    {
+                        loopState.Stop();
+                    }
+                });
             });
-            solutions.OnRunsComplete();
+
+            if (totalRuns == this.BestOf) 
+            {
+                // only one selection probability, harvest period, and rotation length, so maximize responsiveness
+                // Also a partial workaround for a Visual Studio Code bug where the first line of cmdlet verbose output is overwritten if WriteProgress()
+                // is used.
+                runs.Wait();
+            }
+            else
+            {
+                string name = this.GetName();
+                int sleepsSinceLastStatusUpdate = 0;
+                while (runs.IsCompleted == false)
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                    ++sleepsSinceLastStatusUpdate;
+
+                    if (sleepsSinceLastStatusUpdate > 30)
+                    {
+                        double fractionComplete = (double)runsCompleted / (double)totalRuns;
+                        double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
+                        double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
+                        this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + totalRuns + " runs completed."))
+                        {
+                            PercentComplete = (int)(100.0 * fractionComplete),
+                            SecondsRemaining = (int)Math.Round(secondsRemaining)
+                        });
+                        sleepsSinceLastStatusUpdate = 0;
+                    }
+                }
+            }
+            foreach (HeuristicSolutionDistribution distribution in distributions)
+            {
+                distribution.OnRunsComplete();
+            }
             stopwatch.Stop();
 
-            this.WriteObject(solutions);
-            this.WriteRunSummary(solutions, stopwatch.Elapsed);
+            this.WriteObject(distributions);
+            if (distributions.Count == 1)
+            {
+                this.WriteSingleDistributionSummary(distributions[0], stopwatch.Elapsed);
+            }
+            else
+            {
+                this.WriteMultipleDistributionSummary(distributions, stopwatch.Elapsed);
+            }
         }
 
-        private void WriteRunSummary(HeuristicSolutionDistribution solutions, TimeSpan elapsedTime)
+        private void WriteMultipleDistributionSummary(List<HeuristicSolutionDistribution> distributions, TimeSpan elapsedTime)
         {
-            Heuristic bestHeuristic = solutions.BestSolution;
+            Heuristic firstHeuristic = distributions[0].BestSolution;
+            this.WriteVerbose("{0}: {1} configurations ({2} runs) in {3:0.00} minutes.", firstHeuristic.GetName(), distributions.Count, this.BestOf * distributions.Count, elapsedTime.TotalMinutes);
+        }
+
+        private void WriteSingleDistributionSummary(HeuristicSolutionDistribution distribution, TimeSpan elapsedTime)
+        {
+            Heuristic bestHeuristic = distribution.BestSolution;
             int movesAccepted = 0;
             int movesRejected = 0;
             float previousObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[0];
@@ -145,13 +239,13 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             int totalMoves = movesAccepted + movesRejected;
             this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", bestHeuristic.GetName(), totalMoves, movesAccepted, (float)movesAccepted / (float)totalMoves, movesRejected, (float)movesRejected / (float)totalMoves);
-            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", bestHeuristic.BestObjectiveFunction, solutions.BestObjectiveFunctionByRun.Average(), bestHeuristic.ObjectiveFunctionByMove.Last());
+            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", bestHeuristic.BestObjectiveFunction, distribution.BestObjectiveFunctionBySolution.Average(), bestHeuristic.ObjectiveFunctionByMove.Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 
-            double iterationsPerSecond = solutions.TotalMoves / solutions.TotalCoreSeconds.TotalSeconds;
+            double iterationsPerSecond = distribution.TotalMoves / distribution.TotalCoreSeconds.TotalSeconds;
             double iterationsPerSecondMultiplier = iterationsPerSecond > 1E3 ? 1E-3 : 1.0;
             string iterationsPerSecondScale = iterationsPerSecond > 1E3 ? "k" : String.Empty;
-            this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", solutions.TotalMoves, solutions.TotalCoreSeconds.TotalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
+            this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", distribution.TotalMoves, distribution.TotalCoreSeconds.TotalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
         }
 
         protected void WriteVerbose(string format, params object[] args)

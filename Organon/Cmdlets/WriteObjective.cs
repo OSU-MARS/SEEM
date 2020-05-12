@@ -35,7 +35,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter writer = new StreamWriter(stream);
 
-            StringBuilder line = new StringBuilder("stand,heuristic,thin age,rotation,iteration,count,min,mean,max,best");
+            StringBuilder line = new StringBuilder("stand,heuristic,default selection probability,thin age,rotation,iteration,count,min,mean,max,best");
             writer.WriteLine(line);
 
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 HeuristicSolutionDistribution distribution = this.Runs[runIndex];
                 Heuristic bestHeuristic = distribution.BestSolution;
                 OrganonStandTrajectory bestTrajectory = bestHeuristic.BestTrajectory;
-                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + bestTrajectory.GetHarvestYear() + "," + bestTrajectory.GetRotationLength();
+                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + distribution.DefaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture) + "," + bestTrajectory.GetHarvestYear() + "," + bestTrajectory.GetRotationLength();
 
                 Debug.Assert(distribution.CountByMove.Count == distribution.MinimumObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MeanObjectiveFunctionByMove.Count);

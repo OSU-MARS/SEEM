@@ -52,13 +52,14 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         private void WriteLongFormat(StreamWriter writer)
         {
-            StringBuilder line = new StringBuilder("stand,heuristic,thin year,rotation,tree,selection");
+            StringBuilder line = new StringBuilder("stand,heuristic,default selection probability,thin age,rotation,tree,selection");
             writer.WriteLine(line);
 
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
-                OrganonStandTrajectory bestTrajectoryN = this.Runs[runIndex].BestSolution.BestTrajectory;
-                string linePrefix = bestTrajectoryN.Name + "," + bestTrajectoryN.Heuristic.GetName() + "," + bestTrajectoryN.GetHarvestYear() + "," + bestTrajectoryN.GetRotationLength();
+                HeuristicSolutionDistribution solutionDistribution = this.Runs[runIndex];
+                OrganonStandTrajectory bestTrajectoryN = solutionDistribution.BestSolution.BestTrajectory;
+                string linePrefix = bestTrajectoryN.Name + "," + bestTrajectoryN.Heuristic.GetName() + "," + solutionDistribution.DefaultSelectionProbability.ToString("0.00#", CultureInfo.InvariantCulture) + "," + bestTrajectoryN.GetHarvestYear() + "," + bestTrajectoryN.GetRotationLength();
 
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> treeSelectionNForSpecies in bestTrajectoryN.IndividualTreeSelectionBySpecies)

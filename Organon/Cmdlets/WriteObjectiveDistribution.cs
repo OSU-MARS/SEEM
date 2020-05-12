@@ -25,22 +25,24 @@ namespace Osu.Cof.Ferm.Cmdlets
             using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter writer = new StreamWriter(stream);
 
-            StringBuilder line = new StringBuilder("stand,heuristic,thin age,rotation,solution,objective");
+            StringBuilder line = new StringBuilder("stand,heuristic,default selection probability,thin age,rotation,solution,objective,runtime");
             writer.WriteLine(line);
 
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
-                Heuristic bestHeuristic = this.Runs[runIndex].BestSolution;
+                HeuristicSolutionDistribution distribution = this.Runs[runIndex];
+                Heuristic bestHeuristic = distribution.BestSolution;
                 OrganonStandTrajectory bestTrajectory = bestHeuristic.BestTrajectory;
-                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + bestTrajectory.GetHarvestYear() + "," + bestTrajectory.GetRotationLength();
+                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + distribution.DefaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture)  + "," + bestTrajectory.GetHarvestYear() + "," + bestTrajectory.GetRotationLength();
 
-                List<float> bestSolutions = this.Runs[runIndex].BestObjectiveFunctionByRun;
+                List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)
                 {
                     line.Clear();
 
                     string objectiveFunction = bestSolutions[solutionIndex].ToString(CultureInfo.InvariantCulture);
-                    line.Append(linePrefix + "," + solutionIndex + "," + objectiveFunction);
+                    string runtime = distribution.RuntimeBySolution[solutionIndex].TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
+                    line.Append(linePrefix + "," + solutionIndex + "," + objectiveFunction + "," + runtime);
                     writer.WriteLine(line);
                 }
             }

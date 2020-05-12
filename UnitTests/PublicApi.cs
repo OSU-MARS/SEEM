@@ -50,10 +50,10 @@ namespace Osu.Cof.Ferm.Test
             int thinningPeriod = 4;
             int planningPeriods = 9;
             int treeCount = 100;
-            float minObjectiveFunction = 3.65F;
+            float minObjectiveFunction = 3.78F;
             #if DEBUG
             treeCount = 48;
-            minObjectiveFunction = 2.10F;
+            minObjectiveFunction = 2.20F;
             #endif
 
             NelderPlot nelder = this.GetNelder();
@@ -70,7 +70,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 Iterations = 10
             };
-            hero.RandomizeSchedule();
+            hero.RandomizeSelections(TestConstant.Default.HarvestProbability);
             hero.Run();
 
             this.Verify(hero);
@@ -113,35 +113,41 @@ namespace Osu.Cof.Ferm.Test
                 RainRate = 5,
                 StopAfter = 10
             };
-            deluge.RandomizeSchedule();
+            deluge.RandomizeSelections(TestConstant.Default.HarvestProbability);
             deluge.Run();
+
+            RandomGuessing random = new RandomGuessing(stand, configuration, planningPeriods, netPresentValue, 0.5F)
+            {
+                Iterations = 5
+            };
+            random.Run();
 
             RecordToRecordTravel recordTravel = new RecordToRecordTravel(stand, configuration, planningPeriods, netPresentValue)
             {
                 StopAfter = 10
             };
-            recordTravel.RandomizeSchedule();
+            recordTravel.RandomizeSelections(TestConstant.Default.HarvestProbability);
             recordTravel.Run();
 
             SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, planningPeriods, volume)
             {
                 Alpha = 0.9F
             };
-            annealer.RandomizeSchedule();
+            annealer.RandomizeSelections(TestConstant.Default.HarvestProbability);
             annealer.Run();
 
             TabuSearch tabu = new TabuSearch(stand, configuration, planningPeriods, netPresentValue)
             {
                 Iterations = 5
             };
-            tabu.RandomizeSchedule();
+            tabu.RandomizeSelections(TestConstant.Default.HarvestProbability);
             tabu.Run();
 
             ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, planningPeriods, volume)
             {
                 IterationsPerThreshold = 10
             };
-            thresholdAcceptor.RandomizeSchedule();
+            thresholdAcceptor.RandomizeSelections(TestConstant.Default.HarvestProbability);
             thresholdAcceptor.Run();
 
             // heuristics assigned to volume optimization
@@ -151,6 +157,7 @@ namespace Osu.Cof.Ferm.Test
 
             // heuristics assigned to net present value optimization
             this.Verify(genetic);
+            this.Verify(random);
             this.Verify(recordTravel);
             this.Verify(tabu);
         }
@@ -306,7 +313,7 @@ namespace Osu.Cof.Ferm.Test
                 {
                     Iterations = 2
                 };
-                hero.RandomizeSchedule();
+                hero.RandomizeSelections(TestConstant.Default.HarvestProbability);
                 if (run > 0)
                 {
                     // skip first run as a warmup run
@@ -367,14 +374,14 @@ namespace Osu.Cof.Ferm.Test
                 }
                 else if (periodIndex == harvestPeriod)
                 {
-                    Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] >= 0.0F); // best selection with debug stand is no harvest
                     Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
-                    Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex] <= heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
 
-                    Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.HarvestVolumesByPeriod[periodIndex] <= heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
                 }
                 // otherwise past end of harvest arrays

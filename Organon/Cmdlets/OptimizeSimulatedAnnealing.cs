@@ -32,9 +32,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.IterationsPerTemperature = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
-            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
+            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;
@@ -52,6 +52,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 annealer.IterationsPerTemperature = this.IterationsPerTemperature.Value;
             }
             return annealer;
+        }
+
+        protected override string GetName()
+        {
+            return "Optimize-SimulatedAnnealing";
         }
     }
 }

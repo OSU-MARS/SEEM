@@ -13,12 +13,16 @@ namespace Osu.Cof.Ferm.Cmdlets
         public Nullable<float> EndStandardDeviation { get; set; }
 
         [Parameter]
-        [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> MaximumGenerations { get; set; }
+        [ValidateRange(0.0, 1.0)]
+        public Nullable<float> ExchangeProbability { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, 1.0)]
-        public Nullable<float> MutationProbability { get; set; }
+        public Nullable<float> FlipProbability { get; set; }
+
+        [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public Nullable<int> MaximumGenerations { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
@@ -28,20 +32,36 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0, 1.0)]
         public Nullable<float> ReservedPopulationProportion { get; set; }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
+        [Parameter]
+        [ValidateRange(0.0, 1.0)]
+        public Nullable<float> SelectionProbabilityWidth { get; set; }
+
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
-            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
+            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, planningPeriods, objective)
+            {
+                CentralSelectionProbability = defaultSelectionProbability
+            };
+
             if (this.EndStandardDeviation.HasValue)
             {
                 genetic.EndStandardDeviation = this.EndStandardDeviation.Value;
             }
+            if (this.ExchangeProbability.HasValue)
+            {
+                genetic.ExchangeProbability = this.ExchangeProbability.Value;
+            }
+            if (this.FlipProbability.HasValue)
+            {
+                genetic.FlipProbability = this.FlipProbability.Value;
+            }
+            if (this.SelectionProbabilityWidth.HasValue)
+            {
+                genetic.SelectionProbabilityWidth = this.SelectionProbabilityWidth.Value;
+            }
             if (this.MaximumGenerations.HasValue)
             {
                 genetic.MaximumGenerations = this.MaximumGenerations.Value;
-            }
-            if (this.MutationProbability.HasValue)
-            {
-                genetic.MutationProbability = this.MutationProbability.Value;
             }
             if (this.PopulationSize.HasValue)
             {
@@ -52,6 +72,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 genetic.ReservedPopulationProportion = this.ReservedPopulationProportion.Value;
             }
             return genetic;
+        }
+
+        protected override string GetName()
+        {
+            return "Optimize-Genetic";
         }
     }
 }

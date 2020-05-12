@@ -22,9 +22,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Thresholds = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
-            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, this.PlanningPeriods, objective);
+            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.IterationsPerThreshold.HasValue)
             {
                 acceptor.IterationsPerThreshold = this.IterationsPerThreshold.Value;
@@ -35,6 +35,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 acceptor.Thresholds.AddRange(this.Thresholds);
             }
             return acceptor;
+        }
+
+        protected override string GetName()
+        {
+            return "Optimize-ThresholdAccepting";
         }
     }
 }

@@ -48,7 +48,7 @@ namespace Osu.Cof.Ferm.Heuristics
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
             double minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - this.Deviation;
-            float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundToZeroTolerance) / (float)UInt16.MaxValue;
+            float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             while (iterationsSinceBestObjectiveImproved < this.StopAfter)
