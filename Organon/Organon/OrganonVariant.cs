@@ -47,17 +47,17 @@ namespace Osu.Cof.Ferm.Organon
                 }
 
                 float strataThickness = crownCompetitionByHeight[^1] / Constant.HeightStrata;
-                for (int strataIndex = crownCompetitionByHeight.Length - 1; strataIndex >= 0; --strataIndex)
+                for (int strataIndex = crownCompetitionByHeight.Length - 2; strataIndex >= 0; --strataIndex)
                 {
-                    float relativeHeight = (float)strataIndex * strataThickness;
+                    float strataHeight = strataThickness * (strataIndex + 1);
                     float crownWidth = 0.0F;
-                    if (relativeHeight <= XHLCW)
+                    if (strataHeight <= XHLCW)
                     {
                         crownWidth = XLCW;
                     }
-                    else if ((relativeHeight > XHLCW) && (relativeHeight < heightInFeet))
+                    else if ((strataHeight > XHLCW) && (strataHeight < heightInFeet))
                     {
-                        crownWidth = this.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, relativeHeight);
+                        crownWidth = this.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, strataHeight);
                     }
                     float crownCompetitionFactor = Constant.CrownCompetionConstantEnglish * expansionFactor * crownWidth * crownWidth;
                     crownCompetitionByHeight[strataIndex] += crownCompetitionFactor;

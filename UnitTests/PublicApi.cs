@@ -174,12 +174,12 @@ namespace Osu.Cof.Ferm.Test
 
             // verify untihnned trajectory
             //                                             0       1       2       3       4       5       6       7       8       9
-            float[] minimumUnthinnedVolume = new float[] { 103.0F, 198.0F, 307.0F, 412.0F, 507.0F, 589.0F, 660.0F, 722.0F, 776.0F, 824.0F }; // m³
+            float[] minimumUnthinnedVolume = new float[] { 103.0F, 199.0F, 310.0F, 417.0F, 513.0F, 598.0F, 671.0F, 734.0F, 789.0F, 838.0F }; // m³
             this.Verify(unthinnedTrajectory, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
 
             // verify thinned trajectory
             //                                           0       1       2       3       4       5       6       7       8       9
-            float[] minimumThinnedVolume = new float[] { 103.0F, 198.0F, 307.0F, 335.0F, 431.0F, 523.0F, 608.0F, 684.0F, 751.0F, 809.0F }; // m³ for 20+5% thin
+            float[] minimumThinnedVolume = new float[] { 103.0F, 199.0F, 310.0F, 338.0F, 436.0F, 530.0F, 617.0F, 694.0F, 763.0F, 823.0F }; // m³ for 20+5% thin
             this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
             {

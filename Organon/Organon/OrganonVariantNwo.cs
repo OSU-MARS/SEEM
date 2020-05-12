@@ -601,9 +601,9 @@ namespace Osu.Cof.Ferm.Organon
                     Vector128<float> heightToLargestCrownWidth128 = AvxExtensions.BroadcastScalarToVector128(heightToLargestCrownWidth);
                     Vector128<float> largestCrownWidth128 = AvxExtensions.BroadcastScalarToVector128(largestCrownWidth);
                     Vector128<float> strataHeightIncrement = AvxExtensions.BroadcastScalarToVector128(4.0F * crownCompetitionByHeight[^1] / Constant.HeightStrata);
-                    Vector128<float> strataHeight = Avx.Multiply(Vector128.Create(0.125F, 0.375F, 0.625F, 0.875F), strataHeightIncrement); // find CCF at middle of strata
+                    Vector128<float> strataHeight = Avx.Multiply(Vector128.Create(0.25F, 0.50F, 0.75F, 1.0F), strataHeightIncrement); // find CCF at top of strata as in Fortran
                     Vector128<float> zero = Vector128<float>.Zero;
-                    for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 1; strataIndex += 4)
+                    for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += 4)
                     {
                         int strataBelowTreeHeightMask = Avx.MoveMask(Avx.CompareLessThan(strataHeight, heightInFeet128));
                         if (strataBelowTreeHeightMask == 0)
