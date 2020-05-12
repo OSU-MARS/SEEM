@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Management.Automation;
 using System.Text;
 
@@ -17,12 +16,25 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateNotNullOrEmpty]
         public string CsvFile;
 
-        [Parameter(Mandatory = true)]
+        [Parameter()]
+        [ValidateNotNull]
+        public List<HeuristicSolutionDistribution> Runs { get; set; }
+
+        [Parameter()]
         [ValidateNotNull]
         public List<OrganonStandTrajectory> Trajectories { get; set; }
 
         protected override void ProcessRecord()
         {
+            if ((this.Runs == null) && (this.Trajectories == null))
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+            if ((this.Runs != null) && (this.Trajectories != null))
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+
             // TODO: support as input parameter
             TimberValue timberValue = new TimberValue();
 
@@ -32,43 +44,69 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             // TODO: check for mixed units and support TBH
             // TODO: snags per acre or hectare, live and dead QMD?
-            StringBuilder line = new StringBuilder("stand,stand age,sim year,TPA,BA,standing,harvested,BA removed,NPV");
+            bool runsSpecified = this.Runs != null;
+            StringBuilder line = new StringBuilder("stand");
+            if (runsSpecified)
+            {
+                line.Append(",runs,total moves,runtime");
+            }
+            line.Append(",heuristic,thin age,rotation,stand age,sim year,TPA,BA,standing,harvested,BA removed,NPV");
             writer.WriteLine(line);
 
             // rows for periods
-            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
+            int maxIndex = runsSpecified ? this.Runs.Count : this.Trajectories.Count;
+            for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
-                OrganonStandTrajectory trajectory = this.Trajectories[trajectoryIndex];
-                if (trajectory.VolumeUnits != VolumeUnits.ScribnerBoardFeetPerAcre)
+                OrganonStandTrajectory bestTrajectory;
+                int moves = -1;
+                int runs = -1;
+                string runtimeInSeconds = "-1";
+                if (runsSpecified)
+                {
+                    HeuristicSolutionDistribution run = this.Runs[runOrTrajectoryIndex];
+                    bestTrajectory = run.BestSolution.BestTrajectory;
+                    moves = run.TotalMoves;
+                    runs = run.TotalRuns;
+                    runtimeInSeconds = run.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    bestTrajectory = this.Trajectories[runOrTrajectoryIndex];
+                }
+                if (bestTrajectory.VolumeUnits != VolumeUnits.ScribnerBoardFeetPerAcre)
                 {
                     throw new NotSupportedException();
                 }
 
-                string trajectoryName = trajectory.Name;
+                string heuristic = bestTrajectory.Heuristic != null ? bestTrajectory.Heuristic.GetName() : "none";
+                int thinYear = bestTrajectory.GetHarvestYear();
+                int rotationLength = bestTrajectory.GetRotationLength();
+
+                string trajectoryName = bestTrajectory.Name;
                 if (trajectoryName == null)
                 {
-                    trajectoryName = trajectoryIndex.ToString(CultureInfo.InvariantCulture);
+                    trajectoryName = runOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
                 }
                 float volumeUnitMultiplier = 1.0F;
-                if (trajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
+                if (bestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
                 {
                     volumeUnitMultiplier = 0.001F;
                 }
 
-                int initialStandAge = trajectory.StandByPeriod[0].AgeInYears;
-                for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
+                int initialStandAge = bestTrajectory.GetInitialStandAge();
+                for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
                 {
                     line.Clear();
 
                     // get density and volumes
-                    OrganonStandDensity density = trajectory.DensityByPeriod[periodIndex];
-                    float standingVolume = volumeUnitMultiplier * trajectory.StandingVolumeByPeriod[periodIndex];
+                    OrganonStandDensity density = bestTrajectory.DensityByPeriod[periodIndex];
+                    float standingVolume = volumeUnitMultiplier * bestTrajectory.StandingVolumeByPeriod[periodIndex];
                     float harvestMbfPerAcre = 0.0F;
                     float basalAreaRemoved = 0.0F;
-                    if (trajectory.HarvestVolumesByPeriod.Length > periodIndex)
+                    if (bestTrajectory.HarvestVolumesByPeriod.Length > periodIndex)
                     {
-                        harvestMbfPerAcre = volumeUnitMultiplier * trajectory.HarvestVolumesByPeriod[periodIndex];
-                        basalAreaRemoved = trajectory.BasalAreaRemoved[periodIndex];
+                        harvestMbfPerAcre = volumeUnitMultiplier * bestTrajectory.HarvestVolumesByPeriod[periodIndex];
+                        basalAreaRemoved = bestTrajectory.BasalAreaRemoved[periodIndex];
                     }
 
                     // NPV
@@ -76,15 +114,22 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int periodsFromPresent = Math.Max(periodIndex - 1, 0);
                     if (harvestMbfPerAcre > 0.0F)
                     {
-                        netPresentValue = timberValue.GetPresentValueOfThinScribner(trajectory.HarvestVolumesByPeriod[periodIndex], periodsFromPresent, trajectory.PeriodLengthInYears);
+                        netPresentValue = timberValue.GetPresentValueOfThinScribner(bestTrajectory.HarvestVolumesByPeriod[periodIndex], periodsFromPresent, bestTrajectory.PeriodLengthInYears);
                     }
                     else
                     {
-                        netPresentValue = timberValue.GetPresentValueOfFinalHarvestScribner(trajectory.StandingVolumeByPeriod[periodIndex], periodsFromPresent, trajectory.PeriodLengthInYears);
+                        netPresentValue = timberValue.GetPresentValueOfFinalHarvestScribner(bestTrajectory.StandingVolumeByPeriod[periodIndex], periodsFromPresent, bestTrajectory.PeriodLengthInYears);
                     }
 
-                    int simulationYear = trajectory.PeriodLengthInYears * periodIndex;
-                    line.Append(trajectoryName + "," + 
+                    int simulationYear = bestTrajectory.PeriodLengthInYears * periodIndex;
+                    line.Append(trajectoryName);
+                    if (runsSpecified)
+                    {
+                        line.Append("," + runs + "," + moves + "," + runtimeInSeconds);
+                    }
+                    line.Append("," + heuristic + "," +
+                                thinYear + "," +
+                                rotationLength + "," +
                                 (initialStandAge + simulationYear) + "," +
                                 simulationYear + "," +
                                 density.TreesPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +

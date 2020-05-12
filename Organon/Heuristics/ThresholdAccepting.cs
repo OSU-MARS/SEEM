@@ -16,7 +16,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.IterationsPerThreshold = 5 * stand.GetTreeRecordCount();
             this.Thresholds = new List<float>() { 0.90F, 0.92F, 0.95F, 0.97F, 0.99F, 1.0F };
 
-            this.ObjectiveFunctionByIteration = new List<float>(this.Thresholds.Count * this.IterationsPerThreshold)
+            this.ObjectiveFunctionByMove = new List<float>(this.Thresholds.Count * this.IterationsPerThreshold)
             {
                 this.BestObjectiveFunction
             };
@@ -85,7 +85,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
                     }
 
-                    this.ObjectiveFunctionByIteration.Add(currentObjectiveFunction);
+                    this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
                 }
             }
 

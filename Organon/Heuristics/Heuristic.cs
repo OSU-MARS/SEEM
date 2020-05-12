@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public OrganonStandTrajectory BestTrajectory { get; protected set; }
         public OrganonStandTrajectory CurrentTrajectory { get; protected set; }
         public Objective Objective { get; protected set; }
-        public List<float> ObjectiveFunctionByIteration { get; protected set; }
+        public List<float> ObjectiveFunctionByMove { get; protected set; }
 
         protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
         {
@@ -22,9 +22,10 @@ namespace Osu.Cof.Ferm.Heuristics
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.BestTrajectory);
             this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
 
-            string name = this.GetName();
-            this.BestTrajectory.Name = name + this.BestTrajectory.Name + "Best";
-            this.CurrentTrajectory.Name = name + this.CurrentTrajectory.Name + "Current" + planningPeriods;
+            this.BestTrajectory.Name = this.BestTrajectory.Name + "Best";
+            this.BestTrajectory.Heuristic = this;
+            this.CurrentTrajectory.Name = this.CurrentTrajectory.Name + "Current";
+            this.CurrentTrajectory.Heuristic = this;
         }
 
         public abstract string GetName();
@@ -116,9 +117,9 @@ namespace Osu.Cof.Ferm.Heuristics
             this.BestTrajectory.Copy(this.CurrentTrajectory);
 
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
-            if (this.ObjectiveFunctionByIteration.Count > 0)
+            if (this.ObjectiveFunctionByMove.Count > 0)
             {
-                this.ObjectiveFunctionByIteration[0] = this.BestObjectiveFunction;
+                this.ObjectiveFunctionByMove[0] = this.BestObjectiveFunction;
             }
         }
 

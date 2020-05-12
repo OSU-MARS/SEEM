@@ -1,7 +1,6 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Management.Automation;
@@ -39,11 +38,12 @@ namespace Osu.Cof.Ferm.Cmdlets
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
-            this.Cores = 1;
+            this.Cores = 4;
             this.HarvestPeriods = 1;
+            this.NetPresentValue = false;
             this.PlanningPeriods = 9;
             this.TreeModel = TreeModel.OrganonNwo;
-            this.UniformHarvestProbability = false;
+            this.UniformHarvestProbability = true;
             this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
         }
 
@@ -60,10 +60,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 VolumeUnits = this.VolumeUnits
             };
 
-            Heuristic bestHeuristic = null;
-            int totalIterations = 0;
-            TimeSpan computeTime = TimeSpan.Zero;
-            List<float> objectiveFunctionValues = new List<float>();
+            HeuristicSolutionDistribution solutions = new HeuristicSolutionDistribution();
             ParallelOptions parallelOptions = new ParallelOptions()
             {
                 MaxDegreeOfParallelism = this.Cores
@@ -84,16 +81,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 TimeSpan runTime = currentHeuristic.Run();
 
-                lock (parallelOptions)
+                lock (solutions)
                 {
-                    computeTime += runTime;
-                    totalIterations += currentHeuristic.ObjectiveFunctionByIteration.Count;
-                    objectiveFunctionValues.Add(currentHeuristic.BestObjectiveFunction);
-
-                    if ((bestHeuristic == null) || (currentHeuristic.BestObjectiveFunction > bestHeuristic.BestObjectiveFunction))
-                    {
-                        bestHeuristic = currentHeuristic;
-                    }
+                    solutions.AddRun(currentHeuristic, runTime);
                 }
 
                 if (this.Stopping)
@@ -101,25 +91,22 @@ namespace Osu.Cof.Ferm.Cmdlets
                     loopState.Stop();
                 }
             });
+            solutions.OnRunsComplete();
             stopwatch.Stop();
 
-            this.WriteObject(bestHeuristic);
-            if (this.BestOf > 1)
-            {
-                this.WriteObject(objectiveFunctionValues);
-            }
-
-            this.WriteHeuristicRun(bestHeuristic, objectiveFunctionValues, totalIterations, computeTime, stopwatch.Elapsed);
+            this.WriteObject(solutions);
+            this.WriteRunSummary(solutions, stopwatch.Elapsed);
         }
 
-        private void WriteHeuristicRun(Heuristic heuristic, List<float> objectiveFunctionValues, int totalIterations, TimeSpan computeTime, TimeSpan elapsedTime)
+        private void WriteRunSummary(HeuristicSolutionDistribution solutions, TimeSpan elapsedTime)
         {
+            Heuristic bestHeuristic = solutions.BestSolution;
             int movesAccepted = 0;
             int movesRejected = 0;
-            float previousObjectiveFunction = heuristic.ObjectiveFunctionByIteration[0];
-            for (int index = 1; index < heuristic.ObjectiveFunctionByIteration.Count; ++index)
+            float previousObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[0];
+            for (int index = 1; index < bestHeuristic.ObjectiveFunctionByMove.Count; ++index)
             {
-                float currentObjectiveFunction = heuristic.ObjectiveFunctionByIteration[index];
+                float currentObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[index];
                 if (currentObjectiveFunction != previousObjectiveFunction)
                 {
                     ++movesAccepted;
@@ -135,20 +122,20 @@ namespace Osu.Cof.Ferm.Cmdlets
             float minimumHarvest = Single.MaxValue;
             float harvestSum = 0.0F;
             float harvestSumOfSquares = 0.0F;
-            for (int periodIndex = 1; periodIndex < heuristic.BestTrajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < bestHeuristic.BestTrajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
             {
-                float harvest = heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex];
+                float harvest = bestHeuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex];
                 maximumHarvest = Math.Max(harvest, maximumHarvest);
                 harvestSum += harvest;
                 harvestSumOfSquares += harvest * harvest;
                 minimumHarvest = Math.Min(harvest, minimumHarvest);
             }
-            float periods = (float)(heuristic.BestTrajectory.HarvestVolumesByPeriod.Length - 1);
+            float periods = (float)(bestHeuristic.BestTrajectory.HarvestVolumesByPeriod.Length - 1);
             float meanHarvest = harvestSum / periods;
             float variance = harvestSumOfSquares / periods - meanHarvest * meanHarvest;
             float standardDeviation = MathF.Sqrt(variance);
             float flowEvenness = Math.Max(maximumHarvest - meanHarvest, meanHarvest - minimumHarvest) / meanHarvest;
-            if (heuristic.BestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
+            if (bestHeuristic.BestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
             {
                 // convert from BF to MBF
                 meanHarvest *= 0.001F;
@@ -157,14 +144,14 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             int totalMoves = movesAccepted + movesRejected;
-            this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", heuristic.GetName(), totalMoves, movesAccepted, (float)movesAccepted / (float)totalMoves, movesRejected, (float)movesRejected / (float)totalMoves);
-            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.BestObjectiveFunction, objectiveFunctionValues.Average(), heuristic.ObjectiveFunctionByIteration.Last());
+            this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", bestHeuristic.GetName(), totalMoves, movesAccepted, (float)movesAccepted / (float)totalMoves, movesRejected, (float)movesRejected / (float)totalMoves);
+            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", bestHeuristic.BestObjectiveFunction, solutions.BestObjectiveFunctionByRun.Average(), bestHeuristic.ObjectiveFunctionByMove.Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 
-            double iterationsPerSecond = (double)totalIterations / computeTime.TotalSeconds;
+            double iterationsPerSecond = solutions.TotalMoves / solutions.TotalCoreSeconds.TotalSeconds;
             double iterationsPerSecondMultiplier = iterationsPerSecond > 1E3 ? 1E-3 : 1.0;
             string iterationsPerSecondScale = iterationsPerSecond > 1E3 ? "k" : String.Empty;
-            this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", totalIterations, computeTime.TotalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
+            this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", solutions.TotalMoves, solutions.TotalCoreSeconds.TotalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
         }
 
         protected void WriteVerbose(string format, params object[] args)

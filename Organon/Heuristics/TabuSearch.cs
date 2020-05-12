@@ -16,7 +16,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.Iterations = stand.GetTreeRecordCount();
             this.Tenure = (int)(0.3 * this.Iterations);
 
-            this.ObjectiveFunctionByIteration = new List<float>(1000)
+            this.ObjectiveFunctionByMove = new List<float>(1000)
             {
                 this.BestObjectiveFunction
             };
@@ -130,7 +130,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     // remainingTabuTenures[bestNonTabuUnitIndex, bestNonTabuHarvestPeriod] = (int)(tenureScalingFactor * this.GetPseudorandomByteAsDouble()) + 1;
                 }
 
-                this.ObjectiveFunctionByIteration.Add(currentObjectiveFunction);
+                this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
             }
 
             stopwatch.Stop();

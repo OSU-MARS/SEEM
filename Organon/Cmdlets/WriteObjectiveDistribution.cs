@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -17,52 +18,31 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<double[]> Distribution { get; set; }
-
-        [Parameter(Mandatory = true)]
-        [ValidateNotNull]
-        public List<Heuristic> Heuristics { get; set; }
+        public List<HeuristicSolutionDistribution> Runs { get; set; }
 
         protected override void ProcessRecord()
         {
-            if (this.Distribution.Count != this.Heuristics.Count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.Distribution), "Number of distributions and number of heuristics must match.");
-            }
-
             using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter writer = new StreamWriter(stream);
 
-            StringBuilder line = new StringBuilder("run");
-            int maxRun = 0;
-            for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
-            {
-                Heuristic heuristic = this.Heuristics[heuristicIndex];
-                line.Append("," + heuristic.GetName());
-
-                double[] distribution = this.Distribution[heuristicIndex];
-                maxRun = Math.Max(maxRun, distribution.Length);
-            }
+            StringBuilder line = new StringBuilder("stand,heuristic,thin age,rotation,solution,objective");
             writer.WriteLine(line);
 
-            for (int run = 0; run < maxRun; ++run)
+            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
-                line.Clear();
-                line.Append(run);
+                Heuristic bestHeuristic = this.Runs[runIndex].BestSolution;
+                OrganonStandTrajectory bestTrajectory = bestHeuristic.BestTrajectory;
+                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + bestTrajectory.GetHarvestYear() + "," + bestTrajectory.GetRotationLength();
 
-                for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
+                List<float> bestSolutions = this.Runs[runIndex].BestObjectiveFunctionByRun;
+                for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)
                 {
-                    line.Append(",");
+                    line.Clear();
 
-                    double[] distribution = this.Distribution[heuristicIndex];
-                    if (distribution.Length > run)
-                    {
-                        double objectiveFunction = distribution[run];
-                        line.Append(objectiveFunction.ToString(CultureInfo.InvariantCulture));
-                    }
+                    string objectiveFunction = bestSolutions[solutionIndex].ToString(CultureInfo.InvariantCulture);
+                    line.Append(linePrefix + "," + solutionIndex + "," + objectiveFunction);
+                    writer.WriteLine(line);
                 }
-
-                writer.WriteLine(line);
             }
         }
     }

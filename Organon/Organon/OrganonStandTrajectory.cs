@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Heuristics;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -14,7 +15,10 @@ namespace Osu.Cof.Ferm.Organon
 
         public float[] BasalAreaRemoved { get; protected set; }
         public OrganonStandDensity[] DensityByPeriod { get; private set; }
+        
         public float[] HarvestVolumesByPeriod { get; protected set; }
+        public Heuristic Heuristic { get; set; }
+        
         public float IndividualTreeExpansionFactor { get; protected set; }
         // harvest periods by tree, 0 indicates no harvest
         public SortedDictionary<FiaCode, int[]> IndividualTreeSelectionBySpecies { get; private set; }
@@ -55,6 +59,7 @@ namespace Osu.Cof.Ferm.Organon
             this.organonConfiguration = new OrganonConfiguration(organonConfiguration);
             this.organonGrowth = new OrganonGrowth();
             this.HarvestVolumesByPeriod = new float[thinningPeriod + 1];
+            this.Heuristic = null;
             // TODO: check all trees in stand have same expansion factor
             this.IndividualTreeExpansionFactor = stand.TreesBySpecies.First().Value.LiveExpansionFactor[0];
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
@@ -87,6 +92,7 @@ namespace Osu.Cof.Ferm.Organon
             this.BasalAreaRemoved = new float[other.HarvestPeriods];
             this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
             this.HarvestVolumesByPeriod = new float[other.HarvestPeriods];
+            this.Heuristic = other.Heuristic;
             this.IndividualTreeExpansionFactor = other.IndividualTreeExpansionFactor;
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = other.Name;
@@ -146,6 +152,7 @@ namespace Osu.Cof.Ferm.Organon
 
             // for now, shallow copies
             this.fiaVolume = other.fiaVolume;
+            this.Heuristic = other.Heuristic;
             this.organonCalibration = other.organonCalibration;
             this.organonConfiguration = other.organonConfiguration;
             this.organonGrowth = other.organonGrowth;
@@ -256,6 +263,28 @@ namespace Osu.Cof.Ferm.Organon
                 }
             }
             this.HarvestVolumesByPeriod[periodIndex] = scribner6x32footLogPerAcre;
+        }
+
+        public int GetHarvestYear()
+        {
+            for (int periodIndex = 0; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
+            {
+                if (this.HarvestVolumesByPeriod[periodIndex] > 0.0F)
+                {
+                    return this.GetInitialStandAge() + this.PeriodLengthInYears * (this.HarvestPeriods - 1);
+                }
+            }
+            return -1;
+        }
+
+        public int GetInitialStandAge()
+        {
+            return this.StandByPeriod[0].AgeInYears;
+        }
+
+        public int GetRotationLength()
+        {
+            return this.GetInitialStandAge() + this.PeriodLengthInYears * (this.PlanningPeriods - 1);
         }
 
         private void GetStandingAndHarvestedVolume(int periodIndex)

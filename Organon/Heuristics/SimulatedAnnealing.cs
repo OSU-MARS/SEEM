@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float temperatureSteps = (float)(defaultIterations / this.IterationsPerTemperature);
             this.Alpha = 1.0F / MathF.Pow(this.InitialTemperature / this.FinalTemperature, 1.0F / temperatureSteps);
 
-            this.ObjectiveFunctionByIteration = new List<float>(defaultIterations)
+            this.ObjectiveFunctionByMove = new List<float>(defaultIterations)
             {
                 this.BestObjectiveFunction
             };
@@ -118,7 +118,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
                     }
 
-                    this.ObjectiveFunctionByIteration.Add(currentObjectiveFunction);
+                    this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
                 }
             }
 

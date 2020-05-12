@@ -22,7 +22,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.PopulationSize = 30;
             this.ReservedPopulationProportion = 0.5F;
 
-            this.ObjectiveFunctionByIteration = new List<float>(this.MaximumGenerations);
+            this.ObjectiveFunctionByMove = new List<float>(this.MaximumGenerations);
         }
 
         public override string GetName()
@@ -48,7 +48,6 @@ namespace Osu.Cof.Ferm.Heuristics
 
             // TODO: guarantee best individual in population is included in breeding
             // Debug.Assert(highestFitness >= this.BestObjectiveFunction);
-            this.ObjectiveFunctionByIteration.Add(highestFitness);
 
             float n = (float)generation.Size;
             float meanHarvest = sum / n;
@@ -102,8 +101,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.BestObjectiveFunction = individualFitness;
                     this.BestTrajectory.Copy(individualTrajectory);
                 }
+                this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             }
-            this.ObjectiveFunctionByIteration.Add(this.BestObjectiveFunction);
 
             // for each generation of size n, perform n fertile matings
             double endVariance = this.EndStandardDeviation * this.EndStandardDeviation;
@@ -211,6 +210,8 @@ namespace Osu.Cof.Ferm.Heuristics
                             nextGeneration.HarvestVolumesByPeriod[matingIndex] = currentGeneration.HarvestVolumesByPeriod[secondParentIndex];
                         }
                     }
+
+                    this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
                 }
 
                 GeneticPopulation generationSwapPointer = currentGeneration;

@@ -1,4 +1,4 @@
-﻿using Osu.Cof.Ferm.Heuristics;
+﻿using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -16,53 +16,110 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateNotNullOrEmpty]
         public string CsvFile;
 
+        public DataFormat Format { get; set; }
+
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<Heuristic> Heuristics { get; set; }
+        public List<HeuristicSolutionDistribution> Runs { get; set; }
+
+        public WriteHarvestSchedule()
+        {
+            this.Format = DataFormat.Long;
+        }
 
         protected override void ProcessRecord()
         {
-            if (this.Heuristics.Count < 1)
+            if (this.Runs.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Heuristics));
-            }
-
-            // for now, assume all heuristics are from the same stand with the same tree ordering and ingrowth pattern
-            SortedDictionary<FiaCode, int[]> treeSelection0BySpecies = this.Heuristics[0].BestTrajectory.IndividualTreeSelectionBySpecies;
-            for (int heuristicIndex = 1; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
-            {
-                SortedDictionary<FiaCode, int[]> treeSelectionNBySpecies = this.Heuristics[heuristicIndex].BestTrajectory.IndividualTreeSelectionBySpecies;
-                if (SortedDictionaryExtensions.ValueLengthsIdentical(treeSelection0BySpecies, treeSelectionNBySpecies) == false)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(this.Heuristics));
-                }
+                throw new ArgumentOutOfRangeException(nameof(this.Runs));
             }
 
             using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter writer = new StreamWriter(stream);
 
-            StringBuilder line = new StringBuilder("tree");
-            for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
+            switch (this.Format)
             {
-                Heuristic heuristic = this.Heuristics[heuristicIndex];
-                line.Append("," + heuristic.GetName());
+                case DataFormat.Long:
+                    this.WriteLongFormat(writer);
+                    break;
+                case DataFormat.Wide:
+                    this.WriteWideFormat(writer);
+                    break;
+                default:
+                    throw new NotSupportedException(String.Format("Unhandled data format {0}.", this.Format));
+            }
+        }
+
+        private void WriteLongFormat(StreamWriter writer)
+        {
+            StringBuilder line = new StringBuilder("stand,heuristic,thin year,rotation,tree,selection");
+            writer.WriteLine(line);
+
+            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+            {
+                OrganonStandTrajectory bestTrajectoryN = this.Runs[runIndex].BestSolution.BestTrajectory;
+                string linePrefix = bestTrajectoryN.Name + "," + bestTrajectoryN.Heuristic.GetName() + "," + bestTrajectoryN.GetHarvestYear() + "," + bestTrajectoryN.GetRotationLength();
+
+                int previousSpeciesCount = 0;
+                foreach (KeyValuePair<FiaCode, int[]> treeSelectionNForSpecies in bestTrajectoryN.IndividualTreeSelectionBySpecies)
+                {
+                    Trees treesOfSpecies = bestTrajectoryN.StandByPeriod[0].TreesBySpecies[treeSelectionNForSpecies.Key];
+                    int[] treeSelectionN = treeSelectionNForSpecies.Value;
+                    Debug.Assert(treesOfSpecies.Capacity == treeSelectionN.Length);
+                    for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                    {
+                        line.Clear();
+
+                        // for now, make best guess of using tree tag or index as unique identifier
+                        int tree = treesOfSpecies.Tag[treeIndex] < 0 ? previousSpeciesCount + treeIndex : treesOfSpecies.Tag[treeIndex];
+                        int harvestPeriod = treeSelectionN[treeIndex];
+                        line.Append(linePrefix + "," + tree + "," + harvestPeriod.ToString(CultureInfo.InvariantCulture));
+
+                        writer.WriteLine(line);
+                    }
+
+                    previousSpeciesCount += treeSelectionN.Length;
+                }
+            }
+        }
+
+        private void WriteWideFormat(StreamWriter writer)
+        {
+            // for now, assume all heuristics are from the same stand with the same tree ordering and ingrowth pattern
+            SortedDictionary<FiaCode, int[]> treeSelection0BySpecies = this.Runs[0].BestSolution.BestTrajectory.IndividualTreeSelectionBySpecies;
+            for (int heuristicIndex = 1; heuristicIndex < this.Runs.Count; ++heuristicIndex)
+            {
+                SortedDictionary<FiaCode, int[]> treeSelectionBySpecies = this.Runs[heuristicIndex].BestSolution.BestTrajectory.IndividualTreeSelectionBySpecies;
+                if (SortedDictionaryExtensions.ValueLengthsIdentical(treeSelection0BySpecies, treeSelectionBySpecies) == false)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.Runs));
+                }
+            }
+
+            StringBuilder line = new StringBuilder("tree");
+            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+            {
+                OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
+                line.Append("," + bestTrajectory.Name + bestTrajectory.Heuristic + bestTrajectory.GetHarvestYear() + "." + bestTrajectory.GetRotationLength());
             }
             writer.WriteLine(line);
 
             int previousSpeciesCount = 0;
             foreach (KeyValuePair<FiaCode, int[]> treeSelection0ForSpecies in treeSelection0BySpecies)
             {
-                Trees treesOfSpecies = this.Heuristics[0].BestTrajectory.StandByPeriod[0].TreesBySpecies[treeSelection0ForSpecies.Key];
+                OrganonStandTrajectory bestTrajectory0 = this.Runs[0].BestSolution.BestTrajectory;
+                Trees treesOfSpecies = bestTrajectory0.StandByPeriod[0].TreesBySpecies[treeSelection0ForSpecies.Key];
                 Debug.Assert(treesOfSpecies.Count <= treeSelection0ForSpecies.Value.Length);
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
                     line.Clear();
-                    // for now, best guess of using tree tag or index as unique identifier
+                    // for now, make best guess of using tree tag or index as unique identifier
                     line.Append(treesOfSpecies.Tag[treeIndex] == 0 ? previousSpeciesCount + treeIndex : treesOfSpecies.Tag[treeIndex]);
 
-                    for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
+                    for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                     {
-                        int[] treeSelectionN = this.Heuristics[heuristicIndex].BestTrajectory.IndividualTreeSelectionBySpecies[treeSelection0ForSpecies.Key];
+                        OrganonStandTrajectory bestTrajectoryN = this.Runs[runIndex].BestSolution.BestTrajectory;
+                        int[] treeSelectionN = bestTrajectoryN.IndividualTreeSelectionBySpecies[treeSelection0ForSpecies.Key];
                         int harvestPeriod = treeSelectionN[treeIndex];
                         line.Append("," + harvestPeriod.ToString(CultureInfo.InvariantCulture));
                     }

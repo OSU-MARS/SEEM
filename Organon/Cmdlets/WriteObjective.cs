@@ -1,6 +1,8 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
@@ -17,15 +19,15 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<Heuristic> Heuristics { get; set; }
+        public List<HeuristicSolutionDistribution> Runs { get; set; }
 
-        [Parameter(HelpMessage = "Number of iterations between CSV file lines. Default is 100, which prints every 100th objective function value.")]
+        [Parameter(HelpMessage = "Number of iterations between CSV file lines. Default is 1, which logs every objective function value.")]
         [ValidateRange(1, Int32.MaxValue)]
         public int Step;
 
         public WriteObjective()
         {
-            this.Step = 100;
+            this.Step = 1;
         }
 
         protected override void ProcessRecord()
@@ -33,34 +35,37 @@ namespace Osu.Cof.Ferm.Cmdlets
             using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter writer = new StreamWriter(stream);
 
-            StringBuilder line = new StringBuilder("iteration");
-            int maxIteration = 0;
-            for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
-            {
-                Heuristic heuristic = this.Heuristics[heuristicIndex];
-                line.Append("," + heuristic.GetName());
-                maxIteration = Math.Max(maxIteration, heuristic.ObjectiveFunctionByIteration.Count);
-            }
+            StringBuilder line = new StringBuilder("stand,heuristic,thin age,rotation,iteration,count,min,mean,max,best");
             writer.WriteLine(line);
 
-            for (int iteration = 0; iteration < maxIteration; iteration += this.Step)
+            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
-                line.Clear();
-                line.Append(iteration);
+                HeuristicSolutionDistribution distribution = this.Runs[runIndex];
+                Heuristic bestHeuristic = distribution.BestSolution;
+                OrganonStandTrajectory bestTrajectory = bestHeuristic.BestTrajectory;
+                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + bestTrajectory.GetHarvestYear() + "," + bestTrajectory.GetRotationLength();
 
-                for (int heuristicIndex = 0; heuristicIndex < this.Heuristics.Count; ++heuristicIndex)
+                Debug.Assert(distribution.CountByMove.Count == distribution.MinimumObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count == distribution.MeanObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count == distribution.MaximumObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= bestHeuristic.ObjectiveFunctionByMove.Count);
+                for (int moveIndex = 0; moveIndex < distribution.CountByMove.Count; moveIndex += this.Step)
                 {
-                    line.Append(",");
+                    line.Clear();
 
-                    Heuristic heuristic = this.Heuristics[heuristicIndex];
-                    if (heuristic.ObjectiveFunctionByIteration.Count > iteration)
+                    string moves = distribution.CountByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    string minObjectiveFunction = distribution.MinimumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    string meanObjectiveFunction = distribution.MeanObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    string maxObjectiveFunction = distribution.MaximumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    string bestObjectiveFunction = String.Empty;
+                    if (bestHeuristic.ObjectiveFunctionByMove.Count > moveIndex)
                     {
-                        double objectiveFunction = heuristic.ObjectiveFunctionByIteration[iteration];
-                        line.Append(objectiveFunction.ToString(CultureInfo.InvariantCulture));
+                        bestObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
-                }
 
-                writer.WriteLine(line);
+                    line.Append(linePrefix + "," + moveIndex + "," + moves + "," + minObjectiveFunction + "," + meanObjectiveFunction + "," + maxObjectiveFunction + "," + bestObjectiveFunction);
+                    writer.WriteLine(line);
+                }
             }
         }
     }

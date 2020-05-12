@@ -16,7 +16,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.Deviation = 100.0F;
             this.StopAfter = 1000;
 
-            this.ObjectiveFunctionByIteration = new List<float>(1000 * 1000)
+            this.ObjectiveFunctionByMove = new List<float>(1000 * 1000)
             {
                 this.BestObjectiveFunction
             };
@@ -85,7 +85,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
                 }
 
-                this.ObjectiveFunctionByIteration.Add(currentObjectiveFunction);
+                this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
             }
 
             stopwatch.Stop();

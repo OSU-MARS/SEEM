@@ -319,8 +319,8 @@ namespace Osu.Cof.Ferm.Test
         private void Verify(Heuristic heuristic)
         {
             // check objective functions
-            double beginObjectiveFunction = heuristic.ObjectiveFunctionByIteration.First();
-            double endObjectiveFunction = heuristic.ObjectiveFunctionByIteration.Last();
+            double beginObjectiveFunction = heuristic.ObjectiveFunctionByMove.First();
+            double endObjectiveFunction = heuristic.ObjectiveFunctionByMove.Last();
             double recalculatedBestObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.BestTrajectory);
             double recalculatedEndObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.CurrentTrajectory);
 
@@ -330,7 +330,7 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(heuristic.BestObjectiveFunction >= 0.0F);
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
             Assert.IsTrue(heuristic.BestObjectiveFunction >= endObjectiveFunction);
-            Assert.IsTrue(heuristic.ObjectiveFunctionByIteration.Count >= 3);
+            Assert.IsTrue(heuristic.ObjectiveFunctionByMove.Count >= 3);
 
             Assert.IsTrue(bestObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);

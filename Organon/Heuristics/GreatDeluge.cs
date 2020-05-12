@@ -20,7 +20,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.RainRate = this.FinalWaterLevel / (10 * 1000);
             this.StopAfter = 1000;
 
-            this.ObjectiveFunctionByIteration = new List<float>(1000 * 1000)
+            this.ObjectiveFunctionByMove = new List<float>(1000 * 1000)
             {
                 this.BestObjectiveFunction
             };
@@ -92,7 +92,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
                 }
 
-                this.ObjectiveFunctionByIteration.Add(currentObjectiveFunction);
+                this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
                 if (iterationsSinceBestObjectiveImproved > this.StopAfter)
                 {
                     break;

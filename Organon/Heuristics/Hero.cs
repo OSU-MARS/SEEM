@@ -14,7 +14,7 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             this.Iterations = 100;
 
-            this.ObjectiveFunctionByIteration = new List<float>(1000)
+            this.ObjectiveFunctionByMove = new List<float>(1000)
             {
                 this.BestObjectiveFunction
             };
@@ -65,9 +65,10 @@ namespace Osu.Cof.Ferm.Heuristics
                         // otherwise, revert changes candidate trajectory for considering next tree's move
                         candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
                     }
+
+                    this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
                 }
 
-                this.ObjectiveFunctionByIteration.Add(currentObjectiveFunction);
                 if (currentObjectiveFunction <= previousObjectiveFunction)
                 {
                     // convergence: stop if no improvement
