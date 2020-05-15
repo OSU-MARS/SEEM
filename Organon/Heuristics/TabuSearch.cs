@@ -81,7 +81,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (candidateObjectiveFunction > bestCandidateObjectiveFunction)
                         {
                             bestCandidateObjectiveFunction = candidateObjectiveFunction;
-                            bestCandidateTrajectory.Copy(candidateTrajectory);
+                            bestCandidateTrajectory.CopyFrom(candidateTrajectory);
                             bestTreeIndex = treeIndex;
                             bestHarvestPeriod = harvestPeriodIndex;
                         }
@@ -90,7 +90,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if ((tabuTenure == 0) && (candidateObjectiveFunction > bestNonTabuCandidateObjectiveFunction))
                         {
                             bestNonTabuCandidateObjectiveFunction = candidateObjectiveFunction;
-                            bestNonTabuCandidateTrajectory.Copy(candidateTrajectory);
+                            bestNonTabuCandidateTrajectory.CopyFrom(candidateTrajectory);
                             bestNonTabuUnitIndex = treeIndex;
                             bestNonTabuHarvestPeriod = harvestPeriodIndex;
                         }
@@ -111,20 +111,20 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // always accept best candidate if it improves upon the best solution
                     currentObjectiveFunction = bestCandidateObjectiveFunction;
-                    this.CurrentTrajectory.Copy(bestCandidateTrajectory);
+                    this.CurrentTrajectory.CopyFrom(bestCandidateTrajectory);
 
                     remainingTabuTenures[bestTreeIndex, bestHarvestPeriod] = this.Tenure;
                     // remainingTabuTenures[bestUnitIndex, bestHarvestPeriod] = (int)(tenureScalingFactor * this.GetPseudorandomByteAsDouble()) + 1;
 
                     this.BestObjectiveFunction = bestCandidateObjectiveFunction;
-                    this.BestTrajectory.Copy(this.CurrentTrajectory);
+                    this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                 }
                 else if (bestNonTabuUnitIndex != -1)
                 {
                     // otherwise, accept the best non-tabu move when one exists
                     // Existence is quite likely since (n trees) * (n periods) > tenure in most configurations.
                     currentObjectiveFunction = bestNonTabuCandidateObjectiveFunction;
-                    this.CurrentTrajectory.Copy(bestNonTabuCandidateTrajectory);
+                    this.CurrentTrajectory.CopyFrom(bestNonTabuCandidateTrajectory);
 
                     remainingTabuTenures[bestNonTabuUnitIndex, bestNonTabuHarvestPeriod] = this.Tenure;
                     // remainingTabuTenures[bestNonTabuUnitIndex, bestNonTabuHarvestPeriod] = (int)(tenureScalingFactor * this.GetPseudorandomByteAsDouble()) + 1;

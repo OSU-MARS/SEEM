@@ -1,12 +1,16 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
     internal class GeneticPopulation : RandomNumberConsumer
     {
+        private readonly SortedDictionary<float, List<int>> individualIndexByFitness;
         private readonly float[] matingDistributionFunction;
-        private readonly float reservedPopulationProportion;
+        private float reservedPopulationProportion;
 
         public float[][] HarvestVolumesByPeriod { get; private set; }
         public float[] IndividualFitness { get; private set; }
@@ -14,6 +18,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public GeneticPopulation(int populationSize, int harvestPeriods, float reservedPopulationProportion, int treeCapacity)
         {
+            this.individualIndexByFitness = new SortedDictionary<float, List<int>>();
             this.matingDistributionFunction = new float[populationSize];
             this.HarvestVolumesByPeriod = new float[populationSize][];
             this.IndividualFitness = new float[populationSize];
@@ -30,13 +35,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public GeneticPopulation(GeneticPopulation other)
             : this(other.Size, other.HarvestPeriods, other.reservedPopulationProportion, other.IndividualTreeSelections[0].Length)
         {
-            Array.Copy(other.matingDistributionFunction, 0, this.matingDistributionFunction, 0, this.Size);
-            Array.Copy(other.IndividualFitness, 0, this.IndividualFitness, 0, this.Size);
-            for (int individualIndex = 0; individualIndex < other.Size; ++individualIndex)
-            {
-                other.HarvestVolumesByPeriod[individualIndex].CopyToExact(this.HarvestVolumesByPeriod[individualIndex]);
-                other.IndividualTreeSelections[individualIndex].CopyToExact(this.IndividualTreeSelections[individualIndex]);
-            }
+            this.CopyFrom(other);
         }
 
         private int HarvestPeriods
@@ -49,16 +48,39 @@ namespace Osu.Cof.Ferm.Heuristics
             get { return this.IndividualFitness.Length; }
         }
 
+        public void CopyFrom(GeneticPopulation other)
+        {
+            if ((this.HarvestPeriods != other.HarvestPeriods) || (this.Size != other.Size))
+            {
+                throw new ArgumentOutOfRangeException(nameof(other));
+            }
+
+            this.individualIndexByFitness.Clear();
+            foreach (KeyValuePair<float, List<int>> individualOfFitness in other.individualIndexByFitness)
+            {
+                this.individualIndexByFitness.Add(individualOfFitness.Key, new List<int>(individualOfFitness.Value));
+            }
+            this.reservedPopulationProportion = other.reservedPopulationProportion;
+
+            Array.Copy(other.matingDistributionFunction, 0, this.matingDistributionFunction, 0, this.Size);
+            Array.Copy(other.IndividualFitness, 0, this.IndividualFitness, 0, this.Size);
+            for (int individualIndex = 0; individualIndex < other.Size; ++individualIndex)
+            {
+                other.HarvestVolumesByPeriod[individualIndex].CopyToExact(this.HarvestVolumesByPeriod[individualIndex]);
+                other.IndividualTreeSelections[individualIndex].CopyToExact(this.IndividualTreeSelections[individualIndex]);
+            }
+        }
+
         public void FindParents(out int firstParentIndex, out int secondParentIndex)
         {
             // find first parent
             // TODO: check significance of quantization effects from use of two random bytes
             float unityScaling = 1.0F / (float)UInt16.MaxValue;
             float firstParentCumlativeProbability = unityScaling * this.GetTwoPseudorandomBytesAsFloat();
-            firstParentIndex = -1;
+            firstParentIndex = this.Size - 1; // numerical precision may result in the last CDF value being slightly below 1
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
-                if (firstParentCumlativeProbability < this.matingDistributionFunction[individualIndex])
+                if (firstParentCumlativeProbability <= this.matingDistributionFunction[individualIndex])
                 {
                     firstParentIndex = individualIndex;
                     break;
@@ -69,18 +91,15 @@ namespace Osu.Cof.Ferm.Heuristics
             // TODO: check significance of allowing selfing
             // TOOD: investigate selection pressure effect of choosing second parent randomly
             float secondParentCumlativeProbability = unityScaling * this.GetTwoPseudorandomBytesAsFloat();
-            secondParentIndex = -1;
+            secondParentIndex = this.Size - 1;
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
-                if (secondParentCumlativeProbability < this.matingDistributionFunction[individualIndex])
+                if (secondParentCumlativeProbability <= this.matingDistributionFunction[individualIndex])
                 {
                     secondParentIndex = individualIndex;
                     break;
                 }
             }
-
-            Debug.Assert(firstParentIndex != -1);
-            Debug.Assert(secondParentIndex != -1);
         }
 
         public void RandomizeSchedule(HarvestPeriodSelection periodSelection, float centralSelectionProbability, float selectionProbabilityWidth)
@@ -172,6 +191,60 @@ namespace Osu.Cof.Ferm.Heuristics
                 Debug.Assert(this.matingDistributionFunction[individualIndex] > this.matingDistributionFunction[individualIndex - 1]);
                 Debug.Assert(this.matingDistributionFunction[individualIndex] <= 1.00001);
             }
+        }
+
+        public void SetFitness(float fitness, int individualIndex)
+        {
+            this.IndividualFitness[individualIndex] = fitness;
+            if (this.individualIndexByFitness.TryGetValue(fitness, out List<int> probablyClones))
+            {
+                // initial population randomization happened to create two (or more) individuals with identical fitness
+                // This is unlikely in large problems, but may not be uncommon in small test problems.
+                probablyClones.Add(individualIndex);
+            }
+            else
+            {
+                this.individualIndexByFitness.Add(fitness, new List<int>() { individualIndex });
+            }
+        }
+
+        public bool TryInsert(float fitness, OrganonStandTrajectory trajectory)
+        {
+            float minimumFitness = this.individualIndexByFitness.Keys.First();
+            if (minimumFitness > fitness)
+            {
+                return false;
+            }
+            if (this.individualIndexByFitness.ContainsKey(fitness))
+            {
+                // TODO: tolerance for numerical precision
+                // TODO: how to handle cases where differing genetic information produces the same fitness?
+                // TODO: check for no change breeding and avoid no op stand simulations?
+                return false;
+            }
+
+            List<int> replacementIndices = this.individualIndexByFitness[minimumFitness];
+            int replacementIndex;
+            Debug.Assert(replacementIndices.Count > 0);
+            if (replacementIndices.Count == 1)
+            {
+                // reassign individual index to new fitness
+                this.individualIndexByFitness.Remove(minimumFitness);
+                this.individualIndexByFitness.Add(fitness, replacementIndices);
+                replacementIndex = replacementIndices[0];
+            }
+            else
+            {
+                // remove presumed clone from existing list
+                replacementIndex = replacementIndices[^1];
+                replacementIndices.RemoveAt(replacementIndices.Count - 1);
+                this.individualIndexByFitness.Add(fitness, new List<int>() { replacementIndex });
+            }
+
+            Array.Copy(trajectory.HarvestVolumesByPeriod, 0, this.HarvestVolumesByPeriod[replacementIndex], 0, trajectory.HarvestVolumesByPeriod.Length);
+            this.IndividualFitness[replacementIndex] = fitness;
+            trajectory.CopyTreeSelectionTo(this.IndividualTreeSelections[replacementIndex]);
+            return true;
         }
     }
 }

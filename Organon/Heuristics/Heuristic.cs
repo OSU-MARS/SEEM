@@ -127,7 +127,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             this.CurrentTrajectory.Simulate();
-            this.BestTrajectory.Copy(this.CurrentTrajectory);
+            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
 
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
             if (this.ObjectiveFunctionByMove.Count > 0)

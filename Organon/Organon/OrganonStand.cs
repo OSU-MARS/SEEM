@@ -71,7 +71,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public void CopyTreeGrowth(OrganonStand other)
+        public void CopyTreeGrowthFrom(OrganonStand other)
         {
             foreach (Trees otherTreesOfSpecies in other.TreesBySpecies.Values)
             {

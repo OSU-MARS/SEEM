@@ -148,7 +148,7 @@ namespace Osu.Cof.Ferm.Organon
             get { return this.StandingVolumeByPeriod.Length; }
         }
 
-        public void Copy(OrganonStandTrajectory other)
+        public void CopyFrom(OrganonStandTrajectory other)
         {
             if ((this.HarvestPeriods != other.HarvestPeriods) || (this.PlanningPeriods != other.PlanningPeriods))
             {
@@ -176,7 +176,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     else
                     {
-                        this.DensityByPeriod[periodIndex].Copy(otherDensity);
+                        this.DensityByPeriod[periodIndex].CopyFrom(otherDensity);
                     }
                 }
 
@@ -189,7 +189,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     else
                     {
-                        this.StandByPeriod[periodIndex].CopyTreeGrowth(otherStand);
+                        this.StandByPeriod[periodIndex].CopyTreeGrowthFrom(otherStand);
                     }
                 }
                 else
@@ -273,9 +273,21 @@ namespace Osu.Cof.Ferm.Organon
             this.HarvestVolumesByPeriod[periodIndex] = scribner6x32footLogPerAcre;
         }
 
+        public int GetHarvestPeriod()
+        {
+            for (int periodIndex = 1; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
+            {
+                if (this.HarvestVolumesByPeriod[periodIndex] > 0.0F)
+                {
+                    return periodIndex;
+                }
+            }
+            return -1;
+        }
+
         public int GetHarvestYear()
         {
-            for (int periodIndex = 0; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
             {
                 if (this.HarvestVolumesByPeriod[periodIndex] > 0.0F)
                 {
@@ -507,7 +519,7 @@ namespace Osu.Cof.Ferm.Organon
                     else
                     {
                         // update on resimulation
-                        this.StandByPeriod[periodIndex].CopyTreeGrowth(simulationStand);
+                        this.StandByPeriod[periodIndex].CopyTreeGrowthFrom(simulationStand);
                     }
 
                     // recalculate volume for this period

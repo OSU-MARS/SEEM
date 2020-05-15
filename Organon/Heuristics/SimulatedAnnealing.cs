@@ -106,11 +106,11 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (acceptMove)
                     {
                         currentObjectiveFunction = candidateObjectiveFunction;
-                        this.CurrentTrajectory.Copy(candidateTrajectory);
+                        this.CurrentTrajectory.CopyFrom(candidateTrajectory);
                         if (currentObjectiveFunction > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = currentObjectiveFunction;
-                            this.BestTrajectory.Copy(this.CurrentTrajectory);
+                            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         }
                     }
                     else

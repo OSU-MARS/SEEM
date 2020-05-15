@@ -125,7 +125,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public void Copy(OrganonStandDensity other)
+        public void CopyFrom(OrganonStandDensity other)
         {
             this.BasalAreaPerAcre = other.BasalAreaPerAcre;
             this.CrownCompetitionFactor = other.CrownCompetitionFactor;

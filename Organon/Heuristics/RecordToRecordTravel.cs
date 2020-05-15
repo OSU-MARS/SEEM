@@ -71,11 +71,11 @@ namespace Osu.Cof.Ferm.Heuristics
                 if (candidateObjectiveFunction > minimumAcceptableObjectiveFunction)
                 {
                     currentObjectiveFunction = candidateObjectiveFunction;
-                    this.CurrentTrajectory.Copy(candidateTrajectory);
+                    this.CurrentTrajectory.CopyFrom(candidateTrajectory);
                     if (currentObjectiveFunction > this.BestObjectiveFunction)
                     {
                         this.BestObjectiveFunction = currentObjectiveFunction;
-                        this.BestTrajectory.Copy(this.CurrentTrajectory);
+                        this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
                         minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - this.Deviation;
                     }

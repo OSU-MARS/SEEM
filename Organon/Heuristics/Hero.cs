@@ -58,7 +58,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     {
                         // accept change of no cut-cut decision if it improves upon the best solution
                         currentObjectiveFunction = candidateObjectiveFunction;
-                        this.CurrentTrajectory.Copy(candidateTrajectory);
+                        this.CurrentTrajectory.CopyFrom(candidateTrajectory);
                     }
                     else
                     {
@@ -78,7 +78,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             this.BestObjectiveFunction = currentObjectiveFunction;
-            this.BestTrajectory.Copy(this.CurrentTrajectory);
+            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
 
             stopwatch.Stop();
             return stopwatch.Elapsed;

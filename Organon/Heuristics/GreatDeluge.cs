@@ -79,11 +79,11 @@ namespace Osu.Cof.Ferm.Heuristics
                 if ((candidateObjectiveFunction > waterLevel) || (candidateObjectiveFunction > this.BestObjectiveFunction))
                 {
                     currentObjectiveFunction = candidateObjectiveFunction;
-                    this.CurrentTrajectory.Copy(candidateTrajectory);
+                    this.CurrentTrajectory.CopyFrom(candidateTrajectory);
                     if (currentObjectiveFunction > this.BestObjectiveFunction)
                     {
                         this.BestObjectiveFunction = currentObjectiveFunction;
-                        this.BestTrajectory.Copy(this.CurrentTrajectory);
+                        this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
                     }
                 }
