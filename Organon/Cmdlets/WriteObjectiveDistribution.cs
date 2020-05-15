@@ -10,23 +10,22 @@ using System.Text;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "ObjectiveDistribution")]
-    public class WriteObjectiveDistribution : Cmdlet
+    public class WriteObjectiveDistribution : WriteCmdlet
     {
-        [Parameter(Mandatory = true)]
-        [ValidateNotNullOrEmpty]
-        public string CsvFile;
-
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public List<HeuristicSolutionDistribution> Runs { get; set; }
 
         protected override void ProcessRecord()
         {
-            using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
-            using StreamWriter writer = new StreamWriter(stream);
+            using StreamWriter writer = this.GetWriter();
 
-            StringBuilder line = new StringBuilder("stand,heuristic,default selection probability,thin age,rotation,solution,objective,runtime");
-            writer.WriteLine(line);
+            StringBuilder line = new StringBuilder();
+            if (this.ShouldWriteHeader())
+            {
+                line.Append("stand,heuristic,default selection probability,thin age,rotation,solution,objective,runtime");
+                writer.WriteLine(line);
+            }
 
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {

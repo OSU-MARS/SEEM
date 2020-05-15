@@ -8,28 +8,27 @@ using System.Text;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "TreeList")]
-    public class WriteTreeList : Cmdlet
+    public class WriteTreeList : WriteCmdlet
     {
-        [Parameter(Mandatory = true)]
-        [ValidateNotNullOrEmpty]
-        public string CsvFile;
-
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public OrganonStandTrajectory Trajectory { get; set; }
 
         protected override void ProcessRecord()
         {
-            using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
-            using StreamWriter writer = new StreamWriter(stream);
+            using StreamWriter writer = this.GetWriter();
 
             // header
-            StringBuilder line = new StringBuilder("tree,DBH in period 0");
-            for (int periodIndex = 1; periodIndex < this.Trajectory.PlanningPeriods; ++periodIndex)
+            StringBuilder line = new StringBuilder();
+            if (this.ShouldWriteHeader())
             {
-                line.Append("," + periodIndex.ToString(CultureInfo.InvariantCulture));
+                line.Append("tree,DBH in period 0");
+                for (int periodIndex = 1; periodIndex < this.Trajectory.PlanningPeriods; ++periodIndex)
+                {
+                    line.Append("," + periodIndex.ToString(CultureInfo.InvariantCulture));
+                }
+                writer.WriteLine(line);
             }
-            writer.WriteLine(line);
 
             // rows for trees
             int previousSpeciesCount = 0;

@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommon.Get, "StandFromNelderPlot")]
     public class GetStandFromNelderPlot : Cmdlet
     {
-        [Parameter()]
+        [Parameter]
         [ValidateRange(0.0F, Constant.Maximum.SiteIndexInFeet)]
         public float SiteIndex { get; set; }
 

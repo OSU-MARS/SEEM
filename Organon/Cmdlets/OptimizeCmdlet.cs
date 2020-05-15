@@ -17,6 +17,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int BestOf { get; set; }
         [Parameter]
         public int Cores { get; set; }
+        [Parameter]
+        [ValidateRange(0.0F, 30.0F)]
+        public float DiscountRate { get; set; }
 
         [Parameter]
         [ValidateNotNull]
@@ -46,6 +49,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.BestOf = 1;
             this.Cores = 4;
+            this.DiscountRate = 4; // percent per year
             this.HarvestPeriods = new List<int>() { 3 };
             this.NetPresentValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
@@ -77,6 +81,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             Objective objective = new Objective()
             {
+                DiscountRate = 0.01F * this.DiscountRate,
                 IsNetPresentValue = this.NetPresentValue,
                 VolumeUnits = this.VolumeUnits
             };

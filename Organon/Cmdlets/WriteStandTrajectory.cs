@@ -10,19 +10,23 @@ using System.Text;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "StandTrajectory")]
-    public class WriteStandTrajectory : Cmdlet
+    public class WriteStandTrajectory : WriteCmdlet
     {
-        [Parameter(Mandatory = true)]
-        [ValidateNotNullOrEmpty]
-        public string CsvFile;
-
-        [Parameter()]
+        [Parameter]
         [ValidateNotNull]
         public List<HeuristicSolutionDistribution> Runs { get; set; }
 
-        [Parameter()]
+        [Parameter]
+        public TimberValue TimberValue { get; set; }
+
+        [Parameter]
         [ValidateNotNull]
         public List<OrganonStandTrajectory> Trajectories { get; set; }
+
+        public WriteStandTrajectory()
+        {
+            this.TimberValue = new TimberValue();
+        }
 
         protected override void ProcessRecord()
         {
@@ -35,28 +39,28 @@ namespace Osu.Cof.Ferm.Cmdlets
                 throw new ArgumentOutOfRangeException();
             }
 
-            // TODO: support as input parameter
-            TimberValue timberValue = new TimberValue();
-
-            using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
-            using StreamWriter writer = new StreamWriter(stream);
+            using StreamWriter writer = this.GetWriter();
 
             // header
             // TODO: check for mixed units and support TBH
             // TODO: snags per acre or hectare, live and dead QMD?
             bool runsSpecified = this.Runs != null;
-            StringBuilder line = new StringBuilder("stand");
-            if (runsSpecified)
+            StringBuilder line = new StringBuilder();
+            if (this.ShouldWriteHeader())
             {
-                line.Append(",runs,total moves,runtime");
+                line.Append("stand");
+                if (runsSpecified)
+                {
+                    line.Append(",runs,total moves,runtime");
+                }
+                line.Append(",heuristic");
+                if (runsSpecified)
+                {
+                    line.Append(",default selection probability");
+                }
+                line.Append(",thin age,rotation,stand age,sim year,TPA,BA,standing,harvested,BA removed,NPV");
+                writer.WriteLine(line);
             }
-            line.Append(",heuristic");
-            if (runsSpecified)
-            {
-                line.Append(",default selection probability");
-            }
-            line.Append(",thin age,rotation,stand age,sim year,TPA,BA,standing,harvested,BA removed,NPV");
-            writer.WriteLine(line);
 
             // rows for periods
             int maxIndex = runsSpecified ? this.Runs.Count : this.Trajectories.Count;
@@ -121,11 +125,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int periodsFromPresent = Math.Max(periodIndex - 1, 0);
                     if (harvestMbfPerAcre > 0.0F)
                     {
-                        netPresentValue = timberValue.GetPresentValueOfThinScribner(bestTrajectory.HarvestVolumesByPeriod[periodIndex], periodsFromPresent, bestTrajectory.PeriodLengthInYears);
+                        netPresentValue = this.TimberValue.GetPresentValueOfThinScribner(bestTrajectory.HarvestVolumesByPeriod[periodIndex], periodsFromPresent, bestTrajectory.PeriodLengthInYears);
                     }
                     else
                     {
-                        netPresentValue = timberValue.GetPresentValueOfFinalHarvestScribner(bestTrajectory.StandingVolumeByPeriod[periodIndex], periodsFromPresent, bestTrajectory.PeriodLengthInYears);
+                        netPresentValue = this.TimberValue.GetPresentValueOfFinalHarvestScribner(bestTrajectory.StandingVolumeByPeriod[periodIndex], periodsFromPresent, bestTrajectory.PeriodLengthInYears);
                     }
 
                     int simulationYear = bestTrajectory.PeriodLengthInYears * periodIndex;

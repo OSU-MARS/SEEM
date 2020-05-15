@@ -10,38 +10,41 @@ using System.Text;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Harvest")]
-    public class WriteHarvest : Cmdlet
+    public class WriteHarvest : WriteCmdlet
     {
-        [Parameter(Mandatory = true)]
-        [ValidateNotNullOrEmpty]
-        public string CsvFile;
-
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public List<HeuristicSolutionDistribution> Runs { get; set; }
 
         protected override void ProcessRecord()
         {
-            using FileStream stream = new FileStream(this.CsvFile, FileMode.Create, FileAccess.Write, FileShare.Read);
-            using StreamWriter writer = new StreamWriter(stream);
+            using StreamWriter writer = this.GetWriter();
 
-            StringBuilder line = new StringBuilder("period");
-            // harvest volume headers
-            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+            StringBuilder line = new StringBuilder();
+            if (this.ShouldWriteHeader())
             {
-                OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
-                line.Append("," + bestTrajectory.Name + "harvest");
+                line.Append("period");
+                // harvest volume headers
+                for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+                {
+                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
+                    line.Append("," + bestTrajectory.Name + "harvest");
+                }
+                // standing volume headers
+                for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+                {
+                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
+                    line.Append("," + bestTrajectory.Name + "standing");
+                }
+                writer.WriteLine(line);
             }
-            // standing volume headers
+
             int maxPlanningPeriod = 0;
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
                 OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
-                line.Append("," + bestTrajectory.Name + "standing");
                 maxPlanningPeriod = Math.Max(maxPlanningPeriod, bestTrajectory.StandingVolumeByPeriod.Length);
             }
-            writer.WriteLine(line);
-
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
             {
                 line.Clear();
