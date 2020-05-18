@@ -175,19 +175,27 @@ namespace Osu.Cof.Ferm.Test
             unthinnedTrajectory.Simulate();
 
             int thinPeriod = 3;
-            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod, 20.0F, 5.0F));
+            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod, 20.0F, 15.0F, 10.0F));
             OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, VolumeUnits.CubicMetersPerHectare);
             thinnedTrajectory.Simulate();
 
             // verify untihnned trajectory
+            //                                          0      1      2      3       4       5       6       7       8       9
+            float[] minimumUnthinnedQmd = new float[] { 6.61F, 8.02F, 9.30F, 10.39F, 11.34F, 12.17F, 12.92F, 13.59F, 14.21F, 14.78F }; // in
+            //                                                0      1      2      3      4       5       6       7       8       9
+            float[] minimumUnthinnedTopHeight = new float[] { 54.5F, 67.8F, 80.3F, 91.5F, 101.8F, 111.1F, 119.7F, 127.5F, 134.7F, 141.4F }; // ft
             //                                             0       1       2       3       4       5       6       7       8       9
             float[] minimumUnthinnedVolume = new float[] { 103.0F, 199.0F, 310.0F, 417.0F, 513.0F, 598.0F, 671.0F, 734.0F, 789.0F, 838.0F }; // m³
-            this.Verify(unthinnedTrajectory, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
+            this.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
 
             // verify thinned trajectory
+            //                                        0      1      2      3       4       5       6       7       8       9
+            float[] minimumThinnedQmd = new float[] { 6.61F, 8.02F, 9.30F, 10.02F, 10.84F, 11.61F, 12.31F, 12.95F, 13.52F, 14.05F }; // in
+            //                                              0      1      2      3      4      5       6       7       8       9
+            float[] minimumThinnedTopHeight = new float[] { 54.5F, 67.8F, 80.3F, 88.1F, 98.2F, 107.8F, 116.8F, 124.9F, 132.5F, 139.4F }; // ft
             //                                           0       1       2       3       4       5       6       7       8       9
-            float[] minimumThinnedVolume = new float[] { 103.0F, 199.0F, 310.0F, 338.0F, 436.0F, 530.0F, 617.0F, 694.0F, 763.0F, 823.0F }; // m³ for 20+5% thin
-            this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
+            float[] minimumThinnedVolume = new float[] { 103.0F, 199.0F, 310.0F, 247.0F, 340.0F, 435.0F, 527.0F, 613.0F, 690.0F, 760.0F }; // m³ for 20+15+10% thin
+            this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
             {
                 if (periodIndex == thinPeriod)
@@ -397,7 +405,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private void Verify(OrganonStandTrajectory trajectory, float[] minimumVolume, int thinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
+        private void Verify(OrganonStandTrajectory trajectory, float[] minimumQmd, float[] minimumTopHeight, float[] minimumVolume, int thinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
         {
             Assert.IsTrue(trajectory.BasalAreaRemoved.Length == thinPeriod + 1);
             Assert.IsTrue(trajectory.BasalAreaRemoved[0] == 0.0F);
@@ -411,6 +419,8 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(trajectory.PlanningPeriods == lastPeriod + 1); // BUGBUG: clean off by one semantic
             Assert.IsTrue(trajectory.VolumeUnits == VolumeUnits.CubicMetersPerHectare);
 
+            float qmdTolerance = 1.01F;
+            float topHeightTolerance = 1.01F;
             float volumeTolerance = 1.01F;
             for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
             {
@@ -418,7 +428,21 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
                 Assert.IsTrue(trajectory.StandingVolumeByPeriod[periodIndex] > minimumVolume[periodIndex]);
                 Assert.IsTrue(trajectory.StandingVolumeByPeriod[periodIndex] < volumeTolerance * minimumVolume[periodIndex]);
-                Assert.IsTrue(trajectory.StandByPeriod[periodIndex].Name.StartsWith(trajectory.Name));
+
+                OrganonStand stand = trajectory.StandByPeriod[periodIndex];
+                float qmd = stand.GetQuadraticMeanDiameter();
+                float topHeight = stand.GetTopHeight();
+                int treeRecords = stand.GetTreeRecordCount();
+
+                Assert.IsTrue(stand.Name.StartsWith(trajectory.Name));
+                Assert.IsTrue(qmd > minimumQmd[periodIndex]);
+                Assert.IsTrue(qmd < qmdTolerance * minimumQmd[periodIndex]);
+                Assert.IsTrue(topHeight > minimumTopHeight[periodIndex]);
+                Assert.IsTrue(topHeight < topHeightTolerance * minimumTopHeight[periodIndex]);
+                Assert.IsTrue(treeRecords > 0);
+                Assert.IsTrue(treeRecords < 666);
+
+                // TODO: check qmd against QMD from basal area
             }
         }
 

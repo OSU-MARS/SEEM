@@ -57,17 +57,18 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 HeuristicSolutionDistribution solutionDistribution = this.Runs[runIndex];
                 OrganonStandTrajectory bestTrajectoryN = solutionDistribution.BestSolution.BestTrajectory;
-                int standHarvestPeriod = bestTrajectoryN.GetHarvestPeriod();
-                if (standHarvestPeriod == -1)
+                int periodBeforeHarvest = bestTrajectoryN.GetHarvestPeriod() - 1;
+                if (periodBeforeHarvest < 0)
                 {
-                    standHarvestPeriod = bestTrajectoryN.PlanningPeriods - 1;
+                    periodBeforeHarvest = bestTrajectoryN.PlanningPeriods - 1;
                 }
-                string linePrefix = bestTrajectoryN.Name + "," + bestTrajectoryN.Heuristic.GetName() + "," + solutionDistribution.DefaultSelectionProbability.ToString("0.00#", CultureInfo.InvariantCulture) + "," + bestTrajectoryN.GetHarvestYear() + "," + bestTrajectoryN.GetRotationLength();
+                string linePrefix = bestTrajectoryN.Name + "," + bestTrajectoryN.Heuristic.GetName() + "," + solutionDistribution.DefaultSelectionProbability.ToString("0.00#", CultureInfo.InvariantCulture) + "," + bestTrajectoryN.GetHarvestAge() + "," + bestTrajectoryN.GetRotationLength();
 
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> treeSelectionNForSpecies in bestTrajectoryN.IndividualTreeSelectionBySpecies)
                 {
-                    Trees treesOfSpecies = bestTrajectoryN.StandByPeriod[standHarvestPeriod].TreesBySpecies[treeSelectionNForSpecies.Key];
+                    Trees treesOfSpecies = bestTrajectoryN.StandByPeriod[periodBeforeHarvest].TreesBySpecies[treeSelectionNForSpecies.Key];
+
                     int[] treeSelectionN = treeSelectionNForSpecies.Value;
                     Debug.Assert(treesOfSpecies.Capacity == treeSelectionN.Length);
                     for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
@@ -110,7 +111,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
                     OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
-                    line.Append("," + bestTrajectory.Name + bestTrajectory.Heuristic + bestTrajectory.GetHarvestYear() + "." + bestTrajectory.GetRotationLength());
+                    line.Append("," + bestTrajectory.Name + bestTrajectory.Heuristic + bestTrajectory.GetHarvestAge() + "." + bestTrajectory.GetRotationLength());
                 }
                 writer.WriteLine(line);
             }

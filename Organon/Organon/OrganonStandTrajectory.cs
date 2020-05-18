@@ -285,13 +285,13 @@ namespace Osu.Cof.Ferm.Organon
             return -1;
         }
 
-        public int GetHarvestYear()
+        public int GetHarvestAge()
         {
             for (int periodIndex = 1; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
             {
                 if (this.HarvestVolumesByPeriod[periodIndex] > 0.0F)
                 {
-                    return this.GetInitialStandAge() + this.PeriodLengthInYears * (this.HarvestPeriods - 1);
+                    return this.GetInitialStandAge() + this.PeriodLengthInYears * (periodIndex - 1);
                 }
             }
             return -1;

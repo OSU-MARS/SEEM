@@ -58,7 +58,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     line.Append(",default selection probability");
                 }
-                line.Append(",thin age,rotation,stand age,sim year,TPA,BA,standing,harvested,BA removed,NPV");
+                line.Append(",thin age,rotation,stand age,sim year,QMD,Htop,TPA,BA,standing,harvested,BA removed,BA intensity,TPA decrease,NPV");
                 writer.WriteLine(line);
             }
 
@@ -90,7 +90,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 string heuristic = bestTrajectory.Heuristic != null ? bestTrajectory.Heuristic.GetName() : "none";
-                int thinYear = bestTrajectory.GetHarvestYear();
+                int thinAge = bestTrajectory.GetHarvestAge();
                 int rotationLength = bestTrajectory.GetRotationLength();
 
                 string trajectoryName = bestTrajectory.Name;
@@ -114,11 +114,28 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float standingVolume = volumeUnitMultiplier * bestTrajectory.StandingVolumeByPeriod[periodIndex];
                     float harvestMbfPerAcre = 0.0F;
                     float basalAreaRemoved = 0.0F;
+                    float basalAreaIntensity = 0.0F;
                     if (bestTrajectory.HarvestVolumesByPeriod.Length > periodIndex)
                     {
                         harvestMbfPerAcre = volumeUnitMultiplier * bestTrajectory.HarvestVolumesByPeriod[periodIndex];
                         basalAreaRemoved = bestTrajectory.BasalAreaRemoved[periodIndex];
+                        if (periodIndex > 0)
+                        {
+                            basalAreaIntensity = basalAreaRemoved / bestTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre;
+                        }
                     }
+
+                    float tpaDecrease = 0.0F;
+                    if (periodIndex > 0)
+                    {
+                        float tpaPrevious = bestTrajectory.DensityByPeriod[periodIndex - 1].TreesPerAcre;
+                        float tpaCurrent = bestTrajectory.DensityByPeriod[periodIndex].TreesPerAcre;
+                        tpaDecrease = 1.0F - tpaCurrent / tpaPrevious;
+                    }
+
+                    Stand stand = bestTrajectory.StandByPeriod[periodIndex];
+                    float quadraticMeanDiameter = stand.GetQuadraticMeanDiameter();
+                    float topHeight = stand.GetTopHeight();
 
                     // NPV
                     float netPresentValue = 0.0F;
@@ -138,17 +155,24 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         line.Append("," + runs + "," + moves + "," + runtimeInSeconds);
                     }
-                    line.Append("," + heuristic + "," +
-                                defaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture) + "," +
-                                thinYear.ToString(CultureInfo.InvariantCulture) + "," +
+                    line.Append("," + heuristic);
+                    if (runsSpecified)
+                    {
+                        line.Append("," + defaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture));
+                    }
+                    line.Append("," + thinAge.ToString(CultureInfo.InvariantCulture) + "," +
                                 rotationLength.ToString(CultureInfo.InvariantCulture) + "," +
                                 (initialStandAge + simulationYear).ToString(CultureInfo.InvariantCulture) + "," +
                                 simulationYear.ToString(CultureInfo.InvariantCulture) + "," +
+                                quadraticMeanDiameter.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                topHeight.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                 density.TreesPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 density.BasalAreaPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 standingVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 harvestMbfPerAcre.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                tpaDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 netPresentValue.ToString("0", CultureInfo.InvariantCulture)); ;
                     writer.WriteLine(line);
                 }

@@ -28,6 +28,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
+        public float ThinFromAboveIntensity { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0F, 100.0F)]
         public float ThinFromBelowIntensity { get; set; }
 
         [Parameter]
@@ -42,8 +46,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.HarvestPeriods = 9;
             this.Name = null;
             this.PlanningPeriods = 9;
-            this.ProportionalThinIntensity = 5.0F; // %
-            this.ThinFromBelowIntensity = 25.0F; // %
+            this.ProportionalThinIntensity = 0.0F; // %
+            this.ThinFromAboveIntensity = 0.0F; // %
+            this.ThinFromBelowIntensity = 0.0F; // %
             this.ThinPeriod = -1; // no stand entry
             this.Units = VolumeUnits.CubicMetersPerHectare;
         }
@@ -58,7 +63,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             if (this.ThinPeriod > 0)
             {
-                configuration.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod, this.ThinFromBelowIntensity, this.ProportionalThinIntensity));
+                configuration.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod, this.ThinFromAboveIntensity, this.ProportionalThinIntensity, this.ThinFromBelowIntensity));
             }
 
             OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, this.PlanningPeriods, this.Units);

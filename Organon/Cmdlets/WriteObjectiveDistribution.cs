@@ -32,7 +32,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 HeuristicSolutionDistribution distribution = this.Runs[runIndex];
                 Heuristic bestHeuristic = distribution.BestSolution;
                 OrganonStandTrajectory bestTrajectory = bestHeuristic.BestTrajectory;
-                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + distribution.DefaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture)  + "," + bestTrajectory.GetHarvestYear() + "," + bestTrajectory.GetRotationLength();
+                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + distribution.DefaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture)  + "," + bestTrajectory.GetHarvestAge() + "," + bestTrajectory.GetRotationLength();
 
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)
