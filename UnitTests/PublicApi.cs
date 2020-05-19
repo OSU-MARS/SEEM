@@ -15,10 +15,16 @@ namespace Osu.Cof.Ferm.Test
     {
         public TestContext TestContext { get; set; }
 
-        private NelderPlot GetNelder()
+        private PlotWithHeight GetNelder()
         {
-            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
-            return new NelderPlot(plotFilePath, "1");
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnappNelder1.xlsx");
+            return new PlotWithHeight(plotFilePath, "1");
+        }
+
+        private PlotWithHeight GetPlot14()
+        {
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnapp14.xlsx");
+            return new PlotWithHeight(plotFilePath, "14");
         }
 
         [TestMethod]
@@ -56,7 +62,7 @@ namespace Osu.Cof.Ferm.Test
             minObjectiveFunction = 2.20F;
             #endif
 
-            NelderPlot nelder = this.GetNelder();
+            PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToStand(130.0F, treeCount);
@@ -88,7 +94,7 @@ namespace Osu.Cof.Ferm.Test
             treeCount = 25;
             #endif
 
-            NelderPlot nelder = this.GetNelder();
+            PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToStand(130.0F, treeCount);
@@ -167,7 +173,7 @@ namespace Osu.Cof.Ferm.Test
         {
             int lastPeriod = 9;
 
-            NelderPlot nelder = this.GetNelder();
+            PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToStand(130.0F);
 
@@ -196,21 +202,7 @@ namespace Osu.Cof.Ferm.Test
             //                                           0       1       2       3       4       5       6       7       8       9
             float[] minimumThinnedVolume = new float[] { 103.0F, 199.0F, 310.0F, 247.0F, 340.0F, 435.0F, 527.0F, 613.0F, 690.0F, 760.0F }; // m³ for 20+15+10% thin
             this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
-            for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
-            {
-                if (periodIndex == thinPeriod)
-                {
-                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
-                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < thinnedTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre); // assume <50% thin by volume
-                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
-                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] < minimumThinnedVolume[periodIndex]);
-                }
-                else if (periodIndex < thinPeriod)
-                {
-                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
-                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
-                }
-            }
+            this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
         }
 
         [TestMethod]
@@ -264,6 +256,32 @@ namespace Osu.Cof.Ferm.Test
         }
 
         [TestMethod]
+        public void Plot14ImmediateThin()
+        {
+            int thinPeriod = 1;
+            int lastPeriod = 4;
+
+            PlotWithHeight nelder = this.GetPlot14();
+            OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
+            OrganonStand stand = nelder.ToStand(130.0F);
+
+            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod, 0.0F, 30.0F, 0.0F));
+            OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, VolumeUnits.CubicMetersPerHectare);
+            thinnedTrajectory.Simulate();
+
+            // verify thinned trajectory
+            //                                        0      1       2       3       4     
+            float[] minimumThinnedQmd = new float[] { 9.98F, 10.72F, 11.37F, 11.96F, 12.51F }; // in
+            //                                              0       1       2       3       4     
+            float[] minimumThinnedTopHeight = new float[] { 101.7F, 109.7F, 118.0F, 125.9F, 133.1F }; // ft
+            //                                           0       1       2       3       4     
+            float[] minimumThinnedVolume = new float[] { 643.0F, 558.0F, 643.0F, 718.0F, 783.0F }; // m³ for 0+30+0% thin
+            this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 70, 80, configuration.Variant.TimeStepInYears);
+            this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
+            Assert.IsTrue(thinnedTrajectory.GetHarvestAge() == 30);
+        }
+
+        [TestMethod]
         public void RS39()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "RS39 lower half.xlsx");
@@ -299,8 +317,7 @@ namespace Osu.Cof.Ferm.Test
             trees = 10;
             #endif
 
-            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Nelder20.xlsx");
-            NelderPlot nelder = new NelderPlot(plotFilePath, "1");
+            PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToStand(130.0F, trees);
@@ -401,6 +418,25 @@ namespace Osu.Cof.Ferm.Test
                     // for now, assume monotonic increase in standing volumes except in harvest periods
                     Assert.IsTrue(heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex] > heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
                     Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex] > heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
+                }
+            }
+        }
+
+        private void Verify(OrganonStandTrajectory thinnedTrajectory, float[] minimumThinnedVolume, int thinPeriod)
+        {
+            for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
+            {
+                if (periodIndex == thinPeriod)
+                {
+                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < thinnedTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre); // assume <50% thin by volume
+                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] > 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] < minimumThinnedVolume[periodIndex]);
+                }
+                else if (periodIndex < thinPeriod)
+                {
+                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.HarvestVolumesByPeriod[periodIndex] == 0.0F);
                 }
             }
         }

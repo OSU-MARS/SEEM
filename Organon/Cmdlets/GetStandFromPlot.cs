@@ -5,8 +5,8 @@ using System.Management.Automation;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
-    [Cmdlet(VerbsCommon.Get, "StandFromNelderPlot")]
-    public class GetStandFromNelderPlot : Cmdlet
+    [Cmdlet(VerbsCommon.Get, "StandFromPlot")]
+    public class GetStandFromPlot : Cmdlet
     {
         [Parameter]
         [ValidateRange(0.0F, Constant.Maximum.SiteIndexInFeet)]
@@ -24,7 +24,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateNotNullOrEmpty]
         public string XlsxSheet { get; set; }
 
-        public GetStandFromNelderPlot()
+        public GetStandFromPlot()
         {
             this.SiteIndex = 130.0F;
             this.Trees = null;
@@ -33,7 +33,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            NelderPlot plot = new NelderPlot(this.Xlsx, this.XlsxSheet);
+            PlotWithHeight plot = new PlotWithHeight(this.Xlsx, this.XlsxSheet);
             OrganonStand stand;
             if (this.Trees.HasValue)
             {

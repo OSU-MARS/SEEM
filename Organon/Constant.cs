@@ -89,14 +89,17 @@ namespace Osu.Cof.Ferm
             public const float DiameterForVolumeInInches = 4.0F;
         }
 
-        public static class Nelder
+        public static class Plot
         {
             public static class ColumnIndex
             {
-                public static int DbhInMillimeters = 3;
-                public static int HeightInDecimeters = 4;
                 public static int Species = 0;
+                public static int Plot = 1;
                 public static int Tree = 2;
+                public static int Age = 3;
+                public static int DbhInMillimeters = 4;
+                public static int HeightInDecimeters = 5;
+                public static int ExpansionFactor = 6;
             }
         }
 
