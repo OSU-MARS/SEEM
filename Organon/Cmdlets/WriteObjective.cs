@@ -33,7 +33,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
             if (this.ShouldWriteHeader())
             {
-                line.Append("stand,heuristic,default selection probability,thin age,rotation,iteration,count,min,mean,max,best");
+                line.Append("stand,heuristic,default selection probability,thin age,rotation,iteration,count,min,percentile 5,lower quartile,median,mean,upper quartile,percentile 95,max,best");
                 writer.WriteLine(line);
             }
 
@@ -45,7 +45,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                 string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + distribution.DefaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture) + "," + bestTrajectory.GetHarvestAge() + "," + bestTrajectory.GetRotationLength();
 
                 Debug.Assert(distribution.CountByMove.Count == distribution.MinimumObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= distribution.FifthPercentileByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= distribution.LowerQuartileByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= distribution.MedianObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MeanObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= distribution.NinetyFifthPercentileByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= distribution.UpperQuartileByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MaximumObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count >= bestHeuristic.ObjectiveFunctionByMove.Count);
                 for (int moveIndex = 0; moveIndex < distribution.CountByMove.Count; moveIndex += this.Step)
@@ -53,16 +58,54 @@ namespace Osu.Cof.Ferm.Cmdlets
                     line.Clear();
 
                     string moves = distribution.CountByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+
                     string minObjectiveFunction = distribution.MinimumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    string lowerQuartileObjectiveFunction = null;
+                    if (moveIndex < distribution.LowerQuartileByMove.Count)
+                    {
+                        lowerQuartileObjectiveFunction = distribution.LowerQuartileByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    }
+                    string fifthPercentileObjectiveFunction = null;
+                    if (moveIndex < distribution.FifthPercentileByMove.Count)
+                    {
+                        fifthPercentileObjectiveFunction = distribution.FifthPercentileByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    }
+                    string medianObjectiveFunction = null;
+                    if (moveIndex < distribution.MedianObjectiveFunctionByMove.Count)
+                    {
+                        medianObjectiveFunction = distribution.MedianObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    }
                     string meanObjectiveFunction = distribution.MeanObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    string upperQuartileObjectiveFunction = null;
+                    if (moveIndex < distribution.UpperQuartileByMove.Count)
+                    {
+                        upperQuartileObjectiveFunction = distribution.UpperQuartileByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    }
+                    string ninetyFifthPercentileObjectiveFunction = null;
+                    if (moveIndex < distribution.NinetyFifthPercentileByMove.Count)
+                    {
+                        ninetyFifthPercentileObjectiveFunction = distribution.NinetyFifthPercentileByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    }
                     string maxObjectiveFunction = distribution.MaximumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    
                     string bestObjectiveFunction = String.Empty;
                     if (bestHeuristic.ObjectiveFunctionByMove.Count > moveIndex)
                     {
                         bestObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    line.Append(linePrefix + "," + moveIndex + "," + moves + "," + minObjectiveFunction + "," + meanObjectiveFunction + "," + maxObjectiveFunction + "," + bestObjectiveFunction);
+                    line.Append(linePrefix + "," + 
+                                moveIndex + "," + 
+                                moves + "," + 
+                                minObjectiveFunction + "," + 
+                                fifthPercentileObjectiveFunction + "," +
+                                lowerQuartileObjectiveFunction + "," + 
+                                medianObjectiveFunction + "," + 
+                                meanObjectiveFunction + "," + 
+                                upperQuartileObjectiveFunction + "," +
+                                ninetyFifthPercentileObjectiveFunction + "," +
+                                maxObjectiveFunction + "," + 
+                                bestObjectiveFunction);
                     writer.WriteLine(line);
                 }
             }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Osu.Cof.Ferm.Cmdlets;
 using Osu.Cof.Ferm.Data;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
@@ -112,7 +113,7 @@ namespace Osu.Cof.Ferm.Test
                 PopulationSize = 7,
                 MaximumGenerations = 8,
             };
-            genetic.Run();
+            TimeSpan geneticRuntime = genetic.Run();
 
             GreatDeluge deluge = new GreatDeluge(stand, configuration, planningPeriods, volume)
             {
@@ -120,34 +121,34 @@ namespace Osu.Cof.Ferm.Test
                 StopAfter = 10
             };
             deluge.RandomizeSelections(TestConstant.Default.HarvestProbability);
-            deluge.Run();
+            TimeSpan delugeRuntime = deluge.Run();
 
             RandomGuessing random = new RandomGuessing(stand, configuration, planningPeriods, netPresentValue, 0.5F)
             {
                 Iterations = 5
             };
-            random.Run();
+            TimeSpan randomRuntime = random.Run();
 
             RecordToRecordTravel recordTravel = new RecordToRecordTravel(stand, configuration, planningPeriods, netPresentValue)
             {
                 StopAfter = 10
             };
             recordTravel.RandomizeSelections(TestConstant.Default.HarvestProbability);
-            recordTravel.Run();
+            TimeSpan recordRuntime = recordTravel.Run();
 
             SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, planningPeriods, volume)
             {
                 Alpha = 0.9F
             };
             annealer.RandomizeSelections(TestConstant.Default.HarvestProbability);
-            annealer.Run();
+            TimeSpan annealerRuntime = annealer.Run();
 
             TabuSearch tabu = new TabuSearch(stand, configuration, planningPeriods, netPresentValue)
             {
                 Iterations = 5
             };
             tabu.RandomizeSelections(TestConstant.Default.HarvestProbability);
-            tabu.Run();
+            TimeSpan tabuRuntime = tabu.Run();
 
             ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, planningPeriods, volume);
             thresholdAcceptor.IterationsPerThreshold.Clear();
@@ -155,7 +156,7 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.IterationsPerThreshold.Add(10);
             thresholdAcceptor.Thresholds.Add(1.0F);
             thresholdAcceptor.RandomizeSelections(TestConstant.Default.HarvestProbability);
-            thresholdAcceptor.Run();
+            TimeSpan acceptorRuntime = thresholdAcceptor.Run();
 
             // heuristics assigned to volume optimization
             this.Verify(deluge);
@@ -167,6 +168,16 @@ namespace Osu.Cof.Ferm.Test
             this.Verify(random);
             this.Verify(recordTravel);
             this.Verify(tabu);
+
+            HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution();
+            distribution.AddRun(annealer, annealerRuntime);
+            distribution.AddRun(deluge, delugeRuntime);
+            distribution.AddRun(thresholdAcceptor, acceptorRuntime);
+            distribution.AddRun(genetic, geneticRuntime);
+            distribution.AddRun(random, randomRuntime);
+            distribution.AddRun(recordTravel, recordRuntime);
+            distribution.AddRun(tabu, tabuRuntime);
+            distribution.OnRunsComplete();
         }
 
         [TestMethod]
