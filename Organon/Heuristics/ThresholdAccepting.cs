@@ -2,21 +2,24 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
     public class ThresholdAccepting : Heuristic
     {
-        public int IterationsPerThreshold { get; set; }
+        public List<int> IterationsPerThreshold { get; private set; }
         public List<float> Thresholds { get; private set; }
 
         public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
-            this.IterationsPerThreshold = 5 * stand.GetTreeRecordCount();
-            this.Thresholds = new List<float>() { 0.90F, 0.92F, 0.95F, 0.97F, 0.99F, 1.0F };
+            int treeRecords = stand.GetTreeRecordCount();
+            float oneTreeChange = 1.0F / treeRecords;
+            this.IterationsPerThreshold = new List<int>() { 2 * treeRecords, 50, 200, 50, 250 };
+            this.Thresholds = new List<float>() { 1.0F, 1.0F - 2.0F * oneTreeChange, 1.0F, 1.0F - oneTreeChange, 1.0F };
 
-            this.ObjectiveFunctionByMove = new List<float>(this.Thresholds.Count * this.IterationsPerThreshold)
+            this.ObjectiveFunctionByMove = new List<float>(this.IterationsPerThreshold.Sum())
             {
                 this.BestObjectiveFunction
             };
@@ -30,7 +33,7 @@ namespace Osu.Cof.Ferm.Heuristics
         // similar to SimulatedAnnealing.Run(), differences are in move acceptance
         public override TimeSpan Run()
         {
-            if (this.IterationsPerThreshold < 1)
+            if (this.IterationsPerThreshold.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.IterationsPerThreshold));
             }
@@ -38,9 +41,16 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
             }
-            if (this.Thresholds.Count < 1)
+            if (this.Thresholds.Count != this.IterationsPerThreshold.Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Thresholds));
+            }
+            foreach (float threshold in this.Thresholds)
+            {
+                if ((threshold < 0.0F) || (threshold > 1.0F))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.Thresholds));
+                }
             }
 
             Stopwatch stopwatch = new Stopwatch();
@@ -51,9 +61,11 @@ namespace Osu.Cof.Ferm.Heuristics
             float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            foreach (double threshold in this.Thresholds)
+            for (int thresholdIndex = 0; thresholdIndex < this.Thresholds.Count; ++thresholdIndex)
             {
-                for (int iteration = 0; iteration < this.IterationsPerThreshold; ++iteration)
+                float iterations = this.IterationsPerThreshold[thresholdIndex];
+                float threshold = this.Thresholds[thresholdIndex];
+                for (int iteration = 0; iteration < iterations; ++iteration)
                 {
                     int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);

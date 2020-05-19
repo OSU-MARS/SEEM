@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> IterationsPerThreshold { get; set; }
+        public List<int> IterationsPerThreshold { get; set; }
 
         [Parameter]
         public List<float> Thresholds { get; set; }
@@ -25,9 +25,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
             ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, planningPeriods, objective);
-            if (this.IterationsPerThreshold.HasValue)
+            if (this.IterationsPerThreshold != null)
             {
-                acceptor.IterationsPerThreshold = this.IterationsPerThreshold.Value;
+                acceptor.IterationsPerThreshold.Clear();
+                acceptor.IterationsPerThreshold.AddRange(this.IterationsPerThreshold);
             }
             if (this.Thresholds != null)
             {

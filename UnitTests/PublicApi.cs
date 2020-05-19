@@ -72,7 +72,7 @@ namespace Osu.Cof.Ferm.Test
                 IsNetPresentValue = true,
                 VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
             };
-            Hero hero = new Hero(stand, configuration, planningPeriods, netPresentValue)
+            Hero hero = new Hero(stand, configuration, planningPeriods, netPresentValue, true)
             {
                 Iterations = 10
             };
@@ -149,10 +149,11 @@ namespace Osu.Cof.Ferm.Test
             tabu.RandomizeSelections(TestConstant.Default.HarvestProbability);
             tabu.Run();
 
-            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, planningPeriods, volume)
-            {
-                IterationsPerThreshold = 10
-            };
+            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, planningPeriods, volume);
+            thresholdAcceptor.IterationsPerThreshold.Clear();
+            thresholdAcceptor.Thresholds.Clear();
+            thresholdAcceptor.IterationsPerThreshold.Add(10);
+            thresholdAcceptor.Thresholds.Add(1.0F);
             thresholdAcceptor.RandomizeSelections(TestConstant.Default.HarvestProbability);
             thresholdAcceptor.Run();
 
@@ -331,10 +332,8 @@ namespace Osu.Cof.Ferm.Test
             TimeSpan runtime = TimeSpan.Zero;
             for (int run = 0; run < runs; ++run)
             {
-                // 3 runs * 300 trees = 900 growth simulations on i7-3770 (4th gen, Sandy Bridge)
-                // .NET standard 2.0 + Math: 12.978s -> 69.3 sims/core-s       97.8% StandTrajectory.Simulate(): 89.5% Organon, 7.6% FIA Scribner volume
-                // .NET standard 2.0 + MathF: 9.670s -> 93.1 sims/core-s  +34% 
-                Hero hero = new Hero(stand, configuration, planningPeriods, netPresentValue)
+                // after warmup: 3 runs * 300 trees = 900 measured growth simulations on i7-3770 (4th gen, Sandy Bridge)
+                Hero hero = new Hero(stand, configuration, planningPeriods, netPresentValue, false)
                 {
                     Iterations = 2
                 };

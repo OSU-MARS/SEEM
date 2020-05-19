@@ -7,17 +7,32 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class Hero : Heuristic
     {
+        private readonly bool isStochastic;
+
         public int Iterations { get; set; }
 
-        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
+        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, bool isStochastic)
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
+            this.isStochastic = isStochastic;
             this.Iterations = 100;
 
             this.ObjectiveFunctionByMove = new List<float>(1000)
             {
                 this.BestObjectiveFunction
             };
+        }
+
+        private int[] CreateSequentialArray(int length)
+        {
+            Debug.Assert(length > 0);
+
+            int[] array = new int[length];
+            for (int index = 0; index < length; ++index)
+            {
+                array[index] = index;
+            }
+            return array;
         }
 
         public override string GetName()
@@ -43,11 +58,18 @@ namespace Osu.Cof.Ferm.Heuristics
             float previousObjectiveFunction = this.BestObjectiveFunction;
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+            int[] randomizedTreeIndices = this.isStochastic ? this.CreateSequentialArray(initialTreeRecordCount) : null;
             for (int iteration = 0; iteration < this.Iterations; ++iteration)
             {
-                for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
+                if (this.isStochastic)
+                {
+                    this.ShuffleRandom(randomizedTreeIndices);
+                }
+
+                for (int iterationMove = 0; iterationMove < initialTreeRecordCount; ++iterationMove)
                 {
                     // evaluate other cut option
+                    int treeIndex = this.isStochastic ? randomizedTreeIndices[iterationMove] : iterationMove;
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
                     int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
                     candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);

@@ -12,9 +12,12 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0, Int32.MaxValue)]
         public Nullable<int> Iterations { get; set; }
 
+        [Parameter]
+        public SwitchParameter Stochastic { get; set; }
+
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
-            Hero hero = new Hero(this.Stand, organonConfiguration, planningPeriods, objective);
+            Hero hero = new Hero(this.Stand, organonConfiguration, planningPeriods, objective, this.Stochastic);
             if (this.Iterations.HasValue)
             {
                 hero.Iterations = this.Iterations.Value;
