@@ -1056,6 +1056,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
+        // OG only used for Pacific madrone
         public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float SI_1, float SI_2, float OG)
         {
             float hcbB0;
@@ -1063,8 +1064,8 @@ namespace Osu.Cof.Ferm.Organon
             float hcbB2;
             float hcbB3;
             float hcbB4;
-            float hcbB5;
-            float hcbB6;
+            float hcbB5 = 0.0F;
+            float hcbB6 = 0.0F;
             switch (species)
             {
                 // DF Coefficients from Zumrawi and Hann (1989) FRL Research Paper 52
@@ -1074,8 +1075,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB2 = -0.0048737F;
                     hcbB3 = -0.261573F;
                     hcbB4 = 1.08785F;
-                    hcbB5 = 0.0F;
-                    hcbB6 = 0.0F;
                     break;
                 // Zumrawi and Hann (1989) FRL Research Paper 52
                 case FiaCode.AbiesGrandis:
@@ -1084,8 +1083,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB2 = -0.0067129F;
                     hcbB3 = 0.0F;
                     hcbB4 = 0.0F;
-                    hcbB5 = 0.0F;
-                    hcbB6 = 0.0F;
                     break;
                 // Johnson (2002) Willamette Industries Report
                 case FiaCode.TsugaHeterophylla:
@@ -1095,7 +1092,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB3 = -0.513134F;
                     hcbB4 = 3.68901F;
                     hcbB5 = 0.00742219F;
-                    hcbB6 = 0.0F;
                     break;
                 // Hann and Hanus (2002) OSU Department of Forest Management Internal Report #2
                 case FiaCode.ThujaPlicata:
@@ -1105,7 +1101,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB3 = -1.01460531F;
                     hcbB4 = 0.0F;
                     hcbB5 = 0.01340624F;
-                    hcbB6 = 0.0F;
                     break;
                 // Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
                 case FiaCode.TaxusBrevifolia:
@@ -1114,8 +1109,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB2 = 0.0F;
                     hcbB3 = 0.0F;
                     hcbB4 = 2.030940382F;
-                    hcbB5 = 0.0F;
-                    hcbB6 = 0.0F;
                     break;
                 // Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
                 case FiaCode.ArbutusMenziesii:
@@ -1134,8 +1127,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB2 = -0.005476131F;
                     hcbB3 = 0.0F;
                     hcbB4 = 0.0F;
-                    hcbB5 = 0.0F;
-                    hcbB6 = 0.0F;
                     break;
                 // Gould, Marshall, and Harrington (2008) West.J.Appl.For. 23: 26-33
                 case FiaCode.QuercusGarryana:
@@ -1144,8 +1135,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB2 = -0.00183283F;
                     hcbB3 = -0.28644547F;
                     hcbB4 = 0.0F;
-                    hcbB5 = 0.0F;
-                    hcbB6 = 0.0F;
                     break;
                 // Hann and Hanus (2002) OSU Department of Forest Management Internal Report #1
                 case FiaCode.AlnusRubra:
@@ -1154,8 +1143,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB2 = -0.002066036F;
                     hcbB3 = 0.0F;
                     hcbB4 = 1.39796223F;
-                    hcbB5 = 0.0F;
-                    hcbB6 = 0.0F;
                     break;
                 // Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
                 case FiaCode.CornusNuttallii:
@@ -1166,7 +1153,6 @@ namespace Osu.Cof.Ferm.Organon
                     hcbB3 = -0.745540494F;
                     hcbB4 = 0.0F;
                     hcbB5 = 0.038476613F;
-                    hcbB6 = 0.0F;
                     break;
                 default:
                     throw Trees.CreateUnhandledSpeciesException(species);

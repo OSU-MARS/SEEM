@@ -143,21 +143,21 @@ namespace Osu.Cof.Ferm.Test
             this.MeasurementYears.Add(year);
         }
 
-        public TestStand ToStand(OrganonVariant variant, float siteIndex)
+        public TestStand ToStand(OrganonConfiguration configuration, float siteIndex)
         {
             int firstPlotMeasurementYear = this.GetFirstMeasurementYear();
 
             // populate Organon version of stand
             // Currently, PSP stands are assumed to have IsEvenAge = false, which causes Organon to require a stand age of
             // zero years be passed.
-            TestStand stand = new TestStand(variant.TreeModel, 0, siteIndex)
+            TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, siteIndex)
             {
                 NumberOfPlots = this.plotCount
             };
             foreach (KeyValuePair<FiaCode, int> speciesCount in this.CountTreesBySpecies())
             {
                 // skip any unsupported species as they should be remapped in following loops
-                if (variant.IsSpeciesSupported(speciesCount.Key) == false)
+                if (configuration.Variant.IsSpeciesSupported(speciesCount.Key) == false)
                 {
                     continue;
                 }
@@ -179,7 +179,7 @@ namespace Osu.Cof.Ferm.Test
                     continue;
                 }
 
-                FiaCode species = this.MaybeRemapToSupportedSpecies(tree.Species, variant);
+                FiaCode species = this.MaybeRemapToSupportedSpecies(tree.Species, configuration.Variant);
                 Trees treesOfSpecies = stand.TreesBySpecies[species];
                 Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
                 float dbhInInches = TestConstant.InchesPerCm * tree.DbhInCentimetersByYear[firstPlotMeasurementYear];
@@ -187,11 +187,8 @@ namespace Osu.Cof.Ferm.Test
                 treesOfSpecies.Add(tree.Tag, dbhInInches, heightInFeet, TestConstant.Default.CrownRatio, fixedPlotExpansionFactor);
             }
 
-            // establish growth tracking quantiles
-            stand.SetQuantiles();
-
             // estimate crown ratios
-            OrganonStandDensity standDensity = new OrganonStandDensity(stand, variant);
+            OrganonStandDensity standDensity = new OrganonStandDensity(stand, configuration.Variant);
             Dictionary<FiaCode, int> indexBySpecies = new Dictionary<FiaCode, int>();
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
@@ -207,11 +204,17 @@ namespace Osu.Cof.Ferm.Test
                     indexBySpecies.Add(tree.Species, treeIndex);
                 }
 
-                FiaCode species = this.MaybeRemapToSupportedSpecies(tree.Species, variant);
+                FiaCode species = this.MaybeRemapToSupportedSpecies(tree.Species, configuration.Variant);
                 Trees treesOfSpecies = stand.TreesBySpecies[species];
                 treesOfSpecies.CrownRatio[treeIndex] = tree.EstimateInitialCrownRatio(standDensity);
                 indexBySpecies[tree.Species] = ++treeIndex;
             }
+
+            // complete stand initialization
+            stand.SetDefaultAndMortalitySiteIndices(configuration.Variant.TreeModel);
+            stand.SetQuantiles();
+            stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
+            stand.SetSdiMax(configuration);
 
             return stand;
         }

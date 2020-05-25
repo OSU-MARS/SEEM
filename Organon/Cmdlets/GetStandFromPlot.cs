@@ -9,6 +9,9 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class GetStandFromPlot : Cmdlet
     {
         [Parameter]
+        public TreeModel Model { get; set; }
+
+        [Parameter]
         [ValidateRange(0.0F, Constant.Maximum.SiteIndexInFeet)]
         public float SiteIndex { get; set; }
 
@@ -26,6 +29,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public GetStandFromPlot()
         {
+            this.Model = TreeModel.OrganonNwo;
             this.SiteIndex = 130.0F;
             this.Trees = null;
             this.XlsxSheet = "1";
@@ -34,14 +38,16 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override void ProcessRecord()
         {
             PlotWithHeight plot = new PlotWithHeight(this.Xlsx, this.XlsxSheet);
+
+            OrganonConfiguration configuration = new OrganonConfiguration(OrganonVariant.Create(this.Model));
             OrganonStand stand;
             if (this.Trees.HasValue)
             {
-                stand = plot.ToStand(this.SiteIndex, this.Trees.Value);
+                stand = plot.ToOrganonStand(configuration, this.SiteIndex, this.Trees.Value);
             }
             else
             {
-                stand = plot.ToStand(this.SiteIndex);
+                stand = plot.ToOrganonStand(configuration, this.SiteIndex);
             }
             this.WriteObject(stand);
         }

@@ -142,6 +142,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
+        // OG unused
         public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float SI_1, float SI_2, float OG)
         {
             float B0;
@@ -150,8 +151,8 @@ namespace Osu.Cof.Ferm.Organon
             float B3;
             float B4;
             float B5;
-            float B6;
-            float K;
+            // float B6 = 0.0F; // always zero
+            float K = 0.0F;
             switch (species)
             {
                 // Hann, Bluhm, and Hibbs (2011) Development and Evaluation of the Tree-Level Equations and Their Combined 
@@ -163,7 +164,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -1.0649544F;
                     B4 = 7.47699601F;
                     B5 = 0.0252953320F;
-                    B6 = 0.0F;
                     K = 1.6F;
                     break;
                 // Hann and Hanus (2004) FS 34: 1193-2003
@@ -174,8 +174,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -1.19702220F;
                     B4 = 3.17028263F;
                     B5 = 0.0F;
-                    B6 = 0.0F;
-                    K = 0.0F;
                     break;
                 // Johnson (2002) Willamette Industries Report
                 case FiaCode.TsugaHeterophylla:
@@ -185,8 +183,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -0.513134F;
                     B4 = 3.68901F;
                     B5 = 0.00742219F;
-                    B6 = 0.0F;
-                    K = 0.0F;
                     break;
                 // Hann and Hanus (2002) OSU Department of Forest Management Internal Report #2
                 case FiaCode.ThujaPlicata:
@@ -196,8 +192,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -1.01460531F;
                     B4 = 0.0F;
                     B5 = 0.01340624F;
-                    B6 = 0.0F;
-                    K = 0.0F;
                     break;
                 // Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
                 case FiaCode.AcerMacrophyllum:
@@ -207,8 +201,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = 0.0F;
                     B4 = 0.0F;
                     B5 = 0.0F;
-                    B6 = 0.0F;
-                    K = 0.0F;
                     break;
                 // Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
                 case FiaCode.CornusNuttallii:
@@ -219,8 +211,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -0.745540494F;
                     B4 = 0.0F;
                     B5 = 0.038476613F;
-                    B6 = 0.0F;
-                    K = 0.0F;
                     break;
                 default:
                     throw Trees.CreateUnhandledSpeciesException(species);
@@ -229,7 +219,8 @@ namespace Osu.Cof.Ferm.Organon
             float HCB;
             if (species == FiaCode.AlnusRubra)
             {
-                HCB = (HT - K) / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_1 + B6 * OG * OG)) + K;
+                // HCB = (HT - K) / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_1 + B6 * OG * OG)) + K;
+                HCB = (HT - K) / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_1)) + K;
             }
             else
             {
@@ -238,7 +229,8 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     SITE = 0.480F + (1.110F * (SI_2 + 4.5F));
                 }
-                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SITE + B6 * OG * OG));
+                // HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SITE + B6 * OG * OG));
+                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SITE));
             }
             Debug.Assert(HCB >= 0.0F);
             Debug.Assert(HCB <= HT);

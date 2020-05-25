@@ -113,7 +113,6 @@ namespace Osu.Cof.Ferm.Test
                 OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
-                stand.SetSdiMax(configuration);
                 this.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
 
                 density = new TestStandDensity(stand, variant);

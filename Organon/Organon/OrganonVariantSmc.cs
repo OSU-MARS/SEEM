@@ -177,6 +177,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
+        // OG only used for madrone
         public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float SI_1, float SI_2, float OG)
         {
             float B0;
@@ -185,7 +186,7 @@ namespace Osu.Cof.Ferm.Organon
             float B3;
             float B4;
             float B5;
-            float B6;
+            float B6 = 0.0F;
             switch (species)
             {
                 // Hann and Hanus (2004) FS 34: 1193-2003
@@ -196,7 +197,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -1.19702220F;
                     B4 = 3.17028263F;
                     B5 = 0.0F;
-                    B6 = 0.0F;
                     break;
                 // Zumrawi and Hann (1989) FRL Research Paper 52
                 case FiaCode.AbiesGrandis:
@@ -206,7 +206,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = 0.0F;
                     B4 = 0.0F;
                     B5 = 0.0F;
-                    B6 = 0.0F;
                     break;
                 // Johnson (2002) Willamette Industries Report
                 case FiaCode.TsugaHeterophylla:
@@ -216,7 +215,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -0.513134F;
                     B4 = 3.68901F;
                     B5 = 0.00742219F;
-                    B6 = 0.0F;
                     break;
                 // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
                 case FiaCode.ThujaPlicata:
@@ -226,7 +224,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -1.01460531F;
                     B4 = 0.0F;
                     B5 = 0.01340624F;
-                    B6 = 0.0F;
                     break;
                 // Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
                 case FiaCode.TaxusBrevifolia:
@@ -236,7 +233,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = 0.0F;
                     B4 = 2.030940382F;
                     B5 = 0.0F;
-                    B6 = 0.0F;
                     break;
                 // Hanus, Hann, and Marshall (2000) FRL Research Contribution 29
                 case FiaCode.ArbutusMenziesii:
@@ -256,7 +252,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = 0.0F;
                     B4 = 0.0F;
                     B5 = 0.0F;
-                    B6 = 0.0F;
                     break;
                 // Gould, Marshall, and Harrington (2008) West.J.Appl.For. 23: 26-33
                 case FiaCode.QuercusGarryana:
@@ -266,7 +261,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -0.28644547F;
                     B4 = 0.0F;
                     B5 = 0.0F;
-                    B6 = 0.0F;
                     break;
                 // Hann and Hanus (2002) OSU Department of Forest Management Internal Report #1
                 case FiaCode.AlnusRubra:
@@ -287,7 +281,6 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -0.745540494F;
                     B4 = 0.0F;
                     B5 = 0.038476613F;
-                    B6 = 0.0F;
                     break;
                 default:
                     throw Trees.CreateUnhandledSpeciesException(species);
@@ -296,7 +289,8 @@ namespace Osu.Cof.Ferm.Organon
             float HCB;
             if (species == FiaCode.TsugaHeterophylla)
             {
-                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_2 + B6 * OG * OG));
+                // HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_2 + B6 * OG * OG));
+                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_2));
             }
             else
             {
