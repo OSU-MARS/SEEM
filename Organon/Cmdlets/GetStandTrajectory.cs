@@ -20,7 +20,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
-        public float ProportionalThinIntensity { get; set; }
+        public float ProportionalThinPercentage { get; set; }
 
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
@@ -28,11 +28,11 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
-        public float ThinFromAboveIntensity { get; set; }
+        public float ThinFromAbovePercentage { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
-        public float ThinFromBelowIntensity { get; set; }
+        public float ThinFromBelowPercentage { get; set; }
 
         [Parameter]
         [ValidateRange(1, 100)]
@@ -46,9 +46,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.HarvestPeriods = 9;
             this.Name = null;
             this.PlanningPeriods = 9;
-            this.ProportionalThinIntensity = 0.0F; // %
-            this.ThinFromAboveIntensity = 0.0F; // %
-            this.ThinFromBelowIntensity = 0.0F; // %
+            this.ProportionalThinPercentage = 0.0F; // %
+            this.ThinFromAbovePercentage = 0.0F; // %
+            this.ThinFromBelowPercentage = 0.0F; // %
             this.ThinPeriod = -1; // no stand entry
             this.Units = VolumeUnits.CubicMetersPerHectare;
         }
@@ -63,7 +63,12 @@ namespace Osu.Cof.Ferm.Cmdlets
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             if (this.ThinPeriod > 0)
             {
-                configuration.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod, this.ThinFromAboveIntensity, this.ProportionalThinIntensity, this.ThinFromBelowIntensity));
+                configuration.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod)
+                {
+                    FromAbovePercentage = this.ThinFromAbovePercentage, 
+                    ProportionalPercentage = this.ProportionalThinPercentage, 
+                    FromBelowPercentage = this.ThinFromBelowPercentage
+                });
             }
 
             OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, this.PlanningPeriods, this.Units);

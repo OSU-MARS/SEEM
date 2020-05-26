@@ -35,6 +35,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.CentralSelectionProbability));
             }
+            if (this.ChainFrom >= 0)
+            {
+                throw new NotSupportedException(nameof(this.ChainFrom));
+            }
             if ((this.SelectionProbabilityWidth < 0.0F) || (this.SelectionProbabilityWidth > 1.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.SelectionProbabilityWidth));
@@ -69,7 +73,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
                 if (candidateObjectiveFunction > this.BestObjectiveFunction)
                 {
-                    // accept change of no cut-cut decision if it improves upon the best solution
+                    // accept change of tree selection if it improves upon the best solution
                     this.BestObjectiveFunction = candidateObjectiveFunction;
                     this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                 }

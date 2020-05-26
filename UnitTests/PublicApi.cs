@@ -66,7 +66,7 @@ namespace Osu.Cof.Ferm.Test
 
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
-            configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
+            configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, treeCount);
 
             Objective netPresentValue = new Objective()
@@ -98,7 +98,7 @@ namespace Osu.Cof.Ferm.Test
 
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
-            configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
+            configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, treeCount);
 
             Objective netPresentValue = new Objective()
@@ -119,17 +119,11 @@ namespace Osu.Cof.Ferm.Test
             GreatDeluge deluge = new GreatDeluge(stand, configuration, planningPeriods, volume)
             {
                 RainRate = 5,
-                LowerWaterLevelAfter = 9,
+                LowerWaterAfter = 9,
                 StopAfter = 10
             };
             deluge.RandomizeSelections(TestConstant.Default.HarvestProbability);
             TimeSpan delugeRuntime = deluge.Run();
-
-            EducatedGuessing guesses = new EducatedGuessing(stand, configuration, planningPeriods, netPresentValue, 0.5F)
-            {
-                Iterations = 5
-            };
-            TimeSpan guessingRuntime = guesses.Run();
 
             RecordTravel recordTravel = new RecordTravel(stand, configuration, planningPeriods, netPresentValue)
             {
@@ -160,14 +154,31 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.RandomizeSelections(TestConstant.Default.HarvestProbability);
             TimeSpan acceptorRuntime = thresholdAcceptor.Run();
 
+            RandomGuessing random = new RandomGuessing(stand, configuration, planningPeriods, volume, 0.5F)
+            {
+                Iterations = 4
+            };
+            TimeSpan randomRuntime = random.Run();
+
+            configuration.Treatments.Harvests.Clear();
+            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
+            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, planningPeriods, netPresentValue)
+            {
+                IntensityStep = 10.0F,
+                MaximumIntensity = 60.0F,
+                MinimumIntensity = 50.0F
+            };
+            TimeSpan enumerationRuntime = enumerator.Run();
+
             // heuristics assigned to volume optimization
             this.Verify(deluge);
             this.Verify(annealer);
             this.Verify(thresholdAcceptor);
+            this.Verify(random);
 
             // heuristics assigned to net present value optimization
             this.Verify(genetic);
-            this.Verify(guesses);
+            this.Verify(enumerator);
             this.Verify(recordTravel);
             this.Verify(tabu);
 
@@ -176,9 +187,10 @@ namespace Osu.Cof.Ferm.Test
             distribution.AddRun(deluge, delugeRuntime);
             distribution.AddRun(thresholdAcceptor, acceptorRuntime);
             distribution.AddRun(genetic, geneticRuntime);
-            distribution.AddRun(guesses, guessingRuntime);
+            distribution.AddRun(enumerator, enumerationRuntime);
             distribution.AddRun(recordTravel, recordRuntime);
             distribution.AddRun(tabu, tabuRuntime);
+            distribution.AddRun(random, randomRuntime);
             distribution.OnRunsComplete();
         }
 
@@ -195,7 +207,12 @@ namespace Osu.Cof.Ferm.Test
             unthinnedTrajectory.Simulate();
 
             int thinPeriod = 3;
-            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod, 20.0F, 15.0F, 10.0F));
+            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
+            {
+                FromAbovePercentage = 20.0F, 
+                ProportionalPercentage = 15.0F, 
+                FromBelowPercentage = 10.0F
+            });
             OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, VolumeUnits.CubicMetersPerHectare);
             thinnedTrajectory.Simulate();
 
@@ -278,7 +295,12 @@ namespace Osu.Cof.Ferm.Test
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F);
 
-            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod, 0.0F, 30.0F, 0.0F));
+            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
+            {
+                FromAbovePercentage = 0.0F,
+                ProportionalPercentage = 30.0F,
+                FromBelowPercentage = 0.0F
+            });
             OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, VolumeUnits.CubicMetersPerHectare);
             thinnedTrajectory.Simulate();
 
@@ -333,7 +355,7 @@ namespace Osu.Cof.Ferm.Test
 
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
-            configuration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(thinningPeriod));
+            configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, trees);
 
             Objective netPresentValue = new Objective()
@@ -460,7 +482,6 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(trajectory.HarvestPeriods == thinPeriod + 1); // BUGBUG: clean off by one semantic
             Assert.IsTrue(trajectory.HarvestVolumesByPeriod.Length == thinPeriod + 1);
             Assert.IsTrue(trajectory.HarvestVolumesByPeriod[0] == 0.0F);
-            Assert.IsTrue(trajectory.IndividualTreeExpansionFactor > 0.0F);
             this.Verify(trajectory.IndividualTreeSelectionBySpecies, thinPeriod, minTrees, maxTrees);
             Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
             Assert.IsTrue(trajectory.PeriodLengthInYears == timeStepInYears);

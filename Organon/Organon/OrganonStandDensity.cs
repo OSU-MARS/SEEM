@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -127,6 +128,8 @@ namespace Osu.Cof.Ferm.Organon
 
         public void CopyFrom(OrganonStandDensity other)
         {
+            Debug.Assert(Object.ReferenceEquals(this, other) == false);
+
             this.BasalAreaPerAcre = other.BasalAreaPerAcre;
             this.CrownCompetitionFactor = other.CrownCompetitionFactor;
             Array.Copy(other.LargeTreeBasalAreaLarger, 0, this.LargeTreeBasalAreaLarger, 0, other.LargeTreeBasalAreaLarger.Length);

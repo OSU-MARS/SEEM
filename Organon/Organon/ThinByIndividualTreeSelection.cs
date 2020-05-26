@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Organon
 {
-    public class ThinByHeuristicIndividualTreeSelection : IHarvest
+    public class ThinByIndividualTreeSelection : IHarvest
     {
         public int Period { get; private set; }
 
-        public ThinByHeuristicIndividualTreeSelection(int harvestPeriod)
+        public ThinByIndividualTreeSelection(int harvestPeriod)
         {
             if (harvestPeriod < 1)
             {
@@ -15,6 +15,11 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             this.Period = harvestPeriod;
+        }
+
+        public IHarvest Clone()
+        {
+            return new ThinByIndividualTreeSelection(this.Period);
         }
 
         public float EvaluateTreeSelection(OrganonStandTrajectory trajectory)

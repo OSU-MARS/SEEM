@@ -37,6 +37,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override string GetName()
         {
+            if (this.isStochastic)
+            {
+                return "HeroStochastic";
+            }
             return "Hero";
         }
 
@@ -63,7 +67,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 if (this.isStochastic)
                 {
-                    this.ShuffleRandom(randomizedTreeIndices);
+                    this.Pseudorandom.Shuffle(randomizedTreeIndices);
                 }
 
                 for (int iterationMove = 0; iterationMove < initialTreeRecordCount; ++iterationMove)
@@ -89,6 +93,11 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
 
                     this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
+
+                    if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
+                    {
+                        this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
+                    }
                 }
 
                 if (currentObjectiveFunction <= previousObjectiveFunction)

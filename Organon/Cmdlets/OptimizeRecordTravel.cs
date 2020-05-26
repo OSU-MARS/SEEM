@@ -10,7 +10,11 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> Deviation { get; set; }
+        public Nullable<float> FixedDeviation { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0, Single.MaxValue)]
+        public Nullable<float> RelativeDeviation { get; set; }
         
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
@@ -18,16 +22,21 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public OptimizeRecordTravel()
         {
-            this.Deviation = null;
+            this.FixedDeviation = null;
+            this.RelativeDeviation = null;
             this.StopAfter = null;
         }
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
         {
-            RecordToRecordTravel recordTravel = new RecordToRecordTravel(this.Stand, organonConfiguration, planningPeriods, objective);
-            if (this.Deviation.HasValue)
+            RecordTravel recordTravel = new RecordTravel(this.Stand, organonConfiguration, planningPeriods, objective);
+            if (this.FixedDeviation.HasValue)
             {
-                recordTravel.Deviation = this.Deviation.Value;
+                recordTravel.FixedDeviation = this.FixedDeviation.Value;
+            }
+            if (this.RelativeDeviation.HasValue)
+            {
+                recordTravel.RelativeDeviation = this.RelativeDeviation.Value;
             }
             if (this.StopAfter.HasValue)
             {

@@ -133,8 +133,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                         int halfIndex = objectiveFunctions.Count / 2;
                         median = 0.5F * objectiveFunctions[halfIndex - 1] + 0.5F * objectiveFunctions[halfIndex];
 
-                        Debug.Assert(median > objectiveFunctions[0]);
-                        Debug.Assert(median < objectiveFunctions[^1]);
+                        Debug.Assert(median >= objectiveFunctions[0]);
+                        Debug.Assert(median <= objectiveFunctions[^1]);
                     }
                     this.MedianObjectiveFunctionByMove.Add(median);
 
@@ -164,10 +164,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                             float upperQuartile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
                             this.UpperQuartileByMove.Add(upperQuartile);
 
-                            Debug.Assert(lowerQuartile > objectiveFunctions[0]);
-                            Debug.Assert(lowerQuartile < median);
-                            Debug.Assert(upperQuartile > median);
-                            Debug.Assert(upperQuartile < objectiveFunctions[^1]);
+                            Debug.Assert(lowerQuartile >= objectiveFunctions[0]);
+                            Debug.Assert(lowerQuartile <= median);
+                            Debug.Assert(upperQuartile >= median);
+                            Debug.Assert(upperQuartile <= objectiveFunctions[^1]);
                         }
 
                         if (objectiveFunctions.Count > 19)
@@ -196,10 +196,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 float ninetyFifthPercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
                                 this.NinetyFifthPercentileByMove.Add(ninetyFifthPercentile);
 
-                                Debug.Assert(fifthPercentile > objectiveFunctions[0]);
-                                Debug.Assert(fifthPercentile < median);
-                                Debug.Assert(ninetyFifthPercentile > median);
-                                Debug.Assert(ninetyFifthPercentile < objectiveFunctions[^1]);
+                                Debug.Assert(fifthPercentile >= objectiveFunctions[0]);
+                                Debug.Assert(fifthPercentile <= median);
+                                Debug.Assert(ninetyFifthPercentile >= median);
+                                Debug.Assert(ninetyFifthPercentile <= objectiveFunctions[^1]);
                             }
                         }
                     }

@@ -16,6 +16,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(1, Int32.MaxValue)]
         public int BestOf { get; set; }
         [Parameter]
+        [ValidateRange(0, 1000 * 1000)]
+        public Nullable<int> ChainFrom { get; set; }
+
+        [Parameter]
         public int Cores { get; set; }
         [Parameter]
         [ValidateRange(0.0F, 30.0F)]
@@ -48,6 +52,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
+            this.ChainFrom = null;
             this.Cores = 4;
             this.DiscountRate = 4; // percent per year
             this.HarvestPeriods = new List<int>() { 3 };
@@ -56,6 +61,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.TreeModel = TreeModel.OrganonNwo;
             this.SelectionProbabilities = new List<float>() { 0.5F };
             this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
+        }
+
+        protected virtual IHarvest CreateHarvest(int harvestPeriodIndex)
+        {
+            return new ThinByIndividualTreeSelection(this.HarvestPeriods[harvestPeriodIndex]);
         }
 
         protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability);
@@ -102,8 +112,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 MaxDegreeOfParallelism = this.Cores
             };
+            Pseudorandom pseudorandom = new Pseudorandom();
             int totalRuns = this.BestOf * this.SelectionProbabilities.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count;
             int runsCompleted = 0;
+            List<StandTrajectory> trajectoriesForChaining = new List<StandTrajectory>();
             Task runs = Task.Run(() =>
             {
                 Parallel.For(0, totalRuns, parallelOptions, (int iteration, ParallelLoopState loopState) =>
@@ -119,11 +131,16 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int distributionIndex = selectionProbabilityIndex + harvestPeriodIndex * this.SelectionProbabilities.Count + planningPeriodIndex * this.HarvestPeriods.Count * this.SelectionProbabilities.Count;
 
                     OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-                    organonConfiguration.Treatments.Harvests.Add(new ThinByHeuristicIndividualTreeSelection(this.HarvestPeriods[harvestPeriodIndex]));
+                    organonConfiguration.Treatments.Harvests.Add(this.CreateHarvest(harvestPeriodIndex));
 
                     float selectionProbability = this.SelectionProbabilities[selectionProbabilityIndex];
                     Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, this.PlanningPeriods[planningPeriodIndex], objective, selectionProbability);
-                    if (selectionProbability > 0.0F)
+                    if (this.ChainFrom.HasValue && (trajectoriesForChaining.Count > 0))
+                    {
+                        int previousSolutionIndex = pseudorandom.Next(trajectoriesForChaining.Count);
+                        currentHeuristic.CopySelectionsFrom(trajectoriesForChaining[previousSolutionIndex]);
+                    }
+                    else if (selectionProbability > 0.0F)
                     {
                         currentHeuristic.RandomizeSelections(selectionProbability);
                     }
@@ -135,6 +152,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                         distribution.AddRun(currentHeuristic, runTime);
                         distribution.DefaultSelectionProbability = selectionProbability;
                         ++runsCompleted;
+
+                        StandTrajectory trajectoryForChaining = currentHeuristic.BestTrajectoryByMove.Values.FirstOrDefault();
+                        if (trajectoryForChaining != null)
+                        {
+                            trajectoriesForChaining.Add(trajectoryForChaining);
+                        }
                     }
 
                     if (this.Stopping)
@@ -144,7 +167,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             });
 
-            if (totalRuns == this.BestOf) 
+            if (totalRuns == 1) 
             {
                 // only one selection probability, harvest period, and rotation length, so maximize responsiveness
                 // Also a partial workaround for a Visual Studio Code bug where the first line of cmdlet verbose output is overwritten if WriteProgress()
@@ -194,6 +217,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         private void WriteMultipleDistributionSummary(List<HeuristicSolutionDistribution> distributions, TimeSpan elapsedTime)
         {
             Heuristic firstHeuristic = distributions[0].BestSolution;
+            base.WriteVerbose(String.Empty); // Visual Studio code workaround
             this.WriteVerbose("{0}: {1} configurations ({2} runs) in {3:0.00} minutes.", firstHeuristic.GetName(), distributions.Count, this.BestOf * distributions.Count, elapsedTime.TotalMinutes);
         }
 
@@ -242,6 +266,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 standardDeviation *= 0.001F;
             }
 
+            base.WriteVerbose(String.Empty); // Visual Studio code workaround
             int totalMoves = movesAccepted + movesRejected;
             this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", bestHeuristic.GetName(), totalMoves, movesAccepted, (float)movesAccepted / (float)totalMoves, movesRejected, (float)movesRejected / (float)totalMoves);
             this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", bestHeuristic.BestObjectiveFunction, distribution.BestObjectiveFunctionBySolution.Average(), bestHeuristic.ObjectiveFunctionByMove.Last());

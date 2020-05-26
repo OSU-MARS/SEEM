@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    internal class GeneticPopulation : RandomNumberConsumer
+    internal class GeneticPopulation : PseudorandomizingTask
     {
         private readonly SortedDictionary<float, List<int>> individualIndexByFitness;
         private readonly float[] matingDistributionFunction;
@@ -50,6 +50,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public void CopyFrom(GeneticPopulation other)
         {
+            Debug.Assert(Object.ReferenceEquals(this, other) == false);
+
             if ((this.HarvestPeriods != other.HarvestPeriods) || (this.Size != other.Size))
             {
                 throw new ArgumentOutOfRangeException(nameof(other));

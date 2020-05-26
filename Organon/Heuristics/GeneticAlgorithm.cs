@@ -266,6 +266,11 @@ namespace Osu.Cof.Ferm.Heuristics
                     //}
 
                     this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+
+                    if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
+                    {
+                        this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
+                    }
                 }
 
                 //GeneticPopulation generationSwapPointer = currentGeneration;

@@ -7,20 +7,27 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class GreatDeluge : Heuristic
     {
-        public float FinalWaterLevel { get; set; }
-        public float InitialWaterLevel { get; set; }
+        public float FinalMultiplier { get; set; }
+        public float IntitialMultiplier { get; set; }
+        public int Iterations { get; set; }
+        public int LowerWaterAfter { get; set; }
+        public float LowerWaterBy { get; set; }
         public float RainRate { get; set; }
         public int StopAfter { get; set; }
 
         public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
-            this.FinalWaterLevel = 100.0F;
-            this.InitialWaterLevel = 0.0F;
-            this.RainRate = this.FinalWaterLevel / (10 * 1000);
-            this.StopAfter = 1000;
+            int treeRecords = stand.GetTreeRecordCount();
+            this.FinalMultiplier = 2.0F;
+            this.IntitialMultiplier = 1.5F;
+            this.Iterations = 20 * treeRecords;
+            this.LowerWaterAfter = (int)(0.25F * this.Iterations);
+            this.LowerWaterBy = 0.01F;
+            this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.BestObjectiveFunction / this.Iterations;
+            this.StopAfter = (int)(0.25F * this.Iterations);
 
-            this.ObjectiveFunctionByMove = new List<float>(1000 * 1000)
+            this.ObjectiveFunctionByMove = new List<float>(this.Iterations)
             {
                 this.BestObjectiveFunction
             };
@@ -31,11 +38,17 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Deluge";
         }
 
+        public override void CopySelectionsFrom(StandTrajectory trajectory)
+        {
+            base.CopySelectionsFrom(trajectory);
+            this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.BestObjectiveFunction / this.Iterations;
+        }
+
         public override TimeSpan Run()
         {
-            if (this.FinalWaterLevel <= this.InitialWaterLevel)
+            if (this.FinalMultiplier < this.IntitialMultiplier)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FinalWaterLevel));
+                throw new ArgumentOutOfRangeException(nameof(this.FinalMultiplier));
             }
             if (this.RainRate <= 0.0)
             {
@@ -44,6 +57,10 @@ namespace Osu.Cof.Ferm.Heuristics
             if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
             {
                 throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
+            }
+            if (this.LowerWaterAfter < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.LowerWaterAfter));
             }
             if (this.StopAfter < 1)
             {
@@ -55,11 +72,15 @@ namespace Osu.Cof.Ferm.Heuristics
 
             float currentObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
+            int iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
             int iterationsSinceBestObjectiveImproved = 0;
             float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
 
+            // initial solution in constructor is considered iteration 0, so loop starts with iteration 1
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            for (double waterLevel = this.InitialWaterLevel; waterLevel < this.FinalWaterLevel; waterLevel += this.RainRate)
+            float hillClimbingThreshold = this.BestObjectiveFunction;
+            float waterLevel = this.IntitialMultiplier * this.BestObjectiveFunction;
+            for (int iteration = 1; iteration < this.Iterations; ++iteration, waterLevel += this.RainRate)
             {
                 int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                 int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
@@ -73,22 +94,29 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
                 candidateTrajectory.Simulate();
+                ++iterationsSinceObjectiveImprovedOrWaterLevelLowered;
                 ++iterationsSinceBestObjectiveImproved;
 
                 float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                if ((candidateObjectiveFunction > waterLevel) || (candidateObjectiveFunction > this.BestObjectiveFunction))
+                if ((candidateObjectiveFunction > waterLevel) || (candidateObjectiveFunction > hillClimbingThreshold))
                 {
+                    // accept move
                     currentObjectiveFunction = candidateObjectiveFunction;
                     this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                    hillClimbingThreshold = currentObjectiveFunction;
+                    iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
+
                     if (currentObjectiveFunction > this.BestObjectiveFunction)
                     {
                         this.BestObjectiveFunction = currentObjectiveFunction;
                         this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+
                         iterationsSinceBestObjectiveImproved = 0;
                     }
                 }
                 else
                 {
+                    // undo move
                     candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
                 }
 
@@ -96,6 +124,18 @@ namespace Osu.Cof.Ferm.Heuristics
                 if (iterationsSinceBestObjectiveImproved > this.StopAfter)
                 {
                     break;
+                }
+                else if (iterationsSinceObjectiveImprovedOrWaterLevelLowered > this.LowerWaterAfter)
+                {
+                    // could also adjust rain rate but there but does not seem to be a clear need to do so
+                    waterLevel = (1.0F - this.LowerWaterBy) * this.BestObjectiveFunction;
+                    hillClimbingThreshold = waterLevel;
+                    iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
+                }
+
+                if (iteration == this.ChainFrom)
+                {
+                    this.BestTrajectoryByMove.Add(iteration, new StandTrajectory(this.BestTrajectory));
                 }
             }
 

@@ -4,6 +4,7 @@
     {
         int Period { get; }
 
+        IHarvest Clone();
         float EvaluateTreeSelection(OrganonStandTrajectory trajectory);
     }
 }

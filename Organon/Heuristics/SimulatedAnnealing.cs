@@ -119,6 +119,11 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
 
                     this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
+
+                    if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
+                    {
+                        this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
+                    }
                 }
             }
 

@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 
 namespace Osu.Cof.Ferm.Organon
 {
     public class OrganonTreatments
     {
+        private readonly ReaderWriterLockSlim readerWriterLock;
+
         // basal area before most recent thinning (Hann RC 40, equations 10 and 18)
         public float BasalAreaBeforeMostRecentHarvest { get; private set; }
         // basal area removed by thinning in ft²/ac in the years specified
@@ -25,6 +29,8 @@ namespace Osu.Cof.Ferm.Organon
 
         public OrganonTreatments()
         {
+            this.readerWriterLock = new ReaderWriterLockSlim();
+
             this.BasalAreaBeforeMostRecentHarvest = -1.0F;
             this.BasalAreaRemovedByHarvest = new List<float>();
             this.FertilizationsPerformed = 0;
@@ -35,16 +41,24 @@ namespace Osu.Cof.Ferm.Organon
             this.TimeStepsSinceFertilization = new List<int>();
         }
 
-        public OrganonTreatments(OrganonTreatments other)
+        public void ClearHarvestState()
         {
-            this.BasalAreaBeforeMostRecentHarvest = other.BasalAreaBeforeMostRecentHarvest;
-            this.BasalAreaRemovedByHarvest = new List<float>(other.BasalAreaRemovedByHarvest);
-            this.FertilizationsPerformed = other.FertilizationsPerformed;
-            this.Harvests = new List<IHarvest>(other.Harvests);
-            this.HarvestsPerformed = other.HarvestsPerformed;
-            this.PoundsOfNitrogenPerAcre = new List<float>(other.PoundsOfNitrogenPerAcre);
-            this.TimeStepsSinceHarvest = new List<int>(other.TimeStepsSinceHarvest);
-            this.TimeStepsSinceFertilization = new List<int>(other.TimeStepsSinceFertilization);
+            this.readerWriterLock.EnterWriteLock();
+            try
+            {
+                this.BasalAreaBeforeMostRecentHarvest = -1.0F;
+                this.BasalAreaRemovedByHarvest.Clear();
+                this.FertilizationsPerformed = 0;
+                // for now, no state to clear in this.Harvests
+                this.HarvestsPerformed = 0;
+                this.PoundsOfNitrogenPerAcre.Clear();
+                this.TimeStepsSinceHarvest.Clear();
+                this.TimeStepsSinceFertilization.Clear();
+            }
+            finally
+            {
+                this.readerWriterLock.ExitWriteLock();
+            }
         }
 
         // TODO: move this to simulation state
@@ -61,6 +75,38 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
         
+        public void CopyFrom(OrganonTreatments other)
+        {
+            Debug.Assert(Object.ReferenceEquals(this, other) == false);
+
+            this.ClearHarvestState(); // called outside of write lock to avoid lock recursion
+
+            this.readerWriterLock.EnterWriteLock();
+            other.readerWriterLock.EnterReadLock();
+            try
+            {
+                // ClearHarvestState() doesn't modify prescriptions, so they're removed here to allow the AddRange() call below
+                this.Harvests.Clear();
+
+                this.BasalAreaBeforeMostRecentHarvest = other.BasalAreaBeforeMostRecentHarvest;
+                this.BasalAreaRemovedByHarvest.AddRange(other.BasalAreaRemovedByHarvest);
+                this.FertilizationsPerformed = other.FertilizationsPerformed;
+                foreach (IHarvest harvest in other.Harvests)
+                {
+                    this.Harvests.Add(harvest.Clone());
+                }
+                this.HarvestsPerformed = other.HarvestsPerformed;
+                this.PoundsOfNitrogenPerAcre.AddRange(other.PoundsOfNitrogenPerAcre);
+                this.TimeStepsSinceHarvest.AddRange(other.TimeStepsSinceHarvest);
+                this.TimeStepsSinceFertilization.AddRange(other.TimeStepsSinceFertilization);
+            }
+            finally
+            {
+                other.readerWriterLock.ExitReadLock();
+                this.readerWriterLock.ExitWriteLock();
+            }
+        }
+
         public float EvaluateTriggers(int periodJustBeginning, OrganonStandTrajectory trajectory)
         {
             if (periodJustBeginning < 1)
@@ -76,11 +122,19 @@ namespace Osu.Cof.Ferm.Organon
                     float basalAreaRemovedByHarvest = harvest.EvaluateTreeSelection(trajectory);
                     if (basalAreaRemovedByHarvest > 0.0F)
                     {
-                        this.BasalAreaBeforeMostRecentHarvest = trajectory.DensityByPeriod[periodJustBeginning - 1].BasalAreaPerAcre;
-                        this.BasalAreaRemovedByHarvest.Insert(0, basalAreaRemovedByHarvest);
-                        this.TimeStepsSinceHarvest.Insert(0, 0);
+                        this.readerWriterLock.EnterWriteLock();
+                        try
+                        {
+                            this.BasalAreaBeforeMostRecentHarvest = trajectory.DensityByPeriod[periodJustBeginning - 1].BasalAreaPerAcre;
+                            this.BasalAreaRemovedByHarvest.Insert(0, basalAreaRemovedByHarvest);
+                            this.TimeStepsSinceHarvest.Insert(0, 0);
+                            ++this.HarvestsPerformed;
+                        }
+                        finally
+                        {
+                            this.readerWriterLock.ExitWriteLock();
+                        }
                         
-                        ++this.HarvestsPerformed;
                         basalAreaRemovedInPeriod += basalAreaRemovedByHarvest;
                     }
                 }
@@ -99,18 +153,6 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             return false;
-        }
-
-        public void Reset()
-        {
-            this.BasalAreaBeforeMostRecentHarvest = -1.0F;
-            this.BasalAreaRemovedByHarvest.Clear();
-            this.FertilizationsPerformed = 0;
-            // for now, no state to clear in this.Harvests
-            this.HarvestsPerformed = 0;
-            this.PoundsOfNitrogenPerAcre.Clear();
-            this.TimeStepsSinceHarvest.Clear();
-            this.TimeStepsSinceFertilization.Clear();
         }
     }
 }

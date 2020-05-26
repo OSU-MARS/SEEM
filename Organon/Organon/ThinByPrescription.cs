@@ -6,44 +6,91 @@ namespace Osu.Cof.Ferm.Organon
 {
     public class ThinByPrescription : IHarvest
     {
-        private readonly float fromAboveProportion;
-        private readonly float fromBelowProportion;
-        private readonly float proportionalProportion;
+        private float fromAbovePercentage;
+        private float fromBelowPercentage;
+        private float proportionalPercentage;
 
         public int Period { get; private set; }
 
-        public ThinByPrescription(int harvestAtBeginningOfPeriod, float fromAbovePercentage, float proportionalPercentage, float fromBelowPercentage)
+        public ThinByPrescription(int harvestAtBeginningOfPeriod)
         {
             if (harvestAtBeginningOfPeriod < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(harvestAtBeginningOfPeriod));
             }
-            if ((fromAbovePercentage < 0.0F) || (fromAbovePercentage >= 100.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(fromAbovePercentage));
-            }
-            if ((proportionalPercentage < 0.0F) || (proportionalPercentage >= 100.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(proportionalPercentage));
-            }
-            if ((fromBelowPercentage < 0.0F) || (fromBelowPercentage >= 100.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(fromBelowPercentage));
-            }
-            float totalPercentage = fromAbovePercentage + fromBelowPercentage + proportionalPercentage;
-            if ((totalPercentage <= 0.0F) || (totalPercentage >= 100.0F))
-            {
-                throw new ArgumentOutOfRangeException();
-            }
 
-            this.fromAboveProportion = 0.01F * fromAbovePercentage;
-            this.fromBelowProportion = 0.01F * fromBelowPercentage;
-            this.proportionalProportion = 0.01F * proportionalPercentage;
+            this.fromAbovePercentage = 0.0F;
+            this.fromBelowPercentage = 0.0F;
+            this.proportionalPercentage = 0.0F;
             this.Period = harvestAtBeginningOfPeriod;
+        }
+
+        public float FromAbovePercentage
+        {
+            get 
+            { 
+                return this.fromAbovePercentage; 
+            }
+            set 
+            {
+                if ((value < 0.0F) || (value > 100.0F))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                this.fromAbovePercentage = value; 
+            }
+        }
+
+        public float FromBelowPercentage
+        {
+            get
+            {
+                return this.fromBelowPercentage;
+            }
+            set
+            {
+                if ((value < 0.0F) || (value > 100.0F))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                this.fromBelowPercentage = value;
+            }
+        }
+
+        public float ProportionalPercentage
+        {
+            get
+            {
+                return this.proportionalPercentage;
+            }
+            set
+            {
+                if ((value < 0.0F) || (value > 100.0F))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                this.proportionalPercentage = value;
+            }
+        }
+
+        public IHarvest Clone()
+        {
+            return new ThinByPrescription(this.Period)
+            {
+                FromAbovePercentage = this.FromAbovePercentage, 
+                ProportionalPercentage = this.ProportionalPercentage, 
+                fromBelowPercentage = this.FromBelowPercentage
+            };
         }
 
         public float EvaluateTreeSelection(OrganonStandTrajectory trajectory)
         {
+            float totalPercentage = this.fromAbovePercentage + this.fromBelowPercentage + this.proportionalPercentage;
+            if ((totalPercentage < 0.0F) || (totalPercentage > 100.0F))
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+
             OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1];
 
             // sort trees by diameter
@@ -78,7 +125,7 @@ namespace Osu.Cof.Ferm.Organon
 
             // thin from above
             OrganonStandDensity densityAtEndOfPreviousPeriod = trajectory.DensityByPeriod[this.Period - 1];
-            float targetBasalArea = this.fromAboveProportion * densityAtEndOfPreviousPeriod.BasalAreaPerAcre;
+            float targetBasalArea = 0.01F * this.FromAbovePercentage * densityAtEndOfPreviousPeriod.BasalAreaPerAcre;
             float basalAreaRemovedFromAbove = 0.0F;
             while (basalAreaRemovedFromAbove < targetBasalArea)
             {
@@ -108,7 +155,7 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             // thin from below
-            targetBasalArea = this.fromBelowProportion * densityAtEndOfPreviousPeriod.BasalAreaPerAcre;
+            targetBasalArea = 0.01F * this.FromBelowPercentage * densityAtEndOfPreviousPeriod.BasalAreaPerAcre;
             float basalAreaRemovedFromBelow = 0.0F;
             while (basalAreaRemovedFromBelow < targetBasalArea)
             {
@@ -139,7 +186,7 @@ namespace Osu.Cof.Ferm.Organon
 
             // thin remaining trees proportionally
             float proportionalThinAccumulator = 0.0F;
-            float proportionalIncrement = 1.0F / (1.0F - this.fromAboveProportion - this.fromBelowProportion) * this.proportionalProportion;
+            float proportionalIncrement = 0.01F * this.ProportionalPercentage * 100.0F / (100.0F - this.FromAbovePercentage - this.FromBelowPercentage);
             float basalAreaRemovedProportionally = 0.0F;
             foreach (KeyValuePair<FiaCode, int[]> speciesDbhSortOrder in dbhSortOrderBySpecies)
             {
@@ -163,7 +210,7 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             float basalAreaRemoved = basalAreaRemovedFromAbove + basalAreaRemovedProportionally + basalAreaRemovedFromBelow;
-            Debug.Assert(basalAreaRemoved > 0.0F);
+            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || (totalPercentage == 0.0F && basalAreaRemoved == 0.0F));
             return basalAreaRemoved;
         }
     }

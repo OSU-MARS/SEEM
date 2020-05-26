@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -38,9 +40,29 @@ namespace Osu.Cof.Ferm.Organon
         public float PDEN { get; set; }
 
         public OrganonConfiguration(OrganonConfiguration other)
+            : this(other.Variant)
         {
+            this.CopyFrom(other);
+        }
+
+        public OrganonConfiguration(OrganonVariant variant)
+        {
+            this.Bucking = new Bucking();
+            this.Treatments = new OrganonTreatments();
+            this.Variant = variant;
+            if (this.Variant.TreeModel == TreeModel.OrganonRap)
+            {
+                // only even age red alder plantations more than 10 years old are supported
+                this.IsEvenAge = true;
+            }
+        }
+
+        public void CopyFrom(OrganonConfiguration other)
+        {
+            Debug.Assert(Object.ReferenceEquals(this, other) == false);
+
             this.Bucking = other.Bucking;
-            this.Treatments = new OrganonTreatments(other.Treatments);
+            this.Treatments.CopyFrom(other.Treatments);
             this.Variant = other.Variant;
 
             this.CalibrateCrownRatio = other.CalibrateCrownRatio;
@@ -57,18 +79,6 @@ namespace Osu.Cof.Ferm.Organon
             this.GWHG = other.GWHG;
             this.FR = other.FR;
             this.PDEN = other.PDEN;
-        }
-
-        public OrganonConfiguration(OrganonVariant variant)
-        {
-            this.Bucking = new Bucking();
-            this.Treatments = new OrganonTreatments();
-            this.Variant = variant;
-            if (this.Variant.TreeModel == TreeModel.OrganonRap)
-            {
-                // only even age red alder plantations more than 10 years old are supported
-                this.IsEvenAge = true;
-            }
         }
 
         public Dictionary<FiaCode, float[]> CreateSpeciesCalibration()
