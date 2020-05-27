@@ -9,27 +9,47 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class OptimizeSimulatedAnnealing : OptimizeCmdlet
     {
         [Parameter]
-        [ValidateRange(0.0, 1.0)]
+        [ValidateRange(0.0F, 1.0F)]
         public Nullable<float> Alpha { get; set; }
 
         [Parameter]
-        [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> FinalTemperature { get; set; }
+        [ValidateRange(0.0F, Single.MaxValue)]
+        public Nullable<float> FinalProbability { get; set; }
         
         [Parameter]
-        [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> InitialTemperature { get; set; }
-        
+        [ValidateRange(0.0F, Single.MaxValue)]
+        public Nullable<float> InitialProbability { get; set; }
+
+        [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public Nullable<int> Iterations { get; set; }
+
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
         public Nullable<int> IterationsPerTemperature { get; set; }
 
+        [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public Nullable<int> ProbabilityWindowLength { get; set; }
+
+        [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public Nullable<int> ReheatAfter { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0F, 1.0F)]
+        public Nullable<float> ReheatBy { get; set; }
+
         public OptimizeSimulatedAnnealing()
         {
             this.Alpha = null;
-            this.FinalTemperature = null;
-            this.InitialTemperature = null;
+            this.FinalProbability = null;
+            this.InitialProbability = null;
+            this.Iterations = null;
             this.IterationsPerTemperature = null;
+            this.ProbabilityWindowLength = null;
+            this.ReheatAfter = null;
+            this.ReheatBy = null;
         }
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
@@ -39,17 +59,33 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 annealer.Alpha = this.Alpha.Value;
             }
-            if (this.FinalTemperature.HasValue)
+            if (this.FinalProbability.HasValue)
             {
-                annealer.FinalTemperature = this.FinalTemperature.Value;
+                annealer.FinalProbability = this.FinalProbability.Value;
             }
-            if (this.InitialTemperature.HasValue)
+            if (this.InitialProbability.HasValue)
             {
-                annealer.InitialTemperature = this.InitialTemperature.Value;
+                annealer.InitialProbability = this.InitialProbability.Value;
+            }
+            if (this.Iterations.HasValue)
+            {
+                annealer.Iterations = this.Iterations.Value;
             }
             if (this.IterationsPerTemperature.HasValue)
             {
                 annealer.IterationsPerTemperature = this.IterationsPerTemperature.Value;
+            }
+            if (this.ProbabilityWindowLength.HasValue)
+            {
+                annealer.ProbabilityWindowLength = this.ProbabilityWindowLength.Value;
+            }
+            if (this.ReheatAfter.HasValue)
+            {
+                annealer.ReheatAfter = this.ReheatAfter.Value;
+            }
+            if (this.ReheatBy.HasValue)
+            {
+                annealer.ReheatBy = this.ReheatBy.Value;
             }
             return annealer;
         }

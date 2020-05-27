@@ -8,7 +8,11 @@ namespace Osu.Cof.Ferm.Heuristics
     public class RecordTravel : Heuristic
     {
         public float FixedDeviation { get; set; }
+        public float FixedIncrease { get; set; }
+        public float IncreaseAfter { get; set; }
+        public float Iterations { get; set; }
         public float RelativeDeviation { get; set; }
+        public float RelativeIncrease { get; set; }
         public int StopAfter { get; set; }
 
         public RecordTravel(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
@@ -16,7 +20,11 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             int treeRecordCount = stand.GetTreeRecordCount();
             this.FixedDeviation = 0.0F;
-            this.RelativeDeviation = 1.5F / treeRecordCount;
+            this.FixedIncrease = 0.0F;
+            this.IncreaseAfter = 6 * treeRecordCount;
+            this.Iterations = 10 * treeRecordCount;
+            this.RelativeDeviation = 0.0F;
+            this.RelativeIncrease = 0.1F / treeRecordCount;
             this.StopAfter = 1000;
 
             this.ObjectiveFunctionByMove = new List<float>(5 * treeRecordCount)
@@ -48,13 +56,15 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
 
             float currentObjectiveFunction = this.BestObjectiveFunction;
+            float fixedDeviation = this.FixedDeviation;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
-            double minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - this.RelativeDeviation * MathF.Abs(this.BestObjectiveFunction) - this.FixedDeviation;
+            float relativeDeviation = this.RelativeDeviation;
             float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            while (iterationsSinceBestObjectiveImproved < this.StopAfter)
+            float minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - relativeDeviation * MathF.Abs(this.BestObjectiveFunction) - fixedDeviation;
+            for (int iteration = 1; (iteration < this.Iterations) && (iterationsSinceBestObjectiveImproved < this.StopAfter); ++iteration)
             {
                 int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                 int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
@@ -80,7 +90,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         this.BestObjectiveFunction = currentObjectiveFunction;
                         this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
-                        minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - this.RelativeDeviation * MathF.Abs(this.BestObjectiveFunction) - this.FixedDeviation;
+                        minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - relativeDeviation * MathF.Abs(this.BestObjectiveFunction) - fixedDeviation;
                     }
                 }
                 else
@@ -89,6 +99,11 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
 
                 this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
+                if (iteration == this.IncreaseAfter)
+                {
+                    fixedDeviation += this.FixedIncrease;
+                    relativeDeviation += this.RelativeIncrease;
+                }
 
                 if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
                 {

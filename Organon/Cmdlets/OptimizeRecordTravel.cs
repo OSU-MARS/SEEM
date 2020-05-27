@@ -14,8 +14,24 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
+        public Nullable<float> FixedIncrease { get; set; }
+
+        [Parameter]
+        [ValidateRange(0, Int32.MaxValue)]
+        public Nullable<int> IncreaseAfter { get; set; }
+
+        [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public Nullable<int> Iterations { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0, Single.MaxValue)]
         public Nullable<float> RelativeDeviation { get; set; }
-        
+
+        [Parameter]
+        [ValidateRange(0.0, Single.MaxValue)]
+        public Nullable<float> RelativeIncrease { get; set; }
+
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
         public Nullable<int> StopAfter { get; set; }
@@ -23,7 +39,11 @@ namespace Osu.Cof.Ferm.Cmdlets
         public OptimizeRecordTravel()
         {
             this.FixedDeviation = null;
+            this.FixedIncrease = null;
+            this.IncreaseAfter = null;
+            this.Iterations = null;
             this.RelativeDeviation = null;
+            this.RelativeIncrease = null;
             this.StopAfter = null;
         }
 
@@ -34,9 +54,25 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 recordTravel.FixedDeviation = this.FixedDeviation.Value;
             }
+            if (this.FixedIncrease.HasValue)
+            {
+                recordTravel.FixedIncrease = this.FixedIncrease.Value;
+            }
+            if (this.IncreaseAfter.HasValue)
+            {
+                recordTravel.IncreaseAfter = this.IncreaseAfter.Value;
+            }
+            if (this.Iterations.HasValue)
+            {
+                recordTravel.Iterations = this.Iterations.Value;
+            }
             if (this.RelativeDeviation.HasValue)
             {
                 recordTravel.RelativeDeviation = this.RelativeDeviation.Value;
+            }
+            if (this.RelativeIncrease.HasValue)
+            {
+                recordTravel.RelativeIncrease = this.RelativeIncrease.Value;
             }
             if (this.StopAfter.HasValue)
             {

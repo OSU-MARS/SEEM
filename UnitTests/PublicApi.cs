@@ -134,7 +134,7 @@ namespace Osu.Cof.Ferm.Test
 
             SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, planningPeriods, volume)
             {
-                Alpha = 0.9F
+                Iterations = 100
             };
             annealer.RandomizeSelections(TestConstant.Default.HarvestProbability);
             TimeSpan annealerRuntime = annealer.Run();
@@ -395,7 +395,7 @@ namespace Osu.Cof.Ferm.Test
 
             if (heuristic.Objective.IsLandExpectationValue)
             {
-                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.15F);
+                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.2F);
             }
             else
             {

@@ -21,8 +21,8 @@ namespace Osu.Cof.Ferm.Heuristics
             int treeRecords = stand.GetTreeRecordCount();
             this.FinalMultiplier = 2.0F;
             this.IntitialMultiplier = 1.5F;
-            this.Iterations = 20 * treeRecords;
-            this.LowerWaterAfter = (int)(0.25F * this.Iterations);
+            this.Iterations = 10 * treeRecords;
+            this.LowerWaterAfter = treeRecords;
             this.LowerWaterBy = 0.01F;
             this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.BestObjectiveFunction / this.Iterations;
             this.StopAfter = (int)(0.25F * this.Iterations);
