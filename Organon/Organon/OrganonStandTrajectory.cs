@@ -34,6 +34,7 @@ namespace Osu.Cof.Ferm.Organon
             this.Heuristic = null;
             this.Name = stand.Name;
             this.PeriodLengthInYears = organonConfiguration.Variant.TimeStepInYears;
+            this.PeriodZeroAgeInYears = stand.AgeInYears;
             this.StandByPeriod = new OrganonStand[maximumPlanningPeriodIndex];
 
             this.DensityByPeriod[0] = new OrganonStandDensity(stand, organonConfiguration.Variant);
@@ -225,28 +226,6 @@ namespace Osu.Cof.Ferm.Organon
 
             Debug.Assert((this.BasalAreaRemoved[periodIndex] > 0.0F && this.HarvestVolumesByPeriod[periodIndex] > 0.0F) ||
                          (this.BasalAreaRemoved[periodIndex] == 0.0F && this.HarvestVolumesByPeriod[periodIndex] == 0.0F));
-        }
-
-        public int GetHarvestAge()
-        {
-            for (int periodIndex = 1; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
-            {
-                if (this.HarvestVolumesByPeriod[periodIndex] > 0.0F)
-                {
-                    return this.GetInitialStandAge() + this.PeriodLengthInYears * (periodIndex - 1);
-                }
-            }
-            return -1;
-        }
-
-        public int GetInitialStandAge()
-        {
-            return this.StandByPeriod[0].AgeInYears;
-        }
-
-        public int GetRotationLength()
-        {
-            return this.GetInitialStandAge() + this.PeriodLengthInYears * (this.PlanningPeriods - 1);
         }
 
         private void GetStandingAndHarvestedVolume(int periodIndex)

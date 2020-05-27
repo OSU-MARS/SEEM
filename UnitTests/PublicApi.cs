@@ -58,10 +58,10 @@ namespace Osu.Cof.Ferm.Test
             int thinningPeriod = 4;
             int planningPeriods = 9;
             int treeCount = 100;
-            float minObjectiveFunction = 4.53F;
+            float minObjectiveFunction = 1.35F;
             #if DEBUG
             treeCount = 48;
-            minObjectiveFunction = 2.76F;
+            minObjectiveFunction = 0.53F;
             #endif
 
             PlotWithHeight nelder = this.GetNelder();
@@ -69,12 +69,12 @@ namespace Osu.Cof.Ferm.Test
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, treeCount);
 
-            Objective netPresentValue = new Objective()
+            Objective landExpectationValue = new Objective()
             {
-                IsNetPresentValue = true,
+                IsLandExpectationValue = true,
                 VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
             };
-            Hero hero = new Hero(stand, configuration, planningPeriods, netPresentValue, true)
+            Hero hero = new Hero(stand, configuration, planningPeriods, landExpectationValue, true)
             {
                 Iterations = 10
             };
@@ -101,14 +101,14 @@ namespace Osu.Cof.Ferm.Test
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, treeCount);
 
-            Objective netPresentValue = new Objective()
+            Objective landExpectationValue = new Objective()
             {
-                IsNetPresentValue = true,
+                IsLandExpectationValue = true,
                 VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
             };
             Objective volume = new Objective();
 
-            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, planningPeriods, netPresentValue)
+            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, planningPeriods, landExpectationValue)
             {
                 EndStandardDeviation = 0.001F, // US$ 1 NPV
                 PopulationSize = 7,
@@ -125,7 +125,7 @@ namespace Osu.Cof.Ferm.Test
             deluge.RandomizeSelections(TestConstant.Default.HarvestProbability);
             TimeSpan delugeRuntime = deluge.Run();
 
-            RecordTravel recordTravel = new RecordTravel(stand, configuration, planningPeriods, netPresentValue)
+            RecordTravel recordTravel = new RecordTravel(stand, configuration, planningPeriods, landExpectationValue)
             {
                 StopAfter = 10
             };
@@ -139,7 +139,7 @@ namespace Osu.Cof.Ferm.Test
             annealer.RandomizeSelections(TestConstant.Default.HarvestProbability);
             TimeSpan annealerRuntime = annealer.Run();
 
-            TabuSearch tabu = new TabuSearch(stand, configuration, planningPeriods, netPresentValue)
+            TabuSearch tabu = new TabuSearch(stand, configuration, planningPeriods, landExpectationValue)
             {
                 Iterations = 5
             };
@@ -162,7 +162,7 @@ namespace Osu.Cof.Ferm.Test
 
             configuration.Treatments.Harvests.Clear();
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
-            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, planningPeriods, netPresentValue)
+            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, planningPeriods, landExpectationValue)
             {
                 IntensityStep = 10.0F,
                 MaximumIntensity = 60.0F,
@@ -313,7 +313,7 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumThinnedVolume = new float[] { 643.4F, 535.4F, 623.8F, 702.1F, 769.7F }; // m³ for 0+30+0% thin
             this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 70, 80, configuration.Variant.TimeStepInYears);
             this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
-            Assert.IsTrue(thinnedTrajectory.GetHarvestAge() == 30);
+            Assert.IsTrue(thinnedTrajectory.GetFirstHarvestAge() == 30);
         }
 
         [TestMethod]
@@ -358,9 +358,9 @@ namespace Osu.Cof.Ferm.Test
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, trees);
 
-            Objective netPresentValue = new Objective()
+            Objective landExpectationValue = new Objective()
             {
-                IsNetPresentValue = true,
+                IsLandExpectationValue = true,
                 VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
             };
 
@@ -368,7 +368,7 @@ namespace Osu.Cof.Ferm.Test
             for (int run = 0; run < runs; ++run)
             {
                 // after warmup: 3 runs * 300 trees = 900 measured growth simulations on i7-3770 (4th gen, Sandy Bridge)
-                Hero hero = new Hero(stand, configuration, planningPeriods, netPresentValue, false)
+                Hero hero = new Hero(stand, configuration, planningPeriods, landExpectationValue, false)
                 {
                     Iterations = 2
                 };
@@ -393,7 +393,14 @@ namespace Osu.Cof.Ferm.Test
             double bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
             double endObjectiveFunctionRatio = endObjectiveFunction / recalculatedEndObjectiveFunction;
 
-            Assert.IsTrue(heuristic.BestObjectiveFunction >= 0.0F);
+            if (heuristic.Objective.IsLandExpectationValue)
+            {
+                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.15F);
+            }
+            else
+            {
+                Assert.IsTrue(heuristic.BestObjectiveFunction >= 0.0F);
+            }
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
             Assert.IsTrue(heuristic.BestObjectiveFunction >= endObjectiveFunction);
             Assert.IsTrue(heuristic.ObjectiveFunctionByMove.Count >= 3);

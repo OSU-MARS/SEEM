@@ -75,7 +75,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     line.Append(",default selection probability");
                 }
-                line.Append(",thin age,rotation,stand age,sim year,QMD,Htop,TPA,BA,standing,harvested,BA removed,BA intensity,TPA decrease,NPV");
+                line.Append(",thin age,rotation,stand age,sim year,QMD,Htop,TPA,BA,standing,harvested,BA removed,BA intensity,TPA decrease,LEV");
                 writer.WriteLine(line);
             }
 
@@ -114,10 +114,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                     string heuristicParameters = heuristic.GetParametersForCsv();
                     if (heuristicParameters != null)
                     {
-                        heuristicParameters += "," + heuristicParameters;
+                        heuristicNameAndParameters += "," + heuristicParameters;
                     }
                 }
-                int thinAge = bestTrajectory.GetHarvestAge();
+                int thinAge = bestTrajectory.GetFirstHarvestAge();
                 int rotationLength = bestTrajectory.GetRotationLength();
 
                 string trajectoryName = bestTrajectory.Name;
@@ -131,7 +131,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                     volumeUnitMultiplier = 0.001F;
                 }
 
-                int initialStandAge = bestTrajectory.GetInitialStandAge();
                 for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
                 {
                     line.Clear();
@@ -164,16 +163,20 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float quadraticMeanDiameter = stand.GetQuadraticMeanDiameter();
                     float topHeight = stand.GetTopHeight();
 
-                    // NPV
-                    float netPresentValue = 0.0F;
+                    // LEV
+                    float landExpectationValue;
                     int periodsFromPresent = Math.Max(periodIndex - 1, 0);
                     if (harvestMbfPerAcre > 0.0F)
                     {
-                        netPresentValue = this.TimberValue.GetPresentValueOfThinScribner(bestTrajectory.HarvestVolumesByPeriod[periodIndex], periodsFromPresent, bestTrajectory.PeriodLengthInYears);
+                        float thinningPresentValue = this.TimberValue.GetPresentValueOfThinScribner(bestTrajectory.HarvestVolumesByPeriod[periodIndex], thinAge);
+                        float presentToFutureConversionFactor = MathF.Pow(1.0F + this.TimberValue.DiscountRate, rotationLength);
+                        float thinningFutureValue = presentToFutureConversionFactor * thinningPresentValue;
+                        landExpectationValue = thinningFutureValue / (presentToFutureConversionFactor - 1.0F);
                     }
                     else
                     {
-                        netPresentValue = this.TimberValue.GetPresentValueOfFinalHarvestScribner(bestTrajectory.StandingVolumeByPeriod[periodIndex], periodsFromPresent, bestTrajectory.PeriodLengthInYears);
+                        float firstRotationPresentValue = this.TimberValue.GetPresentValueOfRegenerationHarvestScribner(bestTrajectory.StandingVolumeByPeriod[periodIndex], rotationLength) - this.TimberValue.ReforestationCostPerAcre;
+                        landExpectationValue = this.TimberValue.FirstRotationToLandExpectationValue(firstRotationPresentValue, rotationLength);
                     }
 
                     int simulationYear = bestTrajectory.PeriodLengthInYears * periodIndex;
@@ -190,7 +193,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     Debug.Assert((harvestMbfPerAcre == 0.0F && basalAreaRemoved == 0.0F) || (harvestMbfPerAcre > 0.0F && basalAreaRemoved > 0.0F));
                     line.Append("," + thinAge.ToString(CultureInfo.InvariantCulture) + "," +
                                 rotationLength.ToString(CultureInfo.InvariantCulture) + "," +
-                                (initialStandAge + simulationYear).ToString(CultureInfo.InvariantCulture) + "," +
+                                (bestTrajectory.PeriodZeroAgeInYears + simulationYear).ToString(CultureInfo.InvariantCulture) + "," +
                                 simulationYear.ToString(CultureInfo.InvariantCulture) + "," +
                                 quadraticMeanDiameter.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                 topHeight.ToString("0.00", CultureInfo.InvariantCulture) + "," +
@@ -201,7 +204,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 tpaDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                netPresentValue.ToString("0", CultureInfo.InvariantCulture)); ;
+                                landExpectationValue.ToString("0", CultureInfo.InvariantCulture)); ;
                     writer.WriteLine(line);
                 }
             }

@@ -92,7 +92,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             Objective objective = new Objective()
             {
                 DiscountRate = 0.01F * this.DiscountRate,
-                IsNetPresentValue = this.NetPresentValue,
+                IsLandExpectationValue = this.NetPresentValue,
                 VolumeUnits = this.VolumeUnits
             };
 

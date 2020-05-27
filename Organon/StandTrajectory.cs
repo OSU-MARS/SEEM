@@ -13,6 +13,8 @@ namespace Osu.Cof.Ferm
 
         public string Name { get; set; }
         public int PeriodLengthInYears { get; set; }
+        public int PeriodZeroAgeInYears { get; set; }
+
         public float[] StandingVolumeByPeriod { get; private set; }
         public bool TreeSelectionChangedSinceLastSimulation { get; protected set; }
         public VolumeUnits VolumeUnits { get; private set; }
@@ -34,6 +36,7 @@ namespace Osu.Cof.Ferm
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = null;
             this.PeriodLengthInYears = -1;
+            this.PeriodZeroAgeInYears = -1;
             this.StandingVolumeByPeriod = new float[maximumPlanningPeriodIndex];
             this.TreeSelectionChangedSinceLastSimulation = false;
             this.VolumeUnits = volumeUnits;
@@ -46,6 +49,7 @@ namespace Osu.Cof.Ferm
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = other.Name;
             this.PeriodLengthInYears = other.PeriodLengthInYears;
+            this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
             this.StandingVolumeByPeriod = new float[other.PlanningPeriods];
             this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
             this.VolumeUnits = other.VolumeUnits;
@@ -76,7 +80,24 @@ namespace Osu.Cof.Ferm
             get { return this.StandingVolumeByPeriod.Length; }
         }
 
-        public int GetHarvestPeriod()
+        public int GetFirstHarvestAge()
+        {
+            if ((this.PeriodZeroAgeInYears < 0) || (this.PeriodLengthInYears < 0))
+            {
+                throw new NotSupportedException();
+            }
+
+            for (int periodIndex = 1; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
+            {
+                if (this.HarvestVolumesByPeriod[periodIndex] > 0.0F)
+                {
+                    return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (periodIndex - 1);
+                }
+            }
+            return -1;
+        }
+
+        public int GetFirstHarvestPeriod()
         {
             for (int periodIndex = 1; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
             {
@@ -86,6 +107,15 @@ namespace Osu.Cof.Ferm
                 }
             }
             return -1;
+        }
+
+        public int GetRotationLength()
+        {
+            if ((this.PeriodZeroAgeInYears < 0) || (this.PeriodLengthInYears < 0))
+            {
+                throw new NotSupportedException();
+            }
+            return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (this.PlanningPeriods - 1);
         }
 
         public int GetTreeSelection(int allSpeciesTreeIndex)

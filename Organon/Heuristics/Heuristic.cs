@@ -61,8 +61,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
             // find objective function value
             // Volume objective functions are in m³/ha or MBF/ac.
-            float objectiveFunction = 0.0F;
-            if (this.Objective.IsNetPresentValue)
+            float objectiveFunction;
+            if (this.Objective.IsLandExpectationValue)
             {
                 if (trajectory.VolumeUnits == VolumeUnits.CubicMetersPerHectare)
                 {
@@ -70,29 +70,32 @@ namespace Osu.Cof.Ferm.Heuristics
                     throw new NotSupportedException();
                 }
 
-                // net present value
+                // net present value of first rotation
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
                 // TODO: support per species pricing
+                float firstRotationPresentValue = -this.Objective.ReforestationCostPerAcre;
                 for (int periodIndex = 1; periodIndex < trajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
                 {
                     float thinVolumeInBoardFeet = trajectory.HarvestVolumesByPeriod[periodIndex];
                     if (thinVolumeInBoardFeet > 0.0)
                     {
-                        int thinPeriodsFromPresent = periodIndex - 1;
-                        objectiveFunction += this.Objective.GetPresentValueOfThinScribner(thinVolumeInBoardFeet, thinPeriodsFromPresent, trajectory.PeriodLengthInYears);
+                        int thinAge = trajectory.PeriodZeroAgeInYears + trajectory.PeriodLengthInYears * (periodIndex - 1);
+                        firstRotationPresentValue += this.Objective.GetPresentValueOfThinScribner(thinVolumeInBoardFeet, thinAge);
                     }
                 }
 
                 // TODO: check if earlier final harvest provides higher NPV
-                int finalHarvestPeriodsFromPresent = trajectory.PlanningPeriods - 2;
-                objectiveFunction += this.Objective.GetPresentValueOfFinalHarvestScribner(trajectory.StandingVolumeByPeriod[^1], finalHarvestPeriodsFromPresent, trajectory.PeriodLengthInYears);
+                int rotationLength = trajectory.GetRotationLength();
+                firstRotationPresentValue += this.Objective.GetPresentValueOfRegenerationHarvestScribner(trajectory.StandingVolumeByPeriod[^1], rotationLength);
+                float landExpectationValue = this.Objective.FirstRotationToLandExpectationValue(firstRotationPresentValue, rotationLength);
 
                 // convert from US$/ac to k$/ac
-                objectiveFunction *= 0.001F;
+                objectiveFunction = 0.001F * landExpectationValue;
             }
             else
             {
                 // direct volume addition
+                objectiveFunction = 0.0F;
                 for (int periodIndex = 1; periodIndex < trajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
                 {
                     objectiveFunction += trajectory.HarvestVolumesByPeriod[periodIndex];
