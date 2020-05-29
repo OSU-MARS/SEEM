@@ -65,7 +65,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 float iterations = this.IterationsPerThreshold[thresholdIndex];
                 float threshold = this.Thresholds[thresholdIndex];
-                for (int iteration = 0; iteration < iterations; ++iteration)
+                for (int iterationInThreshold = 0; iterationInThreshold < iterations; ++iterationInThreshold)
                 {
                     int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);

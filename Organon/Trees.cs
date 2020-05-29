@@ -149,7 +149,7 @@ namespace Osu.Cof.Ferm
         public int[] GetDbhSortOrder()
         {
             int[] dbhSortIndices = new int[this.Capacity];
-            for (int treeIndex = 0; treeIndex < this.Capacity; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < this.Count; ++treeIndex)
             {
                 dbhSortIndices[treeIndex] = treeIndex;
             }
@@ -164,7 +164,7 @@ namespace Osu.Cof.Ferm
             }
 
             int[] trimmedSortIndices = new int[this.Count];
-            Array.Copy(dbhSortIndices, unusedCapacity, trimmedSortIndices, 0, this.Count - unusedCapacity);
+            Array.Copy(dbhSortIndices, unusedCapacity, trimmedSortIndices, 0, this.Count);
             return trimmedSortIndices;
         }
 

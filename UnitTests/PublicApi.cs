@@ -110,9 +110,8 @@ namespace Osu.Cof.Ferm.Test
 
             GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, planningPeriods, landExpectationValue)
             {
-                EndStandardDeviation = 0.001F, // US$ 1 NPV
                 PopulationSize = 7,
-                MaximumGenerations = 8,
+                MaximumGenerations = 5,
             };
             TimeSpan geneticRuntime = genetic.Run();
 
@@ -227,11 +226,11 @@ namespace Osu.Cof.Ferm.Test
 
             // verify thinned trajectory
             //                                        0      1      2      3       4       5       6       7       8       9
-            float[] minimumThinnedQmd = new float[] { 6.61F, 8.10F, 9.37F, 10.08F, 10.91F, 11.68F, 12.38F, 13.01F, 13.59F, 14.12F }; // in
+            float[] minimumThinnedQmd = new float[] { 6.61F, 8.10F, 9.37F, 10.08F, 10.91F, 11.68F, 12.39F, 13.02F, 13.61F, 14.14F }; // in
             //                                              0      1      2      3      4      5       6       7       8       9
-            float[] minimumThinnedTopHeight = new float[] { 54.5F, 68.1F, 80.5F, 88.4F, 98.5F, 108.0F, 116.9F, 125.1F, 132.6F, 139.5F }; // ft
+            float[] minimumThinnedTopHeight = new float[] { 54.5F, 68.1F, 80.5F, 88.4F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
             //                                           0       1       2       3       4       5       6       7       8       9
-            float[] minimumThinnedVolume = new float[] { 103.0F, 205.3F, 316.8F, 251.2F, 343.9F, 439.4F, 531.4F, 616.9F, 694.5F, 763.9F }; // m³ for 20+15+10% thin
+            float[] minimumThinnedVolume = new float[] { 103.1F, 205.3F, 316.8F, 247.9F, 340.3F, 436.2F, 528.8F, 614.8F, 693.0F, 763.0F }; // m³ for 20+15+10% thin
             this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
         }
@@ -308,9 +307,9 @@ namespace Osu.Cof.Ferm.Test
             //                                        0      1       2       3       4     
             float[] minimumThinnedQmd = new float[] { 9.98F, 10.58F, 11.23F, 11.83F, 12.39F }; // in
             //                                              0       1       2       3       4     
-            float[] minimumThinnedTopHeight = new float[] { 101.7F, 109.7F, 118.0F, 125.8F, 133.1F }; // ft
+            float[] minimumThinnedTopHeight = new float[] { 101.7F, 109.5F, 117.8F, 125.6F, 132.9F }; // ft
             //                                           0       1       2       3       4     
-            float[] minimumThinnedVolume = new float[] { 643.4F, 535.4F, 623.8F, 702.1F, 769.7F }; // m³ for 0+30+0% thin
+            float[] minimumThinnedVolume = new float[] { 643.4F, 530.4F, 619.3F, 698.3F, 766.7F }; // m³ for 0+30+0% thin
             this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 70, 80, configuration.Variant.TimeStepInYears);
             this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
             Assert.IsTrue(thinnedTrajectory.GetFirstHarvestAge() == 30);

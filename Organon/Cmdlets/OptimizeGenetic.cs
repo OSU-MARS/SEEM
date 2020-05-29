@@ -9,10 +9,6 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class OptimizeGenetic : OptimizeCmdlet
     {
         [Parameter]
-        [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> EndStandardDeviation { get; set; }
-
-        [Parameter]
         [ValidateRange(0.0, 1.0)]
         public Nullable<float> ExchangeProbability { get; set; }
 
@@ -23,6 +19,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
         public Nullable<int> MaximumGenerations { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0, Single.MaxValue)]
+        public Nullable<float> MinCoefficientOfVariation { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
@@ -43,9 +43,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                 CentralSelectionProbability = defaultSelectionProbability
             };
 
-            if (this.EndStandardDeviation.HasValue)
+            if (this.MinCoefficientOfVariation.HasValue)
             {
-                genetic.EndStandardDeviation = this.EndStandardDeviation.Value;
+                genetic.MinCoefficientOfVariation = this.MinCoefficientOfVariation.Value;
             }
             if (this.ExchangeProbability.HasValue)
             {

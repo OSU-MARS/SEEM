@@ -87,7 +87,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float unityScalingFactor = 1.0F / (float)byte.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            for (int iteration = 0; (iteration < this.Iterations) && (meanAcceptanceProbability >= this.FinalProbability); meanAcceptanceProbability *= this.Alpha)
+            for (int iteration = 1; (iteration < this.Iterations) && (meanAcceptanceProbability >= this.FinalProbability); meanAcceptanceProbability *= this.Alpha)
             {
                 float logMeanAcceptanceProbability = Single.NegativeInfinity;
                 if (meanAcceptanceProbability > 0.0F)

@@ -8,10 +8,10 @@ namespace Osu.Cof.Ferm.Heuristics
     public class GeneticAlgorithm : Heuristic
     {
         public float CentralSelectionProbability { get; set; }
-        public float EndStandardDeviation { get; set; }
         public float ExchangeProbability { get; set; }
         public float FlipProbability { get; set; }
         public int MaximumGenerations { get; set; }
+        public float MinCoefficientOfVariation { get; set; }
         public int PopulationSize { get; set; }
         public float ReservedPopulationProportion { get; set; }
         public float SelectionProbabilityWidth { get; set; }
@@ -21,10 +21,10 @@ namespace Osu.Cof.Ferm.Heuristics
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
             this.CentralSelectionProbability = 0.5F;
-            this.EndStandardDeviation = 0.001F;
             this.ExchangeProbability = 0.7F;
             this.FlipProbability = 0.9F;
             this.MaximumGenerations = 100;
+            this.MinCoefficientOfVariation = 0.000001F;
             this.PopulationSize = 40;
             this.ReservedPopulationProportion = 0.7F;
             this.SelectionProbabilityWidth = 1.0F;
@@ -38,7 +38,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Genetic";
         }
 
-        private float GetMaximumFitnessAndVariance(GeneticPopulation generation)
+        private float GetMaximumFitnessAndVariance(GeneticPopulation generation, out float coeffcientOfVariation)
         {
             // use double precision for intermediate variance calculations
             // When calculation is done with floats the sum of squares and squared sum accumulations and their eventual subtractions is sensitive to 
@@ -61,21 +61,23 @@ namespace Osu.Cof.Ferm.Heuristics
             Debug.Assert(highestFitness >= this.BestObjectiveFunction);
 
             double n = generation.Size;
-            //double meanHarvest = sum / n;
-            //double variance = sumOfSquares / n - meanHarvest * meanHarvest;
-            float variance = (float)((sumOfSquares - sum * sum / n) / n); // somewhat less likely to truncate to zero compared to direct calculation of mean
-            return variance;
+            double mean = sum / n;
+            double variance = sumOfSquares / n - mean * mean;
+            double standardDeviation = Math.Sqrt(variance);
+
+            coeffcientOfVariation = (float)(standardDeviation / mean);
+            return (float)variance;
         }
 
         public override TimeSpan Run()
         {
-            if (this.EndStandardDeviation <= 0.0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.EndStandardDeviation));
-            }
             if (this.MaximumGenerations < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.MaximumGenerations));
+            }
+            if (this.MinCoefficientOfVariation < 0.0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.MinCoefficientOfVariation));
             }
             if (this.PopulationSize < 1)
             {
@@ -115,16 +117,16 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
                 this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             }
+            float variance = this.GetMaximumFitnessAndVariance(currentGeneration, out float _);
+            this.VarianceByGeneration.Add(variance);
 
             // for each generation of size n, perform n fertile matings
-            double endVariance = this.EndStandardDeviation * this.EndStandardDeviation;
             float treeScalingFactor = ((float)initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
             float mutationScalingFactor = 1.0F / (float)UInt16.MaxValue;
-            float variance = this.GetMaximumFitnessAndVariance(currentGeneration);
             GeneticPopulation nextGeneration = new GeneticPopulation(currentGeneration);
             OrganonStandTrajectory firstChildTrajectory = individualTrajectory;
             OrganonStandTrajectory secondChildTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            for (int generationIndex = 1; (generationIndex < this.MaximumGenerations) && (variance > endVariance); ++generationIndex)
+            for (int generationIndex = 1; generationIndex < this.MaximumGenerations; ++generationIndex)
             {
                 currentGeneration.RecalculateMatingDistributionFunction();
                 for (int matingIndex = 0; matingIndex < currentGeneration.Size; ++matingIndex)
@@ -277,8 +279,13 @@ namespace Osu.Cof.Ferm.Heuristics
                 //currentGeneration = nextGeneration;
                 //nextGeneration = generationSwapPointer;
                 currentGeneration.CopyFrom(nextGeneration);
-                variance = this.GetMaximumFitnessAndVariance(currentGeneration);
+                variance = this.GetMaximumFitnessAndVariance(currentGeneration, out float coefficientOfVariation);
                 this.VarianceByGeneration.Add(variance);
+
+                if (coefficientOfVariation < this.MinCoefficientOfVariation)
+                {
+                    break;
+                }
             }
 
             this.CurrentTrajectory.CopyFrom(this.BestTrajectory);

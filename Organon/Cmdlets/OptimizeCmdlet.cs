@@ -31,7 +31,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<int> HarvestPeriods { get; set; }
 
         [Parameter]
-        public SwitchParameter NetPresentValue { get; set; }
+        public SwitchParameter LandExpectationValue { get; set; }
         [Parameter]
         [ValidateNotNull]
         [ValidateRange(1, 100)]
@@ -56,7 +56,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Cores = 4;
             this.DiscountRate = 4; // percent per year
             this.HarvestPeriods = new List<int>() { 3 };
-            this.NetPresentValue = false;
+            this.LandExpectationValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
             this.TreeModel = TreeModel.OrganonNwo;
             this.SelectionProbabilities = new List<float>() { 0.5F };
@@ -92,7 +92,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             Objective objective = new Objective()
             {
                 DiscountRate = 0.01F * this.DiscountRate,
-                IsLandExpectationValue = this.NetPresentValue,
+                IsLandExpectationValue = this.LandExpectationValue,
                 VolumeUnits = this.VolumeUnits
             };
 
