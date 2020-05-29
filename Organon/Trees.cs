@@ -168,6 +168,28 @@ namespace Osu.Cof.Ferm
             return trimmedSortIndices;
         }
 
+        public int[] GetHeightSortOrder()
+        {
+            int[] heightSortIndices = new int[this.Capacity];
+            for (int treeIndex = 0; treeIndex < this.Count; ++treeIndex)
+            {
+                heightSortIndices[treeIndex] = treeIndex;
+            }
+            float[] heightCloneWhichBecomesSorted = new float[this.Capacity];
+            this.Height.CopyTo(heightCloneWhichBecomesSorted, 0);
+            Array.Sort(heightCloneWhichBecomesSorted, heightSortIndices);
+
+            int unusedCapacity = this.Capacity - this.Count;
+            if (unusedCapacity == 0)
+            {
+                return heightSortIndices;
+            }
+
+            int[] trimmedSortIndices = new int[this.Count];
+            Array.Copy(heightSortIndices, unusedCapacity, trimmedSortIndices, 0, this.Count);
+            return trimmedSortIndices;
+        }
+
         public void SortByDbh()
         {
             int[] dbhSortIndices = new int[this.Capacity];

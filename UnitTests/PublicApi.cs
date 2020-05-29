@@ -140,7 +140,9 @@ namespace Osu.Cof.Ferm.Test
 
             TabuSearch tabu = new TabuSearch(stand, configuration, planningPeriods, landExpectationValue)
             {
-                Iterations = 5
+                Iterations = 5,
+                //Jump = 2,
+                Tenure = 5
             };
             tabu.RandomizeSelections(TestConstant.Default.HarvestProbability);
             TimeSpan tabuRuntime = tabu.Run();

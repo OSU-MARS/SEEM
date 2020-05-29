@@ -8,12 +8,14 @@ namespace Osu.Cof.Ferm.Heuristics
     public class TabuSearch : Heuristic
     {
         public int Iterations { get; set; }
+        //public int Jump { get; set; }
         public int Tenure { get; set; }
 
         public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             :  base(stand, organonConfiguration, planningPeriods, objective)
         {
             this.Iterations = stand.GetTreeRecordCount();
+            //this.Jump = 1;
             this.Tenure = (int)(0.3 * this.Iterations);
 
             this.ObjectiveFunctionByMove = new List<float>(1000)
@@ -22,10 +24,170 @@ namespace Osu.Cof.Ferm.Heuristics
             };
         }
 
+        //private List<List<int>> GetDiameterQuantiles()
+        //{
+        //    List<List<int>> treeIndicesByDiameterQuantile = new List<List<int>>();
+        //    int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+        //    List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
+        //    for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
+        //    {
+        //        allTreeIndices.Add(treeIndex);
+        //    }
+        //    treeIndicesByDiameterQuantile.Add(allTreeIndices);
+
+        //    if (this.Jump == 1)
+        //    {
+        //        return treeIndicesByDiameterQuantile;
+        //    }
+
+        //    int firstHarvestPeriod = this.CurrentTrajectory.GetFirstHarvestPeriod();
+        //    Stand standAtFirstHarvest = this.CurrentTrajectory.StandByPeriod[firstHarvestPeriod];
+        //    if (standAtFirstHarvest.TreesBySpecies.Count != 1)
+        //    {
+        //        throw new NotSupportedException();
+        //    }
+        //    Trees treesOfSpecies = standAtFirstHarvest.TreesBySpecies.Values.First();
+        //    int[] dbhSortOrder = treesOfSpecies.GetDbhSortOrder();
+        //    float quantileSize = 1.0F / this.Jump;
+        //    float treeIncrement = 1.0F / treesOfSpecies.Count;
+        //    float treeCumulativeDistribution = 0.0F;
+        //    for (int dbhSortIndex = 0; dbhSortIndex < treesOfSpecies.Count; treeCumulativeDistribution += treeIncrement, ++dbhSortIndex)
+        //    {
+        //        // numerical rounding may result in CDF positions slightly greater than 1
+        //        // Plus one to account for inclusion of all trees as the first element of the list.
+        //        int quantileIndex = Math.Min((int)(treeCumulativeDistribution / quantileSize), this.Jump - 1) + 1;
+        //        Debug.Assert(treeCumulativeDistribution < 1.001F);
+
+        //        if (treeIndicesByDiameterQuantile.Count <= quantileIndex)
+        //        {
+        //            treeIndicesByDiameterQuantile.Add(new List<int>());
+        //        }
+
+        //        List<int> treeIndicesForQuantile = treeIndicesByDiameterQuantile[quantileIndex];
+        //        treeIndicesForQuantile.Add(dbhSortOrder[dbhSortIndex]);
+        //    }
+
+        //    return treeIndicesByDiameterQuantile;
+        //}
+
+        //private List<List<int>> GetDiameterSubsets()
+        //{
+        //    List<List<int>> treeIndicesBySubset = new List<List<int>>();
+        //    int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+        //    List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
+        //    for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
+        //    {
+        //        allTreeIndices.Add(treeIndex);
+        //    }
+        //    treeIndicesBySubset.Add(allTreeIndices);
+
+        //    if (this.Jump == 1)
+        //    {
+        //        return treeIndicesBySubset;
+        //    }
+
+        //    int firstHarvestPeriod = this.CurrentTrajectory.GetFirstHarvestPeriod();
+        //    Stand standAtFirstHarvest = this.CurrentTrajectory.StandByPeriod[firstHarvestPeriod];
+        //    if (standAtFirstHarvest.TreesBySpecies.Count != 1)
+        //    {
+        //        throw new NotSupportedException();
+        //    }
+        //    Trees treesOfSpecies = standAtFirstHarvest.TreesBySpecies.Values.First();
+        //    int[] dbhSortOrder = treesOfSpecies.GetDbhSortOrder();
+        //    for (int subset = 0; subset < this.Jump; ++subset)
+        //    {
+        //        List<int> treeIndicesForSubset = new List<int>();
+        //        treeIndicesBySubset.Add(treeIndicesForSubset);
+        //        for (int dbhSortIndex = subset; dbhSortIndex < treesOfSpecies.Count; dbhSortIndex += this.Jump)
+        //        {
+        //            treeIndicesForSubset.Add(dbhSortOrder[dbhSortIndex]);
+        //        }
+        //    }
+
+        //    return treeIndicesBySubset;
+        //}
+
+        //private List<List<int>> GetHeightSubsets()
+        //{
+        //    List<List<int>> treeIndicesBySubset = new List<List<int>>();
+        //    int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+        //    List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
+        //    for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
+        //    {
+        //        allTreeIndices.Add(treeIndex);
+        //    }
+        //    treeIndicesBySubset.Add(allTreeIndices);
+
+        //    if (this.Jump == 1)
+        //    {
+        //        return treeIndicesBySubset;
+        //    }
+
+        //    int firstHarvestPeriod = this.CurrentTrajectory.GetFirstHarvestPeriod();
+        //    Stand standAtFirstHarvest = this.CurrentTrajectory.StandByPeriod[firstHarvestPeriod];
+        //    if (standAtFirstHarvest.TreesBySpecies.Count != 1)
+        //    {
+        //        throw new NotSupportedException();
+        //    }
+        //    Trees treesOfSpecies = standAtFirstHarvest.TreesBySpecies.Values.First();
+        //    int[] heightSortOrder = treesOfSpecies.GetHeightSortOrder();
+        //    for (int subset = 0; subset < this.Jump; ++subset)
+        //    {
+        //        List<int> treeIndicesForSubset = new List<int>();
+        //        treeIndicesBySubset.Add(treeIndicesForSubset);
+        //        for (int dbhSortIndex = subset; dbhSortIndex < treesOfSpecies.Count; dbhSortIndex += this.Jump)
+        //        {
+        //            treeIndicesForSubset.Add(heightSortOrder[dbhSortIndex]);
+        //        }
+        //    }
+
+        //    return treeIndicesBySubset;
+        //}
+
         public override string GetName()
         {
             return "Tabu";
         }
+
+        //private List<int> GetNextRandomSubset(int totalTrees /*, List<List<int>> subsets*/)
+        //{
+        //    List<int> subsetIndices = new List<int>();
+        //    for (int subsetIndex = 0; subsetIndex < totalTrees / this.Jump; ++subsetIndex)
+        //    {
+        //        subsetIndices.Add(this.Pseudorandom.Next(totalTrees));
+        //    }
+        //    return subsetIndices;
+
+        //    // guaranteeing all trees are considered results in slower convergance than entirely random subsets
+        //    //if (subsets.Count == 0)
+        //    //{
+        //    //    int[] allTreeIndices = new int[totalTrees];
+        //    //    for (int treeIndex = 0; treeIndex < allTreeIndices.Length; ++treeIndex)
+        //    //    {
+        //    //        allTreeIndices[treeIndex] = treeIndex;
+        //    //    }
+        //    //    this.Pseudorandom.Shuffle(allTreeIndices);
+
+        //    //    for (int subset = 0; subset < this.Jump; ++subset)
+        //    //    {
+        //    //        subsets.Add(new List<int>());
+        //    //    }
+        //    //    for (int treeIndex = 0; treeIndex < allTreeIndices.Length; treeIndex += this.Jump)
+        //    //    {
+        //    //        for (int subset = 0; subset < this.Jump; ++subset)
+        //    //        {
+        //    //            if (treeIndex + subset >= allTreeIndices.Length)
+        //    //            {
+        //    //                break;
+        //    //            }
+        //    //            subsets[subset].Add(allTreeIndices[treeIndex + subset]);
+        //    //        }
+        //    //    }
+        //    //}
+        //    //List<int> subsetIndices = subsets[^1];
+        //    //subsets.RemoveAt(subsets.Count - 1);
+        //    //return subsetIndices;
+        //}
 
         public override TimeSpan Run()
         {
@@ -33,6 +195,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Iterations));
             }
+            //if (this.Jump < 1)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(this.Jump));
+            //}
             if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
             {
                 throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
@@ -48,11 +214,24 @@ namespace Osu.Cof.Ferm.Heuristics
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             int[,] remainingTabuTenures = new int[initialTreeRecordCount, this.CurrentTrajectory.HarvestPeriods];
             float currentObjectiveFunction = this.BestObjectiveFunction;
+            //List<List<int>> treeIndicesBySubset = this.GetDiameterQuantiles();
+            //List<List<int>> treeIndicesBySubset = this.GetDiameterSubsets(); // performs poorly compared to diameter quantiles
+            //List<List<int>> treeIndicesBySubset = this.GetHeightSubsets(); // performs worse
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             OrganonStandTrajectory bestCandidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             OrganonStandTrajectory bestNonTabuCandidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            //double tenureScalingFactor = ((double)this.Tenure - Constant.RoundToZeroTolerance) / (double)byte.MaxValue;
+            //float tenureScalingFactor = ((float)this.Tenure - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
+            //List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
+            //for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
+            //{
+            //    allTreeIndices.Add(treeIndex);
+            //}
+            //int jumpBase = 0;
+            //List<List<int>> subsets = new List<List<int>>();
+            //int treeIndexStep = this.Jump;
+
+            //int subset = 0;
             for (int neighborhoodEvaluation = 0; neighborhoodEvaluation < this.Iterations; ++neighborhoodEvaluation)
             {
                 // evaluate potential moves in neighborhood
@@ -62,6 +241,14 @@ namespace Osu.Cof.Ferm.Heuristics
                 float bestNonTabuCandidateObjectiveFunction = Single.MinValue;
                 int bestNonTabuUnitIndex = -1;
                 int bestNonTabuHarvestPeriod = -1;
+                //List<int> treesInNeighborhood = allTreeIndices;
+                //if ((this.Jump > 1) && (treeIndexStep == this.Jump))
+                //{
+                //    treesInNeighborhood = this.GetNextRandomSubset(initialTreeRecordCount /*, subsets*/);
+                //}
+                //List<int> treesInNeighborhood = treeIndicesBySubset[subset];
+                //foreach (int treeIndex in treesInNeighborhood)
+                //for (int treeIndex = jumpBase; treeIndex < initialTreeRecordCount; treeIndex += treeIndexStep)
                 for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
@@ -114,7 +301,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.CurrentTrajectory.CopyFrom(bestCandidateTrajectory);
 
                     remainingTabuTenures[bestTreeIndex, bestHarvestPeriod] = this.Tenure;
-                    // remainingTabuTenures[bestUnitIndex, bestHarvestPeriod] = (int)(tenureScalingFactor * this.GetPseudorandomByteAsDouble()) + 1;
+                    // remainingTabuTenures[bestUnitIndex, bestHarvestPeriod] = (int)(tenureScalingFactor * this.GetPseudorandomByteAsFloat()) + 1;
 
                     this.BestObjectiveFunction = bestCandidateObjectiveFunction;
                     this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
@@ -127,7 +314,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.CurrentTrajectory.CopyFrom(bestNonTabuCandidateTrajectory);
 
                     remainingTabuTenures[bestNonTabuUnitIndex, bestNonTabuHarvestPeriod] = this.Tenure;
-                    // remainingTabuTenures[bestNonTabuUnitIndex, bestNonTabuHarvestPeriod] = (int)(tenureScalingFactor * this.GetPseudorandomByteAsDouble()) + 1;
+                    // remainingTabuTenures[bestNonTabuUnitIndex, bestNonTabuHarvestPeriod] = (int)(tenureScalingFactor * this.GetPseudorandomByteAsFloat()) + 1;
                 }
 
                 this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
@@ -136,6 +323,20 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
                 }
+                //if (++jumpBase >= this.Jump)
+                //{
+                //    jumpBase = 0;
+                //    treeIndexStep = 1;
+                //}
+                //else if (treeIndexStep != this.Jump)
+                //{
+                //    jumpBase = 0;
+                //    treeIndexStep = this.Jump;
+                //}
+                //if (++subset >= this.Jump)
+                //{
+                //    subset = 0;
+                //}
             }
 
             stopwatch.Stop();

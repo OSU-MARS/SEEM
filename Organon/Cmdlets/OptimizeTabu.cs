@@ -12,6 +12,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0, Int32.MaxValue)]
         public Nullable<int> Iterations { get; set; }
 
+        //[Parameter]
+        //[ValidateRange(1, 100)]
+        //public Nullable<int> Jump { get; set; }
+
         [Parameter]
         [ValidateRange(0, Int32.MaxValue)]
         public Nullable<int> Tenure { get; set; }
@@ -23,6 +27,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 tabu.Iterations = this.Iterations.Value;
             }
+            //if (this.Jump.HasValue)
+            //{
+            //    tabu.Jump = this.Jump.Value;
+            //}
             if (this.Tenure.HasValue)
             {
                 tabu.Tenure = this.Tenure.Value;
