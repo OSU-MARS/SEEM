@@ -7,16 +7,16 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class RandomGuessing : Heuristic
     {
-        public float CentralSelectionProbability { get; set; }
+        public float CentralSelectionPercentage { get; set; }
         public int Iterations { get; set; }
-        public float SelectionProbabilityWidth { get; set; }
+        public float SelectionPercentageWidth { get; set; }
 
-        public RandomGuessing(OrganonStand stand, OrganonConfiguration configuration, int planningPeriods, Objective objective, float centralSelectionProbability)
+        public RandomGuessing(OrganonStand stand, OrganonConfiguration configuration, int planningPeriods, Objective objective, float centralSelectionPercentage)
             : base(stand, configuration, planningPeriods, objective)
         {
-            this.CentralSelectionProbability = centralSelectionProbability;
+            this.CentralSelectionPercentage = centralSelectionPercentage;
             this.Iterations = 4 * stand.GetTreeRecordCount();
-            this.SelectionProbabilityWidth = 0.2F;
+            this.SelectionPercentageWidth = 20.0F;
 
             this.ObjectiveFunctionByMove = new List<float>(1000)
             {
@@ -31,24 +31,24 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
-            if ((this.CentralSelectionProbability < 0.0F) || (this.CentralSelectionProbability > 1.0F))
+            if ((this.CentralSelectionPercentage < 0.0F) || (this.CentralSelectionPercentage > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.CentralSelectionProbability));
+                throw new ArgumentOutOfRangeException(nameof(this.CentralSelectionPercentage));
             }
             if (this.ChainFrom >= 0)
             {
                 throw new NotSupportedException(nameof(this.ChainFrom));
             }
-            if ((this.SelectionProbabilityWidth < 0.0F) || (this.SelectionProbabilityWidth > 1.0F))
+            if ((this.SelectionPercentageWidth < 0.0F) || (this.SelectionPercentageWidth > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.SelectionProbabilityWidth));
+                throw new ArgumentOutOfRangeException(nameof(this.SelectionPercentageWidth));
             }
 
-            float minSelectionProbability = this.CentralSelectionProbability - 0.5F * this.SelectionProbabilityWidth;
-            float maxSelectionProbability = this.CentralSelectionProbability + 0.5F * this.SelectionProbabilityWidth;
-            if ((minSelectionProbability < 0.0F) || (maxSelectionProbability > 1.0F))
+            float minSelectionPercentage = this.CentralSelectionPercentage - 0.5F * this.SelectionPercentageWidth;
+            float maxSelectionPercentage = this.CentralSelectionPercentage + 0.5F * this.SelectionPercentageWidth;
+            if ((minSelectionPercentage < 0.0F) || (maxSelectionPercentage > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.SelectionProbabilityWidth));
+                throw new ArgumentOutOfRangeException(nameof(this.SelectionPercentageWidth));
             }
 
             if (this.Iterations < 1)
@@ -63,11 +63,11 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            float selectionProbabilityScaling = this.SelectionProbabilityWidth / (float)UInt16.MaxValue;
+            float selectionPercentageScaling = this.SelectionPercentageWidth / (float)UInt16.MaxValue;
             for (int iteration = 0; iteration < this.Iterations; ++iteration)
             {
-                float selectionProbability = minSelectionProbability + selectionProbabilityScaling * this.GetTwoPseudorandomBytesAsFloat();
-                this.RandomizeSelections(selectionProbability);
+                float selectionPercentage = minSelectionPercentage + selectionPercentageScaling * this.GetTwoPseudorandomBytesAsFloat();
+                this.RandomizeSelections(selectionPercentage);
                 this.CurrentTrajectory.Simulate();
 
                 float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);

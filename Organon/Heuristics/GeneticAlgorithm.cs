@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Cmdlets;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,30 +8,30 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class GeneticAlgorithm : Heuristic
     {
-        public float CentralSelectionProbability { get; set; }
         public float ExchangeProbability { get; set; }
         public float FlipProbability { get; set; }
         public int MaximumGenerations { get; set; }
         public float MinCoefficientOfVariation { get; set; }
         public int PopulationSize { get; set; }
+        public float ProportionalPercentageCenter { get; set; }
+        public float ProportionalPercentageWidth { get; set; }
         public float ReservedPopulationProportion { get; set; }
-        public float SelectionProbabilityWidth { get; set; }
         public List<float> VarianceByGeneration { get; private set; }
 
         public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
-            this.CentralSelectionProbability = 0.5F;
-            this.ExchangeProbability = 0.7F;
-            this.FlipProbability = 0.9F;
-            this.MaximumGenerations = 100;
-            this.MinCoefficientOfVariation = 0.000001F;
-            this.PopulationSize = 40;
-            this.ReservedPopulationProportion = 0.7F;
-            this.SelectionProbabilityWidth = 1.0F;
+            this.ExchangeProbability = Constant.GeneticDefault.ExchangeProbability;
+            this.FlipProbability = Constant.GeneticDefault.FlipProbability;
+            this.MaximumGenerations = Constant.GeneticDefault.MaximumGenerations;
+            this.MinCoefficientOfVariation = Constant.GeneticDefault.MinCoefficientOfVariation;
+            this.PopulationSize = Constant.GeneticDefault.PopulationSize;
+            this.ProportionalPercentageCenter = Constant.GeneticDefault.ProportionalPercentageCenter;
+            this.ProportionalPercentageWidth = Constant.GeneticDefault.ProportionalPercentageWidth;
+            this.ReservedPopulationProportion = Constant.GeneticDefault.ReservedPopulationProportion;
             this.VarianceByGeneration = new List<float>();
 
-            this.ObjectiveFunctionByMove = new List<float>(this.MaximumGenerations);
+            this.ObjectiveFunctionByMove = new List<float>(this.MaximumGenerations * this.PopulationSize);
         }
 
         public override string GetName()
@@ -69,6 +70,11 @@ namespace Osu.Cof.Ferm.Heuristics
             return (float)variance;
         }
 
+        public override HeuristicParameters GetParameters()
+        {
+            return base.GetParameters();
+        }
+
         public override TimeSpan Run()
         {
             if (this.MaximumGenerations < 1)
@@ -92,12 +98,12 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
 
             // begin with population of random harvest schedules
-            // TODO: CopyTreeSelectionFrom() for initializing tree selection?
+            // TODO: CopyTreeSelectionFrom(this.CurrentSolution) for initializing tree selection?
             // TODO: should incoming schedule on this.CurrentSolution be one of the individuals in the population?
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             int treeSelectionCapacity = Constant.Simd128x4.Width * (initialTreeRecordCount / Constant.Simd128x4.Width + 1);
             GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, treeSelectionCapacity);
-            currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection, this.CentralSelectionProbability, this.SelectionProbabilityWidth);
+            currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection, this.ProportionalPercentageCenter, this.ProportionalPercentageWidth);
             OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             this.BestObjectiveFunction = Single.MinValue;
             for (int individualIndex = 0; individualIndex < this.PopulationSize; ++individualIndex)

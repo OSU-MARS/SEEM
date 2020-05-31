@@ -104,39 +104,39 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public void RandomizeSchedule(HarvestPeriodSelection periodSelection, float centralSelectionProbability, float selectionProbabilityWidth)
+        public void RandomizeSchedule(HarvestPeriodSelection periodSelection, float proportionalPercentageCenter, float proportionalPercentageWidth)
         {
-            if ((centralSelectionProbability < 0.0F) || (centralSelectionProbability > 1.0F))
+            if ((proportionalPercentageCenter < 0.0F) || (proportionalPercentageCenter > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(centralSelectionProbability));
+                throw new ArgumentOutOfRangeException(nameof(proportionalPercentageCenter));
             }
-            if ((selectionProbabilityWidth < 0.0F) || (selectionProbabilityWidth > 1.0F))
+            if ((proportionalPercentageWidth < 0.0F) || (proportionalPercentageWidth > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(selectionProbabilityWidth));
-            }
-
-            float minSelectionProbability = centralSelectionProbability - 0.5F * selectionProbabilityWidth;
-            float maxSelectionProbability = centralSelectionProbability + 0.5F * selectionProbabilityWidth;
-            if ((minSelectionProbability < 0.0F) || (maxSelectionProbability > 1.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(selectionProbabilityWidth));
+                throw new ArgumentOutOfRangeException(nameof(proportionalPercentageWidth));
             }
 
-            float selectionProbability = minSelectionProbability;
-            float selectionProbabilityIncrement = selectionProbabilityWidth / (this.Size - 1);
-            float unityScalingFactor = 1.0F / byte.MaxValue;
+            float minSelectionPercentage = proportionalPercentageCenter - 0.5F * proportionalPercentageWidth;
+            float maxSelectionPercentage = proportionalPercentageCenter + 0.5F * proportionalPercentageWidth;
+            if ((minSelectionPercentage < 0.0F) || (maxSelectionPercentage > 100.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(proportionalPercentageWidth));
+            }
+
+            float selectionPercentage = minSelectionPercentage;
+            float selectionPercentageIncrement = proportionalPercentageWidth / (this.Size - 1);
+            float percentageScalingFactor = 100.0F / byte.MaxValue;
             if (periodSelection == HarvestPeriodSelection.All)
             {
                 for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
                 {
-                    float harvestPeriodScalingFactor = (this.HarvestPeriods - Constant.RoundTowardsZeroTolerance) / selectionProbability;
+                    float harvestPeriodScalingFactor = (this.HarvestPeriods - Constant.RoundTowardsZeroTolerance) / selectionPercentage;
                     int[] schedule = this.IndividualTreeSelections[individualIndex];
                     for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
                     {
-                        float treeProbability = unityScalingFactor * this.GetPseudorandomByteAsFloat();
-                        if (treeProbability < selectionProbability)
+                        float treePercentage = percentageScalingFactor * this.GetPseudorandomByteAsFloat();
+                        if (treePercentage < selectionPercentage)
                         {
-                            schedule[treeIndex] = (int)(harvestPeriodScalingFactor * treeProbability);
+                            schedule[treeIndex] = (int)(harvestPeriodScalingFactor * treePercentage);
                         }
                         else
                         {
@@ -144,8 +144,8 @@ namespace Osu.Cof.Ferm.Heuristics
                         }
                     }
 
-                    Debug.Assert(selectionProbability <= 1.0F);
-                    selectionProbability += selectionProbabilityIncrement;
+                    Debug.Assert(selectionPercentage <= 100.0F);
+                    selectionPercentage += selectionPercentageIncrement;
                 }
             }
             else if (periodSelection == HarvestPeriodSelection.NoneOrLast)
@@ -155,12 +155,12 @@ namespace Osu.Cof.Ferm.Heuristics
                     int[] schedule = this.IndividualTreeSelections[individualIndex];
                     for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
                     {
-                        bool isSelected = (unityScalingFactor * this.GetPseudorandomByteAsFloat()) < selectionProbability;
+                        bool isSelected = (percentageScalingFactor * this.GetPseudorandomByteAsFloat()) < selectionPercentage;
                         schedule[treeIndex] = isSelected ? this.HarvestPeriods - 1: 0;
                     }
 
-                    Debug.Assert(selectionProbability <= 1.0F);
-                    selectionProbability += selectionProbabilityIncrement;
+                    Debug.Assert(selectionPercentage <= 100.0F);
+                    selectionPercentage += selectionPercentageIncrement;
                 }
             }
             else

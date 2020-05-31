@@ -78,7 +78,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 Iterations = 10
             };
-            hero.RandomizeSelections(TestConstant.Default.HarvestProbability);
+            hero.RandomizeSelections(TestConstant.Default.SelectionPercentage);
             hero.Run();
 
             this.Verify(hero);
@@ -101,6 +101,10 @@ namespace Osu.Cof.Ferm.Test
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, treeCount);
 
+            HeuristicParameters heuristicParameters = new HeuristicParameters()
+            {
+                ProportionalPercentage = 50.0F
+            };
             Objective landExpectationValue = new Objective()
             {
                 IsLandExpectationValue = true,
@@ -110,6 +114,7 @@ namespace Osu.Cof.Ferm.Test
 
             GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, planningPeriods, landExpectationValue)
             {
+                ProportionalPercentageCenter = heuristicParameters.ProportionalPercentage,
                 PopulationSize = 7,
                 MaximumGenerations = 5,
             };
@@ -121,30 +126,30 @@ namespace Osu.Cof.Ferm.Test
                 LowerWaterAfter = 9,
                 StopAfter = 10
             };
-            deluge.RandomizeSelections(TestConstant.Default.HarvestProbability);
+            deluge.RandomizeSelections(TestConstant.Default.SelectionPercentage);
             TimeSpan delugeRuntime = deluge.Run();
 
             RecordTravel recordTravel = new RecordTravel(stand, configuration, planningPeriods, landExpectationValue)
             {
                 StopAfter = 10
             };
-            recordTravel.RandomizeSelections(TestConstant.Default.HarvestProbability);
+            recordTravel.RandomizeSelections(TestConstant.Default.SelectionPercentage);
             TimeSpan recordRuntime = recordTravel.Run();
 
             SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, planningPeriods, volume)
             {
                 Iterations = 100
             };
-            annealer.RandomizeSelections(TestConstant.Default.HarvestProbability);
+            annealer.RandomizeSelections(TestConstant.Default.SelectionPercentage);
             TimeSpan annealerRuntime = annealer.Run();
 
             TabuSearch tabu = new TabuSearch(stand, configuration, planningPeriods, landExpectationValue)
             {
-                Iterations = 5,
+                Iterations = 7,
                 //Jump = 2,
                 Tenure = 5
             };
-            tabu.RandomizeSelections(TestConstant.Default.HarvestProbability);
+            tabu.RandomizeSelections(TestConstant.Default.SelectionPercentage);
             TimeSpan tabuRuntime = tabu.Run();
 
             ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, planningPeriods, volume);
@@ -152,10 +157,10 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.Thresholds.Clear();
             thresholdAcceptor.IterationsPerThreshold.Add(10);
             thresholdAcceptor.Thresholds.Add(1.0F);
-            thresholdAcceptor.RandomizeSelections(TestConstant.Default.HarvestProbability);
+            thresholdAcceptor.RandomizeSelections(TestConstant.Default.SelectionPercentage);
             TimeSpan acceptorRuntime = thresholdAcceptor.Run();
 
-            RandomGuessing random = new RandomGuessing(stand, configuration, planningPeriods, volume, 0.5F)
+            RandomGuessing random = new RandomGuessing(stand, configuration, planningPeriods, volume, heuristicParameters.ProportionalPercentage)
             {
                 Iterations = 4
             };
@@ -184,14 +189,14 @@ namespace Osu.Cof.Ferm.Test
             this.Verify(tabu);
 
             HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution();
-            distribution.AddRun(annealer, annealerRuntime);
-            distribution.AddRun(deluge, delugeRuntime);
-            distribution.AddRun(thresholdAcceptor, acceptorRuntime);
-            distribution.AddRun(genetic, geneticRuntime);
-            distribution.AddRun(enumerator, enumerationRuntime);
-            distribution.AddRun(recordTravel, recordRuntime);
-            distribution.AddRun(tabu, tabuRuntime);
-            distribution.AddRun(random, randomRuntime);
+            distribution.AddRun(annealer, annealerRuntime, heuristicParameters);
+            distribution.AddRun(deluge, delugeRuntime, heuristicParameters);
+            distribution.AddRun(thresholdAcceptor, acceptorRuntime, heuristicParameters);
+            distribution.AddRun(genetic, geneticRuntime, heuristicParameters);
+            distribution.AddRun(enumerator, enumerationRuntime, heuristicParameters);
+            distribution.AddRun(recordTravel, recordRuntime, heuristicParameters);
+            distribution.AddRun(tabu, tabuRuntime, heuristicParameters);
+            distribution.AddRun(random, randomRuntime, heuristicParameters);
             distribution.OnRunsComplete();
         }
 
@@ -373,7 +378,7 @@ namespace Osu.Cof.Ferm.Test
                 {
                     Iterations = 2
                 };
-                hero.RandomizeSelections(TestConstant.Default.HarvestProbability);
+                hero.RandomizeSelections(TestConstant.Default.SelectionPercentage);
                 if (run > 0)
                 {
                     // skip first run as a warmup run
@@ -396,11 +401,11 @@ namespace Osu.Cof.Ferm.Test
 
             if (heuristic.Objective.IsLandExpectationValue)
             {
-                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.2F);
+                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.22F);
             }
             else
             {
-                Assert.IsTrue(heuristic.BestObjectiveFunction >= 0.0F);
+                Assert.IsTrue(heuristic.BestObjectiveFunction > 0.0F);
             }
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
             Assert.IsTrue(heuristic.BestObjectiveFunction >= endObjectiveFunction);
@@ -461,6 +466,17 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex] > heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
                     Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex] > heuristic.CurrentTrajectory.StandingVolumeByPeriod[periodIndex - 1]);
                 }
+            }
+
+            // check parameter
+            HeuristicParameters parameters = heuristic.GetParameters();
+            if (parameters != null)
+            {
+                string csvHeader = parameters.GetCsvHeader();
+                string csvValues = parameters.GetCsvValues();
+
+                Assert.IsTrue(String.IsNullOrWhiteSpace(csvHeader) == false);
+                Assert.IsTrue(String.IsNullOrWhiteSpace(csvValues) == false);
             }
         }
 

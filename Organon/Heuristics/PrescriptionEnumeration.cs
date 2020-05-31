@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Cmdlets;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,17 +32,10 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Prescription";
         }
 
-        public override string GetParameterHeaderForCsv()
-        {
-            return "above,proportional,below";
-        }
-
-        public override string GetParametersForCsv()
+        public override HeuristicParameters GetParameters()
         {
             ThinByPrescription prescription = (ThinByPrescription)this.BestTrajectory.Configuration.Treatments.Harvests.First();
-            return prescription.FromAbovePercentage.ToString("0.0", CultureInfo.InvariantCulture) + "," + 
-                   prescription.ProportionalPercentage.ToString("0.0", CultureInfo.InvariantCulture) + "," + 
-                   prescription.FromBelowPercentage.ToString("0.0", CultureInfo.InvariantCulture);
+            return new PrescriptionParameters(prescription);
         }
 
         public override TimeSpan Run()

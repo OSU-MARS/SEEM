@@ -50,20 +50,20 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
             if (this.Append == false)
             {
-                line.Append("stand,heuristic,default selection probability,thin age,rotation,tree,selection,DBH,height,expansion factor");
+                line.Append("stand,heuristic," + this.Runs[0].HeuristicParameters.GetCsvHeader() + ",thin age,rotation,tree,selection,DBH,height,expansion factor");
                 writer.WriteLine(line);
             }
 
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
-                HeuristicSolutionDistribution solutionDistribution = this.Runs[runIndex];
-                OrganonStandTrajectory bestTrajectoryN = solutionDistribution.BestSolution.BestTrajectory;
+                HeuristicSolutionDistribution distribution = this.Runs[runIndex];
+                OrganonStandTrajectory bestTrajectoryN = distribution.BestSolution.BestTrajectory;
                 int periodBeforeHarvest = bestTrajectoryN.GetFirstHarvestPeriod() - 1;
                 if (periodBeforeHarvest < 0)
                 {
                     periodBeforeHarvest = bestTrajectoryN.PlanningPeriods - 1;
                 }
-                string linePrefix = bestTrajectoryN.Name + "," + bestTrajectoryN.Heuristic.GetName() + "," + solutionDistribution.DefaultSelectionProbability.ToString("0.00#", CultureInfo.InvariantCulture) + "," + bestTrajectoryN.GetFirstHarvestAge() + "," + bestTrajectoryN.GetRotationLength();
+                string linePrefix = bestTrajectoryN.Name + "," + bestTrajectoryN.Heuristic.GetName() + "," + distribution.HeuristicParameters.GetCsvValues() + "," + bestTrajectoryN.GetFirstHarvestAge() + "," + bestTrajectoryN.GetRotationLength();
 
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> treeSelectionNForSpecies in bestTrajectoryN.IndividualTreeSelectionBySpecies)

@@ -1,12 +1,13 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 using System.Management.Automation;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "Tabu")]
-    public class OptimizeTabu : OptimizeCmdlet
+    public class OptimizeTabu : OptimizeCmdlet<HeuristicParameters>
     {
         [Parameter]
         [ValidateRange(0, Int32.MaxValue)]
@@ -20,7 +21,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0, Int32.MaxValue)]
         public Nullable<int> Tenure { get; set; }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
         {
             TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.Iterations.HasValue)
@@ -41,6 +42,11 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override string GetName()
         {
             return "Optimize-Tabu";
+        }
+
+        protected override IList<HeuristicParameters> GetParameterCombinations()
+        {
+            return this.ProportionalPercentagesAsHeuristicParameters();
         }
     }
 }

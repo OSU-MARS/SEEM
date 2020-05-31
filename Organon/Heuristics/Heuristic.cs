@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Cmdlets;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -110,21 +111,16 @@ namespace Osu.Cof.Ferm.Heuristics
             return objectiveFunction;
         }
 
-        public virtual string GetParameterHeaderForCsv()
+        public virtual HeuristicParameters GetParameters()
         {
             return null;
         }
 
-        public virtual string GetParametersForCsv()
+        public void RandomizeSelections(float proportionalPercentage)
         {
-            return null;
-        }
-
-        public void RandomizeSelections(float selectionProbability)
-        {
-            if ((selectionProbability < 0.0F) || (selectionProbability > 1.0F))
+            if ((proportionalPercentage < 0.0F) || (proportionalPercentage > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(selectionProbability));
+                throw new ArgumentOutOfRangeException(nameof(proportionalPercentage));
             }
 
             IHarvest harvest = this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
@@ -135,16 +131,16 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
-            float unityScalingFactor = 1.0F / byte.MaxValue;
+            float percentageScalingFactor = 100.0F / byte.MaxValue;
             if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.All)
             {
-                float harvestPeriodScalingFactor = (this.CurrentTrajectory.HarvestPeriods - Constant.RoundTowardsZeroTolerance) / selectionProbability;
+                float harvestPeriodScalingFactor = (this.CurrentTrajectory.HarvestPeriods - Constant.RoundTowardsZeroTolerance) / proportionalPercentage;
                 for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
-                    float treeProbability = unityScalingFactor * this.GetPseudorandomByteAsFloat();
-                    if (treeProbability < selectionProbability)
+                    float treePercentage = percentageScalingFactor * this.GetPseudorandomByteAsFloat();
+                    if (treePercentage < proportionalPercentage)
                     {
-                        int harvestPeriod = (int)(harvestPeriodScalingFactor * treeProbability);
+                        int harvestPeriod = (int)(harvestPeriodScalingFactor * treePercentage);
                         this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
                     }
                     else
@@ -157,7 +153,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {
-                    int harvestPeriod = unityScalingFactor * this.GetPseudorandomByteAsFloat() < selectionProbability ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                    int harvestPeriod = percentageScalingFactor * this.GetPseudorandomByteAsFloat() < proportionalPercentage ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
                     this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
                 }
             }

@@ -11,7 +11,8 @@ namespace Osu.Cof.Ferm
         public const float CrownCompetionConstantEnglish = 0.001803026F;
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
-        public const string DefaultSelectionFormat = "0.00##";
+        public const string DefaultPercentageFormat = "0.0#";
+        public const string DefaultProbabilityFormat = "0.00##";
         public const int DefaultTimeStepInYears = 5;
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
@@ -72,6 +73,18 @@ namespace Osu.Cof.Ferm
             FiaCode.CornusNuttallii,
             FiaCode.Salix
         });
+
+        public static class GeneticDefault
+        {
+            public const float ExchangeProbability = 0.7F;
+            public const float FlipProbability = 0.9F;
+            public const int MaximumGenerations = 100;
+            public const float MinCoefficientOfVariation = 0.000001F;
+            public const int PopulationSize = 40;
+            public const float ProportionalPercentageCenter = 50.0F;
+            public const float ProportionalPercentageWidth = 100.0F;
+            public const float ReservedPopulationProportion = 0.7F;
+        }
 
         public static class Maximum
         {

@@ -62,19 +62,18 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 line.Append(",heuristic");
-                if (this.Runs != null)
+
+                HeuristicParameters heuristicParametersForHeader = runsSpecified ? this.Runs[0].HeuristicParameters : this.Trajectories[0].Heuristic.GetParameters();
+                if (heuristicParametersForHeader != null)
                 {
-                    string heuristicParameters = this.Runs[0].BestSolution.GetParameterHeaderForCsv();
+                    string heuristicParameters = heuristicParametersForHeader.GetCsvHeader();
                     if (String.IsNullOrEmpty(heuristicParameters) == false)
                     {
+                        // TODO: if needed, check if heuristics have different parameters
                         line.Append("," + heuristicParameters);
                     }
                 }
 
-                if (runsSpecified)
-                {
-                    line.Append(",default selection probability");
-                }
                 line.Append(",thin age,rotation,stand age,sim year,QMD,Htop,TPA,BA,standing,harvested,BA removed,BA intensity,TPA decrease,LEV");
                 writer.WriteLine(line);
             }
@@ -84,7 +83,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
                 OrganonStandTrajectory bestTrajectory;
-                float defaultSelectionProbability = -1.0F;
+                HeuristicParameters heuristicParameters = null;
                 int moves = -1;
                 int runs = -1;
                 string runtimeInSeconds = "-1";
@@ -92,7 +91,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     HeuristicSolutionDistribution distribution = this.Runs[runOrTrajectoryIndex];
                     bestTrajectory = distribution.BestSolution.BestTrajectory;
-                    defaultSelectionProbability = distribution.DefaultSelectionProbability;
+                    heuristicParameters = distribution.HeuristicParameters;
                     moves = distribution.TotalMoves;
                     runs = distribution.TotalRuns;
                     runtimeInSeconds = distribution.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
@@ -100,6 +99,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                 else
                 {
                     bestTrajectory = this.Trajectories[runOrTrajectoryIndex];
+                    if (bestTrajectory.Heuristic != null)
+                    {
+                        heuristicParameters = bestTrajectory.Heuristic.GetParameters();
+                    }
                 }
                 if (bestTrajectory.VolumeUnits != VolumeUnits.ScribnerBoardFeetPerAcre)
                 {
@@ -109,14 +112,17 @@ namespace Osu.Cof.Ferm.Cmdlets
                 string heuristicNameAndParameters = "none";
                 if (bestTrajectory.Heuristic != null)
                 {
-                    Heuristic heuristic = bestTrajectory.Heuristic;
-                    heuristicNameAndParameters = heuristic.GetName();
-                    string heuristicParameters = heuristic.GetParametersForCsv();
-                    if (heuristicParameters != null)
+                    heuristicNameAndParameters = bestTrajectory.Heuristic.GetName();
+                }
+                if (heuristicParameters != null)
+                {
+                    string parameterString = heuristicParameters.GetCsvValues();
+                    if (String.IsNullOrEmpty(parameterString) == false)
                     {
-                        heuristicNameAndParameters += "," + heuristicParameters;
+                        heuristicNameAndParameters += "," + parameterString;
                     }
                 }
+
                 int thinAge = bestTrajectory.GetFirstHarvestAge();
                 int rotationLength = bestTrajectory.GetRotationLength();
 
@@ -186,10 +192,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                         line.Append("," + runs + "," + moves + "," + runtimeInSeconds);
                     }
                     line.Append("," + heuristicNameAndParameters);
-                    if (runsSpecified)
-                    {
-                        line.Append("," + defaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture));
-                    }
                     Debug.Assert((harvestMbfPerAcre == 0.0F && basalAreaRemoved == 0.0F) || (harvestMbfPerAcre > 0.0F && basalAreaRemoved > 0.0F));
                     line.Append("," + thinAge.ToString(CultureInfo.InvariantCulture) + "," +
                                 rotationLength.ToString(CultureInfo.InvariantCulture) + "," +

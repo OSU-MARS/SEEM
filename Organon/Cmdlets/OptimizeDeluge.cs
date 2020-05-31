@@ -1,12 +1,13 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 using System.Management.Automation;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "Deluge")]
-    public class OptimizeDeluge : OptimizeCmdlet
+    public class OptimizeDeluge : OptimizeCmdlet<HeuristicParameters>
     {
         [Parameter]
         [ValidateRange(0.0, 1000.0F)]
@@ -47,7 +48,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
         {
             GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.ChainFrom.HasValue)
@@ -95,6 +96,11 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override string GetName()
         {
             return "Optimize-GreatDeluge";
+        }
+
+        protected override IList<HeuristicParameters> GetParameterCombinations()
+        {
+            return this.ProportionalPercentagesAsHeuristicParameters();
         }
     }
 }

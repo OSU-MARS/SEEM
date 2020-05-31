@@ -18,12 +18,17 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
+            if (this.Runs.Count < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.Runs));
+            }
+
             using StreamWriter writer = this.GetWriter();
 
             StringBuilder line = new StringBuilder();
             if (this.ShouldWriteHeader())
             {
-                line.Append("stand,heuristic,default selection probability,thin age,rotation,solution,objective,runtime");
+                line.Append("stand,heuristic," + this.Runs[0].HeuristicParameters.GetCsvHeader() + ",thin age,rotation,solution,objective,runtime");
                 writer.WriteLine(line);
             }
 
@@ -32,7 +37,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 HeuristicSolutionDistribution distribution = this.Runs[runIndex];
                 Heuristic bestHeuristic = distribution.BestSolution;
                 OrganonStandTrajectory bestTrajectory = bestHeuristic.BestTrajectory;
-                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + distribution.DefaultSelectionProbability.ToString(Constant.DefaultSelectionFormat, CultureInfo.InvariantCulture)  + "," + bestTrajectory.GetFirstHarvestAge() + "," + bestTrajectory.GetRotationLength();
+                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + distribution.HeuristicParameters.GetCsvValues() + "," + bestTrajectory.GetFirstHarvestAge() + "," + bestTrajectory.GetRotationLength();
 
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)

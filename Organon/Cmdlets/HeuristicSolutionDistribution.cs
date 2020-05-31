@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Heuristics;
+﻿using DocumentFormat.OpenXml.Drawing;
+using Osu.Cof.Ferm.Heuristics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +10,6 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         public List<float> BestObjectiveFunctionBySolution { get; private set; }
         public Heuristic BestSolution { get; private set; }
-        public float DefaultSelectionProbability { get; set; }
 
         public List<int> CountByMove { get; private set; }
         public List<float> FifthPercentileByMove { get; private set; }
@@ -23,6 +23,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> UpperQuartileByMove { get; private set; }
         public List<float> VarianceByMove { get; private set; }
 
+        public HeuristicParameters HeuristicParameters { get; set; }
         public List<TimeSpan> RuntimeBySolution { get; private set; }
 
         public TimeSpan TotalCoreSeconds { get; private set; }
@@ -37,6 +38,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.BestSolution = null;
             this.CountByMove = new List<int>(defaultMoveCapacity);
             this.FifthPercentileByMove = new List<float>(defaultMoveCapacity);
+            this.HeuristicParameters = null;
             this.LowerQuartileByMove = new List<float>(defaultMoveCapacity);
             this.MaximumObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
             this.MeanObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
@@ -52,7 +54,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.VarianceByMove = new List<float>(defaultMoveCapacity);
         }
 
-        public void AddRun(Heuristic heuristic, TimeSpan coreSeconds)
+        public void AddRun(Heuristic heuristic, TimeSpan coreSeconds, HeuristicParameters runParameters)
         {
             this.BestObjectiveFunctionBySolution.Add(heuristic.BestObjectiveFunction);
             this.RuntimeBySolution.Add(coreSeconds);
@@ -101,6 +103,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             if ((this.BestSolution == null) || (heuristic.BestObjectiveFunction > this.BestSolution.BestObjectiveFunction))
             {
                 this.BestSolution = heuristic;
+                this.HeuristicParameters = heuristic.GetParameters(); // if heuristic reports parameters, prefer them
+                if (this.HeuristicParameters == null)
+                {
+                    this.HeuristicParameters = runParameters; // otherwise, fall back to run parameters
+                }
             }
         }
 

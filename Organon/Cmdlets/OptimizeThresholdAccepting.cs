@@ -7,7 +7,7 @@ using System.Management.Automation;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "ThresholdAccepting")]
-    public class OptimizeThresholdAccepting : OptimizeCmdlet
+    public class OptimizeThresholdAccepting : OptimizeCmdlet<HeuristicParameters>
     {
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
@@ -22,7 +22,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Thresholds = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters parameters)
         {
             ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.IterationsPerThreshold != null)
@@ -41,6 +41,11 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override string GetName()
         {
             return "Optimize-ThresholdAccepting";
+        }
+
+        protected override IList<HeuristicParameters> GetParameterCombinations()
+        {
+            return this.ProportionalPercentagesAsHeuristicParameters();
         }
     }
 }

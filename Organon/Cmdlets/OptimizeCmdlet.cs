@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
-    public abstract class OptimizeCmdlet : Cmdlet
+    public abstract class OptimizeCmdlet<TParameters> : Cmdlet where TParameters : HeuristicParameters
     {
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
@@ -38,8 +38,8 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<int> PlanningPeriods { get; set; }
 
         [Parameter]
-        [ValidateRange(0.0F, 1.0F)]
-        public List<float> SelectionProbabilities { get; set; }
+        [ValidateRange(0.0F, 100.0F)]
+        public List<float> ProportionalPercentage { get; set; }
 
         [Parameter(Mandatory = true)]
         public OrganonStand Stand { get; set; }
@@ -59,7 +59,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.LandExpectationValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
             this.TreeModel = TreeModel.OrganonNwo;
-            this.SelectionProbabilities = new List<float>() { 0.5F };
+            this.ProportionalPercentage = new List<float>() { 50.0F };
             this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
         }
 
@@ -68,8 +68,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return new ThinByIndividualTreeSelection(this.HarvestPeriods[harvestPeriodIndex]);
         }
 
-        protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, float defaultSelectionProbability);
+        protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, TParameters parameters);
         protected abstract string GetName();
+        protected abstract IList<TParameters> GetParameterCombinations();
 
         protected override void ProcessRecord()
         {
@@ -81,9 +82,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ArgumentOutOfRangeException(nameof(this.PlanningPeriods));
             }
-            if (this.SelectionProbabilities.Count < 1)
+            if (this.ProportionalPercentage.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.SelectionProbabilities));
+                throw new ArgumentOutOfRangeException(nameof(this.ProportionalPercentage));
             }
 
             Stopwatch stopwatch = new Stopwatch();
@@ -96,12 +97,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                 VolumeUnits = this.VolumeUnits
             };
 
-            List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(this.SelectionProbabilities.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count);
+            IList<TParameters> parameterCombinations = this.GetParameterCombinations();
+            List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count);
             for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
             {
                 for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.HarvestPeriods.Count; ++harvestPeriodIndex)
                 {
-                    for (int selectionProbabilityIndex = 0; selectionProbabilityIndex < this.SelectionProbabilities.Count; ++selectionProbabilityIndex)
+                    for (int parameterIndex = 0; parameterIndex < parameterCombinations.Count; ++parameterIndex)
                     {
                         distributions.Add(new HeuristicSolutionDistribution());
                     }
@@ -113,7 +115,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 MaxDegreeOfParallelism = this.Cores
             };
             Pseudorandom pseudorandom = new Pseudorandom();
-            int totalRuns = this.BestOf * this.SelectionProbabilities.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count;
+            int totalRuns = this.BestOf * parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count;
             int runsCompleted = 0;
             List<StandTrajectory> trajectoriesForChaining = new List<StandTrajectory>();
             Task runs = Task.Run(() =>
@@ -125,32 +127,32 @@ namespace Osu.Cof.Ferm.Cmdlets
                         return;
                     }
 
-                    int selectionProbabilityIndex = (iteration / this.BestOf) % this.SelectionProbabilities.Count; // innermost "loop": tree selection probability
-                    int harvestPeriodIndex = (iteration / (this.BestOf * this.SelectionProbabilities.Count)) % this.HarvestPeriods.Count; // middle "loop": harvest timings
-                    int planningPeriodIndex = (iteration / (this.BestOf * this.HarvestPeriods.Count * this.SelectionProbabilities.Count)) % this.PlanningPeriods.Count; // outer "loop": rotation length
-                    int distributionIndex = selectionProbabilityIndex + harvestPeriodIndex * this.SelectionProbabilities.Count + planningPeriodIndex * this.HarvestPeriods.Count * this.SelectionProbabilities.Count;
+                    int parameterIndex = (iteration / this.BestOf) % parameterCombinations.Count; // innermost "loop": tree selection probability
+                    int harvestPeriodIndex = (iteration / (this.BestOf * parameterCombinations.Count)) % this.HarvestPeriods.Count; // middle "loop": harvest timings
+                    int planningPeriodIndex = (iteration / (this.BestOf * this.HarvestPeriods.Count * parameterCombinations.Count)) % this.PlanningPeriods.Count; // outer "loop": rotation length
+                    int distributionIndex = parameterIndex + harvestPeriodIndex * parameterCombinations.Count + planningPeriodIndex * this.HarvestPeriods.Count * parameterCombinations.Count;
 
                     OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
                     organonConfiguration.Treatments.Harvests.Add(this.CreateHarvest(harvestPeriodIndex));
 
-                    float selectionProbability = this.SelectionProbabilities[selectionProbabilityIndex];
-                    Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, this.PlanningPeriods[planningPeriodIndex], objective, selectionProbability);
+                    TParameters runParameters = parameterCombinations[parameterIndex];
+                    Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, this.PlanningPeriods[planningPeriodIndex], objective, runParameters);
                     if (this.ChainFrom.HasValue && (trajectoriesForChaining.Count > 0))
                     {
                         int previousSolutionIndex = pseudorandom.Next(trajectoriesForChaining.Count);
                         currentHeuristic.CopySelectionsFrom(trajectoriesForChaining[previousSolutionIndex]);
                     }
-                    else if (selectionProbability > 0.0F)
+                    else if (runParameters.ProportionalPercentage > 0.0F)
                     {
-                        currentHeuristic.RandomizeSelections(selectionProbability);
+                        // minor optimization point: save one stand simulation by skipping this for genetic algorithms
+                        currentHeuristic.RandomizeSelections(runParameters.ProportionalPercentage);
                     }
                     TimeSpan runTime = currentHeuristic.Run();
 
                     lock (distributions)
                     {
                         HeuristicSolutionDistribution distribution = distributions[distributionIndex];
-                        distribution.AddRun(currentHeuristic, runTime);
-                        distribution.DefaultSelectionProbability = selectionProbability;
+                        distribution.AddRun(currentHeuristic, runTime, runParameters);
                         ++runsCompleted;
 
                         StandTrajectory trajectoryForChaining = currentHeuristic.BestTrajectoryByMove.Values.FirstOrDefault();
@@ -212,6 +214,19 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 this.WriteMultipleDistributionSummary(distributions, stopwatch.Elapsed);
             }
+        }
+
+        protected IList<HeuristicParameters> ProportionalPercentagesAsHeuristicParameters()
+        {
+            List<HeuristicParameters> parameters = new List<HeuristicParameters>(this.ProportionalPercentage.Count);
+            foreach (float proportionalPercentage in this.ProportionalPercentage)
+            {
+                parameters.Add(new HeuristicParameters()
+                {
+                    ProportionalPercentage = proportionalPercentage
+                });
+            }
+            return parameters;
         }
 
         private void WriteMultipleDistributionSummary(List<HeuristicSolutionDistribution> distributions, TimeSpan elapsedTime)
