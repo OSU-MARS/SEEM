@@ -18,8 +18,8 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> FlipProbability { get; set; }
 
         [Parameter]
-        [ValidateRange(1, Int32.MaxValue)]
-        public List<int> MaximumGenerations { get; set; }
+        [ValidateRange(0.0, Single.MaxValue)]
+        public List<float> GenerationCoefficient { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
@@ -41,7 +41,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.ExchangeProbability = new List<float>() { Constant.GeneticDefault.ExchangeProbability };
             this.FlipProbability = new List<float>() { Constant.GeneticDefault.ExchangeProbability };
-            this.MaximumGenerations = new List<int>() { Constant.GeneticDefault.MaximumGenerations };
+            this.GenerationCoefficient = new List<float>() { Constant.GeneticDefault.MaximumGenerationCoefficient };
             this.MinCoefficientOfVariation = new List<float>() { Constant.GeneticDefault.MinCoefficientOfVariation };
             this.PopulationSize = new List<int>() { Constant.GeneticDefault.PopulationSize };
             this.ProportionalPercentageWidth = new List<float>() { Constant.GeneticDefault.ProportionalPercentageWidth };
@@ -79,9 +79,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ArgumentOutOfRangeException(nameof(this.FlipProbability));
             }
-            if (this.MaximumGenerations.Count < 1)
+            if (this.GenerationCoefficient.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.MaximumGenerations));
+                throw new ArgumentOutOfRangeException(nameof(this.GenerationCoefficient));
             }
             if (this.MinCoefficientOfVariation.Count < 1)
             {
@@ -101,11 +101,12 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             List<GeneticParameters> parameters = new List<GeneticParameters>(this.ProportionalPercentage.Count);
+            int treeRecordCount = this.Stand.GetTreeRecordCount();
             foreach (float exchangeProbability in this.ExchangeProbability)
             {
                 foreach (float flipProbability in this.FlipProbability)
                 {
-                    foreach (int maximumGenerations in this.MaximumGenerations)
+                    foreach (float generationCoefficient in this.GenerationCoefficient)
                     {
                         foreach (float minCoefficientOfVariation in this.MinCoefficientOfVariation)
                         {
@@ -121,7 +122,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                             {
                                                 ExchangeProbability = exchangeProbability,
                                                 FlipProbability = flipProbability,
-                                                MaximumGenerations = maximumGenerations,
+                                                MaximumGenerations = (int)(generationCoefficient * treeRecordCount + 0.5F),
                                                 MinCoefficientOfVariation = minCoefficientOfVariation,
                                                 PopulationSize = populationSize,
                                                 ProportionalPercentage = proportionalPercentage,

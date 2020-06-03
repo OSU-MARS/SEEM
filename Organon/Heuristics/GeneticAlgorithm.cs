@@ -21,9 +21,10 @@ namespace Osu.Cof.Ferm.Heuristics
         public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
+            int treeRecords = stand.GetTreeRecordCount();
             this.ExchangeProbability = Constant.GeneticDefault.ExchangeProbability;
             this.FlipProbability = Constant.GeneticDefault.FlipProbability;
-            this.MaximumGenerations = Constant.GeneticDefault.MaximumGenerations;
+            this.MaximumGenerations = (int)(Constant.GeneticDefault.MaximumGenerationCoefficient * treeRecords + 0.5F);
             this.MinCoefficientOfVariation = Constant.GeneticDefault.MinCoefficientOfVariation;
             this.PopulationSize = Constant.GeneticDefault.PopulationSize;
             this.ProportionalPercentageCenter = Constant.GeneticDefault.ProportionalPercentageCenter;

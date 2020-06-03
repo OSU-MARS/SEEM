@@ -14,6 +14,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         public Nullable<float> Alpha { get; set; }
 
         [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public Nullable<int> ChangeToExchangeAfter { get; set; }
+
+        [Parameter]
         [ValidateRange(0.0F, Single.MaxValue)]
         public Nullable<float> FinalProbability { get; set; }
         
@@ -44,6 +48,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public OptimizeSimulatedAnnealing()
         {
             this.Alpha = null;
+            this.ChangeToExchangeAfter = null;
             this.FinalProbability = null;
             this.InitialProbability = null;
             this.Iterations = null;
@@ -59,6 +64,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;
+            }
+            if (this.ChangeToExchangeAfter.HasValue)
+            {
+                annealer.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;
             }
             if (this.FinalProbability.HasValue)
             {

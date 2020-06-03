@@ -78,7 +78,7 @@ namespace Osu.Cof.Ferm
         {
             public const float ExchangeProbability = 0.7F;
             public const float FlipProbability = 0.9F;
-            public const int MaximumGenerations = 100;
+            public const float MaximumGenerationCoefficient = 0.667F;
             public const float MinCoefficientOfVariation = 0.000001F;
             public const int PopulationSize = 40;
             public const float ProportionalPercentageCenter = 50.0F;

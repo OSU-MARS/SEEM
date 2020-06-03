@@ -10,6 +10,14 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class OptimizeRecordTravel : OptimizeCmdlet<HeuristicParameters>
     {
         [Parameter]
+        [ValidateRange(0.0F, 1.0F)]
+        public Nullable<float> Alpha { get; set; }
+
+        [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public Nullable<int> ChangeToExchangeAfter { get; set; }
+
+        [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
         public Nullable<float> FixedDeviation { get; set; }
 
@@ -18,7 +26,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public Nullable<float> FixedIncrease { get; set; }
 
         [Parameter]
-        [ValidateRange(0, Int32.MaxValue)]
+        [ValidateRange(1, Int32.MaxValue)]
         public Nullable<int> IncreaseAfter { get; set; }
 
         [Parameter]
@@ -39,6 +47,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public OptimizeRecordTravel()
         {
+            this.ChangeToExchangeAfter = null;
             this.FixedDeviation = null;
             this.FixedIncrease = null;
             this.IncreaseAfter = null;
@@ -51,6 +60,14 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
         {
             RecordTravel recordTravel = new RecordTravel(this.Stand, organonConfiguration, planningPeriods, objective);
+            if (this.Alpha.HasValue)
+            {
+                recordTravel.Alpha = this.Alpha.Value;
+            }
+            if (this.ChangeToExchangeAfter.HasValue)
+            {
+                recordTravel.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;
+            }
             if (this.FixedDeviation.HasValue)
             {
                 recordTravel.FixedDeviation = this.FixedDeviation.Value;

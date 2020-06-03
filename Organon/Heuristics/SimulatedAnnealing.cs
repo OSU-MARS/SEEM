@@ -8,10 +8,12 @@ namespace Osu.Cof.Ferm.Heuristics
     public class SimulatedAnnealing : Heuristic
     {
         public float Alpha { get; set; }
+        public float ChangeToExchangeAfter { get; set; }
         public float FinalProbability { get; set; }
         public float InitialProbability { get; set; }
         public int Iterations { get; set; }
         public int IterationsPerTemperature { get; set; }
+        public MoveType MoveType { get; set; }
         public int ProbabilityWindowLength { get; set; }
         public int ReheatAfter { get; set; }
         public float ReheatBy { get; set; }
@@ -21,12 +23,14 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.Alpha = 0.925F;
+            this.ChangeToExchangeAfter = Int32.MaxValue;
             this.FinalProbability = 0.0F;
             this.InitialProbability = 0.0F;
             this.Iterations = 10 * treeRecords;
             this.IterationsPerTemperature = 10;
+            this.MoveType = MoveType.OneOpt;
             this.ProbabilityWindowLength = 10;
-            this.ReheatAfter = treeRecords;
+            this.ReheatAfter = (int)(1.7F * treeRecords);
             this.ReheatBy = 0.75F;
 
             // float temperatureSteps = (float)(defaultIterations / this.IterationsPerTemperature);
@@ -49,6 +53,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Alpha));
             }
+            if (this.ChangeToExchangeAfter < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ChangeToExchangeAfter));
+            }
             if (this.FinalProbability < 0.0)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.FinalProbability));
@@ -57,6 +65,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.InitialProbability));
             }
+            if (this.Iterations < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.Iterations));
+            }
             if (this.IterationsPerTemperature < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.IterationsPerTemperature));
@@ -64,6 +76,10 @@ namespace Osu.Cof.Ferm.Heuristics
             if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
             {
                 throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
+            }
+            if (this.ProbabilityWindowLength < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ProbabilityWindowLength));
             }
             if (this.ReheatAfter < 0)
             {
@@ -79,6 +95,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             float currentObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
+            int iterationsSinceMoveTypeOrObjectiveChange = 0;
             int iterationsSinceReheatOrObjectiveChange = 0;
             float meanAcceptanceProbability = this.InitialProbability;
             float movingAverageOfObjectiveChange = -1.0F;
@@ -97,18 +114,42 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 for (int iterationAtTemperature = 0; iterationAtTemperature < this.IterationsPerTemperature; ++iteration, ++iterationAtTemperature)
                 {
-                    int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                    int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
-                    int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                    int firstTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                    int firstCurrentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(firstTreeIndex);
+                    int firstCandidateHarvestPeriod;
+                    int secondTreeIndex = -1;
+                    switch (this.MoveType)
+                    {
+                        case MoveType.OneOpt:
+                            firstCandidateHarvestPeriod = firstCurrentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                            candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
+                            break;
+                        case MoveType.TwoOptExchange:
+                            secondTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                            firstCandidateHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(secondTreeIndex);
+                            while (firstCandidateHarvestPeriod == firstCurrentHarvestPeriod)
+                            {
+                                // retry until a modifying exchange is found
+                                // This also excludes the case where a tree is exchanged with itself.
+                                // BUGBUG: infinite loop if all trees have the same selection
+                                secondTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                                firstCandidateHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(secondTreeIndex);
+                            }
+                            candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
+                            candidateTrajectory.SetTreeSelection(secondTreeIndex, firstCurrentHarvestPeriod);
+                            break;
+                        default:
+                            throw new NotSupportedException();
+                    }
                     //int candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
                     //while (candidateHarvestPeriod == currentHarvestPeriod)
                     //{
                     //    candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
                     //}
-                    Debug.Assert(candidateHarvestPeriod >= 0);
+                    Debug.Assert(firstCandidateHarvestPeriod >= 0);
 
-                    candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
                     candidateTrajectory.Simulate();
+                    ++iterationsSinceMoveTypeOrObjectiveChange;
                     ++iterationsSinceReheatOrObjectiveChange;
 
                     float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
@@ -156,16 +197,34 @@ namespace Osu.Cof.Ferm.Heuristics
                             this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         }
 
+                        iterationsSinceMoveTypeOrObjectiveChange = 0;
                         iterationsSinceReheatOrObjectiveChange = 0;
                         Debug.Assert(movingAverageOfObjectiveChange > 0.0F);
                     }
                     else
                     {
-                        candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
+                        // undo move
+                        switch (this.MoveType)
+                        {
+                            case MoveType.OneOpt:
+                                candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCurrentHarvestPeriod);
+                                break;
+                            case MoveType.TwoOptExchange:
+                                candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCurrentHarvestPeriod);
+                                candidateTrajectory.SetTreeSelection(secondTreeIndex, firstCandidateHarvestPeriod);
+                                break;
+                            default:
+                                throw new NotSupportedException();
+                        }
                     }
 
                     this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
 
+                    if (iterationsSinceMoveTypeOrObjectiveChange > this.ChangeToExchangeAfter)
+                    {
+                        this.MoveType = MoveType.TwoOptExchange;
+                        iterationsSinceMoveTypeOrObjectiveChange = 0;
+                    }
                     if (iterationsSinceReheatOrObjectiveChange > this.ReheatAfter)
                     {
                         // while it's unlikely alpha would be close enough to 1 and reheat intervals short enough to drive the acceptance probability

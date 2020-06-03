@@ -7,10 +7,13 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class RecordTravel : Heuristic
     {
+        public float Alpha { get; set; }
+        public float ChangeToExchangeAfter { get; set; }
         public float FixedDeviation { get; set; }
         public float FixedIncrease { get; set; }
-        public float IncreaseAfter { get; set; }
-        public float Iterations { get; set; }
+        public int IncreaseAfter { get; set; }
+        public int Iterations { get; set; }
+        public MoveType MoveType { get; set; }
         public float RelativeDeviation { get; set; }
         public float RelativeIncrease { get; set; }
         public int StopAfter { get; set; }
@@ -19,15 +22,18 @@ namespace Osu.Cof.Ferm.Heuristics
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
             int treeRecordCount = stand.GetTreeRecordCount();
+            this.Alpha = 0.75F;
+            this.ChangeToExchangeAfter = Int32.MaxValue;
             this.FixedDeviation = 0.0F;
             this.FixedIncrease = 0.0F;
-            this.IncreaseAfter = 6 * treeRecordCount;
+            this.IncreaseAfter = (int)(1.7F * treeRecordCount);
             this.Iterations = 10 * treeRecordCount;
+            this.MoveType = MoveType.OneOpt;
             this.RelativeDeviation = 0.0F;
-            this.RelativeIncrease = 0.1F / treeRecordCount;
+            this.RelativeIncrease = 0.01F;
             this.StopAfter = 1000;
 
-            this.ObjectiveFunctionByMove = new List<float>(5 * treeRecordCount)
+            this.ObjectiveFunctionByMove = new List<float>(this.Iterations)
             {
                 this.BestObjectiveFunction
             };
@@ -40,13 +46,37 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
-            if ((this.RelativeDeviation < 0.0) || (this.RelativeDeviation > 1.0))
+            if ((this.Alpha < 0.0F) || (this.Alpha >  1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.RelativeDeviation));
+                throw new ArgumentOutOfRangeException(nameof(this.Alpha));
+            }
+            if (this.ChangeToExchangeAfter < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ChangeToExchangeAfter));
+            }
+            if (this.FixedDeviation < 0.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.FixedDeviation));
+            }
+            if (this.FixedIncrease < 0.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.FixedIncrease));
+            }
+            if (this.IncreaseAfter < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.IncreaseAfter));
             }
             if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
             {
                 throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
+            }
+            if ((this.RelativeDeviation < 0.0) || (this.RelativeDeviation > 1.0))
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.RelativeDeviation));
+            }
+            if ((this.RelativeIncrease < 0.0) || (this.RelativeIncrease > 1.0))
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.RelativeIncrease));
             }
             if (this.StopAfter < 1)
             {
@@ -56,59 +86,104 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
 
             float currentObjectiveFunction = this.BestObjectiveFunction;
-            float fixedDeviation = this.FixedDeviation;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
-            float relativeDeviation = this.RelativeDeviation;
+            int iterationsSinceObjectiveImprovedOrReheat = 0;
+            float previousObjectiveFunction = Single.MinValue;
             float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            float minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - relativeDeviation * MathF.Abs(this.BestObjectiveFunction) - fixedDeviation;
-            for (int iteration = 1; (iteration < this.Iterations) && (iterationsSinceBestObjectiveImproved < this.StopAfter); ++iteration)
+            float deviation = this.RelativeDeviation * MathF.Abs(this.BestObjectiveFunction) + this.FixedDeviation;
+            for (int iteration = 1; (iteration < this.Iterations) && (iterationsSinceBestObjectiveImproved < this.StopAfter); deviation *= this.Alpha, ++iteration)
             {
-                int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
-                int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                int firstTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int firstCurrentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(firstTreeIndex);
+                int firstCandidateHarvestPeriod;
+                int secondTreeIndex = -1;
+                switch (this.MoveType)
+                {
+                    case MoveType.OneOpt:
+                        firstCandidateHarvestPeriod = firstCurrentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                        candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
+                        break;
+                    case MoveType.TwoOptExchange:
+                        secondTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                        firstCandidateHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(secondTreeIndex);
+                        while (firstCandidateHarvestPeriod == firstCurrentHarvestPeriod)
+                        {
+                            // retry until a modifying exchange is found
+                            // This also excludes the case where a tree is exchanged with itself.
+                            // BUGBUG: infinite loop if all trees have the same selection
+                            secondTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                            firstCandidateHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(secondTreeIndex);
+                        }
+                        candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
+                        candidateTrajectory.SetTreeSelection(secondTreeIndex, firstCurrentHarvestPeriod);
+                        break;
+                    default:
+                        throw new NotSupportedException();
+                }
                 //int candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
                 //while (candidateHarvestPeriod == currentHarvestPeriod)
                 //{
                 //    candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
                 //}
-                Debug.Assert(candidateHarvestPeriod >= 0);
+                Debug.Assert(firstCandidateHarvestPeriod >= 0);
 
-                candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
+                candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
                 candidateTrajectory.Simulate();
                 ++iterationsSinceBestObjectiveImproved;
+                ++iterationsSinceObjectiveImprovedOrReheat;
 
                 float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                if (candidateObjectiveFunction > minimumAcceptableObjectiveFunction)
+                float minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - deviation;
+                if ((candidateObjectiveFunction > minimumAcceptableObjectiveFunction) || (candidateObjectiveFunction > previousObjectiveFunction))
                 {
+                    // accept move
                     currentObjectiveFunction = candidateObjectiveFunction;
                     this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                    iterationsSinceObjectiveImprovedOrReheat = 0;
+
                     if (currentObjectiveFunction > this.BestObjectiveFunction)
                     {
                         this.BestObjectiveFunction = currentObjectiveFunction;
                         this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
-                        minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - relativeDeviation * MathF.Abs(this.BestObjectiveFunction) - fixedDeviation;
                     }
                 }
                 else
                 {
-                    candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
+                    // undo move
+                    switch (this.MoveType)
+                    {
+                        case MoveType.OneOpt:
+                            candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCurrentHarvestPeriod);
+                            break;
+                        case MoveType.TwoOptExchange:
+                            candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCurrentHarvestPeriod);
+                            candidateTrajectory.SetTreeSelection(secondTreeIndex, firstCandidateHarvestPeriod);
+                            break;
+                        default:
+                            throw new NotSupportedException();
+                    }
                 }
 
                 this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
-                if (iteration == this.IncreaseAfter)
+                if (iterationsSinceBestObjectiveImproved > this.ChangeToExchangeAfter)
                 {
-                    fixedDeviation += this.FixedIncrease;
-                    relativeDeviation += this.RelativeIncrease;
+                    this.MoveType = MoveType.TwoOptExchange;
+                }
+                if (iterationsSinceObjectiveImprovedOrReheat == this.IncreaseAfter)
+                {
+                    deviation += this.RelativeIncrease * MathF.Abs(this.BestObjectiveFunction) + this.FixedIncrease;
+                    iterationsSinceObjectiveImprovedOrReheat = 0;
                 }
 
                 if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
                 {
                     this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
                 }
+                previousObjectiveFunction = currentObjectiveFunction;
             }
 
             stopwatch.Stop();

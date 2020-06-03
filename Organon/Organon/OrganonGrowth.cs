@@ -82,7 +82,7 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             // Hann DW, Marshall DD, Hanus ML. 2003. Equations for predicting height-to-crown-base, 5-year diameter-growth-rate, 5-year height-growth rate,
-            //   5-year mortality-rate, and maximum size-density trajectory for Douglas-fir and western hemlock in the coasta region of the Pacific
+            //   5-year mortality-rate, and maximum size-density trajectory for Douglas-fir and western hemlock in the coastal region of the Pacific
             //   Northwest. FRL Research Contribution 40. https://ir.library.oregonstate.edu/concern/technical_reports/jd472x893
             // table 21
             float a8;

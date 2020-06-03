@@ -10,6 +10,10 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class OptimizeDeluge : OptimizeCmdlet<HeuristicParameters>
     {
         [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public Nullable<int> ChangeToExchangeAfter { get; set; }
+
+        [Parameter]
         [ValidateRange(0.0, 1000.0F)]
         public Nullable<float> FinalMultiplier { get; set; }
 
@@ -39,6 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public OptimizeDeluge()
         {
+            this.ChangeToExchangeAfter = null;
             this.FinalMultiplier = null;
             this.InitialMultiplier = null;
             this.Iterations = null;
@@ -54,6 +59,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             if (this.ChainFrom.HasValue)
             {
                 deluge.ChainFrom = this.ChainFrom.Value;
+            }
+            if (this.ChangeToExchangeAfter.HasValue)
+            {
+                deluge.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;
             }
             if (this.FinalMultiplier.HasValue)
             {

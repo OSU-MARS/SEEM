@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Management.Automation;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -182,9 +183,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 int sleepsSinceLastStatusUpdate = 0;
                 while (runs.IsCompleted == false)
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(1));
+                    Thread.Sleep(TimeSpan.FromSeconds(1.0));
                     ++sleepsSinceLastStatusUpdate;
 
+                    if (runs.IsFaulted)
+                    {
+                        // per https://stackoverflow.com/questions/20170527/how-to-correctly-rethrow-an-exception-of-task-already-in-faulted-state
+                        ExceptionDispatchInfo.Capture(runs.Exception.InnerException).Throw();
+                    }
                     if (sleepsSinceLastStatusUpdate > 30)
                     {
                         double fractionComplete = (double)runsCompleted / (double)totalRuns;
@@ -198,6 +204,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         sleepsSinceLastStatusUpdate = 0;
                     }
                 }
+                runs.GetAwaiter().GetResult(); // propagate any exceptions since last IsFaulted check
             }
             foreach (HeuristicSolutionDistribution distribution in distributions)
             {
@@ -239,7 +246,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         private void WriteSingleDistributionSummary(HeuristicSolutionDistribution distribution, TimeSpan elapsedTime)
         {
             Heuristic bestHeuristic = distribution.BestSolution;
-            int movesAccepted = 0;
+            int movesAccepted = 1;
             int movesRejected = 0;
             float previousObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[0];
             for (int index = 1; index < bestHeuristic.ObjectiveFunctionByMove.Count; ++index)
