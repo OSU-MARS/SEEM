@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.Drawing;
-using Osu.Cof.Ferm.Heuristics;
+﻿using Osu.Cof.Ferm.Heuristics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +11,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public Heuristic BestSolution { get; private set; }
 
         public List<int> CountByMove { get; private set; }
+        public List<float> TwoPointFivePercentileByMove { get; private set; }
         public List<float> FifthPercentileByMove { get; private set; }
         public List<float> LowerQuartileByMove { get; private set; }
         public List<float> MaximumObjectiveFunctionByMove { get; private set; }
@@ -19,6 +19,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> MedianObjectiveFunctionByMove { get; private set; }
         public List<float> MinimumObjectiveFunctionByMove { get; private set; }
         public List<float> NinetyFifthPercentileByMove { get; private set; }
+        public List<float> NinetySevenPointFivePercentileByMove { get; private set; }
         public List<List<float>> ObjectiveFunctionValuesByMove { get; private set; }
         public List<float> UpperQuartileByMove { get; private set; }
         public List<float> VarianceByMove { get; private set; }
@@ -37,6 +38,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.BestObjectiveFunctionBySolution = new List<float>(100);
             this.BestSolution = null;
             this.CountByMove = new List<int>(defaultMoveCapacity);
+            this.TwoPointFivePercentileByMove = new List<float>(defaultMoveCapacity);
             this.FifthPercentileByMove = new List<float>(defaultMoveCapacity);
             this.HeuristicParameters = null;
             this.LowerQuartileByMove = new List<float>(defaultMoveCapacity);
@@ -45,6 +47,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.MedianObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
             this.MinimumObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
             this.NinetyFifthPercentileByMove = new List<float>(defaultMoveCapacity);
+            this.NinetySevenPointFivePercentileByMove = new List<float>(defaultMoveCapacity);
             this.ObjectiveFunctionValuesByMove = new List<List<float>>(defaultMoveCapacity);
             this.RuntimeBySolution = new List<TimeSpan>(defaultMoveCapacity);
             this.TotalCoreSeconds = TimeSpan.Zero;
@@ -207,6 +210,39 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 Debug.Assert(fifthPercentile <= median);
                                 Debug.Assert(ninetyFifthPercentile >= median);
                                 Debug.Assert(ninetyFifthPercentile <= objectiveFunctions[^1]);
+                            }
+
+                            if (objectiveFunctions.Count > 39)
+                            {
+                                exactPercentiles = (objectiveFunctions.Count % 40) == 0;
+                                if (exactPercentiles)
+                                {
+                                    this.TwoPointFivePercentileByMove.Add(objectiveFunctions[objectiveFunctions.Count / 40]);
+                                    this.NinetySevenPointFivePercentileByMove.Add(objectiveFunctions[39 * objectiveFunctions.Count / 40]);
+                                }
+                                else
+                                {
+                                    float twoPointFivePercentilePosition = 0.025F * objectiveFunctions.Count;
+                                    float ceilingIndex = MathF.Ceiling(twoPointFivePercentilePosition);
+                                    float floorIndex = MathF.Floor(twoPointFivePercentilePosition);
+                                    float ceilingWeight = 1.0F + twoPointFivePercentilePosition - ceilingIndex;
+                                    float floorWeight = 1.0F - twoPointFivePercentilePosition + floorIndex;
+                                    float twoPointFivePercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
+                                    this.TwoPointFivePercentileByMove.Add(twoPointFivePercentile);
+
+                                    float ninetySevenPointFivePercentilePosition = 0.975F * objectiveFunctions.Count;
+                                    ceilingIndex = MathF.Ceiling(ninetySevenPointFivePercentilePosition);
+                                    floorIndex = MathF.Floor(ninetySevenPointFivePercentilePosition);
+                                    ceilingWeight = 1.0F + ninetySevenPointFivePercentilePosition - ceilingIndex;
+                                    floorWeight = 1.0F - ninetySevenPointFivePercentilePosition + floorIndex;
+                                    float ninetySevenPointFivePercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
+                                    this.NinetySevenPointFivePercentileByMove.Add(ninetySevenPointFivePercentile);
+
+                                    Debug.Assert(twoPointFivePercentile >= objectiveFunctions[0]);
+                                    Debug.Assert(twoPointFivePercentile <= median);
+                                    Debug.Assert(ninetySevenPointFivePercentile >= median);
+                                    Debug.Assert(ninetySevenPointFivePercentile <= objectiveFunctions[^1]);
+                                }
                             }
                         }
                     }
