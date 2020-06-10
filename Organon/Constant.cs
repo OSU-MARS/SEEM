@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using DocumentFormat.OpenXml.Office2013.Word;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Osu.Cof.Ferm
@@ -84,6 +85,11 @@ namespace Osu.Cof.Ferm
             public const float ProportionalPercentageCenter = 50.0F;
             public const float ProportionalPercentageWidth = 100.0F;
             public const float ReservedPopulationProportion = 0.7F;
+        }
+
+        public static class HeuristicDefault 
+        {
+            public const int ChainFrom = -1;
         }
 
         public static class Maximum

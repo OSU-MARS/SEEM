@@ -35,7 +35,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.CentralSelectionPercentage));
             }
-            if (this.ChainFrom >= 0)
+            if (this.ChainFrom != Constant.HeuristicDefault.ChainFrom)
             {
                 throw new NotSupportedException(nameof(this.ChainFrom));
             }

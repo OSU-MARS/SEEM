@@ -65,6 +65,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 annealer.Alpha = this.Alpha.Value;
             }
+            if (this.ChainFrom.HasValue)
+            {
+                annealer.ChainFrom = this.ChainFrom.Value;
+            }
             if (this.ChangeToExchangeAfter.HasValue)
             {
                 annealer.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;

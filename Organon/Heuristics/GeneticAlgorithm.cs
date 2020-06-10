@@ -78,6 +78,19 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
+            if (this.ChainFrom != Constant.HeuristicDefault.ChainFrom)
+            {
+                // TODO: use CopyTreeSelectionFrom(this.CurrentSolution) include to include chained solution in population
+                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
+            }
+            if ((this.ExchangeProbability < 0.0F) || (this.ExchangeProbability > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ExchangeProbability));
+            }
+            if ((this.FlipProbability < 0.0F) || (this.FlipProbability > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.FlipProbability));
+            }
             if (this.MaximumGenerations < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.MaximumGenerations));
@@ -90,7 +103,15 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.PopulationSize));
             }
-            if ((this.ReservedPopulationProportion < 0.0) || (this.ReservedPopulationProportion > 1.0))
+            if ((this.ProportionalPercentageCenter < 0.0F) || (this.ProportionalPercentageCenter > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ProportionalPercentageCenter));
+            }
+            if ((this.ProportionalPercentageWidth < 0.0F) || (this.ProportionalPercentageWidth > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ProportionalPercentageWidth));
+            }
+            if ((this.ReservedPopulationProportion < 0.0F) || (this.ReservedPopulationProportion > 1.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.ReservedPopulationProportion));
             }
@@ -99,8 +120,6 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
 
             // begin with population of random harvest schedules
-            // TODO: CopyTreeSelectionFrom(this.CurrentSolution) for initializing tree selection?
-            // TODO: should incoming schedule on this.CurrentSolution be one of the individuals in the population?
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             int treeSelectionCapacity = Constant.Simd128x4.Width * (initialTreeRecordCount / Constant.Simd128x4.Width + 1);
             GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, treeSelectionCapacity);

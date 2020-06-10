@@ -52,6 +52,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, planningPeriods, objective)
             {
+                ChainFrom = parameters.ChainFrom,
                 ExchangeProbability = parameters.ExchangeProbability,
                 FlipProbability = parameters.FlipProbability,
                 MaximumGenerations = parameters.MaximumGenerations,
@@ -71,6 +72,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override IList<GeneticParameters> GetParameterCombinations()
         {
+            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
+            }
             if (this.ExchangeProbability.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.ExchangeProbability));
@@ -120,6 +125,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                         {
                                             parameters.Add(new GeneticParameters()
                                             {
+                                                ChainFrom = this.ChainFrom ?? Constant.HeuristicDefault.ChainFrom,
                                                 ExchangeProbability = exchangeProbability,
                                                 FlipProbability = flipProbability,
                                                 MaximumGenerations = (int)(generationCoefficient * treeRecordCount + 0.5F),

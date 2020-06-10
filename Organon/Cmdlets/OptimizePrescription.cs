@@ -33,6 +33,11 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
         {
+            if (this.ChainFrom != Constant.HeuristicDefault.ChainFrom)
+            {
+                throw new NotSupportedException(nameof(this.ChainFrom));
+            }
+
             PrescriptionEnumeration enumerator = new PrescriptionEnumeration(this.Stand, organonConfiguration, planningPeriods, objective);
             if (this.IntensityStep.HasValue)
             {

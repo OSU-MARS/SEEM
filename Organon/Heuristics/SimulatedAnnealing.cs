@@ -53,6 +53,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Alpha));
             }
+            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
+            }
             if (this.ChangeToExchangeAfter < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.ChangeToExchangeAfter));

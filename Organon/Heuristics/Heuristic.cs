@@ -21,7 +21,7 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, planningPeriods, objective.VolumeUnits);
             this.BestTrajectoryByMove = new Dictionary<int, StandTrajectory>();
-            this.ChainFrom = -1;
+            this.ChainFrom = Constant.HeuristicDefault.ChainFrom;
             this.Objective = objective;
 
             this.BestTrajectory.Simulate();

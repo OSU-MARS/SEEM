@@ -64,6 +64,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 recordTravel.Alpha = this.Alpha.Value;
             }
+            if (this.ChainFrom.HasValue)
+            {
+                recordTravel.ChainFrom = this.ChainFrom.Value;
+            }
             if (this.ChangeToExchangeAfter.HasValue)
             {
                 recordTravel.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;

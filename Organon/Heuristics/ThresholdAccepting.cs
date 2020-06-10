@@ -33,6 +33,10 @@ namespace Osu.Cof.Ferm.Heuristics
         // similar to SimulatedAnnealing.Run(), differences are in move acceptance
         public override TimeSpan Run()
         {
+            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
+            }
             if (this.IterationsPerThreshold.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.IterationsPerThreshold));

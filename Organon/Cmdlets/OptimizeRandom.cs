@@ -19,6 +19,11 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters parameters)
         {
+            if (this.ChainFrom.HasValue)
+            {
+                throw new NotSupportedException(nameof(this.ChainFrom));
+            }
+
             RandomGuessing random = new RandomGuessing(this.Stand, organonConfiguration, planningPeriods, objective, parameters.ProportionalPercentage);
             if (this.Iterations.HasValue)
             {

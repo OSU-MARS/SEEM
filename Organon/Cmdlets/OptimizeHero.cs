@@ -19,6 +19,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters parameters)
         {
             Hero hero = new Hero(this.Stand, organonConfiguration, planningPeriods, objective, this.Stochastic);
+            if (this.ChainFrom.HasValue)
+            {
+                hero.ChainFrom = this.ChainFrom.Value;
+            }
             if (this.Iterations.HasValue)
             {
                 hero.Iterations = this.Iterations.Value;

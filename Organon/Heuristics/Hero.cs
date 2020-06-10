@@ -46,6 +46,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
+            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
+            }
             if (this.Iterations < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Iterations));
@@ -96,7 +100,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
                     {
-                        this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
+                        this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.CurrentTrajectory));
                     }
                 }
 
