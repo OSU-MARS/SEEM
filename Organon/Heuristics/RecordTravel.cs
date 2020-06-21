@@ -30,7 +30,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.Iterations = 10 * treeRecordCount;
             this.MoveType = MoveType.OneOpt;
             this.RelativeDeviation = 0.0F;
-            this.RelativeIncrease = 0.01F;
+            this.RelativeIncrease = 0.0075F;
             this.StopAfter = 1000;
 
             this.ObjectiveFunctionByMove = new List<float>(this.Iterations)

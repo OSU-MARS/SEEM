@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.Office2013.Word;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Osu.Cof.Ferm
@@ -77,14 +76,18 @@ namespace Osu.Cof.Ferm
 
         public static class GeneticDefault
         {
-            public const float ExchangeProbability = 0.7F;
-            public const float FlipProbability = 0.9F;
-            public const float MaximumGenerationCoefficient = 0.667F;
-            public const float MinCoefficientOfVariation = 0.000001F;
-            public const int PopulationSize = 40;
+            public const float EndCrossoverProbability = 0.5F;
+            public const float ExchangeProbabilityEnd = 0.1F;
+            public const float ExchangeProbabilityStart = 0.0F;
+            public const float ExponentK = -8.0F;
+            public const float FlipProbabilityEnd = 1.0F; // ~0.85 best for constant probability
+            public const float FlipProbabilityStart = 0.0F;
+            public const float MaximumGenerationCoefficient = 0.75F;
+            public const float MinimumCoefficientOfVariation = 0.000001F;
+            public const int PopulationSize = 30;
             public const float ProportionalPercentageCenter = 50.0F;
             public const float ProportionalPercentageWidth = 100.0F;
-            public const float ReservedPopulationProportion = 0.7F;
+            public const float ReservedPopulationProportion = 0.5F;
         }
 
         public static class HeuristicDefault 

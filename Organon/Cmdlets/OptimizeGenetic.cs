@@ -11,11 +11,19 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(0.0, 1.0)]
-        public List<float> ExchangeProbability { get; set; }
+        public List<float> CrossoverProbabilityEnd { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, 1.0)]
-        public List<float> FlipProbability { get; set; }
+        public List<float> ExchangeProbabilityEnd { get; set; }
+
+        [Parameter]
+        [ValidateRange(-20.0, 0.0)]
+        public List<float> ExponentK { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0, 1.0)]
+        public List<float> FlipProbabilityEnd { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
@@ -39,10 +47,12 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public OptimizeGenetic()
         {
-            this.ExchangeProbability = new List<float>() { Constant.GeneticDefault.ExchangeProbability };
-            this.FlipProbability = new List<float>() { Constant.GeneticDefault.ExchangeProbability };
+            this.CrossoverProbabilityEnd = new List<float>() { Constant.GeneticDefault.EndCrossoverProbability };
+            this.ExchangeProbabilityEnd = new List<float>() { Constant.GeneticDefault.ExchangeProbabilityEnd };
+            this.ExponentK = new List<float>() { Constant.GeneticDefault.ExponentK };
+            this.FlipProbabilityEnd = new List<float>() { Constant.GeneticDefault.FlipProbabilityEnd };
             this.GenerationCoefficient = new List<float>() { Constant.GeneticDefault.MaximumGenerationCoefficient };
-            this.MinCoefficientOfVariation = new List<float>() { Constant.GeneticDefault.MinCoefficientOfVariation };
+            this.MinCoefficientOfVariation = new List<float>() { Constant.GeneticDefault.MinimumCoefficientOfVariation };
             this.PopulationSize = new List<int>() { Constant.GeneticDefault.PopulationSize };
             this.ProportionalPercentageWidth = new List<float>() { Constant.GeneticDefault.ProportionalPercentageWidth };
             this.ReservedProportion = new List<float>() { Constant.GeneticDefault.ReservedPopulationProportion };
@@ -53,14 +63,18 @@ namespace Osu.Cof.Ferm.Cmdlets
             GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, planningPeriods, objective)
             {
                 ChainFrom = parameters.ChainFrom,
-                ExchangeProbability = parameters.ExchangeProbability,
-                FlipProbability = parameters.FlipProbability,
+                CrossoverProbabilityEnd = parameters.CrossoverProbabilityEnd,
+                ExchangeProbabilityEnd = parameters.ExchangeProbabilityEnd,
+                ExchangeProbabilityStart = parameters.ExchangeProbabilityStart,
+                ExponentK = parameters.ExponentK,
+                FlipProbabilityEnd = parameters.FlipProbabilityEnd,
+                FlipProbabilityStart = parameters.FlipProbabilityStart,
                 MaximumGenerations = parameters.MaximumGenerations,
-                MinCoefficientOfVariation = parameters.MinCoefficientOfVariation,
+                MinimumCoefficientOfVariation = parameters.MinimumCoefficientOfVariation,
                 PopulationSize = parameters.PopulationSize,
                 ProportionalPercentageCenter = parameters.ProportionalPercentage,
                 ProportionalPercentageWidth = parameters.ProportionalPercentageWidth,
-                ReservedPopulationProportion = parameters.ReservedProportion
+                ReservedPopulationProportion = parameters.ReservedProportion,
             };
             return genetic;
         }
@@ -76,13 +90,17 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
             }
-            if (this.ExchangeProbability.Count < 1)
+            if (this.ExchangeProbabilityEnd.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ExchangeProbability));
+                throw new ArgumentOutOfRangeException(nameof(this.ExchangeProbabilityEnd));
             }
-            if (this.FlipProbability.Count < 1)
+            if (this.ExponentK.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FlipProbability));
+                throw new ArgumentOutOfRangeException(nameof(this.ExponentK));
+            }
+            if (this.FlipProbabilityEnd.Count < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.FlipProbabilityEnd));
             }
             if (this.GenerationCoefficient.Count < 1)
             {
@@ -107,34 +125,44 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             List<GeneticParameters> parameters = new List<GeneticParameters>(this.ProportionalPercentage.Count);
             int treeRecordCount = this.Stand.GetTreeRecordCount();
-            foreach (float exchangeProbability in this.ExchangeProbability)
+            foreach (float crossoverProbabilityEnd in this.CrossoverProbabilityEnd)
             {
-                foreach (float flipProbability in this.FlipProbability)
+                foreach (float exponent in this.ExponentK)
                 {
-                    foreach (float generationCoefficient in this.GenerationCoefficient)
+                    foreach (float exchangeProbabilityEnd in this.ExchangeProbabilityEnd)
                     {
-                        foreach (float minCoefficientOfVariation in this.MinCoefficientOfVariation)
+                        foreach (float flipProbabilityEnd in this.FlipProbabilityEnd)
                         {
-                            foreach (int populationSize in this.PopulationSize)
+                            foreach (float generationCoefficient in this.GenerationCoefficient)
                             {
-                                foreach (float proportionalPercentage in this.ProportionalPercentage)
+                                foreach (float minCoefficientOfVariation in this.MinCoefficientOfVariation)
                                 {
-                                    foreach (float proportionalPercentageWidth in this.ProportionalPercentageWidth)
+                                    foreach (int populationSize in this.PopulationSize)
                                     {
-                                        foreach (float reservedProportion in this.ReservedProportion)
+                                        foreach (float proportionalPercentage in this.ProportionalPercentage)
                                         {
-                                            parameters.Add(new GeneticParameters()
+                                            foreach (float proportionalPercentageWidth in this.ProportionalPercentageWidth)
                                             {
-                                                ChainFrom = this.ChainFrom ?? Constant.HeuristicDefault.ChainFrom,
-                                                ExchangeProbability = exchangeProbability,
-                                                FlipProbability = flipProbability,
-                                                MaximumGenerations = (int)(generationCoefficient * treeRecordCount + 0.5F),
-                                                MinCoefficientOfVariation = minCoefficientOfVariation,
-                                                PopulationSize = populationSize,
-                                                ProportionalPercentage = proportionalPercentage,
-                                                ProportionalPercentageWidth = proportionalPercentageWidth,
-                                                ReservedProportion = reservedProportion,
-                                            });
+                                                foreach (float reservedProportion in this.ReservedProportion)
+                                                {
+                                                    parameters.Add(new GeneticParameters()
+                                                    {
+                                                        ChainFrom = this.ChainFrom ?? Constant.HeuristicDefault.ChainFrom,
+                                                        CrossoverProbabilityEnd = crossoverProbabilityEnd,
+                                                        ExchangeProbabilityEnd = exchangeProbabilityEnd,
+                                                        ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
+                                                        ExponentK = exponent,
+                                                        FlipProbabilityEnd = flipProbabilityEnd,
+                                                        FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
+                                                        MaximumGenerations = (int)(generationCoefficient * treeRecordCount + 0.5F),
+                                                        MinimumCoefficientOfVariation = minCoefficientOfVariation,
+                                                        PopulationSize = populationSize,
+                                                        ProportionalPercentage = proportionalPercentage,
+                                                        ProportionalPercentageWidth = proportionalPercentageWidth,
+                                                        ReservedProportion = reservedProportion,
+                                                    });
+                                                }
+                                            }
                                         }
                                     }
                                 }

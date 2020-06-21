@@ -73,12 +73,83 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
+        public void CrossoverKPoint(int points, int firstParentIndex, int secondParentIndex, int[] sortOrder, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
+        {
+            // get parents' schedules
+            int[] firstParentHarvestSchedule = this.IndividualTreeSelections[firstParentIndex];
+            int[] secondParentHarvestSchedule = this.IndividualTreeSelections[secondParentIndex];
+            int treeRecordCount = sortOrder.Length; // sortOrder is of tree record count, parent schedules are of capacity length
+            Debug.Assert(firstParentHarvestSchedule.Length == secondParentHarvestSchedule.Length);
+
+            // find length and position of crossover
+            float treeScalingFactor = ((float)treeRecordCount - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
+            int[] crossoverPoints = new int[points];
+            for (int pointIndex = 0; pointIndex < points; ++pointIndex)
+            {
+                crossoverPoints[pointIndex] = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+            }
+            Array.Sort(crossoverPoints);
+
+            bool isCrossed = false; // initial value is unimportant as designation of first vs second child is arbitrary
+            int crossoverIndex = 0;
+            int crossoverPosition = crossoverPoints[crossoverIndex];
+            for (int sortIndex = 0; sortIndex < treeRecordCount; ++sortIndex)
+            {
+                if (crossoverPosition == sortIndex)
+                {
+                    isCrossed = !isCrossed;
+                    crossoverPosition = crossoverPoints[crossoverIndex];
+                    ++crossoverIndex;
+                }
+
+                int treeIndex = sortOrder[sortIndex];
+                if (isCrossed)
+                {
+                    firstChildTrajectory.SetTreeSelection(treeIndex, secondParentHarvestSchedule[treeIndex]);
+                    secondChildTrajectory.SetTreeSelection(treeIndex, firstParentHarvestSchedule[treeIndex]);
+                }
+                else
+                {
+                    firstChildTrajectory.SetTreeSelection(treeIndex, firstParentHarvestSchedule[treeIndex]);
+                    secondChildTrajectory.SetTreeSelection(treeIndex, secondParentHarvestSchedule[treeIndex]);
+                }
+            }
+        }
+
+        public void CrossoverUniform(int firstParentIndex, int secondParentIndex, float probability, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
+        {
+            // get parents' schedules
+            int[] firstParentHarvestSchedule = this.IndividualTreeSelections[firstParentIndex];
+            int[] secondParentHarvestSchedule = this.IndividualTreeSelections[secondParentIndex];
+            Debug.Assert(firstParentHarvestSchedule.Length == secondParentHarvestSchedule.Length);
+
+            for (int treeIndex = 0; treeIndex < firstParentHarvestSchedule.Length; ++treeIndex)
+            {
+                int firstHarvestPeriod = firstParentHarvestSchedule[treeIndex];
+                int secondHarvestPeriod = secondParentHarvestSchedule[treeIndex];
+                if (firstHarvestPeriod != secondHarvestPeriod)
+                {
+                    int harvestPeriodBuffer = firstHarvestPeriod;
+                    if (this.GetPseudorandomByteAsProbability() < probability)
+                    {
+                        firstHarvestPeriod = secondHarvestPeriod;
+                    }
+                    if (this.GetPseudorandomByteAsProbability() < probability)
+                    {
+                        secondHarvestPeriod = harvestPeriodBuffer;
+                    }
+                }
+                firstChildTrajectory.SetTreeSelection(treeIndex, firstHarvestPeriod);
+                secondChildTrajectory.SetTreeSelection(treeIndex, secondHarvestPeriod);
+            }
+        }
+
         public void FindParents(out int firstParentIndex, out int secondParentIndex)
         {
             // find first parent
             // TODO: check significance of quantization effects from use of two random bytes
-            float unityScaling = 1.0F / (float)UInt16.MaxValue;
-            float firstParentCumlativeProbability = unityScaling * this.GetTwoPseudorandomBytesAsFloat();
+            float probabilityScaling = 1.0F / (float)UInt16.MaxValue;
+            float firstParentCumlativeProbability = probabilityScaling * this.GetTwoPseudorandomBytesAsFloat();
             firstParentIndex = this.Size - 1; // numerical precision may result in the last CDF value being slightly below 1
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
@@ -92,7 +163,7 @@ namespace Osu.Cof.Ferm.Heuristics
             // find second parent
             // TODO: check significance of allowing selfing
             // TOOD: investigate selection pressure effect of choosing second parent randomly
-            float secondParentCumlativeProbability = unityScaling * this.GetTwoPseudorandomBytesAsFloat();
+            float secondParentCumlativeProbability = probabilityScaling * this.GetTwoPseudorandomBytesAsFloat();
             secondParentIndex = this.Size - 1;
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {

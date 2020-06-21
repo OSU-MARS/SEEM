@@ -33,6 +33,11 @@ namespace Osu.Cof.Ferm.Heuristics
             return byteAsFloat;
         }
 
+        protected float GetPseudorandomByteAsProbability()
+        {
+            return this.GetPseudorandomByteAsFloat() / byte.MaxValue;
+        }
+
         protected float GetTwoPseudorandomBytesAsFloat()
         {
             // ensure two bytes are available

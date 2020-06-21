@@ -105,7 +105,6 @@ namespace Osu.Cof.Ferm.Heuristics
             float movingAverageOfObjectiveChange = -1.0F;
             float movingAverageMemory = 1.0F - 1.0F / this.ProbabilityWindowLength;
             float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
-            float unityScalingFactor = 1.0F / (float)byte.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             for (int iteration = 1; (iteration < this.Iterations) && (meanAcceptanceProbability >= this.FinalProbability); meanAcceptanceProbability *= this.Alpha)
@@ -171,7 +170,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             // exponent is small enough not to round acceptance probabilities down to zero
                             // 1/e^10 accepts 1 in 22,026 moves.
                             float acceptanceProbability = 1.0F / MathV.Exp(exponent);
-                            float moveProbability = unityScalingFactor * this.GetPseudorandomByteAsFloat();
+                            float moveProbability = this.GetPseudorandomByteAsProbability();
                             if (moveProbability < acceptanceProbability)
                             {
                                 acceptMove = true;
