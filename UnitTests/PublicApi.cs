@@ -388,6 +388,33 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext.WriteLine(runtime.TotalSeconds.ToString());
         }
 
+        private void Verify(GeneticAlgorithm genetic)
+        {
+            this.Verify((Heuristic)genetic);
+
+            PopulationStatistics statistics = genetic.PopulationStatistics;
+            Assert.IsTrue(statistics.Generations <= genetic.MaximumGenerations);
+            Assert.IsTrue(statistics.CoefficientOfVarianceByGeneration.Count == statistics.Generations);
+            Assert.IsTrue(statistics.MeanAllelesPerLocusByGeneration.Count == statistics.Generations);
+            Assert.IsTrue(statistics.MeanHeterozygosityByGeneration.Count == statistics.Generations);
+            Assert.IsTrue(statistics.NewIndividualsByGeneration.Count == statistics.Generations);
+            Assert.IsTrue(statistics.PolymorphismByGeneration.Count == statistics.Generations);
+            for (int generationIndex = 0; generationIndex < statistics.Generations; ++generationIndex)
+            {
+                float coefficientOfVariation = statistics.CoefficientOfVarianceByGeneration[generationIndex];
+                float meanAllelesPerLocus = statistics.MeanAllelesPerLocusByGeneration[generationIndex];
+                float meanHeterozygosity = statistics.MeanHeterozygosityByGeneration[generationIndex];
+                int newIndividuals = statistics.NewIndividualsByGeneration[generationIndex];
+                float polymorphism = statistics.PolymorphismByGeneration[generationIndex];
+
+                Assert.IsTrue(coefficientOfVariation >= 0.0F);
+                Assert.IsTrue((meanAllelesPerLocus >= 0.0F) && (meanAllelesPerLocus <= 2.0F)); // assumes HarvestPeriodSelection.All
+                Assert.IsTrue((meanHeterozygosity >= 0.0F) && (meanHeterozygosity <= 1.0F));
+                Assert.IsTrue((newIndividuals >= 0) && (newIndividuals <= 2 * genetic.PopulationSize)); // two children per breeding
+                Assert.IsTrue((polymorphism >= 0.0F) && (polymorphism <= 1.0F));
+            }
+        }
+
         private void Verify(Heuristic heuristic)
         {
             // check objective functions

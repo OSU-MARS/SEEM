@@ -8,7 +8,9 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class HeuristicSolutionDistribution
     {
         public List<float> BestObjectiveFunctionBySolution { get; private set; }
-        public Heuristic BestSolution { get; private set; }
+        public HeuristicParameters HighestHeuristicParameters { get; set; }
+        public Heuristic HighestSolution { get; private set; }
+        public Heuristic LowestSolution { get; private set; }
 
         public List<int> CountByMove { get; private set; }
         public List<float> TwoPointFivePercentileByMove { get; private set; }
@@ -24,7 +26,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> UpperQuartileByMove { get; private set; }
         public List<float> VarianceByMove { get; private set; }
 
-        public HeuristicParameters HeuristicParameters { get; set; }
         public List<TimeSpan> RuntimeBySolution { get; private set; }
 
         public TimeSpan TotalCoreSeconds { get; private set; }
@@ -36,12 +37,13 @@ namespace Osu.Cof.Ferm.Cmdlets
             int defaultMoveCapacity = 1024;
 
             this.BestObjectiveFunctionBySolution = new List<float>(100);
-            this.BestSolution = null;
             this.CountByMove = new List<int>(defaultMoveCapacity);
             this.TwoPointFivePercentileByMove = new List<float>(defaultMoveCapacity);
             this.FifthPercentileByMove = new List<float>(defaultMoveCapacity);
-            this.HeuristicParameters = null;
+            this.HighestHeuristicParameters = null;
+            this.HighestSolution = null;
             this.LowerQuartileByMove = new List<float>(defaultMoveCapacity);
+            this.LowestSolution = null;
             this.MaximumObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
             this.MeanObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
             this.MedianObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
@@ -103,14 +105,18 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.TotalMoves += heuristic.ObjectiveFunctionByMove.Count;
             ++this.TotalRuns;
 
-            if ((this.BestSolution == null) || (heuristic.BestObjectiveFunction > this.BestSolution.BestObjectiveFunction))
+            if ((this.HighestSolution == null) || (heuristic.BestObjectiveFunction > this.HighestSolution.BestObjectiveFunction))
             {
-                this.BestSolution = heuristic;
-                this.HeuristicParameters = heuristic.GetParameters(); // if heuristic reports parameters, prefer them
-                if (this.HeuristicParameters == null)
+                this.HighestSolution = heuristic;
+                this.HighestHeuristicParameters = heuristic.GetParameters(); // if heuristic reports parameters, prefer them
+                if (this.HighestHeuristicParameters == null)
                 {
-                    this.HeuristicParameters = runParameters; // otherwise, fall back to run parameters
+                    this.HighestHeuristicParameters = runParameters; // otherwise, fall back to run parameters
                 }
+            }
+            if ((this.LowestSolution == null) || (heuristic.BestObjectiveFunction < this.LowestSolution.BestObjectiveFunction))
+            {
+                this.LowestSolution = heuristic;
             }
         }
 

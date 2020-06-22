@@ -63,7 +63,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 line.Append(",heuristic");
 
-                HeuristicParameters heuristicParametersForHeader = runsSpecified ? this.Runs[0].HeuristicParameters : this.Trajectories[0].Heuristic.GetParameters();
+                HeuristicParameters heuristicParametersForHeader = runsSpecified ? this.Runs[0].HighestHeuristicParameters : this.Trajectories[0].Heuristic.GetParameters();
                 if (heuristicParametersForHeader != null)
                 {
                     string heuristicParameters = heuristicParametersForHeader.GetCsvHeader();
@@ -90,8 +90,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                 if (runsSpecified)
                 {
                     HeuristicSolutionDistribution distribution = this.Runs[runOrTrajectoryIndex];
-                    bestTrajectory = distribution.BestSolution.BestTrajectory;
-                    heuristicParameters = distribution.HeuristicParameters;
+                    bestTrajectory = distribution.HighestSolution.BestTrajectory;
+                    heuristicParameters = distribution.HighestHeuristicParameters;
                     moves = distribution.TotalMoves;
                     runs = distribution.TotalRuns;
                     runtimeInSeconds = distribution.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);

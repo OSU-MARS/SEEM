@@ -17,10 +17,10 @@ namespace Osu.Cof.Ferm.Heuristics
         public int MaximumGenerations { get; set; }
         public float MinimumCoefficientOfVariation { get; set; }
         public int PopulationSize { get; set; }
+        public PopulationStatistics PopulationStatistics { get; private set; }
         public float ProportionalPercentageCenter { get; set; }
         public float ProportionalPercentageWidth { get; set; }
         public float ReservedPopulationProportion { get; set; }
-        public List<float> VarianceByGeneration { get; private set; }
 
         public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, planningPeriods, objective)
@@ -35,10 +35,10 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MaximumGenerations = (int)(Constant.GeneticDefault.MaximumGenerationCoefficient * treeRecords + 0.5F);
             this.MinimumCoefficientOfVariation = Constant.GeneticDefault.MinimumCoefficientOfVariation;
             this.PopulationSize = Constant.GeneticDefault.PopulationSize;
+            this.PopulationStatistics = new PopulationStatistics();
             this.ProportionalPercentageCenter = Constant.GeneticDefault.ProportionalPercentageCenter;
             this.ProportionalPercentageWidth = Constant.GeneticDefault.ProportionalPercentageWidth;
             this.ReservedPopulationProportion = Constant.GeneticDefault.ReservedPopulationProportion;
-            this.VarianceByGeneration = new List<float>();
 
             this.ObjectiveFunctionByMove = new List<float>(this.MaximumGenerations * this.PopulationSize);
         }
@@ -46,37 +46,6 @@ namespace Osu.Cof.Ferm.Heuristics
         public override string GetName()
         {
             return "Genetic";
-        }
-
-        private float GetMaximumFitnessAndVariance(GeneticPopulation generation, out float coeffcientOfVariation)
-        {
-            // use double precision for intermediate variance calculations
-            // When calculation is done with floats the sum of squares and squared sum accumulations and their eventual subtractions is sensitive to 
-            // numerical precision, resulting in an understimate of variance, truncation to zero, a negative value. Using double precision avoids these
-            // difficulties for when the end variance criteria is on the order of 1E-6.
-
-            float highestFitness = Single.MinValue;
-            double sum = 0.0F;
-            double sumOfSquares = 0.0F;
-            for (int individualIndex = 0; individualIndex < generation.Size; ++individualIndex)
-            {
-                float individualFitness = generation.IndividualFitness[individualIndex];
-                sum += individualFitness;
-                sumOfSquares += individualFitness * individualFitness;
-                if (individualFitness > highestFitness)
-                {
-                    highestFitness = individualFitness;
-                }
-            }
-            Debug.Assert(highestFitness >= this.BestObjectiveFunction);
-
-            double n = generation.Size;
-            double mean = sum / n;
-            double variance = sumOfSquares / n - mean * mean;
-            double standardDeviation = Math.Sqrt(variance);
-
-            coeffcientOfVariation = (float)(standardDeviation / mean);
-            return (float)variance;
         }
 
         public override HeuristicParameters GetParameters()
@@ -145,8 +114,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             // begin with population of random harvest schedules
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
-            int treeSelectionCapacity = Constant.Simd128x4.Width * (initialTreeRecordCount / Constant.Simd128x4.Width + 1);
-            GeneticPopulation currentGeneration = new GeneticPopulation(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, treeSelectionCapacity);
+            Population currentGeneration = new Population(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, initialTreeRecordCount);
             currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection, this.ProportionalPercentageCenter, this.ProportionalPercentageWidth);
             OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             this.BestObjectiveFunction = Single.MinValue;
@@ -167,20 +135,19 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
                 this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             }
-            float variance = this.GetMaximumFitnessAndVariance(currentGeneration, out float _);
-            this.VarianceByGeneration.Add(variance);
+            this.PopulationStatistics.AddGeneration(currentGeneration);
 
             // get sort order for K-point crossover
-            Stand standBeforeThin = this.BestTrajectory.StandByPeriod[this.BestTrajectory.HarvestPeriods];
-            if ((standBeforeThin.TreesBySpecies.Count != 1) || (standBeforeThin.TreesBySpecies.ContainsKey(FiaCode.PseudotsugaMenziesii) == false))
-            {
-                throw new NotImplementedException();
-            }
-            int[] dbhSortOrder = standBeforeThin.TreesBySpecies[FiaCode.PseudotsugaMenziesii].GetDbhSortOrder();
+            //Stand standBeforeThin = this.BestTrajectory.StandByPeriod[this.BestTrajectory.HarvestPeriods];
+            //if ((standBeforeThin.TreesBySpecies.Count != 1) || (standBeforeThin.TreesBySpecies.ContainsKey(FiaCode.PseudotsugaMenziesii) == false))
+            //{
+            //    throw new NotImplementedException();
+            //}
+            //int[] dbhSortOrder = standBeforeThin.TreesBySpecies[FiaCode.PseudotsugaMenziesii].GetDbhSortOrder();
 
             // for each generation of size n, perform n fertile matings
             float treeScalingFactor = ((float)initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
-            GeneticPopulation nextGeneration = new GeneticPopulation(currentGeneration);
+            Population nextGeneration = new Population(currentGeneration);
             OrganonStandTrajectory firstChildTrajectory = individualTrajectory;
             OrganonStandTrajectory secondChildTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             for (int generationIndex = 1; generationIndex < this.MaximumGenerations; ++generationIndex)
@@ -239,6 +206,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
 
                     // evaluate fitness of offspring
+                    // TODO: check for no change breeding and avoid no op stand simulations?
                     firstChildTrajectory.Simulate();
                     float firstChildFitness = this.GetObjectiveFunction(firstChildTrajectory);
 
@@ -323,13 +291,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                 }
 
-                //GeneticPopulation generationSwapPointer = currentGeneration;
-                //currentGeneration = nextGeneration;
-                //nextGeneration = generationSwapPointer;
                 currentGeneration.CopyFrom(nextGeneration);
-                variance = this.GetMaximumFitnessAndVariance(currentGeneration, out float coefficientOfVariation);
-                this.VarianceByGeneration.Add(variance);
-
+                nextGeneration.NewIndividuals = 0;
+                
+                float coefficientOfVariation = this.PopulationStatistics.AddGeneration(currentGeneration);
                 if (coefficientOfVariation < this.MinimumCoefficientOfVariation)
                 {
                     break;

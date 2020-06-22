@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -50,36 +49,39 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
             if (this.Append == false)
             {
-                line.Append("stand,heuristic," + this.Runs[0].HeuristicParameters.GetCsvHeader() + ",thin age,rotation,tree,selection,DBH,height,expansion factor");
+                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters.GetCsvHeader() + ",thin age,rotation,tree,lowest selection,highest selection,DBH,height,expansion factor");
                 writer.WriteLine(line);
             }
 
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
                 HeuristicSolutionDistribution distribution = this.Runs[runIndex];
-                OrganonStandTrajectory bestTrajectoryN = distribution.BestSolution.BestTrajectory;
-                int periodBeforeHarvest = bestTrajectoryN.GetFirstHarvestPeriod() - 1;
+                OrganonStandTrajectory highestTrajectoryN = distribution.HighestSolution.BestTrajectory;
+                int periodBeforeHarvest = highestTrajectoryN.GetFirstHarvestPeriod() - 1;
                 if (periodBeforeHarvest < 0)
                 {
-                    periodBeforeHarvest = bestTrajectoryN.PlanningPeriods - 1;
+                    periodBeforeHarvest = highestTrajectoryN.PlanningPeriods - 1;
                 }
-                string linePrefix = bestTrajectoryN.Name + "," + bestTrajectoryN.Heuristic.GetName() + "," + distribution.HeuristicParameters.GetCsvValues() + "," + bestTrajectoryN.GetFirstHarvestAge() + "," + bestTrajectoryN.GetRotationLength();
+                string linePrefix = highestTrajectoryN.Name + "," + highestTrajectoryN.Heuristic.GetName() + "," + distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectoryN.GetFirstHarvestAge() + "," + highestTrajectoryN.GetRotationLength();
 
+                OrganonStandTrajectory lowestTrajectoryN = distribution.LowestSolution.BestTrajectory;
                 int previousSpeciesCount = 0;
-                foreach (KeyValuePair<FiaCode, int[]> treeSelectionNForSpecies in bestTrajectoryN.IndividualTreeSelectionBySpecies)
+                foreach (KeyValuePair<FiaCode, int[]> highestTreeSelectionNForSpecies in highestTrajectoryN.IndividualTreeSelectionBySpecies)
                 {
-                    Trees treesOfSpecies = bestTrajectoryN.StandByPeriod[periodBeforeHarvest].TreesBySpecies[treeSelectionNForSpecies.Key];
+                    Trees treesOfSpecies = highestTrajectoryN.StandByPeriod[periodBeforeHarvest].TreesBySpecies[highestTreeSelectionNForSpecies.Key];
 
-                    int[] treeSelectionN = treeSelectionNForSpecies.Value;
-                    Debug.Assert(treesOfSpecies.Capacity == treeSelectionN.Length);
+                    int[] lowestTreeSelectionN = lowestTrajectoryN.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
+                    int[] highestTreeSelectionN = highestTreeSelectionNForSpecies.Value;
+                    Debug.Assert(treesOfSpecies.Capacity == highestTreeSelectionN.Length);
                     for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                     {
                         line.Clear();
 
                         // for now, make best guess of using tree tag or index as unique identifier
                         int tree = treesOfSpecies.Tag[treeIndex] < 0 ? previousSpeciesCount + treeIndex : treesOfSpecies.Tag[treeIndex];
-                        int treeHarvestPeriod = treeSelectionN[treeIndex];
-                        line.Append(linePrefix + "," + tree + "," + treeHarvestPeriod.ToString(CultureInfo.InvariantCulture) + "," +
+                        line.Append(linePrefix + "," + tree + "," +
+                                    lowestTreeSelectionN[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                    highestTreeSelectionN[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                     treesOfSpecies.Dbh[treeIndex].ToString("0.00", CultureInfo.InvariantCulture) + "," + 
                                     treesOfSpecies.Height[treeIndex].ToString("0.00", CultureInfo.InvariantCulture) + "," + 
                                     treesOfSpecies.LiveExpansionFactor[treeIndex].ToString("0.000", CultureInfo.InvariantCulture));
@@ -87,7 +89,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         writer.WriteLine(line);
                     }
 
-                    previousSpeciesCount += treeSelectionN.Length;
+                    previousSpeciesCount += highestTreeSelectionN.Length;
                 }
             }
         }
@@ -95,10 +97,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         private void WriteWideFormat(StreamWriter writer)
         {
             // for now, assume all heuristics are from the same stand with the same tree ordering and ingrowth pattern
-            SortedDictionary<FiaCode, int[]> treeSelection0BySpecies = this.Runs[0].BestSolution.BestTrajectory.IndividualTreeSelectionBySpecies;
+            SortedDictionary<FiaCode, int[]> treeSelection0BySpecies = this.Runs[0].HighestSolution.BestTrajectory.IndividualTreeSelectionBySpecies;
             for (int heuristicIndex = 1; heuristicIndex < this.Runs.Count; ++heuristicIndex)
             {
-                SortedDictionary<FiaCode, int[]> treeSelectionBySpecies = this.Runs[heuristicIndex].BestSolution.BestTrajectory.IndividualTreeSelectionBySpecies;
+                SortedDictionary<FiaCode, int[]> treeSelectionBySpecies = this.Runs[heuristicIndex].HighestSolution.BestTrajectory.IndividualTreeSelectionBySpecies;
                 if (SortedDictionaryExtensions.ValueLengthsIdentical(treeSelection0BySpecies, treeSelectionBySpecies) == false)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.Runs));
@@ -111,7 +113,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 line.Append("tree");
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
-                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
+                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
                     line.Append("," + bestTrajectory.Name + bestTrajectory.Heuristic + bestTrajectory.GetFirstHarvestAge() + "." + bestTrajectory.GetRotationLength());
                 }
                 writer.WriteLine(line);
@@ -120,7 +122,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             int previousSpeciesCount = 0;
             foreach (KeyValuePair<FiaCode, int[]> treeSelection0ForSpecies in treeSelection0BySpecies)
             {
-                OrganonStandTrajectory bestTrajectory0 = this.Runs[0].BestSolution.BestTrajectory;
+                OrganonStandTrajectory bestTrajectory0 = this.Runs[0].HighestSolution.BestTrajectory;
                 Trees treesOfSpecies = bestTrajectory0.StandByPeriod[0].TreesBySpecies[treeSelection0ForSpecies.Key];
                 Debug.Assert(treesOfSpecies.Count <= treeSelection0ForSpecies.Value.Length);
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
@@ -131,7 +133,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                     {
-                        OrganonStandTrajectory bestTrajectoryN = this.Runs[runIndex].BestSolution.BestTrajectory;
+                        OrganonStandTrajectory bestTrajectoryN = this.Runs[runIndex].HighestSolution.BestTrajectory;
                         int[] treeSelectionN = bestTrajectoryN.IndividualTreeSelectionBySpecies[treeSelection0ForSpecies.Key];
                         int harvestPeriod = treeSelectionN[treeIndex];
                         line.Append("," + harvestPeriod.ToString(CultureInfo.InvariantCulture));

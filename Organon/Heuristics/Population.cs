@@ -6,41 +6,41 @@ using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    internal class GeneticPopulation : PseudorandomizingTask
+    public class Population : PseudorandomizingTask
     {
         private readonly SortedDictionary<float, List<int>> individualIndexByFitness;
         private readonly float[] matingDistributionFunction;
         private float reservedPopulationProportion;
 
-        public float[][] HarvestVolumesByPeriod { get; private set; }
+        public int HarvestPeriods { get; private set; }
         public float[] IndividualFitness { get; private set; }
         public int[][] IndividualTreeSelections { get; private set; }
+        public int NewIndividuals { get; set; }
+        public int TreeCount { get; private set; }
 
-        public GeneticPopulation(int populationSize, int harvestPeriods, float reservedPopulationProportion, int treeCapacity)
+        public Population(int populationSize, int harvestPeriods, float reservedPopulationProportion, int treeCount)
         {
             this.individualIndexByFitness = new SortedDictionary<float, List<int>>();
             this.matingDistributionFunction = new float[populationSize];
-            this.HarvestVolumesByPeriod = new float[populationSize][];
-            this.IndividualFitness = new float[populationSize];
-            this.IndividualTreeSelections = new int[populationSize][];
             this.reservedPopulationProportion = reservedPopulationProportion;
 
+            this.HarvestPeriods = harvestPeriods;
+            this.IndividualFitness = new float[populationSize];
+            this.IndividualTreeSelections = new int[populationSize][];
+            this.NewIndividuals = 0;
+            this.TreeCount = treeCount;
+
+            int treeCapacity = Constant.Simd128x4.Width * (treeCount / Constant.Simd128x4.Width + 1);
             for (int individualIndex = 0; individualIndex < populationSize; ++individualIndex)
             {
-                this.HarvestVolumesByPeriod[individualIndex] = new float[harvestPeriods];
                 this.IndividualTreeSelections[individualIndex] = new int[treeCapacity];
             }
         }
 
-        public GeneticPopulation(GeneticPopulation other)
-            : this(other.Size, other.HarvestPeriods, other.reservedPopulationProportion, other.IndividualTreeSelections[0].Length)
+        public Population(Population other)
+            : this(other.Size, other.HarvestPeriods, other.reservedPopulationProportion, other.TreeCount)
         {
             this.CopyFrom(other);
-        }
-
-        private int HarvestPeriods
-        {
-            get { return this.HarvestVolumesByPeriod[0].Length; }
         }
 
         public int Size
@@ -48,27 +48,28 @@ namespace Osu.Cof.Ferm.Heuristics
             get { return this.IndividualFitness.Length; }
         }
 
-        public void CopyFrom(GeneticPopulation other)
+        public void CopyFrom(Population other)
         {
             Debug.Assert(Object.ReferenceEquals(this, other) == false);
-
-            if ((this.HarvestPeriods != other.HarvestPeriods) || (this.Size != other.Size))
+            if (this.Size != other.Size)
             {
                 throw new ArgumentOutOfRangeException(nameof(other));
             }
 
+            this.HarvestPeriods = other.HarvestPeriods;
             this.individualIndexByFitness.Clear();
             foreach (KeyValuePair<float, List<int>> individualOfFitness in other.individualIndexByFitness)
             {
                 this.individualIndexByFitness.Add(individualOfFitness.Key, new List<int>(individualOfFitness.Value));
             }
+            this.NewIndividuals = other.NewIndividuals;
             this.reservedPopulationProportion = other.reservedPopulationProportion;
+            this.TreeCount = other.TreeCount;
 
             Array.Copy(other.matingDistributionFunction, 0, this.matingDistributionFunction, 0, this.Size);
             Array.Copy(other.IndividualFitness, 0, this.IndividualFitness, 0, this.Size);
             for (int individualIndex = 0; individualIndex < other.Size; ++individualIndex)
             {
-                other.HarvestVolumesByPeriod[individualIndex].CopyToExact(this.HarvestVolumesByPeriod[individualIndex]);
                 other.IndividualTreeSelections[individualIndex].CopyToExact(this.IndividualTreeSelections[individualIndex]);
             }
         }
@@ -116,7 +117,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public void CrossoverUniform(int firstParentIndex, int secondParentIndex, float probability, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
+        public void CrossoverUniform(int firstParentIndex, int secondParentIndex, float changeProbability, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
         {
             // get parents' schedules
             int[] firstParentHarvestSchedule = this.IndividualTreeSelections[firstParentIndex];
@@ -130,11 +131,11 @@ namespace Osu.Cof.Ferm.Heuristics
                 if (firstHarvestPeriod != secondHarvestPeriod)
                 {
                     int harvestPeriodBuffer = firstHarvestPeriod;
-                    if (this.GetPseudorandomByteAsProbability() < probability)
+                    if (this.GetPseudorandomByteAsProbability() < changeProbability)
                     {
                         firstHarvestPeriod = secondHarvestPeriod;
                     }
-                    if (this.GetPseudorandomByteAsProbability() < probability)
+                    if (this.GetPseudorandomByteAsProbability() < changeProbability)
                     {
                         secondHarvestPeriod = harvestPeriodBuffer;
                     }
@@ -279,6 +280,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 this.individualIndexByFitness.Add(fitness, new List<int>() { individualIndex });
             }
+            ++this.NewIndividuals;
         }
 
         public bool TryInsert(float fitness, OrganonStandTrajectory trajectory)
@@ -292,7 +294,6 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 // TODO: tolerance for numerical precision
                 // TODO: how to handle cases where differing genetic information produces the same fitness?
-                // TODO: check for no change breeding and avoid no op stand simulations?
                 return false;
             }
 
@@ -314,9 +315,9 @@ namespace Osu.Cof.Ferm.Heuristics
                 this.individualIndexByFitness.Add(fitness, new List<int>() { replacementIndex });
             }
 
-            Array.Copy(trajectory.HarvestVolumesByPeriod, 0, this.HarvestVolumesByPeriod[replacementIndex], 0, trajectory.HarvestVolumesByPeriod.Length);
             this.IndividualFitness[replacementIndex] = fitness;
             trajectory.CopyTreeSelectionTo(this.IndividualTreeSelections[replacementIndex]);
+            ++this.NewIndividuals;
             return true;
         }
     }

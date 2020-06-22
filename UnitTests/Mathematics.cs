@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Osu.Cof.Ferm.Heuristics;
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -125,6 +126,59 @@ namespace Osu.Cof.Ferm.Test
                     }
                 }
             }
+        }
+
+        [TestMethod]
+        public void Population()
+        {
+            Population binaryPopulation = new Population(2, 2, 0.5F, 5);
+            binaryPopulation.IndividualFitness[0] = 0.0F;
+            binaryPopulation.IndividualFitness[1] = 1.0F;
+            binaryPopulation.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
+            binaryPopulation.IndividualTreeSelections[1] = new int[] { 1, 1, 1, 1, 1 };
+
+            Population clones = new Population(2, 2, 0.5F, 5);
+            clones.IndividualFitness[0] = 0.0F;
+            clones.IndividualFitness[1] = 0.0F;
+            clones.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
+            clones.IndividualTreeSelections[1] = new int[] { 0, 0, 0, 0, 0 };
+
+            Population heterozygousPopulation = new Population(2, 2, 0.5F, 5);
+            heterozygousPopulation.IndividualFitness[0] = 0.4F;
+            heterozygousPopulation.IndividualFitness[1] = 0.6F;
+            heterozygousPopulation.IndividualTreeSelections[0] = new int[] { 1, 0, 0, 1, 0 };
+            heterozygousPopulation.IndividualTreeSelections[1] = new int[] { 1, 0, 1, 0, 1 };
+
+            PopulationStatistics statistics = new PopulationStatistics();
+            statistics.AddGeneration(binaryPopulation);
+            statistics.AddGeneration(clones);
+            statistics.AddGeneration(heterozygousPopulation);
+
+            Assert.IsTrue(statistics.Generations == 3);
+
+            Assert.IsTrue(statistics.CoefficientOfVarianceByGeneration[0] == 1.0F);
+            Assert.IsTrue(statistics.MaximumFitnessByGeneration[0] == 1.0F);
+            Assert.IsTrue(statistics.MeanFitnessByGeneration[0] == 0.5F);
+            Assert.IsTrue(statistics.MinimumFitnessByGeneration[0] == 0.0F);
+            Assert.IsTrue(statistics.MeanHeterozygosityByGeneration[0] == 0.5F);
+            Assert.IsTrue(statistics.NewIndividualsByGeneration[0] == 0);
+            Assert.IsTrue(statistics.PolymorphismByGeneration[0] == 1.0F);
+
+            Assert.IsTrue(statistics.CoefficientOfVarianceByGeneration[1] == 0.0F);
+            Assert.IsTrue(statistics.MaximumFitnessByGeneration[1] == 0.0F);
+            Assert.IsTrue(statistics.MeanFitnessByGeneration[1] == 0.0F);
+            Assert.IsTrue(statistics.MinimumFitnessByGeneration[1] == 0.0F);
+            Assert.IsTrue(statistics.MeanHeterozygosityByGeneration[1] == 0.0F);
+            Assert.IsTrue(statistics.NewIndividualsByGeneration[1] == 0);
+            Assert.IsTrue(statistics.PolymorphismByGeneration[1] == 0.0F);
+
+            Assert.IsTrue(MathF.Round(statistics.CoefficientOfVarianceByGeneration[2], 6) == 0.2F);
+            Assert.IsTrue(statistics.MaximumFitnessByGeneration[2] == 0.6F);
+            Assert.IsTrue(statistics.MeanFitnessByGeneration[2] == 0.5F);
+            Assert.IsTrue(statistics.MinimumFitnessByGeneration[2] == 0.4F);
+            Assert.IsTrue(statistics.MeanHeterozygosityByGeneration[2] == 0.3F);
+            Assert.IsTrue(statistics.NewIndividualsByGeneration[2] == 0);
+            Assert.IsTrue(statistics.PolymorphismByGeneration[2] == 0.6F);
         }
 
         [TestMethod]

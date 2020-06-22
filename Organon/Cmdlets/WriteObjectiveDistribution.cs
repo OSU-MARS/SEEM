@@ -28,16 +28,16 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
             if (this.ShouldWriteHeader())
             {
-                line.Append("stand,heuristic," + this.Runs[0].HeuristicParameters.GetCsvHeader() + ",thin age,rotation,solution,objective,runtime");
+                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters.GetCsvHeader() + ",thin age,rotation,solution,objective,runtime");
                 writer.WriteLine(line);
             }
 
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
                 HeuristicSolutionDistribution distribution = this.Runs[runIndex];
-                Heuristic bestHeuristic = distribution.BestSolution;
-                OrganonStandTrajectory bestTrajectory = bestHeuristic.BestTrajectory;
-                string linePrefix = bestTrajectory.Name + "," + bestHeuristic.GetName() + "," + distribution.HeuristicParameters.GetCsvValues() + "," + bestTrajectory.GetFirstHarvestAge() + "," + bestTrajectory.GetRotationLength();
+                Heuristic highestHeuristic = distribution.HighestSolution;
+                OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
+                string linePrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectory.GetFirstHarvestAge() + "," + highestTrajectory.GetRotationLength();
 
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)

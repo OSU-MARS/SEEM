@@ -27,13 +27,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                 // harvest volume headers
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
-                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
+                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
                     line.Append("," + bestTrajectory.Name + "harvest");
                 }
                 // standing volume headers
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
-                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
+                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
                     line.Append("," + bestTrajectory.Name + "standing");
                 }
                 writer.WriteLine(line);
@@ -42,7 +42,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             int maxPlanningPeriod = 0;
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
-                OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].BestSolution.BestTrajectory;
+                OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
                 maxPlanningPeriod = Math.Max(maxPlanningPeriod, bestTrajectory.StandingVolumeByPeriod.Length);
             }
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
@@ -54,7 +54,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     line.Append(",");
 
-                    Heuristic heuristic = this.Runs[runIndex].BestSolution;
+                    Heuristic heuristic = this.Runs[runIndex].HighestSolution;
                     if (heuristic.BestTrajectory.HarvestVolumesByPeriod.Length > periodIndex)
                     {
                         double harvestVolume = heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex];
@@ -70,7 +70,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     line.Append(",");
 
-                    Heuristic heuristic = this.Runs[runIndex].BestSolution;
+                    Heuristic heuristic = this.Runs[runIndex].HighestSolution;
                     if (heuristic.BestTrajectory.StandingVolumeByPeriod.Length > periodIndex)
                     {
                         double standingVolume = heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex];

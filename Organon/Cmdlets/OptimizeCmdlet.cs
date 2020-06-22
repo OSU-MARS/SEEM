@@ -238,14 +238,14 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         private void WriteMultipleDistributionSummary(List<HeuristicSolutionDistribution> distributions, TimeSpan elapsedTime)
         {
-            Heuristic firstHeuristic = distributions[0].BestSolution;
+            Heuristic firstHeuristic = distributions[0].HighestSolution;
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             this.WriteVerbose("{0}: {1} configurations ({2} runs) in {3:0.00} minutes.", firstHeuristic.GetName(), distributions.Count, this.BestOf * distributions.Count, elapsedTime.TotalMinutes);
         }
 
         private void WriteSingleDistributionSummary(HeuristicSolutionDistribution distribution, TimeSpan elapsedTime)
         {
-            Heuristic bestHeuristic = distribution.BestSolution;
+            Heuristic bestHeuristic = distribution.HighestSolution;
             int movesAccepted = 1;
             int movesRejected = 0;
             float previousObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[0];
