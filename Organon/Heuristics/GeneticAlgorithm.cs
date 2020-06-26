@@ -20,13 +20,14 @@ namespace Osu.Cof.Ferm.Heuristics
         public PopulationStatistics PopulationStatistics { get; private set; }
         public float ProportionalPercentageCenter { get; set; }
         public float ProportionalPercentageWidth { get; set; }
+        public PopulationReplacementStrategy ReplacementStrategy { get; set; }
         public float ReservedPopulationProportion { get; set; }
 
         public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
             int treeRecords = stand.GetTreeRecordCount();
-            this.CrossoverProbabilityEnd = Constant.GeneticDefault.EndCrossoverProbability;
+            this.CrossoverProbabilityEnd = Constant.GeneticDefault.CrossoverProbabilityEnd;
             this.ExchangeProbabilityEnd = Constant.GeneticDefault.ExchangeProbabilityEnd;
             this.ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart;
             this.ExponentK = Constant.GeneticDefault.ExponentK;
@@ -38,6 +39,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.PopulationStatistics = new PopulationStatistics();
             this.ProportionalPercentageCenter = Constant.GeneticDefault.ProportionalPercentageCenter;
             this.ProportionalPercentageWidth = Constant.GeneticDefault.ProportionalPercentageWidth;
+            this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
             this.ReservedPopulationProportion = Constant.GeneticDefault.ReservedPopulationProportion;
 
             this.ObjectiveFunctionByMove = new List<float>(this.MaximumGenerations * this.PopulationSize);
@@ -126,8 +128,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     individualTrajectory.SetTreeSelection(treeIndex, individualTreeSelection[treeIndex]);
                 }
                 individualTrajectory.Simulate();
+
                 float individualFitness = this.GetObjectiveFunction(individualTrajectory);
-                currentGeneration.SetFitness(individualFitness, individualIndex);
+                currentGeneration.AssignFitness(individualIndex, individualFitness);
+
                 if (individualFitness > this.BestObjectiveFunction)
                 {
                     this.BestObjectiveFunction = individualFitness;
@@ -135,6 +139,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
                 this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             }
+            currentGeneration.AssignDistances();
             this.PopulationStatistics.AddGeneration(currentGeneration);
 
             // get sort order for K-point crossover
@@ -214,7 +219,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     float secondChildFitness = this.GetObjectiveFunction(secondChildTrajectory);
 
                     // include offspring in next generation if they're more fit than members of the current population
-                    if (nextGeneration.TryInsert(firstChildFitness, firstChildTrajectory))
+                    if (nextGeneration.TryReplace(firstChildFitness, firstChildTrajectory, this.ReplacementStrategy))
                     {
                         if (firstChildFitness > this.BestObjectiveFunction)
                         {
@@ -222,7 +227,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             this.BestTrajectory.CopyFrom(firstChildTrajectory);
                         }
                     }
-                    if (nextGeneration.TryInsert(secondChildFitness, secondChildTrajectory))
+                    if (nextGeneration.TryReplace(secondChildFitness, secondChildTrajectory, this.ReplacementStrategy))
                     {
                         if (secondChildFitness > this.BestObjectiveFunction)
                         {

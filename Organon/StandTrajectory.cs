@@ -80,6 +80,28 @@ namespace Osu.Cof.Ferm
             get { return this.StandingVolumeByPeriod.Length; }
         }
 
+
+        public void CopyTreeSelectionTo(int[] allTreeSelection)
+        {
+            int destinationIndex = 0;
+            foreach (int[] individualTreeSelection in this.IndividualTreeSelectionBySpecies.Values)
+            {
+                // BUGBUG: assumes either a single species or that all species but the last have tree counts matching the species capacity
+                // TODO: make this copy species count aware to avoid packing gaps when capacity > count
+                Array.Copy(individualTreeSelection, 0, allTreeSelection, destinationIndex, individualTreeSelection.Length);
+                destinationIndex += individualTreeSelection.Length;
+            }
+        }
+
+        public void DeselectAllTrees()
+        {
+            foreach (int[] selectionForSpecies in this.IndividualTreeSelectionBySpecies.Values)
+            {
+                Array.Clear(selectionForSpecies, 0, selectionForSpecies.Length);
+            }
+            this.TreeSelectionChangedSinceLastSimulation = true;
+        }
+
         public int GetFirstHarvestAge()
         {
             if ((this.PeriodZeroAgeInYears < 0) || (this.PeriodLengthInYears < 0))

@@ -17,11 +17,12 @@ namespace Osu.Cof.Ferm.Heuristics
         public float MinimumCoefficientOfVariation { get; set; }
         public int PopulationSize { get; set; }
         public float ProportionalPercentageWidth { get; set; }
+        public PopulationReplacementStrategy ReplacementStrategy { get; set; }
         public float ReservedProportion { get; set; }
 
         public override string GetCsvHeader()
         {
-            return "chain,generations,size,crossover end,exchange start,exchange end,flip start,flip end,exponent,proportional,width,reserved,min CV";
+            return "chain,generations,size,strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,proportional,width,reserved,min CV";
         }
 
         public override string GetCsvValues()
@@ -29,6 +30,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.ChainFrom.ToString(CultureInfo.InvariantCulture) + "," +
                    this.MaximumGenerations.ToString(CultureInfo.InvariantCulture) + "," +
                    this.PopulationSize.ToString(CultureInfo.InvariantCulture) + "," +
+                   this.ReplacementStrategy.ToString() + "," +
                    this.CrossoverProbabilityEnd.ToString(CultureInfo.InvariantCulture) + "," +
                    this.ExchangeProbabilityStart.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
                    this.ExchangeProbabilityEnd.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +

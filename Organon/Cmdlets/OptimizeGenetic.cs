@@ -42,12 +42,15 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> ProportionalPercentageWidth { get; set; }
 
         [Parameter]
+        public PopulationReplacementStrategy ReplacementStrategy { get; set; }
+
+        [Parameter]
         [ValidateRange(0.0, 1.0)]
         public List<float> ReservedProportion { get; set; }
 
         public OptimizeGenetic()
         {
-            this.CrossoverProbabilityEnd = new List<float>() { Constant.GeneticDefault.EndCrossoverProbability };
+            this.CrossoverProbabilityEnd = new List<float>() { Constant.GeneticDefault.CrossoverProbabilityEnd };
             this.ExchangeProbabilityEnd = new List<float>() { Constant.GeneticDefault.ExchangeProbabilityEnd };
             this.ExponentK = new List<float>() { Constant.GeneticDefault.ExponentK };
             this.FlipProbabilityEnd = new List<float>() { Constant.GeneticDefault.FlipProbabilityEnd };
@@ -55,6 +58,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.MinCoefficientOfVariation = new List<float>() { Constant.GeneticDefault.MinimumCoefficientOfVariation };
             this.PopulationSize = new List<int>() { Constant.GeneticDefault.PopulationSize };
             this.ProportionalPercentageWidth = new List<float>() { Constant.GeneticDefault.ProportionalPercentageWidth };
+            this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
             this.ReservedProportion = new List<float>() { Constant.GeneticDefault.ReservedPopulationProportion };
         }
 
@@ -74,6 +78,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 PopulationSize = parameters.PopulationSize,
                 ProportionalPercentageCenter = parameters.ProportionalPercentage,
                 ProportionalPercentageWidth = parameters.ProportionalPercentageWidth,
+                ReplacementStrategy = parameters.ReplacementStrategy,
                 ReservedPopulationProportion = parameters.ReservedProportion,
             };
             return genetic;
@@ -159,6 +164,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                         PopulationSize = populationSize,
                                                         ProportionalPercentage = proportionalPercentage,
                                                         ProportionalPercentageWidth = proportionalPercentageWidth,
+                                                        ReplacementStrategy = this.ReplacementStrategy,
                                                         ReservedProportion = reservedProportion,
                                                     });
                                                 }

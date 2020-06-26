@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Osu.Cof.Ferm.Heuristics;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Osu.Cof.Ferm
@@ -77,7 +78,7 @@ namespace Osu.Cof.Ferm
 
         public static class GeneticDefault
         {
-            public const float EndCrossoverProbability = 0.5F;
+            public const float CrossoverProbabilityEnd = 0.5F;
             public const float ExchangeProbabilityEnd = 0.1F;
             public const float ExchangeProbabilityStart = 0.0F;
             public const float ExponentK = -8.0F;
@@ -88,7 +89,8 @@ namespace Osu.Cof.Ferm
             public const int PopulationSize = 30;
             public const float ProportionalPercentageCenter = 50.0F;
             public const float ProportionalPercentageWidth = 100.0F;
-            public const float ReservedPopulationProportion = 0.5F;
+            public const PopulationReplacementStrategy ReplacementStrategy = PopulationReplacementStrategy.ContributionOfDiversityReplaceWorst;
+            public const float ReservedPopulationProportion = 1.0F;
         }
 
         public static class HeuristicDefault 

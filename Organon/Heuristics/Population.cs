@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Organon;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,6 +9,10 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         private readonly SortedDictionary<float, List<int>> individualIndexByFitness;
         private readonly float[] matingDistributionFunction;
+        private int minimumNeighborDistance;
+        private int minimumNeighborIndex;
+        private readonly int[] nearestNeighborDistance;
+        private readonly int[] nearestNeighborIndex;
         private float reservedPopulationProportion;
 
         public int HarvestPeriods { get; private set; }
@@ -22,6 +25,10 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             this.individualIndexByFitness = new SortedDictionary<float, List<int>>();
             this.matingDistributionFunction = new float[populationSize];
+            this.minimumNeighborDistance = Int32.MaxValue;
+            this.minimumNeighborIndex = -1;
+            this.nearestNeighborDistance = new int[populationSize];
+            this.nearestNeighborIndex = new int[populationSize];
             this.reservedPopulationProportion = reservedPopulationProportion;
 
             this.HarvestPeriods = harvestPeriods;
@@ -30,7 +37,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.NewIndividuals = 0;
             this.TreeCount = treeCount;
 
-            int treeCapacity = Constant.Simd128x4.Width * (treeCount / Constant.Simd128x4.Width + 1);
+            int treeCapacity = this.GetTreeCapacity(treeCount);
             for (int individualIndex = 0; individualIndex < populationSize; ++individualIndex)
             {
                 this.IndividualTreeSelections[individualIndex] = new int[treeCapacity];
@@ -46,6 +53,54 @@ namespace Osu.Cof.Ferm.Heuristics
         public int Size
         {
             get { return this.IndividualFitness.Length; }
+        }
+
+        public void AssignDistances()
+        {
+            for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
+            {
+                int nearestNeighborDistance = Int32.MaxValue;
+                int nearestNeighborIndex = -1;
+                for (int neighborIndex = 0; neighborIndex < this.Size; ++neighborIndex)
+                {
+                    if (individualIndex == neighborIndex)
+                    {
+                        continue;
+                    }
+
+                    int neighborDistance = this.GetDistance(this.IndividualTreeSelections[individualIndex], this.IndividualTreeSelections[neighborIndex]);
+                    if (neighborDistance < nearestNeighborDistance)
+                    {
+                        nearestNeighborDistance = neighborDistance;
+                        nearestNeighborIndex = neighborIndex;
+                    }
+                }
+
+                this.nearestNeighborDistance[individualIndex] = nearestNeighborDistance;
+                this.nearestNeighborIndex[individualIndex] = nearestNeighborIndex;
+
+                if (nearestNeighborDistance < this.minimumNeighborDistance)
+                {
+                    this.minimumNeighborDistance = nearestNeighborDistance;
+                    this.minimumNeighborIndex = nearestNeighborIndex;
+                }
+            }
+        }
+
+        public void AssignFitness(int individualIndex, float newFitness)
+        {
+            this.IndividualFitness[individualIndex] = newFitness;
+            if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int> probablyClones))
+            {
+                // initial population randomization happened to create two (or more) individuals with identical fitness
+                // This is unlikely in large problems, but may not be uncommon in small test problems.
+                probablyClones.Add(individualIndex);
+            }
+            else
+            {
+                this.individualIndexByFitness.Add(newFitness, new List<int>() { individualIndex });
+            }
+            ++this.NewIndividuals;
         }
 
         public void CopyFrom(Population other)
@@ -176,6 +231,26 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
+        private int GetDistance(int[] selection1, int[] selection2)
+        {
+            Debug.Assert(selection1.Length == selection2.Length);
+
+            int distance = 0;
+            for (int treeIndex = 0; treeIndex < this.TreeCount; ++treeIndex)
+            {
+                if (selection1[treeIndex] != selection2[treeIndex])
+                {
+                    ++distance;
+                }
+            }
+            return distance;
+        }
+
+        private int GetTreeCapacity(int treeCount)
+        {
+            return Constant.Simd128x4.Width * (treeCount / Constant.Simd128x4.Width + 1);
+        }
+
         public void RandomizeSchedule(HarvestPeriodSelection periodSelection, float proportionalPercentageCenter, float proportionalPercentageWidth)
         {
             if ((proportionalPercentageCenter < 0.0F) || (proportionalPercentageCenter > 100.0F))
@@ -267,57 +342,130 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public void SetFitness(float fitness, int individualIndex)
+        private void Replace(float currentFitness, List<int> currentIndices, float newFitness, StandTrajectory trajectory, int nearestNeighborDistance, int nearestNeighborIndex)
         {
-            this.IndividualFitness[individualIndex] = fitness;
-            if (this.individualIndexByFitness.TryGetValue(fitness, out List<int> probablyClones))
-            {
-                // initial population randomization happened to create two (or more) individuals with identical fitness
-                // This is unlikely in large problems, but may not be uncommon in small test problems.
-                probablyClones.Add(individualIndex);
-            }
-            else
-            {
-                this.individualIndexByFitness.Add(fitness, new List<int>() { individualIndex });
-            }
-            ++this.NewIndividuals;
-        }
-
-        public bool TryInsert(float fitness, OrganonStandTrajectory trajectory)
-        {
-            float minimumFitness = this.individualIndexByFitness.Keys.First();
-            if (minimumFitness > fitness)
-            {
-                return false;
-            }
-            if (this.individualIndexByFitness.ContainsKey(fitness))
-            {
-                // TODO: tolerance for numerical precision
-                // TODO: how to handle cases where differing genetic information produces the same fitness?
-                return false;
-            }
-
-            List<int> replacementIndices = this.individualIndexByFitness[minimumFitness];
+            Debug.Assert(currentIndices.Count > 0);
             int replacementIndex;
-            Debug.Assert(replacementIndices.Count > 0);
-            if (replacementIndices.Count == 1)
+            if (currentIndices.Count == 1)
             {
                 // reassign individual index to new fitness
-                this.individualIndexByFitness.Remove(minimumFitness);
-                this.individualIndexByFitness.Add(fitness, replacementIndices);
-                replacementIndex = replacementIndices[0];
+                this.individualIndexByFitness.Remove(currentFitness);
+                replacementIndex = currentIndices[0];
+
+                if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int> existingIndices))
+                {
+                    // prepend individual to list to maximize population change since removal below operates from end of list
+                    existingIndices.Insert(0, replacementIndex);
+                }
+                else
+                {
+                    // OK to reuse existing list due to ownership release
+                    this.individualIndexByFitness.Add(newFitness, currentIndices);
+                }
             }
             else
             {
                 // remove presumed clone from existing list
-                replacementIndex = replacementIndices[^1];
-                replacementIndices.RemoveAt(replacementIndices.Count - 1);
-                this.individualIndexByFitness.Add(fitness, new List<int>() { replacementIndex });
+                replacementIndex = currentIndices[^1];
+                if (currentFitness != newFitness)
+                {
+                    currentIndices.RemoveAt(currentIndices.Count - 1);
+                    if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int> existingList))
+                    {
+                        // could potentially no-op by undoing the previous RemoveAt(), but this is likely a rare case
+                        existingList.Add(replacementIndex);
+                    }
+                    else
+                    {
+                        // mainline case
+                        this.individualIndexByFitness.Add(newFitness, new List<int>() { replacementIndex });
+                    }
+                }
             }
 
-            this.IndividualFitness[replacementIndex] = fitness;
+            this.IndividualFitness[replacementIndex] = newFitness;
             trajectory.CopyTreeSelectionTo(this.IndividualTreeSelections[replacementIndex]);
+
+            this.nearestNeighborDistance[replacementIndex] = nearestNeighborDistance;
+            this.nearestNeighborIndex[replacementIndex] = nearestNeighborIndex;
+
+            this.minimumNeighborDistance = Int32.MaxValue;
+            this.minimumNeighborIndex = -1;
+            for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
+            {
+                int neighborDistance = this.nearestNeighborDistance[individualIndex];
+                if (neighborDistance < this.minimumNeighborDistance)
+                {
+                    this.minimumNeighborDistance = neighborDistance;
+                    this.minimumNeighborIndex = individualIndex;
+                }
+            }
+
             ++this.NewIndividuals;
+        }
+
+        public bool TryReplace(float newFitness, StandTrajectory trajectory, PopulationReplacementStrategy replacementStrategy)
+        {
+            return replacementStrategy switch
+            {
+                PopulationReplacementStrategy.ContributionOfDiversityReplaceWorst => this.TryReplaceByDiversityOrFitness(newFitness, trajectory),
+                PopulationReplacementStrategy.ReplaceWorst => this.TryReplaceWorst(newFitness, trajectory),
+                _ => throw new NotSupportedException(String.Format("Unhandled replacement strategy {0}.", replacementStrategy))
+            };
+        }
+
+        public bool TryReplaceByDiversityOrFitness(float newFitness, StandTrajectory trajectory)
+        {
+            int[] candidateSelection = new int[this.GetTreeCapacity(this.TreeCount)];
+            trajectory.CopyTreeSelectionTo(candidateSelection);
+
+            int nearestNeighborDistance = Int32.MaxValue;
+            int nearestNeighborIndex = -1;
+            KeyValuePair<float, List<int>> nearestNeighbor = default;
+            foreach (KeyValuePair<float, List<int>> individual in this.individualIndexByFitness)
+            {
+                float individualFitness = individual.Key;
+                if (individualFitness > newFitness)
+                {
+                    break;
+                }
+                for (int index = 0; index < individual.Value.Count; ++index)
+                {
+                    int individualIndex = individual.Value[index];
+
+                    // for now, use Hamming distance as it's interchangeable with Euclidean distance for binary decision variables
+                    // If needed, Euclidean distance can be used when multiple thinnings are allowed.
+                    int neighborDistance = this.GetDistance(candidateSelection, this.IndividualTreeSelections[individualIndex]);
+                    if (neighborDistance < nearestNeighborDistance)
+                    {
+                        nearestNeighbor = individual;
+                        nearestNeighborDistance = neighborDistance;
+                        nearestNeighborIndex = individualIndex;
+                    }
+                }
+            }
+
+            if ((nearestNeighborIndex >= 0) && (nearestNeighborDistance > this.minimumNeighborDistance))
+            {
+                // the check against minimum neighbor distance prevents introduction of more than a pair of clones through this path
+                // The remove worst path could potentially create higher numbers of clones, though this is unlikely.
+                this.Replace(nearestNeighbor.Key, nearestNeighbor.Value, newFitness, trajectory, nearestNeighborDistance, nearestNeighborIndex);
+                return true;
+            }
+
+            return this.TryReplaceWorst(newFitness, trajectory);
+        }
+
+        public bool TryReplaceWorst(float newFitness, StandTrajectory trajectory)
+        {
+            float minimumFitness = this.individualIndexByFitness.Keys.First();
+            if (minimumFitness > newFitness)
+            {
+                return false;
+            }
+
+            List<int> replacementIndices = this.individualIndexByFitness[minimumFitness];
+            this.Replace(minimumFitness, replacementIndices, newFitness, trajectory, -1, -1);
             return true;
         }
     }
