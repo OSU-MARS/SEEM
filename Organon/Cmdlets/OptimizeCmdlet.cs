@@ -16,9 +16,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
         public int BestOf { get; set; }
-        [Parameter]
-        [ValidateRange(0, 1000 * 1000)]
-        public Nullable<int> ChainFrom { get; set; }
 
         [Parameter]
         public int Cores { get; set; }
@@ -33,6 +30,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         public SwitchParameter LandExpectationValue { get; set; }
+        [Parameter]
+        [ValidateRange(0.0F, 1.0F)]
+        public float PerturbBy { get; set; }
         [Parameter]
         [ValidateNotNull]
         [ValidateRange(1, 100)]
@@ -53,12 +53,12 @@ namespace Osu.Cof.Ferm.Cmdlets
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
-            this.ChainFrom = null;
             this.Cores = 4;
             this.DiscountRate = 4; // percent per year
             this.HarvestPeriods = new List<int>() { 3 };
             this.LandExpectationValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
+            this.PerturbBy = Constant.MetaheuristicDefault.PerturbBy;
             this.TreeModel = TreeModel.OrganonNwo;
             this.ProportionalPercentage = new List<float>() { 50.0F };
             this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
@@ -70,6 +70,22 @@ namespace Osu.Cof.Ferm.Cmdlets
         }
 
         protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, TParameters parameters);
+
+
+        protected IList<HeuristicParameters> GetDefaultParameterCombinations()
+        {
+            List<HeuristicParameters> parameters = new List<HeuristicParameters>(this.ProportionalPercentage.Count);
+            foreach (float proportionalPercentage in this.ProportionalPercentage)
+            {
+                parameters.Add(new HeuristicParameters()
+                {
+                    PerturbBy = this.PerturbBy,
+                    ProportionalPercentage = proportionalPercentage
+                });
+            }
+            return parameters;
+        }
+
         protected abstract string GetName();
         protected abstract IList<TParameters> GetParameterCombinations();
 
@@ -78,6 +94,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             if (this.HarvestPeriods.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.HarvestPeriods));
+            }
+            if ((this.PerturbBy < 0.0F) || (this.PerturbBy > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.PerturbBy));
             }
             if (this.PlanningPeriods.Count < 1)
             {
@@ -99,14 +119,16 @@ namespace Osu.Cof.Ferm.Cmdlets
             };
 
             IList<TParameters> parameterCombinations = this.GetParameterCombinations();
+            int treeCount = this.Stand.GetTreeRecordCount();
             List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count);
             for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
             {
                 for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.HarvestPeriods.Count; ++harvestPeriodIndex)
                 {
+                    int harvestPeriods = this.HarvestPeriods[harvestPeriodIndex];
                     for (int parameterIndex = 0; parameterIndex < parameterCombinations.Count; ++parameterIndex)
                     {
-                        distributions.Add(new HeuristicSolutionDistribution());
+                        distributions.Add(new HeuristicSolutionDistribution(1, harvestPeriods, treeCount));
                     }
                 }
             }
@@ -115,10 +137,8 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 MaxDegreeOfParallelism = this.Cores
             };
-            Pseudorandom pseudorandom = new Pseudorandom();
             int totalRuns = this.BestOf * parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count;
             int runsCompleted = 0;
-            List<StandTrajectory> trajectoriesForChaining = new List<StandTrajectory>();
             Task runs = Task.Run(() =>
             {
                 Parallel.For(0, totalRuns, parallelOptions, (int iteration, ParallelLoopState loopState) =>
@@ -138,29 +158,29 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     TParameters runParameters = parameterCombinations[parameterIndex];
                     Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, this.PlanningPeriods[planningPeriodIndex], objective, runParameters);
-                    if (this.ChainFrom.HasValue && (trajectoriesForChaining.Count > 0))
+                    HeuristicSolutionDistribution distribution = distributions[distributionIndex];
+                    if ((runParameters.PerturbBy == 1.0F) || (distribution.EliteSolutions.NewIndividuals == 0))
                     {
-                        int previousSolutionIndex = pseudorandom.Next(trajectoriesForChaining.Count);
-                        currentHeuristic.CopySelectionsFrom(trajectoriesForChaining[previousSolutionIndex]);
+                        // minor optimization point: save a few time steps by by re-using pre-thin results
+                        // minor optimization point: save one loop over stand by skipping this for genetic algorithms
+                        currentHeuristic.RandomizeTreeSelection(runParameters.ProportionalPercentage);
                     }
-                    else if (runParameters.ProportionalPercentage > 0.0F)
+                    else
                     {
-                        // minor optimization point: save one stand simulation by skipping this for genetic algorithms
-                        currentHeuristic.RandomizeSelections(runParameters.ProportionalPercentage);
+                        // TODO: intialize genetic algorithm population from elite solutions?
+                        // TODO: how to define generation statistics?
+                        // TODO: more granular locking?
+                        lock (distributions)
+                        {
+                            currentHeuristic.RandomizeTreeSelectionFrom(runParameters.PerturbBy, distribution.EliteSolutions);
+                        }
                     }
                     TimeSpan runTime = currentHeuristic.Run();
 
                     lock (distributions)
                     {
-                        HeuristicSolutionDistribution distribution = distributions[distributionIndex];
                         distribution.AddRun(currentHeuristic, runTime, runParameters);
                         ++runsCompleted;
-
-                        StandTrajectory trajectoryForChaining = currentHeuristic.BestTrajectoryByMove.Values.FirstOrDefault();
-                        if (trajectoryForChaining != null)
-                        {
-                            trajectoriesForChaining.Add(trajectoryForChaining);
-                        }
                     }
 
                     if (this.Stopping)
@@ -223,19 +243,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
         }
 
-        protected IList<HeuristicParameters> ProportionalPercentagesAsHeuristicParameters()
-        {
-            List<HeuristicParameters> parameters = new List<HeuristicParameters>(this.ProportionalPercentage.Count);
-            foreach (float proportionalPercentage in this.ProportionalPercentage)
-            {
-                parameters.Add(new HeuristicParameters()
-                {
-                    ProportionalPercentage = proportionalPercentage
-                });
-            }
-            return parameters;
-        }
-
         private void WriteMultipleDistributionSummary(List<HeuristicSolutionDistribution> distributions, TimeSpan elapsedTime)
         {
             Heuristic firstHeuristic = distributions[0].HighestSolution;
@@ -248,10 +255,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             Heuristic bestHeuristic = distribution.HighestSolution;
             int movesAccepted = 1;
             int movesRejected = 0;
-            float previousObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[0];
-            for (int index = 1; index < bestHeuristic.ObjectiveFunctionByMove.Count; ++index)
+            float previousObjectiveFunction = bestHeuristic.AcceptedObjectiveFunctionByMove[0];
+            for (int index = 1; index < bestHeuristic.AcceptedObjectiveFunctionByMove.Count; ++index)
             {
-                float currentObjectiveFunction = bestHeuristic.ObjectiveFunctionByMove[index];
+                float currentObjectiveFunction = bestHeuristic.AcceptedObjectiveFunctionByMove[index];
                 if (currentObjectiveFunction != previousObjectiveFunction)
                 {
                     ++movesAccepted;
@@ -291,7 +298,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             int totalMoves = movesAccepted + movesRejected;
             this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", bestHeuristic.GetName(), totalMoves, movesAccepted, (float)movesAccepted / (float)totalMoves, movesRejected, (float)movesRejected / (float)totalMoves);
-            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", bestHeuristic.BestObjectiveFunction, distribution.BestObjectiveFunctionBySolution.Average(), bestHeuristic.ObjectiveFunctionByMove.Last());
+            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", bestHeuristic.BestObjectiveFunction, distribution.BestObjectiveFunctionBySolution.Average(), bestHeuristic.AcceptedObjectiveFunctionByMove.Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 
             double iterationsPerSecond = distribution.TotalMoves / distribution.TotalCoreSeconds.TotalSeconds;

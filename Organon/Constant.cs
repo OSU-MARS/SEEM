@@ -23,6 +23,7 @@ namespace Osu.Cof.Ferm
         public const float InchesPerCm = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
         public const float NaturalLogOf10 = 2.3025850930F;
+        public const int NoHarvestPeriod = 0;
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
@@ -93,17 +94,17 @@ namespace Osu.Cof.Ferm
             public const float ReservedPopulationProportion = 1.0F;
         }
 
-        public static class HeuristicDefault 
-        {
-            public const int ChainFrom = -1;
-        }
-
         public static class Maximum
         {
             public const float DiameterIncrementInInches = 4.0F;
             public const float HeightIncrementInFeet = 20.0F;
             public const float Sdi = 1000.0F;
             public const float SiteIndexInFeet = 300.0F;
+        }
+
+        public static class MetaheuristicDefault
+        {
+            public const float PerturbBy = 1.0F;
         }
 
         public static class Minimum

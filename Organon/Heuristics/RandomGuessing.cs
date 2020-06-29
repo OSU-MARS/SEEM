@@ -1,6 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -17,11 +16,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.CentralSelectionPercentage = centralSelectionPercentage;
             this.Iterations = 4 * stand.GetTreeRecordCount();
             this.SelectionPercentageWidth = 20.0F;
-
-            this.ObjectiveFunctionByMove = new List<float>(1000)
-            {
-                this.BestObjectiveFunction
-            };
         }
 
         public override string GetName()
@@ -34,10 +28,6 @@ namespace Osu.Cof.Ferm.Heuristics
             if ((this.CentralSelectionPercentage < 0.0F) || (this.CentralSelectionPercentage > 100.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.CentralSelectionPercentage));
-            }
-            if (this.ChainFrom != Constant.HeuristicDefault.ChainFrom)
-            {
-                throw new NotSupportedException(nameof(this.ChainFrom));
             }
             if ((this.SelectionPercentageWidth < 0.0F) || (this.SelectionPercentageWidth > 100.0F))
             {
@@ -63,11 +53,14 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
+            this.AcceptedObjectiveFunctionByMove.Capacity = this.Iterations;
+            this.CandidateObjectiveFunctionByMove.Capacity = this.Iterations;
+
             float selectionPercentageScaling = this.SelectionPercentageWidth / (float)UInt16.MaxValue;
             for (int iteration = 0; iteration < this.Iterations; ++iteration)
             {
                 float selectionPercentage = minSelectionPercentage + selectionPercentageScaling * this.GetTwoPseudorandomBytesAsFloat();
-                this.RandomizeSelections(selectionPercentage);
+                this.RandomizeTreeSelection(selectionPercentage);
                 this.CurrentTrajectory.Simulate();
 
                 float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
@@ -78,7 +71,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                 }
 
-                this.ObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+                this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
             }
 
             stopwatch.Stop();

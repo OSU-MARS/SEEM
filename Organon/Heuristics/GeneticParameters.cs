@@ -5,7 +5,6 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class GeneticParameters : HeuristicParameters
     {
-        public int ChainFrom { get; set; }
         public float CrossoverProbabilityEnd { get; set; }
         public float CrossoverProbabilityStart { get; set; }
         public float ExchangeProbabilityEnd { get; set; }
@@ -22,12 +21,12 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override string GetCsvHeader()
         {
-            return "chain,generations,size,strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,proportional,width,reserved,min CV";
+            return "perturbation,generations,size,strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,proportional,width,reserved,min CV";
         }
 
         public override string GetCsvValues()
         {
-            return this.ChainFrom.ToString(CultureInfo.InvariantCulture) + "," +
+            return this.PerturbBy.ToString(CultureInfo.InvariantCulture) + "," +
                    this.MaximumGenerations.ToString(CultureInfo.InvariantCulture) + "," +
                    this.PopulationSize.ToString(CultureInfo.InvariantCulture) + "," +
                    this.ReplacementStrategy.ToString() + "," +

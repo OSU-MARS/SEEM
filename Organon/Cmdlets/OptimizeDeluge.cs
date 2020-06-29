@@ -56,10 +56,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
         {
             GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, planningPeriods, objective);
-            if (this.ChainFrom.HasValue)
-            {
-                deluge.ChainFrom = this.ChainFrom.Value;
-            }
             if (this.ChangeToExchangeAfter.HasValue)
             {
                 deluge.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;
@@ -109,7 +105,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.ProportionalPercentagesAsHeuristicParameters();
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

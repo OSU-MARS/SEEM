@@ -1,43 +1,24 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class Hero : Heuristic
+    public class Hero : SingleTreeHeuristic
     {
-        private readonly bool isStochastic;
+        public bool IsStochastic { get; set; }
+        public int MaximumIterations { get; set; }
 
-        public int Iterations { get; set; }
-
-        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, bool isStochastic)
+        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
             : base(stand, organonConfiguration, planningPeriods, objective)
         {
-            this.isStochastic = isStochastic;
-            this.Iterations = 100;
-
-            this.ObjectiveFunctionByMove = new List<float>(1000)
-            {
-                this.BestObjectiveFunction
-            };
-        }
-
-        private int[] CreateSequentialArray(int length)
-        {
-            Debug.Assert(length > 0);
-
-            int[] array = new int[length];
-            for (int index = 0; index < length; ++index)
-            {
-                array[index] = index;
-            }
-            return array;
+            this.IsStochastic = false;
+            this.MaximumIterations = 50;
         }
 
         public override string GetName()
         {
-            if (this.isStochastic)
+            if (this.IsStochastic)
             {
                 return "HeroStochastic";
             }
@@ -46,13 +27,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
-            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
+            if (this.MaximumIterations < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
-            }
-            if (this.Iterations < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.Iterations));
+                throw new ArgumentOutOfRangeException(nameof(this.MaximumIterations));
             }
             if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
             {
@@ -62,32 +39,34 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            float currentObjectiveFunction = this.BestObjectiveFunction;
-            float previousObjectiveFunction = this.BestObjectiveFunction;
-            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
-            int[] randomizedTreeIndices = this.isStochastic ? this.CreateSequentialArray(initialTreeRecordCount) : null;
-            for (int iteration = 0; iteration < this.Iterations; ++iteration)
+            this.EvaluateInitialSelection(this.MaximumIterations * initialTreeRecordCount);
+
+            float acceptedObjectiveFunction = this.BestObjectiveFunction;
+            float previousBestObjectiveFunction = this.BestObjectiveFunction;
+            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            int[] treeIndices = this.CreateSequentialArray(initialTreeRecordCount);
+            for (int iteration = 0; iteration < this.MaximumIterations; ++iteration)
             {
-                if (this.isStochastic)
+                if (this.IsStochastic)
                 {
-                    this.Pseudorandom.Shuffle(randomizedTreeIndices);
+                    this.Pseudorandom.Shuffle(treeIndices);
                 }
 
-                for (int iterationMove = 0; iterationMove < initialTreeRecordCount; ++iterationMove)
+                for (int iterationMoveIndex = 0; iterationMoveIndex < initialTreeRecordCount; ++iterationMoveIndex)
                 {
                     // evaluate other cut option
-                    int treeIndex = this.isStochastic ? randomizedTreeIndices[iterationMove] : iterationMove;
+                    int treeIndex = treeIndices[iterationMoveIndex];
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
                     int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
                     candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
                     candidateTrajectory.Simulate();
 
                     float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                    if (candidateObjectiveFunction > currentObjectiveFunction)
+                    if (candidateObjectiveFunction > acceptedObjectiveFunction)
                     {
                         // accept change of no cut-cut decision if it improves upon the best solution
-                        currentObjectiveFunction = candidateObjectiveFunction;
+                        acceptedObjectiveFunction = candidateObjectiveFunction;
                         this.CurrentTrajectory.CopyFrom(candidateTrajectory);
                     }
                     else
@@ -96,23 +75,20 @@ namespace Osu.Cof.Ferm.Heuristics
                         candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
                     }
 
-                    this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
-
-                    if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
-                    {
-                        this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.CurrentTrajectory));
-                    }
+                    this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
+                    this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                    this.TreeIDByMove.Add(treeIndex);
                 }
 
-                if (currentObjectiveFunction <= previousObjectiveFunction)
+                if (acceptedObjectiveFunction <= previousBestObjectiveFunction)
                 {
                     // convergence: stop if no improvement
                     break;
                 }
-                previousObjectiveFunction = currentObjectiveFunction;
+                previousBestObjectiveFunction = acceptedObjectiveFunction;
             }
 
-            this.BestObjectiveFunction = currentObjectiveFunction;
+            this.BestObjectiveFunction = acceptedObjectiveFunction;
             this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
 
             stopwatch.Stop();

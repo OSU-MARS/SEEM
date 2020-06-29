@@ -15,6 +15,7 @@ namespace Osu.Cof.Ferm.Heuristics
         private readonly int[] nearestNeighborIndex;
         private float reservedPopulationProportion;
 
+        public int Count { get; private set; }
         public int HarvestPeriods { get; private set; }
         public float[] IndividualFitness { get; private set; }
         public int[][] IndividualTreeSelections { get; private set; }
@@ -55,7 +56,13 @@ namespace Osu.Cof.Ferm.Heuristics
             get { return this.IndividualFitness.Length; }
         }
 
-        public void AssignDistances()
+        public void Add(float fitness, StandTrajectory trajectory)
+        {
+            trajectory.CopyTreeSelectionTo(this.IndividualTreeSelections[this.Count]);
+            this.AssignFitness(this.Count, fitness);
+        }
+
+        private void AssignDistances()
         {
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
@@ -89,6 +96,11 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public void AssignFitness(int individualIndex, float newFitness)
         {
+            if (this.Count == this.Size)
+            {
+                throw new IndexOutOfRangeException();
+            }
+
             this.IndividualFitness[individualIndex] = newFitness;
             if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int> probablyClones))
             {
@@ -100,7 +112,14 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 this.individualIndexByFitness.Add(newFitness, new List<int>() { individualIndex });
             }
+
+            ++this.Count;
             ++this.NewIndividuals;
+
+            if (this.Count == this.Size)
+            {
+                this.AssignDistances();
+            }
         }
 
         public void CopyFrom(Population other)

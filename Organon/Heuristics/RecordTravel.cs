@@ -1,11 +1,10 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class RecordTravel : Heuristic
+    public class RecordTravel : SingleTreeHeuristic
     {
         public float Alpha { get; set; }
         public float ChangeToExchangeAfter { get; set; }
@@ -32,11 +31,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.RelativeDeviation = 0.0F;
             this.RelativeIncrease = 0.0075F;
             this.StopAfter = 1000;
-
-            this.ObjectiveFunctionByMove = new List<float>(this.Iterations)
-            {
-                this.BestObjectiveFunction
-            };
         }
 
         public override string GetName()
@@ -49,10 +43,6 @@ namespace Osu.Cof.Ferm.Heuristics
             if ((this.Alpha < 0.0F) || (this.Alpha >  1.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Alpha));
-            }
-            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
             }
             if (this.ChangeToExchangeAfter < 0)
             {
@@ -86,10 +76,13 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.StopAfter));
             }
+
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            float currentObjectiveFunction = this.BestObjectiveFunction;
+            this.EvaluateInitialSelection(this.Iterations);
+
+            float acceptedObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
             int iterationsSinceObjectiveImprovedOrReheat = 0;
@@ -144,13 +137,13 @@ namespace Osu.Cof.Ferm.Heuristics
                 if ((candidateObjectiveFunction > minimumAcceptableObjectiveFunction) || (candidateObjectiveFunction > previousObjectiveFunction))
                 {
                     // accept move
-                    currentObjectiveFunction = candidateObjectiveFunction;
+                    acceptedObjectiveFunction = candidateObjectiveFunction;
                     this.CurrentTrajectory.CopyFrom(candidateTrajectory);
                     iterationsSinceObjectiveImprovedOrReheat = 0;
 
-                    if (currentObjectiveFunction > this.BestObjectiveFunction)
+                    if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                     {
-                        this.BestObjectiveFunction = currentObjectiveFunction;
+                        this.BestObjectiveFunction = acceptedObjectiveFunction;
                         this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
                     }
@@ -172,7 +165,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                 }
 
-                this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
+                this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
+                this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                this.TreeIDByMove.Add(firstTreeIndex);
+
                 if (iterationsSinceBestObjectiveImproved > this.ChangeToExchangeAfter)
                 {
                     this.MoveType = MoveType.TwoOptExchange;
@@ -182,12 +178,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     deviation += this.RelativeIncrease * MathF.Abs(this.BestObjectiveFunction) + this.FixedIncrease;
                     iterationsSinceObjectiveImprovedOrReheat = 0;
                 }
-
-                if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
-                {
-                    this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
-                }
-                previousObjectiveFunction = currentObjectiveFunction;
+                previousObjectiveFunction = acceptedObjectiveFunction;
             }
 
             stopwatch.Stop();

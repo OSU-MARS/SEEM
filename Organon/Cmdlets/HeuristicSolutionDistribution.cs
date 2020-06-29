@@ -27,18 +27,19 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> VarianceByMove { get; private set; }
 
         public List<TimeSpan> RuntimeBySolution { get; private set; }
+        public Population EliteSolutions { get; private set; }
 
         public TimeSpan TotalCoreSeconds { get; private set; }
         public int TotalMoves { get; private set; }
         public int TotalRuns { get; private set; }
 
-        public HeuristicSolutionDistribution()
+        public HeuristicSolutionDistribution(int eliteSolutions, int harvestPeriods, int treeCount)
         {
             int defaultMoveCapacity = 1024;
 
             this.BestObjectiveFunctionBySolution = new List<float>(100);
             this.CountByMove = new List<int>(defaultMoveCapacity);
-            this.TwoPointFivePercentileByMove = new List<float>(defaultMoveCapacity);
+            this.EliteSolutions = new Population(eliteSolutions, harvestPeriods, 1.0F, treeCount);
             this.FifthPercentileByMove = new List<float>(defaultMoveCapacity);
             this.HighestHeuristicParameters = null;
             this.HighestSolution = null;
@@ -55,6 +56,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.TotalCoreSeconds = TimeSpan.Zero;
             this.TotalMoves = 0;
             this.TotalRuns = 0;
+            this.TwoPointFivePercentileByMove = new List<float>(defaultMoveCapacity);
             this.UpperQuartileByMove = new List<float>(defaultMoveCapacity);
             this.VarianceByMove = new List<float>(defaultMoveCapacity);
         }
@@ -62,11 +64,19 @@ namespace Osu.Cof.Ferm.Cmdlets
         public void AddRun(Heuristic heuristic, TimeSpan coreSeconds, HeuristicParameters runParameters)
         {
             this.BestObjectiveFunctionBySolution.Add(heuristic.BestObjectiveFunction);
+            if (this.EliteSolutions.Count < this.EliteSolutions.Size)
+            {
+                this.EliteSolutions.Add(heuristic.BestObjectiveFunction, heuristic.BestTrajectory);
+            }
+            else
+            {
+                this.EliteSolutions.TryReplaceByDiversityOrFitness(heuristic.BestObjectiveFunction, heuristic.BestTrajectory);
+            }
             this.RuntimeBySolution.Add(coreSeconds);
 
-            for (int moveIndex = 0; moveIndex < heuristic.ObjectiveFunctionByMove.Count; ++moveIndex)
+            for (int moveIndex = 0; moveIndex < heuristic.AcceptedObjectiveFunctionByMove.Count; ++moveIndex)
             {
-                float objectiveFunction = heuristic.ObjectiveFunctionByMove[moveIndex];
+                float objectiveFunction = heuristic.AcceptedObjectiveFunctionByMove[moveIndex];
                 if (moveIndex >= this.CountByMove.Count)
                 {
                     // all quantiles are found in OnRunsComplete()
@@ -102,7 +112,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             this.TotalCoreSeconds += coreSeconds;
-            this.TotalMoves += heuristic.ObjectiveFunctionByMove.Count;
+            this.TotalMoves += heuristic.AcceptedObjectiveFunctionByMove.Count;
             ++this.TotalRuns;
 
             if ((this.HighestSolution == null) || (heuristic.BestObjectiveFunction > this.HighestSolution.BestObjectiveFunction))

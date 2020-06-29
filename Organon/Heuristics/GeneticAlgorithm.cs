@@ -1,7 +1,6 @@
 ﻿using Osu.Cof.Ferm.Cmdlets;
 using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -41,8 +40,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.ProportionalPercentageWidth = Constant.GeneticDefault.ProportionalPercentageWidth;
             this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
             this.ReservedPopulationProportion = Constant.GeneticDefault.ReservedPopulationProportion;
-
-            this.ObjectiveFunctionByMove = new List<float>(this.MaximumGenerations * this.PopulationSize);
         }
 
         public override string GetName()
@@ -57,11 +54,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
-            if (this.ChainFrom != Constant.HeuristicDefault.ChainFrom)
-            {
-                // TODO: use CopyTreeSelectionFrom(this.CurrentSolution) include to include chained solution in population
-                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
-            }
+            // TODO: support initialization from existing population?
             if ((this.CrossoverProbabilityEnd < 0.0F) || (this.CrossoverProbabilityEnd > 1.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.CrossoverProbabilityEnd));
@@ -114,6 +107,10 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
+            int moveCapacity = this.MaximumGenerations * this.PopulationSize;
+            this.AcceptedObjectiveFunctionByMove.Capacity = moveCapacity;
+            this.CandidateObjectiveFunctionByMove.Capacity = moveCapacity;
+
             // begin with population of random harvest schedules
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             Population currentGeneration = new Population(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, initialTreeRecordCount);
@@ -137,9 +134,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.BestObjectiveFunction = individualFitness;
                     this.BestTrajectory.CopyFrom(individualTrajectory);
                 }
-                this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+
+                this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+                this.CandidateObjectiveFunctionByMove.Add(individualFitness);
             }
-            currentGeneration.AssignDistances();
             this.PopulationStatistics.AddGeneration(currentGeneration);
 
             // get sort order for K-point crossover
@@ -227,6 +225,9 @@ namespace Osu.Cof.Ferm.Heuristics
                             this.BestTrajectory.CopyFrom(firstChildTrajectory);
                         }
                     }
+                    this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+                    this.CandidateObjectiveFunctionByMove.Add(firstChildFitness);
+
                     if (nextGeneration.TryReplace(secondChildFitness, secondChildTrajectory, this.ReplacementStrategy))
                     {
                         if (secondChildFitness > this.BestObjectiveFunction)
@@ -235,6 +236,8 @@ namespace Osu.Cof.Ferm.Heuristics
                             this.BestTrajectory.CopyFrom(secondChildTrajectory);
                         }
                     }
+                    this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+                    this.CandidateObjectiveFunctionByMove.Add(secondChildFitness);
 
                     // identify the fittest individual among the two parents and the two offspring and place it in the next generation
                     //float firstParentFitness = currentGeneration.IndividualFitness[firstParentIndex];
@@ -287,13 +290,6 @@ namespace Osu.Cof.Ferm.Heuristics
                     //        nextGeneration.HarvestVolumesByPeriod[matingIndex] = currentGeneration.HarvestVolumesByPeriod[secondParentIndex];
                     //    }
                     //}
-
-                    this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
-
-                    if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
-                    {
-                        this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
-                    }
                 }
 
                 currentGeneration.CopyFrom(nextGeneration);

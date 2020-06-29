@@ -18,6 +18,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<HeuristicSolutionDistribution> Runs { get; set; }
 
         [Parameter]
+        [ValidateNotNull]
         public TimberValue TimberValue { get; set; }
 
         [Parameter]

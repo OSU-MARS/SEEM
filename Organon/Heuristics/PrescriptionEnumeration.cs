@@ -1,9 +1,7 @@
 ﻿using Osu.Cof.Ferm.Cmdlets;
 using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -20,11 +18,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.IntensityStep = 5.0F;
             this.MaximumIntensity = 90.0F;
             this.MinimumIntensity = 30.0F;
-
-            this.ObjectiveFunctionByMove = new List<float>(1000)
-            {
-                this.BestObjectiveFunction
-            };
         }
 
         public override string GetName()
@@ -40,10 +33,6 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
-            if (this.ChainFrom >= 0)
-            {
-                throw new NotSupportedException(nameof(this.ChainFrom));
-            }
             if ((this.IntensityStep < 0.0F) || (this.IntensityStep > 100.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.IntensityStep));
@@ -68,6 +57,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
+
+            int intensityStepsPerThinMethod = (int)(100.0F / (this.MaximumIntensity - this.MinimumIntensity)) + 1;
+            this.AcceptedObjectiveFunctionByMove.Capacity = intensityStepsPerThinMethod * intensityStepsPerThinMethod * intensityStepsPerThinMethod;
+            this.CandidateObjectiveFunctionByMove.Capacity = this.AcceptedObjectiveFunctionByMove.Capacity;
 
             ThinByPrescription prescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests.First();
             for (float fromAbovePercentage = 0.0F; fromAbovePercentage < 100.0F; fromAbovePercentage += this.IntensityStep)
@@ -101,7 +94,8 @@ namespace Osu.Cof.Ferm.Heuristics
                             this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         }
 
-                        this.ObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                        this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+                        this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
                     }
                 }
             }

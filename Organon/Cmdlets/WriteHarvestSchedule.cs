@@ -12,6 +12,8 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommunications.Write, "HarvestSchedule")]
     public class WriteHarvestSchedule : WriteCmdlet
     {
+        public FiaVolume fiaVolume;
+
         public DataFormat Format { get; set; }
 
         [Parameter(Mandatory = true)]
@@ -20,6 +22,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public WriteHarvestSchedule()
         {
+            this.fiaVolume = new FiaVolume();
+
             this.Format = DataFormat.Long;
         }
 
@@ -49,7 +53,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
             if (this.Append == false)
             {
-                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters.GetCsvHeader() + ",thin age,rotation,tree,lowest selection,highest selection,DBH,height,expansion factor");
+                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters.GetCsvHeader() + ",thin age,rotation,tree,lowest selection,highest selection,highest thin DBH,highest thin height,highest thin CR,highest thin EF,highest thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
                 writer.WriteLine(line);
             }
 
@@ -68,23 +72,48 @@ namespace Osu.Cof.Ferm.Cmdlets
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> highestTreeSelectionNForSpecies in highestTrajectoryN.IndividualTreeSelectionBySpecies)
                 {
-                    Trees treesOfSpecies = highestTrajectoryN.StandByPeriod[periodBeforeHarvest].TreesBySpecies[highestTreeSelectionNForSpecies.Key];
+                    Trees highestTreesBeforeThin = highestTrajectoryN.StandByPeriod[periodBeforeHarvest].TreesBySpecies[highestTreeSelectionNForSpecies.Key];
+                    Trees highestTreesAtFinal = highestTrajectoryN.StandByPeriod[^1].TreesBySpecies[highestTreeSelectionNForSpecies.Key];
 
                     int[] lowestTreeSelectionN = lowestTrajectoryN.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
                     int[] highestTreeSelectionN = highestTreeSelectionNForSpecies.Value;
-                    Debug.Assert(treesOfSpecies.Capacity == highestTreeSelectionN.Length);
-                    for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                    Debug.Assert(highestTreesBeforeThin.Capacity == highestTreeSelectionN.Length);
+                    for (int treeIndex = 0; treeIndex < highestTreesBeforeThin.Count; ++treeIndex)
                     {
                         line.Clear();
 
+                        float highestThinBoardFeet = fiaVolume.GetScribnerBoardFeet(highestTreesBeforeThin, treeIndex);
+
+                        string highestFinalDbh = null;
+                        string highestFinalHeight = null;
+                        string highestFinalCrownRatio = null;
+                        string highestFinalExpansionFactor = null;
+                        string highestFinalBoardFeet = null;
+                        bool isThinnedInHighestTrajectory = highestTreeSelectionN[treeIndex] != Constant.NoHarvestPeriod;
+                        if (isThinnedInHighestTrajectory == false)
+                        {
+                            highestFinalDbh = highestTreesAtFinal.Dbh[treeIndex].ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFinalHeight = highestTreesAtFinal.Height[treeIndex].ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFinalCrownRatio = highestTreesAtFinal.CrownRatio[treeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestFinalExpansionFactor = highestTreesAtFinal.LiveExpansionFactor[treeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestFinalBoardFeet = fiaVolume.GetScribnerBoardFeet(highestTreesAtFinal, treeIndex).ToString("0.00", CultureInfo.InvariantCulture);
+                        }
+
                         // for now, make best guess of using tree tag or index as unique identifier
-                        int tree = treesOfSpecies.Tag[treeIndex] < 0 ? previousSpeciesCount + treeIndex : treesOfSpecies.Tag[treeIndex];
-                        line.Append(linePrefix + "," + tree + "," +
+                        int treeID = highestTreesBeforeThin.Tag[treeIndex] < 0 ? previousSpeciesCount + treeIndex : highestTreesBeforeThin.Tag[treeIndex];
+                        line.Append(linePrefix + "," + treeID + "," +
                                     lowestTreeSelectionN[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                     highestTreeSelectionN[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    treesOfSpecies.Dbh[treeIndex].ToString("0.00", CultureInfo.InvariantCulture) + "," + 
-                                    treesOfSpecies.Height[treeIndex].ToString("0.00", CultureInfo.InvariantCulture) + "," + 
-                                    treesOfSpecies.LiveExpansionFactor[treeIndex].ToString("0.000", CultureInfo.InvariantCulture));
+                                    highestTreesBeforeThin.Dbh[treeIndex].ToString("0.00", CultureInfo.InvariantCulture) + "," + 
+                                    highestTreesBeforeThin.Height[treeIndex].ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    highestTreesBeforeThin.CrownRatio[treeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                    highestTreesBeforeThin.LiveExpansionFactor[treeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                    highestThinBoardFeet.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    highestFinalDbh + "," +
+                                    highestFinalHeight + "," +
+                                    highestFinalCrownRatio + "," +
+                                    highestFinalExpansionFactor + "," + 
+                                    highestFinalBoardFeet);
 
                         writer.WriteLine(line);
                     }

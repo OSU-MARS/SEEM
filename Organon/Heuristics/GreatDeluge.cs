@@ -1,11 +1,10 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class GreatDeluge : Heuristic
+    public class GreatDeluge : SingleTreeHeuristic
     {
         public float ChangeToExchangeAfter { get; set; }
         public float FinalMultiplier { get; set; }
@@ -30,11 +29,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveType = MoveType.OneOpt;
             this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.BestObjectiveFunction / this.Iterations;
             this.StopAfter = (int)(0.25F * this.Iterations);
-
-            this.ObjectiveFunctionByMove = new List<float>(this.Iterations)
-            {
-                this.BestObjectiveFunction
-            };
         }
 
         public override string GetName()
@@ -50,10 +44,6 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
-            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
-            }
             if (this.ChangeToExchangeAfter < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.ChangeToExchangeAfter));
@@ -78,20 +68,22 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.StopAfter));
             }
-
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            float currentObjectiveFunction = this.BestObjectiveFunction;
-            //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             if (initialTreeRecordCount < 2)
             {
                 throw new NotSupportedException();
             }
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            this.EvaluateInitialSelection(this.Iterations);
+
+            float acceptedObjectiveFunction = this.BestObjectiveFunction;
+            //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             float treeIndexScalingFactor = ((float)initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
 
-            // initial solution in constructor is considered iteration 0, so loop starts with iteration 1
+            // initial selection is considered iteration 0, so loop starts with iteration 1
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             float hillClimbingThreshold = this.BestObjectiveFunction;
             int iterationsSinceBestObjectiveImproved = 0;
@@ -144,15 +136,15 @@ namespace Osu.Cof.Ferm.Heuristics
                 if ((candidateObjectiveFunction > waterLevel) || (candidateObjectiveFunction > hillClimbingThreshold))
                 {
                     // accept move
-                    currentObjectiveFunction = candidateObjectiveFunction;
+                    acceptedObjectiveFunction = candidateObjectiveFunction;
                     this.CurrentTrajectory.CopyFrom(candidateTrajectory);
-                    hillClimbingThreshold = currentObjectiveFunction;
+                    hillClimbingThreshold = candidateObjectiveFunction;
                     iterationsSinceObjectiveImprovedOrMoveTypeChanged = 0;
                     iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
 
-                    if (currentObjectiveFunction > this.BestObjectiveFunction)
+                    if (candidateObjectiveFunction > this.BestObjectiveFunction)
                     {
-                        this.BestObjectiveFunction = currentObjectiveFunction;
+                        this.BestObjectiveFunction = candidateObjectiveFunction;
                         this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
 
                         iterationsSinceBestObjectiveImproved = 0;
@@ -175,7 +167,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                 }
 
-                this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
+                this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
+                this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                this.TreeIDByMove.Add(firstTreeIndex);
+
                 if (iterationsSinceBestObjectiveImproved > this.StopAfter)
                 {
                     break;
@@ -192,11 +187,6 @@ namespace Osu.Cof.Ferm.Heuristics
                     waterLevel = (1.0F - this.LowerWaterBy) * this.BestObjectiveFunction;
                     hillClimbingThreshold = waterLevel;
                     iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
-                }
-
-                if (iteration == this.ChainFrom)
-                {
-                    this.BestTrajectoryByMove.Add(iteration, new StandTrajectory(this.BestTrajectory));
                 }
             }
 

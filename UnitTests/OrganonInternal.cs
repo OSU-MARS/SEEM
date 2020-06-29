@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Osu.Cof.Ferm.Test
 {
     [TestClass]
-    public class Component : OrganonTest
+    public class OrganonInternal : OrganonTest
     {
         public TestContext TestContext { get; set; }
 

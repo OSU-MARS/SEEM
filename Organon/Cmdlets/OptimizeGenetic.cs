@@ -66,7 +66,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, planningPeriods, objective)
             {
-                ChainFrom = parameters.ChainFrom,
                 CrossoverProbabilityEnd = parameters.CrossoverProbabilityEnd,
                 ExchangeProbabilityEnd = parameters.ExchangeProbabilityEnd,
                 ExchangeProbabilityStart = parameters.ExchangeProbabilityStart,
@@ -91,10 +90,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override IList<GeneticParameters> GetParameterCombinations()
         {
-            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
-            }
             if (this.ExchangeProbabilityEnd.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.ExchangeProbabilityEnd));
@@ -152,7 +147,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                 {
                                                     parameters.Add(new GeneticParameters()
                                                     {
-                                                        ChainFrom = this.ChainFrom ?? Constant.HeuristicDefault.ChainFrom,
                                                         CrossoverProbabilityEnd = crossoverProbabilityEnd,
                                                         ExchangeProbabilityEnd = exchangeProbabilityEnd,
                                                         ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
@@ -161,6 +155,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                         FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
                                                         MaximumGenerations = (int)(generationCoefficient * treeRecordCount + 0.5F),
                                                         MinimumCoefficientOfVariation = minCoefficientOfVariation,
+                                                        PerturbBy = this.PerturbBy,
                                                         PopulationSize = populationSize,
                                                         ProportionalPercentage = proportionalPercentage,
                                                         ProportionalPercentageWidth = proportionalPercentageWidth,

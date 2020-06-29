@@ -25,11 +25,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters parameters)
         {
             ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, planningPeriods, objective);
-            if (this.ChainFrom.HasValue)
-            {
-                acceptor.ChainFrom = this.ChainFrom.Value;
-            }
-            if (this.IterationsPerThreshold != null)
+           if (this.IterationsPerThreshold != null)
             {
                 acceptor.IterationsPerThreshold.Clear();
                 acceptor.IterationsPerThreshold.AddRange(this.IterationsPerThreshold);
@@ -49,7 +45,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.ProportionalPercentagesAsHeuristicParameters();
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

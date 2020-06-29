@@ -74,11 +74,12 @@ namespace Osu.Cof.Ferm.Test
                 IsLandExpectationValue = true,
                 VolumeUnits = VolumeUnits.ScribnerBoardFeetPerAcre
             };
-            Hero hero = new Hero(stand, configuration, planningPeriods, landExpectationValue, true)
+            Hero hero = new Hero(stand, configuration, planningPeriods, landExpectationValue)
             {
-                Iterations = 10
+                IsStochastic = true,
+                MaximumIterations = 10
             };
-            hero.RandomizeSelections(TestConstant.Default.SelectionPercentage);
+            hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             hero.Run();
 
             this.Verify(hero);
@@ -126,21 +127,21 @@ namespace Osu.Cof.Ferm.Test
                 LowerWaterAfter = 9,
                 StopAfter = 10
             };
-            deluge.RandomizeSelections(TestConstant.Default.SelectionPercentage);
+            deluge.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan delugeRuntime = deluge.Run();
 
             RecordTravel recordTravel = new RecordTravel(stand, configuration, planningPeriods, landExpectationValue)
             {
                 StopAfter = 10
             };
-            recordTravel.RandomizeSelections(TestConstant.Default.SelectionPercentage);
+            recordTravel.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan recordRuntime = recordTravel.Run();
 
             SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, planningPeriods, volume)
             {
                 Iterations = 100
             };
-            annealer.RandomizeSelections(TestConstant.Default.SelectionPercentage);
+            annealer.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan annealerRuntime = annealer.Run();
 
             TabuSearch tabu = new TabuSearch(stand, configuration, planningPeriods, landExpectationValue)
@@ -149,7 +150,7 @@ namespace Osu.Cof.Ferm.Test
                 //Jump = 2,
                 Tenure = 5
             };
-            tabu.RandomizeSelections(TestConstant.Default.SelectionPercentage);
+            tabu.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan tabuRuntime = tabu.Run();
 
             ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, planningPeriods, volume);
@@ -157,7 +158,7 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.Thresholds.Clear();
             thresholdAcceptor.IterationsPerThreshold.Add(10);
             thresholdAcceptor.Thresholds.Add(1.0F);
-            thresholdAcceptor.RandomizeSelections(TestConstant.Default.SelectionPercentage);
+            thresholdAcceptor.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan acceptorRuntime = thresholdAcceptor.Run();
 
             RandomGuessing random = new RandomGuessing(stand, configuration, planningPeriods, volume, heuristicParameters.ProportionalPercentage)
@@ -188,7 +189,7 @@ namespace Osu.Cof.Ferm.Test
             this.Verify(recordTravel);
             this.Verify(tabu);
 
-            HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution();
+            HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution(1, thinningPeriod, treeCount);
             distribution.AddRun(annealer, annealerRuntime, heuristicParameters);
             distribution.AddRun(deluge, delugeRuntime, heuristicParameters);
             distribution.AddRun(thresholdAcceptor, acceptorRuntime, heuristicParameters);
@@ -374,11 +375,12 @@ namespace Osu.Cof.Ferm.Test
             for (int run = 0; run < runs; ++run)
             {
                 // after warmup: 3 runs * 300 trees = 900 measured growth simulations on i7-3770 (4th gen, Sandy Bridge)
-                Hero hero = new Hero(stand, configuration, planningPeriods, landExpectationValue, false)
+                Hero hero = new Hero(stand, configuration, planningPeriods, landExpectationValue)
                 {
-                    Iterations = 2
+                    IsStochastic = false,
+                    MaximumIterations = 2
                 };
-                hero.RandomizeSelections(TestConstant.Default.SelectionPercentage);
+                hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
                 if (run > 0)
                 {
                     // skip first run as a warmup run
@@ -418,14 +420,9 @@ namespace Osu.Cof.Ferm.Test
         private void Verify(Heuristic heuristic)
         {
             // check objective functions
-            double beginObjectiveFunction = heuristic.ObjectiveFunctionByMove.First();
-            double endObjectiveFunction = heuristic.ObjectiveFunctionByMove.Last();
-            double recalculatedBestObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.BestTrajectory);
-            double recalculatedEndObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.CurrentTrajectory);
-
-            double bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
-            double endObjectiveFunctionRatio = endObjectiveFunction / recalculatedEndObjectiveFunction;
-
+            float beginObjectiveFunction = heuristic.CandidateObjectiveFunctionByMove.First();
+            float recalculatedBestObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.BestTrajectory);
+            float bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
             if (heuristic.Objective.IsLandExpectationValue)
             {
                 Assert.IsTrue(heuristic.BestObjectiveFunction > -0.22F);
@@ -435,15 +432,20 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(heuristic.BestObjectiveFunction > 0.0F);
             }
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
-            Assert.IsTrue(heuristic.BestObjectiveFunction >= endObjectiveFunction);
-            Assert.IsTrue(heuristic.ObjectiveFunctionByMove.Count >= 3);
-
+            Assert.IsTrue(heuristic.BestObjectiveFunction == heuristic.AcceptedObjectiveFunctionByMove[^1]);
+            Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove.Count >= 3);
             Assert.IsTrue(bestObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);
-            // currently, this check can fail for genetic algorithms when the best individual doesn't breed and disimprovement results
-            // TODO: either change GA to guarantee best individual breeds or relax this check in the GA case
-            Assert.IsTrue(endObjectiveFunctionRatio > 0.99999);
-            Assert.IsTrue(endObjectiveFunctionRatio < 1.00001);
+
+            float recalculatedCurrentObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.CurrentTrajectory);
+            if (heuristic is RandomGuessing == false)
+            {
+                Assert.IsTrue(recalculatedCurrentObjectiveFunction >= beginObjectiveFunction);
+            }
+            Assert.IsTrue(recalculatedCurrentObjectiveFunction <= heuristic.BestObjectiveFunction);
+
+            float endObjectiveFunction = heuristic.CandidateObjectiveFunctionByMove.Last();
+            Assert.IsTrue(endObjectiveFunction <= heuristic.BestObjectiveFunction);
 
             // check harvest schedule
             int harvestPeriod = heuristic.BestTrajectory.HarvestPeriods - 1;
@@ -495,7 +497,17 @@ namespace Osu.Cof.Ferm.Test
                 }
             }
 
-            // check parameter
+            // check moves
+            Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove.Count == heuristic.CandidateObjectiveFunctionByMove.Count);
+            Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove[0] == heuristic.CandidateObjectiveFunctionByMove[0]);
+            for (int moveIndex = 1; moveIndex < heuristic.AcceptedObjectiveFunctionByMove.Count; ++moveIndex)
+            {
+                Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove[moveIndex] <= heuristic.BestObjectiveFunction);
+                Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove[moveIndex - 1] <= heuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
+                Assert.IsTrue(heuristic.CandidateObjectiveFunctionByMove[moveIndex] <= heuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
+            }
+
+            // check parameters
             HeuristicParameters parameters = heuristic.GetParameters();
             if (parameters != null)
             {

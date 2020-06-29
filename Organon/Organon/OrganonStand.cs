@@ -91,16 +91,6 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public int GetTreeRecordCount()
-        {
-            int treeRecords = 0;
-            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
-            {
-                treeRecords += treesOfSpecies.Count;
-            }
-            return treeRecords;
-        }
-
         public void SetDefaultAndMortalitySiteIndices(TreeModel treeModel)
         {
             switch (treeModel)

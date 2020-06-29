@@ -38,7 +38,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
             if (this.ShouldWriteHeader())
             {
-                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters.GetCsvHeader() + ",thin age,rotation,iteration,count,lowest,min,percentile 2.5,percentile 5,lower quartile,median,mean,upper quartile,percentile 95,percentile 97.5,max,highest");
+                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters.GetCsvHeader() + ",thin age,rotation,iteration,count,lowest,lowest candidate,min,percentile 2.5,percentile 5,lower quartile,median,mean,upper quartile,percentile 95,percentile 97.5,max,highest,highest candidate");
                 writer.WriteLine(line);
             }
 
@@ -50,7 +50,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
                 string linePrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectory.GetFirstHarvestAge() + "," + highestTrajectory.GetRotationLength();
 
-                Debug.Assert(distribution.CountByMove.Count >= lowestHeuristic.ObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= lowestHeuristic.AcceptedObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MinimumObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count >= distribution.TwoPointFivePercentileByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count >= distribution.FifthPercentileByMove.Count);
@@ -61,17 +61,22 @@ namespace Osu.Cof.Ferm.Cmdlets
                 Debug.Assert(distribution.CountByMove.Count >= distribution.NinetySevenPointFivePercentileByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count >= distribution.UpperQuartileByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MaximumObjectiveFunctionByMove.Count);
-                Debug.Assert(distribution.CountByMove.Count >= highestHeuristic.ObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= highestHeuristic.AcceptedObjectiveFunctionByMove.Count);
                 for (int moveIndex = 0; moveIndex < distribution.CountByMove.Count; moveIndex += this.Step)
                 {
                     line.Clear();
 
                     string moves = distribution.CountByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
 
-                    string lowestObjectiveFunction = String.Empty;
-                    if (lowestHeuristic.ObjectiveFunctionByMove.Count > moveIndex)
+                    string lowestObjectiveFunction = null;
+                    if (lowestHeuristic.AcceptedObjectiveFunctionByMove.Count > moveIndex)
                     {
-                        lowestObjectiveFunction = lowestHeuristic.ObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        lowestObjectiveFunction = lowestHeuristic.AcceptedObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    }
+                    string lowestObjectiveFunctionForMove = null;
+                    if (lowestHeuristic.CandidateObjectiveFunctionByMove.Count > moveIndex)
+                    {
+                        lowestObjectiveFunctionForMove = lowestHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
                     string minObjectiveFunction = distribution.MinimumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
@@ -114,15 +119,21 @@ namespace Osu.Cof.Ferm.Cmdlets
                     string maxObjectiveFunction = distribution.MaximumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     
                     string highestObjectiveFunction = String.Empty;
-                    if (highestHeuristic.ObjectiveFunctionByMove.Count > moveIndex)
+                    if (highestHeuristic.AcceptedObjectiveFunctionByMove.Count > moveIndex)
                     {
-                        highestObjectiveFunction = highestHeuristic.ObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        highestObjectiveFunction = highestHeuristic.AcceptedObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                    }
+                    string highestObjectiveFunctionForMove = null;
+                    if (highestHeuristic.CandidateObjectiveFunctionByMove.Count > moveIndex)
+                    {
+                        highestObjectiveFunctionForMove = highestHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
                     line.Append(linePrefix + "," + 
                                 moveIndex + "," + 
                                 moves + "," + 
                                 lowestObjectiveFunction + "," +
+                                lowestObjectiveFunctionForMove + "," +
                                 minObjectiveFunction + "," + 
                                 twoPointFivePercentileObjectiveFunction + "," +
                                 fifthPercentileObjectiveFunction + "," +
@@ -133,7 +144,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 ninetyFifthPercentileObjectiveFunction + "," +
                                 ninetySevenPointFivePercentileObjectiveFunction + "," +
                                 maxObjectiveFunction + "," + 
-                                highestObjectiveFunction);
+                                highestObjectiveFunction + "," +
+                                highestObjectiveFunctionForMove);
                     writer.WriteLine(line);
                 }
             }

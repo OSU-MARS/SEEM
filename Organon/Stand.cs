@@ -118,6 +118,16 @@ namespace Osu.Cof.Ferm
             return topHeight;
         }
 
+        public int GetTreeRecordCount()
+        {
+            int treeRecords = 0;
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
+            {
+                treeRecords += treesOfSpecies.Count;
+            }
+            return treeRecords;
+        }
+
         private Units GetUnits()
         {
             if (this.TreesBySpecies.Count < 1)

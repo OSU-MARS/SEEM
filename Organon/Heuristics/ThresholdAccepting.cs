@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class ThresholdAccepting : Heuristic
+    public class ThresholdAccepting : SingleTreeHeuristic
     {
         public List<int> IterationsPerThreshold { get; private set; }
         public List<float> Thresholds { get; private set; }
@@ -18,11 +18,6 @@ namespace Osu.Cof.Ferm.Heuristics
             float oneTreeChange = 1.0F / treeRecords;
             this.IterationsPerThreshold = new List<int>() { 2 * treeRecords, 50, 200, 50, 250 };
             this.Thresholds = new List<float>() { 1.0F, 1.0F - 2.0F * oneTreeChange, 1.0F, 1.0F - oneTreeChange, 1.0F };
-
-            this.ObjectiveFunctionByMove = new List<float>(this.IterationsPerThreshold.Sum())
-            {
-                this.BestObjectiveFunction
-            };
         }
 
         public override string GetName()
@@ -33,10 +28,6 @@ namespace Osu.Cof.Ferm.Heuristics
         // similar to SimulatedAnnealing.Run(), differences are in move acceptance
         public override TimeSpan Run()
         {
-            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
-            }
             if (this.IterationsPerThreshold.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.IterationsPerThreshold));
@@ -60,7 +51,9 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            float currentObjectiveFunction = this.BestObjectiveFunction;
+            this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum());
+
+            float acceptedObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
 
@@ -85,14 +78,14 @@ namespace Osu.Cof.Ferm.Heuristics
                     candidateTrajectory.Simulate();
 
                     float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                    bool acceptMove = candidateObjectiveFunction > threshold * currentObjectiveFunction;
+                    bool acceptMove = candidateObjectiveFunction > threshold * acceptedObjectiveFunction;
                     if (acceptMove)
                     {
-                        currentObjectiveFunction = candidateObjectiveFunction; 
+                        acceptedObjectiveFunction = candidateObjectiveFunction; 
                         this.CurrentTrajectory.CopyFrom(candidateTrajectory);
-                        if (currentObjectiveFunction > this.BestObjectiveFunction)
+                        if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                         {
-                            this.BestObjectiveFunction = currentObjectiveFunction;
+                            this.BestObjectiveFunction = acceptedObjectiveFunction;
                             this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
                         }
                     }
@@ -101,12 +94,9 @@ namespace Osu.Cof.Ferm.Heuristics
                         candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
                     }
 
-                    this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
-
-                    if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
-                    {
-                        this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
-                    }
+                    this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
+                    this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                    this.TreeIDByMove.Add(treeIndex);
                 }
             }
 

@@ -1,11 +1,10 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class TabuSearch : Heuristic
+    public class TabuSearch : SingleTreeHeuristic
     {
         public int Iterations { get; set; }
         //public int Jump { get; set; }
@@ -17,11 +16,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.Iterations = stand.GetTreeRecordCount();
             //this.Jump = 1;
             this.Tenure = (int)(0.3 * this.Iterations);
-
-            this.ObjectiveFunctionByMove = new List<float>(1000)
-            {
-                this.BestObjectiveFunction
-            };
         }
 
         //private List<List<int>> GetDiameterQuantiles()
@@ -191,10 +185,6 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override TimeSpan Run()
         {
-            if (this.ChainFrom < Constant.HeuristicDefault.ChainFrom)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.ChainFrom));
-            }
             if (this.Iterations < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Iterations));
@@ -215,9 +205,11 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
+            this.EvaluateInitialSelection(this.Iterations);
+
+            float acceptedObjectiveFunction = this.BestObjectiveFunction;
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             int[,] remainingTabuTenures = new int[initialTreeRecordCount, this.CurrentTrajectory.HarvestPeriods];
-            float currentObjectiveFunction = this.BestObjectiveFunction;
             //List<List<int>> treeIndicesBySubset = this.GetDiameterQuantiles();
             //List<List<int>> treeIndicesBySubset = this.GetDiameterSubsets(); // performs poorly compared to diameter quantiles
             //List<List<int>> treeIndicesBySubset = this.GetHeightSubsets(); // performs worse
@@ -243,7 +235,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 int bestTreeIndex = -1;
                 int bestHarvestPeriod = -1;
                 float bestNonTabuCandidateObjectiveFunction = Single.MinValue;
-                int bestNonTabuUnitIndex = -1;
+                int bestNonTabuTreeIndex = -1;
                 int bestNonTabuHarvestPeriod = -1;
                 //List<int> treesInNeighborhood = allTreeIndices;
                 //if ((this.Jump > 1) && (treeIndexStep == this.Jump))
@@ -282,7 +274,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         {
                             bestNonTabuCandidateObjectiveFunction = candidateObjectiveFunction;
                             bestNonTabuCandidateTrajectory.CopyFrom(candidateTrajectory);
-                            bestNonTabuUnitIndex = treeIndex;
+                            bestNonTabuTreeIndex = treeIndex;
                             bestNonTabuHarvestPeriod = harvestPeriodIndex;
                         }
 
@@ -301,7 +293,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 if (bestCandidateObjectiveFunction > this.BestObjectiveFunction)
                 {
                     // always accept best candidate if it improves upon the best solution
-                    currentObjectiveFunction = bestCandidateObjectiveFunction;
+                    acceptedObjectiveFunction = bestCandidateObjectiveFunction;
                     this.CurrentTrajectory.CopyFrom(bestCandidateTrajectory);
 
                     remainingTabuTenures[bestTreeIndex, bestHarvestPeriod] = this.Tenure;
@@ -309,24 +301,26 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     this.BestObjectiveFunction = bestCandidateObjectiveFunction;
                     this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+
+                    this.CandidateObjectiveFunctionByMove.Add(bestCandidateObjectiveFunction);
+                    this.TreeIDByMove.Add(bestTreeIndex);
                 }
-                else if (bestNonTabuUnitIndex != -1)
+                else if (bestNonTabuTreeIndex != -1)
                 {
                     // otherwise, accept the best non-tabu move when one exists
                     // Existence is quite likely since (n trees) * (n periods) > tenure in most configurations.
-                    currentObjectiveFunction = bestNonTabuCandidateObjectiveFunction;
+                    acceptedObjectiveFunction = bestNonTabuCandidateObjectiveFunction;
                     this.CurrentTrajectory.CopyFrom(bestNonTabuCandidateTrajectory);
 
-                    remainingTabuTenures[bestNonTabuUnitIndex, bestNonTabuHarvestPeriod] = this.Tenure;
+                    remainingTabuTenures[bestNonTabuTreeIndex, bestNonTabuHarvestPeriod] = this.Tenure;
                     // remainingTabuTenures[bestNonTabuUnitIndex, bestNonTabuHarvestPeriod] = (int)(tenureScalingFactor * this.GetPseudorandomByteAsFloat()) + 1;
+
+                    this.CandidateObjectiveFunctionByMove.Add(bestNonTabuCandidateObjectiveFunction);
+                    this.TreeIDByMove.Add(bestNonTabuTreeIndex);
                 }
 
-                this.ObjectiveFunctionByMove.Add(currentObjectiveFunction);
+                this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
 
-                if (this.ObjectiveFunctionByMove.Count == this.ChainFrom)
-                {
-                    this.BestTrajectoryByMove.Add(this.ChainFrom, new StandTrajectory(this.BestTrajectory));
-                }
                 //if (++jumpBase >= this.Jump)
                 //{
                 //    jumpBase = 0;

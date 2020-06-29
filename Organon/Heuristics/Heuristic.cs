@@ -10,28 +10,28 @@ namespace Osu.Cof.Ferm.Heuristics
     public abstract class Heuristic : PseudorandomizingTask
     {
         public float BestObjectiveFunction { get; protected set; }
+        public List<float> AcceptedObjectiveFunctionByMove { get; protected set; }
         public OrganonStandTrajectory BestTrajectory { get; private set; }
-        public Dictionary<int, StandTrajectory> BestTrajectoryByMove { get; private set; }
-        public int ChainFrom { get; set; }
         public OrganonStandTrajectory CurrentTrajectory { get; private set; }
         public Objective Objective { get; private set; }
-        public List<float> ObjectiveFunctionByMove { get; protected set; }
+        public List<float> CandidateObjectiveFunctionByMove { get; protected set; }
 
         protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
         {
-            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, planningPeriods, objective.VolumeUnits);
-            this.BestTrajectoryByMove = new Dictionary<int, StandTrajectory>();
-            this.ChainFrom = Constant.HeuristicDefault.ChainFrom;
-            this.Objective = objective;
+            this.BestObjectiveFunction = Single.MinValue;
+            this.AcceptedObjectiveFunctionByMove = new List<float>();
 
-            this.BestTrajectory.Simulate();
-            this.BestObjectiveFunction = this.GetObjectiveFunction(this.BestTrajectory);
-            this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
-
+            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, planningPeriods, objective.VolumeUnits)
+            {
+                Heuristic = this,
+            };
             this.BestTrajectory.Name = this.BestTrajectory.Name + "Best";
-            this.BestTrajectory.Heuristic = this;
+
+            this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
             this.CurrentTrajectory.Name = this.CurrentTrajectory.Name + "Current";
-            this.CurrentTrajectory.Heuristic = this;
+
+            this.Objective = objective;
+            this.CandidateObjectiveFunctionByMove = new List<float>();
         }
 
         public virtual void CopySelectionsFrom(StandTrajectory trajectory)
@@ -43,10 +43,21 @@ namespace Osu.Cof.Ferm.Heuristics
 
             this.BestObjectiveFunction = this.GetObjectiveFunction(trajectory);
             this.BestTrajectory.CopySelectionsFrom(trajectory);
-            this.BestTrajectoryByMove.Clear();
             this.CurrentTrajectory.CopySelectionsFrom(trajectory);
-            this.ObjectiveFunctionByMove.Clear();
-            this.ObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+            this.AcceptedObjectiveFunctionByMove.Clear();
+            this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+        }
+
+        protected int[] CreateSequentialArray(int length)
+        {
+            Debug.Assert(length > 0);
+
+            int[] array = new int[length];
+            for (int index = 0; index < length; ++index)
+            {
+                array[index] = index;
+            }
+            return array;
         }
 
         protected int GetInitialTreeRecordCount()
@@ -116,7 +127,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return null;
         }
 
-        public void RandomizeSelections(float proportionalPercentage)
+        public void RandomizeTreeSelection(float proportionalPercentage)
         {
             if ((proportionalPercentage < 0.0F) || (proportionalPercentage > 100.0F))
             {
@@ -161,14 +172,39 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new NotSupportedException(String.Format("Unhandled harvest period selection {0}.", this.Objective.HarvestPeriodSelection));
             }
+        }
 
-            this.CurrentTrajectory.Simulate();
-            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
-
-            this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
-            if (this.ObjectiveFunctionByMove.Count > 0)
+        public void RandomizeTreeSelectionFrom(float perturbBy, Population eliteSolutions)
+        {
+            if ((perturbBy < 0.0F) || (perturbBy > 1.0F))
             {
-                this.ObjectiveFunctionByMove[0] = this.BestObjectiveFunction;
+                throw new ArgumentOutOfRangeException(nameof(perturbBy));
+            }
+            if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.All)
+            {
+                throw new NotSupportedException();
+            }
+
+            IHarvest harvest = this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
+            if ((harvest == null) || (harvest is ThinByIndividualTreeSelection == false))
+            {
+                // attempt to randomize an individual tree selection without a corresponding harvest present
+                throw new ArgumentOutOfRangeException(nameof(this.CurrentTrajectory.Configuration.Treatments.Harvests));
+            }
+
+            int maxPerturbationIndex = (int)(perturbBy * eliteSolutions.TreeCount) + 1;
+            int[] treeSelection = eliteSolutions.IndividualTreeSelections[0];
+            int[] treeIndices = this.CreateSequentialArray(eliteSolutions.TreeCount);
+            this.Pseudorandom.Shuffle(treeIndices);
+            for (int shuffleIndex = 0; shuffleIndex < treeIndices.Length; ++shuffleIndex)
+            {
+                int treeIndex = treeIndices[shuffleIndex];
+                int harvestPeriod = treeSelection[treeIndex];
+                if (shuffleIndex < maxPerturbationIndex)
+                {
+                    harvestPeriod = harvestPeriod == 0 ? eliteSolutions.HarvestPeriods : 0;
+                }
+                this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
             }
         }
 

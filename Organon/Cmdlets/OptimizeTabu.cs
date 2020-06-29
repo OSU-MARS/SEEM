@@ -24,10 +24,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
         {
             TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, planningPeriods, objective);
-            if (this.ChainFrom.HasValue)
-            {
-                tabu.ChainFrom = this.ChainFrom.Value;
-            }
             if (this.Iterations.HasValue)
             {
                 tabu.Iterations = this.Iterations.Value;
@@ -50,7 +46,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.ProportionalPercentagesAsHeuristicParameters();
+            return this.GetDefaultParameterCombinations();
         }
     }
 }
