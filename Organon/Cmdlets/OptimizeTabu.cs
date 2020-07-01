@@ -7,35 +7,34 @@ using System.Management.Automation;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "Tabu")]
-    public class OptimizeTabu : OptimizeCmdlet<HeuristicParameters>
+    public class OptimizeTabu : OptimizeCmdlet<TabuParameters>
     {
         [Parameter]
         [ValidateRange(0, Int32.MaxValue)]
-        public Nullable<int> Iterations { get; set; }
+        public List<int> Iterations { get; set; }
 
         //[Parameter]
         //[ValidateRange(1, 100)]
         //public Nullable<int> Jump { get; set; }
 
         [Parameter]
-        [ValidateRange(0, Int32.MaxValue)]
-        public Nullable<int> Tenure { get; set; }
+        [ValidateRange(2, Int32.MaxValue)]
+        public List<int> MaxTenure { get; set; }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
+        public OptimizeTabu()
         {
-            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, planningPeriods, objective);
-            if (this.Iterations.HasValue)
+            this.Iterations = null;
+            this.MaxTenure = null;
+        }
+
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, TabuParameters parameters)
+        {
+            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, planningPeriods, objective)
             {
-                tabu.Iterations = this.Iterations.Value;
-            }
-            //if (this.Jump.HasValue)
-            //{
-            //    tabu.Jump = this.Jump.Value;
-            //}
-            if (this.Tenure.HasValue)
-            {
-                tabu.Tenure = this.Tenure.Value;
-            }
+                Iterations = parameters.Iterations,
+                // Jump = parameters.Jump,
+                MaximumTenure = parameters.MaximumTenure
+            };
             return tabu;
         }
 
@@ -44,9 +43,36 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Tabu";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override IList<TabuParameters> GetParameterCombinations()
         {
-            return this.GetDefaultParameterCombinations();
+            int treeCount = this.Stand.GetTreeRecordCount();
+            if (this.Iterations == null)
+            {
+                this.Iterations = new List<int>() { treeCount };
+            }
+            if (this.MaxTenure == null)
+            {
+                this.MaxTenure = new List<int>() { (int)(Constant.TabuDefault.MaximumTenureRatio * treeCount) };
+            }
+
+            List<TabuParameters> parameters = new List<TabuParameters>(this.Iterations.Count * this.MaxTenure.Count * this.ProportionalPercentage.Count);
+            foreach (int iterations in this.Iterations)
+            {
+                foreach (int tenure in this.MaxTenure)
+                {
+                    foreach (float proportionalPercentage in this.ProportionalPercentage)
+                    {
+                        parameters.Add(new TabuParameters()
+                        {
+                            Iterations = iterations,
+                            PerturbBy = this.PerturbBy,
+                            ProportionalPercentage = proportionalPercentage,
+                            MaximumTenure = tenure
+                        });
+                    }
+                }
+            }
+            return parameters;
         }
     }
 }

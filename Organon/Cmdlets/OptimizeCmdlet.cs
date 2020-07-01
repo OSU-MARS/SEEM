@@ -71,7 +71,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, TParameters parameters);
 
-
         protected IList<HeuristicParameters> GetDefaultParameterCombinations()
         {
             List<HeuristicParameters> parameters = new List<HeuristicParameters>(this.ProportionalPercentage.Count);

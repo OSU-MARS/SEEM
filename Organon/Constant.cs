@@ -190,5 +190,10 @@ namespace Osu.Cof.Ferm
             public const int ShuffleRotateLower3 = 0x93; // 2 << 6 | 1 << 4 | 0 << 2 | 3
             public const int Width = 4;
         }
+
+        public static class TabuDefault
+        {
+            public const float MaximumTenureRatio = 0.1F;
+        }
     }
 }

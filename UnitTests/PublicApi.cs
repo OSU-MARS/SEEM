@@ -148,7 +148,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 Iterations = 7,
                 //Jump = 2,
-                Tenure = 5
+                MaximumTenure = 5
             };
             tabu.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan tabuRuntime = tabu.Run();
@@ -503,7 +503,8 @@ namespace Osu.Cof.Ferm.Test
             for (int moveIndex = 1; moveIndex < heuristic.AcceptedObjectiveFunctionByMove.Count; ++moveIndex)
             {
                 Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove[moveIndex] <= heuristic.BestObjectiveFunction);
-                Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove[moveIndex - 1] <= heuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
+                // doesn't necessarily apply to tabu search
+                // Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove[moveIndex - 1] <= heuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
                 Assert.IsTrue(heuristic.CandidateObjectiveFunctionByMove[moveIndex] <= heuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
             }
 
