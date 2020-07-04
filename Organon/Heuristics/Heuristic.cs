@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Cmdlets;
-using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -120,6 +119,11 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             return objectiveFunction;
+        }
+
+        public virtual IHeuristicMoveLog GetMoveLog()
+        {
+            return null;
         }
 
         public virtual HeuristicParameters GetParameters()

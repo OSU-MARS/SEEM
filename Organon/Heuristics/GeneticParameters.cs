@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Cmdlets;
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics
 {

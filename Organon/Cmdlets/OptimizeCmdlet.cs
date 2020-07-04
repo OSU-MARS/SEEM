@@ -158,20 +158,24 @@ namespace Osu.Cof.Ferm.Cmdlets
                     TParameters runParameters = parameterCombinations[parameterIndex];
                     Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, this.PlanningPeriods[planningPeriodIndex], objective, runParameters);
                     HeuristicSolutionDistribution distribution = distributions[distributionIndex];
-                    if ((runParameters.PerturbBy == 1.0F) || (distribution.EliteSolutions.NewIndividuals == 0))
+                    if (runParameters.PerturbBy > 0.0F)
                     {
-                        // minor optimization point: save a few time steps by by re-using pre-thin results
-                        // minor optimization point: save one loop over stand by skipping this for genetic algorithms
-                        currentHeuristic.RandomizeTreeSelection(runParameters.ProportionalPercentage);
-                    }
-                    else
-                    {
-                        // TODO: intialize genetic algorithm population from elite solutions?
-                        // TODO: how to define generation statistics?
-                        // TODO: more granular locking?
-                        lock (distributions)
+                        if ((runParameters.PerturbBy == 1.0F) || (distribution.EliteSolutions.NewIndividuals == 0))
                         {
-                            currentHeuristic.RandomizeTreeSelectionFrom(runParameters.PerturbBy, distribution.EliteSolutions);
+                            // minor optimization point: save a few time steps by by re-using pre-thin results
+                            // minor optimization point: save one loop over stand by skipping this for genetic algorithms
+                            currentHeuristic.RandomizeTreeSelection(runParameters.ProportionalPercentage);
+                        }
+                        else
+                        {
+                            // TODO: support initialization from unperturbed elite solutions
+                            // TODO: intialize genetic algorithm population from elite solutions?
+                            // TODO: how to define generation statistics?
+                            // TODO: more granular locking?
+                            lock (distributions)
+                            {
+                                currentHeuristic.RandomizeTreeSelectionFrom(runParameters.PerturbBy, distribution.EliteSolutions);
+                            }
                         }
                     }
                     TimeSpan runTime = currentHeuristic.Run();

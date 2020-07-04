@@ -169,12 +169,10 @@ namespace Osu.Cof.Ferm.Test
 
             configuration.Treatments.Harvests.Clear();
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
-            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, planningPeriods, landExpectationValue)
-            {
-                IntensityStep = 10.0F,
-                MaximumIntensity = 60.0F,
-                MinimumIntensity = 50.0F
-            };
+            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, planningPeriods, landExpectationValue);
+            enumerator.Parameters.IntensityStep = 10.0F;
+            enumerator.Parameters.MaximumIntensity = 60.0F;
+            enumerator.Parameters.MinimumIntensity = 50.0F;
             TimeSpan enumerationRuntime = enumerator.Run();
 
             // heuristics assigned to volume optimization
@@ -432,7 +430,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(heuristic.BestObjectiveFunction > 0.0F);
             }
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
-            Assert.IsTrue(heuristic.BestObjectiveFunction == heuristic.AcceptedObjectiveFunctionByMove[^1]);
+            Assert.IsTrue(heuristic.BestObjectiveFunction == heuristic.AcceptedObjectiveFunctionByMove[^1]); // only guaranteed for monotonic heuristics
             Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove.Count >= 3);
             Assert.IsTrue(bestObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);
@@ -508,8 +506,21 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(heuristic.CandidateObjectiveFunctionByMove[moveIndex] <= heuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
             }
 
-            // check parameters
-            HeuristicParameters parameters = heuristic.GetParameters();
+            IHeuristicMoveLog moveLog = heuristic.GetMoveLog();
+            if (moveLog != null)
+            {
+                string csvHeader = moveLog.GetCsvHeader("prefix ");
+                Assert.IsTrue(String.IsNullOrWhiteSpace(csvHeader) == false);
+
+                for (int moveIndex = 0; moveIndex < heuristic.AcceptedObjectiveFunctionByMove.Count; ++moveIndex)
+                {
+                    string csvValues = moveLog.GetCsvValues(moveIndex);
+                    Assert.IsTrue(String.IsNullOrWhiteSpace(csvValues) == false);
+                }
+            }
+
+                // check parameters
+                HeuristicParameters parameters = heuristic.GetParameters();
             if (parameters != null)
             {
                 string csvHeader = parameters.GetCsvHeader();

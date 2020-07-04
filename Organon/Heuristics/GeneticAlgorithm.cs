@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Cmdlets;
-using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Organon;
 using System;
 using System.Diagnostics;
 
@@ -45,11 +44,6 @@ namespace Osu.Cof.Ferm.Heuristics
         public override string GetName()
         {
             return "Genetic";
-        }
-
-        public override HeuristicParameters GetParameters()
-        {
-            return base.GetParameters();
         }
 
         public override TimeSpan Run()

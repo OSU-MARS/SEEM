@@ -129,6 +129,13 @@ namespace Osu.Cof.Ferm
             }
         }
 
+        public static class PrescriptionEnumerationDefault
+        {
+            public static float IntensityStep = 5.0F;
+            public static float MaximumIntensity = 90.0F;
+            public static float MinimumIntensity = 30.0F;
+        }
+
         public static class OpenXml
         {
             public const string Namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";

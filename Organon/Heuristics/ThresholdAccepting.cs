@@ -96,7 +96,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
                     this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
-                    this.TreeIDByMove.Add(treeIndex);
+                    this.MoveLog.TreeIDByMove.Add(treeIndex);
                 }
             }
 

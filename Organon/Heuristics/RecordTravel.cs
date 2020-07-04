@@ -167,7 +167,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
                 this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
-                this.TreeIDByMove.Add(firstTreeIndex);
+                this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
                 if (iterationsSinceBestObjectiveImproved > this.ChangeToExchangeAfter)
                 {
