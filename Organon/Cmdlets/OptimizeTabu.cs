@@ -10,30 +10,47 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class OptimizeTabu : OptimizeCmdlet<TabuParameters>
     {
         [Parameter]
-        [ValidateRange(0, Int32.MaxValue)]
-        public List<int> Iterations { get; set; }
+        [ValidateRange(0.0F, 1.0F)]
+        public List<float> EscapeAfter { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0F, 1.0F)]
+        public List<float> EscapeBy { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0F, 10.0F)]
+        public List<float> Iterations { get; set; }
 
         //[Parameter]
         //[ValidateRange(1, 100)]
         //public Nullable<int> Jump { get; set; }
 
         [Parameter]
-        [ValidateRange(2, Int32.MaxValue)]
-        public List<int> MaxTenure { get; set; }
+        [ValidateRange(0.0F, 1.0F)]
+        public List<float> MaxTenure { get; set; }
+
+        [Parameter]
+        public TabuTenure Tenure { get; set; }
 
         public OptimizeTabu()
         {
-            this.Iterations = null;
-            this.MaxTenure = null;
+            this.EscapeAfter = new List<float>() { Constant.TabuDefault.EscapeAfter };
+            this.EscapeBy = new List<float>() { Constant.TabuDefault.EscapeBy };
+            this.Iterations = new List<float>() { Constant.TabuDefault.Iterations };
+            this.MaxTenure = new List<float>() { Constant.TabuDefault.MaximumTenureRatio };
+            this.Tenure = Constant.TabuDefault.Tenure;
         }
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, TabuParameters parameters)
         {
             TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, planningPeriods, objective)
             {
+                EscapeAfter = parameters.EscapeAfter,
+                EscapeDistance = parameters.EscapeDistance,
                 Iterations = parameters.Iterations,
                 // Jump = parameters.Jump,
-                MaximumTenure = parameters.MaximumTenure
+                MaximumTenure = parameters.MaximumTenure,
+                Tenure = parameters.Tenure
             };
             return tabu;
         }
@@ -46,29 +63,30 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override IList<TabuParameters> GetParameterCombinations()
         {
             int treeCount = this.Stand.GetTreeRecordCount();
-            if (this.Iterations == null)
-            {
-                this.Iterations = new List<int>() { treeCount };
-            }
-            if (this.MaxTenure == null)
-            {
-                this.MaxTenure = new List<int>() { (int)(Constant.TabuDefault.MaximumTenureRatio * treeCount) };
-            }
 
-            List<TabuParameters> parameters = new List<TabuParameters>(this.Iterations.Count * this.MaxTenure.Count * this.ProportionalPercentage.Count);
-            foreach (int iterations in this.Iterations)
+            List<TabuParameters> parameters = new List<TabuParameters>(this.EscapeAfter.Count * this.EscapeBy.Count * this.Iterations.Count * this.MaxTenure.Count * this.ProportionalPercentage.Count);
+            foreach (float escapeAfter in this.EscapeAfter)
             {
-                foreach (int tenure in this.MaxTenure)
+                foreach (float escapeBy in this.EscapeBy)
                 {
-                    foreach (float proportionalPercentage in this.ProportionalPercentage)
+                    foreach (float iterationRatio in this.Iterations)
                     {
-                        parameters.Add(new TabuParameters()
+                        foreach (float tenureRatio in this.MaxTenure)
                         {
-                            Iterations = iterations,
-                            PerturbBy = this.PerturbBy,
-                            ProportionalPercentage = proportionalPercentage,
-                            MaximumTenure = tenure
-                        });
+                            foreach (float proportionalPercentage in this.ProportionalPercentage)
+                            {
+                                parameters.Add(new TabuParameters()
+                                {
+                                    EscapeAfter = (int)(escapeAfter * treeCount),
+                                    EscapeDistance = (int)(escapeBy * treeCount),
+                                    Iterations = (int)(iterationRatio * treeCount),
+                                    MaximumTenure = (int)(tenureRatio * treeCount),
+                                    PerturbBy = this.PerturbBy,
+                                    ProportionalPercentage = proportionalPercentage,
+                                    Tenure = this.Tenure
+                                });
+                            }
+                        }
                     }
                 }
             }

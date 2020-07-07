@@ -200,7 +200,11 @@ namespace Osu.Cof.Ferm
 
         public static class TabuDefault
         {
+            public const float EscapeAfter = 0.06F;
+            public const float EscapeBy = 0.04F;
+            public const float Iterations = 1.0F;
             public const float MaximumTenureRatio = 0.1F;
+            public const TabuTenure Tenure = TabuTenure.Stochastic;
         }
     }
 }

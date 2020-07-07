@@ -430,7 +430,10 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(heuristic.BestObjectiveFunction > 0.0F);
             }
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
-            Assert.IsTrue(heuristic.BestObjectiveFunction == heuristic.AcceptedObjectiveFunctionByMove[^1]); // only guaranteed for monotonic heuristics
+            #if DEBUG
+            // only guaranteed for monotonic heuristics: debug runs are short enough reheating or other operations don't occur
+            Assert.IsTrue(heuristic.BestObjectiveFunction == heuristic.AcceptedObjectiveFunctionByMove[^1]);
+            #endif
             Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove.Count >= 3);
             Assert.IsTrue(bestObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);
