@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -134,6 +135,7 @@ namespace Osu.Cof.Ferm
             public static float IntensityStep = 5.0F;
             public static float MaximumIntensity = 90.0F;
             public static float MinimumIntensity = 30.0F;
+            public static PrescriptionUnits Units = PrescriptionUnits.TreePercentageRemoved;
         }
 
         public static class OpenXml
@@ -200,7 +202,7 @@ namespace Osu.Cof.Ferm
 
         public static class TabuDefault
         {
-            public const float EscapeAfter = 0.06F;
+            public const float EscapeAfter = 1000.0F * 1000.0F; // off by default, nominal on value: 0.06F
             public const float EscapeBy = 0.04F;
             public const float Iterations = 1.0F;
             public const float MaximumTenureRatio = 0.1F;

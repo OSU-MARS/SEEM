@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Heuristics;
+﻿using DocumentFormat.OpenXml.Drawing.Diagrams;
+using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
@@ -9,25 +10,45 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommon.Optimize, "Prescription")]
     public class OptimizePrescription : OptimizeCmdlet<PrescriptionParameters>
     {
-        [Parameter(HelpMessage = "Maximum thinning intensity to evaluate. Paired with minimum intensities rather than used combinatorially.")]
+        [Parameter]
         [ValidateRange(0.0F, 100.0F)]
-        public List<float> MaximumIntensity { get; set; }
+        public float FromAbovePercentageUpperLimit { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0F, 100.0F)]
+        public float FromBelowPercentageUpperLimit { get; set; }
+
+        [Parameter(HelpMessage = "Maximum thinning intensity to evaluate. Paired with minimum intensities rather than used combinatorially.")]
+        [ValidateRange(0.0F, 1000.0F)]
+        public List<float> Maximum { get; set; }
 
         [Parameter(HelpMessage = "Minimum thinning intensity to evaluate. Paired with maximum intensities rather than used combinatorially.")]
+        [ValidateRange(0.0F, 1000.0F)]
+        public List<float> Minimum { get; set; }
+
+        [Parameter]
         [ValidateRange(0.0F, 100.0F)]
-        public List<float> MinimumIntensity { get; set; }
+        public float ProportionalPercentageUpperLimit { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
         public float Step { get; set; }
 
+        [Parameter]
+        public PrescriptionUnits Units { get; set; }
+
         public OptimizePrescription()
         {
-            this.MaximumIntensity = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };
-            this.MinimumIntensity = new List<float>() { Constant.PrescriptionEnumerationDefault.MinimumIntensity };
+            this.Cores = 1;
+            this.FromAbovePercentageUpperLimit = 100.0F;
+            this.FromBelowPercentageUpperLimit = 100.0F;
+            this.Maximum = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };
+            this.Minimum = new List<float>() { Constant.PrescriptionEnumerationDefault.MinimumIntensity };
             this.PerturbBy = 0.0F;
             this.ProportionalPercentage[0] = 0.0F;
+            this.ProportionalPercentageUpperLimit = 100.0F;
             this.Step = Constant.PrescriptionEnumerationDefault.IntensityStep;
+            this.Units = Constant.PrescriptionEnumerationDefault.Units;
         }
 
         protected override IHarvest CreateHarvest(int harvestPeriodIndex)
@@ -38,9 +59,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, PrescriptionParameters parameters)
         {
             PrescriptionEnumeration enumerator = new PrescriptionEnumeration(this.Stand, organonConfiguration, planningPeriods, objective);
-            enumerator.Parameters.IntensityStep = parameters.IntensityStep;
-            enumerator.Parameters.MaximumIntensity = parameters.MaximumIntensity;
-            enumerator.Parameters.MinimumIntensity = parameters.MinimumIntensity;
+            enumerator.Parameters.CopyFrom(parameters);
             return enumerator;
         }
 
@@ -51,7 +70,11 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override IList<PrescriptionParameters> GetParameterCombinations()
         {
-            if (this.MinimumIntensity.Count != this.MaximumIntensity.Count)
+            if (this.Cores != 1)
+            {
+                throw new NotSupportedException();
+            }
+            if (this.Minimum.Count != this.Maximum.Count)
             {
                 throw new ArgumentOutOfRangeException();
             }
@@ -68,11 +91,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 throw new ArgumentOutOfRangeException(nameof(this.Step));
             }
 
-            List<PrescriptionParameters> parameters = new List<PrescriptionParameters>(this.MinimumIntensity.Count);
-            for (int intensityIndex = 0; intensityIndex < this.MinimumIntensity.Count; ++intensityIndex)
+            List<PrescriptionParameters> parameters = new List<PrescriptionParameters>(this.Minimum.Count);
+            for (int intensityIndex = 0; intensityIndex < this.Minimum.Count; ++intensityIndex)
             {
-                float minimumIntensity = this.MinimumIntensity[intensityIndex];
-                float maximumIntensity = this.MaximumIntensity[intensityIndex];
+                float minimumIntensity = this.Minimum[intensityIndex];
+                float maximumIntensity = this.Maximum[intensityIndex];
                 if (maximumIntensity < minimumIntensity)
                 {
                     throw new ArgumentOutOfRangeException();
@@ -80,9 +103,13 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 parameters.Add(new PrescriptionParameters()
                 {
-                    MinimumIntensity = minimumIntensity,
-                    MaximumIntensity = maximumIntensity,
-                    IntensityStep = this.Step
+                    FromAbovePercentageUpperLimit = this.FromAbovePercentageUpperLimit,
+                    FromBelowPercentageUpperLimit = this.FromBelowPercentageUpperLimit,
+                    Minimum = minimumIntensity,
+                    Maximum = maximumIntensity,
+                    ProportionalPercentageUpperLimit = this.ProportionalPercentageUpperLimit,
+                    Step = this.Step,
+                    Units = this.Units
                 });
             }
             return parameters;

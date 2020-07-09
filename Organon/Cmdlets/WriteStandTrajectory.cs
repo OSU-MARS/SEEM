@@ -161,9 +161,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float tpaDecrease = 0.0F;
                     if (periodIndex > 0)
                     {
-                        float tpaPrevious = bestTrajectory.DensityByPeriod[periodIndex - 1].TreesPerAcre;
-                        float tpaCurrent = bestTrajectory.DensityByPeriod[periodIndex].TreesPerAcre;
-                        tpaDecrease = 1.0F - tpaCurrent / tpaPrevious;
+                        OrganonStandDensity previousDensity = bestTrajectory.DensityByPeriod[periodIndex - 1];
+                        OrganonStandDensity currentDensity = bestTrajectory.DensityByPeriod[periodIndex];
+                        if ((currentDensity == null) || (previousDensity == null))
+                        {
+                            throw new ArgumentOutOfRangeException(null, "Stand density information is missing. Did the heuristic perform at least one fully simulated move?");
+                        }
+                        tpaDecrease = 1.0F - currentDensity.TreesPerAcre / previousDensity.TreesPerAcre;
                     }
 
                     Stand stand = bestTrajectory.StandByPeriod[periodIndex];

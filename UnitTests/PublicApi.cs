@@ -170,9 +170,9 @@ namespace Osu.Cof.Ferm.Test
             configuration.Treatments.Harvests.Clear();
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
             PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, planningPeriods, landExpectationValue);
-            enumerator.Parameters.IntensityStep = 10.0F;
-            enumerator.Parameters.MaximumIntensity = 60.0F;
-            enumerator.Parameters.MinimumIntensity = 50.0F;
+            enumerator.Parameters.Step = 10.0F;
+            enumerator.Parameters.Maximum = 60.0F;
+            enumerator.Parameters.Minimum = 50.0F;
             TimeSpan enumerationRuntime = enumerator.Run();
 
             // heuristics assigned to volume optimization
@@ -430,10 +430,11 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(heuristic.BestObjectiveFunction > 0.0F);
             }
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
-            #if DEBUG
-            // only guaranteed for monotonic heuristics: debug runs are short enough reheating or other operations don't occur
-            Assert.IsTrue(heuristic.BestObjectiveFunction == heuristic.AcceptedObjectiveFunctionByMove[^1]);
-            #endif
+            // only guaranteed for monotonic heuristics: hero, prescription enumeration, others depending on configuration
+            if ((heuristic is SimulatedAnnealing == false) && (heuristic is TabuSearch == false))
+            {
+                Assert.IsTrue(heuristic.BestObjectiveFunction == heuristic.AcceptedObjectiveFunctionByMove[^1]);
+            }
             Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove.Count >= 3);
             Assert.IsTrue(bestObjectiveFunctionRatio > 0.99999);
             Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);

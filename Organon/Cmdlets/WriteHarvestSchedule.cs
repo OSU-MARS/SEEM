@@ -72,8 +72,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> highestTreeSelectionNForSpecies in highestTrajectoryN.IndividualTreeSelectionBySpecies)
                 {
-                    Trees highestTreesBeforeThin = highestTrajectoryN.StandByPeriod[periodBeforeHarvest].TreesBySpecies[highestTreeSelectionNForSpecies.Key];
-                    Trees highestTreesAtFinal = highestTrajectoryN.StandByPeriod[^1].TreesBySpecies[highestTreeSelectionNForSpecies.Key];
+                    Stand highestStandNbeforeHarvest = highestTrajectoryN.StandByPeriod[periodBeforeHarvest];
+                    Stand highestStandNatEnd = highestTrajectoryN.StandByPeriod[^1];
+                    if ((highestStandNbeforeHarvest == null) || (highestStandNatEnd == null))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(this.Runs), "Highest stand in run has not been fully simulated. Did the heuristic perform at least one move?");
+                    }
+                    Trees highestTreesBeforeThin = highestStandNbeforeHarvest.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
+                    Trees highestTreesAtFinal = highestStandNatEnd.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
 
                     int[] lowestTreeSelectionN = lowestTrajectoryN.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
                     int[] highestTreeSelectionN = highestTreeSelectionNForSpecies.Value;

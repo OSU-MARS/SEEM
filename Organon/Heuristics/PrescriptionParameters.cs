@@ -1,49 +1,56 @@
-﻿using Osu.Cof.Ferm.Organon;
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
     public class PrescriptionParameters : HeuristicParameters
     {
-        public float FromAbovePercentage { get; set; }
-        public float FromBelowPercentage { get; set; }
+        public float FromAbovePercentageUpperLimit { get; set; }
+        public float FromBelowPercentageUpperLimit { get; set; }
+        public float ProportionalPercentageUpperLimit { get; set; }
 
-        public float IntensityStep { get; set; }
-        public float MaximumIntensity { get; set; }
-        public float MinimumIntensity { get; set; }
+        public float Maximum { get; set; }
+        public float Minimum { get; set; }
+        public float Step { get; set; }
+        public PrescriptionUnits Units { get; set; }
 
         public PrescriptionParameters()
         {
-            this.FromAbovePercentage = -1.0F;
+            this.FromAbovePercentageUpperLimit = 100.0F;
             this.ProportionalPercentage = -1.0F;
-            this.FromBelowPercentage = -1.0F;
+            this.ProportionalPercentageUpperLimit = 100.0F;
+            this.FromBelowPercentageUpperLimit = 100.0F;
 
-            this.IntensityStep = Constant.PrescriptionEnumerationDefault.IntensityStep;
-            this.MaximumIntensity = Constant.PrescriptionEnumerationDefault.MaximumIntensity;
-            this.MinimumIntensity = Constant.PrescriptionEnumerationDefault.MinimumIntensity;
+            this.Maximum = Constant.PrescriptionEnumerationDefault.MaximumIntensity;
+            this.Minimum = Constant.PrescriptionEnumerationDefault.MinimumIntensity;
+            this.Step = Constant.PrescriptionEnumerationDefault.IntensityStep;
+            this.Units = Constant.PrescriptionEnumerationDefault.Units;
+        }
+
+        public void CopyFrom(PrescriptionParameters other)
+        {
+            this.FromAbovePercentageUpperLimit = other.FromAbovePercentageUpperLimit;
+            this.FromBelowPercentageUpperLimit = other.FromBelowPercentageUpperLimit;
+            this.Maximum = other.Maximum;
+            this.Minimum = other.Minimum;
+            this.ProportionalPercentageUpperLimit = other.ProportionalPercentageUpperLimit;
+            this.Step = other.Step;
+            this.Units = other.Units;
         }
 
         public override string GetCsvHeader()
         {
-            return "min intensity,max intensity,step,above,proportional,below";
+            return "units,min intensity,max intensity,step,max above,max proportional,max below";
         }
 
         public override string GetCsvValues()
         {
-            return this.MinimumIntensity.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.MaximumIntensity.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.IntensityStep.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.FromAbovePercentage.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentage.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromBelowPercentage.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture);
-        }
-
-        public void SetBestPrescription(ThinByPrescription prescription)
-        {
-            this.FromAbovePercentage = prescription.FromAbovePercentage;
-            this.FromBelowPercentage = prescription.FromBelowPercentage;
-            this.ProportionalPercentage = prescription.ProportionalPercentage;
+            return this.Units.ToString() + "," +
+                   this.Minimum.ToString(CultureInfo.InvariantCulture) + "," +
+                   this.Maximum.ToString(CultureInfo.InvariantCulture) + "," +
+                   this.Step.ToString(CultureInfo.InvariantCulture) + "," +
+                   this.FromAbovePercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ProportionalPercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromBelowPercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture);
         }
     }
 }
