@@ -75,7 +75,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append(",thin age,rotation,stand age,sim year,QMD,Htop,TPA,BA,standing,harvested,BA removed,BA intensity,TPA decrease,LEV");
+                line.Append(",thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPA,BA,standing,harvested,BA removed,BA intensity,TPA decrease,LEV");
                 writer.WriteLine(line);
             }
 
@@ -172,6 +172,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     Stand stand = bestTrajectory.StandByPeriod[periodIndex];
                     float quadraticMeanDiameter = stand.GetQuadraticMeanDiameter();
+                    float reinekeStandDensityIndex = density.TreesPerAcre * MathF.Pow(0.1F * quadraticMeanDiameter, Constant.ReinekeExponent);
                     float topHeight = stand.GetTopHeight();
 
                     // LEV
@@ -202,6 +203,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 rotationLength.ToString(CultureInfo.InvariantCulture) + "," +
                                 (bestTrajectory.PeriodZeroAgeInYears + simulationYear).ToString(CultureInfo.InvariantCulture) + "," +
                                 simulationYear.ToString(CultureInfo.InvariantCulture) + "," +
+                                reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 quadraticMeanDiameter.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                 topHeight.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                 density.TreesPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +

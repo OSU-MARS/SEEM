@@ -223,7 +223,7 @@ namespace Osu.Cof.Ferm.Test
 
             // verify untihnned trajectory
             //                                          0      1      2      3       4       5       6       7       8       9
-            float[] minimumUnthinnedQmd = new float[] { 6.61F, 8.10F, 9.37F, 10.45F, 11.40F, 12.23F, 12.97F, 13.65F, 14.26F, 14.83F }; // in
+            float[] minimumUnthinnedQmd = new float[] { 6.60F, 8.09F, 9.36F, 10.44F, 11.39F, 12.22F, 12.96F, 13.64F, 14.25F, 14.82F }; // in
             //                                                0      1      2      3      4       5       6       7       8       9
             float[] minimumUnthinnedTopHeight = new float[] { 54.5F, 68.1F, 80.5F, 91.7F, 101.9F, 111.3F, 119.8F, 127.7F, 134.9F, 141.6F }; // ft
             //                                             0       1       2       3       4       5       6       7       8       9
@@ -232,7 +232,7 @@ namespace Osu.Cof.Ferm.Test
 
             // verify thinned trajectory
             //                                        0      1      2      3       4       5       6       7       8       9
-            float[] minimumThinnedQmd = new float[] { 6.61F, 8.10F, 9.37F, 10.08F, 10.91F, 11.68F, 12.39F, 13.02F, 13.61F, 14.14F }; // in
+            float[] minimumThinnedQmd = new float[] { 6.60F, 8.09F, 9.36F, 11.23F, 12.70F, 14.04F, 15.22F, 16.27F, 17.22F, 18.07F }; // in
             //                                              0      1      2      3      4      5       6       7       8       9
             float[] minimumThinnedTopHeight = new float[] { 54.5F, 68.1F, 80.5F, 88.4F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
             //                                           0       1       2       3       4       5       6       7       8       9
@@ -311,7 +311,7 @@ namespace Osu.Cof.Ferm.Test
 
             // verify thinned trajectory
             //                                        0      1       2       3       4     
-            float[] minimumThinnedQmd = new float[] { 9.98F, 10.58F, 11.23F, 11.83F, 12.39F }; // in
+            float[] minimumThinnedQmd = new float[] { 9.95F, 10.78F, 11.67F, 12.49F, 13.24F }; // in
             //                                              0       1       2       3       4     
             float[] minimumThinnedTopHeight = new float[] { 101.7F, 109.5F, 117.8F, 125.6F, 132.9F }; // ft
             //                                           0       1       2       3       4     

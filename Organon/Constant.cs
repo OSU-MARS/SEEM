@@ -27,6 +27,7 @@ namespace Osu.Cof.Ferm
         public const int NoHarvestPeriod = 0;
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
+        public const float ReinekeExponent = 1.605F;
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
         public const float RoundTowardsZeroTolerance = 0.001F;

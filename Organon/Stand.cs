@@ -19,15 +19,19 @@ namespace Osu.Cof.Ferm
 
         public float GetQuadraticMeanDiameter()
         {
-            float sumOfSquares = 0.0F;
-            int treeCount = 0;
+            float dbhSumOfSquares = 0.0F;
+            int treeCount = 1;
             foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
                     float dbh = treesOfSpecies.Dbh[treeIndex];
-                    sumOfSquares += dbh * dbh;
-                    ++treeCount;
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    if (expansionFactor > 0.0F)
+                    {
+                        dbhSumOfSquares += dbh * dbh;
+                        ++treeCount;
+                    }
                 }
             }
 
@@ -35,8 +39,8 @@ namespace Osu.Cof.Ferm
             {
                 return 0.0F;
             }
-            float qmd =  MathF.Sqrt(sumOfSquares / treeCount);
-            Debug.Assert(qmd > 0.0F);
+            float qmd =  MathF.Sqrt(dbhSumOfSquares / treeCount);
+            Debug.Assert((qmd > 0.0F) && (qmd < 200.0F));
             return qmd;
         }
 
