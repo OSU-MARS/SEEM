@@ -3,7 +3,7 @@
     "Organon": {
       "commandName": "Executable",
       "executablePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
-      "commandLineArgs": "\"C:\\Users\\westjoh\\source\\repos\\Organon\\UnitTests\\performanceProfile.ps1\""
+      "commandLineArgs": "\"%USERPROFILE%\\source\\repos\\Seem\\UnitTests\\performanceProfile.ps1\""
     }
   }
 }
