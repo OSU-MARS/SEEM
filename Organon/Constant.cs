@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm
     internal static class Constant
     {
         public const float AcresPerHectare = 2.47105F;
-        public const float CmPerInch = 2.54000F;
+        public const float CentimetersPerInch = 2.54000F;
         // 100 * pi / (4 * 43560), from definition of crown competition factor
         public const float CrownCompetionConstantEnglish = 0.001803026F;
         public const float CubicFeetPerCubicMeter = 35.3147F;
@@ -125,8 +125,8 @@ namespace Osu.Cof.Ferm
                 public static int Plot = 1;
                 public static int Tree = 2;
                 public static int Age = 3;
-                public static int DbhInMillimeters = 4;
-                public static int HeightInDecimeters = 5;
+                public static int Dbh = 4;
+                public static int Height = 5;
                 public static int ExpansionFactor = 6;
             }
         }

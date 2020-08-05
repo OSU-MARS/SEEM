@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Test
 
         public float EstimateInitialCrownRatio(OrganonStandDensity density)
         {
-            float initialDiameterInInches = this.GetInitialDiameter() / Constant.CmPerInch;
+            float initialDiameterInInches = this.GetInitialDiameter() / Constant.CentimetersPerInch;
             float crownCompetition = density.GetCrownCompetitionFactorLarger(initialDiameterInInches);
             float crownCompetitionMidpoint = this.Species switch
             {

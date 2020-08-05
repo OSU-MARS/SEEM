@@ -1,5 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
-using System.Collections.Generic;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
@@ -14,6 +14,14 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateNotNull]
         public OrganonStandTrajectory Trajectory { get; set; }
 
+        [Parameter]
+        public Units Units { get; set; }
+
+        public WriteTreeList()
+        {
+            this.Units = Units.Metric;
+        }
+
         protected override void ProcessRecord()
         {
             using StreamWriter writer = this.GetWriter();
@@ -22,33 +30,44 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
             if (this.ShouldWriteHeader())
             {
-                line.Append("tree,DBH in period 0");
-                for (int periodIndex = 1; periodIndex < this.Trajectory.PlanningPeriods; ++periodIndex)
-                {
-                    line.Append("," + periodIndex.ToString(CultureInfo.InvariantCulture));
-                }
+                line.Append("stand,species,tree,age,DBH,height,crown ratio,expansion factor,dead expansion factor");
                 writer.WriteLine(line);
             }
 
             // rows for trees
-            int previousSpeciesCount = 0;
-            foreach (KeyValuePair<FiaCode, int[]> treeSelectionForSpecies in this.Trajectory.IndividualTreeSelectionBySpecies)
+            int age = this.Trajectory.PeriodZeroAgeInYears;
+            for (int periodIndex = 0; periodIndex < this.Trajectory.PlanningPeriods; ++periodIndex)
             {
-                for (int treeIndex = 0; treeIndex < treeSelectionForSpecies.Value.Length; ++treeIndex)
-                {
-                    Trees treesOfSpecies = this.Trajectory.StandByPeriod[0].TreesBySpecies[treeSelectionForSpecies.Key];
-                    line.Clear();
+                Stand stand = this.Trajectory.StandByPeriod[periodIndex];
+                string ageAsString = age.ToString(CultureInfo.InvariantCulture);
 
-                    // for now, best guess of using tree tag or index as unique identifier
-                    line.Append(treesOfSpecies.Tag[treeIndex] == 0 ? previousSpeciesCount + treeIndex : treesOfSpecies.Tag[treeIndex]);
-                    line.Append("," + treesOfSpecies.Dbh[treeIndex]);
-                    for (int periodIndex = 1; periodIndex < this.Trajectory.PlanningPeriods; ++periodIndex)
+                foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
+                {
+                    this.GetDimensionConversions(treesOfSpecies.Units, this.Units, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
+
+                    string species = treesOfSpecies.Species.ToFourLetterCode();
+                    for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                     {
-                        treesOfSpecies = this.Trajectory.StandByPeriod[periodIndex].TreesBySpecies[treeSelectionForSpecies.Key];
-                        line.Append("," + treesOfSpecies.Dbh[treeIndex]);
+                        float dbh = dbhConversionFactor * treesOfSpecies.Dbh[treeIndex];
+                        float height = heightConversionFactor * treesOfSpecies.Height[treeIndex];
+                        float liveExpansionFactor = areaConversionFactor * treesOfSpecies.LiveExpansionFactor[treeIndex];
+                        float deadExpansionFactor = areaConversionFactor * treesOfSpecies.DeadExpansionFactor[treeIndex];
+
+                        line.Clear();
+                        line.Append(stand.Name + "," +
+                                    species + "," +
+                                    treesOfSpecies.Tag[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                    ageAsString + "," +
+                                    dbh.ToString(CultureInfo.InvariantCulture) + "," +
+                                    height.ToString(CultureInfo.InvariantCulture) + "," +
+                                    treesOfSpecies.CrownRatio[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                    liveExpansionFactor.ToString(CultureInfo.InvariantCulture) + "," +
+                                    deadExpansionFactor.ToString(CultureInfo.InvariantCulture));
+                        writer.WriteLine(line);
                     }
-                    writer.WriteLine(line);
                 }
+
+                age += this.Trajectory.PeriodLengthInYears;
             }
         }
     }

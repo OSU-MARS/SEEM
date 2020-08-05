@@ -11,41 +11,70 @@ namespace Osu.Cof.Ferm.Data
     {
         public List<int> Age { get; private set; }
         public List<float> DbhInCentimeters { get; private set; }
+        public float DbhScaleFactor { get; set; }
         public List<float> ExpansionFactorInTph { get; private set; }
         public List<float> HeightInMeters { get; private set; }
+        public float HeightScaleFactor { get; set; }
         public string Name { get; set; }
         public List<FiaCode> Species { get; private set; }
         public List<int> TreeID { get; private set; }
 
-        public PlotWithHeight(string xlsxFilePath, string worksheetName)
+        public PlotWithHeight()
         {
             this.Age = new List<int>();
             this.DbhInCentimeters = new List<float>();
+            this.DbhScaleFactor = 1.0F;
             this.ExpansionFactorInTph = new List<float>();
             this.HeightInMeters = new List<float>();
-            this.Name = Path.GetFileNameWithoutExtension(xlsxFilePath);
+            this.HeightScaleFactor = 1.0F;
+            this.Name = null;
             this.Species = new List<FiaCode>();
             this.TreeID = new List<int>();
-
-            XlsxReader reader = new XlsxReader();
-            reader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
         private void ParseRow(int rowIndex, string[] rowAsStrings)
         {
-            if ((rowIndex == 0) || (rowAsStrings[Constant.Plot.ColumnIndex.Tree] == null))
+            if (rowIndex == 0)
+            {
+                // parse header
+                string dbhHeader = rowAsStrings[Constant.Plot.ColumnIndex.Dbh];
+                if (dbhHeader.EndsWith("mm", StringComparison.Ordinal))
+                {
+                    this.DbhScaleFactor = 0.1F;
+                }
+                string heightHeader = rowAsStrings[Constant.Plot.ColumnIndex.Height];
+                if (heightHeader.EndsWith("dm", StringComparison.Ordinal))
+                {
+                    this.HeightScaleFactor = 0.1F;
+                }
+
+                return;
+            }
+            if (rowAsStrings[Constant.Plot.ColumnIndex.Tree] == null)
             {
                 return;
             }
 
+            // parse data
             FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Species]);
             this.Species.Add(species);
             // for now, ignore plot
+            // for now, require DBH and height be present, failing on NA values
             this.TreeID.Add(Int32.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Tree]));
             this.Age.Add(Int32.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Age]));
-            this.DbhInCentimeters.Add(0.1F * Single.Parse(rowAsStrings[Constant.Plot.ColumnIndex.DbhInMillimeters]));
+            this.DbhInCentimeters.Add(this.DbhScaleFactor * Single.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Dbh]));
             this.ExpansionFactorInTph.Add(Single.Parse(rowAsStrings[Constant.Plot.ColumnIndex.ExpansionFactor]));
-            this.HeightInMeters.Add(0.1F * Single.Parse(rowAsStrings[Constant.Plot.ColumnIndex.HeightInDecimeters]));
+            this.HeightInMeters.Add(this.HeightScaleFactor * Single.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Height]));
+        }
+
+        public void Read(string xlsxFilePath, string worksheetName)
+        {
+            if (this.Name == null)
+            {
+                this.Name = Path.GetFileNameWithoutExtension(xlsxFilePath);
+            }
+            XlsxReader reader = new XlsxReader();
+            reader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
         public OrganonStand ToOrganonStand(OrganonConfiguration configuration, float siteIndex)

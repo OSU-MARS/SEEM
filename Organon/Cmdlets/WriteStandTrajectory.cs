@@ -25,11 +25,15 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateNotNull]
         public List<OrganonStandTrajectory> Trajectories { get; set; }
 
+        [Parameter]
+        public Units Units { get; set; }
+
         public WriteStandTrajectory()
         {
             this.Runs = null;
             this.TimberValue = new TimberValue();
             this.Trajectories = null;
+            this.Units = Units.Metric;
         }
 
         protected override void ProcessRecord()
@@ -64,7 +68,16 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 line.Append(",heuristic");
 
-                HeuristicParameters heuristicParametersForHeader = runsSpecified ? this.Runs[0].HighestHeuristicParameters : this.Trajectories[0].Heuristic.GetParameters();
+                HeuristicParameters heuristicParametersForHeader = null;
+                if (runsSpecified)
+                {
+                    heuristicParametersForHeader = this.Runs[0].HighestHeuristicParameters;
+                }
+                else if(this.Trajectories[0].Heuristic != null)
+                {
+                    heuristicParametersForHeader = this.Trajectories[0].Heuristic.GetParameters();
+                }
+
                 if (heuristicParametersForHeader != null)
                 {
                     string heuristicParameters = heuristicParametersForHeader.GetCsvHeader();
@@ -75,7 +88,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append(",thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPA,BA,standing,harvested,BA removed,BA intensity,TPA decrease,LEV");
+                string treesPerUnitArea = "TPH";
+                if (this.Units == Units.English)
+                {
+                    treesPerUnitArea = "TPA";
+                }
+                line.Append(",thin age,rotation,stand age,sim year,SDI,QMD,Htop," + treesPerUnitArea +
+                            ",BA,standing,harvested,BA removed,BA intensity," + treesPerUnitArea + " decrease,LEV");
                 writer.WriteLine(line);
             }
 
@@ -105,10 +124,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                         heuristicParameters = bestTrajectory.Heuristic.GetParameters();
                     }
                 }
-                if (bestTrajectory.VolumeUnits != VolumeUnits.ScribnerBoardFeetPerAcre)
-                {
-                    throw new NotSupportedException();
-                }
 
                 string heuristicNameAndParameters = "none";
                 if (bestTrajectory.Heuristic != null)
@@ -132,10 +147,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     trajectoryName = runOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
                 }
-                float volumeUnitMultiplier = 1.0F;
+
+                this.GetDimensionConversions(Units.English, this.Units, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
+                this.GetBasalAreaConversion(Units.English, this.Units, out float basalAreaConversionFactor);
+                // for now, don't try to convert between English and metric volumes
+                float volumeUnitMultiplier = 1.0F; // m³ by default
                 if (bestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
                 {
-                    volumeUnitMultiplier = 0.001F;
+                    volumeUnitMultiplier = 0.001F; // BF to MBF
                 }
 
                 for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
@@ -145,12 +164,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                     // get density and volumes
                     OrganonStandDensity density = bestTrajectory.DensityByPeriod[periodIndex];
                     float standingVolume = volumeUnitMultiplier * bestTrajectory.StandingVolumeByPeriod[periodIndex];
-                    float harvestMbfPerAcre = 0.0F;
-                    float basalAreaRemoved = 0.0F;
+                    float harvestPerArea = 0.0F; // MBF/acre from Organon or m³/ha
+                    float basalAreaRemoved = 0.0F; // ft²/acre from Organon
                     float basalAreaIntensity = 0.0F;
                     if (bestTrajectory.HarvestVolumesByPeriod.Length > periodIndex)
                     {
-                        harvestMbfPerAcre = volumeUnitMultiplier * bestTrajectory.HarvestVolumesByPeriod[periodIndex];
+                        harvestPerArea = volumeUnitMultiplier * bestTrajectory.HarvestVolumesByPeriod[periodIndex];
                         basalAreaRemoved = bestTrajectory.BasalAreaRemoved[periodIndex];
                         if (periodIndex > 0)
                         {
@@ -158,7 +177,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         }
                     }
 
-                    float tpaDecrease = 0.0F;
+                    float treesPerAcreDecrease = 0.0F;
                     if (periodIndex > 0)
                     {
                         OrganonStandDensity previousDensity = bestTrajectory.DensityByPeriod[periodIndex - 1];
@@ -167,28 +186,44 @@ namespace Osu.Cof.Ferm.Cmdlets
                         {
                             throw new ArgumentOutOfRangeException(null, "Stand density information is missing. Did the heuristic perform at least one fully simulated move?");
                         }
-                        tpaDecrease = 1.0F - currentDensity.TreesPerAcre / previousDensity.TreesPerAcre;
+                        treesPerAcreDecrease = 1.0F - currentDensity.TreesPerAcre / previousDensity.TreesPerAcre;
                     }
 
                     Stand stand = bestTrajectory.StandByPeriod[periodIndex];
-                    float quadraticMeanDiameter = stand.GetQuadraticMeanDiameter();
-                    float reinekeStandDensityIndex = density.TreesPerAcre * MathF.Pow(0.1F * quadraticMeanDiameter, Constant.ReinekeExponent);
-                    float topHeight = stand.GetTopHeight();
+                    float quadraticMeanDiameter = stand.GetQuadraticMeanDiameter(); // leave in inches for Reineke SDI
+                    float reinekeStandDensityIndex = areaConversionFactor * density.TreesPerAcre * MathF.Pow(0.1F * quadraticMeanDiameter, Constant.ReinekeExponent);
+                    quadraticMeanDiameter *= dbhConversionFactor;
+                    float topHeight = heightConversionFactor * stand.GetTopHeight();
+
+                    float treesPerUnitArea = areaConversionFactor * density.TreesPerAcre;
+                    float basalAreaPerUnitArea = basalAreaConversionFactor * density.BasalAreaPerAcre;
+                    basalAreaRemoved *= basalAreaConversionFactor;
+                    float treesPerUnitAreaDecrease = areaConversionFactor * treesPerAcreDecrease;
 
                     // LEV
                     float landExpectationValue;
-                    int periodsFromPresent = Math.Max(periodIndex - 1, 0);
-                    if (harvestMbfPerAcre > 0.0F)
+                    switch (bestTrajectory.VolumeUnits)
                     {
-                        float thinningPresentValue = this.TimberValue.GetPresentValueOfThinScribner(bestTrajectory.HarvestVolumesByPeriod[periodIndex], thinAge);
-                        float presentToFutureConversionFactor = MathF.Pow(1.0F + this.TimberValue.DiscountRate, rotationLength);
-                        float thinningFutureValue = presentToFutureConversionFactor * thinningPresentValue;
-                        landExpectationValue = thinningFutureValue / (presentToFutureConversionFactor - 1.0F);
-                    }
-                    else
-                    {
-                        float firstRotationPresentValue = this.TimberValue.GetPresentValueOfRegenerationHarvestScribner(bestTrajectory.StandingVolumeByPeriod[periodIndex], rotationLength) - this.TimberValue.ReforestationCostPerAcre;
-                        landExpectationValue = this.TimberValue.FirstRotationToLandExpectationValue(firstRotationPresentValue, rotationLength);
+                        case VolumeUnits.CubicMetersPerHectare:
+                            landExpectationValue = Single.NaN; 
+                            break;
+                        case VolumeUnits.ScribnerBoardFeetPerAcre:
+                            int periodsFromPresent = Math.Max(periodIndex - 1, 0);
+                            if (harvestPerArea > 0.0F)
+                            {
+                                float thinningPresentValue = this.TimberValue.GetPresentValueOfThinScribner(bestTrajectory.HarvestVolumesByPeriod[periodIndex], thinAge);
+                                float presentToFutureConversionFactor = MathF.Pow(1.0F + this.TimberValue.DiscountRate, rotationLength);
+                                float thinningFutureValue = presentToFutureConversionFactor * thinningPresentValue;
+                                landExpectationValue = thinningFutureValue / (presentToFutureConversionFactor - 1.0F);
+                            }
+                            else
+                            {
+                                float firstRotationPresentValue = this.TimberValue.GetPresentValueOfRegenerationHarvestScribner(bestTrajectory.StandingVolumeByPeriod[periodIndex], rotationLength) - this.TimberValue.ReforestationCostPerAcre;
+                                landExpectationValue = this.TimberValue.FirstRotationToLandExpectationValue(firstRotationPresentValue, rotationLength);
+                            }
+                            break;
+                        default:
+                            throw new NotSupportedException(String.Format("Unhandled volume units {0}.", bestTrajectory.VolumeUnits));
                     }
 
                     int simulationYear = bestTrajectory.PeriodLengthInYears * periodIndex;
@@ -198,7 +233,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         line.Append("," + runs + "," + moves + "," + runtimeInSeconds);
                     }
                     line.Append("," + heuristicNameAndParameters);
-                    Debug.Assert((harvestMbfPerAcre == 0.0F && basalAreaRemoved == 0.0F) || (harvestMbfPerAcre > 0.0F && basalAreaRemoved > 0.0F));
+                    Debug.Assert((harvestPerArea == 0.0F && basalAreaRemoved == 0.0F) || (harvestPerArea > 0.0F && basalAreaRemoved > 0.0F));
                     line.Append("," + thinAge.ToString(CultureInfo.InvariantCulture) + "," +
                                 rotationLength.ToString(CultureInfo.InvariantCulture) + "," +
                                 (bestTrajectory.PeriodZeroAgeInYears + simulationYear).ToString(CultureInfo.InvariantCulture) + "," +
@@ -206,13 +241,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 quadraticMeanDiameter.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                 topHeight.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                density.TreesPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                density.BasalAreaPerAcre.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                treesPerUnitArea.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                basalAreaPerUnitArea.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 standingVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                harvestMbfPerAcre.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                harvestPerArea.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                tpaDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                treesPerUnitAreaDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 landExpectationValue.ToString("0", CultureInfo.InvariantCulture)); ;
                     writer.WriteLine(line);
                 }

@@ -44,7 +44,7 @@ namespace Osu.Cof.Ferm.Test
             //   ABPR 50 year site index: 24 m @ n = 1
             // Franklin JF. ND. Abies procera. https://andrewsforest.oregonstate.edu/sites/default/files/lter/pubs/pdf/pub1168.pdf
             //   ABPR class II 100 year site index: 36 m => 48 cm DBH under Ishii 2000
-            float dbhInCm = Constant.CmPerInch * dbhInInches;
+            float dbhInCm = Constant.CentimetersPerInch * dbhInInches;
             float heightInM;
             switch (species)
             {

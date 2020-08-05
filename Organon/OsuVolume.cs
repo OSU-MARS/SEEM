@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm
                 return 0.0F;
             }
 
-            float dbhInCm = Constant.CmPerInch * dbhInInches;
+            float dbhInCm = Constant.CentimetersPerInch * dbhInInches;
             float heightInM = Constant.MetersPerFoot * trees.Height[treeIndex];
             float cvtsPerTreeInCubicM = trees.Species switch
             {

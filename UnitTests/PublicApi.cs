@@ -19,13 +19,17 @@ namespace Osu.Cof.Ferm.Test
         private PlotWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnappNelder1.xlsx");
-            return new PlotWithHeight(plotFilePath, "1");
+            PlotWithHeight plot = new PlotWithHeight();
+            plot.Read(plotFilePath, "1");
+            return plot;
         }
 
         private PlotWithHeight GetPlot14()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnapp14.xlsx");
-            return new PlotWithHeight(plotFilePath, "14");
+            PlotWithHeight plot = new PlotWithHeight();
+            plot.Read(plotFilePath, "14");
+            return plot;
         }
 
         [TestMethod]

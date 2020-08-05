@@ -91,7 +91,7 @@ namespace Osu.Cof.Ferm.Test
                     float basalAreaLarger = TestConstant.AcresPerHectare * TestConstant.SquareMetersPerSquareFoot * density.GetBasalAreaLarger(dbhInInches);
                     float ccfLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
                     writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
-                                     variant.TreeModel, year, id, treesOfSpecies.Species, basalAreaLarger, ccfLarger, Constant.CmPerInch * dbhInInches,
+                                     variant.TreeModel, year, id, treesOfSpecies.Species, basalAreaLarger, ccfLarger, Constant.CentimetersPerInch * dbhInInches,
                                      heightInMeters, liveExpansionFactor, crownRatio);
                 }
             }
@@ -154,11 +154,11 @@ namespace Osu.Cof.Ferm.Test
                     }
 
                     int id = treesOfSpecies.Tag[treeIndex];
-                    float dbhInCentimeters = Constant.CmPerInch * treesOfSpecies.Dbh[treeIndex];
+                    float dbhInCentimeters = Constant.CentimetersPerInch * treesOfSpecies.Dbh[treeIndex];
                     float heightInMeters = Constant.MetersPerFoot * treesOfSpecies.Height[treeIndex];
                     float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
                     float deadExpansionFactor = TestConstant.AcresPerHectare * treesOfSpecies.DeadExpansionFactor[treeIndex];
-                    float dbhGrowth = Constant.CmPerInch * treesOfSpecies.DbhGrowth[treeIndex];
+                    float dbhGrowth = Constant.CentimetersPerInch * treesOfSpecies.DbhGrowth[treeIndex];
                     float heightGrowth = Constant.MetersPerFoot * treesOfSpecies.HeightGrowth[treeIndex];
                     int quantile = initialDbhQuantile[treeIndex];
                     writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",

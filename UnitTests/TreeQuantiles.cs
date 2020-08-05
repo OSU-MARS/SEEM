@@ -40,7 +40,7 @@ namespace Osu.Cof.Ferm.Test
                 float[] speciesQuantileLiveExpansionFactor = new float[TestConstant.DbhQuantiles];
                 float[] speciesQuantileMaxDbh = new float[TestConstant.DbhQuantiles];
                 float[] speciesQuantileMeanDbh = new float[TestConstant.DbhQuantiles];
-                float[] speciesQuantileMinDbh = Enumerable.Repeat(Constant.CmPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
+                float[] speciesQuantileMinDbh = Enumerable.Repeat(Constant.CentimetersPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
 
                 Trees treesOfSpecies = stand.TreesBySpecies[initialDbhQuantile.Key];
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
@@ -97,7 +97,7 @@ namespace Osu.Cof.Ferm.Test
                 float[] quantileMeanCrownRatio = new float[TestConstant.DbhQuantiles];
                 float[] quantileMeanDbh = new float[TestConstant.DbhQuantiles];
                 float[] quantileMeanHeight = new float[TestConstant.DbhQuantiles];
-                float[] quantileMinDbh = Enumerable.Repeat(Constant.CmPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
+                float[] quantileMinDbh = Enumerable.Repeat(Constant.CentimetersPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
                 for (int treeIndex = 0; treeIndex < initialDbhQuantile.Value.Length; ++treeIndex)
                 {
                     int quantile = initialDbhQuantile.Value[treeIndex];
@@ -124,11 +124,11 @@ namespace Osu.Cof.Ferm.Test
                         float liveExpansionFactor = quantileLiveExpansionFactor[quantile];
                         quantileDeadExpansionFactor[quantile] = TestConstant.AcresPerHectare * quantileDeadExpansionFactor[quantile];
                         quantileLiveExpansionFactor[quantile] = TestConstant.AcresPerHectare * liveExpansionFactor;
-                        quantileMaxDbh[quantile] = Constant.CmPerInch * quantileMaxDbh[quantile];
+                        quantileMaxDbh[quantile] = Constant.CentimetersPerInch * quantileMaxDbh[quantile];
                         quantileMeanCrownRatio[quantile] /= liveExpansionFactor;
-                        quantileMeanDbh[quantile] = Constant.CmPerInch * quantileMeanDbh[quantile] / liveExpansionFactor;
+                        quantileMeanDbh[quantile] = Constant.CentimetersPerInch * quantileMeanDbh[quantile] / liveExpansionFactor;
                         quantileMeanHeight[quantile] = Constant.MetersPerFoot * quantileMeanHeight[quantile] / liveExpansionFactor;
-                        quantileMinDbh[quantile] = Constant.CmPerInch * quantileMinDbh[quantile];
+                        quantileMinDbh[quantile] = Constant.CentimetersPerInch * quantileMinDbh[quantile];
 
                         Debug.Assert(quantileMinDbh[quantile] / quantileMaxDbh[quantile] < 1.0001);
                         Debug.Assert(quantileMinDbh[quantile] / quantileMeanDbh[quantile] < 1.0001);

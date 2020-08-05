@@ -37,7 +37,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            PlotWithHeight plot = new PlotWithHeight(this.Xlsx, this.XlsxSheet);
+            PlotWithHeight plot = new PlotWithHeight();
+            plot.Read(this.Xlsx, this.XlsxSheet);
 
             OrganonConfiguration configuration = new OrganonConfiguration(OrganonVariant.Create(this.Model));
             OrganonStand stand;
