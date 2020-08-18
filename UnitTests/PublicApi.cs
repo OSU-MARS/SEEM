@@ -26,7 +26,7 @@ namespace Osu.Cof.Ferm.Test
 
         private PlotWithHeight GetPlot14()
         {
-            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnapp14.xlsx");
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnapp14-30 UBC.xlsx");
             PlotWithHeight plot = new PlotWithHeight();
             plot.Read(plotFilePath, "14");
             return plot;

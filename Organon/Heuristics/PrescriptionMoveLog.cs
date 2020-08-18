@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -14,6 +15,16 @@ namespace Osu.Cof.Ferm.Heuristics
             this.FromAbovePercentageByMove = new List<float>();
             this.FromBelowPercentageByMove = new List<float>();
             this.ProportionalPercentageByMove = new List<float>();
+        }
+
+        public int Count
+        {
+            get 
+            {
+                Debug.Assert(this.FromAbovePercentageByMove.Count == this.FromBelowPercentageByMove.Count);
+                Debug.Assert(this.FromBelowPercentageByMove.Count == this.ProportionalPercentageByMove.Count);
+                return this.ProportionalPercentageByMove.Count; 
+            }
         }
 
         public string GetCsvHeader(string prefix)

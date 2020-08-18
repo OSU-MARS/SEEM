@@ -12,6 +12,11 @@ namespace Osu.Cof.Ferm.Heuristics
             this.TreeIDByMove = new List<int>();
         }
 
+        public int Count
+        {
+            get { return this.TreeIDByMove.Count; }
+        }
+
         public string GetCsvHeader(string prefix)
         {
             return prefix + "tree evaluated";

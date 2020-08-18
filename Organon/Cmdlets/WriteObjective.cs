@@ -40,17 +40,25 @@ namespace Osu.Cof.Ferm.Cmdlets
             if (this.ShouldWriteHeader())
             {
                 line.Append("stand,heuristic,thin age,rotation," + this.Runs[0].HighestHeuristicParameters.GetCsvHeader() + ",iteration,count");
+
+                string lowestMoveLogHeader = "lowest move log";
                 IHeuristicMoveLog lowestMoveLog = this.Runs[0].LowestSolution.GetMoveLog();
                 if (lowestMoveLog != null)
                 {
-                    line.Append("," + lowestMoveLog.GetCsvHeader("lowest "));
+                    lowestMoveLogHeader = lowestMoveLog.GetCsvHeader("lowest ");
                 }
+                line.Append("," + lowestMoveLogHeader);
+
                 line.Append(",lowest,lowest candidate,min,percentile 2.5,percentile 5,lower quartile,median,mean,upper quartile,percentile 95,percentile 97.5,max");
+
+                string highestMoveLogHeader = "highest move log";
                 IHeuristicMoveLog highestMoveLog = this.Runs[0].HighestSolution.GetMoveLog();
                 if (highestMoveLog != null)
                 {
-                    line.Append("," + highestMoveLog.GetCsvHeader("highest "));
+                    highestMoveLogHeader = highestMoveLog.GetCsvHeader("highest ");
                 }
+                line.Append("," + highestMoveLogHeader);
+
                 line.Append(",highest,highest candidate");
                 writer.WriteLine(line);
             }
@@ -85,7 +93,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     string runsWithMoveAtIndex = distribution.CountByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
 
                     string lowestMove = null;
-                    if (lowestMoveLog != null)
+                    if ((lowestMoveLog != null) && (lowestMoveLog.Count > moveIndex))
                     {
                         lowestMove = lowestMoveLog.GetCsvValues(moveIndex);
                     }
@@ -140,7 +148,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     string maxObjectiveFunction = distribution.MaximumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
 
                     string highestMove = null;
-                    if (highestMoveLog != null)
+                    if ((highestMoveLog != null) && (highestMoveLog.Count > moveIndex))
                     {
                         highestMove = highestMoveLog.GetCsvValues(moveIndex);
                     }
