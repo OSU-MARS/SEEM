@@ -13,7 +13,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public int LowerWaterAfter { get; set; }
         public float LowerWaterBy { get; set; }
         public MoveType MoveType { get; set; }
-        public float RainRate { get; set; }
+        public Nullable<float> RainRate { get; set; }
         public int StopAfter { get; set; }
 
         public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
@@ -27,7 +27,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.LowerWaterAfter = (int)(1.7F * treeRecords);
             this.LowerWaterBy = 0.01F;
             this.MoveType = MoveType.OneOpt;
-            this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.BestObjectiveFunction / this.Iterations;
+            this.RainRate = null;
             this.StopAfter = (int)(0.25F * this.Iterations);
         }
 
@@ -52,10 +52,6 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.FinalMultiplier));
             }
-            if (this.RainRate <= 0.0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.RainRate));
-            }
             if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
             {
                 throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
@@ -78,6 +74,14 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
 
             this.EvaluateInitialSelection(this.Iterations);
+            if (this.RainRate.HasValue == false)
+            {
+                this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.BestObjectiveFunction / this.Iterations;
+            }
+            if ((this.RainRate.HasValue == false) || (this.RainRate.Value <= 0.0))
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.RainRate));
+            }
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
@@ -90,7 +94,7 @@ namespace Osu.Cof.Ferm.Heuristics
             int iterationsSinceObjectiveImprovedOrMoveTypeChanged = 0;
             int iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
             float waterLevel = this.IntitialMultiplier * this.BestObjectiveFunction;
-            for (int iteration = 1; iteration < this.Iterations; ++iteration, waterLevel += this.RainRate)
+            for (int iteration = 1; iteration < this.Iterations; ++iteration, waterLevel += this.RainRate.Value)
             {
                 int firstTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                 int firstCurrentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(firstTreeIndex);

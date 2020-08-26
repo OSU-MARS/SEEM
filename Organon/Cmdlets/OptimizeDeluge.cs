@@ -86,11 +86,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 deluge.RainRate = this.RainRate.Value;
             }
-            else if (this.InitialMultiplier.HasValue || this.FinalMultiplier.HasValue)
-            {
-                deluge.RainRate = (deluge.FinalMultiplier - deluge.IntitialMultiplier) * deluge.BestObjectiveFunction / deluge.Iterations;
-            }
-
             if (this.StopAfter.HasValue)
             {
                 deluge.StopAfter = this.StopAfter.Value;
