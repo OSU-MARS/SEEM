@@ -148,7 +148,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         prescription.ProportionalPercentage = proportionalPercentage;
                         this.CurrentTrajectory.DeselectAllTrees();
                         this.CurrentTrajectory.Simulate();
-                        Debug.Assert((totalIntensity == 0.0F && this.CurrentTrajectory.HarvestVolumesByPeriod.Sum() == 0.0F) || (totalIntensity > 0.0F && this.CurrentTrajectory.HarvestVolumesByPeriod.Sum() > 0.0F));
+                        Debug.Assert((totalIntensity == 0.0F && this.CurrentTrajectory.HarvestVolume.Scribner.Sum() == 0.0F) || (totalIntensity > 0.0F && this.CurrentTrajectory.HarvestVolume.Scribner.Sum() > 0.0F));
 
                         float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
                         if (candidateObjectiveFunction > this.BestObjectiveFunction)

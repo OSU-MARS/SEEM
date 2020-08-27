@@ -38,9 +38,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(1, 100)]
         public int ThinPeriod { get; set; }
 
-        [Parameter]
-        public VolumeUnits Units { get; set; }
-
         public GetStandTrajectory()
         {
             this.HarvestPeriods = 9;
@@ -50,7 +47,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ThinFromAbovePercentage = 0.0F; // %
             this.ThinFromBelowPercentage = 0.0F; // %
             this.ThinPeriod = -1; // no stand entry
-            this.Units = VolumeUnits.CubicMetersPerHectare;
         }
 
         protected override void ProcessRecord()
@@ -71,7 +67,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             }
 
-            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, this.PlanningPeriods, this.Units);
+            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, this.PlanningPeriods);
             if (this.Name != null)
             {
                 trajectory.Name = this.Name;

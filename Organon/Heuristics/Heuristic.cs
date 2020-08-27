@@ -20,11 +20,10 @@ namespace Osu.Cof.Ferm.Heuristics
             this.BestObjectiveFunction = Single.MinValue;
             this.AcceptedObjectiveFunctionByMove = new List<float>();
 
-            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, planningPeriods, objective.VolumeUnits)
+            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, planningPeriods)
             {
                 Heuristic = this,
             };
-            this.BestTrajectory.Name = this.BestTrajectory.Name + "Best";
 
             this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
             this.CurrentTrajectory.Name = this.CurrentTrajectory.Name + "Current";
@@ -75,47 +74,37 @@ namespace Osu.Cof.Ferm.Heuristics
             float objectiveFunction;
             if (this.Objective.IsLandExpectationValue)
             {
-                if (trajectory.VolumeUnits == VolumeUnits.CubicMetersPerHectare)
-                {
-                    // TODO: also, check tree model is using a five year time step
-                    throw new NotSupportedException();
-                }
-
                 // net present value of first rotation
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
                 // TODO: support per species pricing
-                float firstRotationPresentValue = -this.Objective.ReforestationCostPerAcre;
-                for (int periodIndex = 1; periodIndex < trajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
+                float firstRotationPresentValue = -this.Objective.ReforestationCostPerHectare;
+                for (int periodIndex = 1; periodIndex < trajectory.HarvestVolume.Scribner.Length; ++periodIndex)
                 {
-                    float thinVolumeInBoardFeet = trajectory.HarvestVolumesByPeriod[periodIndex];
-                    if (thinVolumeInBoardFeet > 0.0)
+                    float thinVolumeInMbfPerHa = trajectory.HarvestVolume.Scribner[periodIndex];
+                    if (thinVolumeInMbfPerHa > 0.0F)
                     {
                         int thinAge = trajectory.PeriodZeroAgeInYears + trajectory.PeriodLengthInYears * (periodIndex - 1);
-                        firstRotationPresentValue += this.Objective.GetPresentValueOfThinScribner(thinVolumeInBoardFeet, thinAge);
+                        firstRotationPresentValue += this.Objective.GetPresentValueOfThinScribner(thinVolumeInMbfPerHa, thinAge);
                     }
                 }
 
                 // TODO: check if earlier final harvest provides higher NPV
                 int rotationLength = trajectory.GetRotationLength();
-                firstRotationPresentValue += this.Objective.GetPresentValueOfRegenerationHarvestScribner(trajectory.StandingVolumeByPeriod[^1], rotationLength);
+                firstRotationPresentValue += this.Objective.GetPresentValueOfRegenerationHarvestScribner(trajectory.StandingVolume.Scribner[^1], rotationLength);
                 float landExpectationValue = this.Objective.FirstRotationToLandExpectationValue(firstRotationPresentValue, rotationLength);
 
-                // convert from US$/ac to k$/ac
+                // convert from US$/ac to USk$/ac
                 objectiveFunction = 0.001F * landExpectationValue;
             }
             else
             {
                 // direct volume addition
                 objectiveFunction = 0.0F;
-                for (int periodIndex = 1; periodIndex < trajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
+                for (int periodIndex = 1; periodIndex < trajectory.HarvestVolume.Scribner.Length; ++periodIndex)
                 {
-                    objectiveFunction += trajectory.HarvestVolumesByPeriod[periodIndex];
+                    objectiveFunction += trajectory.HarvestVolume.Scribner[periodIndex];
                 }
-                objectiveFunction += trajectory.StandingVolumeByPeriod[^1];
-                if (trajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
-                {
-                    objectiveFunction *= 0.001F;
-                }
+                objectiveFunction += trajectory.StandingVolume.Scribner[^1];
             }
 
             return objectiveFunction;

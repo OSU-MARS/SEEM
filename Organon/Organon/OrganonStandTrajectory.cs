@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm.Organon
         public Heuristic Heuristic { get; set; }
         public OrganonStand[] StandByPeriod { get; private set; }
 
-        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, int lastPlanningPeriod, VolumeUnits volumeUnits)
-            : base(lastPlanningPeriod, organonConfiguration.Treatments.Harvests.Count == 1 ? organonConfiguration.Treatments.Harvests[0].Period : 0, volumeUnits)
+        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, int lastPlanningPeriod)
+            : base(lastPlanningPeriod, organonConfiguration.Treatments.Harvests.Count == 1 ? organonConfiguration.Treatments.Harvests[0].Period : 0)
         {
             if (organonConfiguration.Treatments.Harvests.Count > 1)
             {
@@ -45,7 +45,7 @@ namespace Osu.Cof.Ferm.Organon
             this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
             this.StandByPeriod[0].Name += 0;
 
-            this.GetStandingAndHarvestedVolume(0);
+            this.GetVolume(0);
         }
 
         // shallow copy FIA and Organon for now
@@ -139,8 +139,8 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.BasalAreaRemoved.Length);
-            Array.Copy(other.HarvestVolumesByPeriod, 0, this.HarvestVolumesByPeriod, 0, this.HarvestVolumesByPeriod.Length);
-            Array.Copy(other.StandingVolumeByPeriod, 0, this.StandingVolumeByPeriod, 0, this.StandingVolumeByPeriod.Length);
+            this.HarvestVolume.CopyFrom(other.HarvestVolume);
+            this.StandingVolume.CopyFrom(other.StandingVolume);
 
             foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
             {
@@ -154,129 +154,67 @@ namespace Osu.Cof.Ferm.Organon
             this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
         }
 
-        private void GetHarvestedCubicMetersPerHectare(int periodIndex)
+        private void GetVolume(int periodIndex)
         {
-            // tree's expansion factor is set to zero when it's marked for harvest
-            // Use tree's volume from the previous period.
-            OrganonStand previousStand = this.StandByPeriod[periodIndex - 1];
-            double cvts4perAcre = 0.0F;
-            foreach (Trees previousTreesOfSpecies in previousStand.TreesBySpecies.Values)
-            {
-                int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-                Debug.Assert(individualTreeSelection.Length == previousTreesOfSpecies.Capacity);
-                for (int treeIndex = 0; treeIndex < previousTreesOfSpecies.Count; ++treeIndex)
-                {
-                    if (individualTreeSelection[treeIndex] == periodIndex)
-                    {
-                        double treesPerAcre = previousTreesOfSpecies.LiveExpansionFactor[treeIndex];
-                        Debug.Assert(treesPerAcre > 0.0F);
-                        cvts4perAcre += treesPerAcre * this.fiaVolume.GetMerchantableCubicFeet(previousTreesOfSpecies, treeIndex);
-                    }
-                }
-            }
-            this.HarvestVolumesByPeriod[periodIndex] = (float)(Constant.AcresPerHectare * Constant.CubicMetersPerCubicFoot * cvts4perAcre);
-
-            Debug.Assert((this.BasalAreaRemoved[periodIndex] > 0.0F && this.HarvestVolumesByPeriod[periodIndex] > 0.0F) ||
-                         (this.BasalAreaRemoved[periodIndex] == 0.0F && this.HarvestVolumesByPeriod[periodIndex] == 0.0F));
-        }
-
-        private void GetHarvestedScribnerBoardFeetPerAcre(int periodIndex)
-        {
-            // tree's expansion factor is set to zero when it's marked for harvest
-            // Use tree's volume from the previous period.
-            // TODO: track per species volumes
-            OrganonStand previousStand = this.StandByPeriod[periodIndex - 1];
-            float scribner6x32footLogPerAcre = 0.0F;
-            foreach (Trees previousTreesOfSpecies in previousStand.TreesBySpecies.Values)
-            {
-                int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-                Debug.Assert(individualTreeSelection.Length == previousTreesOfSpecies.Capacity);
-                for (int treeIndex = 0; treeIndex < previousTreesOfSpecies.Count; ++treeIndex)
-                {
-                    if (individualTreeSelection[treeIndex] == periodIndex)
-                    {
-                        float treesPerAcre = previousTreesOfSpecies.LiveExpansionFactor[treeIndex];
-                        Debug.Assert(treesPerAcre > 0.0F);
-                        scribner6x32footLogPerAcre += treesPerAcre * this.fiaVolume.GetScribnerBoardFeet(previousTreesOfSpecies, treeIndex);
-                    }
-                }
-            }
-            this.HarvestVolumesByPeriod[periodIndex] = scribner6x32footLogPerAcre;
-
-            Debug.Assert((this.BasalAreaRemoved[periodIndex] > 0.0F && this.HarvestVolumesByPeriod[periodIndex] > 0.0F) ||
-                         (this.BasalAreaRemoved[periodIndex] == 0.0F && this.HarvestVolumesByPeriod[periodIndex] == 0.0F));
-        }
-
-        private void GetStandingAndHarvestedVolume(int periodIndex)
-        {
-            bool isHarvestPeriod = false;
+            // harvest volumes, if applicable
             foreach (IHarvest harvest in this.Configuration.Treatments.Harvests)
             {
                 if (harvest.Period == periodIndex)
                 {
-                    isHarvestPeriod = true;
-                    break;
+                    // tree's expansion factor is set to zero when it's marked for harvest
+                    // Use tree's volume at end of the the previous period.
+                    // TODO: track per species volumes
+                    OrganonStand previousStand = this.StandByPeriod[periodIndex - 1];
+                    double harvestedCvts4perAcre = 0.0F;
+                    double harvestedScribner6x32footLogPerAcre = 0.0F;
+                    foreach (Trees previousTreesOfSpecies in previousStand.TreesBySpecies.Values)
+                    {
+                        int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
+                        Debug.Assert(individualTreeSelection.Length == previousTreesOfSpecies.Capacity);
+                        for (int treeIndex = 0; treeIndex < previousTreesOfSpecies.Count; ++treeIndex)
+                        {
+                            if (individualTreeSelection[treeIndex] == periodIndex)
+                            {
+                                float treesPerAcre = previousTreesOfSpecies.LiveExpansionFactor[treeIndex];
+                                Debug.Assert(treesPerAcre > 0.0F);
+                                harvestedCvts4perAcre += treesPerAcre * this.fiaVolume.GetMerchantableCubicFeet(previousTreesOfSpecies, treeIndex);
+                                harvestedScribner6x32footLogPerAcre += treesPerAcre * this.fiaVolume.GetScribnerBoardFeet(previousTreesOfSpecies, treeIndex);
+                            }
+                        }
+                    }
+                    this.HarvestVolume.Cubic[periodIndex] = (float)(Constant.AcresPerHectare * Constant.CubicMetersPerCubicFoot * harvestedCvts4perAcre);
+                    this.HarvestVolume.Scribner[periodIndex] = (float)(0.001 * Constant.AcresPerHectare * harvestedScribner6x32footLogPerAcre);
+
+                    // could make more specific by checking if harvest removes at least one tree
+                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > 0.0F && this.HarvestVolume.Cubic[periodIndex] > 0.0F && this.HarvestVolume.Scribner[periodIndex] > 0.0F) ||
+                                 (this.BasalAreaRemoved[periodIndex] == 0.0F && this.HarvestVolume.Cubic[periodIndex] == 0.0F && this.HarvestVolume.Scribner[periodIndex] == 0.0F));
                 }
             }
 
-            switch (this.VolumeUnits)
-            {
-                case VolumeUnits.CubicMetersPerHectare:
-                    if (isHarvestPeriod)
-                    {
-                        this.GetHarvestedCubicMetersPerHectare(periodIndex);
-                    }
-                    this.GetStandingCubicMetersPerHectare(periodIndex);
-                    break;
-                case VolumeUnits.ScribnerBoardFeetPerAcre:
-                    if (isHarvestPeriod)
-                    {
-                        this.GetHarvestedScribnerBoardFeetPerAcre(periodIndex);
-                    }
-                    this.GetStandingScribnerBoardFeetPerAcre(periodIndex);
-                    break;
-                default:
-                    throw new NotSupportedException(String.Format("Unhandled volume units {0}.", this.VolumeUnits));
-            }
-        }
-
-        private void GetStandingCubicMetersPerHectare(int periodIndex)
-        {
+            // standing volume
             OrganonStand stand = this.StandByPeriod[periodIndex];
-            float cvts4perAcre = 0.0F;
+            double standingCvts4perAcre = 0.0F;
+            double standingScribner6x32footLogPerAcre = 0.0F;
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
+                if (treesOfSpecies.Units != Units.English)
+                {
+                    throw new NotSupportedException();
+                }
+
                 int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[treesOfSpecies.Species];
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
                     if ((individualTreeSelection[treeIndex] == 0) || (periodIndex < individualTreeSelection[treeIndex]))
                     {
                         float treesPerAcre = treesOfSpecies.LiveExpansionFactor[treeIndex];
-                        cvts4perAcre += treesPerAcre * this.fiaVolume.GetMerchantableCubicFeet(treesOfSpecies, treeIndex);
+                        standingCvts4perAcre += treesPerAcre * this.fiaVolume.GetMerchantableCubicFeet(treesOfSpecies, treeIndex);
                     }
                 }
+                standingScribner6x32footLogPerAcre += this.fiaVolume.GetScribnerBoardFeetPerAcre(treesOfSpecies);
             }
-            this.StandingVolumeByPeriod[periodIndex] = Constant.AcresPerHectare * Constant.CubicMetersPerCubicFoot * cvts4perAcre;
-        }
-
-        private void GetStandingScribnerBoardFeetPerAcre(int periodIndex)
-        {
-            OrganonStand stand = this.StandByPeriod[periodIndex];
-            double scribner6x32footLogPerAcre = 0.0F;
-            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
-            {
-                scribner6x32footLogPerAcre += this.fiaVolume.GetScribnerBoardFeetPerAcre(treesOfSpecies);
-                //int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[treesOfSpecies.Species];
-                //for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
-                //{
-                //    if ((individualTreeSelection[treeIndex] == 0) || (periodIndex < individualTreeSelection[treeIndex]))
-                //    {
-                //        double treesPerAcre = treesOfSpecies.LiveExpansionFactor[treeIndex];
-                //        scribner6x32footLogPerAcre += treesPerAcre * this.fiaVolume.GetScribnerBoardFeet(treesOfSpecies, treeIndex);
-                //    }
-                //}
-            }
-            this.StandingVolumeByPeriod[periodIndex] = (float)scribner6x32footLogPerAcre;
+            this.StandingVolume.Cubic[periodIndex] = (float)(Constant.AcresPerHectare * Constant.CubicMetersPerCubicFoot * standingCvts4perAcre);
+            this.StandingVolume.Scribner[periodIndex] = (float)(0.001 * Constant.AcresPerHectare * standingScribner6x32footLogPerAcre);
         }
 
         public void Simulate()
@@ -350,13 +288,12 @@ namespace Osu.Cof.Ferm.Organon
                     }
 
                     // recalculate volume for this period
-                    this.GetStandingAndHarvestedVolume(periodIndex);
+                    this.GetVolume(periodIndex);
 
                     #if DEBUG
-                    if (periodIndex < this.HarvestVolumesByPeriod.Length)
+                    if (periodIndex < this.HarvestVolume.Scribner.Length)
                     {
-                        Debug.Assert((this.BasalAreaRemoved[periodIndex] == 0.0F && this.HarvestVolumesByPeriod[periodIndex] == 0.0F) || (this.BasalAreaRemoved[periodIndex] > 0.0F && this.HarvestVolumesByPeriod[periodIndex] > 0.0F));
-
+                        Debug.Assert((this.BasalAreaRemoved[periodIndex] == 0.0F && this.HarvestVolume.Scribner[periodIndex] == 0.0F) || (this.BasalAreaRemoved[periodIndex] > 0.0F && this.HarvestVolume.Scribner[periodIndex] > 0.0F));
                     }
                     #endif
                 }

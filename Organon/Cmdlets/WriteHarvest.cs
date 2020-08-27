@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
                 OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
-                maxPlanningPeriod = Math.Max(maxPlanningPeriod, bestTrajectory.StandingVolumeByPeriod.Length);
+                maxPlanningPeriod = Math.Max(maxPlanningPeriod, bestTrajectory.StandingVolume.Cubic.Length);
             }
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
             {
@@ -52,34 +52,16 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
-                    line.Append(",");
-
                     Heuristic heuristic = this.Runs[runIndex].HighestSolution;
-                    if (heuristic.BestTrajectory.HarvestVolumesByPeriod.Length > periodIndex)
-                    {
-                        double harvestVolume = heuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex];
-                        if (heuristic.BestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
-                        {
-                            harvestVolume *= 0.001;
-                        }
-                        line.Append(harvestVolume.ToString(CultureInfo.InvariantCulture));
-                    }
+                    float harvestVolumeScibner = heuristic.BestTrajectory.HarvestVolume.Scribner[periodIndex];
+                    line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
-                    line.Append(",");
-
                     Heuristic heuristic = this.Runs[runIndex].HighestSolution;
-                    if (heuristic.BestTrajectory.StandingVolumeByPeriod.Length > periodIndex)
-                    {
-                        double standingVolume = heuristic.BestTrajectory.StandingVolumeByPeriod[periodIndex];
-                        if (heuristic.BestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
-                        {
-                            standingVolume *= 0.001;
-                        }
-                        line.Append(standingVolume.ToString(CultureInfo.InvariantCulture));
-                    }
+                    float standingVolumeScribner = heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex];
+                    line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 writer.WriteLine(line);

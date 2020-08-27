@@ -47,9 +47,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         public TreeModel TreeModel { get; set; }
 
-        [Parameter]
-        public VolumeUnits VolumeUnits { get; set; }
-
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
@@ -61,7 +58,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.PerturbBy = Constant.MetaheuristicDefault.PerturbBy;
             this.TreeModel = TreeModel.OrganonNwo;
             this.ProportionalPercentage = new List<float>() { 50.0F };
-            this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
         }
 
         protected virtual IHarvest CreateHarvest(int harvestPeriodIndex)
@@ -114,7 +110,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 DiscountRate = 0.01F * this.DiscountRate,
                 IsLandExpectationValue = this.LandExpectationValue,
-                VolumeUnits = this.VolumeUnits
             };
 
             IList<TParameters> parameterCombinations = this.GetParameterCombinations();
@@ -277,26 +272,19 @@ namespace Osu.Cof.Ferm.Cmdlets
             float minimumHarvest = Single.MaxValue;
             float harvestSum = 0.0F;
             float harvestSumOfSquares = 0.0F;
-            for (int periodIndex = 1; periodIndex < bestHeuristic.BestTrajectory.HarvestVolumesByPeriod.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < bestHeuristic.BestTrajectory.HarvestVolume.Scribner.Length; ++periodIndex)
             {
-                float harvest = bestHeuristic.BestTrajectory.HarvestVolumesByPeriod[periodIndex];
-                maximumHarvest = Math.Max(harvest, maximumHarvest);
-                harvestSum += harvest;
-                harvestSumOfSquares += harvest * harvest;
-                minimumHarvest = Math.Min(harvest, minimumHarvest);
+                float harvestVolumeScribner = bestHeuristic.BestTrajectory.HarvestVolume.Scribner[periodIndex];
+                maximumHarvest = Math.Max(harvestVolumeScribner, maximumHarvest);
+                harvestSum += harvestVolumeScribner;
+                harvestSumOfSquares += harvestVolumeScribner * harvestVolumeScribner;
+                minimumHarvest = Math.Min(harvestVolumeScribner, minimumHarvest);
             }
-            float periods = (float)(bestHeuristic.BestTrajectory.HarvestVolumesByPeriod.Length - 1);
+            float periods = (float)(bestHeuristic.BestTrajectory.HarvestVolume.Scribner.Length - 1);
             float meanHarvest = harvestSum / periods;
             float variance = harvestSumOfSquares / periods - meanHarvest * meanHarvest;
             float standardDeviation = MathF.Sqrt(variance);
             float flowEvenness = Math.Max(maximumHarvest - meanHarvest, meanHarvest - minimumHarvest) / meanHarvest;
-            if (bestHeuristic.BestTrajectory.VolumeUnits == VolumeUnits.ScribnerBoardFeetPerAcre)
-            {
-                // convert from BF to MBF
-                meanHarvest *= 0.001F;
-                // variance *= 0.001 * 0.001;
-                standardDeviation *= 0.001F;
-            }
 
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             int totalMoves = movesAccepted + movesRejected;

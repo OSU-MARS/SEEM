@@ -15,6 +15,11 @@ namespace Osu.Cof.Ferm
         /// <returns>Tree's volume including top and stump in ft³.</returns>
         public float GetCubicFeet(Trees trees, int treeIndex)
         {
+            if (trees.Units != Units.English)
+            {
+                throw new NotSupportedException();
+            }
+
             float dbhInInches = trees.Dbh[treeIndex];
             if (dbhInInches < Constant.Minimum.DiameterForVolumeInInches)
             {
@@ -47,6 +52,11 @@ namespace Osu.Cof.Ferm
         /// <returns>Tree's volume in m³.</returns>
         public float GetMerchantableCubicFeet(Trees trees, int treeIndex)
         {
+            if (trees.Units != Units.English)
+            {
+                throw new NotSupportedException();
+            }
+
             float dbhInInches = trees.Dbh[treeIndex];
             if (dbhInInches < Constant.Minimum.DiameterForVolumeInInches)
             {
@@ -84,6 +94,10 @@ namespace Osu.Cof.Ferm
         {
             // for now, assume all trees are of the same species
             if (trees.Species != FiaCode.PseudotsugaMenziesii)
+            {
+                throw new NotSupportedException();
+            }
+            if (trees.Units != Units.English)
             {
                 throw new NotSupportedException();
             }
@@ -204,6 +218,11 @@ namespace Osu.Cof.Ferm
         /// <returns>Tree's volume in Scribner board feet</returns>
         public float GetScribnerBoardFeet(Trees trees, int treeIndex)
         {
+            if (trees.Units != Units.English)
+            {
+                throw new NotSupportedException();
+            }
+
             // repeat code of GetCubicFeet() as this provides about a 6% speedup
             float dbhInInches = trees.Dbh[treeIndex];
             if (dbhInInches < 6.0F)

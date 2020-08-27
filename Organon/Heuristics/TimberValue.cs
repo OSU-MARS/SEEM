@@ -6,14 +6,13 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public float DiscountRate { get; set; }
         public float DouglasFirPondValuePerMbf { get; set; }
-        public float FixedRegenerationHarvestCostPerAcre { get; set; }
-        public float FixedThinningCostPerAcre { get; set; }
-        public float ReforestationCostPerAcre { get; set; }
+        public float FixedRegenerationHarvestCostPerHectare { get; set; }
+        public float FixedThinningCostPerHectare { get; set; }
+        public float ReforestationCostPerHectare { get; set; }
         public float RegenerationHarvestCostPerMbf { get; set; }
-        public float TaxesAndManagementPerAcre { get; set; }
+        public float TaxesAndManagementPerHectare { get; set; }
         public float ThinningCostPerMbf { get; set; }
         public float TimberAppreciationRate { get; set; }
-        public VolumeUnits VolumeUnits { get; set; }
 
         public TimberValue()
         {
@@ -24,39 +23,38 @@ namespace Osu.Cof.Ferm.Heuristics
             // Somewhat different calculations apply for lands enrolled in the small tract forestland program.
             this.DiscountRate = 0.04F; // per year
             this.DouglasFirPondValuePerMbf = 525.0F;
-            this.FixedRegenerationHarvestCostPerAcre = 100.0F;
-            this.FixedThinningCostPerAcre = 60.0F;
-            this.ReforestationCostPerAcre = 560.0F;
+            this.FixedRegenerationHarvestCostPerHectare = Constant.AcresPerHectare * 100.0F;
+            this.FixedThinningCostPerHectare = Constant.AcresPerHectare * 60.0F;
+            this.ReforestationCostPerHectare = Constant.AcresPerHectare * 560.0F;
             this.RegenerationHarvestCostPerMbf = 250.0F; // includes forest products havest tax
-            this.TaxesAndManagementPerAcre = 7.5F; // per year, mean western Oregon forest land tax of $3.40/acre in 2006 plus nominal management expense
+            this.TaxesAndManagementPerHectare = Constant.AcresPerHectare * 7.5F; // per year, mean western Oregon forest land tax of $3.40/acre in 2006 plus nominal management expense
             this.ThinningCostPerMbf = 275.0F; // includes forest products harvest tax
             this.TimberAppreciationRate = 0.01F; // per year
-            this.VolumeUnits = VolumeUnits.CubicMetersPerHectare;
         }
 
         public float FirstRotationToLandExpectationValue(float firstRotationPresentValue, int rotationLength)
         {
             float presentToFutureConversionFactor = MathF.Pow(1.0F + this.DiscountRate, rotationLength);
             float firstRotationFutureValue = presentToFutureConversionFactor * firstRotationPresentValue;
-            float landExpectationValue = firstRotationFutureValue / (presentToFutureConversionFactor - 1.0F) - this.TaxesAndManagementPerAcre / this.DiscountRate;
+            float landExpectationValue = firstRotationFutureValue / (presentToFutureConversionFactor - 1.0F) - this.TaxesAndManagementPerHectare / this.DiscountRate;
             return landExpectationValue;
         }
 
-        // returns $/acre
-        public float GetPresentValueOfRegenerationHarvestScribner(float finalHarvestVolumeInBoardFeetPerAcre, int yearsFromNow)
+        // returns US$/ha
+        public float GetPresentValueOfRegenerationHarvestScribner(float finalHarvestVolumeInMbfPerHectare, int yearsFromNow)
         {
             float appreciatedPricePerMbf = this.DouglasFirPondValuePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, yearsFromNow);
             float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, yearsFromNow);
-            float netPresentValue = discountFactor * (0.001F * finalHarvestVolumeInBoardFeetPerAcre * (appreciatedPricePerMbf - this.RegenerationHarvestCostPerMbf) - this.FixedRegenerationHarvestCostPerAcre);
+            float netPresentValue = discountFactor * (finalHarvestVolumeInMbfPerHectare * (appreciatedPricePerMbf - this.RegenerationHarvestCostPerMbf) - this.FixedRegenerationHarvestCostPerHectare);
             return netPresentValue;
         }
 
-        // returns $/acre
-        public float GetPresentValueOfThinScribner(float thinVolumeInBoardFeetPerAcre, int yearsFromNow)
+        // returns US$/ha
+        public float GetPresentValueOfThinScribner(float thinVolumeInMbfPerHectare, int yearsFromNow)
         {
             float appreciatedPricePerMbf = this.DouglasFirPondValuePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, yearsFromNow);
             float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, yearsFromNow);
-            float netPresentValue = discountFactor * (0.001F * thinVolumeInBoardFeetPerAcre * (appreciatedPricePerMbf - this.ThinningCostPerMbf) - this.FixedThinningCostPerAcre);
+            float netPresentValue = discountFactor * (thinVolumeInMbfPerHectare * (appreciatedPricePerMbf - this.ThinningCostPerMbf) - this.FixedThinningCostPerHectare);
             return netPresentValue;
         }
     }

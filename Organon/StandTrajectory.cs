@@ -6,7 +6,8 @@ namespace Osu.Cof.Ferm
     public class StandTrajectory
     {
         public float[] BasalAreaRemoved { get; private set; }
-        public float[] HarvestVolumesByPeriod { get; private set; }
+        public int HarvestPeriods { get; private set; }
+        public StandVolume HarvestVolume { get; private set; }
 
         // harvest periods by tree, 0 indicates no harvest
         public SortedDictionary<FiaCode, int[]> IndividualTreeSelectionBySpecies { get; private set; }
@@ -15,11 +16,10 @@ namespace Osu.Cof.Ferm
         public int PeriodLengthInYears { get; set; }
         public int PeriodZeroAgeInYears { get; set; }
 
-        public float[] StandingVolumeByPeriod { get; private set; }
+        public StandVolume StandingVolume { get; private set; }
         public bool TreeSelectionChangedSinceLastSimulation { get; protected set; }
-        public VolumeUnits VolumeUnits { get; private set; }
 
-        public StandTrajectory(int lastPlanningPeriod, int thinningPeriod, VolumeUnits volumeUnits)
+        public StandTrajectory(int lastPlanningPeriod, int thinningPeriod)
         {
             if (lastPlanningPeriod < 1)
             {
@@ -31,31 +31,30 @@ namespace Osu.Cof.Ferm
             }
 
             int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
-            this.BasalAreaRemoved = new float[thinningPeriod + 1];
-            this.HarvestVolumesByPeriod = new float[thinningPeriod + 1];
+            this.BasalAreaRemoved = new float[lastPlanningPeriod + 1];
+            this.HarvestPeriods = thinningPeriod + 1;
+            this.HarvestVolume = new StandVolume(maximumPlanningPeriodIndex);
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = null;
             this.PeriodLengthInYears = -1;
             this.PeriodZeroAgeInYears = -1;
-            this.StandingVolumeByPeriod = new float[maximumPlanningPeriodIndex];
+            this.StandingVolume = new StandVolume(maximumPlanningPeriodIndex);
             this.TreeSelectionChangedSinceLastSimulation = false;
-            this.VolumeUnits = volumeUnits;
         }
 
         public StandTrajectory(StandTrajectory other)
         {
-            this.BasalAreaRemoved = new float[other.HarvestPeriods];
-            this.HarvestVolumesByPeriod = new float[other.HarvestPeriods];
+            this.BasalAreaRemoved = new float[other.BasalAreaRemoved.Length];
+            this.HarvestPeriods = other.HarvestPeriods;
+            this.HarvestVolume = new StandVolume(other.HarvestVolume);
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = other.Name;
             this.PeriodLengthInYears = other.PeriodLengthInYears;
             this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
-            this.StandingVolumeByPeriod = new float[other.PlanningPeriods];
+            this.StandingVolume = new StandVolume(other.StandingVolume);
             this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
-            this.VolumeUnits = other.VolumeUnits;
 
             Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.HarvestPeriods);
-            Array.Copy(other.HarvestVolumesByPeriod, 0, this.HarvestVolumesByPeriod, 0, this.HarvestPeriods);
 
             foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
             {
@@ -66,20 +65,12 @@ namespace Osu.Cof.Ferm
                 }
                 Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
             }
-
-            Array.Copy(other.StandingVolumeByPeriod, 0, this.StandingVolumeByPeriod, 0, this.PlanningPeriods);
-        }
-
-        public int HarvestPeriods
-        {
-            get { return this.HarvestVolumesByPeriod.Length; }
         }
 
         public int PlanningPeriods
         {
-            get { return this.StandingVolumeByPeriod.Length; }
+            get { return this.StandingVolume.Cubic.Length; }
         }
-
 
         public void CopyTreeSelectionTo(int[] allTreeSelection)
         {
@@ -109,9 +100,9 @@ namespace Osu.Cof.Ferm
                 throw new NotSupportedException();
             }
 
-            for (int periodIndex = 1; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < this.HarvestVolume.Scribner.Length; ++periodIndex)
             {
-                if (this.HarvestVolumesByPeriod[periodIndex] > 0.0F)
+                if (this.HarvestVolume.Scribner[periodIndex] > 0.0F)
                 {
                     return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (periodIndex - 1);
                 }
@@ -121,9 +112,9 @@ namespace Osu.Cof.Ferm
 
         public int GetFirstHarvestPeriod()
         {
-            for (int periodIndex = 1; periodIndex < this.HarvestVolumesByPeriod.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < this.HarvestVolume.Scribner.Length; ++periodIndex)
             {
-                if (this.HarvestVolumesByPeriod[periodIndex] > 0.0F)
+                if (this.HarvestVolume.Scribner[periodIndex] > 0.0F)
                 {
                     return periodIndex;
                 }
