@@ -19,16 +19,16 @@ namespace Osu.Cof.Ferm.Test
         private PlotWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnappNelder1.xlsx");
-            PlotWithHeight plot = new PlotWithHeight();
+            PlotWithHeight plot = new PlotWithHeight(1);
             plot.Read(plotFilePath, "1");
             return plot;
         }
 
         private PlotWithHeight GetPlot14()
         {
-            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnapp14-30 UBC.xlsx");
-            PlotWithHeight plot = new PlotWithHeight();
-            plot.Read(plotFilePath, "14");
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp plots 14-18+34 Ministry.xlsx");
+            PlotWithHeight plot = new PlotWithHeight(14, 4.95F);
+            plot.Read(plotFilePath, "0.2 ha");
             return plot;
         }
 
@@ -71,7 +71,7 @@ namespace Osu.Cof.Ferm.Test
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, treeCount);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
 
             Objective landExpectationValue = new Objective()
             {
@@ -104,7 +104,7 @@ namespace Osu.Cof.Ferm.Test
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, treeCount);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
 
             HeuristicParameters heuristicParameters = new HeuristicParameters()
             {
@@ -210,7 +210,7 @@ namespace Osu.Cof.Ferm.Test
 
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F);
 
             OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, lastPeriod, VolumeUnits.CubicMetersPerHectare);
             unthinnedTrajectory.Simulate();
@@ -300,9 +300,9 @@ namespace Osu.Cof.Ferm.Test
             int thinPeriod = 1;
             int lastPeriod = 4;
 
-            PlotWithHeight nelder = this.GetPlot14();
+            PlotWithHeight plot14 = this.GetPlot14();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F);
+            OrganonStand stand = plot14.ToOrganonStand(configuration, 30, 130.0F);
 
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
             {
@@ -315,12 +315,13 @@ namespace Osu.Cof.Ferm.Test
 
             // verify thinned trajectory
             //                                        0      1       2       3       4     
-            float[] minimumThinnedQmd = new float[] { 9.95F, 10.78F, 11.67F, 12.49F, 13.24F }; // in
-            //                                              0       1       2       3       4     
-            float[] minimumThinnedTopHeight = new float[] { 101.7F, 109.5F, 117.8F, 125.6F, 132.9F }; // ft
+            float[] minimumThinnedQmd = new float[] { 9.16F, 10.18F, 11.26F, 12.21F, 13.07F }; // in
+            //                                              0      1       2       3       4     
+            float[] minimumThinnedTopHeight = new float[] { 93.2F, 101.7F, 110.5F, 119.0F, 126.8F }; // ft
             //                                           0       1       2       3       4     
-            float[] minimumThinnedVolume = new float[] { 643.4F, 530.4F, 619.3F, 698.3F, 766.7F }; // m³ for 0+30+0% thin
-            this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 70, 80, configuration.Variant.TimeStepInYears);
+            float[] minimumThinnedVolume = new float[] { 450.1F, 407.7F, 511.0F, 605.0F, 687.5F }; // m³ for 0+30+0% thin
+
+            this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
             this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
             Assert.IsTrue(thinnedTrajectory.GetFirstHarvestAge() == 30);
         }
@@ -365,7 +366,7 @@ namespace Osu.Cof.Ferm.Test
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 130.0F, trees);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, trees);
 
             Objective landExpectationValue = new Objective()
             {

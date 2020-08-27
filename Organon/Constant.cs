@@ -99,6 +99,7 @@ namespace Osu.Cof.Ferm
         public static class Maximum
         {
             public const float DiameterIncrementInInches = 4.0F;
+            public const float ExpansionFactor = 1000.0F;
             public const float HeightIncrementInFeet = 20.0F;
             public const float Sdi = 1000.0F;
             public const float SiteIndexInFeet = 300.0F;
@@ -115,20 +116,6 @@ namespace Osu.Cof.Ferm
             // However, ignoring biomass in trees less than 15 cm is probably a larger error than extending the regression beyond its fitting
             // range.
             public const float DiameterForVolumeInInches = 4.0F;
-        }
-
-        public static class Plot
-        {
-            public static class ColumnIndex
-            {
-                public static int Species = 0;
-                public static int Plot = 1;
-                public static int Tree = 2;
-                public static int Age = 3;
-                public static int Dbh = 4;
-                public static int Height = 5;
-                public static int ExpansionFactor = 6;
-            }
         }
 
         public static class PrescriptionEnumerationDefault

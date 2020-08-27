@@ -8,8 +8,19 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommon.Get, "StandFromPlot")]
     public class GetStandFromPlot : Cmdlet
     {
+        [Parameter(Mandatory = true)]
+        [ValidateRange(0, 1000)]
+        public int Age { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0, Constant.Maximum.ExpansionFactor)]
+        public Nullable<float> ExpansionFactor { get; set; }
+
         [Parameter]
         public TreeModel Model { get; set; }
+
+        [Parameter(Mandatory = true)]
+        public int Plot { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, Constant.Maximum.SiteIndexInFeet)]
@@ -29,6 +40,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public GetStandFromPlot()
         {
+            this.ExpansionFactor = null;
             this.Model = TreeModel.OrganonNwo;
             this.SiteIndex = 130.0F;
             this.Trees = null;
@@ -37,18 +49,26 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            PlotWithHeight plot = new PlotWithHeight();
+            PlotWithHeight plot;
+            if (this.ExpansionFactor.HasValue)
+            {
+                plot = new PlotWithHeight(this.Plot, this.ExpansionFactor.Value);
+            }
+            else
+            {
+                plot = new PlotWithHeight(this.Plot);
+            }
             plot.Read(this.Xlsx, this.XlsxSheet);
 
             OrganonConfiguration configuration = new OrganonConfiguration(OrganonVariant.Create(this.Model));
             OrganonStand stand;
             if (this.Trees.HasValue)
             {
-                stand = plot.ToOrganonStand(configuration, this.SiteIndex, this.Trees.Value);
+                stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndex, this.Trees.Value);
             }
             else
             {
-                stand = plot.ToOrganonStand(configuration, this.SiteIndex);
+                stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndex);
             }
             this.WriteObject(stand);
         }

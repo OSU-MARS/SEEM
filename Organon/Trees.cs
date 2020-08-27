@@ -104,14 +104,12 @@ namespace Osu.Cof.Ferm
 
         public void Add(int tag, float dbh, float height, float crownRatio, float liveExpansionFactor)
         {
-            Debug.Assert(dbh >= 0.0F);
-            Debug.Assert(dbh < 500.0F);
-            Debug.Assert(height >= 0.0F);
-            Debug.Assert(height < 380.0F);
+            Debug.Assert(Single.IsNaN(dbh) || ((dbh >= 0.0F) && (dbh < 500.0F)));
+            Debug.Assert(Single.IsNaN(height) || ((height >= 0.0F) && (height < 380.0F)));
             Debug.Assert(crownRatio >= 0.0F);
             Debug.Assert(crownRatio <= 1.0F);
             Debug.Assert(liveExpansionFactor >= 0.0F);
-            Debug.Assert(liveExpansionFactor < 1000.0F);
+            Debug.Assert(liveExpansionFactor <= Constant.Maximum.ExpansionFactor);
 
             if (this.Capacity == this.Count)
             {

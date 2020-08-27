@@ -62,7 +62,7 @@ namespace Osu.Cof.Ferm.Organon
 
                     float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
                     Debug.Assert(expansionFactor >= 0.0F);
-                    Debug.Assert(expansionFactor <= 1000.0F);
+                    Debug.Assert(expansionFactor <= Constant.Maximum.ExpansionFactor);
 
                     treesPerAcreByDiameterClass[dbhIndex] += expansionFactor;
                     weightedDbhByDiameterClass[dbhIndex] += expansionFactor * dbhInInches;

@@ -2,34 +2,58 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
+using System.Globalization;
 using System.Linq;
 
 namespace Osu.Cof.Ferm.Data
 {
     public class PlotWithHeight
     {
-        public List<int> Age { get; private set; }
-        public List<float> DbhInCentimeters { get; private set; }
+        private int ageColumnIndex;
+        private int dbhColumnIndex;
+        private readonly float defaultCrownRatio;
+        private readonly float defaultExpansionFactor;
+        private int expansionFactorColumnIndex;
+        private int heightColumnIndex;
+        private int plotColumnIndex;
+        private int speciesColumnIndex;
+        private int treeColumnIndex;
+
+        private readonly Dictionary<int, Stand> byAge;
+
         public float DbhScaleFactor { get; set; }
-        public List<float> ExpansionFactorInTph { get; private set; }
-        public List<float> HeightInMeters { get; private set; }
         public float HeightScaleFactor { get; set; }
         public string Name { get; set; }
-        public List<FiaCode> Species { get; private set; }
-        public List<int> TreeID { get; private set; }
+        public int PlotID { get; set; }
 
-        public PlotWithHeight()
+        public PlotWithHeight(int plotID)
         {
-            this.Age = new List<int>();
-            this.DbhInCentimeters = new List<float>();
+            this.ageColumnIndex = -1;
+            this.dbhColumnIndex = -1;
+            this.defaultCrownRatio = 0.5F;
+            this.defaultExpansionFactor = -1.0F;
+            this.expansionFactorColumnIndex = -1;
+            this.heightColumnIndex = -1;
+            this.plotColumnIndex = -1;
+            this.speciesColumnIndex = -1;
+            this.treeColumnIndex = -1;
+            this.byAge = new Dictionary<int, Stand>();
+
             this.DbhScaleFactor = 1.0F;
-            this.ExpansionFactorInTph = new List<float>();
-            this.HeightInMeters = new List<float>();
             this.HeightScaleFactor = 1.0F;
-            this.Name = null;
-            this.Species = new List<FiaCode>();
-            this.TreeID = new List<int>();
+            this.Name = plotID.ToString(CultureInfo.InvariantCulture);
+            this.PlotID = plotID;
+        }
+
+        public PlotWithHeight(int plotID, float defaultExpansionFactor)
+            : this(plotID)
+        {
+            if ((defaultExpansionFactor <= 0.0F) || (defaultExpansionFactor > Constant.Maximum.ExpansionFactor))
+            {
+                throw new ArgumentOutOfRangeException(nameof(defaultExpansionFactor));
+            }
+
+            this.defaultExpansionFactor = defaultExpansionFactor;
         }
 
         private void ParseRow(int rowIndex, string[] rowAsStrings)
@@ -37,98 +61,198 @@ namespace Osu.Cof.Ferm.Data
             if (rowIndex == 0)
             {
                 // parse header
-                string dbhHeader = rowAsStrings[Constant.Plot.ColumnIndex.Dbh];
-                if (dbhHeader.EndsWith("mm", StringComparison.Ordinal))
+                for (int columnIndex = 0; columnIndex < rowAsStrings.Length; ++columnIndex)
                 {
-                    this.DbhScaleFactor = 0.1F;
+                    string columnHeader = rowAsStrings[columnIndex];
+                    if (String.IsNullOrWhiteSpace(columnHeader))
+                    {
+                        break;
+                    }
+                    if (columnHeader.Equals("species", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.speciesColumnIndex = columnIndex;
+                    }
+                    else if (columnHeader.Equals("plot", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.plotColumnIndex = columnIndex;
+                    }
+                    else if (columnHeader.Equals("tree", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.treeColumnIndex = columnIndex;
+                    }
+                    else if (columnHeader.Equals("age", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.ageColumnIndex = columnIndex;
+                    }
+                    else if (columnHeader.StartsWith("dbh", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.dbhColumnIndex = columnIndex;
+                        if (columnHeader.EndsWith("mm", StringComparison.Ordinal))
+                        {
+                            this.DbhScaleFactor = 0.1F; // otherwise, assume cm
+                        }
+                    }
+                    else if (columnHeader.Equals("height", StringComparison.OrdinalIgnoreCase) ||
+                             columnHeader.Equals("height, m", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.heightColumnIndex = columnIndex;
+                    }
+                    else if (columnHeader.Equals("height, dm", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.heightColumnIndex = columnIndex;
+                        this.HeightScaleFactor = 0.1F; // otherwise, assume m
+                    }
+                    else if (columnHeader.StartsWith("expansion factor", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.expansionFactorColumnIndex = columnIndex;
+                    }
+                    else
+                    {
+                        // ignore column for now
+                    }
                 }
-                string heightHeader = rowAsStrings[Constant.Plot.ColumnIndex.Height];
-                if (heightHeader.EndsWith("dm", StringComparison.Ordinal))
+
+                // check header
+                if (this.speciesColumnIndex < 0)
                 {
-                    this.HeightScaleFactor = 0.1F;
+                    throw new ArgumentOutOfRangeException(nameof(this.speciesColumnIndex), "Species column not found.");
+                }
+                if (this.plotColumnIndex < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.plotColumnIndex), "Plot column not found.");
+                }
+                if (this.treeColumnIndex < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.treeColumnIndex), "Tree number column not found.");
+                }
+                if (this.ageColumnIndex < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ageColumnIndex), "Tree age column not found.");
+                }
+                if (this.dbhColumnIndex < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.dbhColumnIndex), "DBH column not found.");
+                }
+                if (this.heightColumnIndex < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.heightColumnIndex), "Height column not found.");
+                }
+                if ((this.expansionFactorColumnIndex < 0) && (this.defaultExpansionFactor <= 0.0F))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.expansionFactorColumnIndex), "Expansion factor column not found.");
                 }
 
                 return;
             }
-            if (rowAsStrings[Constant.Plot.ColumnIndex.Tree] == null)
+
+            if (rowAsStrings[this.treeColumnIndex] == null)
             {
+                return; // assume end of data in file
+            }
+
+            // filter by plot
+            int plot = Int32.Parse(rowAsStrings[this.plotColumnIndex]);
+            if (plot != this.PlotID)
+            {
+                // tree is not in this plot
                 return;
             }
 
             // parse data
-            FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Species]);
-            this.Species.Add(species);
-            // for now, ignore plot
-            // for now, require DBH and height be present, failing on NA values
-            this.TreeID.Add(Int32.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Tree]));
-            this.Age.Add(Int32.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Age]));
-            this.DbhInCentimeters.Add(this.DbhScaleFactor * Single.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Dbh]));
-            this.ExpansionFactorInTph.Add(Single.Parse(rowAsStrings[Constant.Plot.ColumnIndex.ExpansionFactor]));
-            this.HeightInMeters.Add(this.HeightScaleFactor * Single.Parse(rowAsStrings[Constant.Plot.ColumnIndex.Height]));
+            int age = Int32.Parse(rowAsStrings[this.ageColumnIndex]);
+            if (this.byAge.TryGetValue(age, out Stand plotAtAge) == false)
+            {
+                plotAtAge = new Stand();
+                this.byAge.Add(age, plotAtAge);
+            }
+
+            FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[this.speciesColumnIndex]);
+            if (plotAtAge.TreesBySpecies.TryGetValue(species, out Trees treesOfSpecies) == false)
+            {
+                treesOfSpecies = new Trees(species, 1, Units.Metric);
+                plotAtAge.TreesBySpecies.Add(species, treesOfSpecies);
+            }
+
+            int tag = Int32.Parse(rowAsStrings[this.treeColumnIndex]);
+            string dbhAsString = rowAsStrings[this.dbhColumnIndex];
+            float dbh = Single.NaN;
+            if (String.Equals(dbhAsString, "NA", StringComparison.OrdinalIgnoreCase) == false)
+            {
+                dbh = this.DbhScaleFactor * Single.Parse(dbhAsString);
+            }
+            string heightAsString = rowAsStrings[this.heightColumnIndex];
+            float height = Single.NaN;
+            if (String.Equals(heightAsString, "NA", StringComparison.OrdinalIgnoreCase) == false)
+            {
+                height = this.HeightScaleFactor * Single.Parse(heightAsString);
+            }
+            float expansionFactor = this.defaultExpansionFactor;
+            if (this.expansionFactorColumnIndex >= 0)
+            {
+                expansionFactor = Single.Parse(rowAsStrings[this.expansionFactorColumnIndex]);
+            }
+
+            // add trees with placeholder crown ratio
+            treesOfSpecies.Add(tag, dbh, height, this.defaultCrownRatio, expansionFactor);
         }
 
         public void Read(string xlsxFilePath, string worksheetName)
         {
-            if (this.Name == null)
-            {
-                this.Name = Path.GetFileNameWithoutExtension(xlsxFilePath);
-            }
             XlsxReader reader = new XlsxReader();
             reader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
-        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, float siteIndex)
+        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndex)
         {
-            return this.ToOrganonStand(configuration, siteIndex, this.TreeID.Count);
+            return this.ToOrganonStand(configuration, ageInYears, siteIndex, Int32.MaxValue);
         }
 
-        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, float siteIndex, int treesInStand)
+        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndex, int maximumTreesInStand)
         {
-            if (treesInStand > this.TreeID.Count)
+            if (maximumTreesInStand < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(treesInStand));
+                throw new ArgumentOutOfRangeException(nameof(maximumTreesInStand));
             }
 
-            List<int> uniqueAges = this.Age.Distinct().ToList();
-            if (uniqueAges.Count != 1)
-            {
-                throw new NotSupportedException("Multi-age stands not currently supported.");
-            }
-
-            Dictionary<FiaCode, int> restrictedTreeCountBySpecies = new Dictionary<FiaCode, int>();
-            for (int treeIndex = 0; treeIndex < treesInStand; ++treeIndex)
-            {
-                FiaCode species = this.Species[treeIndex];
-                if (restrictedTreeCountBySpecies.TryGetValue(species, out int count) == false)
-                {
-                    restrictedTreeCountBySpecies.Add(species, 1);
-                }
-                else
-                {
-                    restrictedTreeCountBySpecies[species] = ++count;
-                }
-            }
-
-            OrganonStand stand = new OrganonStand(uniqueAges[0], siteIndex)
+            // copy trees from plot to Organon stand with default crown ratios
+            // For now, when the stand size is limited this just copies the first n trees encountered rather than subsampling the plot.
+            // Can move this to a Trees.CopyFrom() and Trees.ChangeUnits() if needed.
+            Stand plotAtAge = this.byAge[ageInYears];
+            int maximumTreesToCopy = Math.Min(plotAtAge.GetTreeRecordCount(), maximumTreesInStand);
+            int treesCopied = 0;
+            OrganonStand stand = new OrganonStand(ageInYears, siteIndex)
             {
                 Name = this.Name
             };
-            foreach (KeyValuePair<FiaCode, int> treesOfSpecies in restrictedTreeCountBySpecies)
+            foreach (Trees plotTreesOfSpecies in plotAtAge.TreesBySpecies.Values)
             {
-                stand.TreesBySpecies.Add(treesOfSpecies.Key, new Trees(treesOfSpecies.Key, treesOfSpecies.Value, Units.English));
-            }
+                if (stand.TreesBySpecies.TryGetValue(plotTreesOfSpecies.Species, out Trees standTreesOfSpecies) == false)
+                {
+                    int minimumSize = Math.Min(maximumTreesToCopy - treesCopied, plotTreesOfSpecies.Count);
+                    standTreesOfSpecies = new Trees(plotTreesOfSpecies.Species, minimumSize, Units.English);
+                    stand.TreesBySpecies.Add(plotTreesOfSpecies.Species, standTreesOfSpecies);
+                }
+                for (int treeIndex = 0; treeIndex < plotTreesOfSpecies.Count; ++treeIndex)
+                {
+                    int tag = plotTreesOfSpecies.Tag[treeIndex];
+                    float dbhInInches = Constant.InchesPerCm * plotTreesOfSpecies.Dbh[treeIndex];
+                    float heightInFeet = Constant.FeetPerMeter * plotTreesOfSpecies.Height[treeIndex];
+                    float liveExpansionFactor = Constant.HectaresPerAcre * plotTreesOfSpecies.LiveExpansionFactor[treeIndex];
+                    if (Single.IsNaN(dbhInInches) || Single.IsNaN(heightInFeet))
+                    {
+                        throw new NotSupportedException("Tree is missing height or diameter.");
+                    }
 
-            // add trees to stand with placeholder crown ratio
-            float defaultCrownRatio = 0.6F;
-            for (int treeIndex = 0; treeIndex < treesInStand; ++treeIndex)
-            {
-                Trees treesOfSpecies = stand.TreesBySpecies[this.Species[treeIndex]];
-                Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
-                float dbhInInches = Constant.InchesPerCm * this.DbhInCentimeters[treeIndex];
-                float heightInFeet = Constant.FeetPerMeter * this.HeightInMeters[treeIndex];
-                float liveExpansionFactor = Constant.HectaresPerAcre * this.ExpansionFactorInTph[treeIndex];
-
-                treesOfSpecies.Add(this.TreeID[treeIndex], dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactor);
+                    standTreesOfSpecies.Add(tag, dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactor);
+                    if (++treesCopied >= maximumTreesToCopy)
+                    {
+                        break; // break inner for loop
+                    }
+                }
+                if (++treesCopied >= maximumTreesToCopy)
+                {
+                    break; // break foreach
+                }
             }
 
             // estimate crown ratio
@@ -147,7 +271,7 @@ namespace Osu.Cof.Ferm.Data
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 // initialize crown ratio from Organon variant
-                for (int treeIndex = 0; treeIndex < treesInStand; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
                     float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = treesOfSpecies.Height[treeIndex];

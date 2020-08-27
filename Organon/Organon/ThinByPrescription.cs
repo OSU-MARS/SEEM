@@ -103,6 +103,7 @@ namespace Osu.Cof.Ferm.Organon
             FiaCode minimumSpecies = default;
             foreach (Trees treesOfSpecies in standAtEndOfPreviousPeriod.TreesBySpecies.Values)
             {
+                Debug.Assert(treesOfSpecies.Count > 0);
                 int[] dbhSortOrder = treesOfSpecies.GetDbhSortOrder();
                 dbhSortOrderBySpecies.Add(treesOfSpecies.Species, dbhSortOrder);
                 thinFromAboveIndexBySpecies.Add(treesOfSpecies.Species, treesOfSpecies.Count);
