@@ -53,7 +53,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
                     Heuristic heuristic = this.Runs[runIndex].HighestSolution;
-                    float harvestVolumeScibner = heuristic.BestTrajectory.HarvestVolume.Scribner[periodIndex];
+                    float harvestVolumeScibner = heuristic.BestTrajectory.ThinningVolume.Scribner[periodIndex];
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 

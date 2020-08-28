@@ -53,9 +53,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, planningPeriods, objective);
+            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, objective, parameters.TimberValue);
             if (this.ChangeToExchangeAfter.HasValue)
             {
                 deluge.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;
@@ -98,9 +98,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-GreatDeluge";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
         {
-            return this.GetDefaultParameterCombinations();
+            return this.GetDefaultParameterCombinations(timberValue);
         }
     }
 }

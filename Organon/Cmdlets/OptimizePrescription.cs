@@ -56,9 +56,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return new ThinByPrescription(this.HarvestPeriods[harvestPeriodIndex]);
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, PrescriptionParameters parameters)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, PrescriptionParameters parameters)
         {
-            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(this.Stand, organonConfiguration, planningPeriods, objective);
+            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(this.Stand, organonConfiguration, objective, parameters.TimberValue);
             enumerator.Parameters.CopyFrom(parameters);
             return enumerator;
         }
@@ -68,7 +68,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Prescription";
         }
 
-        protected override IList<PrescriptionParameters> GetParameterCombinations()
+        protected override IList<PrescriptionParameters> GetParameterCombinations(TimberValue timberValue)
         {
             if (this.Cores != 1)
             {
@@ -109,6 +109,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     Maximum = maximumIntensity,
                     ProportionalPercentageUpperLimit = this.ProportionalPercentageUpperLimit,
                     Step = this.Step,
+                    TimberValue = timberValue,
                     Units = this.Units
                 });
             }

@@ -21,8 +21,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public PopulationReplacementStrategy ReplacementStrategy { get; set; }
         public float ReservedPopulationProportion { get; set; }
 
-        public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
-            : base(stand, organonConfiguration, planningPeriods, objective)
+        public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
+            : base(stand, organonConfiguration, objective, timberValue)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.CrossoverProbabilityEnd = Constant.GeneticDefault.CrossoverProbabilityEnd;

@@ -16,8 +16,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public Nullable<float> RainRate { get; set; }
         public int StopAfter { get; set; }
 
-        public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
-            : base(stand, organonConfiguration, planningPeriods, objective)
+        public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
+            : base(stand, organonConfiguration, objective, timberValue)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.ChangeToExchangeAfter = Int32.MaxValue;

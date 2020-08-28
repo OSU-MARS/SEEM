@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Osu.Cof.Ferm
 {
@@ -7,7 +8,6 @@ namespace Osu.Cof.Ferm
     {
         public float[] BasalAreaRemoved { get; private set; }
         public int HarvestPeriods { get; private set; }
-        public StandVolume HarvestVolume { get; private set; }
 
         // harvest periods by tree, 0 indicates no harvest
         public SortedDictionary<FiaCode, int[]> IndividualTreeSelectionBySpecies { get; private set; }
@@ -17,28 +17,31 @@ namespace Osu.Cof.Ferm
         public int PeriodZeroAgeInYears { get; set; }
 
         public StandVolume StandingVolume { get; private set; }
+        public StandVolume ThinningVolume { get; private set; }
+        public TimberValue TimberValue { get; set; }
         public bool TreeSelectionChangedSinceLastSimulation { get; protected set; }
 
-        public StandTrajectory(int lastPlanningPeriod, int thinningPeriod)
+        public StandTrajectory(TimberValue timberValue, int planningPeriods, int thinningPeriod)
         {
-            if (lastPlanningPeriod < 1)
+            if (planningPeriods < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(lastPlanningPeriod));
+                throw new ArgumentOutOfRangeException(nameof(planningPeriods));
             }
-            if (lastPlanningPeriod < thinningPeriod)
+            if (planningPeriods < thinningPeriod)
             {
                 throw new ArgumentOutOfRangeException();
             }
 
-            int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
-            this.BasalAreaRemoved = new float[lastPlanningPeriod + 1];
+            int maximumPlanningPeriodIndex = planningPeriods + 1;
+            this.BasalAreaRemoved = new float[planningPeriods + 1];
             this.HarvestPeriods = thinningPeriod + 1;
-            this.HarvestVolume = new StandVolume(maximumPlanningPeriodIndex);
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = null;
             this.PeriodLengthInYears = -1;
             this.PeriodZeroAgeInYears = -1;
             this.StandingVolume = new StandVolume(maximumPlanningPeriodIndex);
+            this.ThinningVolume = new StandVolume(maximumPlanningPeriodIndex);
+            this.TimberValue = timberValue;
             this.TreeSelectionChangedSinceLastSimulation = false;
         }
 
@@ -46,12 +49,13 @@ namespace Osu.Cof.Ferm
         {
             this.BasalAreaRemoved = new float[other.BasalAreaRemoved.Length];
             this.HarvestPeriods = other.HarvestPeriods;
-            this.HarvestVolume = new StandVolume(other.HarvestVolume);
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = other.Name;
             this.PeriodLengthInYears = other.PeriodLengthInYears;
             this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
             this.StandingVolume = new StandVolume(other.StandingVolume);
+            this.ThinningVolume = new StandVolume(other.ThinningVolume);
+            this.TimberValue = other.TimberValue; // stateless, thread safe
             this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
 
             Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.HarvestPeriods);
@@ -93,28 +97,28 @@ namespace Osu.Cof.Ferm
             this.TreeSelectionChangedSinceLastSimulation = true;
         }
 
+        protected int GetEndOfPeriodAge(int periodIndex)
+        {
+            Debug.Assert((periodIndex >= 0) && (periodIndex < this.PlanningPeriods));
+            Debug.Assert((this.PeriodZeroAgeInYears >= 0) && (this.PeriodLengthInYears > 0));
+            return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * periodIndex;
+        }
+
         public int GetFirstHarvestAge()
         {
-            if ((this.PeriodZeroAgeInYears < 0) || (this.PeriodLengthInYears < 0))
+            int firstHarvestPeriod = this.GetFirstHarvestPeriod();
+            if (firstHarvestPeriod == -1)
             {
-                throw new NotSupportedException();
+                return -1;
             }
-
-            for (int periodIndex = 1; periodIndex < this.HarvestVolume.Scribner.Length; ++periodIndex)
-            {
-                if (this.HarvestVolume.Scribner[periodIndex] > 0.0F)
-                {
-                    return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (periodIndex - 1);
-                }
-            }
-            return -1;
+            return this.GetStartOfPeriodAge(firstHarvestPeriod);
         }
 
         public int GetFirstHarvestPeriod()
         {
-            for (int periodIndex = 1; periodIndex < this.HarvestVolume.Scribner.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < this.ThinningVolume.Scribner.Length; ++periodIndex)
             {
-                if (this.HarvestVolume.Scribner[periodIndex] > 0.0F)
+                if (this.ThinningVolume.Scribner[periodIndex] > 0.0F)
                 {
                     return periodIndex;
                 }
@@ -124,11 +128,14 @@ namespace Osu.Cof.Ferm
 
         public int GetRotationLength()
         {
-            if ((this.PeriodZeroAgeInYears < 0) || (this.PeriodLengthInYears < 0))
-            {
-                throw new NotSupportedException();
-            }
-            return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (this.PlanningPeriods - 1);
+            return this.GetEndOfPeriodAge(this.PlanningPeriods - 1);
+        }
+
+        protected int GetStartOfPeriodAge(int periodIndex)
+        {
+            Debug.Assert(periodIndex > 0);
+            Debug.Assert((this.PeriodZeroAgeInYears >= 0) && (this.PeriodLengthInYears > 0));
+            return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (periodIndex - 1);
         }
 
         public int GetTreeSelection(int allSpeciesTreeIndex)

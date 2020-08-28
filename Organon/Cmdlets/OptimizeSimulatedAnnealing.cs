@@ -58,9 +58,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ReheatBy = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, planningPeriods, objective);
+            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, objective, parameters.TimberValue);
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;
@@ -105,9 +105,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-SimulatedAnnealing";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
         {
-            return this.GetDefaultParameterCombinations();
+            return this.GetDefaultParameterCombinations(timberValue);
         }
     }
 }

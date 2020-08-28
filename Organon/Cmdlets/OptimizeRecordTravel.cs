@@ -57,9 +57,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters _)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            RecordTravel recordTravel = new RecordTravel(this.Stand, organonConfiguration, planningPeriods, objective);
+            RecordTravel recordTravel = new RecordTravel(this.Stand, organonConfiguration, objective, parameters.TimberValue);
             if (this.Alpha.HasValue)
             {
                 recordTravel.Alpha = this.Alpha.Value;
@@ -104,9 +104,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-RecordTravel";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
         {
-            return this.GetDefaultParameterCombinations();
+            return this.GetDefaultParameterCombinations(timberValue);
         }
     }
 }

@@ -15,12 +15,12 @@ namespace Osu.Cof.Ferm.Heuristics
         public Objective Objective { get; private set; }
         public List<float> CandidateObjectiveFunctionByMove { get; protected set; }
 
-        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
+        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
         {
             this.BestObjectiveFunction = Single.MinValue;
             this.AcceptedObjectiveFunctionByMove = new List<float>();
 
-            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, planningPeriods)
+            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, timberValue, objective.PlanningPeriods)
             {
                 Heuristic = this,
             };
@@ -77,21 +77,16 @@ namespace Osu.Cof.Ferm.Heuristics
                 // net present value of first rotation
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
                 // TODO: support per species pricing
-                float firstRotationPresentValue = -this.Objective.ReforestationCostPerHectare;
-                for (int periodIndex = 1; periodIndex < trajectory.HarvestVolume.Scribner.Length; ++periodIndex)
+                float firstRotationNetPresentValue = -trajectory.TimberValue.ReforestationCostPerHectare;
+                for (int periodIndex = 1; periodIndex < trajectory.ThinningVolume.Scribner.Length; ++periodIndex)
                 {
-                    float thinVolumeInMbfPerHa = trajectory.HarvestVolume.Scribner[periodIndex];
-                    if (thinVolumeInMbfPerHa > 0.0F)
-                    {
-                        int thinAge = trajectory.PeriodZeroAgeInYears + trajectory.PeriodLengthInYears * (periodIndex - 1);
-                        firstRotationPresentValue += this.Objective.GetPresentValueOfThinScribner(thinVolumeInMbfPerHa, thinAge);
-                    }
+                    firstRotationNetPresentValue += trajectory.ThinningVolume.NetPresentValue[periodIndex];
                 }
 
-                // TODO: check if earlier final harvest provides higher NPV
+                // TODO: check if earlier final harvest provides higher NPV?
+                firstRotationNetPresentValue += trajectory.StandingVolume.NetPresentValue[^1];
                 int rotationLength = trajectory.GetRotationLength();
-                firstRotationPresentValue += this.Objective.GetPresentValueOfRegenerationHarvestScribner(trajectory.StandingVolume.Scribner[^1], rotationLength);
-                float landExpectationValue = this.Objective.FirstRotationToLandExpectationValue(firstRotationPresentValue, rotationLength);
+                float landExpectationValue = trajectory.TimberValue.ToLandExpectationValue(firstRotationNetPresentValue, rotationLength);
 
                 // convert from US$/ac to USk$/ac
                 objectiveFunction = 0.001F * landExpectationValue;
@@ -100,9 +95,9 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 // direct volume addition
                 objectiveFunction = 0.0F;
-                for (int periodIndex = 1; periodIndex < trajectory.HarvestVolume.Scribner.Length; ++periodIndex)
+                for (int periodIndex = 1; periodIndex < trajectory.ThinningVolume.Scribner.Length; ++periodIndex)
                 {
-                    objectiveFunction += trajectory.HarvestVolume.Scribner[periodIndex];
+                    objectiveFunction += trajectory.ThinningVolume.Scribner[periodIndex];
                 }
                 objectiveFunction += trajectory.StandingVolume.Scribner[^1];
             }

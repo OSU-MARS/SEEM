@@ -17,9 +17,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0, 1.0)]
         public Nullable<float> SelectionProbabilityWidth { get; set; }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters parameters)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            RandomGuessing random = new RandomGuessing(this.Stand, organonConfiguration, planningPeriods, objective, parameters.ProportionalPercentage);
+            RandomGuessing random = new RandomGuessing(this.Stand, organonConfiguration, objective, parameters.TimberValue, parameters.ProportionalPercentage);
             if (this.Iterations.HasValue)
             {
                 random.Iterations = this.Iterations.Value;
@@ -36,9 +36,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Random";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
         {
-            return this.GetDefaultParameterCombinations();
+            return this.GetDefaultParameterCombinations(timberValue);
         }
     }
 }

@@ -17,12 +17,16 @@ namespace Osu.Cof.Ferm.Organon
         public Heuristic Heuristic { get; set; }
         public OrganonStand[] StandByPeriod { get; private set; }
 
-        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, int lastPlanningPeriod)
-            : base(lastPlanningPeriod, organonConfiguration.Treatments.Harvests.Count == 1 ? organonConfiguration.Treatments.Harvests[0].Period : 0)
+        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod)
+            : base(timberValue, lastPlanningPeriod, organonConfiguration.Treatments.Harvests.Count == 1 ? organonConfiguration.Treatments.Harvests[0].Period : 0)
         {
             if (organonConfiguration.Treatments.Harvests.Count > 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(organonConfiguration));
+            }
+            if (timberValue == null)
+            {
+                throw new ArgumentNullException(nameof(timberValue));
             }
 
             int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
@@ -45,7 +49,7 @@ namespace Osu.Cof.Ferm.Organon
             this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
             this.StandByPeriod[0].Name += 0;
 
-            this.GetVolume(0);
+            this.GetVolumeAndValue(0);
         }
 
         // shallow copy FIA and Organon for now
@@ -139,7 +143,7 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.BasalAreaRemoved.Length);
-            this.HarvestVolume.CopyFrom(other.HarvestVolume);
+            this.ThinningVolume.CopyFrom(other.ThinningVolume);
             this.StandingVolume.CopyFrom(other.StandingVolume);
 
             foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
@@ -154,7 +158,12 @@ namespace Osu.Cof.Ferm.Organon
             this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
         }
 
-        private void GetVolume(int periodIndex)
+        private void GetVolumeAndValue(int periodIndex)
+        {
+            this.GetFiaVolumeAndValue(periodIndex);
+        }
+
+        private void GetFiaVolumeAndValue(int periodIndex)
         {
             // harvest volumes, if applicable
             foreach (IHarvest harvest in this.Configuration.Treatments.Harvests)
@@ -182,12 +191,23 @@ namespace Osu.Cof.Ferm.Organon
                             }
                         }
                     }
-                    this.HarvestVolume.Cubic[periodIndex] = (float)(Constant.AcresPerHectare * Constant.CubicMetersPerCubicFoot * harvestedCvts4perAcre);
-                    this.HarvestVolume.Scribner[periodIndex] = (float)(0.001 * Constant.AcresPerHectare * harvestedScribner6x32footLogPerAcre);
+
+                    this.ThinningVolume.Cubic[periodIndex] = (float)(Constant.AcresPerHectare * Constant.CubicMetersPerCubicFoot * harvestedCvts4perAcre);
+                    this.ThinningVolume.Scribner[periodIndex] = (float)(0.001 * Constant.AcresPerHectare * harvestedScribner6x32footLogPerAcre);
+                    if (harvestedCvts4perAcre == 0.0F)
+                    {
+                        Debug.Assert(harvestedScribner6x32footLogPerAcre == 0.0F);
+                        this.ThinningVolume.NetPresentValue[periodIndex] = 0.0F;
+                    }
+                    else
+                    {
+                        int thinAge = this.GetStartOfPeriodAge(periodIndex);
+                        this.ThinningVolume.NetPresentValue[periodIndex] = this.TimberValue.GetNetPresentValueThiningScribner(this.ThinningVolume.Scribner[periodIndex], thinAge);
+                    }
 
                     // could make more specific by checking if harvest removes at least one tree
-                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > 0.0F && this.HarvestVolume.Cubic[periodIndex] > 0.0F && this.HarvestVolume.Scribner[periodIndex] > 0.0F) ||
-                                 (this.BasalAreaRemoved[periodIndex] == 0.0F && this.HarvestVolume.Cubic[periodIndex] == 0.0F && this.HarvestVolume.Scribner[periodIndex] == 0.0F));
+                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > 0.0F && this.ThinningVolume.Cubic[periodIndex] > 0.0F && this.ThinningVolume.Scribner[periodIndex] > 0.0F) ||
+                                 (this.BasalAreaRemoved[periodIndex] == 0.0F && this.ThinningVolume.Cubic[periodIndex] == 0.0F && this.ThinningVolume.Scribner[periodIndex] == 0.0F));
                 }
             }
 
@@ -213,8 +233,11 @@ namespace Osu.Cof.Ferm.Organon
                 }
                 standingScribner6x32footLogPerAcre += this.fiaVolume.GetScribnerBoardFeetPerAcre(treesOfSpecies);
             }
+
             this.StandingVolume.Cubic[periodIndex] = (float)(Constant.AcresPerHectare * Constant.CubicMetersPerCubicFoot * standingCvts4perAcre);
             this.StandingVolume.Scribner[periodIndex] = (float)(0.001 * Constant.AcresPerHectare * standingScribner6x32footLogPerAcre);
+            int harvestAge = this.GetEndOfPeriodAge(periodIndex);
+            this.StandingVolume.NetPresentValue[periodIndex] = this.TimberValue.GetNetPresentValueRegenerationHarvestScribner(this.StandingVolume.Scribner[periodIndex], harvestAge);
         }
 
         public void Simulate()
@@ -288,12 +311,12 @@ namespace Osu.Cof.Ferm.Organon
                     }
 
                     // recalculate volume for this period
-                    this.GetVolume(periodIndex);
+                    this.GetVolumeAndValue(periodIndex);
 
                     #if DEBUG
-                    if (periodIndex < this.HarvestVolume.Scribner.Length)
+                    if (periodIndex < this.ThinningVolume.Scribner.Length)
                     {
-                        Debug.Assert((this.BasalAreaRemoved[periodIndex] == 0.0F && this.HarvestVolume.Scribner[periodIndex] == 0.0F) || (this.BasalAreaRemoved[periodIndex] > 0.0F && this.HarvestVolume.Scribner[periodIndex] > 0.0F));
+                        Debug.Assert((this.BasalAreaRemoved[periodIndex] == 0.0F && this.ThinningVolume.Scribner[periodIndex] == 0.0F) || (this.BasalAreaRemoved[periodIndex] > 0.0F && this.ThinningVolume.Scribner[periodIndex] > 0.0F));
                     }
                     #endif
                 }

@@ -65,9 +65,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return new ThinByIndividualTreeSelection(this.HarvestPeriods[harvestPeriodIndex]);
         }
 
-        protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, TParameters parameters);
+        protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, TParameters parameters);
 
-        protected IList<HeuristicParameters> GetDefaultParameterCombinations()
+        protected IList<HeuristicParameters> GetDefaultParameterCombinations(TimberValue timberValue)
         {
             List<HeuristicParameters> parameters = new List<HeuristicParameters>(this.ProportionalPercentage.Count);
             foreach (float proportionalPercentage in this.ProportionalPercentage)
@@ -75,14 +75,15 @@ namespace Osu.Cof.Ferm.Cmdlets
                 parameters.Add(new HeuristicParameters()
                 {
                     PerturbBy = this.PerturbBy,
-                    ProportionalPercentage = proportionalPercentage
+                    ProportionalPercentage = proportionalPercentage,
+                    TimberValue = timberValue
                 });
             }
             return parameters;
         }
 
         protected abstract string GetName();
-        protected abstract IList<TParameters> GetParameterCombinations();
+        protected abstract IList<TParameters> GetParameterCombinations(TimberValue timberValue);
 
         protected override void ProcessRecord()
         {
@@ -106,13 +107,12 @@ namespace Osu.Cof.Ferm.Cmdlets
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            Objective objective = new Objective()
+            TimberValue timberValue = new TimberValue()
             {
-                DiscountRate = 0.01F * this.DiscountRate,
-                IsLandExpectationValue = this.LandExpectationValue,
+                DiscountRate = 0.01F * this.DiscountRate
             };
 
-            IList<TParameters> parameterCombinations = this.GetParameterCombinations();
+            IList<TParameters> parameterCombinations = this.GetParameterCombinations(timberValue);
             int treeCount = this.Stand.GetTreeRecordCount();
             List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count);
             for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
@@ -150,8 +150,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                     OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
                     organonConfiguration.Treatments.Harvests.Add(this.CreateHarvest(harvestPeriodIndex));
 
+                    Objective objective = new Objective()
+                    {
+                        IsLandExpectationValue = this.LandExpectationValue,
+                        PlanningPeriods = this.PlanningPeriods[planningPeriodIndex]
+                    };
                     TParameters runParameters = parameterCombinations[parameterIndex];
-                    Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, this.PlanningPeriods[planningPeriodIndex], objective, runParameters);
+                    Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, objective, runParameters);
                     HeuristicSolutionDistribution distribution = distributions[distributionIndex];
                     if (runParameters.PerturbBy > 0.0F)
                     {
@@ -272,15 +277,15 @@ namespace Osu.Cof.Ferm.Cmdlets
             float minimumHarvest = Single.MaxValue;
             float harvestSum = 0.0F;
             float harvestSumOfSquares = 0.0F;
-            for (int periodIndex = 1; periodIndex < bestHeuristic.BestTrajectory.HarvestVolume.Scribner.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < bestHeuristic.BestTrajectory.ThinningVolume.Scribner.Length; ++periodIndex)
             {
-                float harvestVolumeScribner = bestHeuristic.BestTrajectory.HarvestVolume.Scribner[periodIndex];
+                float harvestVolumeScribner = bestHeuristic.BestTrajectory.ThinningVolume.Scribner[periodIndex];
                 maximumHarvest = Math.Max(harvestVolumeScribner, maximumHarvest);
                 harvestSum += harvestVolumeScribner;
                 harvestSumOfSquares += harvestVolumeScribner * harvestVolumeScribner;
                 minimumHarvest = Math.Min(harvestVolumeScribner, minimumHarvest);
             }
-            float periods = (float)(bestHeuristic.BestTrajectory.HarvestVolume.Scribner.Length - 1);
+            float periods = (float)(bestHeuristic.BestTrajectory.ThinningVolume.Scribner.Length - 1);
             float meanHarvest = harvestSum / periods;
             float variance = harvestSumOfSquares / periods - meanHarvest * meanHarvest;
             float standardDeviation = MathF.Sqrt(variance);

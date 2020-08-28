@@ -10,8 +10,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public PrescriptionParameters Parameters { get; private set; }
         public PrescriptionMoveLog MoveLog { get; private set; }
 
-        public PrescriptionEnumeration(OrganonStand stand, OrganonConfiguration configuration, int planningPeriods, Objective objective)
-            : base(stand, configuration, planningPeriods, objective)
+        public PrescriptionEnumeration(OrganonStand stand, OrganonConfiguration configuration, Objective objective, TimberValue timberValue)
+            : base(stand, configuration, objective, timberValue)
         {
             this.Parameters = new PrescriptionParameters();
             this.MoveLog = new PrescriptionMoveLog();
@@ -148,7 +148,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         prescription.ProportionalPercentage = proportionalPercentage;
                         this.CurrentTrajectory.DeselectAllTrees();
                         this.CurrentTrajectory.Simulate();
-                        Debug.Assert((totalIntensity == 0.0F && this.CurrentTrajectory.HarvestVolume.Scribner.Sum() == 0.0F) || (totalIntensity > 0.0F && this.CurrentTrajectory.HarvestVolume.Scribner.Sum() > 0.0F));
+                        Debug.Assert((totalIntensity == 0.0F && this.CurrentTrajectory.ThinningVolume.Scribner.Sum() == 0.0F) || (totalIntensity > 0.0F && this.CurrentTrajectory.ThinningVolume.Scribner.Sum() > 0.0F));
 
                         float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
                         if (candidateObjectiveFunction > this.BestObjectiveFunction)

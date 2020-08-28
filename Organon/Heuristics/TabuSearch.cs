@@ -15,8 +15,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public int MaximumTenure { get; set; }
         public TabuTenure Tenure { get; set; }
 
-        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
-            :  base(stand, organonConfiguration, planningPeriods, objective)
+        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
+            :  base(stand, organonConfiguration, objective, timberValue)
         {
             int treeCount = stand.GetTreeRecordCount();
             this.EscapeAfter = (int)(Constant.TabuDefault.EscapeAfter * treeCount);

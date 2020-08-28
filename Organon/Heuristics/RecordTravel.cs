@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public float RelativeIncrease { get; set; }
         public int StopAfter { get; set; }
 
-        public RecordTravel(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
-            : base(stand, organonConfiguration, planningPeriods, objective)
+        public RecordTravel(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
+            : base(stand, organonConfiguration, objective, timberValue)
         {
             int treeRecordCount = stand.GetTreeRecordCount();
             this.Alpha = 0.75F;

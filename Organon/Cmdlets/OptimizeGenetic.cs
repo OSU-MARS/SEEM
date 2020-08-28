@@ -62,9 +62,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ReservedProportion = new List<float>() { Constant.GeneticDefault.ReservedPopulationProportion };
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, GeneticParameters parameters)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, GeneticParameters parameters)
         {
-            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, planningPeriods, objective)
+            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, objective, parameters.TimberValue)
             {
                 CrossoverProbabilityEnd = parameters.CrossoverProbabilityEnd,
                 ExchangeProbabilityEnd = parameters.ExchangeProbabilityEnd,
@@ -88,7 +88,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Genetic";
         }
 
-        protected override IList<GeneticParameters> GetParameterCombinations()
+        protected override IList<GeneticParameters> GetParameterCombinations(TimberValue timberValue)
         {
             if (this.ExchangeProbabilityEnd.Count < 1)
             {
@@ -161,6 +161,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                         ProportionalPercentageWidth = proportionalPercentageWidth,
                                                         ReplacementStrategy = this.ReplacementStrategy,
                                                         ReservedProportion = reservedProportion,
+                                                        TimberValue = timberValue
                                                     });
                                                 }
                                             }

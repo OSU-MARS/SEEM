@@ -22,9 +22,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Thresholds = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters parameters)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, planningPeriods, objective);
+            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, objective, parameters.TimberValue);
            if (this.IterationsPerThreshold != null)
             {
                 acceptor.IterationsPerThreshold.Clear();
@@ -43,9 +43,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-ThresholdAccepting";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
         {
-            return this.GetDefaultParameterCombinations();
+            return this.GetDefaultParameterCombinations(timberValue);
         }
     }
 }

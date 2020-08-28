@@ -6,6 +6,7 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public float PerturbBy { get; set; }
         public float ProportionalPercentage { get; set; }
+        public TimberValue TimberValue { get; set; }
 
         public virtual string GetCsvHeader()
         {

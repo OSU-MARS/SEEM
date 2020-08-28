@@ -11,8 +11,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public List<int> IterationsPerThreshold { get; private set; }
         public List<float> Thresholds { get; private set; }
 
-        public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
-            : base(stand, organonConfiguration, planningPeriods, objective)
+        public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
+            : base(stand, organonConfiguration, objective, timberValue)
         {
             int treeRecords = stand.GetTreeRecordCount();
             float oneTreeChange = 1.0F / treeRecords;

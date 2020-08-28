@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Management.Automation;
 
@@ -67,7 +68,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             }
 
-            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, this.PlanningPeriods);
+            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, new TimberValue(), this.PlanningPeriods);
             if (this.Name != null)
             {
                 trajectory.Name = this.Name;

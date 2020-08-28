@@ -147,8 +147,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                     // get density and volumes
                     float standingVolumeCubic = bestTrajectory.StandingVolume.Cubic[periodIndex]; // m³/ha
                     float standingVolumeScribner = bestTrajectory.StandingVolume.Scribner[periodIndex]; // MBF/ha
-                    float harvestVolumeCubic = bestTrajectory.HarvestVolume.Cubic[periodIndex]; // m³/ha
-                    float harvestVolumeScribner = bestTrajectory.HarvestVolume.Scribner[periodIndex]; // MBF/ha
+                    float harvestVolumeCubic = bestTrajectory.ThinningVolume.Cubic[periodIndex]; // m³/ha
+                    float harvestVolumeScribner = bestTrajectory.ThinningVolume.Scribner[periodIndex]; // MBF/ha
                     float basalAreaRemoved = bestTrajectory.BasalAreaRemoved[periodIndex]; // ft²/acre
                     float basalAreaIntensity = 0.0F;
                     if (periodIndex > 0)
@@ -185,15 +185,15 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int periodsFromPresent = Math.Max(periodIndex - 1, 0);
                     if (harvestVolumeScribner > 0.0F)
                     {
-                        float thinningPresentValue = this.TimberValue.GetPresentValueOfThinScribner(bestTrajectory.HarvestVolume.Scribner[periodIndex], thinAge);
+                        float thinningNetPresentValue = this.TimberValue.GetNetPresentValueThiningScribner(bestTrajectory.ThinningVolume.Scribner[periodIndex], thinAge);
                         float presentToFutureConversionFactor = MathF.Pow(1.0F + this.TimberValue.DiscountRate, rotationLength);
-                        float thinningFutureValue = presentToFutureConversionFactor * thinningPresentValue;
+                        float thinningFutureValue = presentToFutureConversionFactor * thinningNetPresentValue;
                         landExpectationValue = thinningFutureValue / (presentToFutureConversionFactor - 1.0F);
                     }
                     else
                     {
-                        float firstRotationPresentValue = this.TimberValue.GetPresentValueOfRegenerationHarvestScribner(bestTrajectory.StandingVolume.Scribner[periodIndex], rotationLength) - this.TimberValue.ReforestationCostPerHectare;
-                        landExpectationValue = this.TimberValue.FirstRotationToLandExpectationValue(firstRotationPresentValue, rotationLength);
+                        float finalHarvestNetPresentValue = this.TimberValue.GetNetPresentValueRegenerationHarvestScribner(bestTrajectory.StandingVolume.Scribner[periodIndex], rotationLength) - this.TimberValue.ReforestationCostPerHectare;
+                        landExpectationValue = this.TimberValue.ToLandExpectationValue(finalHarvestNetPresentValue, rotationLength);
                     }
 
                     int simulationYear = bestTrajectory.PeriodLengthInYears * periodIndex;

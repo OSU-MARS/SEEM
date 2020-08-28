@@ -16,9 +16,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         public SwitchParameter Stochastic { get; set; }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, HeuristicParameters parameters)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            Hero hero = new Hero(this.Stand, organonConfiguration, planningPeriods, objective)
+            Hero hero = new Hero(this.Stand, organonConfiguration, objective, parameters.TimberValue)
             {
                 IsStochastic = this.Stochastic
             };
@@ -34,9 +34,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Hero";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
         {
-            return this.GetDefaultParameterCombinations();
+            return this.GetDefaultParameterCombinations(timberValue);
         }
     }
 }

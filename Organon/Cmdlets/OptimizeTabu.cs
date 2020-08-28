@@ -41,9 +41,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Tenure = Constant.TabuDefault.Tenure;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective, TabuParameters parameters)
+        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, TabuParameters parameters)
         {
-            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, planningPeriods, objective)
+            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, objective, parameters.TimberValue)
             {
                 EscapeAfter = parameters.EscapeAfter,
                 EscapeDistance = parameters.EscapeDistance,
@@ -60,7 +60,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Tabu";
         }
 
-        protected override IList<TabuParameters> GetParameterCombinations()
+        protected override IList<TabuParameters> GetParameterCombinations(TimberValue timberValue)
         {
             int treeCount = this.Stand.GetTreeRecordCount();
 
@@ -83,7 +83,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     MaximumTenure = (int)(tenureRatio * treeCount),
                                     PerturbBy = this.PerturbBy,
                                     ProportionalPercentage = proportionalPercentage,
-                                    Tenure = this.Tenure
+                                    Tenure = this.Tenure,
+                                    TimberValue = timberValue
                                 });
                             }
                         }

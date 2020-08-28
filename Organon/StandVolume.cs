@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.Contracts;
 
 namespace Osu.Cof.Ferm
 {
@@ -10,6 +9,10 @@ namespace Osu.Cof.Ferm
         /// </summary>
         public float[] Cubic { get; private set; }
         /// <summary>
+        /// Net value in US$/ha. Not discounted.
+        /// </summary>
+        public float[] NetPresentValue { get; private set; }
+        /// <summary>
         /// Scribner volume in MBF/ha.
         /// </summary>
         public float[] Scribner { get; private set; }
@@ -17,6 +20,7 @@ namespace Osu.Cof.Ferm
         public StandVolume(int planningPeriods)
         {
             this.Cubic = new float[planningPeriods];
+            this.NetPresentValue = new float[planningPeriods];
             this.Scribner = new float[planningPeriods];
         }
 
@@ -29,6 +33,7 @@ namespace Osu.Cof.Ferm
         public void CopyFrom(StandVolume other)
         {
             Array.Copy(other.Cubic, 0, this.Cubic, 0, other.Cubic.Length);
+            Array.Copy(other.NetPresentValue, 0, this.NetPresentValue, 0, other.NetPresentValue.Length);
             Array.Copy(other.Scribner, 0, this.Scribner, 0, other.Scribner.Length);
         }
     }

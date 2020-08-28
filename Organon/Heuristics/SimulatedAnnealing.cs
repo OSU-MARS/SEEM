@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public int ReheatAfter { get; set; }
         public float ReheatBy { get; set; }
 
-        public SimulatedAnnealing(OrganonStand stand, OrganonConfiguration organonConfiguration, int planningPeriods, Objective objective)
-            :  base(stand, organonConfiguration, planningPeriods, objective)
+        public SimulatedAnnealing(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
+            :  base(stand, organonConfiguration, objective, timberValue)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.Alpha = 0.925F;
