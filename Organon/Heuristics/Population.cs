@@ -342,8 +342,8 @@ namespace Osu.Cof.Ferm.Heuristics
             float totalFitness = 0.0F;
             for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
-                // for now, clam negative objective functions to zero
-                float individualFitness = Math.Max(this.IndividualFitness[individualIndex], 0.0F);
+                // for now, clamp negative objective functions to small positive ones to avoid total fitness of zero and NaNs
+                float individualFitness = Math.Max(this.IndividualFitness[individualIndex], 0.0001F);
                 totalFitness += individualFitness;
             }
 

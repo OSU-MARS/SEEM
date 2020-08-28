@@ -98,9 +98,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-GreatDeluge";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.GetDefaultParameterCombinations(timberValue);
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

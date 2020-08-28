@@ -80,6 +80,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     Trees highestTreesBeforeThin = highestStandNbeforeHarvest.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
                     Trees highestTreesAtFinal = highestStandNatEnd.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
+                    if (highestTreesBeforeThin.Units != highestTreesAtFinal.Units)
+                    {
+                        throw new NotSupportedException();
+                    }
+                    this.GetDimensionConversions(highestTreesBeforeThin.Units, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
 
                     int[] lowestTreeSelectionN = lowestTrajectoryN.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
                     int[] highestTreeSelectionN = highestTreeSelectionNForSpecies.Value;
@@ -98,8 +103,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                         bool isThinnedInHighestTrajectory = highestTreeSelectionN[treeIndex] != Constant.NoHarvestPeriod;
                         if (isThinnedInHighestTrajectory == false)
                         {
-                            highestFinalDbh = highestTreesAtFinal.Dbh[treeIndex].ToString("0.00", CultureInfo.InvariantCulture);
-                            highestFinalHeight = highestTreesAtFinal.Height[treeIndex].ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFinalDbh = (dbhConversionFactor * highestTreesAtFinal.Dbh[treeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFinalHeight = (heightConversionFactor * highestTreesAtFinal.Height[treeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
                             highestFinalCrownRatio = highestTreesAtFinal.CrownRatio[treeIndex].ToString("0.000", CultureInfo.InvariantCulture);
                             highestFinalExpansionFactor = highestTreesAtFinal.LiveExpansionFactor[treeIndex].ToString("0.000", CultureInfo.InvariantCulture);
                             highestFinalBoardFeet = fiaVolume.GetScribnerBoardFeet(highestTreesAtFinal, treeIndex).ToString("0.00", CultureInfo.InvariantCulture);
@@ -110,8 +115,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                         line.Append(linePrefix + "," + treeID + "," +
                                     lowestTreeSelectionN[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                     highestTreeSelectionN[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    highestTreesBeforeThin.Dbh[treeIndex].ToString("0.00", CultureInfo.InvariantCulture) + "," + 
-                                    highestTreesBeforeThin.Height[treeIndex].ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    (dbhConversionFactor * highestTreesBeforeThin.Dbh[treeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    (heightConversionFactor * highestTreesBeforeThin.Height[treeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                     highestTreesBeforeThin.CrownRatio[treeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                     highestTreesBeforeThin.LiveExpansionFactor[treeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                     highestThinBoardFeet.ToString("0.00", CultureInfo.InvariantCulture) + "," +

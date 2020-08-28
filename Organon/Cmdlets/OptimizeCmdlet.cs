@@ -19,9 +19,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         public int Cores { get; set; }
-        [Parameter]
-        [ValidateRange(0.0F, 30.0F)]
-        public float DiscountRate { get; set; }
 
         [Parameter]
         [ValidateNotNull]
@@ -45,17 +42,20 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter(Mandatory = true)]
         public OrganonStand Stand { get; set; }
         [Parameter]
+        [ValidateNotNull]
+        public TimberValue TimberValue { get; set; }
+        [Parameter]
         public TreeModel TreeModel { get; set; }
 
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
             this.Cores = 4;
-            this.DiscountRate = 4; // percent per year
             this.HarvestPeriods = new List<int>() { 3 };
             this.LandExpectationValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
             this.PerturbBy = Constant.MetaheuristicDefault.PerturbBy;
+            this.TimberValue = TimberValue.Default;
             this.TreeModel = TreeModel.OrganonNwo;
             this.ProportionalPercentage = new List<float>() { 50.0F };
         }
@@ -67,7 +67,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, TParameters parameters);
 
-        protected IList<HeuristicParameters> GetDefaultParameterCombinations(TimberValue timberValue)
+        protected IList<HeuristicParameters> GetDefaultParameterCombinations()
         {
             List<HeuristicParameters> parameters = new List<HeuristicParameters>(this.ProportionalPercentage.Count);
             foreach (float proportionalPercentage in this.ProportionalPercentage)
@@ -76,14 +76,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     PerturbBy = this.PerturbBy,
                     ProportionalPercentage = proportionalPercentage,
-                    TimberValue = timberValue
+                    TimberValue = this.TimberValue
                 });
             }
             return parameters;
         }
 
         protected abstract string GetName();
-        protected abstract IList<TParameters> GetParameterCombinations(TimberValue timberValue);
+        protected abstract IList<TParameters> GetParameterCombinations();
 
         protected override void ProcessRecord()
         {
@@ -107,12 +107,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            TimberValue timberValue = new TimberValue()
-            {
-                DiscountRate = 0.01F * this.DiscountRate
-            };
-
-            IList<TParameters> parameterCombinations = this.GetParameterCombinations(timberValue);
+            IList<TParameters> parameterCombinations = this.GetParameterCombinations();
             int treeCount = this.Stand.GetTreeRecordCount();
             List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count);
             for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)

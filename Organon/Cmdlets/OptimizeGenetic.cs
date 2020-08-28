@@ -88,7 +88,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Genetic";
         }
 
-        protected override IList<GeneticParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<GeneticParameters> GetParameterCombinations()
         {
             if (this.ExchangeProbabilityEnd.Count < 1)
             {
@@ -161,7 +161,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                         ProportionalPercentageWidth = proportionalPercentageWidth,
                                                         ReplacementStrategy = this.ReplacementStrategy,
                                                         ReservedProportion = reservedProportion,
-                                                        TimberValue = timberValue
+                                                        TimberValue = this.TimberValue
                                                     });
                                                 }
                                             }

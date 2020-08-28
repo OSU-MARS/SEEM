@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -13,6 +12,7 @@ namespace Osu.Cof.Ferm
         public const float CrownCompetionConstantEnglish = 0.001803026F;
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
+        public const float DbhHeight = 1.37F; // cm
         public const string DefaultPercentageFormat = "0.0#";
         public const string DefaultProbabilityFormat = "0.00##";
         public const int DefaultTimeStepInYears = 5;
@@ -21,10 +21,11 @@ namespace Osu.Cof.Ferm
         public const float HectaresPerAcre = 0.404685F;
         // must be multiple of SIMD width: multiples of 4 for VEX 128
         public const int HeightStrata = 40;
-        public const float InchesPerCm = 0.393701F;
+        public const float InchesPerCentimeter = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
         public const float NaturalLogOf10 = 2.3025850930F;
         public const int NoHarvestPeriod = 0;
+        public const float Pi = 3.14159265F;
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
         public const float ReinekeExponent = 1.605F;
@@ -79,6 +80,33 @@ namespace Osu.Cof.Ferm
             FiaCode.Salix
         });
 
+        public static class Bucking
+        {
+            public const float DefectAndBreakageReduction = 0.955F; // 100 - 4.5%
+            public const float DiameterClassSizeInCentimeters = 1.0F;
+            public const float EvaluationHeightStep = 0.5F; // m
+            public const float HeightClassSizeInMeters = 0.5F; // m
+            public const float KerfProcessingHead = 0.007F; // m
+            public const float LogLengthRegenerationHarvest = Constant.MetersPerFoot * 40.0F; // m
+            public const float LogLengthThinning = Constant.MetersPerFoot * 24.0F; // m
+            public const float LogTaperSegmentationLength = Constant.MetersPerFoot * 8.0F; // m
+            public const float MaximumDiameterInCentimeters = 100.0F;
+            public const float MaximumHeightInMeters = 75.0F;
+            public const float MinimumLogLength2Saw = Constant.MetersPerFoot * 12.0F; // m
+            public const float MinimumLogLength3Saw = Constant.MetersPerFoot * 12.0F; // m
+            public const float MinimumLogLength4Saw = Constant.MetersPerFoot * 8.0F; // m, typically specified as 12 but often 8 feet in practice
+            public const float MinimumScalingDiameter2Saw = Constant.CentimetersPerInch * 12.0F; // cm
+            public const float MinimumScalingDiameter3Saw = Constant.CentimetersPerInch * 6.0F; // cm
+            public const float MinimumScalingDiameter4Saw = Constant.CentimetersPerInch * 5.0F; // cm
+            public const float MinimumLogScribner2Saw = 60; // board feet
+            public const float MinimumLogScribner3Saw = 50; // board feet
+            public const float MinimumLogScribner4Saw = 10; // board feet
+            public const float StumpHeight = 0.15F; // m
+            public const float ScribnerShortLogLength = Constant.MetersPerFoot * 20.0F; // m
+            public const float ScribnerTrimLongLog = Constant.MetersPerFoot * 1.0F - 0.0001F; // m with 100 μm margin for numerical precision
+            public const float ScribnerTrimShortLog = Constant.MetersPerFoot * 0.5F - 0.0001F; // m with 100 μm margin for numerical precision
+        }
+
         public static class GeneticDefault
         {
             public const float CrossoverProbabilityEnd = 0.5F;
@@ -108,14 +136,6 @@ namespace Osu.Cof.Ferm
         public static class MetaheuristicDefault
         {
             public const float PerturbBy = 1.0F;
-        }
-
-        public static class Minimum
-        {
-            // volume thresholds are debatable as smallest trees used in forming Poudel 2018's regressions were 15 cm DBH
-            // However, ignoring biomass in trees less than 15 cm is probably a larger error than extending the regression beyond its fitting
-            // range.
-            public const float DiameterForVolumeInInches = 4.0F;
         }
 
         public static class PrescriptionEnumerationDefault

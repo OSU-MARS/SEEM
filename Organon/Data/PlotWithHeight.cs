@@ -230,7 +230,7 @@ namespace Osu.Cof.Ferm.Data
                 for (int treeIndex = 0; treeIndex < plotTreesOfSpecies.Count; ++treeIndex)
                 {
                     int tag = plotTreesOfSpecies.Tag[treeIndex];
-                    float dbhInInches = Constant.InchesPerCm * plotTreesOfSpecies.Dbh[treeIndex];
+                    float dbhInInches = Constant.InchesPerCentimeter * plotTreesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = Constant.FeetPerMeter * plotTreesOfSpecies.Height[treeIndex];
                     float liveExpansionFactor = Constant.HectaresPerAcre * plotTreesOfSpecies.LiveExpansionFactor[treeIndex];
                     if (Single.IsNaN(dbhInInches) || Single.IsNaN(heightInFeet))

@@ -28,7 +28,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public WriteStandTrajectory()
         {
             this.Runs = null;
-            this.TimberValue = new TimberValue();
+            this.TimberValue = TimberValue.Default;
             this.Trajectories = null;
         }
 
@@ -185,14 +185,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int periodsFromPresent = Math.Max(periodIndex - 1, 0);
                     if (harvestVolumeScribner > 0.0F)
                     {
-                        float thinningNetPresentValue = this.TimberValue.GetNetPresentValueThiningScribner(bestTrajectory.ThinningVolume.Scribner[periodIndex], thinAge);
+                        float thinningNetPresentValue = bestTrajectory.ThinningVolume.NetPresentValue[periodIndex];
                         float presentToFutureConversionFactor = MathF.Pow(1.0F + this.TimberValue.DiscountRate, rotationLength);
                         float thinningFutureValue = presentToFutureConversionFactor * thinningNetPresentValue;
                         landExpectationValue = thinningFutureValue / (presentToFutureConversionFactor - 1.0F);
                     }
                     else
                     {
-                        float finalHarvestNetPresentValue = this.TimberValue.GetNetPresentValueRegenerationHarvestScribner(bestTrajectory.StandingVolume.Scribner[periodIndex], rotationLength) - this.TimberValue.ReforestationCostPerHectare;
+                        float finalHarvestNetPresentValue = bestTrajectory.StandingVolume.NetPresentValue[periodIndex] - this.TimberValue.ReforestationCostPerHectare;
                         landExpectationValue = this.TimberValue.ToLandExpectationValue(finalHarvestNetPresentValue, rotationLength);
                     }
 

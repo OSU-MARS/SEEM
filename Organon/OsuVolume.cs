@@ -1,30 +1,32 @@
-﻿using System;
+﻿using System.Diagnostics;
 
 namespace Osu.Cof.Ferm
 {
     public class OsuVolume
     {
         /// <summary>
-        /// Find CVTS of tree per hectare.
+        /// Find cubic volume of tree per hectare.
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
         /// <returns>Cubic volume including top and stump in m³/ha.</returns>
         public float GetCubicVolume(Trees trees, int treeIndex)
         {
-            if (trees.Units != Units.English)
+            float dbhInCm = trees.Dbh[treeIndex];
+            float heightInM = trees.Height[treeIndex];
+            float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+            if (trees.Units == Units.English)
             {
-                throw new NotSupportedException();
+                dbhInCm *= Constant.CentimetersPerInch;
+                heightInM *= Constant.MetersPerFoot;
+                expansionFactor *= Constant.AcresPerHectare;
             }
-
-            float dbhInInches = trees.Dbh[treeIndex];
-            if (dbhInInches < Constant.Minimum.DiameterForVolumeInInches)
+            if (dbhInCm <= 0.0F)
             {
+                Debug.Assert(dbhInCm == 0.0F);
                 return 0.0F;
             }
 
-            float dbhInCm = Constant.CentimetersPerInch * dbhInInches;
-            float heightInM = Constant.MetersPerFoot * trees.Height[treeIndex];
             float cvtsPerTreeInCubicM = trees.Species switch
             {
                 // Poudel K, Temesgen H, Gray AN. 2018. Estimating upper stem diameters and volume of Douglas-fir and Western hemlock
@@ -34,7 +36,7 @@ namespace Osu.Cof.Ferm
                 FiaCode.TsugaHeterophylla => MathV.Exp(-9.98200F + 1.37228F * MathV.Ln(dbhInCm) + 1.57319F * MathV.Ln(heightInM)),
                 _ => throw Trees.CreateUnhandledSpeciesException(trees.Species),
             };
-            return cvtsPerTreeInCubicM;
+            return expansionFactor * cvtsPerTreeInCubicM;
         }
     }
 }

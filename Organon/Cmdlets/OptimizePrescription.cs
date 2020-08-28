@@ -1,4 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Drawing.Diagrams;
+using DocumentFormat.OpenXml.Office2013.Excel;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
@@ -68,7 +69,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Prescription";
         }
 
-        protected override IList<PrescriptionParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<PrescriptionParameters> GetParameterCombinations()
         {
             if (this.Cores != 1)
             {
@@ -109,7 +110,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     Maximum = maximumIntensity,
                     ProportionalPercentageUpperLimit = this.ProportionalPercentageUpperLimit,
                     Step = this.Step,
-                    TimberValue = timberValue,
+                    TimberValue = this.TimberValue,
                     Units = this.Units
                 });
             }

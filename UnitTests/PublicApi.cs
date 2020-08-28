@@ -5,7 +5,6 @@ using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -61,24 +60,23 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinningPeriod = 4;
             int treeCount = 100;
-            float minObjectiveFunction = 3.33F; // USk$/ha
+            float minObjectiveFunction = 5.206F; // USk$/ha
             #if DEBUG
             treeCount = 48;
-            minObjectiveFunction = 1.30F; // USk$/ha
+            minObjectiveFunction = 2.452F; // USk$/ha
             #endif
 
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
-            TimberValue timberValue = new TimberValue();
 
             Objective landExpectationValue = new Objective()
             {
                 IsLandExpectationValue = true,
                 PlanningPeriods = 9
             };
-            Hero hero = new Hero(stand, configuration, landExpectationValue, timberValue)
+            Hero hero = new Hero(stand, configuration, landExpectationValue, TimberValue.Default)
             {
                 IsStochastic = true,
                 MaximumIterations = 10
@@ -104,7 +102,6 @@ namespace Osu.Cof.Ferm.Test
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
-            TimberValue timberValue = new TimberValue();
 
             HeuristicParameters heuristicParameters = new HeuristicParameters()
             {
@@ -120,7 +117,7 @@ namespace Osu.Cof.Ferm.Test
                 PlanningPeriods = landExpectationValue.PlanningPeriods
             };
 
-            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, landExpectationValue, timberValue)
+            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, landExpectationValue, TimberValue.Default)
             {
                 ProportionalPercentageCenter = heuristicParameters.ProportionalPercentage,
                 PopulationSize = 7,
@@ -128,7 +125,7 @@ namespace Osu.Cof.Ferm.Test
             };
             TimeSpan geneticRuntime = genetic.Run();
 
-            GreatDeluge deluge = new GreatDeluge(stand, configuration, volume, timberValue)
+            GreatDeluge deluge = new GreatDeluge(stand, configuration, volume, TimberValue.Default)
             {
                 RainRate = 5,
                 LowerWaterAfter = 9,
@@ -137,21 +134,21 @@ namespace Osu.Cof.Ferm.Test
             deluge.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan delugeRuntime = deluge.Run();
 
-            RecordTravel recordTravel = new RecordTravel(stand, configuration, landExpectationValue, timberValue)
+            RecordTravel recordTravel = new RecordTravel(stand, configuration, landExpectationValue, TimberValue.Default)
             {
                 StopAfter = 10
             };
             recordTravel.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan recordRuntime = recordTravel.Run();
 
-            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, volume, timberValue)
+            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, volume, TimberValue.Default)
             {
                 Iterations = 100
             };
             annealer.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan annealerRuntime = annealer.Run();
 
-            TabuSearch tabu = new TabuSearch(stand, configuration, landExpectationValue, timberValue)
+            TabuSearch tabu = new TabuSearch(stand, configuration, landExpectationValue, TimberValue.Default)
             {
                 Iterations = 7,
                 //Jump = 2,
@@ -160,7 +157,7 @@ namespace Osu.Cof.Ferm.Test
             tabu.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan tabuRuntime = tabu.Run();
 
-            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, volume, timberValue);
+            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, volume, TimberValue.Default);
             thresholdAcceptor.IterationsPerThreshold.Clear();
             thresholdAcceptor.Thresholds.Clear();
             thresholdAcceptor.IterationsPerThreshold.Add(10);
@@ -168,7 +165,7 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan acceptorRuntime = thresholdAcceptor.Run();
 
-            RandomGuessing random = new RandomGuessing(stand, configuration, volume, timberValue, heuristicParameters.ProportionalPercentage)
+            RandomGuessing random = new RandomGuessing(stand, configuration, volume, TimberValue.Default, heuristicParameters.ProportionalPercentage)
             {
                 Iterations = 4
             };
@@ -176,7 +173,7 @@ namespace Osu.Cof.Ferm.Test
 
             configuration.Treatments.Harvests.Clear();
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
-            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, landExpectationValue, timberValue);
+            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, landExpectationValue, TimberValue.Default);
             enumerator.Parameters.Step = 10.0F;
             enumerator.Parameters.Maximum = 60.0F;
             enumerator.Parameters.Minimum = 50.0F;
@@ -214,9 +211,8 @@ namespace Osu.Cof.Ferm.Test
             PlotWithHeight nelder = this.GetNelder();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F);
-            TimberValue timberValue = new TimberValue();
 
-            OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, timberValue, lastPeriod);
+            OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod);
             unthinnedTrajectory.Simulate();
 
             int thinPeriod = 3;
@@ -226,7 +222,7 @@ namespace Osu.Cof.Ferm.Test
                 ProportionalPercentage = 15.0F, 
                 FromBelowPercentage = 10.0F
             });
-            OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, timberValue, lastPeriod);
+            OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod);
             thinnedTrajectory.Simulate();
 
             // verify unthinned trajectory
@@ -235,8 +231,10 @@ namespace Osu.Cof.Ferm.Test
             //                                                0      1      2      3      4       5       6       7       8       9
             float[] minimumUnthinnedTopHeight = new float[] { 54.5F, 68.1F, 80.5F, 91.7F, 101.9F, 111.3F, 119.8F, 127.7F, 134.9F, 141.6F }; // ft
             //                                             0       1       2       3       4       5       6       7       8       9
-            float[] minimumUnthinnedVolume = new float[] { 4.947F, 16.16F, 32.01F, 49.93F, 67.99F, 85.26F, 101.3F, 116.2F, 130.0F, 142.7F }; // MBF/ha
-            // float[] minimumUnthinnedVolume = new float[] { 103.1F, 205.3F, 316.8F, 424.2F, 520.6F, 604.6F, 677.2F, 740.1F, 795.2F, 844.2F }; // m³/ha
+            // float[] minimumUnthinnedVolume = new float[] { 4.947F, 16.16F, 32.01F, 49.93F, 67.99F, 85.26F, 101.3F, 116.2F, 130.0F, 142.7F }; // FIA SV6x32 MBF/ha
+            float[] minimumUnthinnedVolume = new float[] { 11.99F, 21.90F, 34.89F, 51.67F, 66.59F, 79.61F, 93.57F, 107.1F, 120.0F, 131.5F }; // Poudel 2018 + Scribner long log net MBF/ha
+            // float[] minimumUnthinnedVolume = new float[] { 103.1F, 205.3F, 316.8F, 424.2F, 520.6F, 604.6F, 677.2F, 740.1F, 795.2F, 844.2F }; // FIA CVTS4 m³/ha
+            // float[] minimumUnthinnedVolume = new float[] { 82.81F, 176.4F, 283.8F, 397.1F, 502.5F, 590.5F, 667.3F, 738.1F, 798.2F, 854.6F }; // Poudel 2018 + BC Firwood m³/ha
             this.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
 
             // verify thinned trajectory
@@ -245,9 +243,10 @@ namespace Osu.Cof.Ferm.Test
             //                                              0      1      2      3      4      5       6       7       8       9
             float[] minimumThinnedTopHeight = new float[] { 54.5F, 68.1F, 80.5F, 88.4F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
             //                                           0       1       2       3       4       5       6       7       8       9
-            float[] minimumThinnedVolume = new float[] { 4.947F, 16.16F, 32.01F, 29.43F, 45.20F, 62.65F, 80.48F, 97.88F, 114.4F, 129.8F }; // MBF/ha
-
-            //float[] minimumThinnedVolume = new float[] { 103.1F, 205.3F, 316.8F, 247.9F, 340.3F, 436.2F, 528.8F, 614.8F, 693.0F, 763.0F }; // m³/ha for 20+15+10% thin
+            // float[] minimumThinnedVolume = new float[] { 4.947F, 16.16F, 32.01F, 29.43F, 45.20F, 62.65F, 80.48F, 97.88F, 114.4F, 129.8F }; // FIA MBF/ha
+            float[] minimumThinnedVolume = new float[] { 11.99F, 21.90F, 34.89F, 29.35F, 42.90F, 55.64F, 70.34F, 87.33F, 103.2F, 116.8F }; // Poudel 2018 + Scribner long log net MBF/ha
+            // float[] minimumThinnedVolume = new float[] { 103.1F, 205.3F, 316.8F, 247.9F, 340.3F, 436.2F, 528.8F, 614.8F, 693.0F, 763.0F }; // FIA CVTS4 m³/ha for 20+15+10% thin
+            // float[] minimumThinnedVolume = new float[] { 82.81F, 176.4F, 283.8F, 234.8F, 329.9F, 427.4F, 522.3F, 610.5F, 694.5F, 770.1F }; // Poudel 2018 + BC Firmwood net m³/ha
             this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
         }
@@ -310,7 +309,6 @@ namespace Osu.Cof.Ferm.Test
             PlotWithHeight plot14 = this.GetPlot14();
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = plot14.ToOrganonStand(configuration, 30, 130.0F);
-            TimberValue timberValue = new TimberValue();
 
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
             {
@@ -318,7 +316,7 @@ namespace Osu.Cof.Ferm.Test
                 ProportionalPercentage = 30.0F,
                 FromBelowPercentage = 0.0F
             });
-            OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, timberValue, lastPeriod);
+            OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod);
             thinnedTrajectory.Simulate();
 
             // verify thinned trajectory
@@ -327,8 +325,10 @@ namespace Osu.Cof.Ferm.Test
             //                                              0      1       2       3       4     
             float[] minimumThinnedTopHeight = new float[] { 93.2F, 101.7F, 110.5F, 119.0F, 126.8F }; // ft
             //                                           0       1       2       3       4     
-            float[] minimumThinnedVolume = new float[] { 48.33F, 50.05F, 69.32F, 88.21F, 105.98F }; // MBF/ha
-            // float[] minimumThinnedVolume = new float[] { 450.1F, 407.7F, 511.0F, 605.0F, 687.5F }; // m³/ha for 0+30+0% thin
+            // float[] minimumThinnedVolume = new float[] { 48.33F, 50.05F, 69.32F, 88.21F, 105.98F }; // Browning 1977 (FIA) MBF/ha
+            float[] minimumThinnedVolume = new float[] { 59.94F, 56.85F, 71.65F, 87.09F, 101.9F }; // Poudel 2018 + Scribner long log net MBF/ha
+            // float[] minimumThinnedVolume = new float[] { 450.1F, 407.7F, 511.0F, 605.0F, 687.5F }; // Browining 1977 (FIA) CVTS4 m³/ha for 0+30+0% thin
+            // float[] minimumThinnedVolume = new float[] { 422.7F, 395.52F, 504.7F, 602.5F, 693.0F }; // Poudel 2018 + BC Firmwood net m³/ha
 
             this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
             this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
@@ -375,7 +375,6 @@ namespace Osu.Cof.Ferm.Test
             OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, trees);
-            TimberValue timberValue = new TimberValue();
 
             Objective landExpectationValue = new Objective()
             {
@@ -387,7 +386,7 @@ namespace Osu.Cof.Ferm.Test
             for (int run = 0; run < runs; ++run)
             {
                 // after warmup: 3 runs * 300 trees = 900 measured growth simulations on i7-3770 (4th gen, Sandy Bridge)
-                Hero hero = new Hero(stand, configuration, landExpectationValue, timberValue)
+                Hero hero = new Hero(stand, configuration, landExpectationValue, TimberValue.Default)
                 {
                     IsStochastic = false,
                     MaximumIterations = 2
@@ -437,7 +436,7 @@ namespace Osu.Cof.Ferm.Test
             float bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
             if (heuristic.Objective.IsLandExpectationValue)
             {
-                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.56F);
+                Assert.IsTrue(heuristic.BestObjectiveFunction > 0.01F);
             }
             else
             {
@@ -508,17 +507,29 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.Scribner[periodIndex] == 0.0F);
                 }
 
-                Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Cubic[periodIndex] > 0.0F);
-                Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex] > 0.0F);
-                Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Cubic[periodIndex] > 0.0F);
-                Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Scribner[periodIndex] > 0.0F);
-                if ((periodIndex > 1) && (periodIndex != harvestPeriod))
+                if (periodIndex == 0)
                 {
-                    // for now, assume monotonic increase in standing volumes except in harvest periods
-                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Cubic[periodIndex] > heuristic.BestTrajectory.StandingVolume.Cubic[periodIndex - 1]);
-                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex] > heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex - 1]);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Cubic[periodIndex] > heuristic.CurrentTrajectory.StandingVolume.Cubic[periodIndex - 1]);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Scribner[periodIndex] > heuristic.CurrentTrajectory.StandingVolume.Scribner[periodIndex - 1]);
+                    // zero merchantable on Nelder 1 at age 20 with Poudel 2018 net volume
+                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Cubic[periodIndex] >= 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex] >= 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Cubic[periodIndex] >= 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Scribner[periodIndex] >= 0.0F);
+                }
+                else
+                {
+                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Cubic[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Cubic[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Scribner[periodIndex] > 0.0F);
+
+                    if (periodIndex != harvestPeriod)
+                    {
+                        // for now, assume monotonic increase in standing volumes except in harvest periods
+                        Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Cubic[periodIndex] > heuristic.BestTrajectory.StandingVolume.Cubic[periodIndex - 1]);
+                        Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex] > heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex - 1]);
+                        Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Cubic[periodIndex] > heuristic.CurrentTrajectory.StandingVolume.Cubic[periodIndex - 1]);
+                        Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.Scribner[periodIndex] > heuristic.CurrentTrajectory.StandingVolume.Scribner[periodIndex - 1]);
+                    }
                 }
             }
 
@@ -566,7 +577,7 @@ namespace Osu.Cof.Ferm.Test
                 {
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < thinnedTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre); // assume <50% thin by volume
-                    Assert.IsTrue(thinnedTrajectory.ThinningVolume.Cubic[periodIndex] > 2.0F * minimumThinnedVolumeScribner[periodIndex]);
+                    Assert.IsTrue(thinnedTrajectory.ThinningVolume.Cubic[periodIndex] > 2.0F * Constant.CubicMetersPerCubicFoot * minimumThinnedVolumeScribner[periodIndex]);
                     Assert.IsTrue(thinnedTrajectory.ThinningVolume.Scribner[periodIndex] > 0.0F);
                     Assert.IsTrue(thinnedTrajectory.ThinningVolume.Scribner[periodIndex] < minimumThinnedVolumeScribner[periodIndex]);
                 }
@@ -646,117 +657,6 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(outOfRangeTrees == 0);
             Assert.IsTrue(treesSelected >= minimumTreesSelected);
             Assert.IsTrue(treesSelected <= maximumTreesSelected);
-        }
-
-        [TestMethod]
-        public void Volume()
-        {
-            int treeCount = 42;
-
-            // TODO: TSHE, THPL, ...
-            FiaVolume fiaVolume = new FiaVolume();
-            OsuVolume osuVolume = new OsuVolume();
-            Trees trees = new Trees(FiaCode.PseudotsugaMenziesii, treeCount, Units.English);
-            float[] fiaMerchantableCubicFeetPerAcre = new float[treeCount];
-            float[] fiaScribnerBoardFeetPerAcre = new float[treeCount];
-            float[] osuMerchantableCubicMetersPerHectare = new float[treeCount];
-            float merchantableCubicFeetPerAcre = 0.0F;
-            float merchantableCubicMetersPerHectare = 0.0F;
-            float totalCylinderCubicMeterVolumePerAcre = 0.0F;
-            float totalScribnerBoardFeetPerAcre = 0.0F;
-            for (int treeIndex = 0; treeIndex < treeCount; ++treeIndex)
-            {
-                // create trees with a range of expansion factors to catch errors in expansion factor management
-                float treeRatio = (float)treeIndex / (float)treeCount;
-                TreeRecord tree = new TreeRecord(treeIndex, trees.Species, (float)treeIndex, 1.0F - 0.75F * treeRatio, 0.6F + treeIndex);
-                trees.Add(tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
-
-                float dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
-                float heightInMeters = Constant.MetersPerFoot * tree.HeightInFeet;
-                float treeSizedCylinderCubicMeterVolumePerAcre = tree.LiveExpansionFactor * 0.25F * MathF.PI * dbhInMeters * dbhInMeters * heightInMeters;
-
-                fiaMerchantableCubicFeetPerAcre[treeIndex] = tree.LiveExpansionFactor * fiaVolume.GetMerchantableCubicFeet(trees, treeIndex);
-                merchantableCubicFeetPerAcre += fiaMerchantableCubicFeetPerAcre[treeIndex];
-                fiaScribnerBoardFeetPerAcre[treeIndex] = tree.LiveExpansionFactor * fiaVolume.GetScribnerBoardFeet(trees, treeIndex);
-                totalScribnerBoardFeetPerAcre += fiaScribnerBoardFeetPerAcre[treeIndex];
-
-                osuMerchantableCubicMetersPerHectare[treeIndex] = Constant.HectaresPerAcre * tree.LiveExpansionFactor * osuVolume.GetCubicVolume(trees, treeIndex);
-                merchantableCubicMetersPerHectare += osuMerchantableCubicMetersPerHectare[treeIndex];
-
-                // taper coefficient should be in the vicinity of 0.3 for larger trees, but this is not well defined for small trees
-                // Lower bound can be made more stringent if necessary.
-                Assert.IsTrue(fiaMerchantableCubicFeetPerAcre[treeIndex] >= 0.0);
-                Assert.IsTrue(fiaMerchantableCubicFeetPerAcre[treeIndex] <= 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
-
-                Assert.IsTrue(fiaScribnerBoardFeetPerAcre[treeIndex] >= 0.0);
-                Assert.IsTrue(fiaScribnerBoardFeetPerAcre[treeIndex] <= 6.5 * 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
-                totalCylinderCubicMeterVolumePerAcre += treeSizedCylinderCubicMeterVolumePerAcre;
-            }
-
-            float totalCylinderCubicFeetVolumePerAcre = Constant.CubicFeetPerCubicMeter * totalCylinderCubicMeterVolumePerAcre;
-            Assert.IsTrue(merchantableCubicFeetPerAcre >= 0.05 * totalCylinderCubicFeetVolumePerAcre);
-            Assert.IsTrue(merchantableCubicFeetPerAcre <= 0.35 * totalCylinderCubicFeetVolumePerAcre);
-            Assert.IsTrue(merchantableCubicFeetPerAcre >= 0.5 * Constant.AcresPerHectare * Constant.CubicFeetPerCubicMeter * merchantableCubicMetersPerHectare);
-
-            Assert.IsTrue(merchantableCubicMetersPerHectare <= 0.35 * Constant.AcresPerHectare * totalCylinderCubicMeterVolumePerAcre);
-
-            Assert.IsTrue(totalScribnerBoardFeetPerAcre >= 1.75 * 0.35 * totalCylinderCubicFeetVolumePerAcre);
-            Assert.IsTrue(totalScribnerBoardFeetPerAcre <= 6.5 * 0.40 * totalCylinderCubicFeetVolumePerAcre);
-
-            // check SIMD 128 result against scalar
-            float totalScribnerBoardFeetPerAcre128 = fiaVolume.GetScribnerBoardFeetPerAcre(trees);
-            float simdScalarScribnerDifference = totalScribnerBoardFeetPerAcre - totalScribnerBoardFeetPerAcre128;
-            Assert.IsTrue(MathF.Abs(simdScalarScribnerDifference) < 0.004 * totalScribnerBoardFeetPerAcre);
-        }
-
-        [TestMethod]
-        public void VolumePerformance()
-        {
-            int iterations = 1025; // 5 warmup run + measured runs
-            int treeCount = 100 * 1000;
-            #if DEBUG
-            iterations = 25; // do only functional validation of test on DEBUG builds to reduce test execution time
-            treeCount = 125;
-            #endif
-
-            Trees trees = new Trees(FiaCode.PseudotsugaMenziesii, treeCount, Units.English);
-            float expansionFactor = 0.5F;
-            for (int treeIndex = 0; treeIndex < treeCount; ++treeIndex)
-            {
-                float dbhInInches = (float)(treeIndex % 36 + 4);
-                trees.Add(treeIndex, dbhInInches, 16.0F * MathF.Sqrt(dbhInInches) + 4.5F, 0.01F * (float)(treeIndex % 100), expansionFactor);
-            }
-            FiaVolume volume = new FiaVolume();
-
-            Stopwatch runtime = new Stopwatch();
-            float accumulatedBoardFeetPerAcre = 0.0F;
-            for (int iteration = 0; iteration < iterations; ++iteration)
-            {
-                if (iteration > 20)
-                {
-                    // skip first few runs as warmup runs
-                    runtime.Start();
-                }
-
-                // 1000 runs * 10,000 trees = 10M volumes on i7-3770
-                // .NET standard 2.0 + MathF: 12.854s -> 686k trees/core-s
-                //      RS616 pow() -> exp(): 13.254s -> 754k
-                //              MathV scalar:  9.451s -> 1.06M
-                //          reuse log10(DBH):  8.897s -> 1.12M
-                //       aggressive inlining:  7.998s -> 1.20M
-                //             internal loop:  7.785s -> 1.28M
-                //            single species:  7.619s -> 1.31M
-                //                   VEX 128:  2.063s -> 4.85M
-                float standBoardFeetPerAcre = volume.GetScribnerBoardFeetPerAcre(trees);
-                #if DEBUG
-                Assert.IsTrue(standBoardFeetPerAcre > 35.0F * 1000.0F * expansionFactor);
-                Assert.IsTrue(standBoardFeetPerAcre < 40.0F * 1000.0F * expansionFactor);
-                #endif
-                accumulatedBoardFeetPerAcre += standBoardFeetPerAcre;
-            }
-            runtime.Stop();
-
-            this.TestContext.WriteLine(runtime.Elapsed.TotalSeconds.ToString());
         }
     }
 }

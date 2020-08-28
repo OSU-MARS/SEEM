@@ -46,7 +46,7 @@ namespace Osu.Cof.Ferm.Test
                 Trees treesOfSpecies = stand.TreesBySpecies[tree.Species];
                 Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
 
-                float dbhInInches = Constant.InchesPerCm * tree.DbhInCentimetersByYear.Values[0];
+                float dbhInInches = Constant.InchesPerCentimeter * tree.DbhInCentimetersByYear.Values[0];
                 float heightInFeet = TestConstant.FeetPerMeter * TreeRecord.EstimateHeightInMeters(tree.Species, dbhInInches);
                 treesOfSpecies.Add(tree.Tag, dbhInInches, heightInFeet, tree.EstimateInitialCrownRatio(standDensity), fixedPlotExpansionFactor);
             }

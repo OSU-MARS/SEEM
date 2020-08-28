@@ -60,7 +60,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Tabu";
         }
 
-        protected override IList<TabuParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<TabuParameters> GetParameterCombinations()
         {
             int treeCount = this.Stand.GetTreeRecordCount();
 
@@ -84,7 +84,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     PerturbBy = this.PerturbBy,
                                     ProportionalPercentage = proportionalPercentage,
                                     Tenure = this.Tenure,
-                                    TimberValue = timberValue
+                                    TimberValue = this.TimberValue
                                 });
                             }
                         }

@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm
     public class FiaVolume
     {
         /// <summary>
-        /// Find CVTS of tree.
+        /// Find cubic volume of tree.
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
@@ -21,7 +21,7 @@ namespace Osu.Cof.Ferm
             }
 
             float dbhInInches = trees.Dbh[treeIndex];
-            if (dbhInInches < Constant.Minimum.DiameterForVolumeInInches)
+            if (dbhInInches < Constant.InchesPerCentimeter * Constant.Bucking.MinimumScalingDiameter4Saw)
             {
                 return 0.0F;
             }
@@ -58,7 +58,7 @@ namespace Osu.Cof.Ferm
             }
 
             float dbhInInches = trees.Dbh[treeIndex];
-            if (dbhInInches < Constant.Minimum.DiameterForVolumeInInches)
+            if (dbhInInches < Constant.InchesPerCentimeter * Constant.Bucking.MinimumScalingDiameter4Saw)
             {
                 // CV4 regression goes negative, unsurprisingly, for trees less than four inches in diameter
                 return 0.0F;

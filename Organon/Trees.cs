@@ -21,12 +21,12 @@ namespace Osu.Cof.Ferm
         public float[] CrownRatio { get; private set; }
 
         /// <summary>
-        /// DBH in inches or meters.
+        /// DBH in inches or centimeters.
         /// </summary>
         public float[] Dbh { get; private set; }
 
         /// <summary>
-        /// DBH in inches or meters at the most recent simulation step. 
+        /// DBH in inches or centimeters at the most recent simulation step. 
         /// </summary>
         public float[] DbhGrowth { get; private set; }
 
