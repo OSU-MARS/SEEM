@@ -272,15 +272,15 @@ namespace Osu.Cof.Ferm.Cmdlets
             float minimumHarvest = Single.MaxValue;
             float harvestSum = 0.0F;
             float harvestSumOfSquares = 0.0F;
-            for (int periodIndex = 1; periodIndex < bestHeuristic.BestTrajectory.ThinningVolume.Scribner.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < bestHeuristic.BestTrajectory.PlanningPeriods; ++periodIndex)
             {
-                float harvestVolumeScribner = bestHeuristic.BestTrajectory.ThinningVolume.Scribner[periodIndex];
+                float harvestVolumeScribner = bestHeuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex];
                 maximumHarvest = Math.Max(harvestVolumeScribner, maximumHarvest);
                 harvestSum += harvestVolumeScribner;
                 harvestSumOfSquares += harvestVolumeScribner * harvestVolumeScribner;
                 minimumHarvest = Math.Min(harvestVolumeScribner, minimumHarvest);
             }
-            float periods = (float)(bestHeuristic.BestTrajectory.ThinningVolume.Scribner.Length - 1);
+            float periods = (float)(bestHeuristic.BestTrajectory.PlanningPeriods - 1);
             float meanHarvest = harvestSum / periods;
             float variance = harvestSumOfSquares / periods - meanHarvest * meanHarvest;
             float standardDeviation = MathF.Sqrt(variance);

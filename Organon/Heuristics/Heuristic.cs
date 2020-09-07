@@ -78,7 +78,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
                 // TODO: support per species pricing
                 float firstRotationNetPresentValue = -trajectory.TimberValue.ReforestationCostPerHectare;
-                for (int periodIndex = 1; periodIndex < trajectory.ThinningVolume.Scribner.Length; ++periodIndex)
+                for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
                 {
                     firstRotationNetPresentValue += trajectory.ThinningVolume.NetPresentValue[periodIndex];
                 }
@@ -95,11 +95,11 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 // direct volume addition
                 objectiveFunction = 0.0F;
-                for (int periodIndex = 1; periodIndex < trajectory.ThinningVolume.Scribner.Length; ++periodIndex)
+                for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
                 {
-                    objectiveFunction += trajectory.ThinningVolume.Scribner[periodIndex];
+                    objectiveFunction += trajectory.ThinningVolume.ScribnerTotal[periodIndex];
                 }
-                objectiveFunction += trajectory.StandingVolume.Scribner[^1];
+                objectiveFunction += trajectory.StandingVolume.ScribnerTotal[^1];
             }
 
             return objectiveFunction;

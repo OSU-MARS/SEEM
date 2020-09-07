@@ -84,7 +84,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append(",thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPH,BA,standing CMH,standing MBFH,harvest CMH,harvest MBFH,BA removed,BA intensity,TPH decrease,LEV");
+                line.Append(",thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPH,BA,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S");
                 writer.WriteLine(line);
             }
 
@@ -138,17 +138,19 @@ namespace Osu.Cof.Ferm.Cmdlets
                     trajectoryName = runOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
                 }
 
-                this.GetDimensionConversions(Units.English, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
                 this.GetBasalAreaConversion(Units.English, Units.Metric, out float basalAreaConversionFactor);
+                this.GetDimensionConversions(Units.English, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
+                bestTrajectory.GetGradedVolumes(out StandGradedVolume gradedVolumeStanding, out StandGradedVolume gradedVolumeHarvested);
                 for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
                 {
                     line.Clear();
 
                     // get density and volumes
-                    float standingVolumeCubic = bestTrajectory.StandingVolume.Cubic[periodIndex]; // m³/ha
-                    float standingVolumeScribner = bestTrajectory.StandingVolume.Scribner[periodIndex]; // MBF/ha
-                    float harvestVolumeCubic = bestTrajectory.ThinningVolume.Cubic[periodIndex]; // m³/ha
-                    float harvestVolumeScribner = bestTrajectory.ThinningVolume.Scribner[periodIndex]; // MBF/ha
+                    float standingVolumeCubic = gradedVolumeStanding.GetCubicTotal(periodIndex); // m³/ha
+                    float standingVolumeScribner = bestTrajectory.StandingVolume.ScribnerTotal[periodIndex]; // MBF/ha
+                    float harvestVolumeCubic = gradedVolumeHarvested.GetCubicTotal(periodIndex); // m³/ha
+                    float harvestVolumeScribner = bestTrajectory.ThinningVolume.ScribnerTotal[periodIndex]; // MBF/ha
+
                     float basalAreaRemoved = bestTrajectory.BasalAreaRemoved[periodIndex]; // ft²/acre
                     float basalAreaIntensity = 0.0F;
                     if (periodIndex > 0)
@@ -196,6 +198,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                         landExpectationValue = this.TimberValue.ToLandExpectationValue(finalHarvestNetPresentValue, rotationLength);
                     }
 
+                    float netPresentValue2Saw = gradedVolumeStanding.NetPresentValue2Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue2Saw[periodIndex];
+                    float netPresentValue3Saw = gradedVolumeStanding.NetPresentValue3Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue3Saw[periodIndex];
+                    float netPresentValue4Saw = gradedVolumeStanding.NetPresentValue4Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue4Saw[periodIndex];
+
                     int simulationYear = bestTrajectory.PeriodLengthInYears * periodIndex;
                     line.Append(trajectoryName);
                     if (runsSpecified)
@@ -214,13 +220,28 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 treesPerUnitArea.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 basalAreaPerUnitArea.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 standingVolumeCubic.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                standingVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 harvestVolumeCubic.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                standingVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 harvestVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 treesPerUnitAreaDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                landExpectationValue.ToString("0", CultureInfo.InvariantCulture)); ;
+                                landExpectationValue.ToString("0", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeStanding.Cubic2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeStanding.Cubic3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeStanding.Cubic4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeHarvested.Cubic2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeHarvested.Cubic3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeHarvested.Cubic4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeStanding.Scribner2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeStanding.Scribner3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeStanding.Scribner4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeHarvested.Scribner2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeHarvested.Scribner3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                gradedVolumeHarvested.Scribner4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                netPresentValue2Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                netPresentValue3Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                netPresentValue4Saw.ToString("0.000", CultureInfo.InvariantCulture));
                     writer.WriteLine(line);
                 }
             }

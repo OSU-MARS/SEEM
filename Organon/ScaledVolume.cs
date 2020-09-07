@@ -7,14 +7,14 @@ namespace Osu.Cof.Ferm
     public class ScaledVolume
     {
         public float PreferredLogLengthInMeters { get; private set; }
-        public Dictionary<FiaCode, VolumeTable> VolumeBySpecies { get; private set; }
+        public Dictionary<FiaCode, TreeVolumeTable> VolumeBySpecies { get; private set; }
 
-        public ScaledVolume(float preferredLogLengthInMeters, TimberValue timberValue)
+        public ScaledVolume(float preferredLogLengthInMeters, bool scribnerFromLumberRecovery)
         {
             this.PreferredLogLengthInMeters = preferredLogLengthInMeters;
-            this.VolumeBySpecies = new Dictionary<FiaCode, VolumeTable>
+            this.VolumeBySpecies = new Dictionary<FiaCode, TreeVolumeTable>
             {
-                { FiaCode.PseudotsugaMenziesii, new VolumeTable(preferredLogLengthInMeters, this.GetDouglasFirDiameterInsideBark, timberValue) }
+                { FiaCode.PseudotsugaMenziesii, new TreeVolumeTable(preferredLogLengthInMeters, this.GetDouglasFirDiameterInsideBark, scribnerFromLumberRecovery) }
             };
         }
 
@@ -41,21 +41,15 @@ namespace Osu.Cof.Ferm
             return dibInCm;
         }
 
-        // test hook
-        internal void GetVolume(FiaCode species, int dbhIndex, int heightIndex, out double merchantableCubicVolume, out double scribnerVolume, out double scribnerValue)
+        public void GetGradedVolume(Trees trees, int[] individualTreeSelection, out double cubic2saw, out double cubic3saw, out double cubic4saw, out double scribner2saw, out double scribner3saw, out double scribner4saw)
         {
-            VolumeTable volumeTable = this.VolumeBySpecies[species];
-            merchantableCubicVolume = volumeTable.CubicTotal[dbhIndex, heightIndex];
-            scribnerVolume = volumeTable.ScribnerTotal[dbhIndex, heightIndex];
-            scribnerValue = volumeTable.ScribnerValue[dbhIndex, heightIndex];
-        }
-
-        public void GetVolume(Trees trees, int[] individualTreeSelection, out double merchantableCubicVolume, out double scribnerVolume, out double scribnerValue)
-        {
-            VolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
-            merchantableCubicVolume = 0.0F;
-            scribnerVolume = 0.0F;
-            scribnerValue = 0.0F;
+            TreeVolumeTable perTreeVolume = this.VolumeBySpecies[trees.Species];
+            cubic2saw = 0.0;
+            cubic3saw = 0.0;
+            cubic4saw = 0.0;
+            scribner2saw = 0.0;
+            scribner3saw = 0.0;
+            scribner4saw = 0.0;
             int selectionIndex = 0;
             for (int treeIndex = 0; treeIndex < trees.Count; ++selectionIndex, ++treeIndex)
             {
@@ -75,20 +69,88 @@ namespace Osu.Cof.Ferm
                 float expansionFactor = trees.LiveExpansionFactor[treeIndex];
 
                 // TODO: shift rounding to reduce bias?
-                int dbhIndex = (int)MathF.Round((dbhInCm + 0.5F * Constant.Bucking.DiameterClassSizeInCentimeters) / Constant.Bucking.DiameterClassSizeInCentimeters);
-                int heightIndex = (int)MathF.Round((heightInMeters + 0.5F * Constant.Bucking.HeightClassSizeInMeters) / Constant.Bucking.HeightClassSizeInMeters);
-                merchantableCubicVolume += expansionFactor * volumeTable.CubicTotal[dbhIndex, heightIndex];
-                scribnerVolume += expansionFactor * volumeTable.ScribnerTotal[dbhIndex, heightIndex];
-                scribnerValue += expansionFactor * volumeTable.ScribnerValue[dbhIndex, heightIndex];
+                int dbhIndex = perTreeVolume.ToDiameterIndex(dbhInCm);
+                int heightIndex = perTreeVolume.ToHeightIndex(heightInMeters);
+                cubic2saw += expansionFactor * perTreeVolume.Cubic2Saw[dbhIndex, heightIndex];
+                cubic3saw += expansionFactor * perTreeVolume.Cubic3Saw[dbhIndex, heightIndex];
+                cubic4saw += expansionFactor * perTreeVolume.Cubic4Saw[dbhIndex, heightIndex];
+                scribner2saw += expansionFactor * perTreeVolume.Scribner2Saw[dbhIndex, heightIndex];
+                scribner3saw += expansionFactor * perTreeVolume.Scribner3Saw[dbhIndex, heightIndex];
+                scribner4saw += expansionFactor * perTreeVolume.Scribner4Saw[dbhIndex, heightIndex];
             }
         }
 
-        public void GetVolume(Trees trees, out double merchantableCubicVolume, out double scribnerVolume, out double scribnerValue)
+        public void GetGradedVolume(Trees trees, out double cubic2saw, out double cubic3saw, out double cubic4saw, out double boardFeet2saw, out double boardFeet3saw, out double boardFeet4saw)
         {
-            VolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
-            merchantableCubicVolume = 0.0F;
-            scribnerVolume = 0.0F;
-            scribnerValue = 0.0F;
+            TreeVolumeTable perTreeVolume = this.VolumeBySpecies[trees.Species];
+            cubic2saw = 0.0;
+            cubic3saw = 0.0;
+            cubic4saw = 0.0;
+            boardFeet2saw = 0.0;
+            boardFeet3saw = 0.0;
+            boardFeet4saw = 0.0;
+            for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
+            {
+                float dbhInCm = trees.Dbh[treeIndex];
+                float heightInMeters = trees.Height[treeIndex];
+                if (trees.Units == Units.English)
+                {
+                    dbhInCm *= Constant.CentimetersPerInch;
+                    heightInMeters *= Constant.MetersPerFoot;
+                }
+                float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+
+                int dbhIndex = perTreeVolume.ToDiameterIndex(dbhInCm);
+                int heightIndex = perTreeVolume.ToHeightIndex(heightInMeters);
+                cubic2saw += expansionFactor * perTreeVolume.Cubic2Saw[dbhIndex, heightIndex];
+                cubic3saw += expansionFactor * perTreeVolume.Cubic3Saw[dbhIndex, heightIndex];
+                cubic4saw += expansionFactor * perTreeVolume.Cubic4Saw[dbhIndex, heightIndex];
+                boardFeet2saw += expansionFactor * perTreeVolume.Scribner2Saw[dbhIndex, heightIndex];
+                boardFeet3saw += expansionFactor * perTreeVolume.Scribner3Saw[dbhIndex, heightIndex];
+                boardFeet4saw += expansionFactor * perTreeVolume.Scribner4Saw[dbhIndex, heightIndex];
+            }
+        }
+
+        public void GetScribnerVolume(Trees trees, int[] individualTreeSelection, out double boardFeet2saw, out double boardFeet3saw, out double boardFeet4saw)
+        {
+            TreeVolumeTable perTreeVolume = this.VolumeBySpecies[trees.Species];
+            boardFeet2saw = 0.0;
+            boardFeet3saw = 0.0;
+            boardFeet4saw = 0.0;
+            int selectionIndex = 0;
+            for (int treeIndex = 0; treeIndex < trees.Count; ++selectionIndex, ++treeIndex)
+            {
+                if (individualTreeSelection[selectionIndex] == 0)
+                {
+                    // tree is retained rather than thinned
+                    // TODO: support multiple thinnings
+                    continue;
+                }
+
+                float dbhInCm = trees.Dbh[treeIndex];
+                float heightInMeters = trees.Height[treeIndex];
+                if (trees.Units == Units.English)
+                {
+                    dbhInCm *= Constant.CentimetersPerInch;
+                    heightInMeters *= Constant.MetersPerFoot;
+                }
+                float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+
+                // TODO: shift rounding to reduce bias?
+                int dbhIndex = perTreeVolume.ToDiameterIndex(dbhInCm);
+                int heightIndex = perTreeVolume.ToHeightIndex(heightInMeters);
+                boardFeet2saw += expansionFactor * perTreeVolume.Scribner2Saw[dbhIndex, heightIndex];
+                boardFeet3saw += expansionFactor * perTreeVolume.Scribner3Saw[dbhIndex, heightIndex];
+                boardFeet4saw += expansionFactor * perTreeVolume.Scribner4Saw[dbhIndex, heightIndex];
+            }
+        }
+
+        public void GetScribnerVolume(Trees trees, out double boardFeet2saw, out double boardFeet3saw, out double boardFeet4saw)
+        {
+            TreeVolumeTable perTreeVolume = this.VolumeBySpecies[trees.Species];
+            boardFeet2saw = 0.0;
+            boardFeet3saw = 0.0;
+            boardFeet4saw = 0.0;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 float dbhInCm = trees.Dbh[treeIndex];
@@ -101,16 +163,122 @@ namespace Osu.Cof.Ferm
                 float expansionFactor = trees.LiveExpansionFactor[treeIndex];
 
                 // TODO: shift rounding to reduce bias?
-                int dbhIndex = (int)MathF.Round((dbhInCm + 0.5F * Constant.Bucking.DiameterClassSizeInCentimeters) / Constant.Bucking.DiameterClassSizeInCentimeters);
-                int heightIndex = (int)MathF.Round((heightInMeters + 0.5F * Constant.Bucking.HeightClassSizeInMeters) / Constant.Bucking.HeightClassSizeInMeters);
-                merchantableCubicVolume += expansionFactor * volumeTable.CubicTotal[dbhIndex, heightIndex];
-                scribnerVolume += expansionFactor * volumeTable.ScribnerTotal[dbhIndex, heightIndex];
-                scribnerValue += expansionFactor * volumeTable.ScribnerValue[dbhIndex, heightIndex];
+                int dbhIndex = perTreeVolume.ToDiameterIndex(dbhInCm);
+                int heightIndex = perTreeVolume.ToHeightIndex(heightInMeters);
+                boardFeet2saw += expansionFactor * perTreeVolume.Scribner2Saw[dbhIndex, heightIndex];
+                boardFeet3saw += expansionFactor * perTreeVolume.Scribner3Saw[dbhIndex, heightIndex];
+                boardFeet4saw += expansionFactor * perTreeVolume.Scribner4Saw[dbhIndex, heightIndex];
             }
         }
 
-        public class VolumeTable
+        public class TreeVolumeTable
         {
+            // Scribner lumber recovery from BC Firmwood cubic scale
+            // Indexed by small end diameter in centimeters.
+            private static readonly float[] BoardFootRecoveryPerCubicMeter = new float[]
+            {
+                /* 0*/ 0.0F,
+                /* 1*/ 0.0F,
+                /* 2*/ 0.0F,
+                /* 3*/ 0.0F,
+                /* 4*/ 0.0F,
+                /* 5*/ 0.0F,
+                /* 6*/ 0.0F,
+                /* 7*/ 0.0F,
+                /* 8*/ 0.0F,
+                /* 9*/ 24.8848F,
+                /*10*/ 42.3848F,
+                /*11*/ 59.8848F,
+                /*12*/ 77.3848F,
+                /*13*/ 94.8848F,
+                /*14*/ 103.7320F,
+                /*15*/ 112.5792F,
+                /*16*/ 119.7373F,
+                /*17*/ 126.8955F,
+                /*18*/ 134.0536F,
+                /*19*/ 140.0180F,
+                /*20*/ 145.9824F,
+                /*21*/ 150.4276F,
+                /*22*/ 154.8728F,
+                /*23*/ 159.3180F,
+                /*24*/ 160.8720F,
+                /*25*/ 162.4260F,
+                /*26*/ 164.4190F,
+                /*27*/ 166.4120F,
+                /*28*/ 168.4050F,
+                /*29*/ 170.3520F,
+                /*30*/ 172.2990F,
+                /*31*/ 173.0623F,
+                /*32*/ 173.8257F,
+                /*33*/ 174.5890F,
+                /*34*/ 174.7475F,
+                /*35*/ 174.9060F,
+                /*36*/ 175.0645F,
+                /*37*/ 175.0645F,
+                /*38*/ 175.0645F,
+                /*39*/ 177.6873F,
+                /*40*/ 180.3102F,
+                /*41*/ 182.9330F,
+                /*42*/ 186.8365F,
+                /*43*/ 190.7400F,
+                /*44*/ 190.7400F,
+                /*45*/ 190.7400F,
+                /*46*/ 190.7400F,
+                /*47*/ 190.7400F,
+                /*48*/ 190.7400F,
+                /*49*/ 194.4767F,
+                /*50*/ 198.2133F,
+                /*51*/ 201.9500F,
+                /*52*/ 205.6390F,
+                /*53*/ 209.3280F,
+                /*54*/ 215.6880F,
+                /*55*/ 222.0480F,
+                /*56*/ 228.4080F,
+                /*57*/ 228.4080F,
+                /*58*/ 228.4080F,
+                /*59*/ 232.4920F,
+                /*60*/ 236.5760F,
+                /*61*/ 240.6600F,
+                /*62*/ 238.1467F,
+                /*63*/ 235.6333F,
+                /*64*/ 233.1200F,
+                /*65*/ 228.9205F,
+                /*66*/ 224.7210F,
+                /*67*/ 222.1720F,
+                /*68*/ 219.6230F,
+                /*69*/ 217.0740F,
+                /*70*/ 213.2010F,
+                /*71*/ 209.3280F,
+                /*72*/ 206.8687F,
+                /*73*/ 204.4093F,
+                /*74*/ 201.9500F,
+                /*75*/ 198.0440F,
+                /*76*/ 194.1380F,
+                /*77*/ 194.1308F,
+                /*78*/ 194.1308F,
+                /*79*/ 194.1308F,
+                /*80*/ 194.1308F,
+                /*81*/ 194.1308F,
+                /*82*/ 194.1308F,
+                /*83*/ 194.1308F,
+                /*84*/ 194.1308F,
+                /*85*/ 194.1308F,
+                /*86*/ 194.1308F,
+                /*87*/ 194.1308F,
+                /*88*/ 194.1308F,
+                /*89*/ 194.1308F,
+                /*90*/ 194.1308F,
+                /*91*/ 194.1308F,
+                /*92*/ 194.1308F,
+                /*93*/ 194.1308F,
+                /*94*/ 194.1308F,
+                /*95*/ 194.1308F,
+                /*96*/ 194.1308F,
+                /*97*/ 194.1308F,
+                /*98*/ 194.1308F,
+                /*99*/ 194.1308F,
+               /*100*/ 194.1308F
+            };
             private static readonly float[,] ScribnerCLongLog = new float[,] {
             // small end diameter, inch
             // |      length, feet
@@ -168,17 +336,14 @@ namespace Osu.Cof.Ferm
             /*50*/ {  0,   12,  23,  35,  47,  58,  70,  82,  94, 105, 117, 129, 140, 152, 164, 175, 187, 199, 211, 222, 234, 246, 257, 269, 281, 292, 304, 316, 328, 339, 351, 363, 374, 386, 398, 409, 421, 433, 445, 456, 468 }
             };
 
-            public float[,] Cubic2Saw { get; private set; }
-            public float[,] Cubic3Saw { get; private set; }
-            public float[,] Cubic4Saw { get; private set; }
-            public float[,] CubicTotal { get; private set; }
-            public float[,] Scribner2Saw { get; private set; }
-            public float[,] Scribner3Saw { get; private set; }
-            public float[,] Scribner4Saw { get; private set; }
-            public float[,] ScribnerTotal { get; private set; }
-            public float[,] ScribnerValue { get; private set; }
+            public float[,] Cubic2Saw { get; private set; } // m³ per tree
+            public float[,] Cubic3Saw { get; private set; } // m³ per tree
+            public float[,] Cubic4Saw { get; private set; } // m³ per tree
+            public float[,] Scribner2Saw { get; private set; } // Scriber board foot log volume per tree
+            public float[,] Scribner3Saw { get; private set; } // Scriber board foot log volume per tree
+            public float[,] Scribner4Saw { get; private set; } // Scriber board foot log volume per tree
 
-            public VolumeTable(float preferredLogLengthInMeters, Func<float, float, float, float> getDiameterInsideBark, TimberValue timberValue)
+            public TreeVolumeTable(float preferredLogLengthInMeters, Func<float, float, float, float> getDiameterInsideBark, bool scribnerFromLumberRecovery)
             {
                 if (preferredLogLengthInMeters > Constant.MetersPerFoot * 40.0F)
                 {
@@ -190,12 +355,9 @@ namespace Osu.Cof.Ferm
                 this.Cubic2Saw = new float[diameterClasses, heightClasses];
                 this.Cubic3Saw = new float[diameterClasses, heightClasses];
                 this.Cubic4Saw = new float[diameterClasses, heightClasses];
-                this.CubicTotal = new float[diameterClasses, heightClasses];
                 this.Scribner2Saw = new float[diameterClasses, heightClasses];
                 this.Scribner3Saw = new float[diameterClasses, heightClasses];
                 this.Scribner4Saw = new float[diameterClasses, heightClasses];
-                this.ScribnerTotal = new float[diameterClasses, heightClasses];
-                this.ScribnerValue = new float[diameterClasses, heightClasses];
 
                 // fill cubic and Scribner volume tables
                 // start at index 1 since trees in zero diameter class have zero merchantable volume
@@ -291,6 +453,7 @@ namespace Osu.Cof.Ferm
                             float bcFirmwoodBottomRadius = MathF.Round(0.5F * bcFirmwoodBottomDiameter); // rounded cm = diameter in rads
                             float bcFirmwoodTopRadius = MathF.Round(0.5F * logTopDib); // rounded cm = diameter in rads
                             float logCubicVolume = -1.0F;
+                            float logScribnerVolume = -1.0F;
                             if (bcFirmwoodBottomRadius > 1.5F * bcFirmwoodTopRadius)
                             {
                                 float logSegments = MathF.Round(logLength / Constant.Bucking.LogTaperSegmentationLength);
@@ -306,8 +469,17 @@ namespace Osu.Cof.Ferm
 
                                         float bcFirmwoodLengthBelowTaper = MathF.Round(bcFirmwoodTaperHeight - logBottomHeight, 1, MidpointRounding.AwayFromZero);
                                         float bcFirmwoodLengthAboveTaper = MathF.Round(logTopHeight - bcFirmwoodTaperHeight, 1, MidpointRounding.AwayFromZero);
-                                        logCubicVolume = MathF.Round(0.5F * 0.0001F * Constant.Pi * (bcFirmwoodTaperRadius * bcFirmwoodTaperRadius + bcFirmwoodBottomRadius * bcFirmwoodBottomRadius) * bcFirmwoodLengthBelowTaper, 3) +
-                                                         MathF.Round(0.5F * 0.0001F * Constant.Pi * (bcFirmwoodTaperRadius * bcFirmwoodTaperRadius + bcFirmwoodTopRadius * bcFirmwoodTopRadius) * bcFirmwoodLengthAboveTaper, 3);
+                                        float logLowerCubicVolume = MathF.Round(0.5F * 0.0001F * Constant.Pi * (bcFirmwoodTaperRadius * bcFirmwoodTaperRadius + bcFirmwoodBottomRadius * bcFirmwoodBottomRadius) * bcFirmwoodLengthBelowTaper, 3);
+                                        float logUpperCubicVolume = MathF.Round(0.5F * 0.0001F * Constant.Pi * (bcFirmwoodTaperRadius * bcFirmwoodTaperRadius + bcFirmwoodTopRadius * bcFirmwoodTopRadius) * bcFirmwoodLengthAboveTaper, 3);
+                                        logCubicVolume = logLowerCubicVolume + logUpperCubicVolume;
+
+                                        if (scribnerFromLumberRecovery)
+                                        {
+                                            int scribnerLowerTopDiameter = (int)Math.Round(bcFirmwoodTaperDiameter);
+                                            int scribnerUpperTopDiameter = (int)Math.Round(logTopDib);
+                                            logScribnerVolume = TreeVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerLowerTopDiameter] * logLowerCubicVolume +
+                                                                TreeVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerUpperTopDiameter] * logUpperCubicVolume;
+                                        }
                                     }
                                 }
                             }
@@ -315,13 +487,24 @@ namespace Osu.Cof.Ferm
                             {
                                 float bcFirmwoodLength = MathF.Round(logLength, 1, MidpointRounding.AwayFromZero);
                                 logCubicVolume = MathF.Round(0.5F * 0.0001F * Constant.Pi * (bcFirmwoodTopRadius * bcFirmwoodTopRadius + bcFirmwoodBottomRadius * bcFirmwoodBottomRadius) * bcFirmwoodLength, 3); // 0.0001 * cm² * m = m³
+
+                                if (scribnerFromLumberRecovery)
+                                {
+                                    int scribnerTopDiameter = (int)Math.Round(logTopDib);
+                                    logScribnerVolume = TreeVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerTopDiameter] * logCubicVolume;
+                                }
                             }
 
-                            // get Scribner long log volume
-                            int scribnerDiameterInInches = (int)MathF.Floor(Constant.InchesPerCentimeter * logTopDib);
-                            int scribnerLengthInFeet = (int)MathF.Floor(Constant.FeetPerMeter * logLength);
-                            float logScribnerVolume = 10.0F * VolumeTable.ScribnerCLongLog[scribnerDiameterInInches, scribnerLengthInFeet];
+                            // get Scribner long log volume if it wasn't recovered from cubic volume
+                            if (scribnerFromLumberRecovery == false)
+                            {
+                                int scribnerDiameterInInches = (int)MathF.Floor(Constant.InchesPerCentimeter * logTopDib);
+                                int scribnerLengthInFeet = (int)MathF.Floor(Constant.FeetPerMeter * logLength);
+                                logScribnerVolume = 10.0F * TreeVolumeTable.ScribnerCLongLog[scribnerDiameterInInches, scribnerLengthInFeet];
+                            }
 
+                            Debug.Assert(logCubicVolume > 0.0F);
+                            Debug.Assert(logScribnerVolume > 0.0F);
                             if ((logTopDib >= Constant.Bucking.MinimumScalingDiameter2Saw) &&
                                 (logLength >= Constant.Bucking.MinimumLogLength2Saw) &&
                                 (logScribnerVolume >= Constant.Bucking.MinimumLogScribner2Saw))
@@ -347,29 +530,7 @@ namespace Osu.Cof.Ferm
                                 this.Scribner4Saw[dbhIndex, heightIndex] += logScribnerVolume;
                             }
                             // else log not merchantable
-
-                            Debug.Assert(logCubicVolume > 0.0F);
-                            Debug.Assert(logScribnerVolume > 0.0F);
                         }
-                    }
-                }
-
-                // set volume totals and calculate values
-                for (int dbhIndex = 1; dbhIndex < diameterClasses; ++dbhIndex)
-                {
-                    for (int heightIndex = 1; heightIndex < heightClasses; ++heightIndex)
-                    {
-                        float cubic2saw = this.Cubic2Saw[dbhIndex, heightIndex];
-                        float cubic3saw = this.Cubic3Saw[dbhIndex, heightIndex];
-                        float cubic4saw = this.Cubic4Saw[dbhIndex, heightIndex];
-                        this.CubicTotal[dbhIndex, heightIndex] = cubic2saw + cubic3saw + cubic4saw;
-
-                        float scribner2saw = this.Scribner2Saw[dbhIndex, heightIndex];
-                        float scribner3saw = this.Scribner3Saw[dbhIndex, heightIndex];
-                        float scribner4saw = this.Scribner4Saw[dbhIndex, heightIndex];
-                        this.ScribnerTotal[dbhIndex, heightIndex] = scribner2saw + scribner3saw + scribner4saw;
-
-                        this.ScribnerValue[dbhIndex, heightIndex] = 0.001F * (timberValue.DouglasFir2SawPondValuePerMbf * scribner2saw + timberValue.DouglasFir3SawPondValuePerMbf * scribner3saw + timberValue.DouglasFir4SawPondValuePerMbf * scribner4saw);
                     }
                 }
             }
@@ -392,6 +553,18 @@ namespace Osu.Cof.Ferm
             public float GetHeight(int heightIndex)
             {
                 return Constant.Bucking.HeightClassSizeInMeters * heightIndex;
+            }
+
+            public int ToDiameterIndex(float dbhInCentimeters)
+            {
+                // TODO: shift rounding to reduce bias?
+                return (int)((dbhInCentimeters + 0.5F * Constant.Bucking.DiameterClassSizeInCentimeters) / Constant.Bucking.DiameterClassSizeInCentimeters);
+            }
+
+            public int ToHeightIndex(float heightInMeters)
+            {
+                // TODO: shift rounding to reduce bias?
+                return (int)((heightInMeters + 0.5F * Constant.Bucking.HeightClassSizeInMeters) / Constant.Bucking.HeightClassSizeInMeters);
             }
         }
     }

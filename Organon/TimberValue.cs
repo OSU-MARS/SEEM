@@ -24,10 +24,10 @@ namespace Osu.Cof.Ferm
 
         static TimberValue()
         {
-            TimberValue.Default = new TimberValue();
+            TimberValue.Default = new TimberValue(false);
         }
 
-        public TimberValue()
+        public TimberValue(bool scribnerFromLumberRecovery)
         {
             // all defaults in US$, nominal values from FOR 469 appraisal of land under Oregon's standard forestland program
             // Nominal Douglas-fir pond value from 
@@ -47,11 +47,16 @@ namespace Osu.Cof.Ferm
             this.ThinningCostPerMbf = 275.0F; // US$/MBF, includes forest products harvest tax
             this.TimberAppreciationRate = 0.01F; // per year
 
-            this.ScaledVolumeRegenerationHarvest = new ScaledVolume(Constant.Bucking.LogLengthRegenerationHarvest, this);
-            this.ScaledVolumeThinning = new ScaledVolume(Constant.Bucking.LogLengthThinning, this);
+            this.ScaledVolumeRegenerationHarvest = new ScaledVolume(Constant.Bucking.LogLengthRegenerationHarvest, scribnerFromLumberRecovery);
+            this.ScaledVolumeThinning = new ScaledVolume(Constant.Bucking.LogLengthThinning, scribnerFromLumberRecovery);
         }
 
-        //public float GetNetPresentValueRegenerationHarvestScribner(float volumeInMbfPerHectare, int rotationLengthInYears)
+        public float GetDiscountFactor(int years)
+        {
+            return 1.0F / MathF.Pow(1.0F + this.DiscountRate, years);
+        }
+
+        //public float GetNetPresentRegenerationHarvestValue(float volumeInMbfPerHectare, int rotationLengthInYears)
         //{
         //    float appreciatedPricePerMbf = this.DouglasFirSinglePondValuePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, rotationLengthInYears);
         //    float netFutureValue = volumeInMbfPerHectare * (appreciatedPricePerMbf - this.RegenerationHarvestCostPerMbf) - this.FixedRegenerationHarvestCostPerHectare;
@@ -59,7 +64,18 @@ namespace Osu.Cof.Ferm
         //    return discountFactor * netFutureValue;
         //}
 
-        //public float GetNetPresentValueThiningScribner(float volumeInMbfPerHectare, int thinningAgeInYears)
+        public float GetNetPresentRegenerationHarvestValue(float net2sawMbfPerHectare, float net3sawMbfPerHectare, float net4sawMbfPerHectare, int harvestAgeInYears)
+        {
+            float appreciationFactor = this.GetTimberAppreciationFactor(harvestAgeInYears);
+            float netValuePerHectareAtHarvest = (appreciationFactor * this.DouglasFir2SawPondValuePerMbf - this.RegenerationHarvestCostPerMbf) * net2sawMbfPerHectare +
+                                                (appreciationFactor * this.DouglasFir3SawPondValuePerMbf - this.RegenerationHarvestCostPerMbf) * net3sawMbfPerHectare +
+                                                (appreciationFactor * this.DouglasFir4SawPondValuePerMbf - this.RegenerationHarvestCostPerMbf) * net4sawMbfPerHectare -
+                                                this.FixedRegenerationHarvestCostPerHectare;
+            float discountFactor = this.GetDiscountFactor(harvestAgeInYears);
+            return discountFactor * netValuePerHectareAtHarvest;
+        }
+
+        //public float GetNetPresentThinningValue(float volumeInMbfPerHectare, int thinningAgeInYears)
         //{
         //    float appreciatedPricePerMbf = this.DouglasFirSinglePondValuePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, thinningAgeInYears);
         //    float netFutureValue = volumeInMbfPerHectare * (appreciatedPricePerMbf - this.ThinningCostPerMbf) - this.FixedThinningCostPerHectare;
@@ -67,19 +83,28 @@ namespace Osu.Cof.Ferm
         //    return discountFactor * netFutureValue;
         //}
 
+        public float GetNetPresentThinningValue(float net2sawMbfPerHectare, float net3sawMbfPerHectare, float net4sawMbfPerHectare, int thinningAgeInYears)
+        {
+            float appreciationFactor = this.GetTimberAppreciationFactor(thinningAgeInYears);
+            float netValuePerHectareAtHarvest = (appreciationFactor * this.DouglasFir2SawPondValuePerMbf - this.ThinningCostPerMbf) * net2sawMbfPerHectare +
+                                                (appreciationFactor * this.DouglasFir3SawPondValuePerMbf - this.ThinningCostPerMbf) * net3sawMbfPerHectare +
+                                                (appreciationFactor * this.DouglasFir4SawPondValuePerMbf - this.ThinningCostPerMbf) * net4sawMbfPerHectare -
+                                                this.FixedThinningCostPerHectare;
+            float discountFactor = this.GetDiscountFactor(thinningAgeInYears);
+            return discountFactor * netValuePerHectareAtHarvest;
+        }
+
+        public float GetTimberAppreciationFactor(int years)
+        {
+            return MathF.Pow(1.0F + this.TimberAppreciationRate, years);
+        }
+
         public float ToLandExpectationValue(float firstRotationNetPresentValue, int rotationLengthInYears)
         {
             float appreciationFactor = MathF.Pow(1.0F + this.DiscountRate, rotationLengthInYears);
             float firstRotationFutureValue = appreciationFactor * firstRotationNetPresentValue;
             float landExpectationValue = firstRotationFutureValue / (appreciationFactor - 1.0F) - this.TaxesAndManagementPerHectareYear / this.DiscountRate;
             return landExpectationValue;
-        }
-
-        public float ToNetPresentValue(float timberValue, int harvestAgeInYears)
-        {
-            float appreciatedTimberValue = timberValue * MathF.Pow(1.0F + this.TimberAppreciationRate, harvestAgeInYears);
-            float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, harvestAgeInYears);
-            return discountFactor * appreciatedTimberValue;
         }
     }
 }

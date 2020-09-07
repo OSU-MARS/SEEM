@@ -73,7 +73,7 @@ namespace Osu.Cof.Ferm
 
         public int PlanningPeriods
         {
-            get { return this.StandingVolume.Cubic.Length; }
+            get { return this.StandingVolume.NetPresentValue.Length; }
         }
 
         public void CopyTreeSelectionTo(int[] allTreeSelection)
@@ -116,9 +116,9 @@ namespace Osu.Cof.Ferm
 
         public int GetFirstHarvestPeriod()
         {
-            for (int periodIndex = 1; periodIndex < this.ThinningVolume.Scribner.Length; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
-                if (this.ThinningVolume.Scribner[periodIndex] > 0.0F)
+                if (this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F)
                 {
                     return periodIndex;
                 }

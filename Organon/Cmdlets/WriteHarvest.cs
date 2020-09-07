@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
                 OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
-                maxPlanningPeriod = Math.Max(maxPlanningPeriod, bestTrajectory.StandingVolume.Cubic.Length);
+                maxPlanningPeriod = Math.Max(maxPlanningPeriod, bestTrajectory.PlanningPeriods);
             }
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
             {
@@ -53,14 +53,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
                     Heuristic heuristic = this.Runs[runIndex].HighestSolution;
-                    float harvestVolumeScibner = heuristic.BestTrajectory.ThinningVolume.Scribner[periodIndex];
+                    float harvestVolumeScibner = heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex];
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
                     Heuristic heuristic = this.Runs[runIndex].HighestSolution;
-                    float standingVolumeScribner = heuristic.BestTrajectory.StandingVolume.Scribner[periodIndex];
+                    float standingVolumeScribner = heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex];
                     line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
                 }
 
