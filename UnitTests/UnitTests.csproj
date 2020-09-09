@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Organon\Seem.csproj" />
+    <ProjectReference Include="..\Seem\Seem.csproj" />
   </ItemGroup>
 
 </Project>
