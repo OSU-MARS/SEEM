@@ -92,7 +92,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceMoveTypeOrObjectiveChange = 0;
-            int iterationsSinceReheatOrObjectiveChange = 0;
+            int iterationsSinceReheatOrBestObjectiveImproved = 0;
             float meanAcceptanceProbability = this.InitialProbability;
             float movingAverageOfObjectiveChange = -1.0F;
             float movingAverageMemory = 1.0F - 1.0F / this.ProbabilityWindowLength;
@@ -145,7 +145,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     candidateTrajectory.Simulate();
                     ++iterationsSinceMoveTypeOrObjectiveChange;
-                    ++iterationsSinceReheatOrObjectiveChange;
+                    ++iterationsSinceReheatOrBestObjectiveImproved;
 
                     float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
 
@@ -190,10 +190,10 @@ namespace Osu.Cof.Ferm.Heuristics
                         {
                             this.BestObjectiveFunction = acceptedObjectiveFunction;
                             this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                            iterationsSinceReheatOrBestObjectiveImproved = 0;
                         }
 
                         iterationsSinceMoveTypeOrObjectiveChange = 0;
-                        iterationsSinceReheatOrObjectiveChange = 0;
                         Debug.Assert(movingAverageOfObjectiveChange > 0.0F);
                     }
                     else
@@ -222,13 +222,13 @@ namespace Osu.Cof.Ferm.Heuristics
                         this.MoveType = MoveType.TwoOptExchange;
                         iterationsSinceMoveTypeOrObjectiveChange = 0;
                     }
-                    if (iterationsSinceReheatOrObjectiveChange > this.ReheatAfter)
+                    if (iterationsSinceReheatOrBestObjectiveImproved > this.ReheatAfter)
                     {
                         // while it's unlikely alpha would be close enough to 1 and reheat intervals short enough to drive the acceptance probability
                         // above one, it is possible
                         meanAcceptanceProbability = Math.Min(meanAcceptanceProbability + this.ReheatBy, 1.0F);
                         logMeanAcceptanceProbability = MathV.Ln(meanAcceptanceProbability);
-                        iterationsSinceReheatOrObjectiveChange = 0;
+                        iterationsSinceReheatOrBestObjectiveImproved = 0;
                     }
                 }
             }
