@@ -43,16 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, TabuParameters parameters)
         {
-            TabuSearch tabu = new TabuSearch(this.Stand, organonConfiguration, objective, parameters.TimberValue)
-            {
-                EscapeAfter = parameters.EscapeAfter,
-                EscapeDistance = parameters.EscapeDistance,
-                Iterations = parameters.Iterations,
-                // Jump = parameters.Jump,
-                MaximumTenure = parameters.MaximumTenure,
-                Tenure = parameters.Tenure
-            };
-            return tabu;
+            return new TabuSearch(this.Stand, organonConfiguration, objective, parameters);
         }
 
         protected override string GetName()
@@ -84,7 +75,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     PerturbBy = this.PerturbBy,
                                     ProportionalPercentage = proportionalPercentage,
                                     Tenure = this.Tenure,
-                                    TimberValue = this.TimberValue
+                                    TimberValue = this.TimberValue,
+                                    UseScaledVolume = this.ScaledVolume
                                 });
                             }
                         }

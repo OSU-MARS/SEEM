@@ -64,23 +64,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, GeneticParameters parameters)
         {
-            GeneticAlgorithm genetic = new GeneticAlgorithm(this.Stand, organonConfiguration, objective, parameters.TimberValue)
-            {
-                CrossoverProbabilityEnd = parameters.CrossoverProbabilityEnd,
-                ExchangeProbabilityEnd = parameters.ExchangeProbabilityEnd,
-                ExchangeProbabilityStart = parameters.ExchangeProbabilityStart,
-                ExponentK = parameters.ExponentK,
-                FlipProbabilityEnd = parameters.FlipProbabilityEnd,
-                FlipProbabilityStart = parameters.FlipProbabilityStart,
-                MaximumGenerations = parameters.MaximumGenerations,
-                MinimumCoefficientOfVariation = parameters.MinimumCoefficientOfVariation,
-                PopulationSize = parameters.PopulationSize,
-                ProportionalPercentageCenter = parameters.ProportionalPercentage,
-                ProportionalPercentageWidth = parameters.ProportionalPercentageWidth,
-                ReplacementStrategy = parameters.ReplacementStrategy,
-                ReservedPopulationProportion = parameters.ReservedProportion,
-            };
-            return genetic;
+            return new GeneticAlgorithm(this.Stand, organonConfiguration, objective, parameters);
         }
 
         protected override string GetName()
@@ -161,7 +145,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                         ProportionalPercentageWidth = proportionalPercentageWidth,
                                                         ReplacementStrategy = this.ReplacementStrategy,
                                                         ReservedProportion = reservedProportion,
-                                                        TimberValue = this.TimberValue
+                                                        TimberValue = this.TimberValue,
+                                                        UseScaledVolume = this.ScaledVolume
                                                     });
                                                 }
                                             }

@@ -59,9 +59,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, PrescriptionParameters parameters)
         {
-            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(this.Stand, organonConfiguration, objective, parameters.TimberValue);
-            enumerator.Parameters.CopyFrom(parameters);
-            return enumerator;
+            return new PrescriptionEnumeration(this.Stand, organonConfiguration, objective, parameters);
         }
 
         protected override string GetName()
@@ -111,7 +109,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                     ProportionalPercentageUpperLimit = this.ProportionalPercentageUpperLimit,
                     Step = this.Step,
                     TimberValue = this.TimberValue,
-                    Units = this.Units
+                    Units = this.Units,
+                    UseScaledVolume = this.ScaledVolume
                 });
             }
             return parameters;

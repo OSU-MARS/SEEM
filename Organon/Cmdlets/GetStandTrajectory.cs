@@ -42,6 +42,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(1, 100)]
         public int ThinPeriod { get; set; }
 
+        [Parameter]
+        public SwitchParameter ScaledVolume { get; set; }
+
         public GetStandTrajectory()
         {
             this.HarvestPeriods = 9;
@@ -72,7 +75,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             }
 
-            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, this.TimberValue, this.PlanningPeriods);
+            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, this.TimberValue, this.PlanningPeriods, this.ScaledVolume);
             if (this.Name != null)
             {
                 trajectory.Name = this.Name;

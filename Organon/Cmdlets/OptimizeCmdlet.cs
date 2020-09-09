@@ -38,6 +38,8 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
         public List<float> ProportionalPercentage { get; set; }
+        [Parameter]
+        public SwitchParameter ScaledVolume { get; set; }
 
         [Parameter(Mandatory = true)]
         public OrganonStand Stand { get; set; }
@@ -55,9 +57,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.LandExpectationValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
             this.PerturbBy = Constant.MetaheuristicDefault.PerturbBy;
+            this.ProportionalPercentage = new List<float>() { Constant.HeuristicDefault.ProportionalPercentage };
+            this.ScaledVolume = false;
             this.TimberValue = TimberValue.Default;
             this.TreeModel = TreeModel.OrganonNwo;
-            this.ProportionalPercentage = new List<float>() { 50.0F };
         }
 
         protected virtual IHarvest CreateHarvest(int harvestPeriodIndex)
@@ -76,7 +79,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     PerturbBy = this.PerturbBy,
                     ProportionalPercentage = proportionalPercentage,
-                    TimberValue = this.TimberValue
+                    TimberValue = this.TimberValue,
+                    UseScaledVolume = this.ScaledVolume
                 });
             }
             return parameters;

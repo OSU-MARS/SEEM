@@ -10,10 +10,10 @@ namespace Osu.Cof.Ferm.Heuristics
         public PrescriptionParameters Parameters { get; private set; }
         public PrescriptionMoveLog MoveLog { get; private set; }
 
-        public PrescriptionEnumeration(OrganonStand stand, OrganonConfiguration configuration, Objective objective, TimberValue timberValue)
-            : base(stand, configuration, objective, timberValue)
+        public PrescriptionEnumeration(OrganonStand stand, OrganonConfiguration configuration, Objective objective, PrescriptionParameters parameters)
+            : base(stand, configuration, objective, parameters)
         {
-            this.Parameters = new PrescriptionParameters();
+            this.Parameters = parameters;
             this.MoveLog = new PrescriptionMoveLog();
         }
 

@@ -21,24 +21,24 @@ namespace Osu.Cof.Ferm.Heuristics
         public PopulationReplacementStrategy ReplacementStrategy { get; set; }
         public float ReservedPopulationProportion { get; set; }
 
-        public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
-            : base(stand, organonConfiguration, objective, timberValue)
+        public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, GeneticParameters parameters)
+            : base(stand, organonConfiguration, objective, parameters)
         {
-            int treeRecords = stand.GetTreeRecordCount();
-            this.CrossoverProbabilityEnd = Constant.GeneticDefault.CrossoverProbabilityEnd;
-            this.ExchangeProbabilityEnd = Constant.GeneticDefault.ExchangeProbabilityEnd;
-            this.ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart;
-            this.ExponentK = Constant.GeneticDefault.ExponentK;
-            this.FlipProbabilityEnd = Constant.GeneticDefault.FlipProbabilityEnd;
-            this.FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart;
-            this.MaximumGenerations = (int)(Constant.GeneticDefault.MaximumGenerationCoefficient * treeRecords + 0.5F);
-            this.MinimumCoefficientOfVariation = Constant.GeneticDefault.MinimumCoefficientOfVariation;
-            this.PopulationSize = Constant.GeneticDefault.PopulationSize;
+            this.CrossoverProbabilityEnd = parameters.CrossoverProbabilityEnd;
+            this.ExchangeProbabilityEnd = parameters.ExchangeProbabilityEnd;
+            this.ExchangeProbabilityStart = parameters.ExchangeProbabilityStart;
+            this.ExponentK = parameters.ExponentK;
+            this.FlipProbabilityEnd = parameters.FlipProbabilityEnd;
+            this.FlipProbabilityStart = parameters.FlipProbabilityStart;
+            this.MaximumGenerations = parameters.MaximumGenerations;
+            this.MinimumCoefficientOfVariation = parameters.MinimumCoefficientOfVariation;
+            this.PopulationSize = parameters.PopulationSize;
+            this.ProportionalPercentageCenter = parameters.ProportionalPercentage;
+            this.ProportionalPercentageWidth = parameters.ProportionalPercentageWidth;
+            this.ReplacementStrategy = parameters.ReplacementStrategy;
+            this.ReservedPopulationProportion = parameters.ReservedProportion;
+
             this.PopulationStatistics = new PopulationStatistics();
-            this.ProportionalPercentageCenter = Constant.GeneticDefault.ProportionalPercentageCenter;
-            this.ProportionalPercentageWidth = Constant.GeneticDefault.ProportionalPercentageWidth;
-            this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
-            this.ReservedPopulationProportion = Constant.GeneticDefault.ReservedPopulationProportion;
         }
 
         public override string GetName()

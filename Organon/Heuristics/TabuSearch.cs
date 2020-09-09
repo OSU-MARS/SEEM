@@ -15,16 +15,15 @@ namespace Osu.Cof.Ferm.Heuristics
         public int MaximumTenure { get; set; }
         public TabuTenure Tenure { get; set; }
 
-        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
-            :  base(stand, organonConfiguration, objective, timberValue)
+        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TabuParameters parameters)
+            :  base(stand, organonConfiguration, objective, parameters)
         {
-            int treeCount = stand.GetTreeRecordCount();
-            this.EscapeAfter = (int)(Constant.TabuDefault.EscapeAfter * treeCount);
-            this.EscapeDistance = Math.Max((int)(Constant.TabuDefault.EscapeBy * treeCount), 2);
-            this.Iterations = treeCount;
-            //this.Jump = 1;
-            this.MaximumTenure = (int)(Constant.TabuDefault.MaximumTenureRatio * treeCount);
-            this.Tenure = Constant.TabuDefault.Tenure;
+            this.EscapeAfter = parameters.EscapeAfter;
+            this.EscapeDistance = parameters.EscapeDistance;
+            this.Iterations = parameters.Iterations;
+            //this.Jump = parameters.Jump;
+            this.MaximumTenure = parameters.MaximumTenure;
+            this.Tenure = parameters.Tenure;
         }
 
         //private List<List<int>> GetDiameterQuantiles()

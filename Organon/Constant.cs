@@ -118,10 +118,14 @@ namespace Osu.Cof.Ferm
             public const float MaximumGenerationCoefficient = 0.75F;
             public const float MinimumCoefficientOfVariation = 0.000001F;
             public const int PopulationSize = 30;
-            public const float ProportionalPercentageCenter = 50.0F;
             public const float ProportionalPercentageWidth = 100.0F;
             public const PopulationReplacementStrategy ReplacementStrategy = PopulationReplacementStrategy.ContributionOfDiversityReplaceWorst;
             public const float ReservedPopulationProportion = 1.0F;
+        }
+
+        public static class HeuristicDefault
+        {
+            public const float ProportionalPercentage = 50.0F;
         }
 
         public static class Maximum

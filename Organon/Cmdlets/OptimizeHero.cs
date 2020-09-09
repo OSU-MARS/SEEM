@@ -18,7 +18,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            Hero hero = new Hero(this.Stand, organonConfiguration, objective, parameters.TimberValue)
+            Hero hero = new Hero(this.Stand, organonConfiguration, objective, parameters)
             {
                 IsStochastic = this.Stochastic
             };

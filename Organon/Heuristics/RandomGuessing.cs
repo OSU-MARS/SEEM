@@ -10,10 +10,10 @@ namespace Osu.Cof.Ferm.Heuristics
         public int Iterations { get; set; }
         public float SelectionPercentageWidth { get; set; }
 
-        public RandomGuessing(OrganonStand stand, OrganonConfiguration configuration, Objective objective, TimberValue timberValue, float centralSelectionPercentage)
-            : base(stand, configuration, objective, timberValue)
+        public RandomGuessing(OrganonStand stand, OrganonConfiguration configuration, Objective objective, HeuristicParameters parameters)
+            : base(stand, configuration, objective, parameters)
         {
-            this.CentralSelectionPercentage = centralSelectionPercentage;
+            this.CentralSelectionPercentage = parameters.ProportionalPercentage;
             this.Iterations = 4 * stand.GetTreeRecordCount();
             this.SelectionPercentageWidth = 20.0F;
         }

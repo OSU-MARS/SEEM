@@ -18,6 +18,28 @@ namespace Osu.Cof.Ferm.Heuristics
         public PopulationReplacementStrategy ReplacementStrategy { get; set; }
         public float ReservedProportion { get; set; }
 
+        public GeneticParameters()
+        {
+            this.CrossoverProbabilityEnd = Constant.GeneticDefault.CrossoverProbabilityEnd;
+            this.ExchangeProbabilityEnd = Constant.GeneticDefault.ExchangeProbabilityEnd;
+            this.ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart;
+            this.ExponentK = Constant.GeneticDefault.ExponentK;
+            this.FlipProbabilityEnd = Constant.GeneticDefault.FlipProbabilityEnd;
+            this.FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart;
+            this.MaximumGenerations = 50;
+            this.MinimumCoefficientOfVariation = Constant.GeneticDefault.MinimumCoefficientOfVariation;
+            this.PopulationSize = Constant.GeneticDefault.PopulationSize;
+            this.ProportionalPercentageWidth = Constant.GeneticDefault.ProportionalPercentageWidth;
+            this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
+            this.ReservedProportion = Constant.GeneticDefault.ReservedPopulationProportion;
+        }
+
+        public GeneticParameters(int treeCount)
+            : this()
+        {
+            this.MaximumGenerations = (int)(Constant.GeneticDefault.MaximumGenerationCoefficient * treeCount + 0.5F);
+        }
+
         public override string GetCsvHeader()
         {
             return "perturbation,generations,size,strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,proportional,width,reserved,min CV";

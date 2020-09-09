@@ -59,7 +59,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            RecordTravel recordTravel = new RecordTravel(this.Stand, organonConfiguration, objective, parameters.TimberValue);
+            RecordTravel recordTravel = new RecordTravel(this.Stand, organonConfiguration, objective, parameters);
             if (this.Alpha.HasValue)
             {
                 recordTravel.Alpha = this.Alpha.Value;

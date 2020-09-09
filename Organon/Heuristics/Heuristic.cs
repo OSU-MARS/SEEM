@@ -15,14 +15,14 @@ namespace Osu.Cof.Ferm.Heuristics
         public Objective Objective { get; private set; }
         public List<float> CandidateObjectiveFunctionByMove { get; protected set; }
 
-        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
+        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
             this.BestObjectiveFunction = Single.MinValue;
             this.AcceptedObjectiveFunctionByMove = new List<float>();
 
-            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, timberValue, objective.PlanningPeriods)
+            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, parameters.TimberValue, objective.PlanningPeriods, parameters.UseScaledVolume)
             {
-                Heuristic = this,
+                Heuristic = this
             };
 
             this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);

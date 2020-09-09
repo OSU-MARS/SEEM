@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            RandomGuessing random = new RandomGuessing(this.Stand, organonConfiguration, objective, parameters.TimberValue, parameters.ProportionalPercentage);
+            RandomGuessing random = new RandomGuessing(this.Stand, organonConfiguration, objective, parameters);
             if (this.Iterations.HasValue)
             {
                 random.Iterations = this.Iterations.Value;

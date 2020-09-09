@@ -26,17 +26,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.Units = Constant.PrescriptionEnumerationDefault.Units;
         }
 
-        public void CopyFrom(PrescriptionParameters other)
-        {
-            this.FromAbovePercentageUpperLimit = other.FromAbovePercentageUpperLimit;
-            this.FromBelowPercentageUpperLimit = other.FromBelowPercentageUpperLimit;
-            this.Maximum = other.Maximum;
-            this.Minimum = other.Minimum;
-            this.ProportionalPercentageUpperLimit = other.ProportionalPercentageUpperLimit;
-            this.Step = other.Step;
-            this.Units = other.Units;
-        }
-
         public override string GetCsvHeader()
         {
             return "units,min intensity,max intensity,step,max above,max proportional,max below";

@@ -9,8 +9,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public bool IsStochastic { get; set; }
         public int MaximumIterations { get; set; }
 
-        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TimberValue timberValue)
-            : base(stand, organonConfiguration, objective, timberValue)
+        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
+            : base(stand, organonConfiguration, objective, parameters)
         {
             this.IsStochastic = false;
             this.MaximumIterations = 50;
