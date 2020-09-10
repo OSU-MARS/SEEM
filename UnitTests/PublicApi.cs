@@ -26,7 +26,7 @@ namespace Osu.Cof.Ferm.Test
         private PlotWithHeight GetPlot14()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp plots 14-18+34 Ministry.xlsx");
-            PlotWithHeight plot = new PlotWithHeight(14, 4.95F);
+            PlotWithHeight plot = new PlotWithHeight(14, 4.48F);
             plot.Read(plotFilePath, "0.2 ha");
             return plot;
         }
@@ -356,19 +356,18 @@ namespace Osu.Cof.Ferm.Test
 
             // verify thinned trajectory
             //                                        0      1       2       3       4     
-            float[] minimumThinnedQmd = new float[] { 9.16F, 10.18F, 11.26F, 12.21F, 13.07F }; // in
+            float[] minimumThinnedQmd = new float[] { 9.16F, 10.26F, 11.41F, 12.42F, 13.32F }; // in
             //                                              0      1       2       3       4     
-            float[] minimumThinnedTopHeight = new float[] { 93.2F, 101.7F, 110.5F, 119.0F, 126.8F }; // ft
+            float[] minimumThinnedTopHeight = new float[] { 92.9F, 101.4F, 110.4F, 118.9F, 126.7F }; // ft
             float[] minimumThinnedVolume;
             if (thinnedTrajectory.UseScaledVolume)
             {
-                minimumThinnedVolume = new float[] { 57.01F, 53.97F, 68.79F, 83.71F, 98.59F }; // Poudel 2018 + Scribner long log net MBF/ha
+                minimumThinnedVolume = new float[] { 51.59F, 49.67F, 64.91F, 80.38F, 95.08F }; // Poudel 2018 + Scribner long log net MBF/ha
             }
             else
             {
                 //                                   0       1       2       3       4     
-                minimumThinnedVolume = new float[] { 48.33F, 50.05F, 69.32F, 88.21F, 105.98F }; // Browning 1977 (FIA) MBF/ha
-                // minimumThinnedVolume = new float[] { 450.1F, 407.7F, 511.0F, 605.0F, 687.5F }; // Browning 1977 (FIA) CVTS4 m³/ha for 0+30+0% thin
+                minimumThinnedVolume = new float[] { 43.74F, 46.59F, 65.78F, 84.94F, 103.1F }; // Browning 1977 (FIA) MBF/ha
             }
 
             this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
