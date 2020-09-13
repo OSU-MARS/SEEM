@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm.Test
 
         private PlotWithHeight GetNelder()
         {
-            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "MalcolmKnappNelder1.xlsx");
-            PlotWithHeight plot = new PlotWithHeight(1);
+            string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp Nelder 1.xlsx");
+            PlotWithHeight plot = new PlotWithHeight(1, 1.327F);
             plot.Read(plotFilePath, "1");
             return plot;
         }
@@ -60,12 +60,12 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinningPeriod = 4;
             int treeCount = 100;
-            float minObjectiveFunctionWithFiaVolume = 3.346F; // USk$/ha
-            float minObjectiveFunctionWithScaledVolume = 3.474F; // USk$/ha
+            float minObjectiveFunctionWithFiaVolume = 3.240F; // USk$/ha
+            float minObjectiveFunctionWithScaledVolume = 3.331F; // USk$/ha
             #if DEBUG
             treeCount = 48;
-            minObjectiveFunctionWithFiaVolume = 1.315F; // USk$/ha
-            minObjectiveFunctionWithScaledVolume = 1.383F; // USk$/ha
+            minObjectiveFunctionWithFiaVolume = 1.201F; // USk$/ha
+            minObjectiveFunctionWithScaledVolume = 1.291F; // USk$/ha
             #endif
 
             PlotWithHeight nelder = this.GetNelder();
@@ -78,7 +78,7 @@ namespace Osu.Cof.Ferm.Test
                 IsLandExpectationValue = true,
                 PlanningPeriods = 9
             };
-            Hero hero = new Hero(stand, configuration, landExpectationValue, new HeuristicParameters())
+            Hero hero = new Hero(stand, configuration, landExpectationValue, new HeuristicParameters() { UseScaledVolume = false })
             {
                 IsStochastic = true,
                 MaximumIterations = 10
@@ -87,6 +87,7 @@ namespace Osu.Cof.Ferm.Test
             hero.Run();
 
             this.Verify(hero);
+            this.TestContext.WriteLine("best objective: {0}", hero.BestObjectiveFunction);
             if (hero.BestTrajectory.UseScaledVolume)
             {
                 Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithScaledVolume);
@@ -249,37 +250,35 @@ namespace Osu.Cof.Ferm.Test
 
             // verify unthinned trajectory
             //                                          0      1      2      3       4       5       6       7       8       9
-            float[] minimumUnthinnedQmd = new float[] { 6.60F, 8.09F, 9.36F, 10.44F, 11.39F, 12.22F, 12.96F, 13.64F, 14.25F, 14.82F }; // in
+            float[] minimumUnthinnedQmd = new float[] { 6.61F, 8.17F, 9.52F, 10.67F, 11.68F, 12.56F, 13.34F, 14.05F, 14.69F, 15.28F }; // in
             //                                                0      1      2      3      4       5       6       7       8       9
-            float[] minimumUnthinnedTopHeight = new float[] { 54.5F, 68.1F, 80.5F, 91.7F, 101.9F, 111.3F, 119.8F, 127.7F, 134.9F, 141.6F }; // ft
+            float[] minimumUnthinnedTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 91.6F, 101.9F, 111.3F, 119.9F, 127.8F, 135.0F, 141.7F }; // ft
             float[] minimumUnthinnedVolume;
             if (unthinnedTrajectory.UseScaledVolume)
             {
-                minimumUnthinnedVolume = new float[] { 10.90F, 20.54F, 32.99F, 48.70F, 63.69F, 76.07F, 90.30F, 103.6F, 115.9F, 128.2F }; // Poudel 2018 + Scribner long log net MBF/ha
+                minimumUnthinnedVolume = new float[] { 9.754F, 19.01F, 31.07F, 47.24F, 62.21F, 75.09F, 89.60F, 103.8F, 116.5F, 128.9F }; // Poudel 2018 + Scribner long log net MBF/ha
             }
             else
             {
                 //                                     0       1       2       3       4       5       6       7       8       9
-                minimumUnthinnedVolume = new float[] { 4.947F, 16.16F, 32.01F, 49.93F, 67.99F, 85.26F, 101.3F, 116.2F, 130.0F, 142.7F }; // FIA SV6x32 MBF/ha
-                // minimumUnthinnedVolume = new float[] { 103.1F, 205.3F, 316.8F, 424.2F, 520.6F, 604.6F, 677.2F, 740.1F, 795.2F, 844.2F }; // FIA CVTS4 m³/ha
+                minimumUnthinnedVolume = new float[] { 4.428F, 15.02F, 30.49F, 48.39F, 66.72F, 84.45F, 101.1F, 116.4F, 130.6F, 143.6F }; // FIA SV6x32 MBF/ha
             }
             this.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
 
             // verify thinned trajectory
             //                                        0      1      2      3       4       5       6       7       8       9
-            float[] minimumThinnedQmd = new float[] { 6.60F, 8.09F, 9.36F, 11.23F, 12.70F, 14.04F, 15.22F, 16.27F, 17.22F, 18.07F }; // in
+            float[] minimumThinnedQmd = new float[] { 6.61F, 8.17F, 9.52F, 11.41F, 12.95F, 14.33F, 15.56F, 16.65F, 17.62F, 18.51F }; // in
             //                                              0      1      2      3      4      5       6       7       8       9
-            float[] minimumThinnedTopHeight = new float[] { 54.5F, 68.1F, 80.5F, 88.4F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
+            float[] minimumThinnedTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 88.3F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
             float[] minimumThinnedVolume;
             if (thinnedTrajectory.UseScaledVolume)
             {
-                minimumThinnedVolume = new float[] { 10.90F, 20.54F, 32.99F, 27.76F, 40.99F, 53.84F, 67.97F, 85.06F, 99.71F, 113.8F }; // Poudel 2018 + Scribner long log net MBF/ha
+                minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 26.63F, 39.89F, 52.26F, 65.87F, 82.84F, 99.15F, 113.7F }; // Poudel 2018 + Scribner long log net MBF/ha
             }
             else
             {
                 //                                   0       1       2       3       4       5       6       7       8       9
-                minimumThinnedVolume = new float[] { 4.947F, 16.16F, 32.01F, 29.43F, 45.20F, 62.65F, 80.48F, 97.88F, 114.4F, 129.8F }; // FIA MBF/ha
-                // minimumThinnedVolume = new float[] { 103.1F, 205.3F, 316.8F, 247.9F, 340.3F, 436.2F, 528.8F, 614.8F, 693.0F, 763.0F }; // FIA CVTS4 m³/ha for 20+15+10% thin
+                minimumThinnedVolume = new float[] { 4.428F, 15.02F, 30.49F, 28.45F, 44.02F, 61.28F, 79.10F, 96.69F, 113.5F, 129.3F }; // FIA MBF/ha
             }
             this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
@@ -477,7 +476,7 @@ namespace Osu.Cof.Ferm.Test
             float bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
             if (heuristic.Objective.IsLandExpectationValue)
             {
-                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.58F);
+                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.68F);
             }
             else
             {
