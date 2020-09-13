@@ -38,7 +38,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.NewIndividuals = 0;
             this.TreeCount = treeCount;
 
-            int treeCapacity = this.GetTreeCapacity(treeCount);
+            int treeCapacity = Trees.GetCapacity(treeCount);
             for (int individualIndex = 0; individualIndex < populationSize; ++individualIndex)
             {
                 this.IndividualTreeSelections[individualIndex] = new int[treeCapacity];
@@ -265,11 +265,6 @@ namespace Osu.Cof.Ferm.Heuristics
             return distance;
         }
 
-        private int GetTreeCapacity(int treeCount)
-        {
-            return Constant.Simd128x4.Width * (treeCount / Constant.Simd128x4.Width + 1);
-        }
-
         public void RandomizeSchedule(HarvestPeriodSelection periodSelection, float proportionalPercentageCenter, float proportionalPercentageWidth)
         {
             if ((proportionalPercentageCenter < 0.0F) || (proportionalPercentageCenter > 100.0F))
@@ -435,7 +430,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public bool TryReplaceByDiversityOrFitness(float newFitness, StandTrajectory trajectory)
         {
-            int[] candidateSelection = new int[this.GetTreeCapacity(this.TreeCount)];
+            int[] candidateSelection = new int[Trees.GetCapacity(this.TreeCount)];
             trajectory.CopyTreeSelectionTo(candidateSelection);
 
             int nearestNeighborDistance = Int32.MaxValue;

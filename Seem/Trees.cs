@@ -68,7 +68,7 @@ namespace Osu.Cof.Ferm
         public Trees(FiaCode species, int minimumSize, Units units)
         {
             // ensure array lengths are an exact multiple of the SIMD width
-            this.Capacity = Constant.Simd128x4.Width * (int)MathF.Ceiling((float)minimumSize / (float)Constant.Simd128x4.Width);
+            this.Capacity = Trees.GetCapacity(minimumSize);
             this.Count = 0; // no trees assigned yet
             this.CrownRatio = new float[this.Capacity];
             this.Dbh = new float[this.Capacity];
@@ -142,6 +142,11 @@ namespace Osu.Cof.Ferm
             float dbhInInches = this.Dbh[treeIndex];
             float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
             return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
+        }
+
+        public static int GetCapacity(int treeCount)
+        {
+            return Constant.Simd128x4.Width * (int)MathF.Ceiling((float)treeCount / (float)Constant.Simd128x4.Width);
         }
 
         public int[] GetDbhSortOrder()
