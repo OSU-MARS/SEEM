@@ -132,7 +132,7 @@ namespace Osu.Cof.Ferm
             return treeRecords;
         }
 
-        private Units GetUnits()
+        public Units GetUnits()
         {
             if (this.TreesBySpecies.Count < 1)
             {

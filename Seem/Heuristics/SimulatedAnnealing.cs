@@ -21,7 +21,7 @@ namespace Osu.Cof.Ferm.Heuristics
             :  base(stand, organonConfiguration, objective, parameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
-            this.Alpha = 0.925F;
+            this.Alpha = 0.7F;
             this.ChangeToExchangeAfter = Int32.MaxValue;
             this.FinalProbability = 0.0F;
             this.InitialProbability = 0.0F;
@@ -30,7 +30,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveType = MoveType.OneOpt;
             this.ProbabilityWindowLength = 10;
             this.ReheatAfter = (int)(1.7F * treeRecords);
-            this.ReheatBy = 0.75F;
+            this.ReheatBy = 0.33F;
 
             // float temperatureSteps = (float)(defaultIterations / this.IterationsPerTemperature);
             // this.Alpha = 1.0F / MathF.Pow(this.InitialAcceptProbability / this.FinalAcceptProbability, 1.0F / temperatureSteps);

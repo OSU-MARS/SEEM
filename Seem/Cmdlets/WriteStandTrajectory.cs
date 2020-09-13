@@ -138,8 +138,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                     trajectoryName = runOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
                 }
 
-                this.GetBasalAreaConversion(Units.English, Units.Metric, out float basalAreaConversionFactor);
-                this.GetDimensionConversions(Units.English, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
+                Units trajectoryUnits = bestTrajectory.GetUnits();
+                this.GetBasalAreaConversion(trajectoryUnits, Units.Metric, out float basalAreaConversionFactor);
+                this.GetDimensionConversions(trajectoryUnits, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
                 bestTrajectory.GetGradedVolumes(out StandGradedVolume gradedVolumeStanding, out StandGradedVolume gradedVolumeHarvested);
                 for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
                 {

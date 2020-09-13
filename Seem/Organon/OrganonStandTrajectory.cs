@@ -164,6 +164,19 @@ namespace Osu.Cof.Ferm.Organon
             this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
         }
 
+        public Units GetUnits()
+        {
+            Units units = this.StandByPeriod[0].GetUnits();
+            for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
+            {
+                if (this.StandByPeriod[periodIndex].GetUnits() != units)
+                {
+                    throw new NotSupportedException();
+                }
+            }
+            return units;
+        }
+
         private void GetVolumeAndValue(int periodIndex)
         {
             if (this.UseScaledVolume)
