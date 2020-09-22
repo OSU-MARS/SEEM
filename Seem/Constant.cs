@@ -92,6 +92,7 @@ namespace Osu.Cof.Ferm
             public const float LogTaperSegmentationLength = Constant.MetersPerFoot * 8.0F; // m
             public const float MaximumDiameterInCentimeters = 100.0F;
             public const float MaximumHeightInMeters = 75.0F;
+            public const float MinimumBasalArea4SawEnglish = 0.14F; // 5 inch DBH + a bit for bark
             public const float MinimumLogLength2Saw = Constant.MetersPerFoot * 12.0F; // m
             public const float MinimumLogLength3Saw = Constant.MetersPerFoot * 12.0F; // m
             public const float MinimumLogLength4Saw = Constant.MetersPerFoot * 8.0F; // m, typically specified as 12 but often 8 feet in practice

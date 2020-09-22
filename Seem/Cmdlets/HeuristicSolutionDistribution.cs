@@ -144,121 +144,118 @@ namespace Osu.Cof.Ferm.Cmdlets
                 this.VarianceByMove[moveIndex] = this.VarianceByMove[moveIndex] / runsAsFloat - this.MeanObjectiveFunctionByMove[moveIndex] * this.MeanObjectiveFunctionByMove[moveIndex];
 
                 List<float> objectiveFunctions = this.ObjectiveFunctionValuesByMove[moveIndex];
-                if (objectiveFunctions.Count > 2)
-                {
-                    objectiveFunctions.Sort();
+                objectiveFunctions.Sort();
 
-                    float median;
-                    bool exactMedian = (objectiveFunctions.Count % 2) == 1;
-                    if (exactMedian)
+                float median;
+                bool exactMedian = (objectiveFunctions.Count % 2) == 1;
+                if (exactMedian)
+                {
+                    median = objectiveFunctions[objectiveFunctions.Count / 2]; // x.5 truncates to x, matching middle element due to zero based indexing
+                }
+                else
+                {
+                    int halfIndex = objectiveFunctions.Count / 2;
+                    median = 0.5F * objectiveFunctions[halfIndex - 1] + 0.5F * objectiveFunctions[halfIndex];
+
+                    Debug.Assert(median >= objectiveFunctions[0]);
+                    Debug.Assert(median <= objectiveFunctions[^1]);
+                }
+                this.MedianObjectiveFunctionByMove.Add(median);
+
+                if (objectiveFunctions.Count > 4)
+                {
+                    bool exactQuartiles = (objectiveFunctions.Count % 4) == 0;
+                    if (exactQuartiles)
                     {
-                        median = objectiveFunctions[objectiveFunctions.Count / 2]; // x.5 truncates to x, matching middle element due zero based indexing
+                        this.LowerQuartileByMove.Add(objectiveFunctions[objectiveFunctions.Count / 4]);
+                        this.UpperQuartileByMove.Add(objectiveFunctions[3 * objectiveFunctions.Count / 4]);
                     }
                     else
                     {
-                        int halfIndex = objectiveFunctions.Count / 2;
-                        median = 0.5F * objectiveFunctions[halfIndex - 1] + 0.5F * objectiveFunctions[halfIndex];
+                        float lowerQuartilePosition = 0.25F * objectiveFunctions.Count;
+                        float ceilingIndex = MathF.Ceiling(lowerQuartilePosition);
+                        float floorIndex = MathF.Floor(lowerQuartilePosition);
+                        float ceilingWeight = 1.0F + lowerQuartilePosition - ceilingIndex;
+                        float floorWeight = 1.0F - lowerQuartilePosition + floorIndex;
+                        float lowerQuartile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
+                        this.LowerQuartileByMove.Add(lowerQuartile);
 
-                        Debug.Assert(median >= objectiveFunctions[0]);
-                        Debug.Assert(median <= objectiveFunctions[^1]);
+                        float upperQuartilePosition = 0.75F * objectiveFunctions.Count;
+                        ceilingIndex = MathF.Ceiling(upperQuartilePosition);
+                        floorIndex = MathF.Floor(upperQuartilePosition);
+                        ceilingWeight = 1.0F + upperQuartilePosition - ceilingIndex;
+                        floorWeight = 1.0F - upperQuartilePosition + floorIndex;
+                        float upperQuartile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
+                        this.UpperQuartileByMove.Add(upperQuartile);
+
+                        Debug.Assert(lowerQuartile >= objectiveFunctions[0]);
+                        Debug.Assert(lowerQuartile <= median);
+                        Debug.Assert(upperQuartile >= median);
+                        Debug.Assert(upperQuartile <= objectiveFunctions[^1]);
                     }
-                    this.MedianObjectiveFunctionByMove.Add(median);
 
-                    if (objectiveFunctions.Count > 4)
+                    if (objectiveFunctions.Count > 19)
                     {
-                        bool exactQuartiles = (objectiveFunctions.Count % 4) == 0;
-                        if (exactQuartiles)
+                        bool exactPercentiles = (objectiveFunctions.Count % 20) == 0;
+                        if (exactPercentiles)
                         {
-                            this.LowerQuartileByMove.Add(objectiveFunctions[objectiveFunctions.Count / 4]);
-                            this.UpperQuartileByMove.Add(objectiveFunctions[3 * objectiveFunctions.Count / 4]);
+                            this.FifthPercentileByMove.Add(objectiveFunctions[objectiveFunctions.Count / 20]);
+                            this.NinetyFifthPercentileByMove.Add(objectiveFunctions[19 * objectiveFunctions.Count / 20]);
                         }
                         else
                         {
-                            float lowerQuartilePosition = 0.25F * objectiveFunctions.Count;
-                            float ceilingIndex = MathF.Ceiling(lowerQuartilePosition);
-                            float floorIndex = MathF.Floor(lowerQuartilePosition);
-                            float ceilingWeight = 1.0F + lowerQuartilePosition - ceilingIndex;
-                            float floorWeight = 1.0F - lowerQuartilePosition + floorIndex;
-                            float lowerQuartile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
-                            this.LowerQuartileByMove.Add(lowerQuartile);
+                            float fifthPercentilePosition = 0.05F * objectiveFunctions.Count;
+                            float ceilingIndex = MathF.Ceiling(fifthPercentilePosition);
+                            float floorIndex = MathF.Floor(fifthPercentilePosition);
+                            float ceilingWeight = 1.0F + fifthPercentilePosition - ceilingIndex;
+                            float floorWeight = 1.0F - fifthPercentilePosition + floorIndex;
+                            float fifthPercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
+                            this.FifthPercentileByMove.Add(fifthPercentile);
 
-                            float upperQuartilePosition = 0.75F * objectiveFunctions.Count;
-                            ceilingIndex = MathF.Ceiling(upperQuartilePosition);
-                            floorIndex = MathF.Floor(upperQuartilePosition);
-                            ceilingWeight = 1.0F + upperQuartilePosition - ceilingIndex;
-                            floorWeight = 1.0F - upperQuartilePosition + floorIndex;
-                            float upperQuartile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
-                            this.UpperQuartileByMove.Add(upperQuartile);
+                            float ninetyFifthPercentilePosition = 0.95F * objectiveFunctions.Count;
+                            ceilingIndex = MathF.Ceiling(ninetyFifthPercentilePosition);
+                            floorIndex = MathF.Floor(ninetyFifthPercentilePosition);
+                            ceilingWeight = 1.0F + ninetyFifthPercentilePosition - ceilingIndex;
+                            floorWeight = 1.0F - ninetyFifthPercentilePosition + floorIndex;
+                            float ninetyFifthPercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
+                            this.NinetyFifthPercentileByMove.Add(ninetyFifthPercentile);
 
-                            Debug.Assert(lowerQuartile >= objectiveFunctions[0]);
-                            Debug.Assert(lowerQuartile <= median);
-                            Debug.Assert(upperQuartile >= median);
-                            Debug.Assert(upperQuartile <= objectiveFunctions[^1]);
+                            Debug.Assert(fifthPercentile >= objectiveFunctions[0]);
+                            Debug.Assert(fifthPercentile <= median);
+                            Debug.Assert(ninetyFifthPercentile >= median);
+                            Debug.Assert(ninetyFifthPercentile <= objectiveFunctions[^1]);
                         }
 
-                        if (objectiveFunctions.Count > 19)
+                        if (objectiveFunctions.Count > 39)
                         {
-                            bool exactPercentiles = (objectiveFunctions.Count % 20) == 0;
+                            exactPercentiles = (objectiveFunctions.Count % 40) == 0;
                             if (exactPercentiles)
                             {
-                                this.FifthPercentileByMove.Add(objectiveFunctions[objectiveFunctions.Count / 20]);
-                                this.NinetyFifthPercentileByMove.Add(objectiveFunctions[19 * objectiveFunctions.Count / 20]);
+                                this.TwoPointFivePercentileByMove.Add(objectiveFunctions[objectiveFunctions.Count / 40]);
+                                this.NinetySevenPointFivePercentileByMove.Add(objectiveFunctions[39 * objectiveFunctions.Count / 40]);
                             }
                             else
                             {
-                                float fifthPercentilePosition = 0.05F * objectiveFunctions.Count;
-                                float ceilingIndex = MathF.Ceiling(fifthPercentilePosition);
-                                float floorIndex = MathF.Floor(fifthPercentilePosition);
-                                float ceilingWeight = 1.0F + fifthPercentilePosition - ceilingIndex;
-                                float floorWeight = 1.0F - fifthPercentilePosition + floorIndex;
-                                float fifthPercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
-                                this.FifthPercentileByMove.Add(fifthPercentile);
+                                float twoPointFivePercentilePosition = 0.025F * objectiveFunctions.Count;
+                                float ceilingIndex = MathF.Ceiling(twoPointFivePercentilePosition);
+                                float floorIndex = MathF.Floor(twoPointFivePercentilePosition);
+                                float ceilingWeight = 1.0F + twoPointFivePercentilePosition - ceilingIndex;
+                                float floorWeight = 1.0F - twoPointFivePercentilePosition + floorIndex;
+                                float twoPointFivePercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
+                                this.TwoPointFivePercentileByMove.Add(twoPointFivePercentile);
 
-                                float ninetyFifthPercentilePosition = 0.95F * objectiveFunctions.Count;
-                                ceilingIndex = MathF.Ceiling(ninetyFifthPercentilePosition);
-                                floorIndex = MathF.Floor(ninetyFifthPercentilePosition);
-                                ceilingWeight = 1.0F + ninetyFifthPercentilePosition - ceilingIndex;
-                                floorWeight = 1.0F - ninetyFifthPercentilePosition + floorIndex;
-                                float ninetyFifthPercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
-                                this.NinetyFifthPercentileByMove.Add(ninetyFifthPercentile);
+                                float ninetySevenPointFivePercentilePosition = 0.975F * objectiveFunctions.Count;
+                                ceilingIndex = MathF.Ceiling(ninetySevenPointFivePercentilePosition);
+                                floorIndex = MathF.Floor(ninetySevenPointFivePercentilePosition);
+                                ceilingWeight = 1.0F + ninetySevenPointFivePercentilePosition - ceilingIndex;
+                                floorWeight = 1.0F - ninetySevenPointFivePercentilePosition + floorIndex;
+                                float ninetySevenPointFivePercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
+                                this.NinetySevenPointFivePercentileByMove.Add(ninetySevenPointFivePercentile);
 
-                                Debug.Assert(fifthPercentile >= objectiveFunctions[0]);
-                                Debug.Assert(fifthPercentile <= median);
-                                Debug.Assert(ninetyFifthPercentile >= median);
-                                Debug.Assert(ninetyFifthPercentile <= objectiveFunctions[^1]);
-                            }
-
-                            if (objectiveFunctions.Count > 39)
-                            {
-                                exactPercentiles = (objectiveFunctions.Count % 40) == 0;
-                                if (exactPercentiles)
-                                {
-                                    this.TwoPointFivePercentileByMove.Add(objectiveFunctions[objectiveFunctions.Count / 40]);
-                                    this.NinetySevenPointFivePercentileByMove.Add(objectiveFunctions[39 * objectiveFunctions.Count / 40]);
-                                }
-                                else
-                                {
-                                    float twoPointFivePercentilePosition = 0.025F * objectiveFunctions.Count;
-                                    float ceilingIndex = MathF.Ceiling(twoPointFivePercentilePosition);
-                                    float floorIndex = MathF.Floor(twoPointFivePercentilePosition);
-                                    float ceilingWeight = 1.0F + twoPointFivePercentilePosition - ceilingIndex;
-                                    float floorWeight = 1.0F - twoPointFivePercentilePosition + floorIndex;
-                                    float twoPointFivePercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
-                                    this.TwoPointFivePercentileByMove.Add(twoPointFivePercentile);
-
-                                    float ninetySevenPointFivePercentilePosition = 0.975F * objectiveFunctions.Count;
-                                    ceilingIndex = MathF.Ceiling(ninetySevenPointFivePercentilePosition);
-                                    floorIndex = MathF.Floor(ninetySevenPointFivePercentilePosition);
-                                    ceilingWeight = 1.0F + ninetySevenPointFivePercentilePosition - ceilingIndex;
-                                    floorWeight = 1.0F - ninetySevenPointFivePercentilePosition + floorIndex;
-                                    float ninetySevenPointFivePercentile = floorWeight * objectiveFunctions[(int)floorIndex] + ceilingWeight * objectiveFunctions[(int)ceilingIndex];
-                                    this.NinetySevenPointFivePercentileByMove.Add(ninetySevenPointFivePercentile);
-
-                                    Debug.Assert(twoPointFivePercentile >= objectiveFunctions[0]);
-                                    Debug.Assert(twoPointFivePercentile <= median);
-                                    Debug.Assert(ninetySevenPointFivePercentile >= median);
-                                    Debug.Assert(ninetySevenPointFivePercentile <= objectiveFunctions[^1]);
-                                }
+                                Debug.Assert(twoPointFivePercentile >= objectiveFunctions[0]);
+                                Debug.Assert(twoPointFivePercentile <= median);
+                                Debug.Assert(ninetySevenPointFivePercentile >= median);
+                                Debug.Assert(ninetySevenPointFivePercentile <= objectiveFunctions[^1]);
                             }
                         }
                     }

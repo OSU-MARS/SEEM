@@ -476,7 +476,7 @@ namespace Osu.Cof.Ferm.Test
             float bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
             if (heuristic.Objective.IsLandExpectationValue)
             {
-                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.68F);
+                Assert.IsTrue(heuristic.BestObjectiveFunction > -0.70F);
             }
             else
             {

@@ -233,9 +233,10 @@ namespace Osu.Cof.Ferm.Organon
                         this.ThinningVolume.NetPresentValue[periodIndex] = this.TimberValue.GetNetPresentThinningValue(this.ThinningVolume.ScribnerTotal[periodIndex], thinAge);
                     }
 
-                    // could make more specific by checking if harvest removes at least one tree
-                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > 0.0F && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
-                                 (this.BasalAreaRemoved[periodIndex] == 0.0F && this.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F));
+                    // could make more specific by checking if harvest removes at least one tree with merchantable volume
+                    // basal area threshold will need to be updated when metric units are supportd
+                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
+                                  this.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F);
                 }
             }
 
@@ -304,8 +305,8 @@ namespace Osu.Cof.Ferm.Organon
                     OrganonStand previousStand = this.StandByPeriod[periodIndex - 1];
                     this.ThinningVolume.FromStand(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TimberValue, this.GetStartOfPeriodAge(periodIndex));
                     // could make more specific by checking if harvest removes at least one tree
-                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > 0.0F && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
-                                 (this.BasalAreaRemoved[periodIndex] == 0.0F && this.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F));
+                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
+                                  this.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F);
                 }
             }
 
@@ -386,7 +387,8 @@ namespace Osu.Cof.Ferm.Organon
                     // recalculate volume for this period
                     this.GetVolumeAndValue(periodIndex);
 
-                    Debug.Assert((this.BasalAreaRemoved[periodIndex] == 0.0F && this.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F) || (this.BasalAreaRemoved[periodIndex] > 0.0F && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F));
+                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
+                                  this.BasalAreaRemoved[periodIndex] == 0.0F);
                 }
             }
 
