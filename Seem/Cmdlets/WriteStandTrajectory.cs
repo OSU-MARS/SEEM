@@ -15,7 +15,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateNotNull]
-        public List<HeuristicSolutionDistribution> Runs { get; set; }
+        public List<HeuristicSolutionDistribution>? Runs { get; set; }
 
         [Parameter]
         [ValidateNotNull]
@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateNotNull]
-        public List<OrganonStandTrajectory> Trajectories { get; set; }
+        public List<OrganonStandTrajectory>? Trajectories { get; set; }
 
         public WriteStandTrajectory()
         {
@@ -64,14 +64,14 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 line.Append(",heuristic");
 
-                HeuristicParameters heuristicParametersForHeader = null;
+                HeuristicParameters? heuristicParametersForHeader = null;
                 if (runsSpecified)
                 {
-                    heuristicParametersForHeader = this.Runs[0].HighestHeuristicParameters;
+                    heuristicParametersForHeader = this.Runs![0].HighestHeuristicParameters;
                 }
-                else if(this.Trajectories[0].Heuristic != null)
+                else if(this.Trajectories![0].Heuristic != null)
                 {
-                    heuristicParametersForHeader = this.Trajectories[0].Heuristic.GetParameters();
+                    heuristicParametersForHeader = this.Trajectories[0].Heuristic!.GetParameters();
                 }
 
                 if (heuristicParametersForHeader != null)
@@ -89,17 +89,21 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             // rows for periods
-            int maxIndex = runsSpecified ? this.Runs.Count : this.Trajectories.Count;
+            int maxIndex = runsSpecified ? this.Runs!.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
                 OrganonStandTrajectory bestTrajectory;
-                HeuristicParameters heuristicParameters = null;
+                HeuristicParameters? heuristicParameters = null;
                 int moves = -1;
                 int runs = -1;
                 string runtimeInSeconds = "-1";
                 if (runsSpecified)
                 {
-                    HeuristicSolutionDistribution distribution = this.Runs[runOrTrajectoryIndex];
+                    HeuristicSolutionDistribution distribution = this.Runs![runOrTrajectoryIndex];
+                    if (distribution.HighestSolution == null)
+                    {
+                        throw new NotSupportedException("Run " + runOrTrajectoryIndex + " is missing a highest solution.");
+                    }
                     bestTrajectory = distribution.HighestSolution.BestTrajectory;
                     heuristicParameters = distribution.HighestHeuristicParameters;
                     moves = distribution.TotalMoves;
@@ -108,7 +112,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 else
                 {
-                    bestTrajectory = this.Trajectories[runOrTrajectoryIndex];
+                    bestTrajectory = this.Trajectories![runOrTrajectoryIndex];
                     if (bestTrajectory.Heuristic != null)
                     {
                         heuristicParameters = bestTrajectory.Heuristic.GetParameters();
@@ -132,15 +136,15 @@ namespace Osu.Cof.Ferm.Cmdlets
                 int thinAge = bestTrajectory.GetFirstHarvestAge();
                 int rotationLength = bestTrajectory.GetRotationLength();
 
-                string trajectoryName = bestTrajectory.Name;
+                string? trajectoryName = bestTrajectory.Name;
                 if (trajectoryName == null)
                 {
                     trajectoryName = runOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
                 }
 
                 Units trajectoryUnits = bestTrajectory.GetUnits();
-                this.GetBasalAreaConversion(trajectoryUnits, Units.Metric, out float basalAreaConversionFactor);
-                this.GetDimensionConversions(trajectoryUnits, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
+                WriteStandTrajectory.GetBasalAreaConversion(trajectoryUnits, Units.Metric, out float basalAreaConversionFactor);
+                WriteStandTrajectory.GetDimensionConversions(trajectoryUnits, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
                 bestTrajectory.GetGradedVolumes(out StandGradedVolume gradedVolumeStanding, out StandGradedVolume gradedVolumeHarvested);
                 for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
                 {
@@ -148,8 +152,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     // get density and volumes
                     float standingVolumeCubic = gradedVolumeStanding.GetCubicTotal(periodIndex); // m³/ha
-                    float standingVolumeScribner = bestTrajectory.StandingVolume.ScribnerTotal[periodIndex]; // MBF/ha
                     float harvestVolumeCubic = gradedVolumeHarvested.GetCubicTotal(periodIndex); // m³/ha
+                    float standingVolumeScribner = bestTrajectory.StandingVolume.ScribnerTotal[periodIndex]; // MBF/ha
                     float harvestVolumeScribner = bestTrajectory.ThinningVolume.ScribnerTotal[periodIndex]; // MBF/ha
 
                     float basalAreaRemoved = bestTrajectory.BasalAreaRemoved[periodIndex]; // ft²/acre
@@ -171,7 +175,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         treesPerAcreDecrease = 1.0F - currentDensity.TreesPerAcre / previousDensity.TreesPerAcre;
                     }
 
-                    Stand stand = bestTrajectory.StandByPeriod[periodIndex];
+                    Stand stand = bestTrajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
                     OrganonStandDensity density = bestTrajectory.DensityByPeriod[periodIndex];
                     float quadraticMeanDiameter = stand.GetQuadraticMeanDiameter(); // leave in inches for Reineke SDI
                     float reinekeStandDensityIndex = areaConversionFactor * density.TreesPerAcre * MathF.Pow(0.1F * quadraticMeanDiameter, Constant.ReinekeExponent);
@@ -198,7 +202,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         float finalHarvestNetPresentValue = bestTrajectory.StandingVolume.NetPresentValue[periodIndex] - this.TimberValue.ReforestationCostPerHectare;
                         landExpectationValue = this.TimberValue.ToLandExpectationValue(finalHarvestNetPresentValue, rotationLength);
                     }
-
+                    
                     float netPresentValue2Saw = gradedVolumeStanding.NetPresentValue2Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue2Saw[periodIndex];
                     float netPresentValue3Saw = gradedVolumeStanding.NetPresentValue3Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue3Saw[periodIndex];
                     float netPresentValue4Saw = gradedVolumeStanding.NetPresentValue4Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue4Saw[periodIndex];

@@ -5,15 +5,15 @@ namespace Osu.Cof.Ferm
 {
     public class StandGradedVolume
     {
-        public float[] Cubic2Saw { get; private set; }
-        public float[] Cubic3Saw { get; private set; }
-        public float[] Cubic4Saw { get; private set; }
-        public float[] NetPresentValue2Saw { get; private set; }
-        public float[] NetPresentValue3Saw { get; private set; }
-        public float[] NetPresentValue4Saw { get; private set; }
-        public float[] Scribner2Saw { get; private set; }
-        public float[] Scribner3Saw { get; private set; }
-        public float[] Scribner4Saw { get; private set; }
+        public float[] Cubic2Saw { get; private init; }
+        public float[] Cubic3Saw { get; private init; }
+        public float[] Cubic4Saw { get; private init; }
+        public float[] NetPresentValue2Saw { get; private init; }
+        public float[] NetPresentValue3Saw { get; private init; }
+        public float[] NetPresentValue4Saw { get; private init; }
+        public float[] Scribner2Saw { get; private init; }
+        public float[] Scribner3Saw { get; private init; }
+        public float[] Scribner4Saw { get; private init; }
 
         public StandGradedVolume(int planningPeriods)
         {

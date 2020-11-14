@@ -34,7 +34,7 @@ namespace Osu.Cof.Ferm.Organon
             return crownRatioAdjustment;
         }
 
-        private float GetDiameterFertilizationAdjustment(FiaCode species, OrganonConfiguration configuration, int simulationStep, float douglasFirSiteIndexFromDbh)
+        private static float GetDiameterFertilizationAdjustment(FiaCode species, OrganonConfiguration configuration, int simulationStep, float douglasFirSiteIndexFromDbh)
         {
             // fertilization diameter effects currently supported only for non-RAP Douglas-fir
             OrganonTreatments treatments = configuration.Treatments;
@@ -73,7 +73,7 @@ namespace Osu.Cof.Ferm.Organon
         /// <remarks>
         /// Has special cases for Douglas-fir, western hemlock, and red alder (only for RAP).
         /// </remarks>
-        private float GetDiameterThinningAdjustment(FiaCode species, OrganonConfiguration configuration)
+        private static float GetDiameterThinningAdjustment(FiaCode species, OrganonConfiguration configuration)
         {
             OrganonTreatments treatments = configuration.Treatments;
             if (treatments.HarvestsPerformed < 1)
@@ -135,7 +135,7 @@ namespace Osu.Cof.Ferm.Organon
             return THINADJ;
         }
 
-        private float GetHeightFertilizationAdjustment(int simulationStep, OrganonConfiguration configuration, FiaCode species, float siteIndexFromBreastHeight)
+        private static float GetHeightFertilizationAdjustment(int simulationStep, OrganonConfiguration configuration, FiaCode species, float siteIndexFromBreastHeight)
         {
             // fertilization height effects currently supported only for non-RAP Douglas-fir
             OrganonTreatments treatments = configuration.Treatments;
@@ -165,7 +165,7 @@ namespace Osu.Cof.Ferm.Organon
             return FERTADJ;
         }
 
-        private float GetHeightThinningAdjustment(OrganonConfiguration configuration, FiaCode species)
+        private static float GetHeightThinningAdjustment(OrganonConfiguration configuration, FiaCode species)
         {
             OrganonTreatments treatments = configuration.Treatments;
             if (treatments.HarvestsPerformed < 1)
@@ -289,8 +289,7 @@ namespace Osu.Cof.Ferm.Organon
 
             // crown competition at start of growth
             float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
-            OrganonGrowth treeGrowth = new OrganonGrowth();
-            treeGrowth.Grow(simulationStep, configuration, stand, densityBeforeGrowth, CALIB, ref crownCompetitionByHeight, out OrganonStandDensity _, out int oldTreeRecordCount);
+            OrganonGrowth.Grow(simulationStep, configuration, stand, densityBeforeGrowth, CALIB, ref crownCompetitionByHeight, out OrganonStandDensity _, out int oldTreeRecordCount);
 
             if (configuration.IsEvenAge == false)
             {
@@ -336,9 +335,9 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="crownCompetitionByHeight"></param>
         /// <param name="densityAfterGrowth"></param>
         /// <param name="oldTreeRecordCount"></param>
-        public void Grow(int simulationStep, OrganonConfiguration configuration, OrganonStand stand, OrganonStandDensity densityBeforeGrowth,
-                         Dictionary<FiaCode, float[]> CALIB, ref float[] crownCompetitionByHeight, out OrganonStandDensity densityAfterGrowth, 
-                         out int oldTreeRecordCount)
+        public static void Grow(int simulationStep, OrganonConfiguration configuration, OrganonStand stand, OrganonStandDensity densityBeforeGrowth,
+                                Dictionary<FiaCode, float[]> CALIB, ref float[] crownCompetitionByHeight, out OrganonStandDensity densityAfterGrowth, 
+                                out int oldTreeRecordCount)
         {
             // initalize step
             float DGMODgenetic = 1.0F;
@@ -385,7 +384,7 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     geneticDiseaseAndCalibrationMultiplier *= DGMODgenetic * DGMODSwissNeedleCast;
                 }
-                this.GrowDiameter(configuration, simulationStep, stand, treesOfSpecies, densityBeforeGrowth, geneticDiseaseAndCalibrationMultiplier);
+                OrganonGrowth.GrowDiameter(configuration, simulationStep, stand, treesOfSpecies, densityBeforeGrowth, geneticDiseaseAndCalibrationMultiplier);
             }
 
             // height growth for big six species
@@ -403,7 +402,7 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     geneticAndDiseaseMultiplier = HGMODgenetic * HGMODSwissNeedleCast;
                 }
-                this.GrowHeightBigSixSpecies(configuration, simulationStep, stand, treesOfSpecies, geneticAndDiseaseMultiplier, crownCompetitionByHeight, out int oldTreeRecordCountForSpecies);
+                OrganonGrowth.GrowHeightBigSixSpecies(configuration, simulationStep, stand, treesOfSpecies, geneticAndDiseaseMultiplier, crownCompetitionByHeight, out int oldTreeRecordCountForSpecies);
                 oldTreeRecordCount += oldTreeRecordCountForSpecies;
             }
 
@@ -434,11 +433,11 @@ namespace Osu.Cof.Ferm.Organon
                     continue;
                 }
 
-                this.GrowHeightMinorSpecies(configuration, stand, treesOfSpecies, CALIB[species][0]);
+                OrganonGrowth.GrowHeightMinorSpecies(configuration, stand, treesOfSpecies, CALIB[species][0]);
             }
 
             // grow crowns
-            crownCompetitionByHeight = this.GrowCrown(configuration.Variant, stand, densityAfterGrowth, CALIB);
+            crownCompetitionByHeight = OrganonGrowth.GrowCrown(configuration.Variant, stand, densityAfterGrowth, CALIB);
 
             // update stand age and period variables
             stand.AgeInYears += configuration.Variant.TimeStepInYears;
@@ -460,7 +459,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public float[] GrowCrown(OrganonVariant variant, OrganonStand stand, OrganonStandDensity densityAfterGrowth, Dictionary<FiaCode, float[]> CALIB)
+        public static float[] GrowCrown(OrganonVariant variant, OrganonStand stand, OrganonStandDensity densityAfterGrowth, Dictionary<FiaCode, float[]> CALIB)
         {
             float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(variant, stand);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
@@ -471,7 +470,7 @@ namespace Osu.Cof.Ferm.Organon
             return OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
         }
 
-        public void GrowDiameter(OrganonConfiguration configuration, int simulationStep, OrganonStand stand, Trees trees, OrganonStandDensity densityBeforeGrowth, float geneticDiseaseAndCalibrationMultiplier)
+        public static void GrowDiameter(OrganonConfiguration configuration, int simulationStep, OrganonStand stand, Trees trees, OrganonStandDensity densityBeforeGrowth, float geneticDiseaseAndCalibrationMultiplier)
         {
             FiaCode species = trees.Species;
             float siteIndex = stand.SiteIndex;
@@ -483,8 +482,8 @@ namespace Osu.Cof.Ferm.Organon
             // - ponderosa index isn't used for SWO
             // - red alder index isn't used for red alder
 
-            float fertilizationAdjustment = this.GetDiameterFertilizationAdjustment(species, configuration, simulationStep, stand.SiteIndex - 4.5F);
-            float thinningAdjustment = this.GetDiameterThinningAdjustment(species, configuration);
+            float fertilizationAdjustment = OrganonGrowth.GetDiameterFertilizationAdjustment(species, configuration, simulationStep, stand.SiteIndex - 4.5F);
+            float thinningAdjustment = OrganonGrowth.GetDiameterThinningAdjustment(species, configuration);
             float combinedAdjustment = geneticDiseaseAndCalibrationMultiplier * fertilizationAdjustment * thinningAdjustment;
             configuration.Variant.GrowDiameter(trees, combinedAdjustment, siteIndex, densityBeforeGrowth);
         }
@@ -499,20 +498,20 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="geneticAndDiseaseMultiplier">Direct multiplier for genetic and disease height growth effects.</param>
         /// <param name="crownCompetitionByHeight"></param>
         /// <param name="oldTreeRecordCount"></param>
-        public void GrowHeightBigSixSpecies(OrganonConfiguration configuration, int simulationStep, OrganonStand stand, Trees trees, 
-                                            float geneticAndDiseaseMultiplier, float[] crownCompetitionByHeight, out int oldTreeRecordCount)
+        public static void GrowHeightBigSixSpecies(OrganonConfiguration configuration, int simulationStep, OrganonStand stand, Trees trees, 
+                                                   float geneticAndDiseaseMultiplier, float[] crownCompetitionByHeight, out int oldTreeRecordCount)
         {
             FiaCode species = trees.Species;
             Debug.Assert(configuration.Variant.IsBigSixSpecies(species));
             oldTreeRecordCount = configuration.Variant.GrowHeightBigSix(configuration, stand, trees, crownCompetitionByHeight);
 
-            float fertilizationAdjustment = this.GetHeightFertilizationAdjustment(simulationStep, configuration, species, stand.SiteIndex);
-            float thinningAdjustement = this.GetHeightThinningAdjustment(configuration, species);
+            float fertilizationAdjustment = OrganonGrowth.GetHeightFertilizationAdjustment(simulationStep, configuration, species, stand.SiteIndex);
+            float thinningAdjustement = OrganonGrowth.GetHeightThinningAdjustment(configuration, species);
             float combinedAdjustment = geneticAndDiseaseMultiplier * thinningAdjustement * fertilizationAdjustment;
-            this.LimitAndApplyHeightGrowth(configuration.Variant, trees, combinedAdjustment);
+            OrganonGrowth.LimitAndApplyHeightGrowth(configuration.Variant, trees, combinedAdjustment);
         }
 
-        public void GrowHeightMinorSpecies(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float calibrationMultiplier)
+        public static void GrowHeightMinorSpecies(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float calibrationMultiplier)
         {
             FiaCode species = trees.Species;
             Debug.Assert(configuration.Variant.IsBigSixSpecies(species) == false);
@@ -574,7 +573,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        private void LimitAndApplyHeightGrowth(OrganonVariant variant, Trees trees, float combinedAdjustment)
+        private static void LimitAndApplyHeightGrowth(OrganonVariant variant, Trees trees, float combinedAdjustment)
         {
             FiaCode speciesWithSwoTsheOptOut = trees.Species;
             if ((speciesWithSwoTsheOptOut == FiaCode.TsugaHeterophylla) && (variant.TreeModel == TreeModel.OrganonSwo))
@@ -791,23 +790,23 @@ namespace Osu.Cof.Ferm.Organon
         {
             if (stand.GetTreeRecordCount() < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.TreesBySpecies));
+                throw new ArgumentOutOfRangeException(nameof(stand), "Stand does not have any trees.");
             }
             if (Enum.IsDefined(typeof(TreeModel), configuration.Variant.TreeModel) == false)
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.Variant));
+                throw new ArgumentOutOfRangeException(nameof(configuration), "Unknown Organon variant " + configuration.Variant.TreeModel + ".");
             }
-            if (stand.NumberOfPlots < 0)
+            if (stand.NumberOfPlots < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.NumberOfPlots));
+                throw new ArgumentOutOfRangeException(nameof(stand), "Stand has less than one plot.");
             }
             if ((stand.SiteIndex <= 0.0F) || (stand.SiteIndex > Constant.Maximum.SiteIndexInFeet))
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.SiteIndex));
+                throw new ArgumentOutOfRangeException(nameof(stand), "Default site index is negative or implausibly large.");
             }
             if ((stand.HemlockSiteIndex <= 0.0F) || (stand.HemlockSiteIndex > Constant.Maximum.SiteIndexInFeet))
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.HemlockSiteIndex));
+                throw new ArgumentOutOfRangeException(nameof(stand), "Hemlock site index is negative or implausibly large.");
             }
 
             if (configuration.IsEvenAge)
@@ -835,63 +834,43 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             OrganonTreatments treatments = configuration.Treatments;
-            bool isFertilized = treatments.PoundsOfNitrogenPerAcre.Count > 0;
             for (int fertilizationindex = 0; fertilizationindex < treatments.PoundsOfNitrogenPerAcre.Count; ++fertilizationindex)
             {
-                if (!isFertilized && (treatments.TimeStepsSinceFertilization[fertilizationindex] != 0 || treatments.PoundsOfNitrogenPerAcre[fertilizationindex] != 0))
+                if (fertilizationindex == 0) // TODO: why is only the first treatments subject to range limits?
                 {
-                    throw new ArgumentException();
+                    if ((treatments.PoundsOfNitrogenPerAcre[fertilizationindex] < 0.0) || (treatments.PoundsOfNitrogenPerAcre[fertilizationindex] > 400.0F))
+                    {
+                        throw new ArgumentException("Nitrogen fertiliation rate must be between 0 and 400 pounds per acre.");
+                    }
                 }
-                if (isFertilized)
+                if ((treatments.TimeStepsSinceFertilization[fertilizationindex] > stand.AgeInYears) || (treatments.TimeStepsSinceFertilization[fertilizationindex] > 70.0F))
                 {
-                    if ((treatments.TimeStepsSinceFertilization[fertilizationindex] > stand.AgeInYears) || (treatments.TimeStepsSinceFertilization[fertilizationindex] > 70.0F))
-                    {
-                        throw new ArgumentException();
-                    }
-                    if (fertilizationindex == 0)
-                    {
-                        if ((treatments.PoundsOfNitrogenPerAcre[fertilizationindex] < 0.0) || (treatments.PoundsOfNitrogenPerAcre[fertilizationindex] > 400.0F))
-                        {
-                            throw new ArgumentException();
-                        }
-                        else
-                        {
-                            if (treatments.PoundsOfNitrogenPerAcre[fertilizationindex] > 400.0F)
-                            {
-                                throw new ArgumentException();
-                            }
-                        }
-                    }
+                    throw new ArgumentException("Fertilization predates stand or was more than 70 time steps ago.");
                 }
             }
 
-            bool isHarvested = treatments.Harvests.Count > 0;
-            if (isHarvested && (treatments.BasalAreaRemovedByHarvest[0] >= treatments.BasalAreaBeforeMostRecentHarvest))
+            if (treatments.Harvests.Count > 0)
             {
-                throw new ArgumentException("The first element of " + nameof(treatments.BasalAreaRemovedByHarvest) + " must be less than " + nameof(treatments.BasalAreaBeforeMostRecentHarvest) + " when thinning response is enabled.");
-            }
-            for (int harvestIndex = 0; harvestIndex < treatments.Harvests.Count; ++harvestIndex)
-            {
-                if (!isHarvested && (treatments.TimeStepsSinceHarvest[harvestIndex] != 0 || treatments.BasalAreaRemovedByHarvest[harvestIndex] != 0))
+                if (treatments.BasalAreaRemovedByHarvest[0] >= treatments.BasalAreaBeforeMostRecentHarvest)
                 {
-                    throw new ArgumentException();
+                    throw new ArgumentException("The first element of " + nameof(treatments.BasalAreaRemovedByHarvest) + " must be less than " + nameof(treatments.BasalAreaBeforeMostRecentHarvest) + " when thinning response is enabled.");
                 }
-                if (isHarvested)
+                for (int harvestIndex = 0; harvestIndex < treatments.Harvests.Count; ++harvestIndex)
                 {
                     if (configuration.IsEvenAge && treatments.TimeStepsSinceHarvest[harvestIndex] > stand.AgeInYears)
                     {
-                        throw new ArgumentException();
+                        throw new ArgumentException("Even age harvest occurred before stand initiation.");
                     }
-                    if (harvestIndex > 1)
+                    if (harvestIndex > 1) // TODO: why is first harvest exempt?
                     {
-                        if (treatments.TimeStepsSinceHarvest[harvestIndex] != 0.0F && treatments.BasalAreaRemovedByHarvest[harvestIndex] < 0.0F)
+                        if (treatments.TimeStepsSinceHarvest[harvestIndex] != 0 && treatments.BasalAreaRemovedByHarvest[harvestIndex] < 0.0F)
                         {
-                            throw new ArgumentException();
+                            throw new ArgumentException("Prior harvest removed negative basal area.");
                         }
                     }
                     if (treatments.BasalAreaBeforeMostRecentHarvest < 0.0F)
                     {
-                        throw new ArgumentException();
+                        throw new ArgumentException("Stand's basal area before harvest was negative.");
                     }
                 }
             }
@@ -903,15 +882,15 @@ namespace Osu.Cof.Ferm.Organon
 
             if (configuration.DefaultMaximumSdi > Constant.Maximum.Sdi)
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.DefaultMaximumSdi));
+                throw new ArgumentOutOfRangeException(nameof(configuration), "Default maximum SDI is implausibly large.");
             }
             if (configuration.TrueFirMaximumSdi > Constant.Maximum.Sdi)
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.TrueFirMaximumSdi));
+                throw new ArgumentOutOfRangeException(nameof(configuration), "True fir maximum SDI is implausibly large.");
             }
             if (configuration.HemlockMaximumSdi > Constant.Maximum.Sdi)
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.HemlockMaximumSdi));
+                throw new ArgumentOutOfRangeException(nameof(configuration), "Hemlock maximum SDI is implausibly large.");
             }
 
             if (configuration.Genetics)
@@ -922,22 +901,14 @@ namespace Osu.Cof.Ferm.Organon
                 }
                 if ((configuration.GWDG < 0.0F) || (configuration.GWDG > 20.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.GWDG));
-                }
-                if ((configuration.GWHG < 0.0F) || (configuration.GWHG > 20.0F))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.GWHG));
+                    throw new ArgumentOutOfRangeException(nameof(configuration), "GWDG is negative or greater than 20.");
                 }
             }
             else
             {
                 if (configuration.GWDG != 0.0F)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.GWDG));
-                }
-                if (configuration.GWHG != 0.0F)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.GWHG));
+                    throw new ArgumentOutOfRangeException(nameof(configuration), "Genetic modifiers are disabled but GWDG is nonzero.");
                 }
             }
 
@@ -947,38 +918,34 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration.Variant), "Swiss needle cast is not supported by the SWO and RAP variants.");
                 }
-                if (!configuration.IsEvenAge)
+                if (configuration.IsEvenAge == false)
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration.IsEvenAge), "Swiss needle cast is not supported for uneven age stands.");
                 }
                 if ((configuration.FR < 0.85F) || (configuration.FR > 7.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.FR));
+                    throw new ArgumentOutOfRangeException(nameof(configuration));
                 }
-                if (isFertilized && (configuration.FR < 3.0))
+                if ((treatments.PoundsOfNitrogenPerAcre.Count > 0) && (configuration.FR < 3.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.FR), nameof(configuration.FR) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(configuration.Treatments.FertilizationsPerformed) + " is nonzero.");
+                    throw new ArgumentOutOfRangeException(nameof(configuration), nameof(configuration.FR) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(configuration.Treatments.FertilizationsPerformed) + " is nonzero.");
                 }
             }
             else
             {
                 if (configuration.FR > 0.0F)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.FR));
+                    throw new ArgumentOutOfRangeException(nameof(configuration));
                 }
             }
 
-            if ((configuration.Variant.TreeModel >= TreeModel.OrganonRap) && (stand.SiteIndex < 0.0F))
+            if ((configuration.Variant.TreeModel == TreeModel.OrganonRap) && (configuration.PDEN < 0.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.SiteIndex));
+                throw new NotSupportedException("PDEN is negative for red alder variant.");
             }
-            if ((configuration.Variant.TreeModel >= TreeModel.OrganonRap) && (configuration.PDEN < 0.0F))
+            if (!configuration.IsEvenAge && (configuration.Variant.TreeModel == TreeModel.OrganonRap))
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration.PDEN));
-            }
-            if (!configuration.IsEvenAge && (configuration.Variant.TreeModel >= TreeModel.OrganonRap))
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration.IsEvenAge));
+                throw new NotSupportedException("Stand for red alder variant is not even age.");
             }
 
             // TODO: is it desirable to clear existing stand warnings?
@@ -1359,39 +1326,25 @@ namespace Osu.Cof.Ferm.Organon
             int standAgeBudgetAvailableAtNextTimeStep;
             if (configuration.IsEvenAge)
             {
-                switch (configuration.Variant.TreeModel)
+                standAgeBudgetAvailableAtNextTimeStep = configuration.Variant.TreeModel switch
                 {
-                    case TreeModel.OrganonSwo:
-                        standAgeBudgetAvailableAtNextTimeStep = 500 - stand.AgeInYears - 5;
-                        break;
-                    case TreeModel.OrganonNwo:
-                    case TreeModel.OrganonSmc:
-                        standAgeBudgetAvailableAtNextTimeStep = 120 - stand.AgeInYears - 5;
-                        break;
-                    case TreeModel.OrganonRap:
-                        standAgeBudgetAvailableAtNextTimeStep = 30 - stand.AgeInYears - 1;
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
-                }
+                    TreeModel.OrganonSwo => 500 - stand.AgeInYears - 5,
+                    TreeModel.OrganonNwo or 
+                    TreeModel.OrganonSmc => 120 - stand.AgeInYears - 5,
+                    TreeModel.OrganonRap => 30 - stand.AgeInYears - 1,
+                    _ => throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel),
+                };
             }
             else
             {
-                switch (configuration.Variant.TreeModel)
+                standAgeBudgetAvailableAtNextTimeStep = configuration.Variant.TreeModel switch
                 {
-                    case TreeModel.OrganonSwo:
-                        standAgeBudgetAvailableAtNextTimeStep = 500 - (simulationStep + 1) * 5;
-                        break;
-                    case TreeModel.OrganonNwo:
-                    case TreeModel.OrganonSmc:
-                        standAgeBudgetAvailableAtNextTimeStep = 120 - (simulationStep + 1) * 5;
-                        break;
-                    case TreeModel.OrganonRap:
-                        standAgeBudgetAvailableAtNextTimeStep = 30 - (simulationStep + 1) * 1;
-                        break;
-                    default:
-                        throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
-                }
+                    TreeModel.OrganonSwo => 500 - (simulationStep + 1) * 5,
+                    TreeModel.OrganonNwo or
+                    TreeModel.OrganonSmc => 120 - (simulationStep + 1) * 5,
+                    TreeModel.OrganonRap => 30 - (simulationStep + 1) * 1,
+                    _ => throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel),
+                };
             }
 
             if (standAgeBudgetAvailableAtNextTimeStep < 0)
@@ -1403,7 +1356,7 @@ namespace Osu.Cof.Ferm.Organon
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 FiaCode species = treesOfSpecies.Species;
-                bool[] heightWarnings = null;
+                bool[]? heightWarnings = null;
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
                     float B0;

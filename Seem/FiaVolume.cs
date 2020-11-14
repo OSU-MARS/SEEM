@@ -13,7 +13,7 @@ namespace Osu.Cof.Ferm
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
         /// <returns>Tree's volume including top and stump in ft³.</returns>
-        public float GetCubicFeet(Trees trees, int treeIndex)
+        public static float GetCubicFeet(Trees trees, int treeIndex)
         {
             if (trees.Units != Units.English)
             {
@@ -50,7 +50,7 @@ namespace Osu.Cof.Ferm
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
         /// <returns>Tree's volume in m³.</returns>
-        public float GetMerchantableCubicFeet(Trees trees, int treeIndex)
+        public static float GetMerchantableCubicFeet(Trees trees, int treeIndex)
         {
             if (trees.Units != Units.English)
             {
@@ -64,33 +64,30 @@ namespace Osu.Cof.Ferm
                 return 0.0F;
             }
 
-            float cvts = this.GetCubicFeet(trees, treeIndex);
+            float cvts = FiaVolume.GetCubicFeet(trees, treeIndex);
             if (cvts <= 0.0)
             {
                 return 0.0F;
             }
 
             float basalAreaInSquareFeet = Constant.ForestersEnglish * dbhInInches * dbhInInches;
-            float tarif;
-            switch (trees.Species)
+            float tarif = trees.Species switch
             {
                 // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
                 //   Volume estimation for PNW Databases NIMS and FIADB. https://ww3.arb.ca.gov/cc/capandtrade/offsets/copupdatereferences/qm_volume_equations_pnw_updated_091914.pdf
                 // Douglas-fir and western hemlock use the same tarif and CV4 regressions
                 // FIA Equation 1: western Oregon and Washington (Brackett 1973)
                 // FIA Equation 6: all of Oregon and California (Chambers 1979)
-                case FiaCode.PseudotsugaMenziesii:
-                case FiaCode.TsugaHeterophylla:
-                    tarif = 0.912733F * cvts / (1.033F * (1.0F + 1.382937F * MathV.Exp(-4.015292F * dbhInInches / 10.0F)) * (basalAreaInSquareFeet + 0.087266F) - 0.174533F);
-                    break;
-                default:
-                    throw Trees.CreateUnhandledSpeciesException(trees.Species);
-            }
+                FiaCode.PseudotsugaMenziesii or 
+                FiaCode.TsugaHeterophylla =>
+                    0.912733F * cvts / (1.033F * (1.0F + 1.382937F * MathV.Exp(-4.015292F * dbhInInches / 10.0F)) * (basalAreaInSquareFeet + 0.087266F) - 0.174533F),
+                _ => throw Trees.CreateUnhandledSpeciesException(trees.Species)
+            };
 
             return tarif * (basalAreaInSquareFeet - 0.087266F) / 0.912733F;
         }
 
-        public unsafe float GetScribnerBoardFeetPerAcre(Trees trees)
+        public static unsafe float GetScribnerBoardFeetPerAcre(Trees trees)
         {
             // for now, assume all trees are of the same species
             if (trees.Species != FiaCode.PseudotsugaMenziesii)
@@ -216,7 +213,7 @@ namespace Osu.Cof.Ferm
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
         /// <returns>Tree's volume in Scribner board feet</returns>
-        public float GetScribnerBoardFeet(Trees trees, int treeIndex)
+        public static float GetScribnerBoardFeet(Trees trees, int treeIndex)
         {
             if (trees.Units != Units.English)
             {
@@ -247,21 +244,18 @@ namespace Osu.Cof.Ferm
             float cubicFeet = MathV.Exp10(cvtsl);
             
             float basalAreaInSquareFeet = Constant.ForestersEnglish * dbhInInches * dbhInInches;
-            float tarif;
-            switch (trees.Species)
+            float tarif = trees.Species switch
             {
                 // Waddell K, Campbell K, Kuegler O, Christensen G. 2014. FIA Volume Equation documentation updated on 9-19-2014:
                 //   Volume estimation for PNW Databases NIMS and FIADB. https://ww3.arb.ca.gov/cc/capandtrade/offsets/copupdatereferences/qm_volume_equations_pnw_updated_091914.pdf
                 // Douglas-fir and western hemlock use the same tarif and CV4 regressions
                 // FIA Equation 1: western Oregon and Washington (Brackett 1973)
                 // FIA Equation 6: all of Oregon and California (Chambers 1979)
-                case FiaCode.PseudotsugaMenziesii:
-                case FiaCode.TsugaHeterophylla:
-                    tarif = 0.912733F * cubicFeet / (1.033F * (1.0F + 1.382937F * MathV.Exp(-4.015292F * dbhInInches / 10.0F)) * (basalAreaInSquareFeet + 0.087266F) - 0.174533F);
-                    break;
-                default:
-                    throw Trees.CreateUnhandledSpeciesException(trees.Species);
-            }
+                FiaCode.PseudotsugaMenziesii or 
+                FiaCode.TsugaHeterophylla =>
+                    0.912733F * cubicFeet / (1.033F * (1.0F + 1.382937F * MathV.Exp(-4.015292F * dbhInInches / 10.0F)) * (basalAreaInSquareFeet + 0.087266F) - 0.174533F),
+                _ => throw Trees.CreateUnhandledSpeciesException(trees.Species)
+            };
             float cv4 = tarif * (basalAreaInSquareFeet - 0.087266F) / 0.912733F;
 
             // conversion to Scribner volumes for 32 foot trees

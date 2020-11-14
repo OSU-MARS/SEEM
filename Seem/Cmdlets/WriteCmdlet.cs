@@ -13,7 +13,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter(Mandatory = true)]
         [ValidateNotNullOrEmpty]
-        public string CsvFile;
+        public string? CsvFile;
 
         public WriteCmdlet()
         {
@@ -28,10 +28,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 this.openedExistingFile = File.Exists(this.CsvFile);
             }
-            return new StreamWriter(new FileStream(this.CsvFile, fileMode, FileAccess.Write, FileShare.Read));
+            return new StreamWriter(new FileStream(this.CsvFile!, fileMode, FileAccess.Write, FileShare.Read));
         }
 
-        protected void GetBasalAreaConversion(Units inputUnits, Units outputUnits, out float basalAreaConversionFactor)
+        protected static void GetBasalAreaConversion(Units inputUnits, Units outputUnits, out float basalAreaConversionFactor)
         {
             if (inputUnits == outputUnits)
             {
@@ -49,7 +49,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             throw new NotSupportedException();
         }
 
-        protected void GetDimensionConversions(Units inputUnits, Units outputUnits, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor)
+        protected static void GetDimensionConversions(Units inputUnits, Units outputUnits, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor)
         {
             if (inputUnits == outputUnits)
             {

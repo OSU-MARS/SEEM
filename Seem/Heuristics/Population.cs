@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public int Count { get; private set; }
         public int HarvestPeriods { get; private set; }
-        public float[] IndividualFitness { get; private set; }
-        public int[][] IndividualTreeSelections { get; private set; }
+        public float[] IndividualFitness { get; private init; }
+        public int[][] IndividualTreeSelections { get; private init; }
         public int NewIndividuals { get; set; }
         public int TreeCount { get; private set; }
 
@@ -102,7 +102,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             this.IndividualFitness[individualIndex] = newFitness;
-            if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int> probablyClones))
+            if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int>? probablyClones))
             {
                 // initial population randomization happened to create two (or more) individuals with identical fitness
                 // This is unlikely in large problems, but may not be uncommon in small test problems.
@@ -366,7 +366,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 this.individualIndexByFitness.Remove(currentFitness);
                 replacementIndex = currentIndices[0];
 
-                if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int> existingIndices))
+                if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int>? existingIndices))
                 {
                     // prepend individual to list to maximize population change since removal below operates from end of list
                     existingIndices.Insert(0, replacementIndex);
@@ -384,7 +384,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 if (currentFitness != newFitness)
                 {
                     currentIndices.RemoveAt(currentIndices.Count - 1);
-                    if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int> existingList))
+                    if (this.individualIndexByFitness.TryGetValue(newFitness, out List<int>? existingList))
                     {
                         // could potentially no-op by undoing the previous RemoveAt(), but this is likely a rare case
                         existingList.Add(replacementIndex);

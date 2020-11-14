@@ -13,7 +13,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public int LowerWaterAfter { get; set; }
         public float LowerWaterBy { get; set; }
         public MoveType MoveType { get; set; }
-        public Nullable<float> RainRate { get; set; }
+        public float? RainRate { get; set; }
         public int StopAfter { get; set; }
 
         public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)

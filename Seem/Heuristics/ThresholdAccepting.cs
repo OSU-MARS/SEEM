@@ -8,8 +8,8 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class ThresholdAccepting : SingleTreeHeuristic
     {
-        public List<int> IterationsPerThreshold { get; private set; }
-        public List<float> Thresholds { get; private set; }
+        public List<int> IterationsPerThreshold { get; private init; }
+        public List<float> Thresholds { get; private init; }
 
         public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
             : base(stand, organonConfiguration, objective, parameters)

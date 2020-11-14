@@ -12,7 +12,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int HarvestPeriods { get; set; }
 
         [Parameter]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [Parameter]
         [ValidateRange(1, 100)]
@@ -24,7 +24,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public OrganonStand Stand { get; set; }
+        public OrganonStand? Stand { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
@@ -75,7 +75,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             }
 
-            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand, configuration, this.TimberValue, this.PlanningPeriods, this.ScaledVolume);
+            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand!, configuration, this.TimberValue, this.PlanningPeriods, this.ScaledVolume);
             if (this.Name != null)
             {
                 trajectory.Name = this.Name;

@@ -6,7 +6,7 @@ namespace Osu.Cof.Ferm
 {
     internal static class SortedDictionaryExtensions
     {
-        public static TValue GetOrAdd<TKey, TValue>(this SortedDictionary<TKey, TValue> dictionary, TKey key) where TValue : new()
+        public static TValue GetOrAdd<TKey, TValue>(this SortedDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull where TValue : new()
         {
             if (dictionary.TryGetValue(key, out TValue value) == false)
             {
@@ -16,9 +16,9 @@ namespace Osu.Cof.Ferm
             return value;
         }
 
-        public static TArray[] GetOrAdd<TKey, TArray>(this SortedDictionary<TKey, TArray[]> dictionary, TKey key, int capacity)
+        public static TArray[] GetOrAdd<TKey, TArray>(this SortedDictionary<TKey, TArray[]> dictionary, TKey key, int capacity) where TKey : notnull
         {
-            if (dictionary.TryGetValue(key, out TArray[] array) == false)
+            if (dictionary.TryGetValue(key, out TArray[]? array) == false)
             {
                 array = new TArray[capacity];
                 dictionary.Add(key, array);
@@ -26,7 +26,7 @@ namespace Osu.Cof.Ferm
             return array;
         }
 
-        public static bool KeysIdentical<TKey, TValue1, TValue2>(SortedDictionary<TKey, TValue1> dictionary1, SortedDictionary<TKey, TValue2> dictionary2)
+        public static bool KeysIdentical<TKey, TValue1, TValue2>(SortedDictionary<TKey, TValue1> dictionary1, SortedDictionary<TKey, TValue2> dictionary2) where TKey : notnull
         {
             if (Object.ReferenceEquals(dictionary1, dictionary2))
             {
@@ -39,7 +39,7 @@ namespace Osu.Cof.Ferm
             return !dictionary1.Keys.Except(dictionary2.Keys).Any();
         }
 
-        public static bool ValueLengthsIdentical<TKey, TArray1, TArray2>(SortedDictionary<TKey, TArray1[]> dictionary1, SortedDictionary<TKey, TArray2[]> dictionary2)
+        public static bool ValueLengthsIdentical<TKey, TArray1, TArray2>(SortedDictionary<TKey, TArray1[]> dictionary1, SortedDictionary<TKey, TArray2[]> dictionary2) where TKey : notnull
         {
             if (Object.ReferenceEquals(dictionary1, dictionary2))
             {

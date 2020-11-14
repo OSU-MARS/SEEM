@@ -7,27 +7,27 @@ namespace Osu.Cof.Ferm.Cmdlets
 {
     public class HeuristicSolutionDistribution
     {
-        public List<float> BestObjectiveFunctionBySolution { get; private set; }
-        public HeuristicParameters HighestHeuristicParameters { get; set; }
-        public Heuristic HighestSolution { get; private set; }
-        public Heuristic LowestSolution { get; private set; }
+        public List<float> BestObjectiveFunctionBySolution { get; private init; }
+        public HeuristicParameters? HighestHeuristicParameters { get; set; }
+        public Heuristic? HighestSolution { get; private set; }
+        public Heuristic? LowestSolution { get; private set; }
 
-        public List<int> CountByMove { get; private set; }
-        public List<float> TwoPointFivePercentileByMove { get; private set; }
-        public List<float> FifthPercentileByMove { get; private set; }
-        public List<float> LowerQuartileByMove { get; private set; }
-        public List<float> MaximumObjectiveFunctionByMove { get; private set; }
-        public List<float> MeanObjectiveFunctionByMove { get; private set; }
-        public List<float> MedianObjectiveFunctionByMove { get; private set; }
-        public List<float> MinimumObjectiveFunctionByMove { get; private set; }
-        public List<float> NinetyFifthPercentileByMove { get; private set; }
-        public List<float> NinetySevenPointFivePercentileByMove { get; private set; }
-        public List<List<float>> ObjectiveFunctionValuesByMove { get; private set; }
-        public List<float> UpperQuartileByMove { get; private set; }
-        public List<float> VarianceByMove { get; private set; }
+        public List<int> CountByMove { get; private init; }
+        public List<float> TwoPointFivePercentileByMove { get; private init; }
+        public List<float> FifthPercentileByMove { get; private init; }
+        public List<float> LowerQuartileByMove { get; private init; }
+        public List<float> MaximumObjectiveFunctionByMove { get; private init; }
+        public List<float> MeanObjectiveFunctionByMove { get; private init; }
+        public List<float> MedianObjectiveFunctionByMove { get; private init; }
+        public List<float> MinimumObjectiveFunctionByMove { get; private init; }
+        public List<float> NinetyFifthPercentileByMove { get; private init; }
+        public List<float> NinetySevenPointFivePercentileByMove { get; private init; }
+        public List<List<float>> ObjectiveFunctionValuesByMove { get; private init; }
+        public List<float> UpperQuartileByMove { get; private init; }
+        public List<float> VarianceByMove { get; private init; }
 
-        public List<TimeSpan> RuntimeBySolution { get; private set; }
-        public Population EliteSolutions { get; private set; }
+        public List<TimeSpan> RuntimeBySolution { get; private init; }
+        public Population EliteSolutions { get; private init; }
 
         public TimeSpan TotalCoreSeconds { get; private set; }
         public int TotalMoves { get; private set; }

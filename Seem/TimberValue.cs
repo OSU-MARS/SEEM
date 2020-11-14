@@ -19,8 +19,8 @@ namespace Osu.Cof.Ferm
         public float ThinningCostPerMbf { get; set; }
         public float TimberAppreciationRate { get; set; }
 
-        public ScaledVolume ScaledVolumeRegenerationHarvest { get; private set; }
-        public ScaledVolume ScaledVolumeThinning { get; private set; }
+        public ScaledVolume ScaledVolumeRegenerationHarvest { get; private init; }
+        public ScaledVolume ScaledVolumeThinning { get; private init; }
 
         static TimberValue()
         {

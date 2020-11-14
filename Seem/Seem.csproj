@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>Osu.Cof.Ferm</RootNamespace>
     <Version>0.0.0</Version>
     <Company>Oregon State University</Company>
@@ -12,9 +12,10 @@
     <Copyright>Copyright © 2019-2020 Oregon State University</Copyright>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Platforms>x64</Platforms>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <Description>Includes code derived from the CIPS-R 2.2.4 version of the Organon growth and yield model created by Oregon State University's Center for Intensive Planted-forest Silviculture and Management, Algorithms, and Remote Sensing.</Description>
     <AssemblyName>Seem</AssemblyName>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -37,7 +38,7 @@
 
   <ItemGroup>
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.11.3" />
-    <PackageReference Include="Microsoft.WSMan.Runtime" Version="7.0.3" />
+    <PackageReference Include="Microsoft.WSMan.Runtime" Version="7.1.0" />
   </ItemGroup>
   
 </Project>

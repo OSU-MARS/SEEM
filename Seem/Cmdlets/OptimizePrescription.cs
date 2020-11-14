@@ -59,7 +59,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, PrescriptionParameters parameters)
         {
-            return new PrescriptionEnumeration(this.Stand, organonConfiguration, objective, parameters);
+            return new PrescriptionEnumeration(this.Stand!, organonConfiguration, objective, parameters);
         }
 
         protected override string GetName()

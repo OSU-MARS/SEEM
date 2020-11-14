@@ -15,21 +15,21 @@ namespace Osu.Cof.Ferm.Organon
         /// <summary>
         /// Basal area competition range vector of length 51 for trees 50-100 inches DBH. (BALL)
         /// </summary>
-        public float[] LargeTreeBasalAreaLarger { get; private set; }
+        public float[] LargeTreeBasalAreaLarger { get; private init; }
         /// <summary>
         /// Crown competition factor range vector of length 51 for trees 50-100 inches DBH. (CCFLL)
         /// </summary>
-        public float[] LargeTreeCrownCompetition { get; private set; }
+        public float[] LargeTreeCrownCompetition { get; private init; }
 
         /// <summary>
         /// Basal area competition range vector of length 501 indexed by DBH in tenths of an inch. (BAL)
         /// </summary>
-        public float[] SmallTreeBasalAreaLarger { get; private set; }
+        public float[] SmallTreeBasalAreaLarger { get; private init; }
 
         /// <summary>
         /// Crown competition factor range vector of length 501 indexed by DBH in tenths of an inch. (CCFL)
         /// </summary>
-        public float[] SmallTreeCrownCompetition { get; private set; }
+        public float[] SmallTreeCrownCompetition { get; private init; }
 
         public float TreesPerAcre { get; set; }
 

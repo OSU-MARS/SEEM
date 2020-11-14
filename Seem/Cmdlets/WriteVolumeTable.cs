@@ -31,11 +31,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 writer.WriteLine(line);
             }
 
-            this.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeRegenerationHarvest);
-            this.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeThinning);
+            WriteVolumeTable.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeRegenerationHarvest);
+            WriteVolumeTable.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeThinning);
         }
 
-        private void WriteScaledVolume(StreamWriter writer, ScaledVolume scaledVolume)
+        private static void WriteScaledVolume(StreamWriter writer, ScaledVolume scaledVolume)
         {
             StringBuilder line = new StringBuilder();
 
@@ -46,10 +46,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                 ScaledVolume.TreeVolumeTable perTreeValue = species.Value;
                 for (int heightIndex = 0; heightIndex < perTreeValue.HeightClasses; ++heightIndex)
                 {
-                    string height = perTreeValue.GetHeight(heightIndex).ToString(CultureInfo.InvariantCulture);
+                    string height = ScaledVolume.TreeVolumeTable.GetHeight(heightIndex).ToString(CultureInfo.InvariantCulture);
                     for (int dbhIndex = 0; dbhIndex < perTreeValue.DiameterClasses; ++dbhIndex)
                     {
-                        string dbh = perTreeValue.GetDiameter(dbhIndex).ToString(CultureInfo.InvariantCulture);
+                        string dbh = ScaledVolume.TreeVolumeTable.GetDiameter(dbhIndex).ToString(CultureInfo.InvariantCulture);
                         string cubic2saw = perTreeValue.Cubic2Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
                         string cubic3saw = perTreeValue.Cubic3Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
                         string cubic4saw = perTreeValue.Cubic4Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);

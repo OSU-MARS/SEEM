@@ -11,15 +11,15 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(0, Int32.MaxValue)]
-        public Nullable<int> Iterations { get; set; }
+        public int? Iterations { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, 1.0)]
-        public Nullable<float> SelectionProbabilityWidth { get; set; }
+        public float? SelectionProbabilityWidth { get; set; }
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            RandomGuessing random = new RandomGuessing(this.Stand, organonConfiguration, objective, parameters);
+            RandomGuessing random = new RandomGuessing(this.Stand!, organonConfiguration, objective, parameters);
             if (this.Iterations.HasValue)
             {
                 random.Iterations = this.Iterations.Value;

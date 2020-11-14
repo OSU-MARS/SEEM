@@ -155,14 +155,14 @@ namespace Osu.Cof.Ferm.Data
 
             // parse data
             int age = Int32.Parse(rowAsStrings[this.ageColumnIndex]);
-            if (this.byAge.TryGetValue(age, out Stand plotAtAge) == false)
+            if (this.byAge.TryGetValue(age, out Stand? plotAtAge) == false)
             {
                 plotAtAge = new Stand();
                 this.byAge.Add(age, plotAtAge);
             }
 
             FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[this.speciesColumnIndex]);
-            if (plotAtAge.TreesBySpecies.TryGetValue(species, out Trees treesOfSpecies) == false)
+            if (plotAtAge.TreesBySpecies.TryGetValue(species, out Trees? treesOfSpecies) == false)
             {
                 treesOfSpecies = new Trees(species, 1, Units.Metric);
                 plotAtAge.TreesBySpecies.Add(species, treesOfSpecies);
@@ -194,7 +194,7 @@ namespace Osu.Cof.Ferm.Data
         public void Read(string xlsxFilePath, string worksheetName)
         {
             XlsxReader reader = new XlsxReader();
-            reader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
+            XlsxReader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
         public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndex)
@@ -221,7 +221,7 @@ namespace Osu.Cof.Ferm.Data
             };
             foreach (Trees plotTreesOfSpecies in plotAtAge.TreesBySpecies.Values)
             {
-                if (stand.TreesBySpecies.TryGetValue(plotTreesOfSpecies.Species, out Trees standTreesOfSpecies) == false)
+                if (stand.TreesBySpecies.TryGetValue(plotTreesOfSpecies.Species, out Trees? standTreesOfSpecies) == false)
                 {
                     int minimumSize = Math.Min(maximumTreesToCopy - treesCopied, plotTreesOfSpecies.Count);
                     standTreesOfSpecies = new Trees(plotTreesOfSpecies.Species, minimumSize, Units.English);

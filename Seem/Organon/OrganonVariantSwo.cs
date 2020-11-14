@@ -440,56 +440,37 @@ namespace Osu.Cof.Ferm.Organon
 
         protected override float GetHeightToLargestCrownWidth(FiaCode species, float HT, float CR)
         {
-            // DISTANCE ABOVE CROWN BASE TO LARGEST CROWN WIDTH
-            float B1;
-            switch (species)
+            float B1 = species switch
             {
                 // Hann(1999) FS 45: 217-225
-                case FiaCode.PseudotsugaMenziesii:
-                    B1 = 0.062000F;
-                    break;
+                FiaCode.PseudotsugaMenziesii => 0.062000F,
                 // Hann and Hanus(2001) FRL Research Contribution 34
-                case FiaCode.AbiesConcolor:
-                case FiaCode.AbiesGrandis:
-                    B1 = 0.028454F;
-                    break;
+                FiaCode.AbiesConcolor or
+                FiaCode.AbiesGrandis => 0.028454F,
                 // Hann and Hanus(2001) FRL Research Contribution 34
-                case FiaCode.PinusPonderosa:
-                case FiaCode.PinusLambertiana:
-                    B1 = 0.05F;
-                    break;
+                FiaCode.PinusPonderosa or 
+                FiaCode.PinusLambertiana => 0.05F,
                 // Hann and Hanus(2001) FRL Research Contribution 34
-                case FiaCode.CalocedrusDecurrens:
-                    B1 = 0.20F;
-                    break;
+                FiaCode.CalocedrusDecurrens => 0.20F,
                 // Hann and Hanus(2001) FRL Research Contribution 34
-                case FiaCode.TsugaHeterophylla:
-                    B1 = 0.209806F;
-                    break;
+                FiaCode.TsugaHeterophylla => 0.209806F,
                 // IC
-                case FiaCode.ThujaPlicata:
-                    B1 = 0.20F;
-                    break;
+                FiaCode.ThujaPlicata => 0.20F,
                 // WH
-                case FiaCode.TaxusBrevifolia:
-                    B1 = 0.209806F;
-                    break;
+                FiaCode.TaxusBrevifolia => 0.209806F,
                 // Hann and Hanus(2001) FRL Research Contribution 34
-                case FiaCode.ArbutusMenziesii:
-                case FiaCode.ChrysolepisChrysophyllaVarChrysophylla:
-                case FiaCode.NotholithocarpusDensiflorus:
-                case FiaCode.QuercusChrysolepis:
-                case FiaCode.AcerMacrophyllum:
-                case FiaCode.QuercusGarryana:
-                case FiaCode.QuercusKelloggii:
-                case FiaCode.AlnusRubra:
-                case FiaCode.CornusNuttallii:
-                case FiaCode.Salix:
-                    B1 = 0.0F;
-                    break;
-                default:
-                    throw Trees.CreateUnhandledSpeciesException(species);
-            }
+                FiaCode.ArbutusMenziesii or 
+                FiaCode.ChrysolepisChrysophyllaVarChrysophylla or 
+                FiaCode.NotholithocarpusDensiflorus or
+                FiaCode.QuercusChrysolepis or 
+                FiaCode.AcerMacrophyllum or 
+                FiaCode.QuercusGarryana or 
+                FiaCode.QuercusKelloggii or 
+                FiaCode.AlnusRubra or 
+                FiaCode.CornusNuttallii or 
+                FiaCode.Salix => 0.0F,
+                _ => throw Trees.CreateUnhandledSpeciesException(species),
+            };
             float CL = CR * HT;
             float HLCW = HT - (1.0F - B1) * CL;
             return HLCW;
@@ -1219,7 +1200,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
 
                 float growthEffectiveAge = configuration.Variant.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
-                float crownCompetitionIncrement = this.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
+                float crownCompetitionIncrement = OrganonVariant.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
 
                 // Hann 2002 Equation 2 (p17) as reduced to Eq 5.1 (p19), 5.2 (p20), 5.3 (p20) by setting a1 = 1, k1 = 1, k3 = 2, a5 = 0
                 //                                             5.x forms are identical: 5.1 uses SCCH, 5.2 scaled PCCH, and 5.3 PCCH
@@ -1461,7 +1442,7 @@ namespace Osu.Cof.Ferm.Organon
                     throw Trees.CreateUnhandledSpeciesException(trees.Species);
             }
             float OG1 = OrganonMortality.GetOldGrowthIndicator(this, stand);
-            float[] mortalityKforRedAlder = null;
+            float[]? mortalityKforRedAlder = null;
             if (trees.Species == FiaCode.AlnusRubra)
             {
                 mortalityKforRedAlder = new float[trees.Capacity];
@@ -1483,7 +1464,7 @@ namespace Osu.Cof.Ferm.Organon
                 float PMK = B0 + B1 * dbhInInches + B2 * dbhInInches * dbhInInches + B3 * crownRatio + B4 * stand.SiteIndex + B5 * basalAreaLarger + B6 * basalAreaLarger * MathV.Exp(B7 * OG1) + fertilizationExponent;
                 if (trees.Species == FiaCode.AlnusRubra)
                 {
-                    mortalityKforRedAlder[treeIndex] = PMK;
+                    mortalityKforRedAlder![treeIndex] = PMK;
                 }
 
                 float XPM = 1.0F / (1.0F + MathV.Exp(-PMK));
@@ -1515,7 +1496,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     if (alnusRubraTreesPerAcre > 0.0001F)
                     {
-                        RedAlder.ReduceExpansionFactor(trees, stand.RedAlderGrowthEffectiveAge, alnusRubraTreesPerAcre, mortalityKforRedAlder);
+                        RedAlder.ReduceExpansionFactor(trees, stand.RedAlderGrowthEffectiveAge, alnusRubraTreesPerAcre, mortalityKforRedAlder!);
                     }
                 }
             }

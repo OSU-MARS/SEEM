@@ -11,14 +11,14 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(0, Int32.MaxValue)]
-        public Nullable<int> MaxIterations { get; set; }
+        public int? MaxIterations { get; set; }
 
         [Parameter]
         public SwitchParameter Stochastic { get; set; }
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            Hero hero = new Hero(this.Stand, organonConfiguration, objective, parameters)
+            Hero hero = new Hero(this.Stand!, organonConfiguration, objective, parameters)
             {
                 IsStochastic = this.Stochastic
             };

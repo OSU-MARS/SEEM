@@ -11,35 +11,35 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> ChangeToExchangeAfter { get; set; }
+        public int? ChangeToExchangeAfter { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, 1000.0F)]
-        public Nullable<float> FinalMultiplier { get; set; }
+        public float? FinalMultiplier { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, 1000.0F)]
-        public Nullable<float> InitialMultiplier { get; set; }
+        public float? InitialMultiplier { get; set; }
 
         [Parameter]
         [ValidateRange(1, 1000 * 1000)]
-        public Nullable<int> Iterations { get; set; }
+        public int? Iterations { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> LowerAfter { get; set; }
+        public int? LowerAfter { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, 1.0)]
-        public Nullable<float> LowerBy { get; set; }
+        public float? LowerBy { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> RainRate { get; set; }
+        public float? RainRate { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> StopAfter { get; set; }
+        public int? StopAfter { get; set; }
 
         public OptimizeDeluge()
         {
@@ -55,7 +55,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            GreatDeluge deluge = new GreatDeluge(this.Stand, organonConfiguration, objective, parameters);
+            GreatDeluge deluge = new GreatDeluge(this.Stand!, organonConfiguration, objective, parameters);
             if (this.ChangeToExchangeAfter.HasValue)
             {
                 deluge.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;

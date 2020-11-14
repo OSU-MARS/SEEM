@@ -7,8 +7,8 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class PrescriptionEnumeration : Heuristic
     {
-        public PrescriptionParameters Parameters { get; private set; }
-        public PrescriptionMoveLog MoveLog { get; private set; }
+        public PrescriptionParameters Parameters { get; private init; }
+        public PrescriptionMoveLog MoveLog { get; private init; }
 
         public PrescriptionEnumeration(OrganonStand stand, OrganonConfiguration configuration, Objective objective, PrescriptionParameters parameters)
             : base(stand, configuration, objective, parameters)

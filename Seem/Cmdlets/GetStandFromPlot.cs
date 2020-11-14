@@ -14,7 +14,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateRange(0.0, Constant.Maximum.ExpansionFactor)]
-        public Nullable<float> ExpansionFactor { get; set; }
+        public float? ExpansionFactor { get; set; }
 
         [Parameter]
         public TreeModel Model { get; set; }
@@ -28,11 +28,11 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateRange(0, Int32.MaxValue)]
-        public Nullable<int> Trees { get; set; }
+        public int? Trees { get; set; }
 
         [Parameter(Mandatory = true)]
         [ValidateNotNullOrEmpty]
-        public string Xlsx { get; set; }
+        public string? Xlsx { get; set; }
 
         [Parameter]
         [ValidateNotNullOrEmpty]
@@ -58,7 +58,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 plot = new PlotWithHeight(this.Plot);
             }
-            plot.Read(this.Xlsx, this.XlsxSheet);
+            plot.Read(this.Xlsx!, this.XlsxSheet);
 
             OrganonConfiguration configuration = new OrganonConfiguration(OrganonVariant.Create(this.Model));
             OrganonStand stand;

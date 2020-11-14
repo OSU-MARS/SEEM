@@ -9,14 +9,14 @@ namespace Osu.Cof.Ferm.Heuristics
     //   - measures of genetic diversity
     public class PopulationStatistics
     {
-        public List<float> CoefficientOfVarianceByGeneration { get; private set; }
-        public List<float> MaximumFitnessByGeneration { get; private set; }
-        public List<float> MeanAllelesPerLocusByGeneration { get; private set; }
-        public List<float> MeanFitnessByGeneration { get; private set; }
-        public List<float> MeanHeterozygosityByGeneration { get; private set; }
-        public List<float> MinimumFitnessByGeneration { get; private set; }
-        public List<int> NewIndividualsByGeneration { get; private set; }
-        public List<float> PolymorphismByGeneration { get; private set; }
+        public List<float> CoefficientOfVarianceByGeneration { get; private init; }
+        public List<float> MaximumFitnessByGeneration { get; private init; }
+        public List<float> MeanAllelesPerLocusByGeneration { get; private init; }
+        public List<float> MeanFitnessByGeneration { get; private init; }
+        public List<float> MeanHeterozygosityByGeneration { get; private init; }
+        public List<float> MinimumFitnessByGeneration { get; private init; }
+        public List<int> NewIndividualsByGeneration { get; private init; }
+        public List<float> PolymorphismByGeneration { get; private init; }
 
         public PopulationStatistics()
         {

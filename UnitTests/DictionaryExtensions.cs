@@ -4,7 +4,7 @@ namespace Osu.Cof.Ferm.Test
 {
     internal static class DictionaryExtensions
     {
-        public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TValue : new()
+        public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull where TValue : new()
         {
             if (dictionary.TryGetValue(key, out TValue value) == false)
             {
@@ -14,9 +14,9 @@ namespace Osu.Cof.Ferm.Test
             return value;
         }
 
-        public static TArray[] GetOrAdd<TKey, TArray>(this Dictionary<TKey, TArray[]> dictionary, TKey key, int capacity)
+        public static TArray[] GetOrAdd<TKey, TArray>(this Dictionary<TKey, TArray[]> dictionary, TKey key, int capacity) where TKey : notnull
         {
-            if (dictionary.TryGetValue(key, out TArray[] array) == false)
+            if (dictionary.TryGetValue(key, out TArray[]? array) == false)
             {
                 array = new TArray[capacity];
                 dictionary.Add(key, array);

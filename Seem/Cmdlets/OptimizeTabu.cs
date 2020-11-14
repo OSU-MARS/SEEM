@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         //[Parameter]
         //[ValidateRange(1, 100)]
-        //public Nullable<int> Jump { get; set; }
+        //public int? Jump { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, 1.0F)]
@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, TabuParameters parameters)
         {
-            return new TabuSearch(this.Stand, organonConfiguration, objective, parameters);
+            return new TabuSearch(this.Stand!, organonConfiguration, objective, parameters);
         }
 
         protected override string GetName()
@@ -53,7 +53,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override IList<TabuParameters> GetParameterCombinations()
         {
-            int treeCount = this.Stand.GetTreeRecordCount();
+            int treeCount = this.Stand!.GetTreeRecordCount();
 
             List<TabuParameters> parameters = new List<TabuParameters>(this.EscapeAfter.Count * this.EscapeBy.Count * this.Iterations.Count * this.MaxTenure.Count * this.ProportionalPercentage.Count);
             foreach (float escapeAfter in this.EscapeAfter)

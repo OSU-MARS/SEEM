@@ -7,9 +7,9 @@ namespace Osu.Cof.Ferm.Organon
 {
     public abstract class OrganonVariant
     {
-        public float OldTreeAgeThreshold { get; private set; }
-        public int TimeStepInYears { get; private set; }
-        public TreeModel TreeModel { get; private set; }
+        public float OldTreeAgeThreshold { get; private init; }
+        public int TimeStepInYears { get; private init; }
+        public TreeModel TreeModel { get; private init; }
 
         protected OrganonVariant(TreeModel treeModel, float oldTreeAgeThreshold)
         {
@@ -82,7 +82,7 @@ namespace Osu.Cof.Ferm.Organon
             return new NotSupportedException(String.Format("Unhandled model {0}.", treeModel));
         }
 
-        protected float GetCrownCompetitionFactorByHeight(float height, float[] crownCompetitionByHeight)
+        protected static float GetCrownCompetitionFactorByHeight(float height, float[] crownCompetitionByHeight)
         {
             if (height >= crownCompetitionByHeight[^1])
             {
@@ -99,7 +99,7 @@ namespace Osu.Cof.Ferm.Organon
             return crownCompetitionByHeight[strataIndex + 1];
         }
 
-        protected unsafe Vector128<float> GetCrownCompetitionFactorByHeight(Vector128<float> height, float[] crownCompetitionByHeight)
+        protected static unsafe Vector128<float> GetCrownCompetitionFactorByHeight(Vector128<float> height, float[] crownCompetitionByHeight)
         {
             // this is called during GrowHeight() with grown height but before crown competition has been recomputed for new heights
             // As a result, indices well beyond the end of the crown competition array can be generated and must be clamped. If needed, the code 
@@ -309,18 +309,14 @@ namespace Osu.Cof.Ferm.Organon
 
         public bool IsSpeciesSupported(FiaCode species)
         {
-            switch (this.TreeModel)
+            return this.TreeModel switch
             {
-                case TreeModel.OrganonNwo:
-                case TreeModel.OrganonSmc:
-                    return Constant.NwoSmcSpecies.Contains(species);
-                case TreeModel.OrganonRap:
-                    return Constant.RapSpecies.Contains(species);
-                case TreeModel.OrganonSwo:
-                    return Constant.SwoSpecies.Contains(species);
-                default:
-                    throw OrganonVariant.CreateUnhandledModelException(this.TreeModel);
-            }
+                TreeModel.OrganonNwo or 
+                TreeModel.OrganonSmc => Constant.NwoSmcSpecies.Contains(species),
+                TreeModel.OrganonRap => Constant.RapSpecies.Contains(species),
+                TreeModel.OrganonSwo => Constant.SwoSpecies.Contains(species),
+                _ => throw OrganonVariant.CreateUnhandledModelException(this.TreeModel),
+            };
         }
 
         public abstract void ReduceExpansionFactors(OrganonStand stand, OrganonStandDensity densityBeforeGrowth, Trees trees, float fertilizationExponent);

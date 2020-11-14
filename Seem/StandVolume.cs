@@ -9,11 +9,11 @@ namespace Osu.Cof.Ferm
         /// <summary>
         /// Net value in US$/ha.
         /// </summary>
-        public float[] NetPresentValue { get; private set; }
+        public float[] NetPresentValue { get; private init; }
         /// <summary>
         /// Scribner log volume in MBF/ha.
         /// </summary>
-        public float[] ScribnerTotal { get; private set; }
+        public float[] ScribnerTotal { get; private init; }
 
         public StandVolume(int planningPeriods)
         {

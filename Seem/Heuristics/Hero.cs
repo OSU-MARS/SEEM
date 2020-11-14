@@ -45,7 +45,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             float previousBestObjectiveFunction = this.BestObjectiveFunction;
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            int[] treeIndices = this.CreateSequentialArray(initialTreeRecordCount);
+            int[] treeIndices = Heuristic.CreateSequentialArray(initialTreeRecordCount);
             for (int iteration = 0; iteration < this.MaximumIterations; ++iteration)
             {
                 if (this.IsStochastic)

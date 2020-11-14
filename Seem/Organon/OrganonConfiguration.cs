@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm.Organon
     public class OrganonConfiguration
     {
         public Bucking Bucking { get; private set; }
-        public OrganonTreatments Treatments { get; private set; }
+        public OrganonTreatments Treatments { get; private init; }
         public OrganonVariant Variant { get; private set; }
 
         // enable per species crown ratio growth multiplier used only for NWO
@@ -83,23 +83,14 @@ namespace Osu.Cof.Ferm.Organon
 
         public Dictionary<FiaCode, float[]> CreateSpeciesCalibration()
         {
-            ReadOnlyCollection<FiaCode> speciesList;
-            switch (this.Variant.TreeModel)
+            ReadOnlyCollection<FiaCode> speciesList = this.Variant.TreeModel switch
             {
-                case TreeModel.OrganonNwo:
-                case TreeModel.OrganonSmc:
-                    speciesList = Constant.NwoSmcSpecies;
-                    break;
-                case TreeModel.OrganonRap:
-                    speciesList = Constant.RapSpecies;
-                    break;
-                case TreeModel.OrganonSwo:
-                    speciesList = Constant.SwoSpecies;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledModelException(this.Variant.TreeModel);
-            }
-
+                TreeModel.OrganonNwo or 
+                TreeModel.OrganonSmc => Constant.NwoSmcSpecies,
+                TreeModel.OrganonRap => Constant.RapSpecies,
+                TreeModel.OrganonSwo => Constant.SwoSpecies,
+                _ => throw OrganonVariant.CreateUnhandledModelException(this.Variant.TreeModel),
+            };
             Dictionary<FiaCode, float[]> calibration = new Dictionary<FiaCode, float[]>();
             foreach (FiaCode species in speciesList)
             {

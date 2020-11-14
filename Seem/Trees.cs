@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm
         /// <summary>
         /// Maximum number of trees which can be stored in this set.
         /// </summary>
-        public int Capacity { get; set; }
+        public int Capacity { get; private set; }
 
         /// <summary>
         /// Number of trees currently in this set.
@@ -53,7 +53,7 @@ namespace Osu.Cof.Ferm
         /// <summary>
         /// Species of this set of trees.
         /// </summary>
-        public FiaCode Species { get; private set; }
+        public FiaCode Species { get; private init; }
 
         /// <summary>
         /// Trees' tag numbers, if specified.
@@ -63,7 +63,7 @@ namespace Osu.Cof.Ferm
         /// <summary>
         /// Whether diameters, heights, and densities are in English or metric units.
         /// </summary>
-        public Units Units { get; private set; }
+        public Units Units { get; private init; }
 
         public Trees(FiaCode species, int minimumSize, Units units)
         {

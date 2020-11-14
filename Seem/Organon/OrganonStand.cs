@@ -16,7 +16,7 @@ namespace Osu.Cof.Ferm.Organon
         // time since oldest cohort of trees in the stand reached breast height (4.5 feet) (DOUG?)
         public int BreastHeightAgeInYears { get; set; }
 
-        public DouglasFir.SiteConstants DouglasFirSiteConstants { get; private set; }
+        public DouglasFir.SiteConstants DouglasFirSiteConstants { get; private init; }
 
         // also used for ponderosa (SWO) and western redcedar (NWO)
         public float HemlockSiteIndex { get; private set; }
@@ -31,9 +31,9 @@ namespace Osu.Cof.Ferm.Organon
         public float RedAlderSiteIndex { get; private set; }
         public float RedAlderGrowthEffectiveAge { get; set; }
 
-        public OrganonWarnings Warnings { get; private set; }
+        public OrganonWarnings Warnings { get; private init; }
 
-        public SortedDictionary<FiaCode, bool[]> TreeHeightWarningBySpecies { get; private set; }
+        public SortedDictionary<FiaCode, bool[]> TreeHeightWarningBySpecies { get; private init; }
 
         public OrganonStand(int ageInYears, float primarySiteIndex)
         {
@@ -139,7 +139,7 @@ namespace Osu.Cof.Ferm.Organon
             // In CIPSR 2.2.4 these paths are disabled for SMC red alder even though it's a supported species, resulting in zero
             // height growth. In this fork the code's called regardless of variant.
             float heightOfTallestRedAlderInFeet = 0.0F;
-            if (this.TreesBySpecies.TryGetValue(FiaCode.AlnusRubra, out Trees redAlders))
+            if (this.TreesBySpecies.TryGetValue(FiaCode.AlnusRubra, out Trees? redAlders))
             {
                 for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
                 {
@@ -171,22 +171,14 @@ namespace Osu.Cof.Ferm.Organon
         public void SetSdiMax(OrganonConfiguration configuration)
         {
             // CALCULATE THE MAXIMUM SIZE-DENISTY LINE
-            switch (configuration.Variant.TreeModel)
+            this.A2 = configuration.Variant.TreeModel switch
             {
-                case TreeModel.OrganonSwo:
-                case TreeModel.OrganonNwo:
-                case TreeModel.OrganonSmc:
-                    // REINEKE (1933): 1.605^-1 = 0.623053
-                    this.A2 = 0.62305F;
-                    break;
-                case TreeModel.OrganonRap:
-                    // PUETTMANN ET AL. (1993)
-                    this.A2 = 0.64F;
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
-            }
-
+                TreeModel.OrganonSwo or 
+                TreeModel.OrganonNwo or 
+                TreeModel.OrganonSmc => 0.62305F,// Reineke (1933): 1.605^-1 = 0.623053
+                TreeModel.OrganonRap => 0.64F,// Puettmann ET AL. (1993)
+                _ => throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel),
+            };
             float TEMPA1;
             if (configuration.DefaultMaximumSdi > 0.0F)
             {

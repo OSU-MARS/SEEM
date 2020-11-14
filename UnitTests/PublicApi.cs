@@ -13,9 +13,9 @@ namespace Osu.Cof.Ferm.Test
     [TestClass]
     public class PublicApi : OrganonTest
     {
-        public TestContext TestContext { get; set; }
+        public TestContext? TestContext { get; set; }
 
-        private PlotWithHeight GetNelder()
+        private static PlotWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp Nelder 1.xlsx");
             PlotWithHeight plot = new PlotWithHeight(1, 1.327F);
@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Test
             return plot;
         }
 
-        private PlotWithHeight GetPlot14()
+        private static PlotWithHeight GetPlot14()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp plots 14-18+34 Ministry.xlsx");
             PlotWithHeight plot = new PlotWithHeight(14, 4.48F);
@@ -37,11 +37,11 @@ namespace Osu.Cof.Ferm.Test
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "HPNF.xlsx");
             PspStand huffmanPeak = new PspStand(plotFilePath, "HPNF", 0.2F);
             OrganonVariant variant = new OrganonVariantSwo(); // SWO allows mapping ABAM -> ABGR and ABPR -> ABCO
-            OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
+            OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
             TestStand stand = huffmanPeak.ToStand(configuration, 80.0F);
             int startYear = 1980;
             stand.WriteCompetitionAsCsv("HPNF initial competition.csv", variant, startYear);
-            this.GrowPspStand(huffmanPeak, stand, variant, startYear, 2015, Path.GetFileNameWithoutExtension(plotFilePath));
+            OrganonTest.GrowPspStand(huffmanPeak, stand, variant, startYear, 2015, Path.GetFileNameWithoutExtension(plotFilePath));
 
             TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, huffmanPeak, startYear);
             using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("HPNF measured quantiles.csv", variant, startYear);
@@ -68,7 +68,7 @@ namespace Osu.Cof.Ferm.Test
             minObjectiveFunctionWithScaledVolume = 1.291F; // USk$/ha
             #endif
 
-            PlotWithHeight nelder = this.GetNelder();
+            PlotWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
@@ -86,8 +86,8 @@ namespace Osu.Cof.Ferm.Test
             hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             hero.Run();
 
-            this.Verify(hero);
-            this.TestContext.WriteLine("best objective: {0}", hero.BestObjectiveFunction);
+            PublicApi.Verify(hero);
+            this.TestContext!.WriteLine("best objective: {0}", hero.BestObjectiveFunction);
             if (hero.BestTrajectory.UseScaledVolume)
             {
                 Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithScaledVolume);
@@ -109,8 +109,8 @@ namespace Osu.Cof.Ferm.Test
             treeCount = 25;
             #endif
 
-            PlotWithHeight nelder = this.GetNelder();
-            OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
+            PlotWithHeight nelder = PublicApi.GetNelder();
+            OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
 
@@ -202,16 +202,16 @@ namespace Osu.Cof.Ferm.Test
             TimeSpan enumerationRuntime = enumerator.Run();
 
             // heuristics assigned to volume optimization
-            this.Verify(deluge);
-            this.Verify(annealer);
-            this.Verify(thresholdAcceptor);
-            this.Verify(random);
+            PublicApi.Verify(deluge);
+            PublicApi.Verify(annealer);
+            PublicApi.Verify(thresholdAcceptor);
+            PublicApi.Verify(random);
 
             // heuristics assigned to net present value optimization
-            this.Verify(genetic);
-            this.Verify(enumerator);
-            this.Verify(recordTravel);
-            this.Verify(tabu);
+            PublicApi.Verify(genetic);
+            PublicApi.Verify(enumerator);
+            PublicApi.Verify(recordTravel);
+            PublicApi.Verify(tabu);
 
             HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution(1, thinningPeriod, treeCount);
             distribution.AddRun(annealer, annealerRuntime, defaultParameters);
@@ -231,8 +231,8 @@ namespace Osu.Cof.Ferm.Test
             int lastPeriod = 9;
             bool useScaledVolume = false;
 
-            PlotWithHeight nelder = this.GetNelder();
-            OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
+            PlotWithHeight nelder = PublicApi.GetNelder();
+            OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F);
 
             OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useScaledVolume);
@@ -263,7 +263,7 @@ namespace Osu.Cof.Ferm.Test
                 //                                     0       1       2       3       4       5       6       7       8       9
                 minimumUnthinnedVolume = new float[] { 4.428F, 15.02F, 30.49F, 48.39F, 66.72F, 84.45F, 101.1F, 116.4F, 130.6F, 143.6F }; // FIA SV6x32 MBF/ha
             }
-            this.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
 
             // verify thinned trajectory
             //                                        0      1      2      3       4       5       6       7       8       9
@@ -280,24 +280,24 @@ namespace Osu.Cof.Ferm.Test
                 //                                   0       1       2       3       4       5       6       7       8       9
                 minimumThinnedVolume = new float[] { 4.428F, 15.02F, 30.49F, 28.45F, 44.02F, 61.28F, 79.10F, 96.69F, 113.5F, 129.3F }; // FIA MBF/ha
             }
-            this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
-            this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
+            PublicApi.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
         }
 
         [TestMethod]
         public void OrganonStandGrowthApi()
         {
-            TestStand.WriteTreeHeader(this.TestContext);
+            TestStand.WriteTreeHeader(this.TestContext!);
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
-                OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
+                OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
 
                 // check crown competition API
-                TestStand stand = this.CreateDefaultStand(configuration);
+                TestStand stand = OrganonTest.CreateDefaultStand(configuration);
                 float crownCompetitionFactor = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand)[0];
                 Assert.IsTrue(crownCompetitionFactor >= 0.0F);
                 Assert.IsTrue(crownCompetitionFactor <= TestConstant.Maximum.CrownCompetitionFactor);
-                this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
+                OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // recalculate heights and crown ratios for all trees
                 Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
@@ -305,17 +305,17 @@ namespace Osu.Cof.Ferm.Test
                 {
                     OrganonGrowth.SetIngrowthHeightAndCrownRatio(variant, stand, treesOfSpecies, treesOfSpecies.Count, CALIB);
                 }
-                this.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
+                OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // run Organon growth simulation
-                stand = this.CreateDefaultStand(configuration);
+                stand = OrganonTest.CreateDefaultStand(configuration);
                 if (configuration.IsEvenAge)
                 {
                     // stand error if less than one year to grow to breast height
                     stand.AgeInYears = stand.BreastHeightAgeInYears + 2;
                 }
                 stand.SetQuantiles();
-                stand.WriteTreesAsCsv(this.TestContext, variant, 0, false);
+                stand.WriteTreesAsCsv(this.TestContext!, variant, 0, false);
 
                 TestStand initialStand = new TestStand(stand);
                 TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath();
@@ -323,13 +323,13 @@ namespace Osu.Cof.Ferm.Test
                 {
                     OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
-                    this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
+                    OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
 
-                    stand.WriteTreesAsCsv(this.TestContext, variant, variant.GetEndYear(simulationStep), false);
+                    stand.WriteTreesAsCsv(this.TestContext!, variant, variant.GetEndYear(simulationStep), false);
                 }
 
-                this.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, treeGrowth, initialStand, stand);
-                this.Verify(CALIB);
+                OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, treeGrowth, initialStand, stand);
+                OrganonTest.Verify(CALIB);
             }
         }
 
@@ -340,8 +340,8 @@ namespace Osu.Cof.Ferm.Test
             int lastPeriod = 4;
             bool useScaledVolume = true;
 
-            PlotWithHeight plot14 = this.GetPlot14();
-            OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
+            PlotWithHeight plot14 = PublicApi.GetPlot14();
+            OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = plot14.ToOrganonStand(configuration, 30, 130.0F);
 
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
@@ -369,8 +369,8 @@ namespace Osu.Cof.Ferm.Test
                 minimumThinnedVolume = new float[] { 43.74F, 46.59F, 65.78F, 84.94F, 103.1F }; // Browning 1977 (FIA) MBF/ha
             }
 
-            this.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
-            this.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
+            PublicApi.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
             Assert.IsTrue(thinnedTrajectory.GetFirstHarvestAge() == 30);
         }
 
@@ -384,7 +384,7 @@ namespace Osu.Cof.Ferm.Test
             TestStand stand = rs39.ToStand(configuration, 105.0F);
             int startYear = 1992;
             stand.WriteCompetitionAsCsv("RS39 lower half initial competition.csv", variant, startYear);
-            this.GrowPspStand(rs39, stand, variant, startYear, 2019, Path.GetFileNameWithoutExtension(plotFilePath));
+            OrganonTest.GrowPspStand(rs39, stand, variant, startYear, 2019, Path.GetFileNameWithoutExtension(plotFilePath));
 
             TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, rs39, startYear);
             using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("RS39 lower half measured quantiles.csv", variant, startYear);
@@ -410,8 +410,8 @@ namespace Osu.Cof.Ferm.Test
             trees = 10;
             #endif
 
-            PlotWithHeight nelder = this.GetNelder();
-            OrganonConfiguration configuration = this.CreateOrganonConfiguration(new OrganonVariantNwo());
+            PlotWithHeight nelder = PublicApi.GetNelder();
+            OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, trees);
 
@@ -438,12 +438,12 @@ namespace Osu.Cof.Ferm.Test
                     runtime += hero.Run();
                 }
             }
-            this.TestContext.WriteLine(runtime.TotalSeconds.ToString());
+            this.TestContext!.WriteLine(runtime.TotalSeconds.ToString());
         }
 
-        private void Verify(GeneticAlgorithm genetic)
+        private static void Verify(GeneticAlgorithm genetic)
         {
-            this.Verify((Heuristic)genetic);
+            PublicApi.Verify((Heuristic)genetic);
 
             PopulationStatistics statistics = genetic.PopulationStatistics;
             Assert.IsTrue(statistics.Generations <= genetic.MaximumGenerations);
@@ -468,7 +468,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private void Verify(Heuristic heuristic)
+        private static void Verify(Heuristic heuristic)
         {
             // check objective functions
             float beginObjectiveFunction = heuristic.CandidateObjectiveFunctionByMove.First();
@@ -632,7 +632,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(heuristic.CandidateObjectiveFunctionByMove[moveIndex] <= heuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
             }
 
-            IHeuristicMoveLog moveLog = heuristic.GetMoveLog();
+            IHeuristicMoveLog? moveLog = heuristic.GetMoveLog();
             if (moveLog != null)
             {
                 string csvHeader = moveLog.GetCsvHeader("prefix ");
@@ -645,8 +645,8 @@ namespace Osu.Cof.Ferm.Test
                 }
             }
 
-                // check parameters
-                HeuristicParameters parameters = heuristic.GetParameters();
+            // check parameters
+            HeuristicParameters? parameters = heuristic.GetParameters();
             if (parameters != null)
             {
                 string csvHeader = parameters.GetCsvHeader();
@@ -657,7 +657,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private void Verify(OrganonStandTrajectory thinnedTrajectory, float[] minimumThinnedVolumeScribner, int thinPeriod)
+        private static void Verify(OrganonStandTrajectory thinnedTrajectory, float[] minimumThinnedVolumeScribner, int thinPeriod)
         {
             for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
             {
@@ -676,14 +676,14 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private void Verify(OrganonStandTrajectory trajectory, float[] minimumQmd, float[] minimumTopHeight, float[] minimumStandingVolumeScribner, int thinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
+        private static void Verify(OrganonStandTrajectory trajectory, float[] minimumQmd, float[] minimumTopHeight, float[] minimumStandingVolumeScribner, int thinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
         {
             Assert.IsTrue(trajectory.BasalAreaRemoved.Length == lastPeriod + 1);
             Assert.IsTrue(trajectory.BasalAreaRemoved[0] == 0.0F);
             Assert.IsTrue(trajectory.HarvestPeriods == thinPeriod + 1); // BUGBUG: clean off by one semantic
             Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[0] == 0.0F);
             Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal.Length == lastPeriod + 1);
-            this.Verify(trajectory.IndividualTreeSelectionBySpecies, thinPeriod, minTrees, maxTrees);
+            PublicApi.Verify(trajectory.IndividualTreeSelectionBySpecies, thinPeriod, minTrees, maxTrees);
             Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
             Assert.IsTrue(trajectory.PeriodLengthInYears == timeStepInYears);
             Assert.IsTrue(trajectory.PlanningPeriods == lastPeriod + 1); // BUGBUG: clean off by one semantic
@@ -698,12 +698,12 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(trajectory.StandingVolume.ScribnerTotal[periodIndex] > minimumStandingVolumeScribner[periodIndex]);
                 Assert.IsTrue(trajectory.StandingVolume.ScribnerTotal[periodIndex] < volumeTolerance * minimumStandingVolumeScribner[periodIndex]);
 
-                OrganonStand stand = trajectory.StandByPeriod[periodIndex];
+                OrganonStand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
                 float qmd = stand.GetQuadraticMeanDiameter();
                 float topHeight = stand.GetTopHeight();
                 int treeRecords = stand.GetTreeRecordCount();
 
-                Assert.IsTrue(stand.Name.StartsWith(trajectory.Name));
+                Assert.IsTrue((stand.Name != null) && (trajectory.Name != null) && stand.Name.StartsWith(trajectory.Name));
                 Assert.IsTrue(qmd > minimumQmd[periodIndex]);
                 Assert.IsTrue(qmd < qmdTolerance * minimumQmd[periodIndex]);
                 Assert.IsTrue(topHeight > minimumTopHeight[periodIndex]);
@@ -715,7 +715,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private void Verify(SortedDictionary<FiaCode, int[]> individualTreeSelectionBySpecies, int harvestPeriod, int minimumTreesSelected, int maximumTreesSelected)
+        private static void Verify(SortedDictionary<FiaCode, int[]> individualTreeSelectionBySpecies, int harvestPeriod, int minimumTreesSelected, int maximumTreesSelected)
         {
             int outOfRangeTrees = 0;
             int treesSelected = 0;

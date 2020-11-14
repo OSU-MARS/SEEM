@@ -26,7 +26,7 @@ namespace Osu.Cof.Ferm.Test
             this.yearOfMostRecentIngrowthAdded = Int32.MinValue;
 
             XlsxReader reader = new XlsxReader();
-            reader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
+            XlsxReader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
         public void AddIngrowth(int year, OrganonStand stand, OrganonStandDensity standDensity)
@@ -86,7 +86,7 @@ namespace Osu.Cof.Ferm.Test
             return TestConstant.AcresPerHectare * this.GetTreesPerAcreExpansionFactor();
         }
 
-        private FiaCode MaybeRemapToSupportedSpecies(FiaCode species, OrganonVariant variant)
+        private static FiaCode MaybeRemapToSupportedSpecies(FiaCode species, OrganonVariant variant)
         {
             if (variant.IsSpeciesSupported(species))
             {
@@ -114,7 +114,7 @@ namespace Osu.Cof.Ferm.Test
             this.plotCount = Math.Max(this.plotCount, plot);
 
             int tag = Int32.Parse(rowAsStrings[Constant.Psp.ColumnIndex.Tag]);
-            if (this.MeasurementsByTag.TryGetValue(tag, out PspTreeMeasurementSeries tree) == false)
+            if (this.MeasurementsByTag.TryGetValue(tag, out PspTreeMeasurementSeries? tree) == false)
             {
                 FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[Constant.Psp.ColumnIndex.Species]);
                 if (species == FiaCode.Alnus)
@@ -179,7 +179,7 @@ namespace Osu.Cof.Ferm.Test
                     continue;
                 }
 
-                FiaCode species = this.MaybeRemapToSupportedSpecies(tree.Species, configuration.Variant);
+                FiaCode species = PspStand.MaybeRemapToSupportedSpecies(tree.Species, configuration.Variant);
                 Trees treesOfSpecies = stand.TreesBySpecies[species];
                 Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
                 float dbhInInches = TestConstant.InchesPerCm * tree.DbhInCentimetersByYear[firstPlotMeasurementYear];
@@ -204,7 +204,7 @@ namespace Osu.Cof.Ferm.Test
                     indexBySpecies.Add(tree.Species, treeIndex);
                 }
 
-                FiaCode species = this.MaybeRemapToSupportedSpecies(tree.Species, configuration.Variant);
+                FiaCode species = PspStand.MaybeRemapToSupportedSpecies(tree.Species, configuration.Variant);
                 Trees treesOfSpecies = stand.TreesBySpecies[species];
                 treesOfSpecies.CrownRatio[treeIndex] = tree.EstimateInitialCrownRatio(standDensity);
                 indexBySpecies[tree.Species] = ++treeIndex;

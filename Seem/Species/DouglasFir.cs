@@ -110,13 +110,13 @@ namespace Osu.Cof.Ferm.Species
         // Collection of pre-calculable site constants used by Bruce 1981's height growth increments.
         public class SiteConstants
         {
-            public float B1 { get; private set; }
-            public float B2 { get; private set; }
-            public float SiteIndexFromGround { get; private set; }
-            public float X1 { get; private set; }
-            public float X2toB2 { get; private set; }
-            public float X2 { get; private set; }
-            public float X3 { get; private set; }
+            public float B1 { get; private init; }
+            public float B2 { get; private init; }
+            public float SiteIndexFromGround { get; private init; }
+            public float X1 { get; private init; }
+            public float X2toB2 { get; private init; }
+            public float X2 { get; private init; }
+            public float X3 { get; private init; }
 
             public SiteConstants(float siteIndexFromGround)
             {

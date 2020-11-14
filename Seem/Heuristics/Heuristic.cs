@@ -10,9 +10,9 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public float BestObjectiveFunction { get; protected set; }
         public List<float> AcceptedObjectiveFunctionByMove { get; protected set; }
-        public OrganonStandTrajectory BestTrajectory { get; private set; }
-        public OrganonStandTrajectory CurrentTrajectory { get; private set; }
-        public Objective Objective { get; private set; }
+        public OrganonStandTrajectory BestTrajectory { get; private init; }
+        public OrganonStandTrajectory CurrentTrajectory { get; private init; }
+        public Objective Objective { get; private init; }
         public List<float> CandidateObjectiveFunctionByMove { get; protected set; }
 
         protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
@@ -46,7 +46,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
         }
 
-        protected int[] CreateSequentialArray(int length)
+        protected static int[] CreateSequentialArray(int length)
         {
             Debug.Assert(length > 0);
 
@@ -60,7 +60,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
         protected int GetInitialTreeRecordCount()
         {
-            return this.CurrentTrajectory.StandByPeriod[0].GetTreeRecordCount();
+            OrganonStand initialStand = this.CurrentTrajectory.StandByPeriod[0] ?? throw new NotSupportedException("Initial stand infomation is missing.");
+            return initialStand.GetTreeRecordCount();
         }
 
         public abstract string GetName();
@@ -105,12 +106,12 @@ namespace Osu.Cof.Ferm.Heuristics
             return objectiveFunction;
         }
 
-        public virtual IHeuristicMoveLog GetMoveLog()
+        public virtual IHeuristicMoveLog? GetMoveLog()
         {
             return null;
         }
 
-        public virtual HeuristicParameters GetParameters()
+        public virtual HeuristicParameters? GetParameters()
         {
             return null;
         }
@@ -122,11 +123,11 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(proportionalPercentage));
             }
 
-            IHarvest harvest = this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
+            IHarvest? harvest = this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
             if ((harvest == null) || (harvest is ThinByIndividualTreeSelection == false))
             {
                 // attempt to randomize an individual tree selection without a corresponding harvest present
-                throw new ArgumentOutOfRangeException(nameof(this.CurrentTrajectory.Configuration.Treatments.Harvests));
+                throw new NotSupportedException("No harvest is specified or the first harvest is not thinning by individual tree selection.");
             }
 
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
@@ -173,16 +174,16 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new NotSupportedException();
             }
 
-            IHarvest harvest = this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
+            IHarvest? harvest = this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
             if ((harvest == null) || (harvest is ThinByIndividualTreeSelection == false))
             {
                 // attempt to randomize an individual tree selection without a corresponding harvest present
-                throw new ArgumentOutOfRangeException(nameof(this.CurrentTrajectory.Configuration.Treatments.Harvests));
+                throw new NotSupportedException("No harvest is specified or the first harvest is not individual tree selection.");
             }
 
             int maxPerturbationIndex = (int)(perturbBy * eliteSolutions.TreeCount) + 1;
             int[] treeSelection = eliteSolutions.IndividualTreeSelections[0];
-            int[] treeIndices = this.CreateSequentialArray(eliteSolutions.TreeCount);
+            int[] treeIndices = Heuristic.CreateSequentialArray(eliteSolutions.TreeCount);
             this.Pseudorandom.Shuffle(treeIndices);
             for (int shuffleIndex = 0; shuffleIndex < treeIndices.Length; ++shuffleIndex)
             {

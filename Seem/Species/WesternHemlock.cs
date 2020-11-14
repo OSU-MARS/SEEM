@@ -103,27 +103,27 @@ namespace Osu.Cof.Ferm.Species
         {
             // apply height-age equation
             float X = AGE - 1.0F;
-            if (X < site.XK)
+            if (X < site.Xk)
             {
-                HTOP = site.H1 + site.PPSI * X + (1.0F - site.B1) * site.PPSI * site.XK / (site.C + 1.0F) * (MathF.Pow((site.XK - X) / site.XK, site.C + 1.0F) - 1.0F);
+                HTOP = site.H1 + site.PPSI * X + (1.0F - site.B1) * site.PPSI * site.Xk / (site.C + 1.0F) * (MathF.Pow((site.Xk - X) / site.Xk, site.C + 1.0F) - 1.0F);
             }
             else
             {
-                float Z = X - site.XK;
-                HTOP = site.YK + site.ALPHA * (1.0F - MathV.Exp(-site.BETA * Z));
+                float Z = X - site.Xk;
+                HTOP = site.Yk + site.Alpha * (1.0F - MathV.Exp(-site.Beta * Z));
             }
         }
 
         public class SiteConstants
         {
-            public float ALPHA { get; private set; }
-            public float B1 { get; private set; }
-            public float BETA { get; private set; }
-            public float C { get; private set; }
-            public float H1 { get; private set; }
-            public float PPSI { get; private set; }
-            public float XK { get; private set; }
-            public float YK { get; private set; }
+            public float Alpha { get; private init; }
+            public float B1 { get; private init; }
+            public float Beta { get; private init; }
+            public float C { get; private init; }
+            public float H1 { get; private init; }
+            public float PPSI { get; private init; }
+            public float Xk { get; private init; }
+            public float Yk { get; private init; }
 
             public SiteConstants(float siteIndexFromGroundEnglish)
             {
@@ -155,13 +155,13 @@ namespace Osu.Cof.Ferm.Species
                 //
                 // psi input REAL productivity index (m/yr)
                 this.PPSI = PSI;
-                this.XK = 128.326F * MathV.Exp(-2.54871F * PSI);
+                this.Xk = 128.326F * MathV.Exp(-2.54871F * PSI);
                 this.B1 = 0.2F + 0.8F / (1.0F + MathV.Exp(5.33208F - 9.00622F * PSI));
                 this.C = 1.0F + 1.2F * PSI;
-                this.ALPHA = 52.7948F * PSI;
+                this.Alpha = 52.7948F * PSI;
                 this.H1 = 1.3F + (B1 * PSI) / 2.0F;
-                this.YK = H1 + PSI * XK * (1.0F - (1.0F - B1) / (C + 1.0F));
-                this.BETA = PSI / ALPHA;
+                this.Yk = H1 + PSI * Xk * (1.0F - (1.0F - B1) / (C + 1.0F));
+                this.Beta = PSI / Alpha;
             }
         }
     }

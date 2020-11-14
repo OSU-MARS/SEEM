@@ -10,7 +10,7 @@ namespace Osu.Cof.Ferm
 {
     internal class XlsxReader
     {
-        private int GetExcelColumnIndex(string cellReference)
+        private static int GetExcelColumnIndex(string cellReference)
         {
             int index = cellReference[0] - 'A';
             if ((cellReference[1] > '9') || (cellReference[1] < '0'))
@@ -25,7 +25,7 @@ namespace Osu.Cof.Ferm
             return index;
         }
 
-        public void ReadWorksheet(string xlsxFilePath, string worksheetName, Action<int, string[]> parseRow)
+        public static void ReadWorksheet(string xlsxFilePath, string worksheetName, Action<int, string[]> parseRow)
         {
             using FileStream stream = new FileStream(xlsxFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using SpreadsheetDocument xlsx = SpreadsheetDocument.Open(stream, false);
@@ -59,7 +59,7 @@ namespace Osu.Cof.Ferm
             }
 
             // read worksheet
-            Sheet worksheetInfo = workbook.Workbook.Sheets.Elements<Sheet>().FirstOrDefault(sheet => String.Equals(sheet.Name, worksheetName, StringComparison.Ordinal));
+            Sheet? worksheetInfo = workbook.Workbook.Sheets.Elements<Sheet>().FirstOrDefault(sheet => String.Equals(sheet.Name, worksheetName, StringComparison.Ordinal));
             if (worksheetInfo == null)
             {
                 throw new XmlException("Worksheet not found.");
@@ -74,7 +74,7 @@ namespace Osu.Cof.Ferm
             {
                 throw new XmlException("Worksheet dimension element not found.");
             }
-            string dimension = worksheetReader.GetAttribute(Constant.OpenXml.Attribute.Reference);
+            string? dimension = worksheetReader.GetAttribute(Constant.OpenXml.Attribute.Reference);
             if (dimension == null)
             {
                 throw new XmlException("Worksheet dimension reference not found.");
@@ -84,7 +84,7 @@ namespace Osu.Cof.Ferm
             {
                 throw new XmlException(String.Format("Worksheet dimension reference '{0}' is malformed.", dimension));
             }
-            int maximumColumnIndex = this.GetExcelColumnIndex(range[1]);
+            int maximumColumnIndex = XlsxReader.GetExcelColumnIndex(range[1]);
 
             worksheetReader.ReadToNextSibling(Constant.OpenXml.Element.SheetData, Constant.OpenXml.Namespace);
             int rowIndex = 0;
@@ -108,12 +108,16 @@ namespace Osu.Cof.Ferm
                             }
                             else if (String.Equals(rowReader.LocalName, Constant.OpenXml.Element.Cell, StringComparison.Ordinal))
                             {
-                                string cellReference = rowReader.GetAttribute(Constant.OpenXml.Attribute.CellReference);
+                                string? cellReference = rowReader.GetAttribute(Constant.OpenXml.Attribute.CellReference);
+                                if (String.IsNullOrEmpty(cellReference))
+                                {
+                                    throw new NotSupportedException("Missing cell reference.");
+                                }
 
                                 // get cell's column
                                 // The XML is sparse in the sense empty cells are omitted, so this is required to correctly output
                                 // rows.
-                                int column = this.GetExcelColumnIndex(cellReference);
+                                int column = XlsxReader.GetExcelColumnIndex(cellReference);
 
                                 // get cell's value
                                 bool isSharedString = String.Equals(rowReader.GetAttribute(Constant.OpenXml.Attribute.CellType), Constant.OpenXml.CellType.SharedString, StringComparison.Ordinal);

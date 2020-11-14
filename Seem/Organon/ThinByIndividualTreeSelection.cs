@@ -5,7 +5,7 @@ namespace Osu.Cof.Ferm.Organon
 {
     public class ThinByIndividualTreeSelection : IHarvest
     {
-        public int Period { get; private set; }
+        public int Period { get; private init; }
 
         public ThinByIndividualTreeSelection(int harvestPeriod)
         {
@@ -25,7 +25,7 @@ namespace Osu.Cof.Ferm.Organon
         public float EvaluateTreeSelection(OrganonStandTrajectory trajectory)
         {
             float basalAreaRemoved = 0.0F;
-            OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1];
+            OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1] ?? throw new NotSupportedException("No stand information prior to thinning.");
             foreach (KeyValuePair<FiaCode, int[]> treeSelectionForSpecies in trajectory.IndividualTreeSelectionBySpecies)
             {
                 Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[treeSelectionForSpecies.Key];

@@ -14,11 +14,11 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<HeuristicSolutionDistribution> Runs { get; set; }
+        public List<HeuristicSolutionDistribution>? Runs { get; set; }
 
         protected override void ProcessRecord()
         {
-            if (this.Runs.Count < 1)
+            if (this.Runs!.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Runs));
             }
@@ -28,14 +28,24 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
             if (this.ShouldWriteHeader())
             {
-                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters.GetCsvHeader() + ",thin age,rotation,solution,objective,runtime");
+                HeuristicParameters? highestParameters = this.Runs[0].HighestHeuristicParameters;
+                if (highestParameters == null)
+                {
+                    throw new NotSupportedException("Cannot generate header because first run is missing highest solution parameters.");
+                }
+
+                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + ",thin age,rotation,solution,objective,runtime");
                 writer.WriteLine(line);
             }
 
             for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
             {
                 HeuristicSolutionDistribution distribution = this.Runs[runIndex];
-                Heuristic highestHeuristic = distribution.HighestSolution;
+                Heuristic? highestHeuristic = distribution.HighestSolution;
+                if ((highestHeuristic == null) || (distribution.HighestHeuristicParameters == null))
+                {
+                    throw new NotSupportedException("Run " + runIndex + " is missing a highest solution or highest solution parameters.");
+                }
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
                 string linePrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectory.GetFirstHarvestAge() + "," + highestTrajectory.GetRotationLength();
 

@@ -12,7 +12,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public OrganonStandTrajectory Trajectory { get; set; }
+        public OrganonStandTrajectory? Trajectory { get; set; }
 
         [Parameter]
         public Units Units { get; set; }
@@ -35,15 +35,15 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             // rows for trees
-            int age = this.Trajectory.PeriodZeroAgeInYears;
+            int age = this.Trajectory!.PeriodZeroAgeInYears;
             for (int periodIndex = 0; periodIndex < this.Trajectory.PlanningPeriods; ++periodIndex)
             {
-                Stand stand = this.Trajectory.StandByPeriod[periodIndex];
+                Stand stand = this.Trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information not available for period " + periodIndex + ".");
                 string ageAsString = age.ToString(CultureInfo.InvariantCulture);
 
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
-                    this.GetDimensionConversions(treesOfSpecies.Units, this.Units, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
+                    WriteTreeList.GetDimensionConversions(treesOfSpecies.Units, this.Units, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
 
                     string species = treesOfSpecies.Species.ToFourLetterCode();
                     for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)

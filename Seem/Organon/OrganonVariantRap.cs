@@ -674,7 +674,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
 
                 float growthEffectiveAge = configuration.Variant.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
-                float crownCompetitionIncrement = this.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
+                float crownCompetitionIncrement = OrganonVariant.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
 
                 float crownRatio = trees.CrownRatio[treeIndex];
                 float FCR = -P5 * MathV.Pow(1.0F - crownRatio, P6) * MathV.Exp(P7 * MathF.Sqrt(crownCompetitionIncrement));

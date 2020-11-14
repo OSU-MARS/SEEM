@@ -42,7 +42,8 @@ namespace Osu.Cof.Ferm.Cmdlets
         public SwitchParameter ScaledVolume { get; set; }
 
         [Parameter(Mandatory = true)]
-        public OrganonStand Stand { get; set; }
+        [ValidateNotNull]
+        public OrganonStand? Stand { get; set; }
         [Parameter]
         [ValidateNotNull]
         public TimberValue TimberValue { get; set; }
@@ -112,7 +113,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             stopwatch.Start();
 
             IList<TParameters> parameterCombinations = this.GetParameterCombinations();
-            int treeCount = this.Stand.GetTreeRecordCount();
+            int treeCount = this.Stand!.GetTreeRecordCount();
             List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count);
             for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
             {
@@ -210,6 +211,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     if (runs.IsFaulted)
                     {
+                        Debug.Assert(runs.Exception != null && runs.Exception.InnerException != null);
                         // per https://stackoverflow.com/questions/20170527/how-to-correctly-rethrow-an-exception-of-task-already-in-faulted-state
                         ExceptionDispatchInfo.Capture(runs.Exception.InnerException).Throw();
                     }
@@ -247,14 +249,24 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         private void WriteMultipleDistributionSummary(List<HeuristicSolutionDistribution> distributions, TimeSpan elapsedTime)
         {
-            Heuristic firstHeuristic = distributions[0].HighestSolution;
+            Heuristic? firstHeuristic = distributions[0].HighestSolution;
+            if (firstHeuristic == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(distributions));
+            }
+
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             this.WriteVerbose("{0}: {1} configurations ({2} runs) in {3:0.00} minutes.", firstHeuristic.GetName(), distributions.Count, this.BestOf * distributions.Count, elapsedTime.TotalMinutes);
         }
 
         private void WriteSingleDistributionSummary(HeuristicSolutionDistribution distribution, TimeSpan elapsedTime)
         {
-            Heuristic bestHeuristic = distribution.HighestSolution;
+            Heuristic? bestHeuristic = distribution.HighestSolution;
+            if (bestHeuristic == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(distribution));
+            }
+
             int movesAccepted = 1;
             int movesRejected = 0;
             float previousObjectiveFunction = bestHeuristic.AcceptedObjectiveFunctionByMove[0];

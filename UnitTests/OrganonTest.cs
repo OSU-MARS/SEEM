@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm.Test
 {
     public class OrganonTest
     {
-        protected TestStand CreateDefaultStand(OrganonConfiguration configuration)
+        protected static TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
             // TODO: cover cases with more than one SIMD width per species
             TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, TestConstant.Default.SiteIndex);
@@ -78,7 +78,7 @@ namespace Osu.Cof.Ferm.Test
             return stand;
         }
 
-        protected OrganonConfiguration CreateOrganonConfiguration(OrganonVariant variant)
+        protected static OrganonConfiguration CreateOrganonConfiguration(OrganonVariant variant)
         {
             OrganonConfiguration configuration = new OrganonConfiguration(variant)
             {
@@ -90,9 +90,9 @@ namespace Osu.Cof.Ferm.Test
             return configuration;
         }
 
-        protected void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
+        protected static void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
         {
-            OrganonConfiguration configuration = this.CreateOrganonConfiguration(variant);
+            OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
             TestStand initialTreeData = new TestStand(stand);
             TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath();
 
@@ -113,7 +113,7 @@ namespace Osu.Cof.Ferm.Test
                 OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
-                this.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
+                OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
 
                 density = new TestStandDensity(stand, variant);
                 density.WriteToCsv(densityWriter, variant, year);
@@ -122,11 +122,11 @@ namespace Osu.Cof.Ferm.Test
                 stand.WriteTreesToCsv(treeGrowthWriter, variant, year);
             }
 
-            this.Verify(ExpectedTreeChanges.ExpansionFactorConservedOrIncreased | ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, treeGrowth, initialTreeData, stand);
-            this.Verify(CALIB);
+            OrganonTest.Verify(ExpectedTreeChanges.ExpansionFactorConservedOrIncreased | ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, treeGrowth, initialTreeData, stand);
+            OrganonTest.Verify(CALIB);
         }
 
-        protected void Verify(Dictionary<FiaCode, float[]> calibration)
+        protected static void Verify(Dictionary<FiaCode, float[]> calibration)
         {
             foreach (KeyValuePair<FiaCode, float[]> species in calibration)
             {
@@ -136,12 +136,12 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        protected void Verify(ExpectedTreeChanges expectedGrowth, TestStand stand, OrganonVariant variant)
+        protected static void Verify(ExpectedTreeChanges expectedGrowth, TestStand stand, OrganonVariant variant)
         {
-            this.Verify(expectedGrowth, OrganonWarnings.None, stand, variant);
+            OrganonTest.Verify(expectedGrowth, OrganonWarnings.None, stand, variant);
         }
 
-        protected void Verify(ExpectedTreeChanges expectedGrowth, OrganonWarnings expectedWarnings, TestStand stand, OrganonVariant variant)
+        protected static void Verify(ExpectedTreeChanges expectedGrowth, OrganonWarnings expectedWarnings, TestStand stand, OrganonVariant variant)
         {
             Assert.IsTrue(stand.AgeInYears >= 0);
             Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
@@ -237,7 +237,7 @@ namespace Osu.Cof.Ferm.Test
             // for now, ignore stand.Warnings.TreesYoung
         }
 
-        protected void Verify(ExpectedTreeChanges expectedGrowth, TreeLifeAndDeath treeGrowth, TestStand initialStand, TestStand finalStand)
+        protected static void Verify(ExpectedTreeChanges expectedGrowth, TreeLifeAndDeath treeGrowth, TestStand initialStand, TestStand finalStand)
         {
             foreach (Trees finalTreesOfSpecies in finalStand.TreesBySpecies.Values)
             {
@@ -314,7 +314,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        protected void Verify(float[] crownCompetitionByHeight, OrganonVariant variant)
+        protected static void Verify(float[] crownCompetitionByHeight, OrganonVariant variant)
         {
             float ccfInStrataImmediatelyBelow = TestConstant.Maximum.CrownCompetitionFactor;
             for (int ccfIndex = 0; ccfIndex < crownCompetitionByHeight.Length - 1; ++ccfIndex)

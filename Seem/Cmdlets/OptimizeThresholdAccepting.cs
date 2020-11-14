@@ -11,10 +11,10 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public List<int> IterationsPerThreshold { get; set; }
+        public List<int>? IterationsPerThreshold { get; set; }
 
         [Parameter]
-        public List<float> Thresholds { get; set; }
+        public List<float>? Thresholds { get; set; }
 
         public OptimizeThresholdAccepting()
         {
@@ -24,7 +24,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand, organonConfiguration, objective, parameters);
+            ThresholdAccepting acceptor = new ThresholdAccepting(this.Stand!, organonConfiguration, objective, parameters);
            if (this.IterationsPerThreshold != null)
             {
                 acceptor.IterationsPerThreshold.Clear();

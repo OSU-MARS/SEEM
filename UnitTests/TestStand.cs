@@ -30,7 +30,7 @@ namespace Osu.Cof.Ferm.Test
 
         public void Add(TreeRecord tree)
         {
-            if (this.TreesBySpecies.TryGetValue(tree.Species, out Trees treesOfSpecies) == false)
+            if (this.TreesBySpecies.TryGetValue(tree.Species, out Trees? treesOfSpecies) == false)
             {
                 treesOfSpecies = new Trees(tree.Species, 1, Units.English);
                 this.TreesBySpecies.Add(tree.Species, treesOfSpecies);

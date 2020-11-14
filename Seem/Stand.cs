@@ -7,9 +7,9 @@ namespace Osu.Cof.Ferm
 {
     public class Stand
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
-        public SortedDictionary<FiaCode, Trees> TreesBySpecies { get; private set; }
+        public SortedDictionary<FiaCode, Trees> TreesBySpecies { get; private init; }
 
         public Stand()
         {
@@ -139,7 +139,7 @@ namespace Osu.Cof.Ferm
                 throw new NotSupportedException("Stand units are indeterminate if no trees are present.");
             }
 
-            Nullable<Units> units = null;
+            Units? units = null;
             foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
                 if (units == null)
@@ -151,7 +151,7 @@ namespace Osu.Cof.Ferm
                     throw new NotSupportedException("Stand units are indeterminate when multiple units are in use.");
                 }
             }
-            return units.Value;
+            return units!.Value;
         }
     }
 }

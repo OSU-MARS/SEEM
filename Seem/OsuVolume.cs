@@ -10,7 +10,7 @@ namespace Osu.Cof.Ferm
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
         /// <returns>Cubic volume including top and stump in m³/ha.</returns>
-        public float GetCubicVolume(Trees trees, int treeIndex)
+        public static float GetCubicVolume(Trees trees, int treeIndex)
         {
             float dbhInCm = trees.Dbh[treeIndex];
             float heightInM = trees.Height[treeIndex];

@@ -45,54 +45,34 @@ namespace Osu.Cof.Ferm.Test
             // Franklin JF. ND. Abies procera. https://andrewsforest.oregonstate.edu/sites/default/files/lter/pubs/pdf/pub1168.pdf
             //   ABPR class II 100 year site index: 36 m => 48 cm DBH under Ishii 2000
             float dbhInCm = Constant.CentimetersPerInch * dbhInInches;
-            float heightInM;
-            switch (species)
+            var heightInM = species switch
             {
-                case FiaCode.AbiesAmabalis:
-                    heightInM = 45.8F * (1.0F - MathF.Exp(-0.008F * MathF.Pow(dbhInCm, 1.36F)));
-                    break;
-                case FiaCode.AbiesProcera:
-                    heightInM = dbhInCm / (0.6035F + 0.0095F * dbhInCm);
-                    break;
-                case FiaCode.PseudotsugaMenziesii:
-                    heightInM = 60.1F * (1.0F - MathF.Exp(-0.007F * MathF.Pow(dbhInCm, 1.25F)));
-                    break;
-                case FiaCode.TaxusBrevifolia:
-                    heightInM = 50.0F * (1.0F - MathF.Exp(-0.025F * MathF.Pow(dbhInCm, 0.71F)));
-                    break;
-                case FiaCode.ThujaPlicata:
-                    heightInM = 68.5F * (1.0F - MathF.Exp(-0.009F * MathF.Pow(dbhInCm, 1.04F)));
-                    break;
-                case FiaCode.TsugaHeterophylla:
-                    heightInM = 56.9F * (1.0F - MathF.Exp(-0.007F * MathF.Pow(dbhInCm, 1.29F)));
-                    break;
-
+                FiaCode.AbiesAmabalis => 45.8F * (1.0F - MathF.Exp(-0.008F * MathF.Pow(dbhInCm, 1.36F))),
+                FiaCode.AbiesProcera => dbhInCm / (0.6035F + 0.0095F * dbhInCm),
+                FiaCode.PseudotsugaMenziesii => 60.1F * (1.0F - MathF.Exp(-0.007F * MathF.Pow(dbhInCm, 1.25F))),
+                FiaCode.TaxusBrevifolia => 50.0F * (1.0F - MathF.Exp(-0.025F * MathF.Pow(dbhInCm, 0.71F))),
+                FiaCode.ThujaPlicata => 68.5F * (1.0F - MathF.Exp(-0.009F * MathF.Pow(dbhInCm, 1.04F))),
+                FiaCode.TsugaHeterophylla => 56.9F * (1.0F - MathF.Exp(-0.007F * MathF.Pow(dbhInCm, 1.29F))),
                 // simple defaults for other conifers and willows
-                case FiaCode.AbiesConcolor:
-                case FiaCode.AbiesGrandis:
-                case FiaCode.CalocedrusDecurrens:
-                case FiaCode.NotholithocarpusDensiflorus:
-                case FiaCode.PinusLambertiana:
-                case FiaCode.PinusPonderosa:
-                case FiaCode.Salix:
-                    heightInM = dbhInCm + 1.37F;
-                    break;
-
+                FiaCode.AbiesConcolor or 
+                FiaCode.AbiesGrandis or 
+                FiaCode.CalocedrusDecurrens or 
+                FiaCode.NotholithocarpusDensiflorus or 
+                FiaCode.PinusLambertiana or 
+                FiaCode.PinusPonderosa or 
+                FiaCode.Salix => dbhInCm + 1.37F,
                 // simple defaults for most hardwoods
-                case FiaCode.AcerMacrophyllum:
-                case FiaCode.AlnusRubra:
-                case FiaCode.ArbutusMenziesii:
-                case FiaCode.ChrysolepisChrysophyllaVarChrysophylla:
-                case FiaCode.CornusNuttallii:
-                case FiaCode.QuercusChrysolepis:
-                case FiaCode.QuercusGarryana:
-                case FiaCode.QuercusKelloggii:
-                    heightInM = 0.8F * dbhInCm + 1.37F;
-                    break;
-
-                default:
-                    throw Trees.CreateUnhandledSpeciesException(species);
+                FiaCode.AcerMacrophyllum or 
+                FiaCode.AlnusRubra or 
+                FiaCode.ArbutusMenziesii or 
+                FiaCode.ChrysolepisChrysophyllaVarChrysophylla or 
+                FiaCode.CornusNuttallii or 
+                FiaCode.QuercusChrysolepis or 
+                FiaCode.QuercusGarryana or 
+                FiaCode.QuercusKelloggii => 0.8F * dbhInCm + 1.37F,
+                _ => throw Trees.CreateUnhandledSpeciesException(species),
             };
+            ;
             if (heightInM < 1.372F)
             {
                 // regression equations above may be inaccurate on small trees, resulting in heights below Organon 2.2.4's 4.5 foot minimum

@@ -11,39 +11,39 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(0.0F, 1.0F)]
-        public Nullable<float> Alpha { get; set; }
+        public float? Alpha { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> ChangeToExchangeAfter { get; set; }
+        public int? ChangeToExchangeAfter { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> FixedDeviation { get; set; }
+        public float? FixedDeviation { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> FixedIncrease { get; set; }
+        public float? FixedIncrease { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> IncreaseAfter { get; set; }
+        public int? IncreaseAfter { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> Iterations { get; set; }
+        public int? Iterations { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> RelativeDeviation { get; set; }
+        public float? RelativeDeviation { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
-        public Nullable<float> RelativeIncrease { get; set; }
+        public float? RelativeIncrease { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> StopAfter { get; set; }
+        public int? StopAfter { get; set; }
 
         public OptimizeRecordTravel()
         {
@@ -59,7 +59,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            RecordTravel recordTravel = new RecordTravel(this.Stand, organonConfiguration, objective, parameters);
+            RecordTravel recordTravel = new RecordTravel(this.Stand!, organonConfiguration, objective, parameters);
             if (this.Alpha.HasValue)
             {
                 recordTravel.Alpha = this.Alpha.Value;

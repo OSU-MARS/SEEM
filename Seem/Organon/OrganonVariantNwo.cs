@@ -405,40 +405,26 @@ namespace Osu.Cof.Ferm.Organon
                     throw Trees.CreateUnhandledSpeciesException(species);
             }
 
-            // coefficients for height to largest crown width
-            float hlcwB1;
-            switch (species)
+            float hlcwB1 = species switch
             {
                 // Hann(1999) FS 45: 217-225
-                case FiaCode.PseudotsugaMenziesii:
-                    hlcwB1 = 0.062000F;
-                    break;
+                FiaCode.PseudotsugaMenziesii => 0.062000F,
                 // Hann and Hanus(2001) FRL Research Contribution 34
-                case FiaCode.AbiesGrandis:
-                    hlcwB1 = 0.028454F;
-                    break;
+                FiaCode.AbiesGrandis => 0.028454F,
                 // Marshall, Johnson, and Hann(2003) CJFR 33: 2059-2066
-                case FiaCode.TsugaHeterophylla:
-                    hlcwB1 = 0.355270F;
-                    break;
+                FiaCode.TsugaHeterophylla => 0.355270F,
                 // WH of Hann and Hanus(2001) FRL Research Contribution 34
-                case FiaCode.ThujaPlicata:
-                case FiaCode.TaxusBrevifolia:
-                    hlcwB1 = 0.209806F;
-                    break;
+                FiaCode.ThujaPlicata or 
+                FiaCode.TaxusBrevifolia => 0.209806F,
                 // Hann and Hanus(2001) FRL Research Contribution 34
-                case FiaCode.ArbutusMenziesii:
-                case FiaCode.AcerMacrophyllum:
-                case FiaCode.QuercusGarryana:
-                case FiaCode.AlnusRubra:
-                case FiaCode.CornusNuttallii:
-                case FiaCode.Salix:
-                    hlcwB1 = 0.0F;
-                    break;
-                default:
-                    throw Trees.CreateUnhandledSpeciesException(species);
-            }
-
+                FiaCode.ArbutusMenziesii or 
+                FiaCode.AcerMacrophyllum or 
+                FiaCode.QuercusGarryana or 
+                FiaCode.AlnusRubra or 
+                FiaCode.CornusNuttallii or 
+                FiaCode.Salix => 0.0F,
+                _ => throw Trees.CreateUnhandledSpeciesException(species),
+            };
             float lcwB1;
             float lcwB2;
             float lcwB3;
@@ -1875,14 +1861,22 @@ namespace Osu.Cof.Ferm.Organon
                     throw Trees.CreateUnhandledSpeciesException(trees.Species);
             }
 
+            DouglasFir.SiteConstants? psmeSite = null;
+            WesternHemlock.SiteConstants? tsheSite = null;
+            if (trees.Species == FiaCode.TsugaHeterophylla)
+            {
+                tsheSite = new WesternHemlock.SiteConstants(stand.HemlockSiteIndex);
+            }
+            else
+            {
+                psmeSite =  new DouglasFir.SiteConstants(stand.SiteIndex); // also used for grand fir
+            }
+            Vector128<float> zero = Vector128<float>.Zero;
+            Vector128<float> one = AvxExtensions.BroadcastScalarToVector128(1.0F);
+
             Vector128<int> oldTreeRecordCount = Vector128<int>.Zero;
             fixed (float* crownRatios = &trees.CrownRatio[0], expansionFactors = &trees.LiveExpansionFactor[0], heights = &trees.Height[0], heightGrowths = &trees.HeightGrowth[0])
             {
-                Vector128<float> one = AvxExtensions.BroadcastScalarToVector128(1.0F);
-                DouglasFir.SiteConstants psmeSite = trees.Species == FiaCode.TsugaHeterophylla ? null : new DouglasFir.SiteConstants(stand.SiteIndex); // also used for grand fir
-                WesternHemlock.SiteConstants tsheSite = trees.Species == FiaCode.TsugaHeterophylla ? new WesternHemlock.SiteConstants(stand.HemlockSiteIndex) : null;
-                Vector128<float> zero = Vector128<float>.Zero;
-
                 for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += 4)
                 {
                     // inline version of GetGrowthEffectiveAge()
@@ -1891,13 +1885,13 @@ namespace Osu.Cof.Ferm.Organon
                     Vector128<float> potentialHeightGrowth;
                     if (trees.Species == FiaCode.TsugaHeterophylla)
                     {
-                        growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite, this.TimeStepInYears, height, out potentialHeightGrowth);
+                        growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite!, this.TimeStepInYears, height, out potentialHeightGrowth);
                     }
                     else
                     {
-                        growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite, this.TimeStepInYears, height, out potentialHeightGrowth);
+                        growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite!, this.TimeStepInYears, height, out potentialHeightGrowth);
                     }
-                    Vector128<float> crownCompetitionFactor = this.GetCrownCompetitionFactorByHeight(height, crownCompetitionByHeight);
+                    Vector128<float> crownCompetitionFactor = OrganonVariant.GetCrownCompetitionFactorByHeight(height, crownCompetitionByHeight);
                     Vector128<float> sqrtCrownCompetitionFactor = Avx.Sqrt(crownCompetitionFactor);
                     Vector128<float> crownCompetitionIncrementToP4 = sqrtCrownCompetitionFactor;
                     if (trees.Species == FiaCode.AbiesGrandis)
@@ -2028,7 +2022,7 @@ namespace Osu.Cof.Ferm.Organon
                     throw Trees.CreateUnhandledSpeciesException(trees.Species);
             }
             
-            float[] mortalityKforRedAlder = null;
+            float[]? mortalityKforRedAlder = null;
             if (trees.Species == FiaCode.AlnusRubra)
             {
                 mortalityKforRedAlder = new float[trees.Capacity];
@@ -2062,13 +2056,13 @@ namespace Osu.Cof.Ferm.Organon
                     // Overall stand simulation speedup of +4% at time of testing on i7-3770.
                     crownRatio = MathF.Sqrt(MathF.Sqrt(crownRatio));
                 }
-                float PMK = B0 + B1 * dbhInInches + B2 * dbhInInches * dbhInInches + B3 * crownRatio + B4 * siteIndex + B5 * basalAreaLarger + fertilizationExponent;
+                float mortalityK = B0 + B1 * dbhInInches + B2 * dbhInInches * dbhInInches + B3 * crownRatio + B4 * siteIndex + B5 * basalAreaLarger + fertilizationExponent;
                 if (trees.Species == FiaCode.AlnusRubra)
                 {
-                    mortalityKforRedAlder[treeIndex] = PMK;
+                    mortalityKforRedAlder![treeIndex] = mortalityK;
                 }
 
-                float survivalProbability = 1.0F - 1.0F / (1.0F + MathV.Exp(-PMK));
+                float survivalProbability = 1.0F - 1.0F / (1.0F + MathV.Exp(-mortalityK));
                 survivalProbability *= OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
                 Debug.Assert(survivalProbability >= 0.0F);
                 Debug.Assert(survivalProbability <= 1.0F);
@@ -2096,7 +2090,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     if (alnusRubraTreesPerAcre > 0.0001F)
                     {
-                        RedAlder.ReduceExpansionFactor(trees, stand.RedAlderGrowthEffectiveAge, alnusRubraTreesPerAcre, mortalityKforRedAlder);
+                        RedAlder.ReduceExpansionFactor(trees, stand.RedAlderGrowthEffectiveAge, alnusRubraTreesPerAcre, mortalityKforRedAlder!);
                     }
                 }
             }

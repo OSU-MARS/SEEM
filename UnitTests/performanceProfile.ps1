@@ -1,5 +1,5 @@
 ﻿Set-Location -Path ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Release"))
-$buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Release\\netcoreapp3.1"))
+$buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Release\\net5.0"))
 Import-Module -Name ([System.IO.Path]::Combine($buildDirectory, "Seem.dll"));
-$stand = Get-StandFromPlot -Xlsx ([System.IO.Path]::Combine($env:USERPROFILE, "OSU\\Organon\\MalcolmKnappNelder1.xlsx"));
-$hero = Optimize-Hero -MaxIterations 2 -Cores 1 -LandExpectationValue -Stand $stand -VolumeUnits ScribnerBoardFeetPerAcre -Verbose
+$stand = Get-StandFromPlot -Plot 1 -Age 20 -ExpansionFactor 1.327 -Xlsx ([System.IO.Path]::Combine($env:USERPROFILE, "OSU\\Organon\\Malcolm Knapp Nelder 1.xlsx")) -XlsxSheet "1";
+$hero = Optimize-Hero -MaxIterations 2 -Cores 1 -LandExpectationValue -Stand $stand -Verbose

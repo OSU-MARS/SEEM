@@ -14,7 +14,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<HeuristicSolutionDistribution> Runs { get; set; }
+        public List<HeuristicSolutionDistribution>? Runs { get; set; }
 
         protected override void ProcessRecord()
         {
@@ -25,24 +25,36 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 line.Append("period");
                 // harvest volume headers
-                for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+                for (int runIndex = 0; runIndex < this.Runs!.Count; ++runIndex)
                 {
-                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
+                    Heuristic? highestSolution = this.Runs[runIndex].HighestSolution;
+                    if (highestSolution == null)
+                    {
+                        throw new NotSupportedException("Cannot write harvest becaue no heuristic solution was provided for run " + runIndex + ".");
+                    }
+
+                    OrganonStandTrajectory bestTrajectory = highestSolution.BestTrajectory;
                     line.Append("," + bestTrajectory.Name + "harvest");
                 }
                 // standing volume headers
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
-                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
+                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution!.BestTrajectory;
                     line.Append("," + bestTrajectory.Name + "standing");
                 }
                 writer.WriteLine(line);
             }
 
             int maxPlanningPeriod = 0;
-            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+            for (int runIndex = 0; runIndex < this.Runs!.Count; ++runIndex)
             {
-                OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution.BestTrajectory;
+                Heuristic? highestSolution = this.Runs[runIndex].HighestSolution;
+                if (highestSolution == null)
+                {
+                    throw new NotSupportedException("Cannot write harvest becaue no heuristic solution was provided for run " + runIndex + ".");
+                }
+
+                OrganonStandTrajectory bestTrajectory = highestSolution.BestTrajectory;
                 maxPlanningPeriod = Math.Max(maxPlanningPeriod, bestTrajectory.PlanningPeriods);
             }
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
@@ -52,14 +64,14 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
-                    Heuristic heuristic = this.Runs[runIndex].HighestSolution;
+                    Heuristic heuristic = this.Runs[runIndex].HighestSolution!;
                     float harvestVolumeScibner = heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex];
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
                 {
-                    Heuristic heuristic = this.Runs[runIndex].HighestSolution;
+                    Heuristic heuristic = this.Runs[runIndex].HighestSolution!;
                     float standingVolumeScribner = heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex];
                     line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
                 }

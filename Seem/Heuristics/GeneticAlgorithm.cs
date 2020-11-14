@@ -15,7 +15,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public int MaximumGenerations { get; set; }
         public float MinimumCoefficientOfVariation { get; set; }
         public int PopulationSize { get; set; }
-        public PopulationStatistics PopulationStatistics { get; private set; }
+        public PopulationStatistics PopulationStatistics { get; private init; }
         public float ProportionalPercentageCenter { get; set; }
         public float ProportionalPercentageWidth { get; set; }
         public PopulationReplacementStrategy ReplacementStrategy { get; set; }

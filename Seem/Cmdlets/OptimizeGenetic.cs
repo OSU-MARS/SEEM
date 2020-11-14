@@ -64,7 +64,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, GeneticParameters parameters)
         {
-            return new GeneticAlgorithm(this.Stand, organonConfiguration, objective, parameters);
+            return new GeneticAlgorithm(this.Stand!, organonConfiguration, objective, parameters);
         }
 
         protected override string GetName()
@@ -108,7 +108,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             List<GeneticParameters> parameters = new List<GeneticParameters>(this.ProportionalPercentage.Count);
-            int treeRecordCount = this.Stand.GetTreeRecordCount();
+            int treeRecordCount = this.Stand!.GetTreeRecordCount();
             foreach (float crossoverProbabilityEnd in this.CrossoverProbabilityEnd)
             {
                 foreach (float exponent in this.ExponentK)

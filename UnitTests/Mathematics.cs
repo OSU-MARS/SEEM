@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Test
     [TestClass]
     public class Mathematics
     {
-        public TestContext TestContext { get; set; }
+        public TestContext? TestContext { get; set; }
 
         [TestMethod]
         public void Exp()
@@ -240,8 +240,6 @@ namespace Osu.Cof.Ferm.Test
             int treeCount = 42;
 
             // TODO: TSHE, THPL, ...
-            FiaVolume fiaVolume = new FiaVolume();
-            OsuVolume osuVolume = new OsuVolume();
             Trees trees = new Trees(FiaCode.PseudotsugaMenziesii, treeCount, Units.English);
             float[] fiaMerchantableCubicFeetPerAcre = new float[treeCount];
             float[] fiaScribnerBoardFeetPerAcre = new float[treeCount];
@@ -260,12 +258,12 @@ namespace Osu.Cof.Ferm.Test
                 float heightInMeters = Constant.MetersPerFoot * tree.HeightInFeet;
                 float treeSizedCylinderCubicMeterVolumePerAcre = tree.LiveExpansionFactor * 0.25F * MathF.PI * dbhInMeters * dbhInMeters * heightInMeters;
 
-                fiaMerchantableCubicFeetPerAcre[treeIndex] = tree.LiveExpansionFactor * fiaVolume.GetMerchantableCubicFeet(trees, treeIndex);
+                fiaMerchantableCubicFeetPerAcre[treeIndex] = tree.LiveExpansionFactor * FiaVolume.GetMerchantableCubicFeet(trees, treeIndex);
                 merchantableCubicFeetPerAcre += fiaMerchantableCubicFeetPerAcre[treeIndex];
-                fiaScribnerBoardFeetPerAcre[treeIndex] = tree.LiveExpansionFactor * fiaVolume.GetScribnerBoardFeet(trees, treeIndex);
+                fiaScribnerBoardFeetPerAcre[treeIndex] = tree.LiveExpansionFactor * FiaVolume.GetScribnerBoardFeet(trees, treeIndex);
                 totalScribnerBoardFeetPerAcre += fiaScribnerBoardFeetPerAcre[treeIndex];
 
-                merchantableCubicMetersPerHectare += osuVolume.GetCubicVolume(trees, treeIndex);
+                merchantableCubicMetersPerHectare += OsuVolume.GetCubicVolume(trees, treeIndex);
 
                 // taper coefficient should be in the vicinity of 0.3 for larger trees, but this is not well defined for small trees
                 // Lower bound can be made more stringent if necessary.
@@ -288,7 +286,7 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(totalScribnerBoardFeetPerAcre <= 6.5 * 0.40 * totalCylinderCubicFeetVolumePerAcre);
 
             // check SIMD 128 result against scalar
-            float totalScribnerBoardFeetPerAcre128 = fiaVolume.GetScribnerBoardFeetPerAcre(trees);
+            float totalScribnerBoardFeetPerAcre128 = FiaVolume.GetScribnerBoardFeetPerAcre(trees);
             float simdScalarScribnerDifference = totalScribnerBoardFeetPerAcre - totalScribnerBoardFeetPerAcre128;
             Assert.IsTrue(MathF.Abs(simdScalarScribnerDifference) < 0.004 * totalScribnerBoardFeetPerAcre);
         }
@@ -331,7 +329,7 @@ namespace Osu.Cof.Ferm.Test
                 //             internal loop:  7.785s -> 1.28M
                 //            single species:  7.619s -> 1.31M
                 //                   VEX 128:  2.063s -> 4.85M
-                float standBoardFeetPerAcre = volume.GetScribnerBoardFeetPerAcre(trees);
+                float standBoardFeetPerAcre = FiaVolume.GetScribnerBoardFeetPerAcre(trees);
                 #if DEBUG
                 Assert.IsTrue(standBoardFeetPerAcre > 35.0F * 1000.0F * expansionFactor);
                 Assert.IsTrue(standBoardFeetPerAcre < 40.0F * 1000.0F * expansionFactor);
@@ -340,7 +338,7 @@ namespace Osu.Cof.Ferm.Test
             }
             runtime.Stop();
 
-            this.TestContext.WriteLine(runtime.Elapsed.TotalSeconds.ToString());
+            this.TestContext!.WriteLine(runtime.Elapsed.TotalSeconds.ToString());
         }
 
         [TestMethod]
@@ -392,9 +390,8 @@ namespace Osu.Cof.Ferm.Test
             TimberValue timberValue = new TimberValue(false);
             stopwatch.Stop();
             TimeSpan timberValueTabulationTime = stopwatch.Elapsed;
-            this.TestContext.WriteLine("tabulation: {0:s\\.fff}s", timberValueTabulationTime);
+            this.TestContext!.WriteLine("tabulation: {0:s\\.fff}s", timberValueTabulationTime);
 
-            OsuVolume osuVolume = new OsuVolume();
             float volumeTolerance = 1.01F;
             foreach (ExpectedTreeVolume tree in trees)
             {
@@ -454,7 +451,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(regenScribnerMetric < volumeTolerance * tree.MinimumRegenVolumeScribner);
 
                 // ratios must be greater than zero in principle but scaling and CVTS regression error allow crossover
-                float poudelTotalCubic = osuVolume.GetCubicVolume(psmeMetric, 0);
+                float poudelTotalCubic = OsuVolume.GetCubicVolume(psmeMetric, 0);
                 poudelTotalCubic /= tree.ExpansionFactor;
                 Assert.IsTrue(regenCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
                 Assert.IsTrue(thinCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);

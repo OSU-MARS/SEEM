@@ -10,7 +10,7 @@ namespace Osu.Cof.Ferm.Organon
         private float fromBelowPercentage;
         private float proportionalPercentage;
 
-        public int Period { get; private set; }
+        public int Period { get; private init; }
 
         public ThinByPrescription(int harvestAtBeginningOfPeriod)
         {
@@ -88,10 +88,10 @@ namespace Osu.Cof.Ferm.Organon
             float totalPercentage = this.fromAbovePercentage + this.fromBelowPercentage + this.proportionalPercentage;
             if ((totalPercentage < 0.0F) || (totalPercentage > 100.0F))
             {
-                throw new ArgumentOutOfRangeException();
+                throw new NotSupportedException("Sum of from above, from below, and proportional removal percentages is negative or greater than 100%.");
             }
 
-            OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1];
+            OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (this.Period - 1) + ".");
 
             // sort trees by diameter
             SortedDictionary<FiaCode, int[]> dbhSortOrderBySpecies = new SortedDictionary<FiaCode, int[]>();

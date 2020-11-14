@@ -6,18 +6,18 @@ namespace Osu.Cof.Ferm
 {
     public class StandTrajectory
     {
-        public float[] BasalAreaRemoved { get; private set; }
-        public int HarvestPeriods { get; private set; }
+        public float[] BasalAreaRemoved { get; private init; }
+        public int HarvestPeriods { get; private init; }
 
         // harvest periods by tree, 0 indicates no harvest
-        public SortedDictionary<FiaCode, int[]> IndividualTreeSelectionBySpecies { get; private set; }
+        public SortedDictionary<FiaCode, int[]> IndividualTreeSelectionBySpecies { get; private init; }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public int PeriodLengthInYears { get; set; }
         public int PeriodZeroAgeInYears { get; set; }
 
-        public StandVolume StandingVolume { get; private set; }
-        public StandVolume ThinningVolume { get; private set; }
+        public StandVolume StandingVolume { get; private init; }
+        public StandVolume ThinningVolume { get; private init; }
         public TimberValue TimberValue { get; set; }
         public bool TreeSelectionChangedSinceLastSimulation { get; protected set; }
 
@@ -29,7 +29,7 @@ namespace Osu.Cof.Ferm
             }
             if (planningPeriods < thinningPeriod)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(thinningPeriod));
             }
 
             int maximumPlanningPeriodIndex = planningPeriods + 1;
@@ -65,7 +65,7 @@ namespace Osu.Cof.Ferm
                 int[] thisSelectionForSpecies = this.IndividualTreeSelectionBySpecies.GetOrAdd(otherSelectionForSpecies.Key, otherSelectionForSpecies.Value.Length);
                 if (otherSelectionForSpecies.Value.Length != thisSelectionForSpecies.Length)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(other.IndividualTreeSelectionBySpecies));
+                    throw new NotSupportedException("Lengths of individual tree selections do not match.");
                 }
                 Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
             }

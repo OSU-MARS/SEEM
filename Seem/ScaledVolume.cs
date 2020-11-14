@@ -6,8 +6,8 @@ namespace Osu.Cof.Ferm
 {
     public class ScaledVolume
     {
-        public float PreferredLogLengthInMeters { get; private set; }
-        public Dictionary<FiaCode, TreeVolumeTable> VolumeBySpecies { get; private set; }
+        public float PreferredLogLengthInMeters { get; private init; }
+        public Dictionary<FiaCode, TreeVolumeTable> VolumeBySpecies { get; private init; }
 
         public ScaledVolume(float preferredLogLengthInMeters, bool scribnerFromLumberRecovery)
         {
@@ -69,8 +69,9 @@ namespace Osu.Cof.Ferm
                 float expansionFactor = trees.LiveExpansionFactor[treeIndex];
 
                 // TODO: shift rounding to reduce bias?
-                int dbhIndex = perTreeVolume.ToDiameterIndex(dbhInCm);
-                int heightIndex = perTreeVolume.ToHeightIndex(heightInMeters);
+                // TODO: use bilinear interpolation
+                int dbhIndex = ScaledVolume.TreeVolumeTable.ToDiameterIndex(dbhInCm);
+                int heightIndex = ScaledVolume.TreeVolumeTable.ToHeightIndex(heightInMeters);
                 cubic2saw += expansionFactor * perTreeVolume.Cubic2Saw[dbhIndex, heightIndex];
                 cubic3saw += expansionFactor * perTreeVolume.Cubic3Saw[dbhIndex, heightIndex];
                 cubic4saw += expansionFactor * perTreeVolume.Cubic4Saw[dbhIndex, heightIndex];
@@ -100,8 +101,8 @@ namespace Osu.Cof.Ferm
                 }
                 float expansionFactor = trees.LiveExpansionFactor[treeIndex];
 
-                int dbhIndex = perTreeVolume.ToDiameterIndex(dbhInCm);
-                int heightIndex = perTreeVolume.ToHeightIndex(heightInMeters);
+                int dbhIndex = ScaledVolume.TreeVolumeTable.ToDiameterIndex(dbhInCm);
+                int heightIndex = ScaledVolume.TreeVolumeTable.ToHeightIndex(heightInMeters);
                 cubic2saw += expansionFactor * perTreeVolume.Cubic2Saw[dbhIndex, heightIndex];
                 cubic3saw += expansionFactor * perTreeVolume.Cubic3Saw[dbhIndex, heightIndex];
                 cubic4saw += expansionFactor * perTreeVolume.Cubic4Saw[dbhIndex, heightIndex];
@@ -137,8 +138,8 @@ namespace Osu.Cof.Ferm
                 float expansionFactor = trees.LiveExpansionFactor[treeIndex];
 
                 // TODO: shift rounding to reduce bias?
-                int dbhIndex = perTreeVolume.ToDiameterIndex(dbhInCm);
-                int heightIndex = perTreeVolume.ToHeightIndex(heightInMeters);
+                int dbhIndex = ScaledVolume.TreeVolumeTable.ToDiameterIndex(dbhInCm);
+                int heightIndex = ScaledVolume.TreeVolumeTable.ToHeightIndex(heightInMeters);
                 boardFeet2saw += expansionFactor * perTreeVolume.Scribner2Saw[dbhIndex, heightIndex];
                 boardFeet3saw += expansionFactor * perTreeVolume.Scribner3Saw[dbhIndex, heightIndex];
                 boardFeet4saw += expansionFactor * perTreeVolume.Scribner4Saw[dbhIndex, heightIndex];
@@ -163,8 +164,8 @@ namespace Osu.Cof.Ferm
                 float expansionFactor = trees.LiveExpansionFactor[treeIndex];
 
                 // TODO: shift rounding to reduce bias?
-                int dbhIndex = perTreeVolume.ToDiameterIndex(dbhInCm);
-                int heightIndex = perTreeVolume.ToHeightIndex(heightInMeters);
+                int dbhIndex = ScaledVolume.TreeVolumeTable.ToDiameterIndex(dbhInCm);
+                int heightIndex = ScaledVolume.TreeVolumeTable.ToHeightIndex(heightInMeters);
                 boardFeet2saw += expansionFactor * perTreeVolume.Scribner2Saw[dbhIndex, heightIndex];
                 boardFeet3saw += expansionFactor * perTreeVolume.Scribner3Saw[dbhIndex, heightIndex];
                 boardFeet4saw += expansionFactor * perTreeVolume.Scribner4Saw[dbhIndex, heightIndex];
@@ -336,12 +337,12 @@ namespace Osu.Cof.Ferm
             /*50*/ {  0,   12,  23,  35,  47,  58,  70,  82,  94, 105, 117, 129, 140, 152, 164, 175, 187, 199, 211, 222, 234, 246, 257, 269, 281, 292, 304, 316, 328, 339, 351, 363, 374, 386, 398, 409, 421, 433, 445, 456, 468 }
             };
 
-            public float[,] Cubic2Saw { get; private set; } // m³ per tree
-            public float[,] Cubic3Saw { get; private set; } // m³ per tree
-            public float[,] Cubic4Saw { get; private set; } // m³ per tree
-            public float[,] Scribner2Saw { get; private set; } // Scriber board foot log volume per tree
-            public float[,] Scribner3Saw { get; private set; } // Scriber board foot log volume per tree
-            public float[,] Scribner4Saw { get; private set; } // Scriber board foot log volume per tree
+            public float[,] Cubic2Saw { get; private init; } // m³ per tree
+            public float[,] Cubic3Saw { get; private init; } // m³ per tree
+            public float[,] Cubic4Saw { get; private init; } // m³ per tree
+            public float[,] Scribner2Saw { get; private init; } // Scriber board foot log volume per tree
+            public float[,] Scribner3Saw { get; private init; } // Scriber board foot log volume per tree
+            public float[,] Scribner4Saw { get; private init; } // Scriber board foot log volume per tree
 
             public TreeVolumeTable(float preferredLogLengthInMeters, Func<float, float, float, float> getDiameterInsideBark, bool scribnerFromLumberRecovery)
             {
@@ -365,7 +366,7 @@ namespace Osu.Cof.Ferm
                 float preferredLogLengthWithTrim = preferredLogLengthInMeters + scribnerTrim;
                 for (int dbhIndex = 1; dbhIndex < diameterClasses; ++dbhIndex)
                 {
-                    float dbh = this.GetDiameter(dbhIndex);
+                    float dbh = ScaledVolume.TreeVolumeTable.GetDiameter(dbhIndex);
                     if (dbh < Constant.Bucking.MinimumScalingDiameter4Saw)
                     {
                         // tree cannot produce a merchantable log
@@ -377,7 +378,7 @@ namespace Osu.Cof.Ferm
                     // start at index 1 since trees in zero height class have zero merchantable volume
                     for (int heightIndex = 1; heightIndex < heightClasses; ++heightIndex)
                     {
-                        float height = this.GetHeight(heightIndex);
+                        float height = ScaledVolume.TreeVolumeTable.GetHeight(heightIndex);
                         if (height < Constant.Bucking.MinimumLogLength4Saw + Constant.Bucking.StumpHeight)
                         {
                             // tree cannot produce a merchantable log
@@ -545,23 +546,23 @@ namespace Osu.Cof.Ferm
                 get { return this.Cubic2Saw.GetLength(1); }
             }
 
-            public float GetDiameter(int dbhIndex)
+            public static float GetDiameter(int dbhIndex)
             {
                 return Constant.Bucking.DiameterClassSizeInCentimeters * dbhIndex;
             }
 
-            public float GetHeight(int heightIndex)
+            public static float GetHeight(int heightIndex)
             {
                 return Constant.Bucking.HeightClassSizeInMeters * heightIndex;
             }
 
-            public int ToDiameterIndex(float dbhInCentimeters)
+            public static int ToDiameterIndex(float dbhInCentimeters)
             {
                 // TODO: shift rounding to reduce bias?
                 return (int)((dbhInCentimeters + 0.5F * Constant.Bucking.DiameterClassSizeInCentimeters) / Constant.Bucking.DiameterClassSizeInCentimeters);
             }
 
-            public int ToHeightIndex(float heightInMeters)
+            public static int ToHeightIndex(float heightInMeters)
             {
                 // TODO: shift rounding to reduce bias?
                 return (int)((heightInMeters + 0.5F * Constant.Bucking.HeightClassSizeInMeters) / Constant.Bucking.HeightClassSizeInMeters);

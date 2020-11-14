@@ -11,39 +11,39 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateRange(0.0F, 1.0F)]
-        public Nullable<float> Alpha { get; set; }
+        public float? Alpha { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> ChangeToExchangeAfter { get; set; }
+        public int? ChangeToExchangeAfter { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, Single.MaxValue)]
-        public Nullable<float> FinalProbability { get; set; }
+        public float? FinalProbability { get; set; }
         
         [Parameter]
         [ValidateRange(0.0F, Single.MaxValue)]
-        public Nullable<float> InitialProbability { get; set; }
+        public float? InitialProbability { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> Iterations { get; set; }
+        public int? Iterations { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> IterationsPerTemperature { get; set; }
+        public int? IterationsPerTemperature { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> ProbabilityWindowLength { get; set; }
+        public int? ProbabilityWindowLength { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public Nullable<int> ReheatAfter { get; set; }
+        public int? ReheatAfter { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, 1.0F)]
-        public Nullable<float> ReheatBy { get; set; }
+        public float? ReheatBy { get; set; }
 
         public OptimizeSimulatedAnnealing()
         {
@@ -60,7 +60,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand, organonConfiguration, objective, parameters);
+            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand!, organonConfiguration, objective, parameters);
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;

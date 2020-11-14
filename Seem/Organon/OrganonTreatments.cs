@@ -12,20 +12,20 @@ namespace Osu.Cof.Ferm.Organon
         // basal area before most recent thinning (Hann RC 40, equations 10 and 18)
         public float BasalAreaBeforeMostRecentHarvest { get; private set; }
         // basal area removed by thinning in ft²/ac in the years specified
-        public List<float> BasalAreaRemovedByHarvest { get; private set; }
+        public List<float> BasalAreaRemovedByHarvest { get; private init; }
 
         public int FertilizationsPerformed { get; set; }
 
-        public List<IHarvest> Harvests { get; private set; }
+        public List<IHarvest> Harvests { get; private init; }
         public int HarvestsPerformed { get; set; }
 
         // N applied in lb/ac (Hann RC 40)
-        public List<float> PoundsOfNitrogenPerAcre { get; private set; }
+        public List<float> PoundsOfNitrogenPerAcre { get; private init; }
 
         // number of simulation time steps since fertlization at index was performed
-        public List<int> TimeStepsSinceFertilization { get; private set; }
+        public List<int> TimeStepsSinceFertilization { get; private init; }
         // number of simulation time steps since thin at index was performed
-        public List<int> TimeStepsSinceHarvest { get; private set; }
+        public List<int> TimeStepsSinceHarvest { get; private init; }
 
         public OrganonTreatments()
         {
