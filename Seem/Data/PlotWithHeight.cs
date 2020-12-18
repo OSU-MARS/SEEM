@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 
 namespace Osu.Cof.Ferm.Data
 {
@@ -22,6 +21,7 @@ namespace Osu.Cof.Ferm.Data
         private readonly int plotID;
         private int speciesColumnIndex;
         private int treeColumnIndex;
+        private int treeConditionColumnIndex;
 
         public PlotWithHeight(int plotID)
         {
@@ -38,6 +38,7 @@ namespace Osu.Cof.Ferm.Data
             this.plotID = plotID;
             this.speciesColumnIndex = -1;
             this.treeColumnIndex = -1;
+            this.treeConditionColumnIndex = -1;
         }
 
         public PlotWithHeight(int plotID, float defaultExpansionFactor)
@@ -101,6 +102,10 @@ namespace Osu.Cof.Ferm.Data
                     {
                         this.expansionFactorColumnIndex = columnIndex;
                     }
+                    else if (columnHeader.Equals("treecond", StringComparison.OrdinalIgnoreCase))
+                    {
+                        this.treeConditionColumnIndex = columnIndex;
+                    }
                     else
                     {
                         // ignore column for now
@@ -151,6 +156,19 @@ namespace Osu.Cof.Ferm.Data
             {
                 // tree is not in this plot
                 return;
+            }
+
+            // exclude dead trees
+            if (this.treeConditionColumnIndex >= 0)
+            {
+                if (String.IsNullOrWhiteSpace(rowAsStrings[this.treeConditionColumnIndex]) == false)
+                {
+                    int treeCondition = Int32.Parse(rowAsStrings[this.treeConditionColumnIndex]);
+                    if (treeCondition == Constant.MalcolmKnapp.TreeCondition.Dead)
+                    {
+                        return;
+                    }
+                }
             }
 
             // parse data

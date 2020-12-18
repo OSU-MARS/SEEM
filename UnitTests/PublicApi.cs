@@ -246,6 +246,8 @@ namespace Osu.Cof.Ferm.Test
                 FromBelowPercentage = 10.0F
             });
             OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useScaledVolume);
+            AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
+            Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == 661);
             thinnedTrajectory.Simulate();
 
             // verify unthinned trajectory
@@ -256,7 +258,7 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumUnthinnedVolume;
             if (unthinnedTrajectory.UseScaledVolume)
             {
-                minimumUnthinnedVolume = new float[] { 9.754F, 19.01F, 31.07F, 47.24F, 62.21F, 75.09F, 89.60F, 103.8F, 116.5F, 128.9F }; // Poudel 2018 + Scribner long log net MBF/ha
+                minimumUnthinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 47.24F, 62.21F, 75.09F, 89.64F, 103.7F, 116.5F, 128.9F }; // Poudel 2018 + Scribner long log net MBF/ha
             }
             else
             {
@@ -273,12 +275,12 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumThinnedVolume;
             if (thinnedTrajectory.UseScaledVolume)
             {
-                minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 26.63F, 39.89F, 52.26F, 65.87F, 82.84F, 99.15F, 113.7F }; // Poudel 2018 + Scribner long log net MBF/ha
+                minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 26.65F, 39.53F, 51.98F, 65.57F, 82.56F, 98.61F, 112.9F }; // Poudel 2018 + Scribner long log net MBF/ha
             }
             else
             {
                 //                                   0       1       2       3       4       5       6       7       8       9
-                minimumThinnedVolume = new float[] { 4.428F, 15.02F, 30.49F, 28.45F, 44.02F, 61.28F, 79.10F, 96.69F, 113.5F, 129.3F }; // FIA MBF/ha
+                minimumThinnedVolume = new float[] { 4.428F, 15.02F, 30.50F, 28.36F, 43.86F, 61.08F, 78.83F, 96.36F, 113.1F, 128.9F }; // FIA MBF/ha
             }
             PublicApi.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
@@ -351,6 +353,8 @@ namespace Osu.Cof.Ferm.Test
                 FromBelowPercentage = 0.0F
             });
             OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useScaledVolume);
+            AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
+            Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == 222);
             thinnedTrajectory.Simulate();
 
             // verify thinned trajectory

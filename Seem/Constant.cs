@@ -129,6 +129,14 @@ namespace Osu.Cof.Ferm
             public const float ProportionalPercentage = 50.0F;
         }
 
+        public static class MalcolmKnapp
+        {
+            public static class TreeCondition
+            {
+                public const int Dead = 2;
+            }
+        }
+
         public static class Maximum
         {
             public const float DiameterIncrementInInches = 4.0F;
