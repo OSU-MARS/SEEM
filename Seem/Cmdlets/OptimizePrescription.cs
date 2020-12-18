@@ -1,5 +1,4 @@
 ﻿using DocumentFormat.OpenXml.Drawing.Diagrams;
-using DocumentFormat.OpenXml.Office2013.Excel;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
@@ -40,7 +39,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public OptimizePrescription()
         {
-            this.Cores = 1;
             this.FromAbovePercentageUpperLimit = 100.0F;
             this.FromBelowPercentageUpperLimit = 100.0F;
             this.Maximum = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };
@@ -69,10 +67,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override IList<PrescriptionParameters> GetParameterCombinations()
         {
-            if (this.Cores != 1)
-            {
-                throw new NotSupportedException();
-            }
             if (this.Minimum.Count != this.Maximum.Count)
             {
                 throw new ArgumentOutOfRangeException();
