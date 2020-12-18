@@ -7,8 +7,12 @@ namespace Osu.Cof.Ferm.Cmdlets
 {
     public class HeuristicSolutionDistribution
     {
+        public int HarvestPeriodIndex { get; init; }
+        public int ParameterIndex { get; init; }
+        public int PlanningPeriodIndex { get; init; }
+
         public List<float> BestObjectiveFunctionBySolution { get; private init; }
-        public HeuristicParameters? HighestHeuristicParameters { get; set; }
+        public HeuristicParameters? HighestHeuristicParameters { get; private set; }
         public Heuristic? HighestSolution { get; private set; }
         public Heuristic? LowestSolution { get; private set; }
 

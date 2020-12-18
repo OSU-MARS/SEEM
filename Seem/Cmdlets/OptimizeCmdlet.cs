@@ -53,7 +53,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
-            this.Cores = 4;
+            this.Cores = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
             this.HarvestPeriods = new List<int>() { 3 };
             this.LandExpectationValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
@@ -119,10 +119,21 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.HarvestPeriods.Count; ++harvestPeriodIndex)
                 {
+                    int planningPeriods = this.PlanningPeriods[planningPeriodIndex];
                     int harvestPeriods = this.HarvestPeriods[harvestPeriodIndex];
+                    if (harvestPeriods >= planningPeriods) // minimum 10 years between thinning and final harvest (if five year time step)
+                    {
+                        continue;
+                    }
+
                     for (int parameterIndex = 0; parameterIndex < parameterCombinations.Count; ++parameterIndex)
                     {
-                        distributions.Add(new HeuristicSolutionDistribution(1, harvestPeriods, treeCount));
+                        distributions.Add(new HeuristicSolutionDistribution(1, harvestPeriods, treeCount)
+                        {
+                            HarvestPeriodIndex = harvestPeriodIndex,
+                            ParameterIndex = parameterIndex,
+                            PlanningPeriodIndex = planningPeriodIndex
+                        });
                     }
                 }
             }
@@ -131,33 +142,27 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 MaxDegreeOfParallelism = this.Cores
             };
-            int totalRuns = this.BestOf * parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count;
             int runsCompleted = 0;
             Task runs = Task.Run(() =>
             {
-                Parallel.For(0, totalRuns, parallelOptions, (int iteration, ParallelLoopState loopState) =>
+                Parallel.For(0, distributions.Count, parallelOptions, (int distributionIndex, ParallelLoopState loopState) =>
                 {
                     if (loopState.ShouldExitCurrentIteration)
                     {
                         return;
                     }
 
-                    int parameterIndex = (iteration / this.BestOf) % parameterCombinations.Count; // innermost "loop": tree selection probability
-                    int harvestPeriodIndex = (iteration / (this.BestOf * parameterCombinations.Count)) % this.HarvestPeriods.Count; // middle "loop": harvest timings
-                    int planningPeriodIndex = (iteration / (this.BestOf * this.HarvestPeriods.Count * parameterCombinations.Count)) % this.PlanningPeriods.Count; // outer "loop": rotation length
-                    int distributionIndex = parameterIndex + harvestPeriodIndex * parameterCombinations.Count + planningPeriodIndex * this.HarvestPeriods.Count * parameterCombinations.Count;
-
+                    HeuristicSolutionDistribution distribution = distributions[distributionIndex];
                     OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-                    organonConfiguration.Treatments.Harvests.Add(this.CreateHarvest(harvestPeriodIndex));
+                    organonConfiguration.Treatments.Harvests.Add(this.CreateHarvest(distribution.HarvestPeriodIndex));
 
                     Objective objective = new Objective()
                     {
                         IsLandExpectationValue = this.LandExpectationValue,
-                        PlanningPeriods = this.PlanningPeriods[planningPeriodIndex]
+                        PlanningPeriods = this.PlanningPeriods[distribution.PlanningPeriodIndex]
                     };
-                    TParameters runParameters = parameterCombinations[parameterIndex];
+                    TParameters runParameters = parameterCombinations[distribution.ParameterIndex];
                     Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, objective, runParameters);
-                    HeuristicSolutionDistribution distribution = distributions[distributionIndex];
                     if (runParameters.PerturbBy > 0.0F)
                     {
                         if ((runParameters.PerturbBy == 1.0F) || (distribution.EliteSolutions.NewIndividuals == 0))
@@ -193,7 +198,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             });
 
-            if (totalRuns == 1) 
+            if (distributions.Count == 1) 
             {
                 // only one selection probability, harvest period, and rotation length, so maximize responsiveness
                 // Also a partial workaround for a Visual Studio Code bug where the first line of cmdlet verbose output is overwritten if WriteProgress()
@@ -217,10 +222,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     if (sleepsSinceLastStatusUpdate > 30)
                     {
-                        double fractionComplete = (double)runsCompleted / (double)totalRuns;
+                        double fractionComplete = (double)runsCompleted / (double)distributions.Count;
                         double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
                         double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
-                        this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + totalRuns + " runs completed."))
+                        this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + distributions.Count + " runs completed."))
                         {
                             PercentComplete = (int)(100.0 * fractionComplete),
                             SecondsRemaining = (int)Math.Round(secondsRemaining)
