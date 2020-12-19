@@ -211,7 +211,8 @@ namespace Osu.Cof.Ferm.Organon
                         }
 
                         int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-                        Debug.Assert(individualTreeSelection.Length == previousTreesOfSpecies.Capacity);
+                        Debug.Assert(individualTreeSelection.Length == previousTreesOfSpecies.Capacity); // tree selection and tree capacities are expected to match
+                        Debug.Assert(previousTreesOfSpecies.Capacity - previousTreesOfSpecies.Count < Constant.Simd128x4.Width); // also expected that trees haven't previously been compacted
                         for (int treeIndex = 0; treeIndex < previousTreesOfSpecies.Count; ++treeIndex)
                         {
                             if (individualTreeSelection[treeIndex] == periodIndex)
@@ -253,15 +254,15 @@ namespace Osu.Cof.Ferm.Organon
                     throw new NotSupportedException();
                 }
 
-                int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[treesOfSpecies.Species];
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    if ((individualTreeSelection[treeIndex] == 0) || (periodIndex < individualTreeSelection[treeIndex]))
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    if (expansionFactor > 0.0F)
                     {
-                        float treesPerAcre = treesOfSpecies.LiveExpansionFactor[treeIndex];
-                        standingCvts4perAcre += treesPerAcre * FiaVolume.GetMerchantableCubicFeet(treesOfSpecies, treeIndex);
+                        standingCvts4perAcre += expansionFactor * FiaVolume.GetMerchantableCubicFeet(treesOfSpecies, treeIndex);
                     }
                 }
+
                 standingScribner6x32footLogPerAcre += FiaVolume.GetScribnerBoardFeetPerAcre(treesOfSpecies);
             }
 
@@ -346,13 +347,20 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     foreach (KeyValuePair<FiaCode, int[]> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
                     {
+                        Trees treesOfSpecies = simulationStand.TreesBySpecies[individualTreeSelection.Key];
+                        bool atLeastOneTreeRemoved = false;
                         for (int treeIndex = 0; treeIndex < individualTreeSelection.Value.Length; ++treeIndex) // assumes trailing capacity is set to zero and of insignificant length
                         {
                             // if needed, this loop can be changed to use either the simulation stand's tree count or a reference tree count rather than capacity
                             if (individualTreeSelection.Value[treeIndex] == periodIndex)
                             {
-                                simulationStand.TreesBySpecies[individualTreeSelection.Key].LiveExpansionFactor[treeIndex] = 0.0F;
+                                treesOfSpecies.LiveExpansionFactor[treeIndex] = 0.0F;
+                                atLeastOneTreeRemoved = true;
                             }
+                        }
+                        if (atLeastOneTreeRemoved)
+                        {
+                            treesOfSpecies.RemoveZeroExpansionFactorTrees();
                         }
                     }
 

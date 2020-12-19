@@ -18,9 +18,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int BestOf { get; set; }
 
         [Parameter]
-        public int Cores { get; set; }
-
-        [Parameter]
         [ValidateNotNull]
         [ValidateRange(1, 100)]
         public List<int> HarvestPeriods { get; set; }
@@ -44,6 +41,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public OrganonStand? Stand { get; set; }
+
+        [Parameter]
+        public int Threads { get; set; }
+
         [Parameter]
         [ValidateNotNull]
         public TimberValue TimberValue { get; set; }
@@ -53,7 +54,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
-            this.Cores = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
+            this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
             this.HarvestPeriods = new List<int>() { 3 };
             this.LandExpectationValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
@@ -140,7 +141,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             ParallelOptions parallelOptions = new ParallelOptions()
             {
-                MaxDegreeOfParallelism = this.Cores
+                MaxDegreeOfParallelism = this.Threads
             };
             int runsCompleted = 0;
             Task runs = Task.Run(() =>
@@ -225,7 +226,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         double fractionComplete = (double)runsCompleted / (double)distributions.Count;
                         double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
                         double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
-                        this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + distributions.Count + " runs completed."))
+                        this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + distributions.Count + " runs completed by " + this.Threads + " threads."))
                         {
                             PercentComplete = (int)(100.0 * fractionComplete),
                             SecondsRemaining = (int)Math.Round(secondsRemaining)

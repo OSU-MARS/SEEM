@@ -138,7 +138,7 @@ namespace Osu.Cof.Ferm
             fixed (float* dbh = &trees.Dbh[0], expansionFactors = &trees.LiveExpansionFactor[0], height = &trees.Height[0])
             {
                 Vector128<float> standBoardFeetPerAcre = Vector128<float>.Zero;
-                for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += 4)
+                for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += Constant.Simd128x4.Width)
                 {
                     Vector128<float> dbhInInches = Avx.LoadVector128(dbh + treeIndex);
                     Vector128<float> heightInFeet = Avx.LoadVector128(height + treeIndex);

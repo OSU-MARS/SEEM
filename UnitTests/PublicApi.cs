@@ -60,12 +60,16 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinningPeriod = 4;
             int treeCount = 100;
+            int expectedTreesSelectedWithFiaVolume = 0;
             float minObjectiveFunctionWithFiaVolume = 3.240F; // USk$/ha
             float minObjectiveFunctionWithScaledVolume = 3.331F; // USk$/ha
+            float minThinnedMbfWithFiaVolume = 0.0F;
             #if DEBUG
             treeCount = 48;
+            expectedTreesSelectedWithFiaVolume = 0;
             minObjectiveFunctionWithFiaVolume = 1.201F; // USk$/ha
             minObjectiveFunctionWithScaledVolume = 1.291F; // USk$/ha
+            minThinnedMbfWithFiaVolume = 0.0F;
             #endif
 
             PlotWithHeight nelder = PublicApi.GetNelder();
@@ -80,14 +84,19 @@ namespace Osu.Cof.Ferm.Test
             };
             Hero hero = new Hero(stand, configuration, landExpectationValue, new HeuristicParameters() { UseScaledVolume = false })
             {
-                IsStochastic = true,
+                //IsStochastic = true,
                 MaximumIterations = 10
             };
-            hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
+            //hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
+            hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
             hero.Run();
 
             PublicApi.Verify(hero);
             this.TestContext!.WriteLine("best objective: {0}", hero.BestObjectiveFunction);
+
+            int[] treeSelection = hero.BestTrajectory.IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            int treesSelected = treeSelection.Sum() / thinningPeriod;
+
             if (hero.BestTrajectory.UseScaledVolume)
             {
                 Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithScaledVolume);
@@ -95,8 +104,15 @@ namespace Osu.Cof.Ferm.Test
             }
             else
             {
+                // expected standing volume, MBF, for no trees harvested
+                // 0.122, 0.971, 3.18, 6.749, 11.56, 17.54, 24.56, 32.44, 40.97, 49.98
+                // expected NPV, US$/ha, for no trees harvested
+                // -90.96, 61.62, 373.49, 781.90, 1228.99, 1674.68, 2085.93, 2438.25, 2717.76, 2918.96
                 Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithFiaVolume);
                 Assert.IsTrue(hero.BestObjectiveFunction < 1.02F * minObjectiveFunctionWithFiaVolume);
+                Assert.IsTrue(hero.BestTrajectory.ThinningVolume.ScribnerTotal[thinningPeriod] >= minThinnedMbfWithFiaVolume);
+                Assert.IsTrue(hero.BestTrajectory.ThinningVolume.ScribnerTotal[thinningPeriod] <= 1.01 * minThinnedMbfWithFiaVolume);
+                Assert.IsTrue(treesSelected == expectedTreesSelectedWithFiaVolume);
             }
         }
 
@@ -228,6 +244,7 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void NelderTrajectory()
         {
+            int expectedUnthinnedTreeRecordCount = 661;
             int lastPeriod = 9;
             bool useScaledVolume = false;
 
@@ -237,18 +254,38 @@ namespace Osu.Cof.Ferm.Test
 
             OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useScaledVolume);
             unthinnedTrajectory.Simulate();
+            foreach (Stand? unthinnedStand in unthinnedTrajectory.StandByPeriod)
+            {
+                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+            }
 
             int thinPeriod = 3;
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
-            {
-                FromAbovePercentage = 20.0F, 
-                ProportionalPercentage = 15.0F, 
-                FromBelowPercentage = 10.0F
-            });
+                                                  {
+                                                      FromAbovePercentage = 20.0F,
+                                                      ProportionalPercentage = 15.0F,
+                                                      FromBelowPercentage = 10.0F
+                                                  });
             OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useScaledVolume);
             AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
-            Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == 661);
+            Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+
             thinnedTrajectory.Simulate();
+
+            for (int periodIndex = 0; periodIndex < thinPeriod; ++periodIndex)
+            {
+                Stand? unthinnedStand = thinnedTrajectory.StandByPeriod[periodIndex];
+                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+            }
+            int expectedThinnedTreeRecordCount = 328; // must be updated if prescription changes
+            for (int periodIndex = thinPeriod; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
+            {
+                Stand? thinnedStand = thinnedTrajectory.StandByPeriod[periodIndex];
+                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedThinnedTreeRecordCount);
+            }
 
             // verify unthinned trajectory
             //                                          0      1      2      3       4       5       6       7       8       9
@@ -430,6 +467,8 @@ namespace Osu.Cof.Ferm.Test
             for (int run = 0; run < runs; ++run)
             {
                 // after warmup: 3 runs * 300 trees = 900 measured growth simulations on i7-3770 (4th gen, Sandy Bridge)
+                // dispersion of 5 runs                   min   mean  median  max
+                // .NET 5.0 with removed tree compaction  1.67  1.72  1.72    1.82
                 Hero hero = new Hero(stand, configuration, landExpectationValue, defaultParameters)
                 {
                     IsStochastic = false,
@@ -548,7 +587,7 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
                     Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex] >= 0.0F);
                     Assert.IsTrue(bestCubicThinningVolume <= previousBestCubicStandingVolume);
-                    Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex] <= heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex - 1]);
+                    Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex] < heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex - 1] + 0.000001F); // allow for numerical error in case where all trees are harvested
                     Assert.IsTrue(bestGradedVolumeHarvested.Cubic2Saw[periodIndex] >= 0.0F);
                     Assert.IsTrue(bestGradedVolumeHarvested.Cubic3Saw[periodIndex] >= 0.0F);
                     Assert.IsTrue(bestGradedVolumeHarvested.Cubic4Saw[periodIndex] >= 0.0F);
@@ -564,7 +603,7 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(currentCubicThinningVolume >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.ScribnerTotal[periodIndex] >= 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume <= previousCurrentCubicStandingVolume);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.ScribnerTotal[periodIndex] <= heuristic.CurrentTrajectory.StandingVolume.ScribnerTotal[periodIndex - 1]);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.ScribnerTotal[periodIndex] < heuristic.CurrentTrajectory.StandingVolume.ScribnerTotal[periodIndex - 1] + 0.000001F); // numerical error
                 }
                 else
                 {

@@ -589,7 +589,7 @@ namespace Osu.Cof.Ferm.Organon
                     Vector128<float> strataHeightIncrement = AvxExtensions.BroadcastScalarToVector128(4.0F * crownCompetitionByHeight[^1] / Constant.HeightStrata);
                     Vector128<float> strataHeight = Avx.Multiply(Vector128.Create(0.25F, 0.50F, 0.75F, 1.0F), strataHeightIncrement); // find CCF at top of strata as in Fortran
                     Vector128<float> zero = Vector128<float>.Zero;
-                    for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += 4)
+                    for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += Constant.Simd128x4.Width)
                     {
                         int strataBelowTreeHeightMask = Avx.MoveMask(Avx.CompareLessThan(strataHeight, heightInFeet128));
                         if (strataBelowTreeHeightMask == 0)
@@ -871,7 +871,7 @@ namespace Osu.Cof.Ferm.Organon
         //    Vector128<float> strataThickness = AvxExtensions.BroadcastScalarToVector128(crownCompetitionByHeight[^1] / Constant.HeightStrataAsFloat);
         //    fixed (float* dbh = &trees.Dbh[0], heights = &trees.Height[0], crownRatios = &trees.CrownRatio[0], expansionFactors = &trees.LiveExpansionFactor[0])
         //    {
-        //        for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += 4)
+        //        for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += Constant.Simd128x4.Width)
         //        {
         //            Vector128<float> dbhInInches = Avx.LoadVector128(dbh + treeIndex);
         //            Vector128<float> heightInFeet = Avx.LoadVector128(heights + treeIndex);
@@ -1877,7 +1877,7 @@ namespace Osu.Cof.Ferm.Organon
             Vector128<int> oldTreeRecordCount = Vector128<int>.Zero;
             fixed (float* crownRatios = &trees.CrownRatio[0], expansionFactors = &trees.LiveExpansionFactor[0], heights = &trees.Height[0], heightGrowths = &trees.HeightGrowth[0])
             {
-                for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += 4)
+                for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += Constant.Simd128x4.Width)
                 {
                     // inline version of GetGrowthEffectiveAge()
                     Vector128<float> height = Avx.LoadVector128(heights + treeIndex);

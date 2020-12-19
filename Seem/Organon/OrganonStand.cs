@@ -76,18 +76,7 @@ namespace Osu.Cof.Ferm.Organon
             foreach (Trees otherTreesOfSpecies in other.TreesBySpecies.Values)
             {
                 Trees thisTreesOfSpecies = this.TreesBySpecies[otherTreesOfSpecies.Species];
-                if (otherTreesOfSpecies.Count > thisTreesOfSpecies.Capacity)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(other));
-                }
-
-                Array.Copy(otherTreesOfSpecies.CrownRatio, 0, thisTreesOfSpecies.CrownRatio, 0, otherTreesOfSpecies.Count);
-                Array.Copy(otherTreesOfSpecies.Dbh, 0, thisTreesOfSpecies.Dbh, 0, otherTreesOfSpecies.Count);
-                Array.Copy(otherTreesOfSpecies.DbhGrowth, 0, thisTreesOfSpecies.DbhGrowth, 0, otherTreesOfSpecies.Count);
-                Array.Copy(otherTreesOfSpecies.DeadExpansionFactor, 0, thisTreesOfSpecies.DeadExpansionFactor, 0, otherTreesOfSpecies.Count);
-                Array.Copy(otherTreesOfSpecies.Height, 0, thisTreesOfSpecies.Height, 0, otherTreesOfSpecies.Count);
-                Array.Copy(otherTreesOfSpecies.HeightGrowth, 0, thisTreesOfSpecies.HeightGrowth, 0, otherTreesOfSpecies.Count);
-                Array.Copy(otherTreesOfSpecies.LiveExpansionFactor, 0, thisTreesOfSpecies.LiveExpansionFactor, 0, otherTreesOfSpecies.Count);
+                thisTreesOfSpecies.CopyFrom(otherTreesOfSpecies);
             }
         }
 
