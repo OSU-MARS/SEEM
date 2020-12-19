@@ -143,16 +143,18 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 MaxDegreeOfParallelism = this.Threads
             };
+            int totalRuns = distributions.Count * this.BestOf;
             int runsCompleted = 0;
             Task runs = Task.Run(() =>
             {
-                Parallel.For(0, distributions.Count, parallelOptions, (int distributionIndex, ParallelLoopState loopState) =>
+                Parallel.For(0, totalRuns, parallelOptions, (int iteration, ParallelLoopState loopState) =>
                 {
                     if (loopState.ShouldExitCurrentIteration)
                     {
                         return;
                     }
 
+                    int distributionIndex = iteration / this.BestOf;
                     HeuristicSolutionDistribution distribution = distributions[distributionIndex];
                     OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
                     organonConfiguration.Treatments.Harvests.Add(this.CreateHarvest(distribution.HarvestPeriodIndex));
@@ -223,10 +225,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     if (sleepsSinceLastStatusUpdate > 30)
                     {
-                        double fractionComplete = (double)runsCompleted / (double)distributions.Count;
+                        double fractionComplete = (double)runsCompleted / (double)totalRuns;
                         double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
                         double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
-                        this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + distributions.Count + " runs completed by " + this.Threads + " threads."))
+                        this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + totalRuns + " runs completed by " + this.Threads + " threads."))
                         {
                             PercentComplete = (int)(100.0 * fractionComplete),
                             SecondsRemaining = (int)Math.Round(secondsRemaining)

@@ -57,6 +57,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, PrescriptionParameters parameters)
         {
+            if (this.BestOf != 1)
+            {
+                throw new NotSupportedException(nameof(this.BestOf)); // enumeration is deterministic, so no value in repeated runs
+            }
             return new PrescriptionEnumeration(this.Stand!, organonConfiguration, objective, parameters);
         }
 
@@ -69,15 +73,15 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             if (this.Minimum.Count != this.Maximum.Count)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(this.Minimum));
             }
             if (this.PerturbBy != 0.0F)
             {
-                throw new NotSupportedException();
+                throw new NotSupportedException(nameof(this.PerturbBy));
             }
             if ((this.ProportionalPercentage.Count != 1) || (this.ProportionalPercentage[0] != 0.0F))
             {
-                throw new NotSupportedException();
+                throw new NotSupportedException(nameof(this.ProportionalPercentage));
             }
             if (this.Step < 0.0F)
             {
@@ -91,7 +95,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 float maximumIntensity = this.Maximum[intensityIndex];
                 if (maximumIntensity < minimumIntensity)
                 {
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(this.Minimum));
                 }
 
                 parameters.Add(new PrescriptionParameters()

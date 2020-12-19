@@ -251,9 +251,10 @@ namespace Osu.Cof.Ferm.Data
                     float dbhInInches = Constant.InchesPerCentimeter * plotTreesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = Constant.FeetPerMeter * plotTreesOfSpecies.Height[treeIndex];
                     float liveExpansionFactor = Constant.HectaresPerAcre * plotTreesOfSpecies.LiveExpansionFactor[treeIndex];
-                    if (Single.IsNaN(dbhInInches) || Single.IsNaN(heightInFeet))
+                    if (Single.IsNaN(dbhInInches) || (dbhInInches <= 0.0F) ||
+                        Single.IsNaN(heightInFeet) || (heightInFeet <= 0.0F))
                     {
-                        throw new NotSupportedException("Tree is missing height or diameter.");
+                        throw new NotSupportedException("Tree " + tag + " has a missing, zero, or negative height or diameter at age " + ageInYears + ".");
                     }
 
                     standTreesOfSpecies.Add(tag, dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactor);

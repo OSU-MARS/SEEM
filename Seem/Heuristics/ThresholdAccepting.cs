@@ -15,9 +15,8 @@ namespace Osu.Cof.Ferm.Heuristics
             : base(stand, organonConfiguration, objective, parameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
-            float oneTreeChange = 1.0F / treeRecords;
-            this.IterationsPerThreshold = new List<int>() { 2 * treeRecords, 50, 200, 50, 250 };
-            this.Thresholds = new List<float>() { 1.0F, 1.0F - 2.0F * oneTreeChange, 1.0F, 1.0F - oneTreeChange, 1.0F };
+            this.IterationsPerThreshold = new List<int>() { (int)(11.5F * treeRecords), 25, (int)(7.5F * treeRecords) };
+            this.Thresholds = new List<float>() { 1.0F, 0.999F, 1.0F };
         }
 
         public override string GetName()

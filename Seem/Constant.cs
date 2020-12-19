@@ -116,7 +116,8 @@ namespace Osu.Cof.Ferm
             public const float ExponentK = -8.0F;
             public const float FlipProbabilityEnd = 1.0F; // ~0.85 best for constant probability
             public const float FlipProbabilityStart = 0.0F;
-            public const float MaximumGenerationCoefficient = 0.75F;
+            public const float GenerationMultiplier = 6.5F;
+            public const float GenerationPower = 0.6F;
             public const float MinimumCoefficientOfVariation = 0.000001F;
             public const int PopulationSize = 30;
             public const float ProportionalPercentageWidth = 100.0F;
@@ -126,6 +127,7 @@ namespace Osu.Cof.Ferm
 
         public static class HeuristicDefault
         {
+            public const int HeroMaximumIterations = 25;
             public const float ProportionalPercentage = 50.0F;
         }
 
@@ -149,6 +151,22 @@ namespace Osu.Cof.Ferm
         public static class MetaheuristicDefault
         {
             public const float PerturbBy = 1.0F;
+        }
+
+        public static class MonteCarloDefault
+        {
+            public const float AnnealingAlpha = 0.7F;
+            public const int AnnealingAveragingWindowLength = 10;
+            public const int AnnealingIterationsPerTemperature = 10;
+            public const float AnnealingReheadBy = 0.33F;
+            public const float DelugeFinalMultiplier = 1.75F;
+            public const float DelugeInitialMultiplier = 1.25F;
+            public const float DelugeLowerWaterBy = 0.0033F;
+            public const int IterationMultiplier = 19;
+            public const float RecordTravelAlpha = 0.75F;
+            public const float RecordTravelRelativeIncrease = 0.0075F;
+            public const float ReheatAfter = 1.6F;
+            public const int StopAfter = 19;
         }
 
         public static class PrescriptionEnumerationDefault
@@ -225,7 +243,7 @@ namespace Osu.Cof.Ferm
         {
             public const float EscapeAfter = 1000.0F * 1000.0F; // off by default, nominal on value: 0.06F
             public const float EscapeBy = 0.04F;
-            public const float Iterations = 1.0F;
+            public const float IterationMultiplier = 4.25F;
             public const float MaximumTenureRatio = 0.1F;
             public const TabuTenure Tenure = TabuTenure.Stochastic;
         }

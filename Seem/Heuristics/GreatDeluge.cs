@@ -21,14 +21,14 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.ChangeToExchangeAfter = Int32.MaxValue;
-            this.FinalMultiplier = 2.0F;
-            this.IntitialMultiplier = 1.5F;
-            this.Iterations = 10 * treeRecords;
-            this.LowerWaterAfter = (int)(1.7F * treeRecords);
-            this.LowerWaterBy = 0.01F;
+            this.FinalMultiplier = Constant.MonteCarloDefault.DelugeFinalMultiplier;
+            this.IntitialMultiplier = Constant.MonteCarloDefault.DelugeInitialMultiplier;
+            this.Iterations = Constant.MonteCarloDefault.IterationMultiplier * treeRecords;
+            this.LowerWaterAfter = (int)(Constant.MonteCarloDefault.ReheatAfter * treeRecords + 0.5F);
+            this.LowerWaterBy = Constant.MonteCarloDefault.DelugeLowerWaterBy;
             this.MoveType = MoveType.OneOpt;
             this.RainRate = null;
-            this.StopAfter = (int)(0.25F * this.Iterations);
+            this.StopAfter = Constant.MonteCarloDefault.StopAfter * treeRecords;
         }
 
         public override string GetName()

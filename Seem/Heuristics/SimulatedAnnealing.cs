@@ -21,16 +21,16 @@ namespace Osu.Cof.Ferm.Heuristics
             :  base(stand, organonConfiguration, objective, parameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
-            this.Alpha = 0.7F;
+            this.Alpha = Constant.MonteCarloDefault.AnnealingAlpha;
             this.ChangeToExchangeAfter = Int32.MaxValue;
             this.FinalProbability = 0.0F;
             this.InitialProbability = 0.0F;
-            this.Iterations = 10 * treeRecords;
-            this.IterationsPerTemperature = 10;
+            this.Iterations = Constant.MonteCarloDefault.IterationMultiplier * treeRecords;
+            this.IterationsPerTemperature = Constant.MonteCarloDefault.AnnealingIterationsPerTemperature;
             this.MoveType = MoveType.OneOpt;
-            this.ProbabilityWindowLength = 10;
-            this.ReheatAfter = (int)(1.7F * treeRecords);
-            this.ReheatBy = 0.33F;
+            this.ProbabilityWindowLength = Constant.MonteCarloDefault.AnnealingAveragingWindowLength;
+            this.ReheatAfter = (int)(Constant.MonteCarloDefault.ReheatAfter * treeRecords + 0.5F);
+            this.ReheatBy = Constant.MonteCarloDefault.AnnealingReheadBy;
 
             // float temperatureSteps = (float)(defaultIterations / this.IterationsPerTemperature);
             // this.Alpha = 1.0F / MathF.Pow(this.InitialAcceptProbability / this.FinalAcceptProbability, 1.0F / temperatureSteps);

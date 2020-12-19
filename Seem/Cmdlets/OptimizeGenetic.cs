@@ -27,7 +27,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
-        public List<float> GenerationCoefficient { get; set; }
+        public List<float> GenerationMultiplier { get; set; }
 
         [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
@@ -54,7 +54,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ExchangeProbabilityEnd = new List<float>() { Constant.GeneticDefault.ExchangeProbabilityEnd };
             this.ExponentK = new List<float>() { Constant.GeneticDefault.ExponentK };
             this.FlipProbabilityEnd = new List<float>() { Constant.GeneticDefault.FlipProbabilityEnd };
-            this.GenerationCoefficient = new List<float>() { Constant.GeneticDefault.MaximumGenerationCoefficient };
+            this.GenerationMultiplier = new List<float>() { Constant.GeneticDefault.GenerationMultiplier };
             this.MinCoefficientOfVariation = new List<float>() { Constant.GeneticDefault.MinimumCoefficientOfVariation };
             this.PopulationSize = new List<int>() { Constant.GeneticDefault.PopulationSize };
             this.ProportionalPercentageWidth = new List<float>() { Constant.GeneticDefault.ProportionalPercentageWidth };
@@ -86,9 +86,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ArgumentOutOfRangeException(nameof(this.FlipProbabilityEnd));
             }
-            if (this.GenerationCoefficient.Count < 1)
+            if (this.GenerationMultiplier.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.GenerationCoefficient));
+                throw new ArgumentOutOfRangeException(nameof(this.GenerationMultiplier));
             }
             if (this.MinCoefficientOfVariation.Count < 1)
             {
@@ -117,7 +117,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         foreach (float flipProbabilityEnd in this.FlipProbabilityEnd)
                         {
-                            foreach (float generationCoefficient in this.GenerationCoefficient)
+                            foreach (float generationMultiplier in this.GenerationMultiplier)
                             {
                                 foreach (float minCoefficientOfVariation in this.MinCoefficientOfVariation)
                                 {
@@ -137,7 +137,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                         ExponentK = exponent,
                                                         FlipProbabilityEnd = flipProbabilityEnd,
                                                         FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
-                                                        MaximumGenerations = (int)(generationCoefficient * treeRecordCount + 0.5F),
+                                                        MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
                                                         MinimumCoefficientOfVariation = minCoefficientOfVariation,
                                                         PerturbBy = this.PerturbBy,
                                                         PopulationSize = populationSize,

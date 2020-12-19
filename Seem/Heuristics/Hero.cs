@@ -13,7 +13,7 @@ namespace Osu.Cof.Ferm.Heuristics
             : base(stand, organonConfiguration, objective, parameters)
         {
             this.IsStochastic = false;
-            this.MaximumIterations = 50;
+            this.MaximumIterations = Constant.HeuristicDefault.HeroMaximumIterations;
         }
 
         public override string GetName()

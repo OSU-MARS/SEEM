@@ -21,16 +21,16 @@ namespace Osu.Cof.Ferm.Heuristics
             : base(stand, organonConfiguration, objective, parameters)
         {
             int treeRecordCount = stand.GetTreeRecordCount();
-            this.Alpha = 0.75F;
+            this.Alpha = Constant.MonteCarloDefault.RecordTravelAlpha;
             this.ChangeToExchangeAfter = Int32.MaxValue;
             this.FixedDeviation = 0.0F;
             this.FixedIncrease = 0.0F;
-            this.IncreaseAfter = (int)(1.7F * treeRecordCount);
-            this.Iterations = 10 * treeRecordCount;
+            this.IncreaseAfter = (int)(Constant.MonteCarloDefault.ReheatAfter * treeRecordCount + 0.5F);
+            this.Iterations = Constant.MonteCarloDefault.IterationMultiplier * treeRecordCount;
             this.MoveType = MoveType.OneOpt;
             this.RelativeDeviation = 0.0F;
-            this.RelativeIncrease = 0.0075F;
-            this.StopAfter = 1000;
+            this.RelativeIncrease = Constant.MonteCarloDefault.RecordTravelRelativeIncrease;
+            this.StopAfter = Constant.MonteCarloDefault.StopAfter * treeRecordCount;
         }
 
         public override string GetName()

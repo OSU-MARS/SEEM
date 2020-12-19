@@ -37,7 +37,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public GeneticParameters(int treeCount)
             : this()
         {
-            this.MaximumGenerations = (int)(Constant.GeneticDefault.MaximumGenerationCoefficient * treeCount + 0.5F);
+            this.MaximumGenerations = (int)(Constant.GeneticDefault.GenerationMultiplier * treeCount + 0.5F);
         }
 
         public override string GetCsvHeader()
