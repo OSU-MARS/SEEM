@@ -101,39 +101,43 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     WriteHarvestSchedule.GetDimensionConversions(highestTreesBeforeThin.Units, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
 
+                    // uncompactedTreeIndex: tree index in periods before thinned trees are removed
+                    // compactedTreeIndex: index of retained trees in periods after thinning
                     int[] lowestTreeSelectionN = lowestTrajectoryN.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
                     int[] highestTreeSelectionN = highestTreeSelectionNForSpecies.Value;
                     Debug.Assert(highestTreesBeforeThin.Capacity == highestTreeSelectionN.Length);
-                    for (int treeIndex = 0; treeIndex < highestTreesBeforeThin.Count; ++treeIndex)
+                    for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < highestTreesBeforeThin.Count; ++uncompactedTreeIndex)
                     {
                         line.Clear();
 
-                        float highestThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesBeforeThin, treeIndex);
+                        float highestThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesBeforeThin, uncompactedTreeIndex);
 
                         string? highestFinalDbh = null;
                         string? highestFinalHeight = null;
                         string? highestFinalCrownRatio = null;
                         string? highestFinalExpansionFactor = null;
                         string? highestFinalBoardFeet = null;
-                        bool isThinnedInHighestTrajectory = highestTreeSelectionN[treeIndex] != Constant.NoHarvestPeriod;
+                        bool isThinnedInHighestTrajectory = highestTreeSelectionN[uncompactedTreeIndex] != Constant.NoHarvestPeriod;
                         if (isThinnedInHighestTrajectory == false)
                         {
-                            highestFinalDbh = (dbhConversionFactor * highestTreesAtFinal.Dbh[treeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
-                            highestFinalHeight = (heightConversionFactor * highestTreesAtFinal.Height[treeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
-                            highestFinalCrownRatio = highestTreesAtFinal.CrownRatio[treeIndex].ToString("0.000", CultureInfo.InvariantCulture);
-                            highestFinalExpansionFactor = highestTreesAtFinal.LiveExpansionFactor[treeIndex].ToString("0.000", CultureInfo.InvariantCulture);
-                            highestFinalBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesAtFinal, treeIndex).ToString("0.00", CultureInfo.InvariantCulture);
+                            Debug.Assert(highestTreesAtFinal.Tag[compactedTreeIndex] == highestTreesBeforeThin.Tag[uncompactedTreeIndex]);
+                            highestFinalDbh = (dbhConversionFactor * highestTreesAtFinal.Dbh[compactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFinalHeight = (heightConversionFactor * highestTreesAtFinal.Height[compactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFinalCrownRatio = highestTreesAtFinal.CrownRatio[compactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestFinalExpansionFactor = highestTreesAtFinal.LiveExpansionFactor[compactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestFinalBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesAtFinal, compactedTreeIndex).ToString("0.00", CultureInfo.InvariantCulture);
+                            ++compactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 
                         // for now, make best guess of using tree tag or index as unique identifier
-                        int treeID = highestTreesBeforeThin.Tag[treeIndex] < 0 ? previousSpeciesCount + treeIndex : highestTreesBeforeThin.Tag[treeIndex];
+                        int treeID = highestTreesBeforeThin.Tag[uncompactedTreeIndex] < 0 ? previousSpeciesCount + uncompactedTreeIndex : highestTreesBeforeThin.Tag[uncompactedTreeIndex];
                         line.Append(linePrefix + "," + treeID + "," +
-                                    lowestTreeSelectionN[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    highestTreeSelectionN[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    (dbhConversionFactor * highestTreesBeforeThin.Dbh[treeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                    (heightConversionFactor * highestTreesBeforeThin.Height[treeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                    highestTreesBeforeThin.CrownRatio[treeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                    highestTreesBeforeThin.LiveExpansionFactor[treeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                    lowestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                    highestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                    (dbhConversionFactor * highestTreesBeforeThin.Dbh[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    (heightConversionFactor * highestTreesBeforeThin.Height[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    highestTreesBeforeThin.CrownRatio[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                    highestTreesBeforeThin.LiveExpansionFactor[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                     highestThinBoardFeet.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                     highestFinalDbh + "," +
                                     highestFinalHeight + "," +
