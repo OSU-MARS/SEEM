@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Species;
-using System;
 using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Organon
@@ -57,6 +56,7 @@ namespace Osu.Cof.Ferm.Organon
             this.Name = other.Name;
             this.NumberOfPlots = other.NumberOfPlots;
             this.RedAlderSiteIndex = other.RedAlderSiteIndex;
+            this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
             this.Warnings = new OrganonWarnings(other.Warnings);
 
             foreach (KeyValuePair<FiaCode, bool[]> species in other.TreeHeightWarningBySpecies)

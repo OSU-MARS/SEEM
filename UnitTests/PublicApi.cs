@@ -61,14 +61,14 @@ namespace Osu.Cof.Ferm.Test
             int thinningPeriod = 4;
             int treeCount = 100;
             int expectedTreesSelectedWithFiaVolume = 0;
-            float minObjectiveFunctionWithFiaVolume = 3.240F; // USk$/ha
-            float minObjectiveFunctionWithScaledVolume = 3.331F; // USk$/ha
+            float minObjectiveFunctionWithFiaVolume = 4.154F; // USk$/ha
+            float minObjectiveFunctionWithScaledVolume = 3.454F; // USk$/ha
             float minThinnedMbfWithFiaVolume = 0.0F;
             #if DEBUG
             treeCount = 48;
             expectedTreesSelectedWithFiaVolume = 0;
-            minObjectiveFunctionWithFiaVolume = 1.201F; // USk$/ha
-            minObjectiveFunctionWithScaledVolume = 1.291F; // USk$/ha
+            minObjectiveFunctionWithFiaVolume = 1.790F; // USk$/ha
+            minObjectiveFunctionWithScaledVolume = 1.357F; // USk$/ha
             minThinnedMbfWithFiaVolume = 0.0F;
             #endif
 
@@ -76,6 +76,7 @@ namespace Osu.Cof.Ferm.Test
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
+            stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             Objective landExpectationValue = new Objective()
             {
@@ -91,14 +92,14 @@ namespace Osu.Cof.Ferm.Test
             hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
             hero.Run();
 
-            PublicApi.Verify(hero);
-            this.TestContext!.WriteLine("best objective: {0}", hero.BestObjectiveFunction);
+            this.Verify(hero);
 
             int[] treeSelection = hero.BestTrajectory.IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesSelected = treeSelection.Sum() / thinningPeriod;
 
             if (hero.BestTrajectory.UseScaledVolume)
             {
+                this.TestContext!.WriteLine("best objective: {0} observed, near {1} expected", hero.BestObjectiveFunction, minObjectiveFunctionWithScaledVolume);
                 Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithScaledVolume);
                 Assert.IsTrue(hero.BestObjectiveFunction < 1.02F * minObjectiveFunctionWithScaledVolume);
             }
@@ -108,8 +109,9 @@ namespace Osu.Cof.Ferm.Test
                 // 0.122, 0.971, 3.18, 6.749, 11.56, 17.54, 24.56, 32.44, 40.97, 49.98
                 // expected NPV, US$/ha, for no trees harvested
                 // -90.96, 61.62, 373.49, 781.90, 1228.99, 1674.68, 2085.93, 2438.25, 2717.76, 2918.96
+                this.TestContext!.WriteLine("best objective: {0} observed, near {1} expected", hero.BestObjectiveFunction, minObjectiveFunctionWithFiaVolume);
                 Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithFiaVolume);
-                Assert.IsTrue(hero.BestObjectiveFunction < 1.02F * minObjectiveFunctionWithFiaVolume);
+                Assert.IsTrue(hero.BestObjectiveFunction < 1.01F * minObjectiveFunctionWithFiaVolume);
                 Assert.IsTrue(hero.BestTrajectory.ThinningVolume.ScribnerTotal[thinningPeriod] >= minThinnedMbfWithFiaVolume);
                 Assert.IsTrue(hero.BestTrajectory.ThinningVolume.ScribnerTotal[thinningPeriod] <= 1.01 * minThinnedMbfWithFiaVolume);
                 Assert.IsTrue(treesSelected == expectedTreesSelectedWithFiaVolume);
@@ -129,6 +131,7 @@ namespace Osu.Cof.Ferm.Test
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
+            stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             Objective landExpectationValue = new Objective()
             {
@@ -218,16 +221,16 @@ namespace Osu.Cof.Ferm.Test
             TimeSpan enumerationRuntime = enumerator.Run();
 
             // heuristics assigned to volume optimization
-            PublicApi.Verify(deluge);
-            PublicApi.Verify(annealer);
-            PublicApi.Verify(thresholdAcceptor);
-            PublicApi.Verify(random);
+            this.Verify(deluge);
+            this.Verify(annealer);
+            this.Verify(thresholdAcceptor);
+            this.Verify(random);
 
             // heuristics assigned to net present value optimization
-            PublicApi.Verify(genetic);
-            PublicApi.Verify(enumerator);
-            PublicApi.Verify(recordTravel);
-            PublicApi.Verify(tabu);
+            this.Verify(genetic);
+            this.Verify(enumerator);
+            this.Verify(recordTravel);
+            this.Verify(tabu);
 
             HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution(1, thinningPeriod, treeCount);
             distribution.AddRun(annealer, annealerRuntime, defaultParameters);
@@ -251,6 +254,7 @@ namespace Osu.Cof.Ferm.Test
             PlotWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F);
+            stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useScaledVolume);
             unthinnedTrajectory.Simulate();
@@ -382,6 +386,7 @@ namespace Osu.Cof.Ferm.Test
             PlotWithHeight plot14 = PublicApi.GetPlot14();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = plot14.ToOrganonStand(configuration, 30, 130.0F);
+            stand.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
 
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
             {
@@ -455,6 +460,7 @@ namespace Osu.Cof.Ferm.Test
             OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, trees);
+            stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             Objective landExpectationValue = new Objective()
             {
@@ -484,9 +490,9 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext!.WriteLine(runtime.TotalSeconds.ToString());
         }
 
-        private static void Verify(GeneticAlgorithm genetic)
+        private void Verify(GeneticAlgorithm genetic)
         {
-            PublicApi.Verify((Heuristic)genetic);
+            this.Verify((Heuristic)genetic);
 
             PopulationStatistics statistics = genetic.PopulationStatistics;
             Assert.IsTrue(statistics.Generations <= genetic.MaximumGenerations);
@@ -511,12 +517,15 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static void Verify(Heuristic heuristic)
+        private void Verify(Heuristic heuristic)
         {
             // check objective functions
-            float beginObjectiveFunction = heuristic.CandidateObjectiveFunctionByMove.First();
+            Assert.IsTrue(heuristic.BestTrajectory.PlantingDensityInTreesPerHectare == heuristic.CurrentTrajectory.PlantingDensityInTreesPerHectare);
+            Assert.IsTrue(heuristic.BestTrajectory.PlantingDensityInTreesPerHectare >= TestConstant.NelderReplantingDensityInTreesPerHectare);
+
             float recalculatedBestObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.BestTrajectory);
             float bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
+            this.TestContext!.WriteLine("best objective: {0}", heuristic.BestObjectiveFunction);
             if (heuristic.Objective.IsLandExpectationValue)
             {
                 Assert.IsTrue(heuristic.BestObjectiveFunction > -0.70F);
@@ -525,7 +534,10 @@ namespace Osu.Cof.Ferm.Test
             {
                 Assert.IsTrue(heuristic.BestObjectiveFunction > 0.0F);
             }
+
+            float beginObjectiveFunction = heuristic.CandidateObjectiveFunctionByMove.First();
             Assert.IsTrue(heuristic.BestObjectiveFunction >= beginObjectiveFunction);
+
             // only guaranteed for monotonic heuristics: hero, prescription enumeration, others depending on configuration
             if ((heuristic is SimulatedAnnealing == false) && (heuristic is TabuSearch == false))
             {

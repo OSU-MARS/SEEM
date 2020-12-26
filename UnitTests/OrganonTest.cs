@@ -11,7 +11,10 @@ namespace Osu.Cof.Ferm.Test
         protected static TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
             // TODO: cover cases with more than one SIMD width per species
-            TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, TestConstant.Default.SiteIndex);
+            TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, TestConstant.Default.SiteIndex)
+            {
+                PlantingDensityInTreesPerHectare = 939.0F // 380 trees per acre
+            };
             switch (configuration.Variant.TreeModel)
             {
                 case TreeModel.OrganonNwo:

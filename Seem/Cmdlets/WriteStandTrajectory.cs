@@ -199,7 +199,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     else
                     {
-                        float finalHarvestNetPresentValue = bestTrajectory.StandingVolume.NetPresentValue[periodIndex] - this.TimberValue.ReforestationCostPerHectare;
+                        float finalHarvestNetPresentValue = bestTrajectory.StandingVolume.NetPresentValue[periodIndex] - this.TimberValue.FixedReforestationCostPerHectare - this.TimberValue.SeedlingCost * bestTrajectory.PlantingDensityInTreesPerHectare;
                         landExpectationValue = this.TimberValue.ToLandExpectationValue(finalHarvestNetPresentValue, rotationLength);
                     }
                     

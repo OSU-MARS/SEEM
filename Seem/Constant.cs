@@ -144,6 +144,7 @@ namespace Osu.Cof.Ferm
             public const float DiameterIncrementInInches = 4.0F;
             public const float ExpansionFactor = 1000.0F;
             public const float HeightIncrementInFeet = 20.0F;
+            public const float PlantingDensityInTreesPerHectare = 40000.0F; // sanity upper bound, 0.5 m spacing
             public const float Sdi = 1000.0F;
             public const float SiteIndexInFeet = 300.0F;
         }

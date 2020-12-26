@@ -4,17 +4,24 @@ namespace Osu.Cof.Ferm
 {
     public class TimberValue
     {
+        private readonly float douglasFirFinal2045PondValueIntercept;
+        private readonly float douglasFirFinal2045PondValueSlope;
+        private readonly float douglasFirFinal5075PondValueIntercept;
+        private readonly float douglasFirFinal5075PondValueSlope;
+        private readonly float douglasFirThinPondValueIntercept;
+        private readonly float douglasFirThinPondValueSlope;
+
         public static TimberValue Default { get; private set; }
 
         public float DiscountRate { get; set; }
         public float DouglasFir2SawPondValuePerMbf { get; set; }
         public float DouglasFir3SawPondValuePerMbf { get; set; }
         public float DouglasFir4SawPondValuePerMbf { get; set; }
-        public float DouglasFirSinglePondValuePerMbf { get; set; }
         public float FixedRegenerationHarvestCostPerHectare { get; set; }
+        public float FixedReforestationCostPerHectare { get; set; }
         public float FixedThinningCostPerHectare { get; set; }
-        public float ReforestationCostPerHectare { get; set; }
         public float RegenerationHarvestCostPerMbf { get; set; }
+        public float SeedlingCost { get; set; }
         public float TaxesAndManagementPerHectareYear { get; set; }
         public float ThinningCostPerMbf { get; set; }
         public float TimberAppreciationRate { get; set; }
@@ -35,17 +42,31 @@ namespace Osu.Cof.Ferm
             //   2) mean values in Washington Department of Natural Resources log price reports
             // Somewhat different calculations apply for lands enrolled in the small tract forestland program.
             this.DiscountRate = 0.04F; // per year
-            this.DouglasFir2SawPondValuePerMbf = 604.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-August 2020
-            this.DouglasFir3SawPondValuePerMbf = 586.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-August 2020
-            this.DouglasFir4SawPondValuePerMbf = 502.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-August 2020
-            this.DouglasFirSinglePondValuePerMbf = 525.0F; // US$/MBF, nominal value
+            this.DouglasFir2SawPondValuePerMbf = 605.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-November 2020
+            this.DouglasFir3SawPondValuePerMbf = 590.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-November 2020
+            this.DouglasFir4SawPondValuePerMbf = 503.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-November 2020
+            this.FixedReforestationCostPerHectare = Constant.AcresPerHectare * (136.0F + 154.0F + 39.0F); // US$/ha: site prep + planting labor + one release spray, cost of seedlings not included
             this.FixedRegenerationHarvestCostPerHectare = Constant.AcresPerHectare * 100.0F; // US$/ha
             this.FixedThinningCostPerHectare = Constant.AcresPerHectare * 60.0F; // US$/ha
-            this.ReforestationCostPerHectare = Constant.AcresPerHectare * 560.0F; // US$/ha
             this.RegenerationHarvestCostPerMbf = 250.0F; // US$/MBF, includes forest products havest tax
+            this.SeedlingCost = 0.50F; // US$ per seedling
             this.TaxesAndManagementPerHectareYear = Constant.AcresPerHectare * 7.5F; // US$/ha-year, mean western Oregon forest land tax of $3.40/acre in 2006 plus nominal management expense
             this.ThinningCostPerMbf = 275.0F; // US$/MBF, includes forest products harvest tax
             this.TimberAppreciationRate = 0.01F; // per year
+
+            // fractions extracted from Malcolm Knapp 2.7 m, 3.7 m, and Nelder plots
+            // zero order model
+            // this.douglasFirThinPondValueIntercept = 0.23F * this.DouglasFir2SawPondValuePerMbf + 0.41F * this.DouglasFir3SawPondValuePerMbf + 0.36F * this.DouglasFir4SawPondValuePerMbf;
+            // this.douglasFirThinPondValueSlope = 0.0F;
+            // this.douglasFirFinalPondValueIntercept = 0.49F * this.DouglasFir2SawPondValuePerMbf + 0.42F * this.DouglasFir3SawPondValuePerMbf + 0.09F * this.DouglasFir4SawPondValuePerMbf;
+            // this.douglasFirFinalPondValueSlope = 0.0F;
+            // first order model from volume regression in R
+            this.douglasFirFinal2045PondValueIntercept = 513.2525F;
+            this.douglasFirFinal2045PondValueSlope = 1.443416F;
+            this.douglasFirFinal5075PondValueIntercept = 565.9510F;
+            this.douglasFirFinal5075PondValueSlope = 0.3793543F;
+            this.douglasFirThinPondValueIntercept = 473.2018F;
+            this.douglasFirThinPondValueSlope = 2.147121F;
 
             this.ScaledVolumeRegenerationHarvest = new ScaledVolume(Constant.Bucking.LogLengthRegenerationHarvest, scribnerFromLumberRecovery);
             this.ScaledVolumeThinning = new ScaledVolume(Constant.Bucking.LogLengthThinning, scribnerFromLumberRecovery);
@@ -58,7 +79,26 @@ namespace Osu.Cof.Ferm
 
         public float GetNetPresentRegenerationHarvestValue(float volumeInMbfPerHectare, int rotationLengthInYears)
         {
-            float appreciatedPricePerMbf = this.DouglasFirSinglePondValuePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, rotationLengthInYears);
+            if (volumeInMbfPerHectare < 0.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(volumeInMbfPerHectare));
+            }
+
+            float unappreciatedPricePerMbf;
+            if ((rotationLengthInYears >= 20) && (rotationLengthInYears < 50))
+            {
+                unappreciatedPricePerMbf = this.douglasFirFinal2045PondValueIntercept + this.douglasFirFinal2045PondValueSlope * rotationLengthInYears;
+            }
+            else if (rotationLengthInYears <= 75)
+            {
+                unappreciatedPricePerMbf = this.douglasFirFinal5075PondValueIntercept + this.douglasFirFinal5075PondValueSlope * rotationLengthInYears;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(rotationLengthInYears));
+            }
+
+            float appreciatedPricePerMbf = unappreciatedPricePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, rotationLengthInYears);
             float netFutureValue = volumeInMbfPerHectare * (appreciatedPricePerMbf - this.RegenerationHarvestCostPerMbf) - this.FixedRegenerationHarvestCostPerHectare;
             float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, rotationLengthInYears);
             return discountFactor * netFutureValue;
@@ -77,7 +117,17 @@ namespace Osu.Cof.Ferm
 
         public float GetNetPresentThinningValue(float volumeInMbfPerHectare, int thinningAgeInYears)
         {
-            float appreciatedPricePerMbf = this.DouglasFirSinglePondValuePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, thinningAgeInYears);
+            if (volumeInMbfPerHectare < 0.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(volumeInMbfPerHectare));
+            }
+            if ((thinningAgeInYears < 30) || (thinningAgeInYears > 45))
+            {
+                throw new ArgumentOutOfRangeException(nameof(thinningAgeInYears));
+            }
+
+            float unappreciatedPricePerMbf = this.douglasFirThinPondValueIntercept + this.douglasFirThinPondValueSlope * thinningAgeInYears;
+            float appreciatedPricePerMbf = unappreciatedPricePerMbf * MathF.Pow(1.0F + this.TimberAppreciationRate, thinningAgeInYears);
             float netFutureValue = volumeInMbfPerHectare * (appreciatedPricePerMbf - this.ThinningCostPerMbf) - this.FixedThinningCostPerHectare;
             float discountFactor = 1.0F / MathF.Pow(1.0F + this.DiscountRate, thinningAgeInYears);
             return discountFactor * netFutureValue;

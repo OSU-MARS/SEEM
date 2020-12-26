@@ -8,8 +8,8 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public abstract class Heuristic : PseudorandomizingTask
     {
-        public float BestObjectiveFunction { get; protected set; }
         public List<float> AcceptedObjectiveFunctionByMove { get; protected set; }
+        public float BestObjectiveFunction { get; protected set; }
         public OrganonStandTrajectory BestTrajectory { get; private init; }
         public OrganonStandTrajectory CurrentTrajectory { get; private init; }
         public Objective Objective { get; private init; }
@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
         protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            this.BestObjectiveFunction = Single.MinValue;
             this.AcceptedObjectiveFunctionByMove = new List<float>();
+            this.BestObjectiveFunction = Single.MinValue;
 
             this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, parameters.TimberValue, objective.PlanningPeriods, parameters.UseScaledVolume)
             {
@@ -78,7 +78,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 // net present value of first rotation
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
                 // TODO: support per species pricing
-                float firstRotationNetPresentValue = -trajectory.TimberValue.ReforestationCostPerHectare;
+                float firstRotationNetPresentValue = -trajectory.TimberValue.FixedReforestationCostPerHectare - trajectory.TimberValue.SeedlingCost * trajectory.PlantingDensityInTreesPerHectare;
                 for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
                 {
                     firstRotationNetPresentValue += trajectory.ThinningVolume.NetPresentValue[periodIndex];

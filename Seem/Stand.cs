@@ -8,12 +8,14 @@ namespace Osu.Cof.Ferm
     public class Stand
     {
         public string? Name { get; set; }
+        public float? PlantingDensityInTreesPerHectare { get; set; }
 
         public SortedDictionary<FiaCode, Trees> TreesBySpecies { get; private init; }
 
         public Stand()
         {
             this.Name = null;
+            this.PlantingDensityInTreesPerHectare = null;
             this.TreesBySpecies = new SortedDictionary<FiaCode, Trees>();
         }
 

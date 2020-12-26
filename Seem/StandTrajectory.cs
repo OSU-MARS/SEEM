@@ -15,13 +15,14 @@ namespace Osu.Cof.Ferm
         public string? Name { get; set; }
         public int PeriodLengthInYears { get; set; }
         public int PeriodZeroAgeInYears { get; set; }
+        public float PlantingDensityInTreesPerHectare { get; private init; } // trees per hectare
 
         public StandVolume StandingVolume { get; private init; }
         public StandVolume ThinningVolume { get; private init; }
         public TimberValue TimberValue { get; set; }
         public bool TreeSelectionChangedSinceLastSimulation { get; protected set; }
 
-        public StandTrajectory(TimberValue timberValue, int planningPeriods, int thinningPeriod)
+        public StandTrajectory(TimberValue timberValue, int planningPeriods, int thinningPeriod, float plantingDensityInTreesPerHectare)
         {
             if (planningPeriods < 1)
             {
@@ -31,6 +32,10 @@ namespace Osu.Cof.Ferm
             {
                 throw new ArgumentOutOfRangeException(nameof(thinningPeriod));
             }
+            if ((plantingDensityInTreesPerHectare <= 0.0F) || (plantingDensityInTreesPerHectare > Constant.Maximum.PlantingDensityInTreesPerHectare))
+            {
+                throw new ArgumentOutOfRangeException(nameof(plantingDensityInTreesPerHectare));
+            }
 
             int maximumPlanningPeriodIndex = planningPeriods + 1;
             this.BasalAreaRemoved = new float[planningPeriods + 1];
@@ -39,6 +44,7 @@ namespace Osu.Cof.Ferm
             this.Name = null;
             this.PeriodLengthInYears = -1;
             this.PeriodZeroAgeInYears = -1;
+            this.PlantingDensityInTreesPerHectare = plantingDensityInTreesPerHectare;
             this.StandingVolume = new StandVolume(maximumPlanningPeriodIndex);
             this.ThinningVolume = new StandVolume(maximumPlanningPeriodIndex);
             this.TimberValue = timberValue;
@@ -53,6 +59,7 @@ namespace Osu.Cof.Ferm
             this.Name = other.Name;
             this.PeriodLengthInYears = other.PeriodLengthInYears;
             this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
+            this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
             this.StandingVolume = new StandVolume(other.StandingVolume);
             this.ThinningVolume = new StandVolume(other.ThinningVolume);
             this.TimberValue = other.TimberValue; // stateless, thread safe

@@ -19,6 +19,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         public TreeModel Model { get; set; }
 
+        [Parameter]
+        [ValidateRange(0.0F, Constant.Maximum.PlantingDensityInTreesPerHectare)]
+        public float? PlantingDensity { get; set; }
+
         [Parameter(Mandatory = true)]
         public int Plot { get; set; }
 
@@ -69,6 +73,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             else
             {
                 stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndex);
+            }
+            if (this.PlantingDensity.HasValue)
+            {
+                stand.PlantingDensityInTreesPerHectare = this.PlantingDensity.Value;
             }
             this.WriteObject(stand);
         }

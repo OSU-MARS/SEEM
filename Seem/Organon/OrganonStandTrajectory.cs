@@ -19,7 +19,9 @@ namespace Osu.Cof.Ferm.Organon
         public bool UseScaledVolume { get; private set; }
 
         public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod, bool useScaledVolume)
-            : base(timberValue, lastPlanningPeriod, organonConfiguration.Treatments.Harvests.Count == 1 ? organonConfiguration.Treatments.Harvests[0].Period : 0)
+            : base(timberValue, lastPlanningPeriod, 
+                  organonConfiguration.Treatments.Harvests.Count == 1 ? organonConfiguration.Treatments.Harvests[0].Period : 0,
+                  stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand))) // base does range checks
         {
             if (organonConfiguration.Treatments.Harvests.Count > 1)
             {
