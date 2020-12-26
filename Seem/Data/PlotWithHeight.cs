@@ -189,13 +189,13 @@ namespace Osu.Cof.Ferm.Data
             int tag = Int32.Parse(rowAsStrings[this.treeColumnIndex]);
             string dbhAsString = rowAsStrings[this.dbhColumnIndex];
             float dbh = Single.NaN;
-            if (String.Equals(dbhAsString, "NA", StringComparison.OrdinalIgnoreCase) == false)
+            if ((String.IsNullOrWhiteSpace(dbhAsString) == false) && (String.Equals(dbhAsString, "NA", StringComparison.OrdinalIgnoreCase) == false))
             {
                 dbh = this.dbhScaleFactor * Single.Parse(dbhAsString);
             }
             string heightAsString = rowAsStrings[this.heightColumnIndex];
             float height = Single.NaN;
-            if (String.Equals(heightAsString, "NA", StringComparison.OrdinalIgnoreCase) == false)
+            if ((String.IsNullOrWhiteSpace(heightAsString) == false) && (String.Equals(heightAsString, "NA", StringComparison.OrdinalIgnoreCase) == false))
             {
                 height = this.heightScaleFactor * Single.Parse(heightAsString);
             }
