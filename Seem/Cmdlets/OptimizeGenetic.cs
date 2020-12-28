@@ -22,7 +22,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> ExponentK { get; set; }
 
         [Parameter]
-        [ValidateRange(0.0, 1.0)]
+        [ValidateRange(0.0, 10.0)]
         public List<float> FlipProbabilityEnd { get; set; }
 
         [Parameter]
@@ -36,10 +36,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
         public List<int> PopulationSize { get; set; }
-
-        [Parameter]
-        [ValidateRange(0.0, 100.0)]
-        public List<float> ProportionalPercentageWidth { get; set; }
 
         [Parameter]
         public PopulationReplacementStrategy ReplacementStrategy { get; set; }
@@ -57,7 +53,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.GenerationMultiplier = new List<float>() { Constant.GeneticDefault.GenerationMultiplier };
             this.MinCoefficientOfVariation = new List<float>() { Constant.GeneticDefault.MinimumCoefficientOfVariation };
             this.PopulationSize = new List<int>() { Constant.GeneticDefault.PopulationSize };
-            this.ProportionalPercentageWidth = new List<float>() { Constant.GeneticDefault.ProportionalPercentageWidth };
             this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
             this.ReservedProportion = new List<float>() { Constant.GeneticDefault.ReservedPopulationProportion };
         }
@@ -98,10 +93,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ArgumentOutOfRangeException(nameof(this.PopulationSize));
             }
-            if (this.ProportionalPercentageWidth.Count < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.ProportionalPercentageWidth));
-            }
             if (this.ReservedProportion.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.ReservedProportion));
@@ -125,30 +116,26 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     {
                                         foreach (float proportionalPercentage in this.ProportionalPercentage)
                                         {
-                                            foreach (float proportionalPercentageWidth in this.ProportionalPercentageWidth)
+                                            foreach (float reservedProportion in this.ReservedProportion)
                                             {
-                                                foreach (float reservedProportion in this.ReservedProportion)
+                                                parameters.Add(new GeneticParameters()
                                                 {
-                                                    parameters.Add(new GeneticParameters()
-                                                    {
-                                                        CrossoverProbabilityEnd = crossoverProbabilityEnd,
-                                                        ExchangeProbabilityEnd = exchangeProbabilityEnd,
-                                                        ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
-                                                        ExponentK = exponent,
-                                                        FlipProbabilityEnd = flipProbabilityEnd,
-                                                        FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
-                                                        MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
-                                                        MinimumCoefficientOfVariation = minCoefficientOfVariation,
-                                                        PerturbBy = this.PerturbBy,
-                                                        PopulationSize = populationSize,
-                                                        ProportionalPercentage = proportionalPercentage,
-                                                        ProportionalPercentageWidth = proportionalPercentageWidth,
-                                                        ReplacementStrategy = this.ReplacementStrategy,
-                                                        ReservedProportion = reservedProportion,
-                                                        TimberValue = this.TimberValue,
-                                                        UseScaledVolume = this.ScaledVolume
-                                                    });
-                                                }
+                                                    CrossoverProbabilityEnd = crossoverProbabilityEnd,
+                                                    ExchangeProbabilityEnd = exchangeProbabilityEnd,
+                                                    ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
+                                                    ExponentK = exponent,
+                                                    FlipProbabilityEnd = flipProbabilityEnd,
+                                                    FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
+                                                    MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
+                                                    MinimumCoefficientOfVariation = minCoefficientOfVariation,
+                                                    PerturbBy = this.PerturbBy,
+                                                    PopulationSize = populationSize,
+                                                    ProportionalPercentage = proportionalPercentage,
+                                                    ReplacementStrategy = this.ReplacementStrategy,
+                                                    ReservedProportion = reservedProportion,
+                                                    TimberValue = this.TimberValue,
+                                                    UseScaledVolume = this.ScaledVolume
+                                                });
                                             }
                                         }
                                     }

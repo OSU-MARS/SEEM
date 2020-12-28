@@ -114,13 +114,12 @@ namespace Osu.Cof.Ferm
             public const float ExchangeProbabilityEnd = 0.1F;
             public const float ExchangeProbabilityStart = 0.0F;
             public const float ExponentK = -8.0F;
-            public const float FlipProbabilityEnd = 1.0F; // ~0.85 best for constant probability
+            public const float FlipProbabilityEnd = 0.9F; // ~0.85 best for constant probability
             public const float FlipProbabilityStart = 0.0F;
-            public const float GenerationMultiplier = 6.5F;
+            public const float GenerationMultiplier = 5.5F;
             public const float GenerationPower = 0.6F;
             public const float MinimumCoefficientOfVariation = 0.000001F;
             public const int PopulationSize = 30;
-            public const float ProportionalPercentageWidth = 100.0F;
             public const PopulationReplacementStrategy ReplacementStrategy = PopulationReplacementStrategy.ContributionOfDiversityReplaceWorst;
             public const float ReservedPopulationProportion = 1.0F;
         }

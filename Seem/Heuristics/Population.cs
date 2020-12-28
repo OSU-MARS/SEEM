@@ -250,6 +250,47 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
+        private static List<int> GetTreeDiameterClasses(Stand standBeforeThinning, int diameterClasses)
+        {
+            float maximumDbh = Single.MinValue;
+            float minimumDbh = Single.MaxValue;
+            int totalCapacity = 0;
+            foreach (Trees treesOfSpecies in standBeforeThinning.TreesBySpecies.Values)
+            {
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    maximumDbh = MathF.Max(maximumDbh, treesOfSpecies.Dbh[treeIndex]);
+                    minimumDbh = MathF.Min(maximumDbh, treesOfSpecies.Dbh[treeIndex]);
+                }
+                totalCapacity += treesOfSpecies.Capacity;
+            }
+
+            List<int> diameterClassByTree = new List<int>(totalCapacity);
+            float diameterClassWidth = (maximumDbh - minimumDbh) / diameterClasses;
+            foreach (Trees treesOfSpecies in standBeforeThinning.TreesBySpecies.Values)
+            {
+                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                {
+                    int diameterClass = (int)((treesOfSpecies.Dbh[treeIndex] - minimumDbh) / diameterClassWidth);
+                    if (diameterClass < 0)
+                    {
+                        diameterClass = 0; // limit numerical error
+                    }
+                    else if (diameterClass >= diameterClasses)
+                    {
+                        diameterClass = diameterClasses - 1; // limit numerical error
+                    }
+                    diameterClassByTree.Add(diameterClass);
+                }
+                for (int treeIndex = treesOfSpecies.Count; treeIndex < treesOfSpecies.Capacity; ++treeIndex)
+                {
+                    diameterClassByTree.Add(-1);
+                }
+            }
+
+            return diameterClassByTree;
+        }
+
         private int GetDistance(int[] selection1, int[] selection2)
         {
             Debug.Assert(selection1.Length == selection2.Length);
@@ -265,63 +306,70 @@ namespace Osu.Cof.Ferm.Heuristics
             return distance;
         }
 
-        public void RandomizeSchedule(HarvestPeriodSelection periodSelection, float proportionalPercentageCenter, float proportionalPercentageWidth)
+        public void RandomizeSchedules(HarvestPeriodSelection periodSelection, Stand? standBeforeThinning)
         {
-            if ((proportionalPercentageCenter < 0.0F) || (proportionalPercentageCenter > 100.0F))
+            if (standBeforeThinning == null)
             {
-                throw new ArgumentOutOfRangeException(nameof(proportionalPercentageCenter));
-            }
-            if ((proportionalPercentageWidth < 0.0F) || (proportionalPercentageWidth > 100.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(proportionalPercentageWidth));
+                throw new ArgumentNullException(nameof(standBeforeThinning));
             }
 
-            float minSelectionPercentage = proportionalPercentageCenter - 0.5F * proportionalPercentageWidth;
-            float maxSelectionPercentage = proportionalPercentageCenter + 0.5F * proportionalPercentageWidth;
-            if ((minSelectionPercentage < 0.0F) || (maxSelectionPercentage > 100.0F))
+            // get trees' diameter classes
+            float sqrtPopulationSize = MathF.Sqrt(this.Size);
+            int diameterClasses = (int)MathF.Floor(sqrtPopulationSize);
+            List<int> diameterClassByTree = Population.GetTreeDiameterClasses(standBeforeThinning, diameterClasses);
+
+            // set up selection probabilities
+            // Since each diameter class runs from a selection probability of zero to one the total probability range to traverse when intializing individuals
+            // is (1 - 0) * diameterClasses. Individuals in a population of size p are therefore spaced diameterClasses / p apart in probability. A loop
+            // initializing p individuals takes p - 1 steps, traversing a probability distance of (p - 1) / p * diameterClasses, and leaving a separation of
+            // diameterClasses / p between the last individual initialized and the individual the loop started on.
+            List<float> selectionProbabilityByDiameterClass = new List<float>(diameterClasses);
+            float selectionProbabilityIncrement = (float)diameterClasses / this.Size; 
+            float initialSelectionProbability = 0.5F * selectionProbabilityIncrement;
+            for (int diameterClass = 0; diameterClass < diameterClasses; ++diameterClass)
             {
-                throw new ArgumentOutOfRangeException(nameof(proportionalPercentageWidth));
+                selectionProbabilityByDiameterClass.Add(initialSelectionProbability);
             }
 
-            float selectionPercentage = minSelectionPercentage;
-            float selectionPercentageIncrement = proportionalPercentageWidth / (this.Size - 1);
-            float percentageScalingFactor = 100.0F / byte.MaxValue;
+            // select trees
+            float probabilityScalingFactor = 1.0F / byte.MaxValue;
             if (periodSelection == HarvestPeriodSelection.All)
             {
-                for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
-                {
-                    float harvestPeriodScalingFactor = (this.HarvestPeriods - Constant.RoundTowardsZeroTolerance) / selectionPercentage;
-                    int[] schedule = this.IndividualTreeSelections[individualIndex];
-                    for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
-                    {
-                        float treePercentage = percentageScalingFactor * this.GetPseudorandomByteAsFloat();
-                        if (treePercentage < selectionPercentage)
-                        {
-                            schedule[treeIndex] = (int)(harvestPeriodScalingFactor * treePercentage);
-                        }
-                        else
-                        {
-                            schedule[treeIndex] = 0;
-                        }
-                    }
-
-                    Debug.Assert(selectionPercentage <= 100.0F);
-                    selectionPercentage += selectionPercentageIncrement;
-                }
+                throw new NotImplementedException();
             }
             else if (periodSelection == HarvestPeriodSelection.NoneOrLast)
             {
                 for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
                 {
+                    // randomly select this individual's trees based on current diameter class selection probabilities
                     int[] schedule = this.IndividualTreeSelections[individualIndex];
+                    Debug.Assert(diameterClassByTree.Count == schedule.Length);
                     for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
                     {
-                        bool isSelected = (percentageScalingFactor * this.GetPseudorandomByteAsFloat()) < selectionPercentage;
-                        schedule[treeIndex] = isSelected ? this.HarvestPeriods - 1: 0;
+                        int diameterClass = diameterClassByTree[treeIndex];
+                        if (diameterClass >= 0) // diameter class of unused capacity is set to -1
+                        {
+                            float selectionProbability = selectionProbabilityByDiameterClass[diameterClass];
+                            bool isSelected = (probabilityScalingFactor * this.GetPseudorandomByteAsFloat()) < selectionProbability;
+                            schedule[treeIndex] = isSelected ? this.HarvestPeriods - 1 : 0;
+                        }
                     }
 
-                    Debug.Assert(selectionPercentage <= 100.0F);
-                    selectionPercentage += selectionPercentageIncrement;
+                    // increment diameter class probabilities
+                    for (int diameterClass = 0; diameterClass < diameterClasses; ++diameterClass)
+                    {
+                        float nextSelectionProbability = selectionProbabilityByDiameterClass[diameterClass] + selectionProbabilityIncrement;
+                        if (nextSelectionProbability < 1.0F)
+                        {
+                            // no rollover to next diameter class, so stop incrementing
+                            selectionProbabilityByDiameterClass[diameterClass] = nextSelectionProbability;
+                            break;
+                        }
+
+                        // roll over this diameter class and continue on to increment the next largest diameter class
+                        // Use roll over, rather than reset, to avoid creation of individuals with duplicate diameter class selection probabilities.
+                        selectionProbabilityByDiameterClass[diameterClass] = nextSelectionProbability - 1.0F;
+                    }
                 }
             }
             else

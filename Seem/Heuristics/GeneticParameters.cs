@@ -14,12 +14,14 @@ namespace Osu.Cof.Ferm.Heuristics
         public int MaximumGenerations { get; set; }
         public float MinimumCoefficientOfVariation { get; set; }
         public int PopulationSize { get; set; }
-        public float ProportionalPercentageWidth { get; set; }
         public PopulationReplacementStrategy ReplacementStrategy { get; set; }
         public float ReservedProportion { get; set; }
 
         public GeneticParameters()
         {
+            // not used
+            // base.PerturbBy
+            // base.ProportionalPercentage
             this.CrossoverProbabilityEnd = Constant.GeneticDefault.CrossoverProbabilityEnd;
             this.ExchangeProbabilityEnd = Constant.GeneticDefault.ExchangeProbabilityEnd;
             this.ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart;
@@ -29,7 +31,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MaximumGenerations = 50;
             this.MinimumCoefficientOfVariation = Constant.GeneticDefault.MinimumCoefficientOfVariation;
             this.PopulationSize = Constant.GeneticDefault.PopulationSize;
-            this.ProportionalPercentageWidth = Constant.GeneticDefault.ProportionalPercentageWidth;
             this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
             this.ReservedProportion = Constant.GeneticDefault.ReservedPopulationProportion;
         }
@@ -42,13 +43,12 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override string GetCsvHeader()
         {
-            return "perturbation,generations,size,strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,proportional,width,reserved,min CV";
+            return "generations,population size,replacement strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,reserved,min CV";
         }
 
         public override string GetCsvValues()
         {
-            return this.PerturbBy.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.MaximumGenerations.ToString(CultureInfo.InvariantCulture) + "," +
+            return this.MaximumGenerations.ToString(CultureInfo.InvariantCulture) + "," +
                    this.PopulationSize.ToString(CultureInfo.InvariantCulture) + "," +
                    this.ReplacementStrategy.ToString() + "," +
                    this.CrossoverProbabilityEnd.ToString(CultureInfo.InvariantCulture) + "," +
@@ -57,8 +57,6 @@ namespace Osu.Cof.Ferm.Heuristics
                    this.FlipProbabilityStart.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
                    this.FlipProbabilityEnd.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
                    this.ExponentK.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentage.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentageWidth.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
                    this.ReservedProportion.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
                    this.MinimumCoefficientOfVariation.ToString(CultureInfo.InvariantCulture);
         }

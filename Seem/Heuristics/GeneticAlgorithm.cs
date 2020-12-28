@@ -16,8 +16,6 @@ namespace Osu.Cof.Ferm.Heuristics
         public float MinimumCoefficientOfVariation { get; set; }
         public int PopulationSize { get; set; }
         public PopulationStatistics PopulationStatistics { get; private init; }
-        public float ProportionalPercentageCenter { get; set; }
-        public float ProportionalPercentageWidth { get; set; }
         public PopulationReplacementStrategy ReplacementStrategy { get; set; }
         public float ReservedPopulationProportion { get; set; }
 
@@ -33,8 +31,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MaximumGenerations = parameters.MaximumGenerations;
             this.MinimumCoefficientOfVariation = parameters.MinimumCoefficientOfVariation;
             this.PopulationSize = parameters.PopulationSize;
-            this.ProportionalPercentageCenter = parameters.ProportionalPercentage;
-            this.ProportionalPercentageWidth = parameters.ProportionalPercentageWidth;
             this.ReplacementStrategy = parameters.ReplacementStrategy;
             this.ReservedPopulationProportion = parameters.ReservedProportion;
 
@@ -44,6 +40,56 @@ namespace Osu.Cof.Ferm.Heuristics
         public override string GetName()
         {
             return "Genetic";
+        }
+
+        private void MutateChild(StandTrajectory childTrajectory, float flipProbability, float exchangeProbability, float treeScalingFactor)
+        {
+            // perform guaranteed flip mutations until remaining flip probability is less than 1.0
+            float flipProbabilityRemaining = flipProbability;
+            for (; flipProbabilityRemaining >= 1.0F; --flipProbabilityRemaining)
+            {
+                int treeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int harvestPeriod = childTrajectory.GetTreeSelection(treeIndex);
+                int newHarvestPeriod = harvestPeriod == 0 ? childTrajectory.HarvestPeriods - 1 : 0;
+                childTrajectory.SetTreeSelection(treeIndex, newHarvestPeriod);
+            }
+
+            // remaining flip mutation probability
+            float mutationProbability = this.GetPseudorandomByteAsProbability();
+            if (mutationProbability < flipProbabilityRemaining)
+            {
+                int treeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int harvestPeriod = childTrajectory.GetTreeSelection(treeIndex);
+                int newHarvestPeriod = harvestPeriod == 0 ? childTrajectory.HarvestPeriods - 1 : 0;
+                childTrajectory.SetTreeSelection(treeIndex, newHarvestPeriod);
+            }
+
+            // exchange mutations
+            //if (flipProbabilityRemaining + exchangeProbability < 1.000001F)
+            //{
+            //    // flip and exchange mutations exclusive: disadvantageous relative to independent mutations
+            //    mutationProbability -= flipProbabilityRemaining;
+            //    if (mutationProbability < exchangeProbability)
+            //    {
+            //        int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+            //        int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+            //        int firstHarvestPeriod = childTrajectory.GetTreeSelection(firstTreeIndex);
+            //        childTrajectory.SetTreeSelection(firstTreeIndex, childTrajectory.GetTreeSelection(secondTreeIndex));
+            //        childTrajectory.SetTreeSelection(secondTreeIndex, firstHarvestPeriod);
+            //    }
+            //}
+            //else
+            //{
+            // flip and exchange mutations independent
+            if (this.GetPseudorandomByteAsProbability() < exchangeProbability)
+            {
+                int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int firstHarvestPeriod = childTrajectory.GetTreeSelection(firstTreeIndex);
+                childTrajectory.SetTreeSelection(firstTreeIndex, childTrajectory.GetTreeSelection(secondTreeIndex));
+                childTrajectory.SetTreeSelection(secondTreeIndex, firstHarvestPeriod);
+            }
+            //}
         }
 
         public override TimeSpan Run()
@@ -65,11 +111,11 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.ExponentK));
             }
-            if ((this.FlipProbabilityEnd < 0.0F) || (this.FlipProbabilityEnd > 1.0F))
+            if ((this.FlipProbabilityEnd < 0.0F) || (this.FlipProbabilityEnd > 10.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.FlipProbabilityEnd));
             }
-            if ((this.FlipProbabilityStart < 0.0F) || (this.FlipProbabilityStart > 1.0F))
+            if ((this.FlipProbabilityStart < 0.0F) || (this.FlipProbabilityStart > 10.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.FlipProbabilityStart));
             }
@@ -84,14 +130,6 @@ namespace Osu.Cof.Ferm.Heuristics
             if (this.PopulationSize < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.PopulationSize));
-            }
-            if ((this.ProportionalPercentageCenter < 0.0F) || (this.ProportionalPercentageCenter > 100.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.ProportionalPercentageCenter));
-            }
-            if ((this.ProportionalPercentageWidth < 0.0F) || (this.ProportionalPercentageWidth > 100.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(this.ProportionalPercentageWidth));
             }
             if ((this.ReservedPopulationProportion < 0.0F) || (this.ReservedPopulationProportion > 1.0F))
             {
@@ -108,7 +146,7 @@ namespace Osu.Cof.Ferm.Heuristics
             // begin with population of random harvest schedules
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
             Population currentGeneration = new Population(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, initialTreeRecordCount);
-            currentGeneration.RandomizeSchedule(this.Objective.HarvestPeriodSelection, this.ProportionalPercentageCenter, this.ProportionalPercentageWidth);
+            currentGeneration.RandomizeSchedules(this.Objective.HarvestPeriodSelection, this.CurrentTrajectory.StandByPeriod[0]); // TODO: use thinning period
             OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             this.BestObjectiveFunction = Single.MinValue;
             for (int individualIndex = 0; individualIndex < this.PopulationSize; ++individualIndex)
@@ -164,43 +202,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     currentGeneration.CrossoverUniform(firstParentIndex, secondParentIndex, crossoverProbability, firstChildTrajectory, secondChildTrajectory);
 
                     // maybe perform mutations
-                    if (this.GetPseudorandomByteAsProbability() < exchangeProbability)
-                    {
-                        // 2-opt exchange
-                        int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                        int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                        int firstHarvestPeriod = firstChildTrajectory.GetTreeSelection(firstTreeIndex);
-                        firstChildTrajectory.SetTreeSelection(firstTreeIndex, firstChildTrajectory.GetTreeSelection(secondTreeIndex));
-                        firstChildTrajectory.SetTreeSelection(secondTreeIndex, firstHarvestPeriod);
-                    }
-
-                    if (this.GetPseudorandomByteAsProbability() < flipProbability)
-                    {
-                        // 1-opt for single thin
-                        int treeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                        int harvestPeriod = firstChildTrajectory.GetTreeSelection(treeIndex);
-                        int newHarvestPeriod = harvestPeriod == 0 ? firstChildTrajectory.HarvestPeriods - 1 : 0;
-                        firstChildTrajectory.SetTreeSelection(treeIndex, newHarvestPeriod);
-                    }
-
-                    if (this.GetPseudorandomByteAsProbability() < exchangeProbability)
-                    {
-                        // 2-opt exchange
-                        int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                        int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                        int firstHarvestPeriod = secondChildTrajectory.GetTreeSelection(firstTreeIndex);
-                        secondChildTrajectory.SetTreeSelection(firstTreeIndex, secondChildTrajectory.GetTreeSelection(secondTreeIndex));
-                        secondChildTrajectory.SetTreeSelection(secondTreeIndex, firstHarvestPeriod);
-                    }
-
-                    if (this.GetPseudorandomByteAsProbability() < flipProbability)
-                    {
-                        // 1-opt for single thin
-                        int treeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                        int harvestPeriod = secondChildTrajectory.GetTreeSelection(treeIndex);
-                        int newHarvestPeriod = harvestPeriod == 0 ? secondChildTrajectory.HarvestPeriods - 1 : 0;
-                        secondChildTrajectory.SetTreeSelection(treeIndex, newHarvestPeriod);
-                    }
+                    this.MutateChild(firstChildTrajectory, flipProbability, exchangeProbability, treeScalingFactor);
+                    this.MutateChild(secondChildTrajectory, flipProbability, exchangeProbability, treeScalingFactor);
 
                     // evaluate fitness of offspring
                     // TODO: check for no change breeding and avoid no op stand simulations?

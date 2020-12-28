@@ -37,6 +37,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.GetPseudorandomByteAsFloat() / byte.MaxValue;
         }
 
+        // TODO: audit callers for sufficient bit depth as a function of the number of trees being optimized
         protected float GetTwoPseudorandomBytesAsFloat()
         {
             // ensure two bytes are available
