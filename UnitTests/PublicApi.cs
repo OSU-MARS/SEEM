@@ -149,13 +149,11 @@ namespace Osu.Cof.Ferm.Test
 
             GeneticParameters geneticParameters = new GeneticParameters(treeCount)
             {
-                UseScaledVolume = defaultParameters.UseScaledVolume
-            };
-            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, landExpectationValue, geneticParameters)
-            {
                 PopulationSize = 7,
                 MaximumGenerations = 5,
+                UseScaledVolume = defaultParameters.UseScaledVolume
             };
+            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, landExpectationValue, geneticParameters);
             TimeSpan geneticRuntime = genetic.Run();
 
             GreatDeluge deluge = new GreatDeluge(stand, configuration, volume, defaultParameters)
@@ -495,7 +493,7 @@ namespace Osu.Cof.Ferm.Test
             this.Verify((Heuristic)genetic);
 
             PopulationStatistics statistics = genetic.PopulationStatistics;
-            Assert.IsTrue(statistics.Generations <= genetic.MaximumGenerations);
+            Assert.IsTrue(statistics.Generations <= genetic.Parameters.MaximumGenerations);
             Assert.IsTrue(statistics.CoefficientOfVarianceByGeneration.Count == statistics.Generations);
             Assert.IsTrue(statistics.MeanAllelesPerLocusByGeneration.Count == statistics.Generations);
             Assert.IsTrue(statistics.MeanHeterozygosityByGeneration.Count == statistics.Generations);
@@ -512,7 +510,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(coefficientOfVariation >= 0.0F);
                 Assert.IsTrue((meanAllelesPerLocus >= 0.0F) && (meanAllelesPerLocus <= 2.0F)); // assumes HarvestPeriodSelection.All
                 Assert.IsTrue((meanHeterozygosity >= 0.0F) && (meanHeterozygosity <= 1.0F));
-                Assert.IsTrue((newIndividuals >= 0) && (newIndividuals <= 2 * genetic.PopulationSize)); // two children per breeding
+                Assert.IsTrue((newIndividuals >= 0) && (newIndividuals <= 2 * genetic.Parameters.PopulationSize)); // two children per breeding
                 Assert.IsTrue((polymorphism >= 0.0F) && (polymorphism <= 1.0F));
             }
         }

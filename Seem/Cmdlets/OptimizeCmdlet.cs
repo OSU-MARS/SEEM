@@ -201,43 +201,34 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             });
 
-            if (distributions.Count == 1) 
+            string name = this.GetName();
+            int sleepsSinceLastStatusUpdate = 0;
+            while (runs.IsCompleted == false)
             {
-                // only one selection probability, harvest period, and rotation length, so maximize responsiveness
-                // Also a partial workaround for a Visual Studio Code bug where the first line of cmdlet verbose output is overwritten if WriteProgress()
-                // is used.
-                runs.Wait();
-            }
-            else
-            {
-                string name = this.GetName();
-                int sleepsSinceLastStatusUpdate = 0;
-                while (runs.IsCompleted == false)
-                {
-                    Thread.Sleep(TimeSpan.FromSeconds(1.0));
-                    ++sleepsSinceLastStatusUpdate;
+                Thread.Sleep(TimeSpan.FromSeconds(1.0));
+                ++sleepsSinceLastStatusUpdate;
 
-                    if (runs.IsFaulted)
-                    {
-                        Debug.Assert(runs.Exception != null && runs.Exception.InnerException != null);
-                        // per https://stackoverflow.com/questions/20170527/how-to-correctly-rethrow-an-exception-of-task-already-in-faulted-state
-                        ExceptionDispatchInfo.Capture(runs.Exception.InnerException).Throw();
-                    }
-                    if (sleepsSinceLastStatusUpdate > 30)
-                    {
-                        double fractionComplete = (double)runsCompleted / (double)totalRuns;
-                        double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
-                        double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
-                        this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + totalRuns + " runs completed by " + this.Threads + " threads."))
-                        {
-                            PercentComplete = (int)(100.0 * fractionComplete),
-                            SecondsRemaining = (int)Math.Round(secondsRemaining)
-                        });
-                        sleepsSinceLastStatusUpdate = 0;
-                    }
+                if (runs.IsFaulted)
+                {
+                    Debug.Assert(runs.Exception != null && runs.Exception.InnerException != null);
+                    // per https://stackoverflow.com/questions/20170527/how-to-correctly-rethrow-an-exception-of-task-already-in-faulted-state
+                    ExceptionDispatchInfo.Capture(runs.Exception.InnerException).Throw();
                 }
-                runs.GetAwaiter().GetResult(); // propagate any exceptions since last IsFaulted check
+                if (sleepsSinceLastStatusUpdate > 30)
+                {
+                    double fractionComplete = (double)runsCompleted / (double)totalRuns;
+                    double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
+                    double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
+                    this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + totalRuns + " runs completed by " + this.Threads + " threads."))
+                    {
+                        PercentComplete = (int)(100.0 * fractionComplete),
+                        SecondsRemaining = (int)Math.Round(secondsRemaining)
+                    });
+                    sleepsSinceLastStatusUpdate = 0;
+                }
             }
+            runs.GetAwaiter().GetResult(); // propagate any exceptions since last IsFaulted check
+
             foreach (HeuristicSolutionDistribution distribution in distributions)
             {
                 distribution.OnRunsComplete();

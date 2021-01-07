@@ -6,34 +6,13 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class GeneticAlgorithm : Heuristic
     {
-        public float CrossoverProbabilityEnd { get; set; }
-        public float ExchangeProbabilityEnd { get; set; }
-        public float ExchangeProbabilityStart { get; set; }
-        public float ExponentK { get; set; }
-        public float FlipProbabilityEnd { get; set; }
-        public float FlipProbabilityStart { get; set; }
-        public int MaximumGenerations { get; set; }
-        public float MinimumCoefficientOfVariation { get; set; }
-        public int PopulationSize { get; set; }
+        public GeneticParameters Parameters { get; private init; }
         public PopulationStatistics PopulationStatistics { get; private init; }
-        public PopulationReplacementStrategy ReplacementStrategy { get; set; }
-        public float ReservedPopulationProportion { get; set; }
 
         public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, GeneticParameters parameters)
             : base(stand, organonConfiguration, objective, parameters)
         {
-            this.CrossoverProbabilityEnd = parameters.CrossoverProbabilityEnd;
-            this.ExchangeProbabilityEnd = parameters.ExchangeProbabilityEnd;
-            this.ExchangeProbabilityStart = parameters.ExchangeProbabilityStart;
-            this.ExponentK = parameters.ExponentK;
-            this.FlipProbabilityEnd = parameters.FlipProbabilityEnd;
-            this.FlipProbabilityStart = parameters.FlipProbabilityStart;
-            this.MaximumGenerations = parameters.MaximumGenerations;
-            this.MinimumCoefficientOfVariation = parameters.MinimumCoefficientOfVariation;
-            this.PopulationSize = parameters.PopulationSize;
-            this.ReplacementStrategy = parameters.ReplacementStrategy;
-            this.ReservedPopulationProportion = parameters.ReservedProportion;
-
+            this.Parameters = parameters;
             this.PopulationStatistics = new PopulationStatistics();
         }
 
@@ -95,61 +74,61 @@ namespace Osu.Cof.Ferm.Heuristics
         public override TimeSpan Run()
         {
             // TODO: support initialization from existing population?
-            if ((this.CrossoverProbabilityEnd < 0.0F) || (this.CrossoverProbabilityEnd > 1.0F))
+            if ((this.Parameters.CrossoverProbabilityEnd < 0.0F) || (this.Parameters.CrossoverProbabilityEnd > 1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.CrossoverProbabilityEnd));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.CrossoverProbabilityEnd));
             }
-            if ((this.ExchangeProbabilityEnd < 0.0F) || (this.ExchangeProbabilityEnd > 1.0F))
+            if ((this.Parameters.ExchangeProbabilityEnd < 0.0F) || (this.Parameters.ExchangeProbabilityEnd > 1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ExchangeProbabilityEnd));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.ExchangeProbabilityEnd));
             }
-            if ((this.ExchangeProbabilityStart < 0.0F) || (this.ExchangeProbabilityStart > 1.0F))
+            if ((this.Parameters.ExchangeProbabilityStart < 0.0F) || (this.Parameters.ExchangeProbabilityStart > 1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ExchangeProbabilityStart));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.ExchangeProbabilityStart));
             }
-            if (this.ExponentK > 0.0F)
+            if (this.Parameters.ExponentK > 0.0F)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ExponentK));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.ExponentK));
             }
-            if ((this.FlipProbabilityEnd < 0.0F) || (this.FlipProbabilityEnd > 10.0F))
+            if ((this.Parameters.FlipProbabilityEnd < 0.0F) || (this.Parameters.FlipProbabilityEnd > 10.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FlipProbabilityEnd));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.FlipProbabilityEnd));
             }
-            if ((this.FlipProbabilityStart < 0.0F) || (this.FlipProbabilityStart > 10.0F))
+            if ((this.Parameters.FlipProbabilityStart < 0.0F) || (this.Parameters.FlipProbabilityStart > 10.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FlipProbabilityStart));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.FlipProbabilityStart));
             }
-            if (this.MaximumGenerations < 1)
+            if (this.Parameters.MaximumGenerations < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.MaximumGenerations));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.MaximumGenerations));
             }
-            if (this.MinimumCoefficientOfVariation < 0.0)
+            if (this.Parameters.MinimumCoefficientOfVariation < 0.0)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.MinimumCoefficientOfVariation));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.MinimumCoefficientOfVariation));
             }
-            if (this.PopulationSize < 1)
+            if (this.Parameters.PopulationSize < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.PopulationSize));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.PopulationSize));
             }
-            if ((this.ReservedPopulationProportion < 0.0F) || (this.ReservedPopulationProportion > 1.0F))
+            if ((this.Parameters.ReservedProportion < 0.0F) || (this.Parameters.ReservedProportion > 1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ReservedPopulationProportion));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.ReservedProportion));
             }
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            int moveCapacity = this.MaximumGenerations * this.PopulationSize;
+            int moveCapacity = this.Parameters.MaximumGenerations * this.Parameters.PopulationSize;
             this.AcceptedObjectiveFunctionByMove.Capacity = moveCapacity;
             this.CandidateObjectiveFunctionByMove.Capacity = moveCapacity;
 
             // begin with population of random harvest schedules
             int initialTreeRecordCount = this.GetInitialTreeRecordCount();
-            Population currentGeneration = new Population(this.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.ReservedPopulationProportion, initialTreeRecordCount);
-            currentGeneration.RandomizeSchedules(this.Objective.HarvestPeriodSelection, this.CurrentTrajectory.StandByPeriod[0]); // TODO: use thinning period
+            Population currentGeneration = new Population(this.Parameters.PopulationSize, this.CurrentTrajectory.HarvestPeriods, this.Parameters.ReservedProportion, initialTreeRecordCount);
+            currentGeneration.RandomizeSchedules(this.CurrentTrajectory.StandByPeriod[0], this.Parameters, this.Objective.HarvestPeriodSelection); // TODO: use thinning period
             OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             this.BestObjectiveFunction = Single.MinValue;
-            for (int individualIndex = 0; individualIndex < this.PopulationSize; ++individualIndex)
+            for (int individualIndex = 0; individualIndex < this.Parameters.PopulationSize; ++individualIndex)
             {
                 int[] individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
                 for (int treeIndex = 0; treeIndex < individualTreeSelection.Length; ++treeIndex)
@@ -185,15 +164,15 @@ namespace Osu.Cof.Ferm.Heuristics
             Population nextGeneration = new Population(currentGeneration);
             OrganonStandTrajectory firstChildTrajectory = individualTrajectory;
             OrganonStandTrajectory secondChildTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            for (int generationIndex = 1; generationIndex < this.MaximumGenerations; ++generationIndex)
+            for (int generationIndex = 1; generationIndex < this.Parameters.MaximumGenerations; ++generationIndex)
             {
                 currentGeneration.RecalculateMatingDistributionFunction();
 
-                float generationFraction = (float)generationIndex / (float)this.MaximumGenerations;
-                float exponent = MathF.Exp(this.ExponentK * generationFraction);
-                float crossoverProbability = 0.5F + (this.CrossoverProbabilityEnd - 0.5F) * exponent;
-                float exchangeProbability = this.ExchangeProbabilityEnd - (this.ExchangeProbabilityEnd - this.ExchangeProbabilityStart) * exponent;
-                float flipProbability = this.FlipProbabilityEnd - (this.FlipProbabilityEnd - this.FlipProbabilityStart) * exponent;
+                float generationFraction = (float)generationIndex / (float)this.Parameters.MaximumGenerations;
+                float exponent = MathF.Exp(this.Parameters.ExponentK * generationFraction);
+                float crossoverProbability = 0.5F + (this.Parameters.CrossoverProbabilityEnd - 0.5F) * exponent;
+                float exchangeProbability = this.Parameters.ExchangeProbabilityEnd - (this.Parameters.ExchangeProbabilityEnd - this.Parameters.ExchangeProbabilityStart) * exponent;
+                float flipProbability = this.Parameters.FlipProbabilityEnd - (this.Parameters.FlipProbabilityEnd - this.Parameters.FlipProbabilityStart) * exponent;
                 for (int matingIndex = 0; matingIndex < currentGeneration.Size; ++matingIndex)
                 {
                     // crossover parents' genetic material to create offsprings' genetic material
@@ -214,7 +193,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     float secondChildFitness = this.GetObjectiveFunction(secondChildTrajectory);
 
                     // include offspring in next generation if they're more fit than members of the current population
-                    if (nextGeneration.TryReplace(firstChildFitness, firstChildTrajectory, this.ReplacementStrategy))
+                    if (nextGeneration.TryReplace(firstChildFitness, firstChildTrajectory, this.Parameters.ReplacementStrategy))
                     {
                         if (firstChildFitness > this.BestObjectiveFunction)
                         {
@@ -225,7 +204,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
                     this.CandidateObjectiveFunctionByMove.Add(firstChildFitness);
 
-                    if (nextGeneration.TryReplace(secondChildFitness, secondChildTrajectory, this.ReplacementStrategy))
+                    if (nextGeneration.TryReplace(secondChildFitness, secondChildTrajectory, this.Parameters.ReplacementStrategy))
                     {
                         if (secondChildFitness > this.BestObjectiveFunction)
                         {
@@ -293,7 +272,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 nextGeneration.NewIndividuals = 0;
                 
                 float coefficientOfVariation = this.PopulationStatistics.AddGeneration(currentGeneration);
-                if (coefficientOfVariation < this.MinimumCoefficientOfVariation)
+                if (coefficientOfVariation < this.Parameters.MinimumCoefficientOfVariation)
                 {
                     break;
                 }

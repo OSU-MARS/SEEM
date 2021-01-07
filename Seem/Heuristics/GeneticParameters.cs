@@ -2,7 +2,7 @@
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class GeneticParameters : HeuristicParameters
+    public class GeneticParameters : PopulationParameters
     {
         public float CrossoverProbabilityEnd { get; set; }
         public float CrossoverProbabilityStart { get; set; }
@@ -13,7 +13,6 @@ namespace Osu.Cof.Ferm.Heuristics
         public float FlipProbabilityEnd { get; set; }
         public int MaximumGenerations { get; set; }
         public float MinimumCoefficientOfVariation { get; set; }
-        public int PopulationSize { get; set; }
         public PopulationReplacementStrategy ReplacementStrategy { get; set; }
         public float ReservedProportion { get; set; }
 
@@ -30,7 +29,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart;
             this.MaximumGenerations = 50;
             this.MinimumCoefficientOfVariation = Constant.GeneticDefault.MinimumCoefficientOfVariation;
-            this.PopulationSize = Constant.GeneticDefault.PopulationSize;
             this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
             this.ReservedProportion = Constant.GeneticDefault.ReservedPopulationProportion;
         }
@@ -43,13 +41,15 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override string GetCsvHeader()
         {
-            return "generations,population size,replacement strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,reserved,min CV";
+            return "generations,population size,init method,init classes,replacement strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,reserved,min CV";
         }
 
         public override string GetCsvValues()
         {
             return this.MaximumGenerations.ToString(CultureInfo.InvariantCulture) + "," +
                    this.PopulationSize.ToString(CultureInfo.InvariantCulture) + "," +
+                   this.InitializationMethod.ToString() + "," +
+                   this.InitializationClasses.ToString(CultureInfo.InvariantCulture) + "," +
                    this.ReplacementStrategy.ToString() + "," +
                    this.CrossoverProbabilityEnd.ToString(CultureInfo.InvariantCulture) + "," +
                    this.ExchangeProbabilityStart.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +

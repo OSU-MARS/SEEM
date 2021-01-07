@@ -118,6 +118,8 @@ namespace Osu.Cof.Ferm
             public const float FlipProbabilityStart = 0.0F;
             public const float GenerationMultiplier = 5.5F;
             public const float GenerationPower = 0.6F;
+            public const int InitializationClasses = 1;
+            public const PopulationInitializationMethod InitializationMethod = PopulationInitializationMethod.DiameterClass;
             public const float MinimumCoefficientOfVariation = 0.000001F;
             public const int PopulationSize = 30;
             public const PopulationReplacementStrategy ReplacementStrategy = PopulationReplacementStrategy.ContributionOfDiversityReplaceWorst;

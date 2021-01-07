@@ -30,6 +30,13 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> GenerationMultiplier { get; set; }
 
         [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public List<int> InitializationClasses { get; set; }
+
+        [Parameter]
+        public List<PopulationInitializationMethod> InitializationMethod { get; set; }
+
+        [Parameter]
         [ValidateRange(0.0, Single.MaxValue)]
         public List<float> MinCoefficientOfVariation { get; set; }
 
@@ -51,6 +58,8 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ExponentK = new List<float>() { Constant.GeneticDefault.ExponentK };
             this.FlipProbabilityEnd = new List<float>() { Constant.GeneticDefault.FlipProbabilityEnd };
             this.GenerationMultiplier = new List<float>() { Constant.GeneticDefault.GenerationMultiplier };
+            this.InitializationClasses = new List<int>() { Constant.GeneticDefault.InitializationClasses };
+            this.InitializationMethod = new List<PopulationInitializationMethod> { Constant.GeneticDefault.InitializationMethod };
             this.MinCoefficientOfVariation = new List<float>() { Constant.GeneticDefault.MinimumCoefficientOfVariation };
             this.PopulationSize = new List<int>() { Constant.GeneticDefault.PopulationSize };
             this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
@@ -85,6 +94,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ArgumentOutOfRangeException(nameof(this.GenerationMultiplier));
             }
+            if (this.InitializationClasses.Count < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(this.InitializationClasses));
+            }
             if (this.MinCoefficientOfVariation.Count < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.MinCoefficientOfVariation));
@@ -110,32 +123,40 @@ namespace Osu.Cof.Ferm.Cmdlets
                         {
                             foreach (float generationMultiplier in this.GenerationMultiplier)
                             {
-                                foreach (float minCoefficientOfVariation in this.MinCoefficientOfVariation)
+                                foreach (PopulationInitializationMethod initializationMethod in this.InitializationMethod)
                                 {
-                                    foreach (int populationSize in this.PopulationSize)
+                                    foreach (int initializationClassCount in this.InitializationClasses)
                                     {
-                                        foreach (float proportionalPercentage in this.ProportionalPercentage)
+                                        foreach (float minCoefficientOfVariation in this.MinCoefficientOfVariation)
                                         {
-                                            foreach (float reservedProportion in this.ReservedProportion)
+                                            foreach (int populationSize in this.PopulationSize)
                                             {
-                                                parameters.Add(new GeneticParameters()
+                                                foreach (float proportionalPercentage in this.ProportionalPercentage)
                                                 {
-                                                    CrossoverProbabilityEnd = crossoverProbabilityEnd,
-                                                    ExchangeProbabilityEnd = exchangeProbabilityEnd,
-                                                    ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
-                                                    ExponentK = exponent,
-                                                    FlipProbabilityEnd = flipProbabilityEnd,
-                                                    FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
-                                                    MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
-                                                    MinimumCoefficientOfVariation = minCoefficientOfVariation,
-                                                    PerturbBy = this.PerturbBy,
-                                                    PopulationSize = populationSize,
-                                                    ProportionalPercentage = proportionalPercentage,
-                                                    ReplacementStrategy = this.ReplacementStrategy,
-                                                    ReservedProportion = reservedProportion,
-                                                    TimberValue = this.TimberValue,
-                                                    UseScaledVolume = this.ScaledVolume
-                                                });
+                                                    foreach (float reservedProportion in this.ReservedProportion)
+                                                    {
+                                                        parameters.Add(new GeneticParameters()
+                                                        {
+                                                            CrossoverProbabilityEnd = crossoverProbabilityEnd,
+                                                            ExchangeProbabilityEnd = exchangeProbabilityEnd,
+                                                            ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
+                                                            ExponentK = exponent,
+                                                            FlipProbabilityEnd = flipProbabilityEnd,
+                                                            FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
+                                                            InitializationClasses = initializationClassCount,
+                                                            InitializationMethod = initializationMethod,
+                                                            MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
+                                                            MinimumCoefficientOfVariation = minCoefficientOfVariation,
+                                                            PerturbBy = this.PerturbBy,
+                                                            PopulationSize = populationSize,
+                                                            ProportionalPercentage = proportionalPercentage,
+                                                            ReplacementStrategy = this.ReplacementStrategy,
+                                                            ReservedProportion = reservedProportion,
+                                                            TimberValue = this.TimberValue,
+                                                            UseScaledVolume = this.ScaledVolume
+                                                        });
+                                                    }
+                                                }
                                             }
                                         }
                                     }
