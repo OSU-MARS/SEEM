@@ -3,10 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 
 namespace Osu.Cof.Ferm.Data
 {
-    public class PlotWithHeight
+    public class PlotsWithHeight
     {
         private int ageColumnIndex;
         private readonly Dictionary<int, Stand> byAge;
@@ -18,13 +19,18 @@ namespace Osu.Cof.Ferm.Data
         private int heightColumnIndex;
         private float heightScaleFactor;
         private int plotColumnIndex;
-        private readonly int plotID;
+        private readonly List<int> plotIDs;
         private int speciesColumnIndex;
         private int treeColumnIndex;
         private int treeConditionColumnIndex;
 
-        public PlotWithHeight(int plotID)
+        public PlotsWithHeight(List<int> plotIDs)
         {
+            if (plotIDs.Count < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(plotIDs));
+            }
+
             this.ageColumnIndex = -1;
             this.byAge = new Dictionary<int, Stand>();
             this.dbhColumnIndex = -1;
@@ -35,14 +41,14 @@ namespace Osu.Cof.Ferm.Data
             this.heightColumnIndex = -1;
             this.heightScaleFactor = 1.0F;
             this.plotColumnIndex = -1;
-            this.plotID = plotID;
+            this.plotIDs = plotIDs;
             this.speciesColumnIndex = -1;
             this.treeColumnIndex = -1;
             this.treeConditionColumnIndex = -1;
         }
 
-        public PlotWithHeight(int plotID, float defaultExpansionFactor)
-            : this(plotID)
+        public PlotsWithHeight(List<int> plotIDs, float defaultExpansionFactor)
+            : this(plotIDs)
         {
             if ((defaultExpansionFactor <= 0.0F) || (defaultExpansionFactor > Constant.Maximum.ExpansionFactor))
             {
@@ -152,9 +158,18 @@ namespace Osu.Cof.Ferm.Data
 
             // filter by plot
             int plot = Int32.Parse(rowAsStrings[this.plotColumnIndex]);
-            if (plot != this.plotID)
+            bool treeInPlotList = false;
+            for (int idIndex = 0; idIndex < this.plotIDs.Count; ++idIndex)
             {
-                // tree is not in this plot
+                if (plot == this.plotIDs[idIndex])
+                {
+                    treeInPlotList = true;
+                    break;
+                }
+            }
+            if (treeInPlotList == false)
+            {
+                // tree is not in the list of plots specified
                 return;
             }
 
@@ -233,9 +248,14 @@ namespace Osu.Cof.Ferm.Data
             Stand plotAtAge = this.byAge[ageInYears];
             int maximumTreesToCopy = Math.Min(plotAtAge.GetTreeRecordCount(), maximumTreesInStand);
             int treesCopied = 0;
+            StringBuilder plotIDsAsString = new StringBuilder();
+            foreach (int plotID in this.plotIDs)
+            {
+                plotIDsAsString.Append(plotID.ToString(CultureInfo.InvariantCulture));
+            }
             OrganonStand stand = new OrganonStand(ageInYears, siteIndex)
             {
-                Name = this.plotID.ToString(CultureInfo.InvariantCulture)
+                Name = plotIDsAsString.ToString()
             };
             foreach (Trees plotTreesOfSpecies in plotAtAge.TreesBySpecies.Values)
             {

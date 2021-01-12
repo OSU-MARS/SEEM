@@ -15,18 +15,18 @@ namespace Osu.Cof.Ferm.Test
     {
         public TestContext? TestContext { get; set; }
 
-        private static PlotWithHeight GetNelder()
+        private static PlotsWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp Nelder 1.xlsx");
-            PlotWithHeight plot = new PlotWithHeight(1, 1.327F);
+            PlotsWithHeight plot = new PlotsWithHeight(new List<int>() { 1 }, 1.327F);
             plot.Read(plotFilePath, "1");
             return plot;
         }
 
-        private static PlotWithHeight GetPlot14()
+        private static PlotsWithHeight GetPlot14()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp plots 14-18+34 Ministry.xlsx");
-            PlotWithHeight plot = new PlotWithHeight(14, 4.48F);
+            PlotsWithHeight plot = new PlotsWithHeight(new List<int>() { 14 }, 4.48F);
             plot.Read(plotFilePath, "0.2 ha");
             return plot;
         }
@@ -72,7 +72,7 @@ namespace Osu.Cof.Ferm.Test
             minThinnedMbfWithFiaVolume = 0.0F;
             #endif
 
-            PlotWithHeight nelder = PublicApi.GetNelder();
+            PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
@@ -127,7 +127,7 @@ namespace Osu.Cof.Ferm.Test
             treeCount = 25;
             #endif
 
-            PlotWithHeight nelder = PublicApi.GetNelder();
+            PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
@@ -249,7 +249,7 @@ namespace Osu.Cof.Ferm.Test
             int lastPeriod = 9;
             bool useScaledVolume = false;
 
-            PlotWithHeight nelder = PublicApi.GetNelder();
+            PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
@@ -381,7 +381,7 @@ namespace Osu.Cof.Ferm.Test
             int lastPeriod = 4;
             bool useScaledVolume = true;
 
-            PlotWithHeight plot14 = PublicApi.GetPlot14();
+            PlotsWithHeight plot14 = PublicApi.GetPlot14();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = plot14.ToOrganonStand(configuration, 30, 130.0F);
             stand.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
@@ -454,7 +454,7 @@ namespace Osu.Cof.Ferm.Test
             trees = 10;
             #endif
 
-            PlotWithHeight nelder = PublicApi.GetNelder();
+            PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, trees);

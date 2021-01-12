@@ -2,6 +2,7 @@
 using Osu.Cof.Ferm.Data;
 using System;
 using System.Management.Automation;
+using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
@@ -24,7 +25,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public float? PlantingDensity { get; set; }
 
         [Parameter(Mandatory = true)]
-        public int Plot { get; set; }
+        public List<int>? Plots { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, Constant.Maximum.SiteIndexInFeet)]
@@ -53,14 +54,14 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            PlotWithHeight plot;
+            PlotsWithHeight plot;
             if (this.ExpansionFactor.HasValue)
             {
-                plot = new PlotWithHeight(this.Plot, this.ExpansionFactor.Value);
+                plot = new PlotsWithHeight(this.Plots!, this.ExpansionFactor.Value);
             }
             else
             {
-                plot = new PlotWithHeight(this.Plot);
+                plot = new PlotsWithHeight(this.Plots!);
             }
             plot.Read(this.Xlsx!, this.XlsxSheet);
 
