@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Test
         protected static TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
             // TODO: cover cases with more than one SIMD width per species
-            TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, TestConstant.Default.SiteIndex)
+            TestStand stand = new TestStand(configuration.Variant, 0, TestConstant.Default.SiteIndex)
             {
                 PlantingDensityInTreesPerHectare = 939.0F // 380 trees per acre
             };
@@ -99,7 +99,7 @@ namespace Osu.Cof.Ferm.Test
             TestStand initialTreeData = new TestStand(stand);
             TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath();
 
-            Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
+            Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
             if (configuration.IsEvenAge)
             {
                 // stand error if less than one year to grow to breast height
@@ -113,7 +113,7 @@ namespace Osu.Cof.Ferm.Test
             using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
             for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)
             {
-                OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB);
+                OrganonGrowth.Grow(simulationStep, configuration, stand, calibrationBySpecies);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
                 OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);
@@ -126,16 +126,16 @@ namespace Osu.Cof.Ferm.Test
             }
 
             OrganonTest.Verify(ExpectedTreeChanges.ExpansionFactorConservedOrIncreased | ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, treeGrowth, initialTreeData, stand);
-            OrganonTest.Verify(CALIB);
+            OrganonTest.Verify(calibrationBySpecies);
         }
 
-        protected static void Verify(Dictionary<FiaCode, float[]> calibration)
+        protected static void Verify(Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies)
         {
-            foreach (KeyValuePair<FiaCode, float[]> species in calibration)
+            foreach (KeyValuePair<FiaCode, SpeciesCalibration> speciesCalibration in calibrationBySpecies)
             {
-                Assert.IsTrue(species.Value[0] == 1.0F);
-                Assert.IsTrue(species.Value[1] == 1.0F);
-                Assert.IsTrue(species.Value[2] == 1.0F);
+                Assert.IsTrue(speciesCalibration.Value.CrownRatio == 1.0F);
+                Assert.IsTrue(speciesCalibration.Value.Diameter == 1.0F);
+                Assert.IsTrue(speciesCalibration.Value.Height == 1.0F);
             }
         }
 

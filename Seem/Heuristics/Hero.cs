@@ -48,6 +48,7 @@ namespace Osu.Cof.Ferm.Heuristics
             int[] treeIndices = Heuristic.CreateSequentialArray(initialTreeRecordCount);
             for (int iteration = 0; iteration < this.MaximumIterations; ++iteration)
             {
+                // randomize on every iteration since a single randomization against the order of the data has little effect
                 if (this.IsStochastic)
                 {
                     this.Pseudorandom.Shuffle(treeIndices);

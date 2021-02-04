@@ -81,7 +81,7 @@ namespace Osu.Cof.Ferm.Organon
             this.PDEN = other.PDEN;
         }
 
-        public Dictionary<FiaCode, float[]> CreateSpeciesCalibration()
+        public Dictionary<FiaCode, SpeciesCalibration> CreateSpeciesCalibration()
         {
             ReadOnlyCollection<FiaCode> speciesList = this.Variant.TreeModel switch
             {
@@ -91,10 +91,10 @@ namespace Osu.Cof.Ferm.Organon
                 TreeModel.OrganonSwo => Constant.SwoSpecies,
                 _ => throw OrganonVariant.CreateUnhandledModelException(this.Variant.TreeModel),
             };
-            Dictionary<FiaCode, float[]> calibration = new Dictionary<FiaCode, float[]>();
+            Dictionary<FiaCode, SpeciesCalibration> calibration = new Dictionary<FiaCode, SpeciesCalibration>();
             foreach (FiaCode species in speciesList)
             {
-                calibration.Add(species, new float[] { 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F });
+                calibration.Add(species, new SpeciesCalibration());
             }
             return calibration;
         }

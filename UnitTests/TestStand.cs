@@ -11,12 +11,12 @@ namespace Osu.Cof.Ferm.Test
     {
         public SortedDictionary<FiaCode, int[]> InitialDbhQuantileBySpecies { get; private set; }
 
-        public TestStand(TreeModel treeModel, int ageInYears, float primarySiteIndex)
+        public TestStand(OrganonVariant variant, int ageInYears, float primarySiteIndex)
             : base(ageInYears, primarySiteIndex)
         {
             this.InitialDbhQuantileBySpecies = new SortedDictionary<FiaCode, int[]>();
 
-            this.SetDefaultAndMortalitySiteIndices(treeModel);
+            this.EnsureSiteIndicesSet(variant);
         }
 
         public TestStand(TestStand other)

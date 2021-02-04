@@ -296,7 +296,7 @@ namespace Osu.Cof.Ferm.Data
                 throw new NotImplementedException("Old tree index not computed.");
             }
 
-            stand.SetDefaultAndMortalitySiteIndices(configuration.Variant.TreeModel);
+            stand.EnsureSiteIndicesSet(configuration.Variant);
             stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
             stand.SetSdiMax(configuration);
 

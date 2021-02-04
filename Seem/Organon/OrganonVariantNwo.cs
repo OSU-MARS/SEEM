@@ -1043,7 +1043,7 @@ namespace Osu.Cof.Ferm.Organon
         }
 
         // OG only used for Pacific madrone
-        public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float SI_1, float SI_2, float OG)
+        public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float siteIndex, float hemlockSiteIndex, float OG)
         {
             float hcbB0;
             float hcbB1;
@@ -1144,10 +1144,10 @@ namespace Osu.Cof.Ferm.Organon
                     throw Trees.CreateUnhandledSpeciesException(species);
             }
 
-            float siteIndexFromDbh = SI_1;
+            float siteIndexFromDbh = siteIndex;
             if (species == FiaCode.TsugaHeterophylla)
             {
-                siteIndexFromDbh = SI_2;
+                siteIndexFromDbh = hemlockSiteIndex;
             }
 
             float HCB = HT / (1.0F + MathV.Exp(hcbB0 + hcbB1 * HT + hcbB2 * CCFL + hcbB3 * MathV.Ln(BA) + hcbB4 * (DBH / HT) + hcbB5 * siteIndexFromDbh + hcbB6 * OG * OG));
@@ -1272,7 +1272,7 @@ namespace Osu.Cof.Ferm.Organon
             throw new NotImplementedException("Inlined into GrowCrown() for efficiency.");
         }
 
-        public override void GrowCrown(OrganonStand stand, Trees trees, OrganonStandDensity densityAfterGrowth, float oldGrowthIndicator, float nwoCrownRatioMultiplier)
+        public override void GrowCrown(OrganonStand stand, Trees trees, OrganonStandDensity densityAfterGrowth, float oldGrowthIndicator, float nwoSmcCrownRatioMultiplier)
         {
             // coefficients for maximum height to crown base
             float mhcbB0;
@@ -1507,7 +1507,7 @@ namespace Osu.Cof.Ferm.Organon
                 Debug.Assert(endMaxHeightToCrownBase >= 0.0F);
                 Debug.Assert(endMaxHeightToCrownBase <= endHeightInFeet);
 
-                float endCrownRatio = nwoCrownRatioMultiplier * (1.0F - endHeightToCrownBase / endHeightInFeet);
+                float endCrownRatio = nwoSmcCrownRatioMultiplier * (1.0F - endHeightToCrownBase / endHeightInFeet);
                 endHeightToCrownBase = (1.0F - endCrownRatio) * endHeightInFeet;
 
                 // crown recession = change in height of crown base
@@ -1693,6 +1693,7 @@ namespace Osu.Cof.Ferm.Organon
             Debug.Assert((K2 >= 1) && (K2 <= 4));
             Debug.Assert((K3 >= 1) && (K3 <= 4));
 
+            speciesMultiplier *= growthMultiplier;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 if (trees.LiveExpansionFactor[treeIndex] <= 0.0F)
@@ -2094,6 +2095,33 @@ namespace Osu.Cof.Ferm.Organon
                     }
                 }
             }
+        }
+
+        public override float ToHemlockSiteIndex(float siteIndex)
+        {
+            return OrganonVariantNwo.ToHemlockSiteIndexStatic(siteIndex);
+        }
+
+        // clunky naming because C# doesn't require explicit indication of instance versus static calls (this. versus ClassName.) and therefore doesn't 
+        // distinguish between instance and static method names
+        public static float ToHemlockSiteIndexStatic(float siteIndex)
+        {
+            if (siteIndex < Constant.Minimum.SiteIndexInFeet)
+            {
+                throw new ArgumentOutOfRangeException(nameof(siteIndex));
+            }
+            return -0.432F + 0.899F * siteIndex;
+        }
+
+        public override float ToSiteIndex(float hemlockSiteIndex)
+        {
+            if (hemlockSiteIndex < Constant.Minimum.SiteIndexInFeet)
+            {
+                throw new ArgumentOutOfRangeException(nameof(hemlockSiteIndex));
+            }
+
+            // Nigh 1995, Forest Science 41:84-98
+            return 0.480F + 1.110F * hemlockSiteIndex;
         }
     }
 }

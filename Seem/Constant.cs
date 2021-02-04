@@ -142,7 +142,7 @@ namespace Osu.Cof.Ferm
 
         public static class Maximum
         {
-            public const float DiameterIncrementInInches = 4.0F;
+            public const float DiameterIncrementInInches = 4.5F;
             public const float ExpansionFactor = 1000.0F;
             public const float HeightIncrementInFeet = 20.0F;
             public const float PlantingDensityInTreesPerHectare = 40000.0F; // sanity upper bound, 0.5 m spacing
@@ -153,6 +153,11 @@ namespace Osu.Cof.Ferm
         public static class MetaheuristicDefault
         {
             public const float PerturbBy = 1.0F;
+        }
+
+        public static class Minimum
+        {
+            public const float SiteIndexInFeet = 4.5F;
         }
 
         public static class MonteCarloDefault

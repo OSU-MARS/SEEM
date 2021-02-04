@@ -78,14 +78,15 @@ namespace Osu.Cof.Ferm.Organon
             else if (trees.Species == FiaCode.TsugaHeterophylla)
             {
                 // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
-                float siteIndexFromGround = -0.432F + 0.899F * (stand.HemlockSiteIndex + 4.5F); // BUGBUG: why is this not just the hemlock site index/
+                // BUGBUG: why isn't redcedar also on this code path?
+                float siteIndexFromGround = OrganonVariantNwo.ToHemlockSiteIndexStatic(stand.HemlockSiteIndex); // stand.HemlockSiteIndex is interpreted as PSME site index
                 WesternHemlock.SiteConstants tsheSite = new WesternHemlock.SiteConstants(siteIndexFromGround);
                 growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             else
             {
                 // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
-                DouglasFir.SiteConstants psmeSite = new DouglasFir.SiteConstants(stand.HemlockSiteIndex);
+                DouglasFir.SiteConstants psmeSite = new DouglasFir.SiteConstants(stand.HemlockSiteIndex); // stand.HemlockSiteIndex is interpreted as PSME site index
                 growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             return growthEffectiveAge;
@@ -143,7 +144,7 @@ namespace Osu.Cof.Ferm.Organon
         }
 
         // OG unused
-        public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float SI_1, float SI_2, float OG)
+        public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float siteIndex, float hemlockSiteIndex, float OG)
         {
             float B0;
             float B1;
@@ -220,14 +221,14 @@ namespace Osu.Cof.Ferm.Organon
             if (species == FiaCode.AlnusRubra)
             {
                 // HCB = (HT - K) / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_1 + B6 * OG * OG)) + K;
-                HCB = (HT - K) / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_1)) + K;
+                HCB = (HT - K) / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * siteIndex)) + K;
             }
             else
             {
-                float SITE = SI_2;
+                float SITE = hemlockSiteIndex;
                 if (species == FiaCode.TsugaHeterophylla)
                 {
-                    SITE = 0.480F + (1.110F * (SI_2 + 4.5F));
+                    SITE = 0.480F + (1.110F * (hemlockSiteIndex + 4.5F));
                 }
                 // HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SITE + B6 * OG * OG));
                 HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SITE));
@@ -595,6 +596,7 @@ namespace Osu.Cof.Ferm.Organon
                     throw Trees.CreateUnhandledSpeciesException(trees.Species);
             }
 
+            speciesMultiplier *= growthMultiplier;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 if (trees.LiveExpansionFactor[treeIndex] <= 0.0F)
@@ -775,14 +777,14 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             // BUGBUG: Fortran code didn't use red alder site index for red alder and used hemlock site index for all conifers, not just hemlock and redcedar
-            float siteIndex = stand.HemlockSiteIndex;
+            float siteIndex = stand.HemlockSiteIndex; // interpreted as Douglas-fir site index
             if (trees.Species == FiaCode.AlnusRubra)
             {
                 siteIndex = stand.SiteIndex;
             }
             else if ((trees.Species == FiaCode.TsugaHeterophylla) || (trees.Species == FiaCode.ThujaPlicata))
             {
-                siteIndex = -0.432F + 0.899F * siteIndex;
+                siteIndex = OrganonVariantNwo.ToHemlockSiteIndexStatic(siteIndex); // convert from Douglas-fir site index to actual hemlock site inde
             }
 
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
@@ -812,6 +814,20 @@ namespace Osu.Cof.Ferm.Organon
                 trees.DeadExpansionFactor[treeIndex] = mortalityExpansionFactor;
                 trees.LiveExpansionFactor[treeIndex] = newLiveExpansionFactor;
             }
+        }
+
+        public override float ToHemlockSiteIndex(float siteIndex)
+        {
+            if (siteIndex < Constant.Minimum.SiteIndexInFeet)
+            {
+                throw new ArgumentOutOfRangeException(nameof(siteIndex));
+            }
+            return siteIndex;
+        }
+
+        public override float ToSiteIndex(float hemlockSiteIndex)
+        {
+            throw new NotSupportedException();
         }
     }
 }

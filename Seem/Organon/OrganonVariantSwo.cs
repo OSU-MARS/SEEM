@@ -98,22 +98,22 @@ namespace Osu.Cof.Ferm.Organon
         public override float GetGrowthEffectiveAge(OrganonConfiguration configuration, OrganonStand stand, Trees trees, int treeIndex, out float potentialHeightGrowth)
         {
             // GROWTH EFFECTIVE AGE FROM HANN AND SCRIVANI'S (1987) DOMINANT HEIGHT GROWTH EQUATION
-            float SITE;
+            float siteIndexFromDbh;
             bool treatAsDouglasFir = false;
             if (trees.Species == FiaCode.TsugaHeterophylla)
             {
-                SITE = stand.HemlockSiteIndex - 4.5F;
+                siteIndexFromDbh = stand.HemlockSiteIndex - 4.5F;
             }
             else
             {
-                SITE = stand.SiteIndex - 4.5F;
+                siteIndexFromDbh = stand.SiteIndex - 4.5F;
                 if (trees.Species == FiaCode.PinusLambertiana)
                 {
-                    SITE = stand.SiteIndex * 0.66F - 4.5F;
+                    siteIndexFromDbh = 0.66F * stand.SiteIndex - 4.5F;
                 }
                 treatAsDouglasFir = true;
             }
-            DouglasFir.GetDouglasFirPonderosaHeightGrowth(treatAsDouglasFir, SITE, trees.Height[treeIndex], out float growthEffectiveAge, out potentialHeightGrowth);
+            DouglasFir.GetDouglasFirPonderosaHeightGrowth(treatAsDouglasFir, siteIndexFromDbh, trees.Height[treeIndex], out float growthEffectiveAge, out potentialHeightGrowth);
             return growthEffectiveAge;
         }
 
@@ -236,7 +236,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float SI_1, float SI_2, float OG)
+        public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float siteIndex, float hemlockSiteIndex, float OG)
         {
             // HEIGHT TO CROWN BASE FOR UNDAMAGED TREES ONLY
             float B0;
@@ -427,11 +427,11 @@ namespace Osu.Cof.Ferm.Organon
             float HCB;
             if (species == FiaCode.PinusLambertiana)
             {
-                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_2 + B6 * OG * OG));
+                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * hemlockSiteIndex + B6 * OG * OG));
             }
             else
             {
-                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_1 + B6 * OG * OG));
+                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * siteIndex + B6 * OG * OG));
             }
             Debug.Assert(HCB >= 0.0F);
             Debug.Assert(HCB <= HT);
@@ -1127,6 +1127,7 @@ namespace Osu.Cof.Ferm.Organon
                     throw Trees.CreateUnhandledSpeciesException(trees.Species);
             }
 
+            speciesMultiplier *= growthMultiplier;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 if (trees.LiveExpansionFactor[treeIndex] <= 0.0F)
@@ -1500,6 +1501,24 @@ namespace Osu.Cof.Ferm.Organon
                     }
                 }
             }
+        }
+
+        public override float ToHemlockSiteIndex(float siteIndex)
+        {
+            if (siteIndex < Constant.Minimum.SiteIndexInFeet)
+            {
+                throw new ArgumentOutOfRangeException(nameof(siteIndex));
+            }
+            return 0.940792F * siteIndex;
+        }
+
+        public override float ToSiteIndex(float hemlockSiteIndex)
+        {
+            if (hemlockSiteIndex < Constant.Minimum.SiteIndexInFeet)
+            {
+                throw new ArgumentOutOfRangeException(nameof(hemlockSiteIndex));
+            }
+            return 1.062934F * hemlockSiteIndex;
         }
     }
 }

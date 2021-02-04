@@ -308,18 +308,18 @@ namespace Osu.Cof.Ferm.Test
 
             // verify thinned trajectory
             //                                        0      1      2      3       4       5       6       7       8       9
-            float[] minimumThinnedQmd = new float[] { 6.61F, 8.17F, 9.52F, 11.41F, 12.95F, 14.33F, 15.56F, 16.65F, 17.62F, 18.51F }; // in
+            float[] minimumThinnedQmd = new float[] { 6.61F, 8.19F, 9.53F, 11.81F, 13.44F, 14.80F, 15.99F, 17.05F, 18.00F, 18.85F }; // in
             //                                              0      1      2      3      4      5       6       7       8       9
             float[] minimumThinnedTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 88.3F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
             float[] minimumThinnedVolume;
             if (thinnedTrajectory.UseScaledVolume)
             {
-                minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 26.65F, 39.53F, 51.98F, 65.57F, 82.56F, 98.61F, 112.9F }; // Poudel 2018 + Scribner long log net MBF/ha
+                minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 28.25F, 41.77F, 54.37F, 68.44F, 85.10F, 100.4F, 114.7F }; // Poudel 2018 + Scribner long log net MBF/ha
             }
             else
             {
                 //                                   0       1       2       3       4       5       6       7       8       9
-                minimumThinnedVolume = new float[] { 4.428F, 15.02F, 30.50F, 28.36F, 43.86F, 61.08F, 78.83F, 96.36F, 113.1F, 128.9F }; // FIA MBF/ha
+                minimumThinnedVolume = new float[] { 4.428F, 15.02F, 30.50F, 30.64F, 47.26F, 64.81F, 82.54F, 99.87F, 116.3F, 131.7F }; // FIA MBF/ha
             }
             PublicApi.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
@@ -341,10 +341,10 @@ namespace Osu.Cof.Ferm.Test
                 OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
                 // recalculate heights and crown ratios for all trees
-                Dictionary<FiaCode, float[]> CALIB = configuration.CreateSpeciesCalibration();
+                Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
-                    OrganonGrowth.SetIngrowthHeightAndCrownRatio(variant, stand, treesOfSpecies, treesOfSpecies.Count, CALIB);
+                    OrganonGrowth.SetIngrowthHeightAndCrownRatio(variant, stand, treesOfSpecies, treesOfSpecies.Count, calibrationBySpecies);
                 }
                 OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth | ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
 
@@ -362,7 +362,7 @@ namespace Osu.Cof.Ferm.Test
                 TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath();
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    OrganonGrowth.Grow(simulationStep, configuration, stand, CALIB);
+                    OrganonGrowth.Grow(simulationStep, configuration, stand, calibrationBySpecies);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
                     OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
 
@@ -370,7 +370,7 @@ namespace Osu.Cof.Ferm.Test
                 }
 
                 OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, treeGrowth, initialStand, stand);
-                OrganonTest.Verify(CALIB);
+                OrganonTest.Verify(calibrationBySpecies);
             }
         }
 
@@ -379,7 +379,7 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinPeriod = 1;
             int lastPeriod = 4;
-            bool useScaledVolume = true;
+            bool useScaledVolume = false;
 
             PlotsWithHeight plot14 = PublicApi.GetPlot14();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
@@ -399,18 +399,18 @@ namespace Osu.Cof.Ferm.Test
 
             // verify thinned trajectory
             //                                        0      1       2       3       4     
-            float[] minimumThinnedQmd = new float[] { 9.16F, 10.26F, 11.41F, 12.42F, 13.32F }; // in
+            float[] minimumThinnedQmd = new float[] { 9.16F, 10.47F, 11.64F, 12.64F, 13.52F }; // in
             //                                              0      1       2       3       4     
             float[] minimumThinnedTopHeight = new float[] { 92.9F, 101.4F, 110.4F, 118.9F, 126.7F }; // ft
             float[] minimumThinnedVolume;
             if (thinnedTrajectory.UseScaledVolume)
             {
-                minimumThinnedVolume = new float[] { 51.59F, 49.67F, 64.91F, 80.38F, 95.08F }; // Poudel 2018 + Scribner long log net MBF/ha
+                minimumThinnedVolume = new float[] { 51.59F, 51.75F, 66.71F, 81.88F, 97.72F }; // Poudel 2018 + Scribner long log net MBF/ha
             }
             else
             {
                 //                                   0       1       2       3       4     
-                minimumThinnedVolume = new float[] { 43.74F, 46.59F, 65.78F, 84.94F, 103.1F }; // Browning 1977 (FIA) MBF/ha
+                minimumThinnedVolume = new float[] { 43.74F, 49.00F, 68.86F, 87.95F, 105.8F }; // Browning 1977 (FIA) MBF/ha
             }
 
             PublicApi.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);

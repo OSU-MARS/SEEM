@@ -131,7 +131,7 @@ namespace Osu.Cof.Ferm.Organon
 
             float THINADJ = 1.0F + a8 * PREM * MathV.Exp(a9 * yearsSinceMostRecentThin);
             Debug.Assert(THINADJ >= 1.0F); // increased diameter growth from increased taper
-            Debug.Assert(THINADJ < 2.0F);
+            Debug.Assert(THINADJ < 1.5F);
             return THINADJ;
         }
 
@@ -244,44 +244,31 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="simulationStep"></param>
         /// <param name="configuration">Organon growth simulation options and site settings.</param>
         /// <param name="stand"></param>
-        /// <param name="ACALIB">Array of calibration coefficients. Values must be between 0.5 and 2.0.</param>
-        public static void Grow(int simulationStep, OrganonConfiguration configuration, OrganonStand stand, Dictionary<FiaCode, float[]> ACALIB)
+        /// <param name="previousCalibrationBySpecies">Array of calibration coefficients. Values must be between 0.5 and 2.0.</param>
+        public static void Grow(int simulationStep, OrganonConfiguration configuration, OrganonStand stand, Dictionary<FiaCode, SpeciesCalibration> previousCalibrationBySpecies)
         {
             // BUGBUG: simulationStep largely duplicates stand age
-            OrganonGrowth.ValidateArguments(simulationStep, configuration, stand, ACALIB, out int BIG6, out int BNXT);
+            OrganonGrowth.ValidateArguments(simulationStep, configuration, stand, previousCalibrationBySpecies, out int BIG6, out int BNXT);
 
-            Dictionary<FiaCode, float[]> CALIB = new Dictionary<FiaCode, float[]>(ACALIB.Count);
-            foreach (KeyValuePair<FiaCode, float[]> species in ACALIB)
+            Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = new Dictionary<FiaCode, SpeciesCalibration>(previousCalibrationBySpecies.Count);
+            foreach (KeyValuePair<FiaCode, SpeciesCalibration> species in previousCalibrationBySpecies)
             {
-                float[] speciesCalibration = new float[6];
-                CALIB.Add(species.Key, speciesCalibration);
+                SpeciesCalibration speciesCalibration = new SpeciesCalibration();
+                calibrationBySpecies.Add(species.Key, speciesCalibration);
 
                 if (configuration.CalibrateHeight)
                 {
-                    speciesCalibration[0] = (1.0F + ACALIB[species.Key][0]) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][0] - 1.0F) / 2.0F);
-                }
-                else
-                {
-                    speciesCalibration[0] = 1.0F;
+                    speciesCalibration.Height = (1.0F + previousCalibrationBySpecies[species.Key].Height) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((previousCalibrationBySpecies[species.Key].Height - 1.0F) / 2.0F);
                 }
                 if (configuration.CalibrateCrownRatio)
                 {
-                    speciesCalibration[1] = (1.0F + ACALIB[species.Key][1]) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][1] - 1.0F) / 2.0F);
-                }
-                else
-                {
-                    speciesCalibration[1] = 1.0F;
+                    speciesCalibration.CrownRatio = (1.0F + previousCalibrationBySpecies[species.Key].CrownRatio) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((previousCalibrationBySpecies[species.Key].CrownRatio - 1.0F) / 2.0F);
                 }
                 if (configuration.CalibrateDiameter)
                 {
-                    speciesCalibration[2] = (1.0F + ACALIB[species.Key][2]) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((ACALIB[species.Key][2] - 1.0F) / 2.0F);
-                }
-                else
-                {
-                    speciesCalibration[2] = 1.0F;
+                    speciesCalibration.Diameter = (1.0F + previousCalibrationBySpecies[species.Key].Diameter) / 2.0F + MathV.Pow(0.5F, 0.5F * simulationStep) * ((previousCalibrationBySpecies[species.Key].Diameter - 1.0F) / 2.0F);
                 }
             }
-
 
             // density at start of growth
             stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
@@ -289,7 +276,7 @@ namespace Osu.Cof.Ferm.Organon
 
             // crown competition at start of growth
             float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
-            OrganonGrowth.Grow(simulationStep, configuration, stand, densityBeforeGrowth, CALIB, ref crownCompetitionByHeight, out OrganonStandDensity _, out int oldTreeRecordCount);
+            OrganonGrowth.Grow(simulationStep, configuration, stand, densityBeforeGrowth, calibrationBySpecies, ref crownCompetitionByHeight, out OrganonStandDensity _, out int oldTreeRecordCount);
 
             if (configuration.IsEvenAge == false)
             {
@@ -331,12 +318,12 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="configuration">Organon configuration settings.</param>
         /// <param name="stand">Stand data.</param>
         /// <param name="densityBeforeGrowth"></param>
-        /// <param name="CALIB"></param>
+        /// <param name="calibrationBySpecies"></param>
         /// <param name="crownCompetitionByHeight"></param>
         /// <param name="densityAfterGrowth"></param>
         /// <param name="oldTreeRecordCount"></param>
         public static void Grow(int simulationStep, OrganonConfiguration configuration, OrganonStand stand, OrganonStandDensity densityBeforeGrowth,
-                                Dictionary<FiaCode, float[]> CALIB, ref float[] crownCompetitionByHeight, out OrganonStandDensity densityAfterGrowth, 
+                                Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies, ref float[] crownCompetitionByHeight, out OrganonStandDensity densityAfterGrowth, 
                                 out int oldTreeRecordCount)
         {
             // initalize step
@@ -346,11 +333,11 @@ namespace Osu.Cof.Ferm.Organon
             float HGMODSwissNeedleCast = 1.0F;
             if ((stand.AgeInYears > 0) && configuration.Genetics)
             {
-                OrganonGrowthModifiers.GG_MODS(stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMODgenetic, out HGMODgenetic);
+                OrganonGrowthModifiers.GetGeneticModifiers(stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMODgenetic, out HGMODgenetic);
             }
             if (configuration.SwissNeedleCast && (configuration.Variant.TreeModel == TreeModel.OrganonNwo || configuration.Variant.TreeModel == TreeModel.OrganonSmc))
             {
-                OrganonGrowthModifiers.SNC_MODS(configuration.FR, out DGMODSwissNeedleCast, out HGMODSwissNeedleCast);
+                OrganonGrowthModifiers.GetSwissNeedleCastModifiers(configuration.FR, out DGMODSwissNeedleCast, out HGMODSwissNeedleCast);
             }
 
             // diameter growth
@@ -379,7 +366,7 @@ namespace Osu.Cof.Ferm.Organon
             // BUGBUG no check that SITE_1 and SITE_2 indices are greater than 4.5 feet
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                float geneticDiseaseAndCalibrationMultiplier = CALIB[treesOfSpecies.Species][2];
+                float geneticDiseaseAndCalibrationMultiplier = calibrationBySpecies[treesOfSpecies.Species].Diameter;
                 if (treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii)
                 {
                     geneticDiseaseAndCalibrationMultiplier *= DGMODgenetic * DGMODSwissNeedleCast;
@@ -433,11 +420,11 @@ namespace Osu.Cof.Ferm.Organon
                     continue;
                 }
 
-                OrganonGrowth.GrowHeightMinorSpecies(configuration, stand, treesOfSpecies, CALIB[species][0]);
+                OrganonGrowth.GrowHeightMinorSpecies(configuration, stand, treesOfSpecies, calibrationBySpecies[species].Height);
             }
 
             // grow crowns
-            crownCompetitionByHeight = OrganonGrowth.GrowCrown(configuration.Variant, stand, densityAfterGrowth, CALIB);
+            crownCompetitionByHeight = OrganonGrowth.GrowCrown(configuration.Variant, stand, densityAfterGrowth, calibrationBySpecies);
 
             // update stand age and period variables
             stand.AgeInYears += configuration.Variant.TimeStepInYears;
@@ -446,25 +433,21 @@ namespace Osu.Cof.Ferm.Organon
             configuration.Treatments.CompleteTimeStep();
 
             // reduce calibration ratios
-            foreach (float[] speciesCalibration in CALIB.Values)
+            foreach (SpeciesCalibration speciesCalibration in calibrationBySpecies.Values)
             {
-                for (int index = 0; index < 3; ++index)
-                {
-                    if (speciesCalibration[index] != 1.0F)
-                    {
-                        float MCALIB = (1.0F + speciesCalibration[index + 2]) / 2.0F;
-                        speciesCalibration[index] = MCALIB + 0.7071067812F * (speciesCalibration[index] - MCALIB); // 0.7071067812 = MathF.Sqrt(0.5F)
-                    }
-                }
+                float heightFactor = (1.0F + speciesCalibration.Height) / 2.0F;
+                speciesCalibration.Height = heightFactor + 0.7071067812F * (speciesCalibration.Height - heightFactor); // 0.7071067812 = MathF.Sqrt(0.5F)
+                float diameterFactor = (1.0F + speciesCalibration.Diameter) / 2.0F;
+                speciesCalibration.Diameter = diameterFactor + 0.7071067812F * (speciesCalibration.Diameter - diameterFactor);
             }
         }
 
-        public static float[] GrowCrown(OrganonVariant variant, OrganonStand stand, OrganonStandDensity densityAfterGrowth, Dictionary<FiaCode, float[]> CALIB)
+        public static float[] GrowCrown(OrganonVariant variant, OrganonStand stand, OrganonStandDensity densityAfterGrowth, Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies)
         {
             float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(variant, stand);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                variant.GrowCrown(stand, treesOfSpecies, densityAfterGrowth, oldGrowthIndicator, CALIB[treesOfSpecies.Species][1]);
+                variant.GrowCrown(stand, treesOfSpecies, densityAfterGrowth, oldGrowthIndicator, calibrationBySpecies[treesOfSpecies.Species].CrownRatio);
             }
 
             return OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
@@ -686,55 +669,17 @@ namespace Osu.Cof.Ferm.Organon
         /// </summary>
         /// <param name="variant">Organon variant.</param>
         /// <param name="stand">Stand data.</param>
-        /// <param name="ingrowthCount">Number of new trees.</param>
-        /// <param name="ACALIB"></param>
-        public static void SetIngrowthHeightAndCrownRatio(OrganonVariant variant, OrganonStand stand, Trees treesOfSpecies, int ingrowthCount, Dictionary<FiaCode, float[]> ACALIB)
+        /// <param name="treesOfSpecies"></param>
+        /// <param name="ingrowthCount">Number of new trees added to end of treesOfSpecies.</param>
+        /// <param name="calibrationBySpecies"></param>
+        public static void SetIngrowthHeightAndCrownRatio(OrganonVariant variant, OrganonStand stand, Trees treesOfSpecies, int ingrowthCount, Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies)
         {
-            if (ingrowthCount > treesOfSpecies.Count)
+            if ((ingrowthCount < 0) || (ingrowthCount > treesOfSpecies.Count))
             {
                 throw new ArgumentOutOfRangeException(nameof(ingrowthCount));
             }
 
             // ROUTINE TO CALCULATE MISSING CROWN RATIOS
-            // BUGBUG: does this duplicate site index code elsewhere?
-            // NINGRO = NUMBER OF TREES ADDED
-            float SITE_1 = stand.SiteIndex;
-            float SITE_2 = stand.HemlockSiteIndex;
-            float SI_1;
-            if (variant.TreeModel == TreeModel.OrganonSwo)
-            {
-                if ((SITE_1 < 0.0F) && (SITE_2 > 0.0F))
-                {
-                    SITE_1 = 1.062934F * SITE_2;
-                }
-                else if (SITE_2 < 0.0F)
-                {
-                    SITE_2 = 0.940792F * SITE_1;
-                }
-            }
-            else if ((variant.TreeModel == TreeModel.OrganonNwo) || (variant.TreeModel == TreeModel.OrganonSmc))
-            {
-                if ((SITE_1 < 0.0F) && (SITE_2 > 0.0F))
-                {
-                    SITE_1 = 0.480F + (1.110F * SITE_2);
-                }
-                else if (SITE_2 < 0.0F)
-                {
-                    SITE_2 = -0.432F + (0.899F * SITE_1);
-                }
-            }
-            else
-            {
-                if (SITE_2 < 0.0F)
-                {
-                    // BUGBUG: not initialized in Fortran code; should this be SITE_1?
-                    SI_1 = 0.0F;
-                    SITE_2 = 4.776377F * MathV.Pow(SI_1, 0.763530587F);
-                }
-            }
-
-            SI_1 = SITE_1 - 4.5F;
-            float SI_2 = SITE_2 - 4.5F;
             variant.GetHeightPredictionCoefficients(treesOfSpecies.Species, out float B0, out float B1, out float B2);
             for (int treeIndex = treesOfSpecies.Count - ingrowthCount; treeIndex < treesOfSpecies.Count; ++treeIndex)
             {
@@ -746,10 +691,17 @@ namespace Osu.Cof.Ferm.Organon
 
                 float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                 float predictedHeight = 4.5F + MathV.Exp(B0 + B1 * MathV.Pow(dbhInInches, B2));
-                treesOfSpecies.Height[treeIndex] = 4.5F + ACALIB[treesOfSpecies.Species][0] * (predictedHeight - 4.5F);
+                treesOfSpecies.Height[treeIndex] = 4.5F + calibrationBySpecies[treesOfSpecies.Species].Height * (predictedHeight - 4.5F);
             }
 
-            float OG = OrganonMortality.GetOldGrowthIndicator(variant, stand);
+            if ((stand.SiteIndex < Constant.Minimum.SiteIndexInFeet) || (stand.HemlockSiteIndex < Constant.Minimum.SiteIndexInFeet))
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand));
+            }
+            float siteIndexFromDbh = stand.SiteIndex - 4.5F;
+            float hemlockSiteIndexFromDbh = stand.HemlockSiteIndex - 4.5F;
+
+            float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(variant, stand);
             OrganonStandDensity standDensity = new OrganonStandDensity(stand, variant);
             FiaCode species = treesOfSpecies.Species;
             for (int treeIndex = treesOfSpecies.Count - ingrowthCount; treeIndex < treesOfSpecies.Count; ++treeIndex)
@@ -763,7 +715,7 @@ namespace Osu.Cof.Ferm.Organon
                 float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                 float heightInFeet = treesOfSpecies.Height[treeIndex];
                 float crownCompetitionFactorLarger = standDensity.GetCrownCompetitionFactorLarger(dbhInInches);
-                float heightToCrownBase = variant.GetHeightToCrownBase(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, standDensity.BasalAreaPerAcre, SI_1, SI_2, OG);
+                float heightToCrownBase = variant.GetHeightToCrownBase(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, standDensity.BasalAreaPerAcre, siteIndexFromDbh, hemlockSiteIndexFromDbh, oldGrowthIndicator);
                 if (heightToCrownBase < 0.0F)
                 {
                     heightToCrownBase = 0.0F;
@@ -772,7 +724,7 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     heightToCrownBase = 0.95F * heightInFeet;
                 }
-                treesOfSpecies.CrownRatio[treeIndex] = (1.0F - (heightToCrownBase / heightInFeet)) * ACALIB[species][1];
+                treesOfSpecies.CrownRatio[treeIndex] = (1.0F - (heightToCrownBase / heightInFeet)) * calibrationBySpecies[species].CrownRatio;
             }
         }
 
@@ -782,11 +734,11 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="simulationStep"></param>
         /// <param name="configuration">Organon configuration settings.</param>
         /// <param name="stand"></param>
-        /// <param name="ACALIB"></param>
-        /// <param name="BIG6"></param>
-        /// <param name="BNXT"></param>
-        private static void ValidateArguments(int simulationStep, OrganonConfiguration configuration, OrganonStand stand, Dictionary<FiaCode, float[]> ACALIB, 
-                                              out int BIG6, out int BNXT)
+        /// <param name="calibrationBySpecies"></param>
+        /// <param name="bigSixSpeciesTreeCount"></param>
+        /// <param name="bigSixTreesWithNegativeExpansionFactor"></param>
+        private static void ValidateArguments(int simulationStep, OrganonConfiguration configuration, OrganonStand stand, Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies, 
+                                              out int bigSixSpeciesTreeCount, out int bigSixTreesWithNegativeExpansionFactor)
         {
             if (stand.GetTreeRecordCount() < 1)
             {
@@ -800,13 +752,13 @@ namespace Osu.Cof.Ferm.Organon
             {
                 throw new ArgumentOutOfRangeException(nameof(stand), "Stand has less than one plot.");
             }
-            if ((stand.SiteIndex <= 0.0F) || (stand.SiteIndex > Constant.Maximum.SiteIndexInFeet))
+            if ((stand.SiteIndex < Constant.Minimum.SiteIndexInFeet) || (stand.SiteIndex > Constant.Maximum.SiteIndexInFeet))
             {
-                throw new ArgumentOutOfRangeException(nameof(stand), "Default site index is negative or implausibly large.");
+                throw new ArgumentOutOfRangeException(nameof(stand), "Default site index is implausibly small or implausibly large.");
             }
-            if ((stand.HemlockSiteIndex <= 0.0F) || (stand.HemlockSiteIndex > Constant.Maximum.SiteIndexInFeet))
+            if ((stand.HemlockSiteIndex < Constant.Minimum.SiteIndexInFeet) || (stand.HemlockSiteIndex > Constant.Maximum.SiteIndexInFeet))
             {
-                throw new ArgumentOutOfRangeException(nameof(stand), "Hemlock site index is negative or implausibly large.");
+                throw new ArgumentOutOfRangeException(nameof(stand), "Hemlock site index (conifer site index for red alder) is implausibly small or implausibly large.");
             }
 
             if (configuration.IsEvenAge)
@@ -957,14 +909,13 @@ namespace Osu.Cof.Ferm.Organon
             stand.Warnings.TreesOld = false;
             stand.Warnings.TreesYoung = false;
 
-            foreach (float[] speciesCalibration in ACALIB.Values)
+            foreach (SpeciesCalibration speciesCalibration in calibrationBySpecies.Values)
             {
-                if ((speciesCalibration.Length != 6) ||
-                    (speciesCalibration[0] < 0.5F) || (speciesCalibration[0] > 2.0F) ||
-                    (speciesCalibration[1] < 0.5F) || (speciesCalibration[1] > 2.0F) ||
-                    (speciesCalibration[2] < 0.5F) || (speciesCalibration[2] > 2.0F))
+                if ((speciesCalibration.Height < 0.5F) || (speciesCalibration.Height > 2.0F) ||
+                    (speciesCalibration.CrownRatio < 0.5F) || (speciesCalibration.CrownRatio > 2.0F) ||
+                    (speciesCalibration.Diameter < 0.5F) || (speciesCalibration.Diameter > 2.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(ACALIB));
+                    throw new ArgumentOutOfRangeException(nameof(calibrationBySpecies));
                 }
             }
 
@@ -1000,8 +951,8 @@ namespace Osu.Cof.Ferm.Organon
                 }
             }
 
-            BIG6 = 0;
-            BNXT = 0;
+            bigSixSpeciesTreeCount = 0;
+            bigSixTreesWithNegativeExpansionFactor = 0;
             float maxGrandFirHeight = 0.0F;
             float maxDouglasFirHeight = 0.0F;
             float maxWesternHemlockHeight = 0.0F;
@@ -1069,10 +1020,10 @@ namespace Osu.Cof.Ferm.Organon
 
                     if (configuration.Variant.IsBigSixSpecies(species))
                     {
-                        ++BIG6;
+                        ++bigSixSpeciesTreeCount;
                         if (treesOfSpecies.LiveExpansionFactor[treeIndex] < 0.0F)
                         {
-                            ++BNXT;
+                            ++bigSixTreesWithNegativeExpansionFactor;
                         }
                     }
                 }
@@ -1181,25 +1132,25 @@ namespace Osu.Cof.Ferm.Organon
                 case TreeModel.OrganonSwo:
                     if (maxPonderosaHeight > 0.0F)
                     {
-                        float MAXHT = (stand.HemlockSiteIndex - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.164985F * (stand.HemlockSiteIndex - 4.5F), 0.288169F)))) + 4.5F;
-                        if (maxPonderosaHeight > MAXHT)
+                        float maxHeight = (stand.HemlockSiteIndex - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.164985F * (stand.HemlockSiteIndex - 4.5F), 0.288169F)))) + 4.5F;
+                        if (maxPonderosaHeight > maxHeight)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     if (maxIncenseCedarHeight > 0.0F)
                     {
-                        float ICSI = (0.66F * stand.SiteIndex) - 4.5F;
-                        float MAXHT = ICSI * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * ICSI, 0.281176F)))) + 4.5F;
-                        if (maxIncenseCedarHeight > MAXHT)
+                        float incenseCedarSiteIndex = 0.66F * stand.SiteIndex - 4.5F; // TODO: same as PILA?
+                        float maxHeight = incenseCedarSiteIndex * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * incenseCedarSiteIndex, 0.281176F)))) + 4.5F;
+                        if (maxIncenseCedarHeight > maxHeight)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
                         }
                     }
                     if (maxDouglasFirHeight > 0.0F)
                     {
-                        float MAXHT = (stand.SiteIndex - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * (stand.SiteIndex - 4.5F), 0.281176F)))) + 4.5F;
-                        if (maxDouglasFirHeight > MAXHT)
+                        float maxHeight = (stand.SiteIndex - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * (stand.SiteIndex - 4.5F), 0.281176F)))) + 4.5F;
+                        if (maxDouglasFirHeight > maxHeight)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
                         }
@@ -1295,7 +1246,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
             }
 
-            float percentOldTrees = 100.0F * (float)oldTreeRecordCount / (float)(BIG6 - BNXT);
+            float percentOldTrees = 100.0F * (float)oldTreeRecordCount / (float)(bigSixSpeciesTreeCount - bigSixTreesWithNegativeExpansionFactor);
             if (percentOldTrees >= 50.0F)
             {
                 stand.Warnings.TreesOld = true;

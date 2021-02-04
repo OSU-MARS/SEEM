@@ -178,7 +178,7 @@ namespace Osu.Cof.Ferm.Organon
         }
 
         // OG only used for madrone
-        public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float SI_1, float SI_2, float OG)
+        public override float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float siteIndex, float hemlockSiteIndex, float OG)
         {
             float B0;
             float B1;
@@ -290,11 +290,11 @@ namespace Osu.Cof.Ferm.Organon
             if (species == FiaCode.TsugaHeterophylla)
             {
                 // HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_2 + B6 * OG * OG));
-                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_2));
+                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * hemlockSiteIndex));
             }
             else
             {
-                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * SI_1 + B6 * OG * OG));
+                HCB = HT / (1.0F + MathV.Exp(B0 + B1 * HT + B2 * CCFL + B3 * MathV.Ln(BA) + B4 * (DBH / HT) + B5 * siteIndex + B6 * OG * OG));
             }
             Debug.Assert(HCB >= 0.0F);
             Debug.Assert(HCB <= HT);
@@ -770,6 +770,7 @@ namespace Osu.Cof.Ferm.Organon
                     throw Trees.CreateUnhandledSpeciesException(trees.Species);
             }
 
+            speciesMultiplier *= growthMultiplier;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 if (trees.LiveExpansionFactor[treeIndex] <= 0.0F)
@@ -905,7 +906,7 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -4.74019F;
                     B4 = 0.0119587F;
                     B5 = 0.00756365F;
-                    siteIndex = stand.HemlockSiteIndex;
+                    siteIndex = stand.HemlockSiteIndex; // BUGBUG: why does redcedar get hemlock site index only here?
                     break;
                 // Hann and Hanus(2001) FRL Research Contribution 34
                 case FiaCode.TaxusBrevifolia:

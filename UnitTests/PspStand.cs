@@ -150,7 +150,7 @@ namespace Osu.Cof.Ferm.Test
             // populate Organon version of stand
             // Currently, PSP stands are assumed to have IsEvenAge = false, which causes Organon to require a stand age of
             // zero years be passed.
-            TestStand stand = new TestStand(configuration.Variant.TreeModel, 0, siteIndex)
+            TestStand stand = new TestStand(configuration.Variant, 0, siteIndex)
             {
                 NumberOfPlots = this.plotCount
             };
@@ -211,7 +211,7 @@ namespace Osu.Cof.Ferm.Test
             }
 
             // complete stand initialization
-            stand.SetDefaultAndMortalitySiteIndices(configuration.Variant.TreeModel);
+            stand.EnsureSiteIndicesSet(configuration.Variant);
             stand.SetQuantiles();
             stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
             stand.SetSdiMax(configuration);

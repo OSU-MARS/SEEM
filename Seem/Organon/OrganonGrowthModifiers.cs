@@ -12,7 +12,7 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="GWHG">Genetic height gain factor. (DOUG?)</param>
         /// <param name="DGMOD">Diameter growth modifier.</param>
         /// <param name="HGMOD">Height growth modifier.</param>
-        public static void GG_MODS(float TAGE, float GWDG, float GWHG, out float DGMOD, out float HGMOD)
+        public static void GetGeneticModifiers(float TAGE, float GWDG, float GWHG, out float DGMOD, out float HGMOD)
         {
             float XGWHG = GWDG;
             if (GWHG > 20.0F)
@@ -83,7 +83,7 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="FR">Foliage retention? (DOUG?)</param>
         /// <param name="DGMOD">Diameter growth modifier.</param>
         /// <param name="HGMOD">Height growth modifier.</param>
-        public static void SNC_MODS(float FR, out float DGMOD, out float HGMOD)
+        public static void GetSwissNeedleCastModifiers(float FR, out float DGMOD, out float HGMOD)
         {
             float XFR = FR;
             if (FR > 4.0F)

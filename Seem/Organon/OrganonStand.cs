@@ -80,45 +80,15 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public void SetDefaultAndMortalitySiteIndices(TreeModel treeModel)
+        public void EnsureSiteIndicesSet(OrganonVariant variant)
         {
-            switch (treeModel)
+            if (this.SiteIndex < 0.0F)
             {
-                case TreeModel.OrganonNwo:
-                case TreeModel.OrganonSmc:
-                    // Site index equation from Nigh(1995, Forest Science 41:84-98)
-                    if ((this.SiteIndex < 0.0F) && (this.HemlockSiteIndex > 0.0F))
-                    {
-                        this.SiteIndex = 0.480F + (1.110F * this.HemlockSiteIndex);
-                    }
-                    else if (this.HemlockSiteIndex < 0.0F)
-                    {
-                        this.HemlockSiteIndex = -0.432F + (0.899F * this.SiteIndex);
-                    }
-                    break;
-                case TreeModel.OrganonRap:
-                    if (this.HemlockSiteIndex < 0.0F)
-                    {
-                        // Fortran code sets SITE_2 from an uninitialized value of SI_1. It's unclear what the Fortran equation was intended
-                        // to accomplish as using SITE_1, which is initialized translates to
-                        //   this.MortalitySiteIndex = 4.776377F * MathF.Pow(this.PrimarySiteIndex, 0.763530587);
-                        // which produces mortality site indices outside of the range supported for RAP.
-                        // BUGBUG: clamp range to maximum and minimum once these constants are available from variant capabilities
-                        this.HemlockSiteIndex = this.SiteIndex;
-                    }
-                    break;
-                case TreeModel.OrganonSwo:
-                    if ((this.SiteIndex < 0.0F) && (this.HemlockSiteIndex > 0.0F))
-                    {
-                        this.SiteIndex = 1.062934F * this.HemlockSiteIndex;
-                    }
-                    else if (this.HemlockSiteIndex < 0.0F)
-                    {
-                        this.HemlockSiteIndex = 0.940792F * this.SiteIndex;
-                    }
-                    break;
-                default:
-                    throw OrganonVariant.CreateUnhandledModelException(treeModel);
+                this.SiteIndex = variant.ToSiteIndex(this.HemlockSiteIndex);
+            }
+            if (this.HemlockSiteIndex < 0.0F)
+            {
+                this.HemlockSiteIndex = variant.ToHemlockSiteIndex(this.SiteIndex);
             }
         }
 

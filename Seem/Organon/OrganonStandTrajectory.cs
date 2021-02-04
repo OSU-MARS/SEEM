@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm.Organon
     public class OrganonStandTrajectory : StandTrajectory
     {
         private FiaVolume fiaVolume;
-        private Dictionary<FiaCode, float[]> organonCalibration;
+        private Dictionary<FiaCode, SpeciesCalibration> organonCalibration;
         private OrganonGrowth organonGrowth;
 
         public OrganonConfiguration Configuration { get; private init; }

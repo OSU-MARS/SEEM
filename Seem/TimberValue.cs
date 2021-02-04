@@ -63,10 +63,10 @@ namespace Osu.Cof.Ferm
             // first order model from volume regression in R
             this.douglasFirFinal2045PondValueIntercept = 513.2525F;
             this.douglasFirFinal2045PondValueSlope = 1.443416F;
-            this.douglasFirFinal5075PondValueIntercept = 565.9510F;
-            this.douglasFirFinal5075PondValueSlope = 0.3793543F;
-            this.douglasFirThinPondValueIntercept = 473.2018F;
-            this.douglasFirThinPondValueSlope = 2.147121F;
+            this.douglasFirFinal5075PondValueIntercept = 567.5667F;
+            this.douglasFirFinal5075PondValueSlope = 0.3645541F;
+            this.douglasFirThinPondValueIntercept = 453.6676F;
+            this.douglasFirThinPondValueSlope = 2.775607F;
 
             this.ScaledVolumeRegenerationHarvest = new ScaledVolume(Constant.Bucking.LogLengthRegenerationHarvest, scribnerFromLumberRecovery);
             this.ScaledVolumeThinning = new ScaledVolume(Constant.Bucking.LogLengthThinning, scribnerFromLumberRecovery);

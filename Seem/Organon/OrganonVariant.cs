@@ -167,11 +167,11 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="DBH">Tree's diameter at breast height (inches)</param>
         /// <param name="CCFL"></param>
         /// <param name="BA">Stand basal area.</param>
-        /// <param name="SI_1">Stand site index.</param>
-        /// <param name="SI_2">Stand site index.</param>
+        /// <param name="siteIndex">Site index for variant's primary species.</param>
+        /// <param name="hemlockSiteIndex">Site index for variant's secondary species.</param>
         /// <param name="oldGrowthIndex"></param>
         /// <returns>Height to crown base (feet).</returns>
-        public abstract float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float SI_1, float SI_2, float oldGrowthIndex);
+        public abstract float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float siteIndex, float hemlockSiteIndex, float oldGrowthIndex);
 
         /// <summary>
         /// Estimate height to largest crown width.
@@ -214,7 +214,8 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="B2"></param>
         public abstract void GetHeightPredictionCoefficients(FiaCode species, out float B0, out float B1, out float B2);
 
-        public virtual void GrowCrown(OrganonStand stand, Trees trees, OrganonStandDensity densityAfterGrowth, float oldGrowthIndicator, float nwoCrownRatioMultiplier)
+        // RAP and SWO use this default implemenation
+        public virtual void GrowCrown(OrganonStand stand, Trees trees, OrganonStandDensity densityAfterGrowth, float oldGrowthIndicator, float nwoSmcCrownRatioMultiplier)
         {
             float siteIndexFromDbh = stand.SiteIndex - 4.5F;
             float hemlockIndexFromDbh = stand.HemlockSiteIndex - 4.5F;
@@ -238,7 +239,7 @@ namespace Osu.Cof.Ferm.Organon
                 // float startCrownRatio = 1.0F - startHeightToCrownBase / startHeight;
                 // if (variant.TreeModel == TreeModel.OrganonNwo)
                 // {
-                //     startCrownRatio = CALIB[species][1] * (1.0F - startHeightToCrownBase / startHeight);
+                //     startCrownRatio = calibrationBySpecies[species].CrownRatio * (1.0F - startHeightToCrownBase / startHeight);
                 // }
                 //startHeightToCrownBase = (1.0F - startCrownRatio) * startHeight;
                 float startCrownRatio = trees.CrownRatio[treeIndex];
@@ -251,7 +252,7 @@ namespace Osu.Cof.Ferm.Organon
                 float endCrownRatio = 1.0F - endHeightToCrownBase / endHeightInFeet; // NWO overrides so NWO multiplier isn't needed here
                 endHeightToCrownBase = (1.0F - endCrownRatio) * endHeightInFeet;
 
-                // crown recession = change in height of crown base
+                // crown recession = increase in height of crown base
                 float crownRecession = endHeightToCrownBase - startHeightToCrownBase;
                 if (crownRecession < 0.0F)
                 {
@@ -320,5 +321,8 @@ namespace Osu.Cof.Ferm.Organon
         }
 
         public abstract void ReduceExpansionFactors(OrganonStand stand, OrganonStandDensity densityBeforeGrowth, Trees trees, float fertilizationExponent);
+
+        public abstract float ToHemlockSiteIndex(float siteIndex);
+        public abstract float ToSiteIndex(float hemlockSiteIndex);
     }
 }
