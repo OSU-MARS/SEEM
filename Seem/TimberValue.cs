@@ -42,9 +42,10 @@ namespace Osu.Cof.Ferm
             //   2) mean values in Washington Department of Natural Resources log price reports
             // Somewhat different calculations apply for lands enrolled in the small tract forestland program.
             this.DiscountRate = 0.04F; // per year
-            this.DouglasFir2SawPondValuePerMbf = 605.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-November 2020
-            this.DouglasFir3SawPondValuePerMbf = 590.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-November 2020
-            this.DouglasFir4SawPondValuePerMbf = 503.0F; // US$/MBF, WA DNR coast region median monthly mean delivered price October 2011-November 2020
+            //this.DouglasFirSpecialMillPondValuePerMbf = 675.50; // US$/MBF special mill and better, WA DNR coast region median monthly mean delivered price October 2011-January 2021
+            this.DouglasFir2SawPondValuePerMbf = 605.50F; // US$/MBF 2S
+            this.DouglasFir3SawPondValuePerMbf = 591.00F; // US$/MBF 3S
+            this.DouglasFir4SawPondValuePerMbf = 505.00F; // US$/MBF 4S/CNS
             this.FixedReforestationCostPerHectare = Constant.AcresPerHectare * (136.0F + 154.0F + 39.0F); // US$/ha: site prep + planting labor + one release spray, cost of seedlings not included
             this.FixedRegenerationHarvestCostPerHectare = Constant.AcresPerHectare * 100.0F; // US$/ha
             this.FixedThinningCostPerHectare = Constant.AcresPerHectare * 60.0F; // US$/ha
@@ -53,14 +54,7 @@ namespace Osu.Cof.Ferm
             this.TaxesAndManagementPerHectareYear = Constant.AcresPerHectare * 7.5F; // US$/ha-year, mean western Oregon forest land tax of $3.40/acre in 2006 plus nominal management expense
             this.ThinningCostPerMbf = 275.0F; // US$/MBF, includes forest products harvest tax
             this.TimberAppreciationRate = 0.01F; // per year
-
-            // fractions extracted from Malcolm Knapp 2.7 m, 3.7 m, and Nelder plots
-            // zero order model
-            // this.douglasFirThinPondValueIntercept = 0.23F * this.DouglasFir2SawPondValuePerMbf + 0.41F * this.DouglasFir3SawPondValuePerMbf + 0.36F * this.DouglasFir4SawPondValuePerMbf;
-            // this.douglasFirThinPondValueSlope = 0.0F;
-            // this.douglasFirFinalPondValueIntercept = 0.49F * this.DouglasFir2SawPondValuePerMbf + 0.42F * this.DouglasFir3SawPondValuePerMbf + 0.09F * this.DouglasFir4SawPondValuePerMbf;
-            // this.douglasFirFinalPondValueSlope = 0.0F;
-            // first order model from volume regression in R
+            // first order model from Malcolm Knapp volume regression in R: WA DNR coast region median monthly mean delivered price October 2011-November 2020
             this.douglasFirFinal2045PondValueIntercept = 513.2525F;
             this.douglasFirFinal2045PondValueSlope = 1.443416F;
             this.douglasFirFinal5075PondValueIntercept = 567.5667F;

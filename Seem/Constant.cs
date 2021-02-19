@@ -85,13 +85,13 @@ namespace Osu.Cof.Ferm
             public const float DefectAndBreakageReduction = 0.955F; // 100 - 4.5%
             public const float DiameterClassSizeInCentimeters = 1.0F;
             public const float EvaluationHeightStep = 0.5F; // m
-            public const float HeightClassSizeInMeters = 0.5F; // m
+            public const float HeightClassSizeInMeters = 1.0F; // m
             public const float KerfProcessingHead = 0.007F; // m
             public const float LogLengthRegenerationHarvest = Constant.MetersPerFoot * 40.0F; // m
             public const float LogLengthThinning = Constant.MetersPerFoot * 24.0F; // m
             public const float LogTaperSegmentationLength = Constant.MetersPerFoot * 8.0F; // m
-            public const float MaximumDiameterInCentimeters = 100.0F;
-            public const float MaximumHeightInMeters = 75.0F;
+            public const float MaximumDiameterInCentimeters = 120.0F;
+            public const float MaximumHeightInMeters = 90.0F;
             public const float MinimumBasalArea4SawEnglish = 0.14F; // 5 inch DBH + a bit for bark
             public const float MinimumLogLength2Saw = Constant.MetersPerFoot * 12.0F; // m
             public const float MinimumLogLength3Saw = Constant.MetersPerFoot * 12.0F; // m

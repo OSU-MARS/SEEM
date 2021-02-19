@@ -16,9 +16,9 @@ namespace Osu.Cof.Ferm.Organon
 
         public Heuristic? Heuristic { get; set; }
         public OrganonStand?[] StandByPeriod { get; private init; }
-        public bool UseScaledVolume { get; private set; }
+        public bool UseFiaVolume { get; private set; }
 
-        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod, bool useScaledVolume)
+        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod, bool useFiaVolume)
             : base(timberValue, lastPlanningPeriod, 
                   organonConfiguration.Treatments.Harvests.Count == 1 ? organonConfiguration.Treatments.Harvests[0].Period : 0,
                   stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand))) // base does range checks
@@ -44,7 +44,7 @@ namespace Osu.Cof.Ferm.Organon
             this.PeriodLengthInYears = organonConfiguration.Variant.TimeStepInYears;
             this.PeriodZeroAgeInYears = stand.AgeInYears;
             this.StandByPeriod = new OrganonStand[maximumPlanningPeriodIndex];
-            this.UseScaledVolume = useScaledVolume;
+            this.UseFiaVolume = useFiaVolume;
 
             this.DensityByPeriod[0] = new OrganonStandDensity(stand, organonConfiguration.Variant);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
@@ -70,7 +70,7 @@ namespace Osu.Cof.Ferm.Organon
             this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
             this.Heuristic = other.Heuristic;
             this.StandByPeriod = new OrganonStand[other.PlanningPeriods];
-            this.UseScaledVolume = other.UseScaledVolume;
+            this.UseFiaVolume = other.UseFiaVolume;
 
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
@@ -137,7 +137,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
             }
 
-            this.UseScaledVolume = other.UseScaledVolume;
+            this.UseFiaVolume = other.UseFiaVolume;
         }
 
         public void CopySelectionsFrom(StandTrajectory other)
@@ -183,13 +183,13 @@ namespace Osu.Cof.Ferm.Organon
 
         private void GetVolumeAndValue(int periodIndex)
         {
-            if (this.UseScaledVolume)
+            if (this.UseFiaVolume)
             {
-                this.GetScaledVolumeAndValue(periodIndex);
+                this.GetFiaVolumeAndValue(periodIndex);
             }
             else
             {
-                this.GetFiaVolumeAndValue(periodIndex);
+                this.GetScaledVolumeAndValue(periodIndex);
             }
         }
 

@@ -8,6 +8,9 @@ namespace Osu.Cof.Ferm.Cmdlets
     public class GetStandTrajectory : Cmdlet
     {
         [Parameter]
+        public SwitchParameter FiaVolume { get; set; }
+
+        [Parameter]
         [ValidateRange(1, 100)]
         public int HarvestPeriods { get; set; }
 
@@ -42,11 +45,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(1, 100)]
         public int ThinPeriod { get; set; }
 
-        [Parameter]
-        public SwitchParameter ScaledVolume { get; set; }
-
         public GetStandTrajectory()
         {
+            this.FiaVolume = false;
             this.HarvestPeriods = 9;
             this.Name = null;
             this.PlanningPeriods = 9;
@@ -75,7 +76,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             }
 
-            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand!, configuration, this.TimberValue, this.PlanningPeriods, this.ScaledVolume);
+            OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand!, configuration, this.TimberValue, this.PlanningPeriods, this.FiaVolume);
             if (this.Name != null)
             {
                 trajectory.Name = this.Name;

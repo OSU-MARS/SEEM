@@ -82,7 +82,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     PerturbBy = this.PerturbBy,
                     ProportionalPercentage = proportionalPercentage,
                     TimberValue = this.TimberValue,
-                    UseScaledVolume = this.ScaledVolume
+                    UseFiaVolume = this.ScaledVolume
                 });
             }
             return parameters;

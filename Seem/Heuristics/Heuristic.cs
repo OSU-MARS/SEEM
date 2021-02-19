@@ -20,7 +20,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.AcceptedObjectiveFunctionByMove = new List<float>();
             this.BestObjectiveFunction = Single.MinValue;
 
-            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, parameters.TimberValue, objective.PlanningPeriods, parameters.UseScaledVolume)
+            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, parameters.TimberValue, objective.PlanningPeriods, parameters.UseFiaVolume)
             {
                 Heuristic = this
             };

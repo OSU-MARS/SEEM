@@ -40,22 +40,22 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new StringBuilder();
 
             string logLengthAsString = scaledVolume.PreferredLogLengthInMeters.ToString(CultureInfo.InvariantCulture);
-            foreach (KeyValuePair<FiaCode, ScaledVolume.TreeVolumeTable> species in scaledVolume.VolumeBySpecies)
+            foreach (KeyValuePair<FiaCode, TreeVolumeTable> species in scaledVolume.VolumeBySpecies)
             {
                 string speciesPrefix = String.Concat(logLengthAsString, ",", FiaCodeExtensions.ToFourLetterCode(species.Key));
-                ScaledVolume.TreeVolumeTable perTreeValue = species.Value;
-                for (int heightIndex = 0; heightIndex < perTreeValue.HeightClasses; ++heightIndex)
+                TreeVolumeTable volumeTable = species.Value;
+                for (int heightIndex = 0; heightIndex < volumeTable.HeightClasses; ++heightIndex)
                 {
-                    string height = ScaledVolume.TreeVolumeTable.GetHeight(heightIndex).ToString(CultureInfo.InvariantCulture);
-                    for (int dbhIndex = 0; dbhIndex < perTreeValue.DiameterClasses; ++dbhIndex)
+                    string height = volumeTable.GetHeight(heightIndex).ToString(CultureInfo.InvariantCulture);
+                    for (int dbhIndex = 0; dbhIndex < volumeTable.DiameterClasses; ++dbhIndex)
                     {
-                        string dbh = ScaledVolume.TreeVolumeTable.GetDiameter(dbhIndex).ToString(CultureInfo.InvariantCulture);
-                        string cubic2saw = perTreeValue.Cubic2Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
-                        string cubic3saw = perTreeValue.Cubic3Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
-                        string cubic4saw = perTreeValue.Cubic4Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
-                        string scribner2saw = perTreeValue.Scribner2Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
-                        string scribner3saw = perTreeValue.Scribner3Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
-                        string scribner4saw = perTreeValue.Scribner4Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
+                        string dbh = volumeTable.GetDiameter(dbhIndex).ToString(CultureInfo.InvariantCulture);
+                        string cubic2saw = volumeTable.Cubic2Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
+                        string cubic3saw = volumeTable.Cubic3Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
+                        string cubic4saw = volumeTable.Cubic4Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
+                        string scribner2saw = volumeTable.Scribner2Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
+                        string scribner3saw = volumeTable.Scribner3Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
+                        string scribner4saw = volumeTable.Scribner4Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
 
                         line.Clear();
                         line.Append(speciesPrefix + "," + height + "," + dbh + "," + cubic2saw + "," + cubic3saw + "," + cubic4saw + "," + scribner2saw + "," + scribner3saw + "," + scribner4saw);

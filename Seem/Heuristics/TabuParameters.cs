@@ -32,14 +32,14 @@ namespace Osu.Cof.Ferm.Heuristics
         public override string GetCsvHeader()
         {
             // for now, don't log iterations
-            return "perturbation,proportional,escape after,escape distance,tenure method,max tenure";
+            return base.GetCsvHeader() + ",perturbation,escape after,escape distance,tenure method,max tenure";
         }
 
         public override string GetCsvValues()
         {
             // for now don't log iterations
-            return this.PerturbBy.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentage.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+            return base.GetCsvValues() + "," +
+                   this.PerturbBy.ToString(CultureInfo.InvariantCulture) + "," +
                    this.EscapeAfter.ToString(CultureInfo.InvariantCulture) + "," +
                    this.EscapeDistance.ToString(CultureInfo.InvariantCulture) + "," +
                    this.Tenure.ToString() + "," +

@@ -41,15 +41,13 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override string GetCsvHeader()
         {
-            return "generations,population size,init method,init classes,replacement strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,reserved,min CV";
+            return base.GetCsvHeader() + ",generations,replacement strategy,crossover end,exchange start,exchange end,flip start,flip end,exponent,reserved,min CV";
         }
 
         public override string GetCsvValues()
         {
-            return this.MaximumGenerations.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.PopulationSize.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.InitializationMethod.ToString() + "," +
-                   this.InitializationClasses.ToString(CultureInfo.InvariantCulture) + "," +
+            return base.GetCsvValues() + "," +
+                   this.MaximumGenerations.ToString(CultureInfo.InvariantCulture) + "," +
                    this.ReplacementStrategy.ToString() + "," +
                    this.CrossoverProbabilityEnd.ToString(CultureInfo.InvariantCulture) + "," +
                    this.ExchangeProbabilityStart.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +

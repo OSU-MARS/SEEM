@@ -29,12 +29,13 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override string GetCsvHeader()
         {
-            return "units,min intensity,max intensity,step,max above,max proportional,max below";
+            return base.GetCsvHeader() + ",units,min intensity,max intensity,step,max above,max proportional,max below";
         }
 
         public override string GetCsvValues()
         {
-            return this.Units.ToString() + "," +
+            return base.GetCsvValues() + "," +
+                   this.Units.ToString() + "," +
                    this.Minimum.ToString(CultureInfo.InvariantCulture) + "," +
                    this.Maximum.ToString(CultureInfo.InvariantCulture) + "," +
                    this.Step.ToString(CultureInfo.InvariantCulture) + "," +

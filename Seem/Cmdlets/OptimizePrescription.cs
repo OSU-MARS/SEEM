@@ -108,7 +108,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     Step = this.Step,
                     TimberValue = this.TimberValue,
                     Units = this.Units,
-                    UseScaledVolume = this.ScaledVolume
+                    UseFiaVolume = this.ScaledVolume
                 });
             }
             return parameters;

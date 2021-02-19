@@ -153,7 +153,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                             ReplacementStrategy = this.ReplacementStrategy,
                                                             ReservedProportion = reservedProportion,
                                                             TimberValue = this.TimberValue,
-                                                            UseScaledVolume = this.ScaledVolume
+                                                            UseFiaVolume = this.ScaledVolume
                                                         });
                                                     }
                                                 }

@@ -390,9 +390,29 @@ namespace Osu.Cof.Ferm.Test
             TimberValue timberValue = new TimberValue(false);
             stopwatch.Stop();
             TimeSpan timberValueTabulationTime = stopwatch.Elapsed;
-            this.TestContext!.WriteLine("tabulation: {0:s\\.fff}s", timberValueTabulationTime);
+            this.TestContext!.WriteLine("tabulation: {0:s\\.fff}s for {1:0.0} cm diameter classes and {2:0.0} m height classes", timberValueTabulationTime, Constant.Bucking.DiameterClassSizeInCentimeters, Constant.Bucking.HeightClassSizeInMeters);
 
-            float volumeTolerance = 1.01F;
+            // rounding to nearest indices in volume table
+            // 1 cm diameter classes, 0.5 m height classes
+            //float volumeHighSideTolerance = 1.01F;
+            //float volumeLowSideTolerance = 1.00F;
+
+            // bilinear interpolation
+            // 1 cm diameter classes, 0.5 m height classes
+            //float volumeHighSideTolerance = 1.16F;
+            //float volumeLowSideTolerance = 0.97F;
+            // 1 cm diameter classes, 1 m height classes
+            float volumeHighSideTolerance = 1.27F;
+            float volumeLowSideTolerance = 0.98F;
+            // 2 cm diameter classes, 2 m height classes
+            //float volumeLowSideTolerance = 0.95F;
+            //float volumeHighSideTolerance = 1.26F;
+            // 5 cm diameter classes, 5 m height classes
+            //float volumeLowSideTolerance = 0.95F;
+            //float volumeHighSideTolerance = 1.26F;
+            // 10 cm diameter classes, 5 m height classes
+            //float volumeLowSideTolerance = 0.95F;
+            //float volumeHighSideTolerance = 1.25F;
             foreach (ExpectedTreeVolume tree in trees)
             {
                 float dbhInCentimeters = tree.Dbh;
@@ -426,29 +446,29 @@ namespace Osu.Cof.Ferm.Test
                 double thinCubicMetric = thinCubic2SawMetric + thinCubic3SawMetric + thinCubic4SawMetric;
                 double thinScribnerMetricCheck = thinScribner2SawMetric + thinScribner3SawMetric + thinScribner4SawMetric;
 
-                Assert.IsTrue(regenCubicEnglish == regenCubicMetric);
-                Assert.IsTrue(regenScribnerEnglish == regenScribnerMetric);
-                Assert.IsTrue(Math.Abs(regenScribnerEnglish - regenScribnerEnglishCheck) < 0.0001);
-                Assert.IsTrue(Math.Abs(regenScribnerMetric - regenScribnerMetricCheck) < 0.0001);
-                Assert.IsTrue(thinCubicEnglish == thinCubicMetric);
-                Assert.IsTrue(thinScribnerEnglish == thinScribnerMetric);
-                Assert.IsTrue(Math.Abs(thinScribnerEnglish - thinScribnerEnglishCheck) < 0.0001);
-                Assert.IsTrue(Math.Abs(thinScribnerMetric - thinScribnerMetricCheck) < 0.0001);
+                Assert.IsTrue(Math.Abs(regenCubicEnglish - regenCubicMetric) < 0.000003 * regenCubicMetric);
+                Assert.IsTrue(Math.Abs(regenScribnerEnglish - regenScribnerMetric) < 0.000003 * regenScribnerMetric);
+                Assert.IsTrue(Math.Abs(regenScribnerEnglish - regenScribnerEnglishCheck) < 0.000002 * regenScribnerEnglishCheck);
+                Assert.IsTrue(Math.Abs(regenScribnerMetric - regenScribnerMetricCheck) < 0.000002 * regenScribnerMetricCheck);
+                Assert.IsTrue(Math.Abs(thinCubicEnglish - thinCubicMetric) < 0.000004 * thinCubicMetric);
+                Assert.IsTrue(Math.Abs(thinScribnerEnglish - thinScribnerMetric) < 0.000003 * thinScribnerMetric);
+                Assert.IsTrue(Math.Abs(thinScribnerEnglish - thinScribnerEnglishCheck) < 0.000002 * thinScribnerEnglishCheck);
+                Assert.IsTrue(Math.Abs(thinScribnerMetric - thinScribnerMetricCheck) < 0.000002 * thinScribnerMetricCheck);
 
                 regenCubicMetric /= tree.ExpansionFactor;
                 regenScribnerMetric /= tree.ExpansionFactor;
                 thinCubicMetric /= tree.ExpansionFactor;
                 thinScribnerMetric /= tree.ExpansionFactor;
 
-                Assert.IsTrue(thinCubicMetric >= tree.MinimumThinVolumeCubic);
-                Assert.IsTrue(thinScribnerMetric >= tree.MinimumThinVolumeScribner);
-                Assert.IsTrue(thinCubicMetric < volumeTolerance * tree.MinimumThinVolumeCubic);
-                Assert.IsTrue(thinScribnerMetric < volumeTolerance * tree.MinimumThinVolumeScribner);
+                Assert.IsTrue(thinCubicMetric >= volumeLowSideTolerance * tree.MinimumThinVolumeCubic);
+                Assert.IsTrue(thinScribnerMetric >= volumeLowSideTolerance * tree.MinimumThinVolumeScribner);
+                Assert.IsTrue(thinCubicMetric < volumeHighSideTolerance * tree.MinimumThinVolumeCubic);
+                Assert.IsTrue(thinScribnerMetric < volumeHighSideTolerance * tree.MinimumThinVolumeScribner);
 
-                Assert.IsTrue(regenCubicMetric >= tree.MinimumRegenVolumeCubic);
-                Assert.IsTrue(regenScribnerMetric >= tree.MinimumRegenVolumeScribner);
-                Assert.IsTrue(regenCubicMetric < volumeTolerance * tree.MinimumRegenVolumeCubic);
-                Assert.IsTrue(regenScribnerMetric < volumeTolerance * tree.MinimumRegenVolumeScribner);
+                Assert.IsTrue(regenCubicMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeCubic);
+                Assert.IsTrue(regenScribnerMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeScribner);
+                Assert.IsTrue(regenCubicMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeCubic);
+                Assert.IsTrue(regenScribnerMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeScribner);
 
                 // ratios must be greater than zero in principle but scaling and CVTS regression error allow crossover
                 float poudelTotalCubic = OsuVolume.GetCubicVolume(psmeMetric, 0);
@@ -457,6 +477,13 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(thinCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
                 Assert.IsTrue(regenCubicMetric / poudelTotalCubic < 1.0F);
                 Assert.IsTrue(thinCubicMetric / poudelTotalCubic < 1.0F);
+
+                // log ratios
+                this.TestContext.WriteLine("tree: {0:0.0} cm DBH, {1:0.0} m tall", tree.Dbh, tree.Height);
+                this.TestContext.WriteLine("thin cubic: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", thinCubicMetric, tree.MinimumThinVolumeCubic, thinCubicMetric / tree.MinimumThinVolumeCubic);
+                this.TestContext.WriteLine("regen cubic: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", regenCubicMetric, tree.MinimumRegenVolumeCubic, regenCubicMetric / tree.MinimumRegenVolumeCubic);
+                this.TestContext.WriteLine("thin Scribner: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", thinScribnerMetric, tree.MinimumThinVolumeScribner, thinScribnerMetric / tree.MinimumThinVolumeScribner);
+                this.TestContext.WriteLine("regen Scribner: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", regenScribnerMetric, tree.MinimumRegenVolumeScribner, regenScribnerMetric / tree.MinimumRegenVolumeScribner);
             }
         }
 

@@ -76,7 +76,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     ProportionalPercentage = proportionalPercentage,
                                     Tenure = this.Tenure,
                                     TimberValue = this.TimberValue,
-                                    UseScaledVolume = this.ScaledVolume
+                                    UseFiaVolume = this.ScaledVolume
                                 });
                             }
                         }
