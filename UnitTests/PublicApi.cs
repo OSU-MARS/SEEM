@@ -83,7 +83,6 @@ namespace Osu.Cof.Ferm.Test
 
             Objective landExpectationValue = new Objective()
             {
-                IsLandExpectationValue = true,
                 PlanningPeriods = 9
             };
             Hero hero = new Hero(stand, configuration, landExpectationValue, new HeuristicParameters() { UseFiaVolume = false })
@@ -138,12 +137,12 @@ namespace Osu.Cof.Ferm.Test
 
             Objective landExpectationValue = new Objective()
             {
-                IsLandExpectationValue = true,
                 PlanningPeriods = 9
             };
             Objective volume = new Objective()
             {
-                PlanningPeriods = landExpectationValue.PlanningPeriods
+                PlanningPeriods = landExpectationValue.PlanningPeriods,
+                TimberObjective = TimberObjective.ScribnerVolume
             };
             HeuristicParameters defaultParameters = new HeuristicParameters()
             {
@@ -488,7 +487,6 @@ namespace Osu.Cof.Ferm.Test
 
             Objective landExpectationValue = new Objective()
             {
-                IsLandExpectationValue = true,
                 PlanningPeriods = 9
             };
             HeuristicParameters defaultParameters = new HeuristicParameters();
@@ -550,7 +548,7 @@ namespace Osu.Cof.Ferm.Test
             float recalculatedBestObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.BestTrajectory);
             float bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
             this.TestContext!.WriteLine("best objective: {0}", heuristic.BestObjectiveFunction);
-            if (heuristic.Objective.IsLandExpectationValue)
+            if (heuristic.Objective.TimberObjective == TimberObjective.LandExpectationValue)
             {
                 Assert.IsTrue(heuristic.BestObjectiveFunction > -0.70F);
             }

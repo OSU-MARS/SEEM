@@ -13,6 +13,7 @@ namespace Osu.Cof.Ferm
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
         public const float DbhHeight = 1.37F; // cm
+        public const float DefaultAnnualDiscountRate = 0.04F;
         public const string DefaultPercentageFormat = "0.0#";
         public const string DefaultProbabilityFormat = "0.00##";
         public const int DefaultTimeStepInYears = 5;
@@ -82,6 +83,8 @@ namespace Osu.Cof.Ferm
 
         public static class Bucking
         {
+            public const float DefaultMaximumDiameterInCentimeters = 120.0F;
+            public const float DefaultMaximumHeightInMeters = 75.0F;
             public const float DefectAndBreakageReduction = 0.955F; // 100 - 4.5%
             public const float DiameterClassSizeInCentimeters = 1.0F;
             public const float EvaluationHeightStep = 0.5F; // m
@@ -90,8 +93,6 @@ namespace Osu.Cof.Ferm
             public const float LogLengthRegenerationHarvest = Constant.MetersPerFoot * 40.0F; // m
             public const float LogLengthThinning = Constant.MetersPerFoot * 24.0F; // m
             public const float LogTaperSegmentationLength = Constant.MetersPerFoot * 8.0F; // m
-            public const float MaximumDiameterInCentimeters = 120.0F;
-            public const float MaximumHeightInMeters = 90.0F;
             public const float MinimumBasalArea4SawEnglish = 0.14F; // 5 inch DBH + a bit for bark
             public const float MinimumLogLength2Saw = Constant.MetersPerFoot * 12.0F; // m
             public const float MinimumLogLength3Saw = Constant.MetersPerFoot * 12.0F; // m

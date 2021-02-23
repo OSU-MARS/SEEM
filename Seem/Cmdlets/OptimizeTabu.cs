@@ -51,11 +51,12 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Tabu";
         }
 
-        protected override IList<TabuParameters> GetParameterCombinations()
+        protected override IList<TabuParameters> GetParameterCombinations(TimberValue timberValue)
         {
             int treeRecords = this.Stand!.GetTreeRecordCount();
 
-            List<TabuParameters> parameters = new List<TabuParameters>(this.EscapeAfter.Count * this.EscapeBy.Count * this.IterationMultipliers.Count * this.MaxTenure.Count * this.ProportionalPercentage.Count);
+            List<TabuParameters> parameterCombinations = new List<TabuParameters>(this.EscapeAfter.Count * this.EscapeBy.Count *
+                this.IterationMultipliers.Count * this.MaxTenure.Count * this.ProportionalPercentage.Count);
             foreach (float escapeAfter in this.EscapeAfter)
             {
                 foreach (float escapeBy in this.EscapeBy)
@@ -66,7 +67,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         {
                             foreach (float proportionalPercentage in this.ProportionalPercentage)
                             {
-                                parameters.Add(new TabuParameters()
+                                parameterCombinations.Add(new TabuParameters()
                                 {
                                     EscapeAfter = (int)(escapeAfter * treeRecords),
                                     EscapeDistance = (int)(escapeBy * treeRecords),
@@ -75,7 +76,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     PerturbBy = this.PerturbBy,
                                     ProportionalPercentage = proportionalPercentage,
                                     Tenure = this.Tenure,
-                                    TimberValue = this.TimberValue,
+                                    TimberValue = timberValue,
                                     UseFiaVolume = this.ScaledVolume
                                 });
                             }
@@ -83,7 +84,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
             }
-            return parameters;
+            return parameterCombinations;
         }
     }
 }

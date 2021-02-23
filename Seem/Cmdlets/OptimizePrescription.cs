@@ -69,11 +69,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Prescription";
         }
 
-        protected override IList<PrescriptionParameters> GetParameterCombinations()
+        protected override IList<PrescriptionParameters> GetParameterCombinations(TimberValue timberValue)
         {
             if (this.Minimum.Count != this.Maximum.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Minimum));
+                throw new ParameterOutOfRangeException(nameof(this.Minimum));
             }
             if (this.PerturbBy != 0.0F)
             {
@@ -85,20 +85,20 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
             if (this.Step < 0.0F)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Step));
+                throw new ParameterOutOfRangeException(nameof(this.Step));
             }
 
-            List<PrescriptionParameters> parameters = new List<PrescriptionParameters>(this.Minimum.Count);
+            List<PrescriptionParameters> parameterCombinations = new List<PrescriptionParameters>(this.Minimum.Count);
             for (int intensityIndex = 0; intensityIndex < this.Minimum.Count; ++intensityIndex)
             {
                 float minimumIntensity = this.Minimum[intensityIndex];
                 float maximumIntensity = this.Maximum[intensityIndex];
                 if (maximumIntensity < minimumIntensity)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.Minimum));
+                    throw new ParameterOutOfRangeException(nameof(this.Minimum));
                 }
 
-                parameters.Add(new PrescriptionParameters()
+                parameterCombinations.Add(new PrescriptionParameters()
                 {
                     FromAbovePercentageUpperLimit = this.FromAbovePercentageUpperLimit,
                     FromBelowPercentageUpperLimit = this.FromBelowPercentageUpperLimit,
@@ -106,12 +106,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                     Maximum = maximumIntensity,
                     ProportionalPercentageUpperLimit = this.ProportionalPercentageUpperLimit,
                     Step = this.Step,
-                    TimberValue = this.TimberValue,
+                    TimberValue = timberValue,
                     Units = this.Units,
                     UseFiaVolume = this.ScaledVolume
                 });
             }
-            return parameters;
+            return parameterCombinations;
         }
     }
 }

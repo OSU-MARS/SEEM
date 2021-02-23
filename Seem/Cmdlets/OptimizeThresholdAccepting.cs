@@ -43,9 +43,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-ThresholdAccepting";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
         {
-            return this.GetDefaultParameterCombinations();
+            return this.GetDefaultParameterCombinations(timberValue);
         }
     }
 }

@@ -19,11 +19,14 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateNotNull]
+        [ValidateRange(0.0F, 100.0F)]
+        public List<float> DiscountRates { get; set; }
+
+        [Parameter]
+        [ValidateNotNull]
         [ValidateRange(1, 100)]
         public List<int> HarvestPeriods { get; set; }
 
-        [Parameter]
-        public SwitchParameter LandExpectationValue { get; set; }
         [Parameter]
         [ValidateRange(0.0F, 1.0F)]
         public float PerturbBy { get; set; }
@@ -46,6 +49,8 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int Threads { get; set; }
 
         [Parameter]
+        public TimberObjective TimberObjective { get; set; }
+        [Parameter]
         [ValidateNotNull]
         public TimberValue TimberValue { get; set; }
         [Parameter]
@@ -55,12 +60,14 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.BestOf = 1;
             this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
+
+            this.DiscountRates = new List<float>() { Constant.DefaultAnnualDiscountRate };
             this.HarvestPeriods = new List<int>() { 3 };
-            this.LandExpectationValue = false;
             this.PlanningPeriods = new List<int>() { 9 };
             this.PerturbBy = Constant.MetaheuristicDefault.PerturbBy;
             this.ProportionalPercentage = new List<float>() { Constant.HeuristicDefault.ProportionalPercentage };
             this.ScaledVolume = false;
+            this.TimberObjective = TimberObjective.LandExpectationValue;
             this.TimberValue = TimberValue.Default;
             this.TreeModel = TreeModel.OrganonNwo;
         }
@@ -72,78 +79,104 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, TParameters parameters);
 
-        protected IList<HeuristicParameters> GetDefaultParameterCombinations()
+        protected IList<HeuristicParameters> GetDefaultParameterCombinations(TimberValue timberValue)
         {
-            List<HeuristicParameters> parameters = new List<HeuristicParameters>(this.ProportionalPercentage.Count);
+            List<HeuristicParameters> parameterCombinations = new List<HeuristicParameters>();
             foreach (float proportionalPercentage in this.ProportionalPercentage)
             {
-                parameters.Add(new HeuristicParameters()
+                parameterCombinations.Add(new HeuristicParameters()
                 {
                     PerturbBy = this.PerturbBy,
                     ProportionalPercentage = proportionalPercentage,
-                    TimberValue = this.TimberValue,
+                    TimberValue = timberValue,
                     UseFiaVolume = this.ScaledVolume
                 });
             }
-            return parameters;
+            return parameterCombinations;
         }
 
         protected abstract string GetName();
-        protected abstract IList<TParameters> GetParameterCombinations();
+        protected abstract IList<TParameters> GetParameterCombinations(TimberValue timberValue);
 
         protected override void ProcessRecord()
         {
             if (this.HarvestPeriods.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.HarvestPeriods));
+                throw new ParameterOutOfRangeException(nameof(this.HarvestPeriods));
             }
             if ((this.PerturbBy < 0.0F) || (this.PerturbBy > 1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.PerturbBy));
+                throw new ParameterOutOfRangeException(nameof(this.PerturbBy));
             }
             if (this.PlanningPeriods.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.PlanningPeriods));
+                throw new ParameterOutOfRangeException(nameof(this.PlanningPeriods));
             }
             if (this.ProportionalPercentage.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ProportionalPercentage));
+                throw new ParameterOutOfRangeException(nameof(this.ProportionalPercentage));
+            }
+
+            // for now, if multiple discount rates are specified assume they should override the discount rate on TimberValue
+            if (this.DiscountRates.Count == 1)
+            {
+                if (this.TimberValue.DiscountRate != Constant.DefaultAnnualDiscountRate)
+                {
+                    // conflicting single discount rates
+                    if ((this.DiscountRates[0] != Constant.DefaultAnnualDiscountRate) &&
+                        (this.DiscountRates[0] != this.TimberValue.DiscountRate))
+                    {
+                        throw new NotSupportedException("The single, non-default discount rate " + this.DiscountRates[0].ToString("0.00") + " was specified but the discount rate set on TimberValue is the non-default " + this.TimberValue.DiscountRate.ToString("0.00") + ".  Resolve this conflict by not specifying a discount rate, using the same discount rate in both locations, or specifying a default discount rate in the location which should be overridden.");
+                    }
+
+                    // override default discount rate with non-default value 
+                    this.DiscountRates[0] = this.TimberValue.DiscountRate;
+                }
             }
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            IList<TParameters> parameterCombinations = this.GetParameterCombinations();
             int treeCount = this.Stand!.GetTreeRecordCount();
-            List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(parameterCombinations.Count * this.HarvestPeriods.Count * this.PlanningPeriods.Count);
-            for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
+            List<TParameters> parameterCombinations = new List<TParameters>();
+            List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(this.HarvestPeriods.Count * this.PlanningPeriods.Count);
+            for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
             {
-                for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.HarvestPeriods.Count; ++harvestPeriodIndex)
+                TimberValue timberValue = new TimberValue(this.TimberValue)
+                {
+                    DiscountRate = this.DiscountRates[discountRateIndex]
+                };
+                IList<TParameters> parameterCombinationsForDiscountRate = this.GetParameterCombinations(timberValue);
+                for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
                 {
                     int planningPeriods = this.PlanningPeriods[planningPeriodIndex];
-                    int harvestPeriods = this.HarvestPeriods[harvestPeriodIndex];
-                    if (harvestPeriods >= planningPeriods) // minimum 10 years between thinning and final harvest (if five year time step)
+                    for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.HarvestPeriods.Count; ++harvestPeriodIndex)
                     {
-                        continue;
-                    }
-
-                    for (int parameterIndex = 0; parameterIndex < parameterCombinations.Count; ++parameterIndex)
-                    {
-                        distributions.Add(new HeuristicSolutionDistribution(1, harvestPeriods, treeCount)
+                        int harvestPeriods = this.HarvestPeriods[harvestPeriodIndex];
+                        if (harvestPeriods >= planningPeriods) // minimum 10 years between thinning and final harvest (if five year time step)
                         {
-                            HarvestPeriodIndex = harvestPeriodIndex,
-                            ParameterIndex = parameterIndex,
-                            PlanningPeriodIndex = planningPeriodIndex
-                        });
+                            continue;
+                        }
+
+                        for (int parameterIndex = 0; parameterIndex < parameterCombinationsForDiscountRate.Count; ++parameterIndex)
+                        {
+                            distributions.Add(new HeuristicSolutionDistribution(1, harvestPeriods, treeCount)
+                            {
+                                HarvestPeriodIndex = harvestPeriodIndex,
+                                ParameterIndex = parameterCombinations.Count + parameterIndex,
+                                PlanningPeriodIndex = planningPeriodIndex,
+                            });
+                        }
                     }
                 }
-            }
 
+                parameterCombinations.AddRange(parameterCombinationsForDiscountRate);
+            }
             ParallelOptions parallelOptions = new ParallelOptions()
             {
                 MaxDegreeOfParallelism = this.Threads
             };
-            int totalRuns = distributions.Count * this.BestOf;
+            int totalRuns = this.BestOf * distributions.Count;
             int runsCompleted = 0;
             Task runs = Task.Run(() =>
             {
@@ -161,7 +194,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     Objective objective = new Objective()
                     {
-                        IsLandExpectationValue = this.LandExpectationValue,
+                        TimberObjective = this.TimberObjective,
                         PlanningPeriods = this.PlanningPeriods[distribution.PlanningPeriodIndex]
                     };
                     TParameters runParameters = parameterCombinations[distribution.ParameterIndex];

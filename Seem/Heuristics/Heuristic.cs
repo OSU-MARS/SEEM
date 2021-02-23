@@ -73,7 +73,8 @@ namespace Osu.Cof.Ferm.Heuristics
             // find objective function value
             // Volume objective functions are in m³/ha or MBF/ac.
             float objectiveFunction;
-            if (this.Objective.IsLandExpectationValue)
+            if ((this.Objective.TimberObjective == TimberObjective.LandExpectationValue) ||
+                (this.Objective.TimberObjective == TimberObjective.NetPresentValue))
             {
                 // net present value of first rotation
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
@@ -83,16 +84,22 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     firstRotationNetPresentValue += trajectory.ThinningVolume.NetPresentValue[periodIndex];
                 }
-
-                // TODO: check if earlier final harvest provides higher NPV?
                 firstRotationNetPresentValue += trajectory.StandingVolume.NetPresentValue[^1];
-                int rotationLength = trajectory.GetRotationLength();
-                float landExpectationValue = trajectory.TimberValue.ToLandExpectationValue(firstRotationNetPresentValue, rotationLength);
 
                 // convert from US$/ac to USk$/ac
-                objectiveFunction = 0.001F * landExpectationValue;
+                objectiveFunction = firstRotationNetPresentValue;
+
+                if (this.Objective.TimberObjective == TimberObjective.LandExpectationValue)
+                {
+                    int rotationLengthInYears = trajectory.GetRotationLength();
+                    float presentToFutureConversionFactor = MathF.Pow(1.0F + trajectory.TimberValue.DiscountRate, rotationLengthInYears);
+                    float landExpectationValue = presentToFutureConversionFactor * firstRotationNetPresentValue / (presentToFutureConversionFactor - 1.0F);
+                    objectiveFunction = landExpectationValue;
+                }
+
+                objectiveFunction *= 0.001F;
             }
-            else
+            else if (this.Objective.TimberObjective == TimberObjective.ScribnerVolume)
             {
                 // direct volume addition
                 objectiveFunction = 0.0F;
@@ -101,6 +108,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     objectiveFunction += trajectory.ThinningVolume.ScribnerTotal[periodIndex];
                 }
                 objectiveFunction += trajectory.StandingVolume.ScribnerTotal[^1];
+            }
+            else 
+            {
+                throw new NotSupportedException("Unhandled timber objective " + this.Objective.TimberObjective + ".");
             }
 
             return objectiveFunction;

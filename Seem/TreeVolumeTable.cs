@@ -183,7 +183,7 @@ namespace Osu.Cof.Ferm
         public float[,] Scribner3Saw { get; private init; } // Scriber board foot log volume per tree
         public float[,] Scribner4Saw { get; private init; } // Scriber board foot log volume per tree
 
-        public TreeVolumeTable(float preferredLogLengthInMeters, Func<float, float, float, float> getDiameterInsideBark, bool scribnerFromLumberRecovery)
+        public TreeVolumeTable(float maximumDiameterInCentimeters, float maximumHeightInMeters, float preferredLogLengthInMeters, Func<float, float, float, float> getDiameterInsideBark, bool scribnerFromLumberRecovery)
         {
             if (preferredLogLengthInMeters > Constant.MetersPerFoot * 40.0F)
             {
@@ -192,8 +192,8 @@ namespace Osu.Cof.Ferm
 
             this.DiameterClassSizeInCentimeters = Constant.Bucking.DiameterClassSizeInCentimeters;
             this.HeightClassSizeInMeters = Constant.Bucking.HeightClassSizeInMeters;
-            this.MaximumDiameterInCentimeters = Constant.Bucking.MaximumDiameterInCentimeters;
-            this.MaximumHeightInMeters = Constant.Bucking.MaximumHeightInMeters;
+            this.MaximumDiameterInCentimeters = maximumDiameterInCentimeters;
+            this.MaximumHeightInMeters = maximumHeightInMeters;
 
             int diameterClasses = (int)(this.MaximumDiameterInCentimeters / this.DiameterClassSizeInCentimeters) + 1;
             int heightClasses = (int)(this.MaximumHeightInMeters / this.HeightClassSizeInMeters) + 1;

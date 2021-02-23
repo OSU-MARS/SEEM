@@ -3,14 +3,14 @@
     public class Objective
     {
         public HarvestPeriodSelection HarvestPeriodSelection { get; set; }
-        public bool IsLandExpectationValue { get; set; }
         public int PlanningPeriods { get; set; }
+        public TimberObjective TimberObjective { get; set; }
 
         public Objective()
         {
             this.HarvestPeriodSelection = HarvestPeriodSelection.NoneOrLast;
-            this.IsLandExpectationValue = false;
             this.PlanningPeriods = 1;
+            this.TimberObjective = TimberObjective.LandExpectationValue;
         }
     }
 }

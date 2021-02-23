@@ -76,42 +76,44 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Genetic";
         }
 
-        protected override IList<GeneticParameters> GetParameterCombinations()
+        protected override IList<GeneticParameters> GetParameterCombinations(TimberValue timberValue)
         {
             if (this.ExchangeProbabilityEnd.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ExchangeProbabilityEnd));
+                throw new ParameterOutOfRangeException(nameof(this.ExchangeProbabilityEnd));
             }
             if (this.ExponentK.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ExponentK));
+                throw new ParameterOutOfRangeException(nameof(this.ExponentK));
             }
             if (this.FlipProbabilityEnd.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FlipProbabilityEnd));
+                throw new ParameterOutOfRangeException(nameof(this.FlipProbabilityEnd));
             }
             if (this.GenerationMultiplier.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.GenerationMultiplier));
+                throw new ParameterOutOfRangeException(nameof(this.GenerationMultiplier));
             }
             if (this.InitializationClasses.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.InitializationClasses));
+                throw new ParameterOutOfRangeException(nameof(this.InitializationClasses));
             }
             if (this.MinCoefficientOfVariation.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.MinCoefficientOfVariation));
+                throw new ParameterOutOfRangeException(nameof(this.MinCoefficientOfVariation));
             }
             if (this.PopulationSize.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.PopulationSize));
+                throw new ParameterOutOfRangeException(nameof(this.PopulationSize));
             }
             if (this.ReservedProportion.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ReservedProportion));
+                throw new ParameterOutOfRangeException(nameof(this.ReservedProportion));
             }
 
-            List<GeneticParameters> parameters = new List<GeneticParameters>(this.ProportionalPercentage.Count);
+            List<GeneticParameters> parameterCombinations = new List<GeneticParameters>(this.CrossoverProbabilityEnd.Count * this.ExponentK.Count * 
+                this.FlipProbabilityEnd.Count * this.GenerationMultiplier.Count * this.InitializationMethod.Count * this.InitializationClasses.Count * 
+                this.MinCoefficientOfVariation.Count * this.PopulationSize.Count * this.ProportionalPercentage.Count * this.ReservedProportion.Count);
             int treeRecordCount = this.Stand!.GetTreeRecordCount();
             foreach (float crossoverProbabilityEnd in this.CrossoverProbabilityEnd)
             {
@@ -135,7 +137,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                 {
                                                     foreach (float reservedProportion in this.ReservedProportion)
                                                     {
-                                                        parameters.Add(new GeneticParameters()
+                                                        parameterCombinations.Add(new GeneticParameters()
                                                         {
                                                             CrossoverProbabilityEnd = crossoverProbabilityEnd,
                                                             ExchangeProbabilityEnd = exchangeProbabilityEnd,
@@ -152,7 +154,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                             ProportionalPercentage = proportionalPercentage,
                                                             ReplacementStrategy = this.ReplacementStrategy,
                                                             ReservedProportion = reservedProportion,
-                                                            TimberValue = this.TimberValue,
+                                                            TimberValue = timberValue,
                                                             UseFiaVolume = this.ScaledVolume
                                                         });
                                                     }
@@ -166,7 +168,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
             }
-            return parameters;
+            return parameterCombinations;
         }
     }
 }

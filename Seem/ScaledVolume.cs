@@ -8,12 +8,12 @@ namespace Osu.Cof.Ferm
         public float PreferredLogLengthInMeters { get; private init; }
         public Dictionary<FiaCode, TreeVolumeTable> VolumeBySpecies { get; private init; }
 
-        public ScaledVolume(float preferredLogLengthInMeters, bool scribnerFromLumberRecovery)
+        public ScaledVolume(float maximumDiameterInCentimeters, float maximumHeightInMeters, float preferredLogLengthInMeters, bool scribnerFromLumberRecovery)
         {
             this.PreferredLogLengthInMeters = preferredLogLengthInMeters;
             this.VolumeBySpecies = new Dictionary<FiaCode, TreeVolumeTable>
             {
-                { FiaCode.PseudotsugaMenziesii, new TreeVolumeTable(preferredLogLengthInMeters, this.GetDouglasFirDiameterInsideBark, scribnerFromLumberRecovery) }
+                { FiaCode.PseudotsugaMenziesii, new TreeVolumeTable(maximumDiameterInCentimeters, maximumHeightInMeters, preferredLogLengthInMeters, this.GetDouglasFirDiameterInsideBark, scribnerFromLumberRecovery) }
             };
         }
 
@@ -21,7 +21,24 @@ namespace Osu.Cof.Ferm
         {
             // Poudel K, Temesgen H, Gray AN. 2018. Estimating upper stem diameters and volume of Douglas-fir and Western hemlock
             //   trees in the Pacific northwest. Forest Ecosystems 5:16. https://doi.org/10.1186/s40663-018-0134-2
-            // M4 Table 4 (Kozak 2004)
+            // Table 4: M4 (Kozak 2004) form
+            // regression's fitted diameter range: 1.8-114 cm
+            //                     height range: 2.4-64 m
+            // allow extrapolation beyond fit range in lieu of a better predictor but block height-diameter ratios so high b3 becomes
+            // negative and table generation fails
+            if (dbhInCm > 135.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString("0.0") + " cm exceeds limit of 135.0 cm.");
+            }
+            if (heightInM > 75.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString("0.0") + " m exceeds limit of 75.0 m.");
+            }
+            if ((evaluationHeightInM < 0.0F) || (evaluationHeightInM > heightInM))
+            {
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString("0.00") + " m exceeds tree height of " + heightInM.ToString("0.00") + " m.");
+            }
+
             const float b1 = 1.04208F;
             const float b2 = 0.99771F;
             const float b3 = -0.03111F;
@@ -74,11 +91,11 @@ namespace Osu.Cof.Ferm
                 // compare greater than or equals to avoid overstep in bilinear interpolation
                 if (dbhInCm >= volumeTable.MaximumDiameterInCentimeters)
                 {
-                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + "  cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
+                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
                 }
                 if (heightInMeters >= volumeTable.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s height of " + heightInMeters.ToString("0.0") + "  m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
+                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s height of " + heightInMeters.ToString("0.0") + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
                 }
 
                 // bilinear interpolation

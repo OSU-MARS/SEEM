@@ -30,7 +30,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             if (this.Runs!.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Runs));
+                throw new ParameterOutOfRangeException(nameof(this.Runs));
             }
 
             using StreamWriter writer = this.GetWriter();
@@ -44,7 +44,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first run is missing a highest solution, lowest solution, or highest solution parameters.");
                 }
 
-                line.Append("stand,heuristic,thin age,rotation," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + ",iteration,count");
+                line.Append("stand,heuristic,discount rate,thin age,rotation," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + ",iteration,count");
 
                 string lowestMoveLogHeader = "lowest move log";
                 IHeuristicMoveLog? lowestMoveLog = this.Runs[0].LowestSolution!.GetMoveLog();
@@ -81,7 +81,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 IHeuristicMoveLog? lowestMoveLog = lowestHeuristic.GetMoveLog();
                 // for now, assume highest and lowest solutions used the same parameters
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
-                string runPrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + highestTrajectory.GetFirstHarvestAge() + "," + highestTrajectory.GetRotationLength() + "," + distribution.HighestHeuristicParameters.GetCsvValues();
+                string runPrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + highestTrajectory.TimberValue.DiscountRate + "," + highestTrajectory.GetFirstHarvestAge() + "," + highestTrajectory.GetRotationLength() + "," + distribution.HighestHeuristicParameters.GetCsvValues();
 
                 Debug.Assert(distribution.CountByMove.Count >= lowestHeuristic.AcceptedObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MinimumObjectiveFunctionByMove.Count);

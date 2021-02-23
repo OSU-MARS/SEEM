@@ -387,7 +387,7 @@ namespace Osu.Cof.Ferm.Test
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            TimberValue timberValue = new TimberValue(false);
+            TimberValue timberValue = new TimberValue(Constant.Bucking.DefaultMaximumDiameterInCentimeters, Constant.Bucking.DefaultMaximumHeightInMeters, false);
             stopwatch.Stop();
             TimeSpan timberValueTabulationTime = stopwatch.Elapsed;
             this.TestContext!.WriteLine("tabulation: {0:s\\.fff}s for {1:0.0} cm diameter classes and {2:0.0} m height classes", timberValueTabulationTime, Constant.Bucking.DiameterClassSizeInCentimeters, Constant.Bucking.HeightClassSizeInMeters);

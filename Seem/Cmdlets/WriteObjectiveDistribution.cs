@@ -20,7 +20,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             if (this.Runs!.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Runs));
+                throw new ParameterOutOfRangeException(nameof(this.Runs));
             }
 
             using StreamWriter writer = this.GetWriter();
@@ -34,7 +34,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first run is missing highest solution parameters.");
                 }
 
-                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + ",thin age,rotation,solution,objective,runtime");
+                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + ",discount rate,thin age,rotation,solution,objective,runtime");
                 writer.WriteLine(line);
             }
 
@@ -47,7 +47,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Run " + runIndex + " is missing a highest solution or highest solution parameters.");
                 }
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
-                string linePrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectory.GetFirstHarvestAge() + "," + highestTrajectory.GetRotationLength();
+                string linePrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + 
+                    distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectory.TimberValue.DiscountRate.ToString(CultureInfo.InvariantCulture) + "," + 
+                    highestTrajectory.GetFirstHarvestAge().ToString(CultureInfo.InvariantCulture) + "," + highestTrajectory.GetRotationLength().ToString(CultureInfo.InvariantCulture);
 
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)

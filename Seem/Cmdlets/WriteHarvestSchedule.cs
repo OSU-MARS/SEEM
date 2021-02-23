@@ -15,8 +15,6 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         public FiaVolume fiaVolume;
 
-        public DataFormat Format { get; set; }
-
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public List<HeuristicSolutionDistribution>? Runs { get; set; }
@@ -24,33 +22,16 @@ namespace Osu.Cof.Ferm.Cmdlets
         public WriteHarvestSchedule()
         {
             this.fiaVolume = new FiaVolume();
-
-            this.Format = DataFormat.Long;
         }
 
         protected override void ProcessRecord()
         {
             if (this.Runs!.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Runs));
+                throw new ParameterOutOfRangeException(nameof(this.Runs));
             }
 
-            using StreamWriter writer = this.GetWriter(); 
-            switch (this.Format)
-            {
-                case DataFormat.Long:
-                    this.WriteLongFormat(writer);
-                    break;
-                case DataFormat.Wide:
-                    this.WriteWideFormat(writer);
-                    break;
-                default:
-                    throw new NotSupportedException(String.Format("Unhandled data format {0}.", this.Format));
-            }
-        }
-
-        private void WriteLongFormat(StreamWriter writer)
-        {
+            using StreamWriter writer = this.GetWriter();
             StringBuilder line = new StringBuilder();
             if (this.Append == false)
             {
@@ -59,15 +40,15 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Cannot generate schedule header because first run has no heuristic parameters.");
                 }
-                line.Append("stand,heuristic," + highestHeuristicParameters.GetCsvHeader() + ",thin age,rotation,tree,lowest selection,highest selection,highest thin DBH,highest thin height,highest thin CR,highest thin EF,highest thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
+                line.Append("stand,heuristic," + highestHeuristicParameters.GetCsvHeader() + ",discount rate,thin age,rotation,tree,lowest selection,highest selection,highest thin DBH,highest thin height,highest thin CR,highest thin EF,highest thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
                 writer.WriteLine(line);
             }
 
             for (int runIndex = 0; runIndex < this.Runs!.Count; ++runIndex)
             {
                 HeuristicSolutionDistribution distribution = this.Runs[runIndex];
-                if ((distribution.HighestHeuristicParameters == null) || 
-                    (distribution.HighestSolution == null) || 
+                if ((distribution.HighestHeuristicParameters == null) ||
+                    (distribution.HighestSolution == null) ||
                     (distribution.HighestSolution.BestTrajectory == null) ||
                     (distribution.HighestSolution.BestTrajectory.Heuristic == null) ||
                     (distribution.LowestSolution == null))
@@ -81,7 +62,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     periodBeforeHarvest = highestTrajectoryN.PlanningPeriods - 1;
                 }
-                string linePrefix = highestTrajectoryN.Name + "," + highestTrajectoryN.Heuristic.GetName() + "," + distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectoryN.GetFirstHarvestAge() + "," + highestTrajectoryN.GetRotationLength();
+                string linePrefix = highestTrajectoryN.Name + "," + highestTrajectoryN.Heuristic.GetName() + "," + 
+                    distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectoryN.TimberValue.DiscountRate.ToString(CultureInfo.InvariantCulture) + "," + 
+                    highestTrajectoryN.GetFirstHarvestAge().ToString(CultureInfo.InvariantCulture) + "," + highestTrajectoryN.GetRotationLength().ToString(CultureInfo.InvariantCulture);
 
                 OrganonStandTrajectory lowestTrajectoryN = distribution.LowestSolution.BestTrajectory;
                 int previousSpeciesCount = 0;
@@ -91,7 +74,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     Stand? highestStandNatEnd = highestTrajectoryN.StandByPeriod[^1];
                     if ((highestStandNbeforeHarvest == null) || (highestStandNatEnd == null))
                     {
-                        throw new ArgumentOutOfRangeException(nameof(this.Runs), "Highest stand in run has not been fully simulated. Did the heuristic perform at least one move?");
+                        throw new ParameterOutOfRangeException(nameof(this.Runs), "Highest stand in run has not been fully simulated. Did the heuristic perform at least one move?");
                     }
                     Trees highestTreesBeforeThin = highestStandNbeforeHarvest.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
                     Trees highestTreesAtFinal = highestStandNatEnd.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
@@ -142,7 +125,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     highestFinalDbh + "," +
                                     highestFinalHeight + "," +
                                     highestFinalCrownRatio + "," +
-                                    highestFinalExpansionFactor + "," + 
+                                    highestFinalExpansionFactor + "," +
                                     highestFinalBoardFeet);
 
                         writer.WriteLine(line);
@@ -150,71 +133,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     previousSpeciesCount += highestTreeSelectionN.Length;
                 }
-            }
-        }
-
-        private void WriteWideFormat(StreamWriter writer)
-        {
-            // for now, assume all heuristics are from the same stand with the same tree ordering and ingrowth pattern
-            Heuristic? firstRunHighestSolution = this.Runs![0].HighestSolution;
-            if (firstRunHighestSolution == null)
-            {
-                throw new NotSupportedException("First run does not have a highest solution.");
-            }
-
-            SortedDictionary<FiaCode, int[]> treeSelection0BySpecies = firstRunHighestSolution.BestTrajectory.IndividualTreeSelectionBySpecies;
-            for (int heuristicIndex = 1; heuristicIndex < this.Runs.Count; ++heuristicIndex)
-            {
-                Heuristic? highestSolution = this.Runs[heuristicIndex].HighestSolution;
-                if (highestSolution == null)
-                {
-                    throw new NotSupportedException("Run " + heuristicIndex + " does not have a highest solution.");
-                }
-
-                SortedDictionary<FiaCode, int[]> treeSelectionBySpecies = highestSolution.BestTrajectory.IndividualTreeSelectionBySpecies;
-                if (SortedDictionaryExtensions.ValueLengthsIdentical(treeSelection0BySpecies, treeSelectionBySpecies) == false)
-                {
-                    throw new NotSupportedException("Heuristic produced tree selections of varying lengths.");
-                }
-            }
-
-            StringBuilder line = new StringBuilder();
-            if (this.ShouldWriteHeader())
-            {
-                line.Append("tree");
-                for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
-                {
-                    OrganonStandTrajectory bestTrajectory = this.Runs[runIndex].HighestSolution!.BestTrajectory;
-                    line.Append("," + bestTrajectory.Name + bestTrajectory.Heuristic + bestTrajectory.GetFirstHarvestAge() + "." + bestTrajectory.GetRotationLength());
-                }
-                writer.WriteLine(line);
-            }
-
-            int previousSpeciesCount = 0;
-            foreach (KeyValuePair<FiaCode, int[]> treeSelection0ForSpecies in treeSelection0BySpecies)
-            {
-                OrganonStandTrajectory bestTrajectory0 = this.Runs[0].HighestSolution!.BestTrajectory;
-                OrganonStand initialStand0 = bestTrajectory0.StandByPeriod[0] ?? throw new NotSupportedException("Initial stand information is missing.");
-                Trees treesOfSpecies = initialStand0.TreesBySpecies[treeSelection0ForSpecies.Key];
-                Debug.Assert(treesOfSpecies.Count <= treeSelection0ForSpecies.Value.Length);
-                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
-                {
-                    line.Clear();
-                    // for now, make best guess of using tree tag or index as unique identifier
-                    line.Append(treesOfSpecies.Tag[treeIndex] == 0 ? previousSpeciesCount + treeIndex : treesOfSpecies.Tag[treeIndex]);
-
-                    for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
-                    {
-                        OrganonStandTrajectory bestTrajectoryN = this.Runs[runIndex].HighestSolution!.BestTrajectory;
-                        int[] treeSelectionN = bestTrajectoryN.IndividualTreeSelectionBySpecies[treeSelection0ForSpecies.Key];
-                        int harvestPeriod = treeSelectionN[treeIndex];
-                        line.Append("," + harvestPeriod.ToString(CultureInfo.InvariantCulture));
-                    }
-
-                    writer.WriteLine(line);
-                }
-
-                previousSpeciesCount += treesOfSpecies.Count;
             }
         }
     }
