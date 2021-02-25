@@ -397,7 +397,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new NotImplementedException();
             }
-            else if (periodSelection == HarvestPeriodSelection.NoneOrLast)
+            else if (periodSelection == HarvestPeriodSelection.ThinPeriodOrRetain)
             {
                 for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
                 {

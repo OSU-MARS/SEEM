@@ -46,7 +46,7 @@ namespace Osu.Cof.Ferm
                 Debug.Assert(previousTreesOfSpecies.Units == Units.English, "TODO: per hectare.");
 
                 int[] individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-                timberValue.ScaledVolumeThinning.GetGradedVolume(previousTreesOfSpecies, individualTreeSelection, out double cubic2saw, out double cubic3saw, out double cubic4saw, out double scribner2saw, out double scribner3saw, out double scribner4saw);
+                timberValue.ScaledVolumeThinning.GetGradedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex, out double cubic2saw, out double cubic3saw, out double cubic4saw, out double scribner2saw, out double scribner3saw, out double scribner4saw);
                 harvested2SawCubicMetersPerAcre += cubic2saw;
                 harvested3SawCubicMetersPerAcre += cubic3saw;
                 harvested4SawCubicMetersPerAcre += cubic4saw;

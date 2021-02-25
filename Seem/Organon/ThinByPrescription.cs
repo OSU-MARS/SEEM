@@ -103,7 +103,12 @@ namespace Osu.Cof.Ferm.Organon
             FiaCode minimumSpecies = default;
             foreach (Trees treesOfSpecies in standAtEndOfPreviousPeriod.TreesBySpecies.Values)
             {
-                Debug.Assert(treesOfSpecies.Count > 0);
+                if (treesOfSpecies.Count == 0)
+                {
+                    // no trees to thin
+                    continue;
+                }
+
                 int[] dbhSortOrder = treesOfSpecies.GetDbhSortOrder();
                 dbhSortOrderBySpecies.Add(treesOfSpecies.Species, dbhSortOrder);
                 thinFromAboveIndexBySpecies.Add(treesOfSpecies.Species, treesOfSpecies.Count);
@@ -132,10 +137,13 @@ namespace Osu.Cof.Ferm.Organon
             {
                 Trees treesWithLargest = standAtEndOfPreviousPeriod.TreesBySpecies[maximumSpecies];
                 int thinIndex = thinFromAboveIndexBySpecies[maximumSpecies] - 1;
-                int treeIndex = dbhSortOrderBySpecies[maximumSpecies][thinIndex];
-                float basalAreaOfTree = treesWithLargest.GetBasalArea(treeIndex);
+                int compactedTreeIndex = dbhSortOrderBySpecies[maximumSpecies][thinIndex];
+                int uncompactedTreeIndex = treesWithLargest.UncompactedIndex[compactedTreeIndex];
+                float basalAreaOfTree = treesWithLargest.GetBasalArea(compactedTreeIndex);
 
-                trajectory.SetTreeSelection(maximumSpecies, treeIndex, this.Period);
+                Debug.Assert(trajectory.IndividualTreeSelectionBySpecies[treesWithLargest.Species][uncompactedTreeIndex] == Constant.NoHarvestPeriod); // can't select trees which have already been harvested
+                Debug.Assert(treesWithLargest.LiveExpansionFactor[compactedTreeIndex] > 0.0F);
+                trajectory.SetTreeSelection(maximumSpecies, uncompactedTreeIndex, this.Period);
 
                 basalAreaRemovedFromAbove += basalAreaOfTree; // for now, use complete removal of tree's expansion factor
                 thinFromAboveIndexBySpecies[maximumSpecies] = thinIndex;
@@ -162,10 +170,13 @@ namespace Osu.Cof.Ferm.Organon
             {
                 Trees treesWithSmallest = standAtEndOfPreviousPeriod.TreesBySpecies[minimumSpecies];
                 int thinIndex = thinFromBelowIndexBySpecies[minimumSpecies];
-                int treeIndex = dbhSortOrderBySpecies[minimumSpecies][thinIndex];
-                float basalAreaOfTree = treesWithSmallest.GetBasalArea(treeIndex);
+                int compactedTreeIndex = dbhSortOrderBySpecies[minimumSpecies][thinIndex];
+                int uncompactedTreeIndex = treesWithSmallest.UncompactedIndex[compactedTreeIndex];
+                float basalAreaOfTree = treesWithSmallest.GetBasalArea(compactedTreeIndex);
 
-                trajectory.SetTreeSelection(minimumSpecies, treeIndex, this.Period);
+                Debug.Assert(trajectory.IndividualTreeSelectionBySpecies[treesWithSmallest.Species][uncompactedTreeIndex] == Constant.NoHarvestPeriod); // can't select trees which have already been harvested
+                Debug.Assert(treesWithSmallest.LiveExpansionFactor[compactedTreeIndex] > 0.0F);
+                trajectory.SetTreeSelection(minimumSpecies, uncompactedTreeIndex, this.Period);
 
                 basalAreaRemovedFromBelow += basalAreaOfTree;
                 thinFromBelowIndexBySpecies[minimumSpecies] = thinIndex + 1;
@@ -193,18 +204,25 @@ namespace Osu.Cof.Ferm.Organon
             {
                 int[] dbhSortOrder = speciesDbhSortOrder.Value;
                 Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[speciesDbhSortOrder.Key];
+                if (treesOfSpecies.Count == 0)
+                {
+                    continue;
+                }
 
                 for (int thinIndex = thinFromBelowIndexBySpecies[speciesDbhSortOrder.Key]; thinIndex < thinFromAboveIndexBySpecies[speciesDbhSortOrder.Key]; ++thinIndex)
                 {
                     proportionalThinAccumulator += proportionalIncrement;
                     if (proportionalThinAccumulator >= 1.0F)
                     {
-                        int treeIndex = dbhSortOrder[thinIndex];
+                        int compactedTreeIndex = dbhSortOrder[thinIndex];
+                        int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
+                        float basalAreaOfTree = treesOfSpecies.GetBasalArea(compactedTreeIndex);
 
-                        float basalAreaOfTree = treesOfSpecies.GetBasalArea(treeIndex);
-                        trajectory.SetTreeSelection(speciesDbhSortOrder.Key, treeIndex, this.Period);
-                        basalAreaRemovedProportionally += basalAreaOfTree;
-                        
+                        Debug.Assert(trajectory.IndividualTreeSelectionBySpecies[treesOfSpecies.Species][uncompactedTreeIndex] == Constant.NoHarvestPeriod); // can't select trees which have already been harvested
+                        Debug.Assert(treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] > 0.0F);
+                        trajectory.SetTreeSelection(speciesDbhSortOrder.Key, uncompactedTreeIndex, this.Period);
+
+                        basalAreaRemovedProportionally += basalAreaOfTree;                        
                         proportionalThinAccumulator -= 1.0F;
                     }
                 }

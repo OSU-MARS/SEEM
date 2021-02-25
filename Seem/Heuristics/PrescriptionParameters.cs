@@ -10,7 +10,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public float Maximum { get; set; }
         public float Minimum { get; set; }
-        public float Step { get; set; }
+        public float StepSize { get; set; }
         public PrescriptionUnits Units { get; set; }
 
         public PrescriptionParameters()
@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             this.Maximum = Constant.PrescriptionEnumerationDefault.MaximumIntensity;
             this.Minimum = Constant.PrescriptionEnumerationDefault.MinimumIntensity;
-            this.Step = Constant.PrescriptionEnumerationDefault.IntensityStep;
+            this.StepSize = Constant.PrescriptionEnumerationDefault.IntensityStep;
             this.Units = Constant.PrescriptionEnumerationDefault.Units;
         }
 
@@ -38,7 +38,7 @@ namespace Osu.Cof.Ferm.Heuristics
                    this.Units.ToString() + "," +
                    this.Minimum.ToString(CultureInfo.InvariantCulture) + "," +
                    this.Maximum.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.Step.ToString(CultureInfo.InvariantCulture) + "," +
+                   this.StepSize.ToString(CultureInfo.InvariantCulture) + "," +
                    this.FromAbovePercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
                    this.ProportionalPercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
                    this.FromBelowPercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture);

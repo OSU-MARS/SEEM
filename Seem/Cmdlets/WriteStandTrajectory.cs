@@ -82,7 +82,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append(",discount rate,thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPH,BA,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S");
+                line.Append(",discount rate,first thin age,second thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPH,BA,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S");
                 writer.WriteLine(line);
             }
 
@@ -90,7 +90,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             int maxIndex = runsSpecified ? this.Runs!.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
-                OrganonStandTrajectory bestTrajectory;
+                OrganonStandTrajectory highestTrajectory;
                 HeuristicParameters? heuristicParameters = null;
                 int moves = -1;
                 int runs = -1;
@@ -102,7 +102,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         throw new NotSupportedException("Run " + runOrTrajectoryIndex + " is missing a highest solution.");
                     }
-                    bestTrajectory = distribution.HighestSolution.BestTrajectory;
+                    highestTrajectory = distribution.HighestSolution.BestTrajectory;
                     heuristicParameters = distribution.HighestHeuristicParameters;
                     moves = distribution.TotalMoves;
                     runs = distribution.TotalRuns;
@@ -110,17 +110,17 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 else
                 {
-                    bestTrajectory = this.Trajectories![runOrTrajectoryIndex];
-                    if (bestTrajectory.Heuristic != null)
+                    highestTrajectory = this.Trajectories![runOrTrajectoryIndex];
+                    if (highestTrajectory.Heuristic != null)
                     {
-                        heuristicParameters = bestTrajectory.Heuristic.GetParameters();
+                        heuristicParameters = highestTrajectory.Heuristic.GetParameters();
                     }
                 }
 
                 string heuristicName = "none";
-                if (bestTrajectory.Heuristic != null)
+                if (highestTrajectory.Heuristic != null)
                 {
-                    heuristicName = bestTrajectory.Heuristic.GetName();
+                    heuristicName = highestTrajectory.Heuristic.GetName();
                 }
                 string? heuristicParameterString = null;
                 if (heuristicParameters != null)
@@ -128,44 +128,46 @@ namespace Osu.Cof.Ferm.Cmdlets
                     heuristicParameterString = heuristicParameters.GetCsvValues();
                 }
 
-                float discountRate = bestTrajectory.TimberValue.DiscountRate;
-                int thinAge = bestTrajectory.GetFirstHarvestAge();
-                string? thinAgeString = thinAge != -1 ? thinAge.ToString(CultureInfo.InvariantCulture) : null;
-                int rotationLength = bestTrajectory.GetRotationLength();
+                float discountRate = highestTrajectory.TimberValue.DiscountRate;
+                int firstThinAge = highestTrajectory.GetFirstHarvestAge();
+                string? firstThinAgeString = firstThinAge != -1 ? firstThinAge.ToString(CultureInfo.InvariantCulture) : null;
+                int secondThinAge = highestTrajectory.GetSecondHarvestAge();
+                string? secondThinAgeString = secondThinAge != -1 ? secondThinAge.ToString(CultureInfo.InvariantCulture) : null;
+                int rotationLength = highestTrajectory.GetRotationLength();
 
-                string? trajectoryName = bestTrajectory.Name;
+                string? trajectoryName = highestTrajectory.Name;
                 if (trajectoryName == null)
                 {
                     trajectoryName = runOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
                 }
 
-                Units trajectoryUnits = bestTrajectory.GetUnits();
+                Units trajectoryUnits = highestTrajectory.GetUnits();
                 WriteStandTrajectory.GetBasalAreaConversion(trajectoryUnits, Units.Metric, out float basalAreaConversionFactor);
                 WriteStandTrajectory.GetDimensionConversions(trajectoryUnits, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
-                bestTrajectory.GetGradedVolumes(out StandGradedVolume gradedVolumeStanding, out StandGradedVolume gradedVolumeHarvested);
+                highestTrajectory.GetGradedVolumes(out StandGradedVolume gradedVolumeStanding, out StandGradedVolume gradedVolumeHarvested);
                 float totalThinNetPresentValue = 0.0F;
-                for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
+                for (int periodIndex = 0; periodIndex < highestTrajectory.PlanningPeriods; ++periodIndex)
                 {
                     line.Clear();
 
                     // get density and volumes
                     float standingVolumeCubic = gradedVolumeStanding.GetCubicTotal(periodIndex); // m³/ha
                     float harvestVolumeCubic = gradedVolumeHarvested.GetCubicTotal(periodIndex); // m³/ha
-                    float standingVolumeScribner = bestTrajectory.StandingVolume.ScribnerTotal[periodIndex]; // MBF/ha
-                    float harvestVolumeScribner = bestTrajectory.ThinningVolume.ScribnerTotal[periodIndex]; // MBF/ha
+                    float standingVolumeScribner = highestTrajectory.StandingVolume.ScribnerTotal[periodIndex]; // MBF/ha
+                    float harvestVolumeScribner = highestTrajectory.ThinningVolume.ScribnerTotal[periodIndex]; // MBF/ha
 
-                    float basalAreaRemoved = bestTrajectory.BasalAreaRemoved[periodIndex]; // ft²/acre
+                    float basalAreaRemoved = highestTrajectory.BasalAreaRemoved[periodIndex]; // ft²/acre
                     float basalAreaIntensity = 0.0F;
                     if (periodIndex > 0)
                     {
-                        basalAreaIntensity = basalAreaRemoved / bestTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre;
+                        basalAreaIntensity = basalAreaRemoved / highestTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre;
                     }
 
                     float treesPerAcreDecrease = 0.0F;
                     if (periodIndex > 0)
                     {
-                        OrganonStandDensity previousDensity = bestTrajectory.DensityByPeriod[periodIndex - 1];
-                        OrganonStandDensity currentDensity = bestTrajectory.DensityByPeriod[periodIndex];
+                        OrganonStandDensity previousDensity = highestTrajectory.DensityByPeriod[periodIndex - 1];
+                        OrganonStandDensity currentDensity = highestTrajectory.DensityByPeriod[periodIndex];
                         if ((currentDensity == null) || (previousDensity == null))
                         {
                             throw new ParameterOutOfRangeException(null, "Stand density information is missing. Did the heuristic perform at least one fully simulated move?");
@@ -173,8 +175,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                         treesPerAcreDecrease = 1.0F - currentDensity.TreesPerAcre / previousDensity.TreesPerAcre;
                     }
 
-                    Stand stand = bestTrajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
-                    OrganonStandDensity density = bestTrajectory.DensityByPeriod[periodIndex];
+                    Stand stand = highestTrajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
+                    OrganonStandDensity density = highestTrajectory.DensityByPeriod[periodIndex];
                     float quadraticMeanDiameter = stand.GetQuadraticMeanDiameter(); // leave in inches for Reineke SDI
                     float reinekeStandDensityIndex = areaConversionFactor * density.TreesPerAcre * MathF.Pow(0.1F * quadraticMeanDiameter, Constant.ReinekeExponent);
                     quadraticMeanDiameter *= dbhConversionFactor;
@@ -186,9 +188,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float treesPerUnitAreaDecrease = areaConversionFactor * treesPerAcreDecrease;
 
                     // NPV and LEV
-                    float thinNetPresentValue = bestTrajectory.ThinningVolume.NetPresentValue[periodIndex];
+                    float thinNetPresentValue = highestTrajectory.ThinningVolume.NetPresentValue[periodIndex];
                     totalThinNetPresentValue += thinNetPresentValue;
-                    float standingNetPresentValue = bestTrajectory.StandingVolume.NetPresentValue[periodIndex] - this.TimberValue.FixedReforestationCostPerHectare - this.TimberValue.SeedlingCost * bestTrajectory.PlantingDensityInTreesPerHectare;
+                    float standingNetPresentValue = highestTrajectory.StandingVolume.NetPresentValue[periodIndex] - this.TimberValue.FixedReforestationCostPerHectare - this.TimberValue.SeedlingCost * highestTrajectory.PlantingDensityInTreesPerHectare;
                     float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue;
 
                     float presentToFutureConversionFactor = MathF.Pow(1.0F + this.TimberValue.DiscountRate, rotationLength);
@@ -199,7 +201,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float netPresentValue3Saw = gradedVolumeStanding.NetPresentValue3Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue3Saw[periodIndex];
                     float netPresentValue4Saw = gradedVolumeStanding.NetPresentValue4Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue4Saw[periodIndex];
 
-                    int simulationYear = bestTrajectory.PeriodLengthInYears * periodIndex;
+                    int simulationYear = highestTrajectory.PeriodLengthInYears * periodIndex;
                     line.Append(trajectoryName + "," + heuristicName + ",");
                     if (runsSpecified)
                     {
@@ -211,9 +213,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     Debug.Assert((harvestVolumeScribner == 0.0F && basalAreaRemoved == 0.0F) || (harvestVolumeScribner > 0.0F && basalAreaRemoved > 0.0F));
                     line.Append(discountRate.ToString(CultureInfo.InvariantCulture) + "," +
-                                thinAgeString + "," +
+                                firstThinAgeString + "," + 
+                                secondThinAgeString + "," +
                                 rotationLength.ToString(CultureInfo.InvariantCulture) + "," +
-                                (bestTrajectory.PeriodZeroAgeInYears + simulationYear).ToString(CultureInfo.InvariantCulture) + "," +
+                                (highestTrajectory.PeriodZeroAgeInYears + simulationYear).ToString(CultureInfo.InvariantCulture) + "," +
                                 simulationYear.ToString(CultureInfo.InvariantCulture) + "," +
                                 reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                 quadraticMeanDiameter.ToString("0.00", CultureInfo.InvariantCulture) + "," +

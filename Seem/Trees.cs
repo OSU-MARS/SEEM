@@ -61,6 +61,11 @@ namespace Osu.Cof.Ferm
         public int[] Tag { get; private set; }
 
         /// <summary>
+        /// Original index of tree prior to any harvests. Used for locating retained trees in tree selection vectors.
+        /// </summary>
+        public int[] UncompactedIndex { get; private set; }
+
+        /// <summary>
         /// Whether diameters, heights, and densities are in English or metric units.
         /// </summary>
         public Units Units { get; private init; }
@@ -79,6 +84,7 @@ namespace Osu.Cof.Ferm
             this.HeightGrowth = new float[this.Capacity];
             this.Species = species;
             this.Tag = new int[this.Capacity];
+            this.UncompactedIndex = new int[this.Capacity];
             this.Units = units;
         }
 
@@ -95,6 +101,7 @@ namespace Osu.Cof.Ferm
             other.Height.CopyTo(this.Height, 0);
             other.HeightGrowth.CopyTo(this.HeightGrowth, 0);
             other.Tag.CopyTo(this.Tag, 0);
+            other.UncompactedIndex.CopyTo(this.UncompactedIndex, 0);
         }
 
         public void CopyFrom(Trees other)
@@ -114,6 +121,7 @@ namespace Osu.Cof.Ferm
             Array.Copy(other.HeightGrowth, 0, this.HeightGrowth, 0, other.Count);
             Array.Copy(other.LiveExpansionFactor, 0, this.LiveExpansionFactor, 0, other.Count);
             Array.Copy(other.Tag, 0, this.Tag, 0, other.Count);
+            Array.Copy(other.UncompactedIndex, 0, this.UncompactedIndex, 0, other.Count);
 
             // ensure expansion factors are zeroed in any unused capacity
             for (int treeIndex = this.Count; treeIndex < this.Capacity; ++treeIndex)
@@ -148,6 +156,12 @@ namespace Osu.Cof.Ferm
                 this.Height = this.Height.Extend(this.Capacity);
                 this.HeightGrowth = this.HeightGrowth.Extend(this.Capacity);
                 this.Tag = this.Tag.Extend(this.Capacity);
+                this.UncompactedIndex = this.UncompactedIndex.Extend(this.Capacity);
+            }
+
+            if (this.UncompactedIndex[this.Count] != 0)
+            {
+                throw new NotSupportedException("Uncompacted index is nonzero. Is this an attempt to add a tree after trees have been removed?");
             }
 
             this.Tag[this.Count] = tag;
@@ -155,17 +169,18 @@ namespace Osu.Cof.Ferm
             this.Height[this.Count] = height;
             this.CrownRatio[this.Count] = crownRatio;
             this.LiveExpansionFactor[this.Count] = liveExpansionFactor;
+            this.UncompactedIndex[this.Count] = this.Count; // if needed, support multiple species by including offset due to trees of other species
 
             ++this.Count;
         }
 
-        public float GetBasalArea(int treeIndex)
+        public float GetBasalArea(int compactedTreeIndex)
         {
             // TODO: support metric
             Debug.Assert(this.Units == Units.English);
 
-            float dbhInInches = this.Dbh[treeIndex];
-            float liveExpansionFactor = this.LiveExpansionFactor[treeIndex];
+            float dbhInInches = this.Dbh[compactedTreeIndex];
+            float liveExpansionFactor = this.LiveExpansionFactor[compactedTreeIndex];
             return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
         }
 
@@ -176,91 +191,78 @@ namespace Osu.Cof.Ferm
 
         public int[] GetDbhSortOrder()
         {
-            int[] dbhSortIndices = new int[this.Capacity];
+            int[] dbhSortIndices = new int[this.Count];
             for (int treeIndex = 0; treeIndex < this.Count; ++treeIndex)
             {
                 dbhSortIndices[treeIndex] = treeIndex;
             }
-            float[] dbhCloneWhichBecomesSorted = new float[this.Capacity];
-            this.Dbh.CopyTo(dbhCloneWhichBecomesSorted, 0);
+            float[] dbhCloneWhichBecomesSorted = new float[this.Count];
+            Array.Copy(this.Dbh, 0, dbhCloneWhichBecomesSorted, 0, this.Count);
             Array.Sort(dbhCloneWhichBecomesSorted, dbhSortIndices);
-
-            int unusedCapacity = this.Capacity - this.Count;
-            if (unusedCapacity == 0)
-            {
-                return dbhSortIndices;
-            }
-
-            int[] trimmedSortIndices = new int[this.Count];
-            Array.Copy(dbhSortIndices, unusedCapacity, trimmedSortIndices, 0, this.Count);
-            return trimmedSortIndices;
+            return dbhSortIndices;
         }
 
         public int[] GetHeightSortOrder()
         {
-            int[] heightSortIndices = new int[this.Capacity];
+            int[] heightSortIndices = new int[this.Count];
             for (int treeIndex = 0; treeIndex < this.Count; ++treeIndex)
             {
                 heightSortIndices[treeIndex] = treeIndex;
             }
-            float[] heightCloneWhichBecomesSorted = new float[this.Capacity];
-            this.Height.CopyTo(heightCloneWhichBecomesSorted, 0);
+            float[] heightCloneWhichBecomesSorted = new float[this.Count];
+            Array.Copy(this.Height, 0, heightCloneWhichBecomesSorted, 0, this.Count);
             Array.Sort(heightCloneWhichBecomesSorted, heightSortIndices);
-
-            int unusedCapacity = this.Capacity - this.Count;
-            if (unusedCapacity == 0)
-            {
-                return heightSortIndices;
-            }
-
-            int[] trimmedSortIndices = new int[this.Count];
-            Array.Copy(heightSortIndices, unusedCapacity, trimmedSortIndices, 0, this.Count);
-            return trimmedSortIndices;
+            return heightSortIndices;
         }
 
         public void RemoveZeroExpansionFactorTrees()
         {
-            // for now, assume snags indicated by dead expansion factor can be dropped
-            int destinationTreeIndex = 0;
-            for (int sourceTreeIndex = 0; sourceTreeIndex < this.Count; ++sourceTreeIndex)
+            // for now, assume snags are indicated by dead expansion factor can be dropped
+            int moreCompactedTreeIndex = 0;
+            for (int lessCompactedTreeIndex = 0; lessCompactedTreeIndex < this.Count; ++lessCompactedTreeIndex)
             {
-                float sourceExpansionFactor = this.LiveExpansionFactor[sourceTreeIndex];
+                float sourceExpansionFactor = this.LiveExpansionFactor[lessCompactedTreeIndex];
                 if (sourceExpansionFactor > 0.0F)
                 {
                     // if the source and destinations aren't matched, compact this tree in the array
-                    if (destinationTreeIndex != sourceTreeIndex)
+                    if (moreCompactedTreeIndex != lessCompactedTreeIndex)
                     {
-                        Debug.Assert(destinationTreeIndex < sourceTreeIndex);
-                        this.CrownRatio[destinationTreeIndex] = this.CrownRatio[sourceTreeIndex];
-                        this.Dbh[destinationTreeIndex] = this.Dbh[sourceTreeIndex];
-                        this.DbhGrowth[destinationTreeIndex] = this.DbhGrowth[sourceTreeIndex];
-                        this.DeadExpansionFactor[destinationTreeIndex] = this.DeadExpansionFactor[sourceTreeIndex];
-                        this.Height[destinationTreeIndex] = this.Height[sourceTreeIndex];
-                        this.HeightGrowth[destinationTreeIndex] = this.HeightGrowth[sourceTreeIndex];
-                        this.LiveExpansionFactor[destinationTreeIndex] = this.LiveExpansionFactor[sourceTreeIndex];
-                        this.Tag[destinationTreeIndex] = this.Tag[sourceTreeIndex];
+                        Debug.Assert(moreCompactedTreeIndex < lessCompactedTreeIndex);
+                        this.CrownRatio[moreCompactedTreeIndex] = this.CrownRatio[lessCompactedTreeIndex];
+                        this.Dbh[moreCompactedTreeIndex] = this.Dbh[lessCompactedTreeIndex];
+                        this.DbhGrowth[moreCompactedTreeIndex] = this.DbhGrowth[lessCompactedTreeIndex];
+                        this.DeadExpansionFactor[moreCompactedTreeIndex] = this.DeadExpansionFactor[lessCompactedTreeIndex];
+                        this.Height[moreCompactedTreeIndex] = this.Height[lessCompactedTreeIndex];
+                        this.HeightGrowth[moreCompactedTreeIndex] = this.HeightGrowth[lessCompactedTreeIndex];
+                        this.LiveExpansionFactor[moreCompactedTreeIndex] = this.LiveExpansionFactor[lessCompactedTreeIndex];
+                        this.Tag[moreCompactedTreeIndex] = this.Tag[lessCompactedTreeIndex];
+                        this.UncompactedIndex[moreCompactedTreeIndex] = this.UncompactedIndex[lessCompactedTreeIndex];
                     }
 
                     // if the source tree remains present in the stand, advance the destination index
                     // If the source tree is removed, the destination isn't incremented and the source-destination index mismatch will trigger array
                     // compaction for all remaining loop iterations.
                     Debug.Assert(sourceExpansionFactor >= 0.0F);
-                    ++destinationTreeIndex;
+                    ++moreCompactedTreeIndex;
                 }
             }
 
-            // update count for any removed trees and set expansion factors of any source trees which were compacted to zero
-            this.Count = destinationTreeIndex;
+            // update count for any removed trees
+            this.Count = moreCompactedTreeIndex;
+            // zero tail of now unused tree records due to compaction
+            // This
+            // - Clears expansion factors in the last SIMD block processed, resulting in no longer valid records being masked from computations.
+            // - May need to include other properties depending on sorting implementations or other tree processing requirements.
             for (int treeIndex = this.Count; treeIndex < this.Capacity; ++treeIndex)
             {
-                // this.CrownRatio[destinationTreeIndex] = 0.0F;
-                // this.Dbh[destinationTreeIndex] = 0.0F;
-                // this.DbhGrowth[destinationTreeIndex] = 0.0F;
-                // this.DeadExpansionFactor[destinationTreeIndex] = 0.0F;
-                // this.Height[destinationTreeIndex] = 0.0F;
-                // this.HeightGrowth[destinationTreeIndex] = 0.0F;
+                // this.CrownRatio[treeIndex] = 0.0F;
+                // this.Dbh[treeIndex] = 0.0F;
+                // this.DbhGrowth[treeIndex] = 0.0F;
+                // this.DeadExpansionFactor[treeIndex] = 0.0F;
+                // this.Height[treeIndex] = 0.0F;
+                // this.HeightGrowth[treeIndex] = 0.0F;
                 this.LiveExpansionFactor[treeIndex] = 0.0F;
-                // this.Tag[destinationTreeIndex] = 0;
+                // this.Tag[treeIndex] = 0; // potential desirable not to zero as a aid to debugging
             }
         }
 

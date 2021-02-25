@@ -160,7 +160,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                 }
             }
-            else if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.NoneOrLast)
+            else if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.ThinPeriodOrRetain)
             {
                 for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
                 {

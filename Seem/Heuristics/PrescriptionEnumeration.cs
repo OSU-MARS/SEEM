@@ -53,9 +53,9 @@ namespace Osu.Cof.Ferm.Heuristics
                 PrescriptionUnits.TreePercentageRemoved => 100.0F,
                 _ => throw new NotSupportedException(String.Format("Unhandled units {0}.", this.Parameters.Units))
             };
-            if ((this.Parameters.Step < 0.0F) || (this.Parameters.Step > intensityUpperBound))
+            if ((this.Parameters.StepSize < 0.0F) || (this.Parameters.StepSize > intensityUpperBound))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Parameters.Step));
+                throw new ArgumentOutOfRangeException(nameof(this.Parameters.StepSize));
             }
             if ((this.Parameters.Maximum < 0.0F) || (this.Parameters.Maximum > intensityUpperBound))
             {
@@ -70,7 +70,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException();
             }
-            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
+            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.ThinPeriodOrRetain)
             {
                 throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
             }
@@ -78,32 +78,43 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            ThinByPrescription prescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests.First();
-            float maximumPercentage = this.Parameters.Maximum;
-            float minimumPercentage = this.Parameters.Minimum;
-            switch (this.Parameters.Units)
+            float maximumPercentage = 0.0F;
+            float minimumPercentage = 0.0F;
+            ThinByPrescription? firstThinPrescription = (ThinByPrescription?)this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
+            ThinByPrescription? secondThinPrescription = null;
+            if (firstThinPrescription != null)
             {
-                case PrescriptionUnits.BasalAreaPerAcreRetained:
-                    // obtain stand's basal area prior to thinning if it's not already available
-                    if (this.CurrentTrajectory.DensityByPeriod[prescription.Period - 1] == null)
-                    {
-                        // TODO: check for no conflicting other prescriptions
-                        this.CurrentTrajectory.Simulate();
-                    }    
-                    float basalAreaPerAcreBeforeThin = this.CurrentTrajectory.DensityByPeriod[prescription.Period - 1].BasalAreaPerAcre;
-                    if (maximumPercentage >= basalAreaPerAcreBeforeThin)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(this.Parameters.Minimum));
-                    }
-                    // convert retained basal area to removed percentage
-                    maximumPercentage = 100.0F * (1.0F - maximumPercentage / basalAreaPerAcreBeforeThin);
-                    minimumPercentage = 100.0F * (1.0F - minimumPercentage / basalAreaPerAcreBeforeThin);
-                    break;
-                case PrescriptionUnits.TreePercentageRemoved:
-                    // no changes needed
-                    break;
-                default:
-                    throw new NotSupportedException(String.Format("Unhandled units {0}.", this.Parameters.Units));
+                maximumPercentage = this.Parameters.Maximum;
+                minimumPercentage = this.Parameters.Minimum;
+                switch (this.Parameters.Units)
+                {
+                    case PrescriptionUnits.BasalAreaPerAcreRetained:
+                        // obtain stand's basal area prior to thinning if it's not already available
+                        if (this.CurrentTrajectory.DensityByPeriod[firstThinPrescription.Period - 1] == null)
+                        {
+                            // TODO: check for no conflicting other prescriptions
+                            this.CurrentTrajectory.Simulate();
+                        }
+                        float basalAreaPerAcreBeforeThin = this.CurrentTrajectory.DensityByPeriod[firstThinPrescription.Period - 1].BasalAreaPerAcre;
+                        if (maximumPercentage >= basalAreaPerAcreBeforeThin)
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(this.Parameters.Minimum));
+                        }
+                        // convert retained basal area to removed percentage
+                        maximumPercentage = 100.0F * (1.0F - maximumPercentage / basalAreaPerAcreBeforeThin);
+                        minimumPercentage = 100.0F * (1.0F - minimumPercentage / basalAreaPerAcreBeforeThin);
+                        break;
+                    case PrescriptionUnits.TreePercentageRemoved:
+                        // no changes needed
+                        break;
+                    default:
+                        throw new NotSupportedException(String.Format("Unhandled units {0}.", this.Parameters.Units));
+                }
+
+                if (this.CurrentTrajectory.Configuration.Treatments.Harvests.Count > 1)
+                {
+                    secondThinPrescription = (ThinByPrescription?)this.CurrentTrajectory.Configuration.Treatments.Harvests[1];
+                }
             }
 
             float maximumAllowedPercentage = this.Parameters.FromAbovePercentageUpperLimit + this.Parameters.ProportionalPercentageUpperLimit + this.Parameters.FromBelowPercentageUpperLimit;
@@ -126,44 +137,79 @@ namespace Osu.Cof.Ferm.Heuristics
             // in such a way that valid combinations will be found within the maximum and minimum intensities and percentage limits and
             // granularity specified by the step size. This is nontrivial and valid parameter combinations may exist which the current
             // code fails to locate.
-            for (float fromAbovePercentage = 0.0F; fromAbovePercentage <= this.Parameters.FromAbovePercentageUpperLimit; fromAbovePercentage += this.Parameters.Step)
+            for (float fromAbovePercentage1 = 0.0F; fromAbovePercentage1 <= this.Parameters.FromAbovePercentageUpperLimit; fromAbovePercentage1 += this.Parameters.StepSize)
             {
-                float availableProportionalAndBelowPercentage = maximumPercentage - fromAbovePercentage;
-                float maximumProportionalPercentage = MathF.Min(availableProportionalAndBelowPercentage, this.Parameters.ProportionalPercentageUpperLimit);
-                float requiredProportionalPercentage = MathF.Max(minimumPercentage - fromAbovePercentage - this.Parameters.FromBelowPercentageUpperLimit, 0.0F);
-                for (float proportionalPercentage = requiredProportionalPercentage; proportionalPercentage <= maximumProportionalPercentage; proportionalPercentage += this.Parameters.Step)
+                float availableProportionalAndBelowPercentage1 = maximumPercentage - fromAbovePercentage1;
+                float maximumProportionalPercentage1 = MathF.Min(availableProportionalAndBelowPercentage1, this.Parameters.ProportionalPercentageUpperLimit);
+                float requiredProportionalPercentage1 = MathF.Max(minimumPercentage - fromAbovePercentage1 - this.Parameters.FromBelowPercentageUpperLimit, 0.0F);
+                for (float proportionalPercentage1 = requiredProportionalPercentage1; proportionalPercentage1 <= maximumProportionalPercentage1; proportionalPercentage1 += this.Parameters.StepSize)
                 {
-                    float availableBelowPercentage = availableProportionalAndBelowPercentage - proportionalPercentage;
-                    float maximumFromBelowPercentage = MathF.Min(availableBelowPercentage, this.Parameters.FromBelowPercentageUpperLimit);
-                    float requiredBelowPercentage = MathF.Max(minimumPercentage - proportionalPercentage - fromAbovePercentage, 0.0F);
-                    for (float fromBelowPercentage = requiredBelowPercentage; fromBelowPercentage <= maximumFromBelowPercentage; fromBelowPercentage += this.Parameters.Step)
+                    float availableBelowPercentage1 = availableProportionalAndBelowPercentage1 - proportionalPercentage1;
+                    float maximumFromBelowPercentage1 = MathF.Min(availableBelowPercentage1, this.Parameters.FromBelowPercentageUpperLimit);
+                    float requiredBelowPercentage1 = MathF.Max(minimumPercentage - proportionalPercentage1 - fromAbovePercentage1, 0.0F);
+                    for (float fromBelowPercentage1 = requiredBelowPercentage1; fromBelowPercentage1 <= maximumFromBelowPercentage1; fromBelowPercentage1 += this.Parameters.StepSize)
                     {
-                        Debug.Assert(fromBelowPercentage >= 0.0F);
-                        float totalIntensity = fromAbovePercentage + proportionalPercentage + fromBelowPercentage;
-                        Debug.Assert(totalIntensity >= minimumPercentage);
-                        Debug.Assert(totalIntensity <= maximumPercentage);
+                        Debug.Assert(fromBelowPercentage1 >= 0.0F);
+                        float totalIntensity1 = fromAbovePercentage1 + proportionalPercentage1 + fromBelowPercentage1;
+                        Debug.Assert(totalIntensity1 >= minimumPercentage);
+                        Debug.Assert(totalIntensity1 <= maximumPercentage);
 
-                        prescription.FromAbovePercentage = fromAbovePercentage;
-                        prescription.FromBelowPercentage = fromBelowPercentage;
-                        prescription.ProportionalPercentage = proportionalPercentage;
-                        this.CurrentTrajectory.DeselectAllTrees();
-                        this.CurrentTrajectory.Simulate();
-                        Debug.Assert((totalIntensity == 0.0F && this.CurrentTrajectory.ThinningVolume.ScribnerTotal.Sum() == 0.0F) || (totalIntensity > 0.0F && this.CurrentTrajectory.ThinningVolume.ScribnerTotal.Sum() > 0.0F));
-
-                        float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
-                        if (candidateObjectiveFunction > this.BestObjectiveFunction)
+                        if (firstThinPrescription != null)
                         {
-                            // accept change of prescription if it improves upon the best solution
-                            this.BestObjectiveFunction = candidateObjectiveFunction;
-                            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                            firstThinPrescription.FromAbovePercentage = fromAbovePercentage1;
+                            firstThinPrescription.FromBelowPercentage = fromBelowPercentage1;
+                            firstThinPrescription.ProportionalPercentage = proportionalPercentage1;
                         }
 
-                        this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
-                        this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                        float secondStepSize = this.Parameters.StepSize / (1.0F - 0.01F * totalIntensity1);
+                        for (float fromAbovePercentage2 = 0.0F; fromAbovePercentage2 <= this.Parameters.FromAbovePercentageUpperLimit; fromAbovePercentage2 += secondStepSize)
+                        {
+                            float availableProportionalAndBelowPercentage2 = maximumPercentage - fromAbovePercentage2;
+                            float maximumProportionalPercentage2 = MathF.Min(availableProportionalAndBelowPercentage2, this.Parameters.ProportionalPercentageUpperLimit);
+                            float requiredProportionalPercentage2 = MathF.Max(minimumPercentage - fromAbovePercentage2 - this.Parameters.FromBelowPercentageUpperLimit, 0.0F);
+                            for (float proportionalPercentage2 = requiredProportionalPercentage2; proportionalPercentage2 <= maximumProportionalPercentage2; proportionalPercentage2 += secondStepSize)
+                            {
+                                float availableBelowPercentage2 = availableProportionalAndBelowPercentage2 - proportionalPercentage2;
+                                float maximumFromBelowPercentage2 = MathF.Min(availableBelowPercentage2, this.Parameters.FromBelowPercentageUpperLimit);
+                                float requiredBelowPercentage2 = MathF.Max(minimumPercentage - proportionalPercentage2 - fromAbovePercentage2, 0.0F);
+                                for (float fromBelowPercentage2 = requiredBelowPercentage2; fromBelowPercentage2 <= maximumFromBelowPercentage2; fromBelowPercentage2 += secondStepSize)
+                                {
+                                    if (secondThinPrescription != null)
+                                    {
+                                        secondThinPrescription.FromAbovePercentage = fromAbovePercentage2;
+                                        secondThinPrescription.FromBelowPercentage = fromBelowPercentage2;
+                                        secondThinPrescription.ProportionalPercentage = proportionalPercentage2;
+                                    }
 
-                        this.MoveLog.FromAbovePercentageByMove.Add(fromAbovePercentage);
-                        this.MoveLog.ProportionalPercentageByMove.Add(proportionalPercentage);
-                        this.MoveLog.FromBelowPercentageByMove.Add(fromBelowPercentage);
+                                    this.CurrentTrajectory.DeselectAllTrees();
+                                    this.CurrentTrajectory.Simulate();
+
+                                    if (secondThinPrescription == null)
+                                    {
+                                        Debug.Assert((totalIntensity1 == 0.0F && this.CurrentTrajectory.ThinningVolume.ScribnerTotal.Sum() == 0.0F) || (totalIntensity1 > 0.0F && this.CurrentTrajectory.ThinningVolume.ScribnerTotal.Sum() > 0.0F));
+                                    }
+
+                                    float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
+                                    if (candidateObjectiveFunction > this.BestObjectiveFunction)
+                                    {
+                                        // accept change of prescription if it improves upon the best solution
+                                        this.BestObjectiveFunction = candidateObjectiveFunction;
+                                        this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                                    }
+
+                                    this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+                                    this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+
+                                    this.MoveLog.FromAbovePercentageByMove1.Add(fromAbovePercentage1);
+                                    this.MoveLog.ProportionalPercentageByMove1.Add(proportionalPercentage1);
+                                    this.MoveLog.FromBelowPercentageByMove1.Add(fromBelowPercentage1);
+
+                                    this.MoveLog.FromAbovePercentageByMove2.Add(fromAbovePercentage2);
+                                    this.MoveLog.ProportionalPercentageByMove2.Add(proportionalPercentage2);
+                                    this.MoveLog.FromBelowPercentageByMove2.Add(fromBelowPercentage2);
+                                }
+                            }
+                        }
                     }
                 }
             }

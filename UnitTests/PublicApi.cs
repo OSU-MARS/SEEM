@@ -214,7 +214,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 Maximum = 60.0F,
                 Minimum = 50.0F,
-                Step = 10.0F,
+                StepSize = 10.0F,
                 UseFiaVolume = defaultParameters.UseFiaVolume
             };
             PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, landExpectationValue, prescriptionParameters);
@@ -258,38 +258,30 @@ namespace Osu.Cof.Ferm.Test
 
             OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             unthinnedTrajectory.Simulate();
-            foreach (Stand? unthinnedStand in unthinnedTrajectory.StandByPeriod)
-            {
-                AssertNullable.IsNotNull(unthinnedStand);
-                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
-            }
 
-            int thinPeriod = 3;
-            configuration.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
+            int firstThinPeriod = 3;
+            configuration.Treatments.Harvests.Add(new ThinByPrescription(firstThinPeriod)
                                                   {
-                                                      FromAbovePercentage = 20.0F,
+                                                      FromAbovePercentage = 20.0F, // by basal area
                                                       ProportionalPercentage = 15.0F,
                                                       FromBelowPercentage = 10.0F
                                                   });
-            OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
-            AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
-            Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+            OrganonStandTrajectory oneThinTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            AssertNullable.IsNotNull(oneThinTrajectory.StandByPeriod[0]);
+            Assert.IsTrue(oneThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+            oneThinTrajectory.Simulate();
 
-            thinnedTrajectory.Simulate();
-
-            for (int periodIndex = 0; periodIndex < thinPeriod; ++periodIndex)
+            int secondThinPeriod = 6;
+            configuration.Treatments.Harvests.Add(new ThinByPrescription(secondThinPeriod)
             {
-                Stand? unthinnedStand = thinnedTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(unthinnedStand);
-                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
-            }
-            int expectedThinnedTreeRecordCount = 328; // must be updated if prescription changes
-            for (int periodIndex = thinPeriod; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
-            {
-                Stand? thinnedStand = thinnedTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(thinnedStand);
-                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedThinnedTreeRecordCount);
-            }
+                FromAbovePercentage = 0.0F,
+                ProportionalPercentage = 20.0F,
+                FromBelowPercentage = 0.0F
+            });
+            OrganonStandTrajectory twoThinTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            AssertNullable.IsNotNull(twoThinTrajectory.StandByPeriod[0]);
+            Assert.IsTrue(twoThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+            twoThinTrajectory.Simulate();
 
             // verify unthinned trajectory
             // find/replace regular expression for cleaning up watch window copy/paste: \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
@@ -297,11 +289,11 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumUnthinnedQmd = new float[] { 6.61F, 8.17F, 9.52F, 10.67F, 11.68F, 12.56F, 13.34F, 14.05F, 14.69F, 15.28F }; // in
             //                                                0      1      2      3      4       5       6       7       8       9
             float[] minimumUnthinnedTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 91.6F, 101.9F, 111.3F, 119.9F, 127.8F, 135.0F, 141.7F }; // ft
-            float[] minimumUnthinnedVolume;
+            float[] minimumUnthinnedStandingVolume;
             if (unthinnedTrajectory.UseFiaVolume)
             {
-                //                                     0       1       2       3       4       5       6       7       8       9
-                minimumUnthinnedVolume = new float[] { 4.428F, 15.02F, 30.49F, 48.39F, 66.72F, 84.45F, 101.1F, 116.4F, 130.6F, 143.6F }; // FIA SV6x32 MBF/ha
+                //                                             0       1       2       3       4       5       6       7       8       9
+                minimumUnthinnedStandingVolume = new float[] { 4.428F, 15.02F, 30.49F, 48.39F, 66.72F, 84.45F, 101.1F, 116.4F, 130.6F, 143.6F }; // FIA SV6x32 MBF/ha
             }
             else
             {
@@ -310,36 +302,118 @@ namespace Osu.Cof.Ferm.Test
                 ///minimumUnthinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 47.24F, 62.21F, 75.09F, 89.64F, 103.7F, 116.5F, 128.9F };
                 // bilinear interpolation
                 // minimumUnthinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 47.22F, 62.24F, 75.22F, 89.55F, 103.8F, 116.7F, 128.8F }; // 0.5 cm diameter classes, 1 m height classes
-                minimumUnthinnedVolume = new float[] { 9.648F, 18.88F, 31.01F, 47.24F, 62.33F, 75.18F, 89.45F, 103.8F, 116.8F, 128.7F }; // 1 cm diameter classes, 1 m height classes
+                minimumUnthinnedStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 47.24F, 62.33F, 75.18F, 89.45F, 103.8F, 116.8F, 128.7F }; // 1 cm diameter classes, 1 m height classes
                 // minimumUnthinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 46.98F, 61.97F, 75.17F, 89.22F, 103.9F, 116.8F, 128.7F }; // 2 cm diameter classes, 2 m height classes
                 // minimumUnthinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 48.27F, 63.40F, 76.92F, 90.37F, 104.7F, 117.5F, 129.0F }; // 5 cm diameter classes, 5 m height classes
             }
-            PublicApi.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedVolume, 0, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
+            float[] minimumUnthinnedHarvestVolume = new float[minimumUnthinnedStandingVolume.Length];
 
-            // verify thinned trajectory
-            //                                        0      1      2      3       4       5       6       7       8       9
-            float[] minimumThinnedQmd = new float[] { 6.61F, 8.19F, 9.53F, 11.81F, 13.44F, 14.80F, 15.99F, 17.05F, 18.00F, 18.85F }; // in
-            //                                              0      1      2      3      4      5       6       7       8       9
-            float[] minimumThinnedTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 88.3F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
-            float[] minimumThinnedVolume;
-            if (thinnedTrajectory.UseFiaVolume)
+            foreach (Stand? unthinnedStand in unthinnedTrajectory.StandByPeriod)
             {
-                //                                   0       1       2       3       4       5       6       7       8       9
-                minimumThinnedVolume = new float[] { 4.428F, 15.02F, 30.50F, 30.64F, 47.26F, 64.81F, 82.54F, 99.87F, 116.3F, 131.7F }; // FIA MBF/ha
+                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+            }
+
+            PublicApi.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedStandingVolume, minimumUnthinnedHarvestVolume, 0, null, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
+
+            // verify one thin trajectory
+            //                                        0      1      2      3       4       5       6       7       8       9
+            float[] minimumOneThinQmd = new float[] { 6.61F, 8.19F, 9.53F, 11.81F, 13.44F, 14.80F, 15.99F, 17.05F, 18.00F, 18.85F }; // in
+            //                                              0      1      2      3      4      5       6       7       8       9
+            float[] minimumOneThinTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 88.3F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
+            float[] minimumOneThinStandingVolume;
+            float[] minimumOneThinHarvestVolume;
+            if (oneThinTrajectory.UseFiaVolume)
+            {
+                //                                           0       1       2       3       4       5       6       7       8       9
+                minimumOneThinStandingVolume = new float[] { 4.428F, 15.02F, 30.50F, 30.64F, 47.26F, 64.81F, 82.54F, 99.87F, 116.3F, 131.7F }; // FIA MBF/ha
+                minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
             }
             else
             {
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // nearest 1 cm diameter class and 0.5 m height class
                 // minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 28.25F, 41.77F, 54.37F, 68.44F, 85.10F, 100.4F, 114.7F };
+                // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
                 // bilinear interpolation
                 // minimumThinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 28.22F, 41.68F, 54.31F, 68.33F, 84.91F, 100.5F, 114.6F }; // 1 cm diameter classes, 0.5 m height classes
-                minimumThinnedVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 68.41F, 84.91F, 100.4F, 114.6F }; // 1 cm diameter classes, 1 m height classes
+                // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
+                minimumOneThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 68.41F, 84.91F, 100.4F, 114.6F }; // 1 cm diameter classes, 1 m height classes
+                minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
                 // minimumThinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 28.05F, 41.55F, 54.22F, 68.39F, 85.09F, 100.0F, 114.7F }; // 2 cm diameter classes, 2 m height classes
+                // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
                 // minimumThinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 29.34F, 42.72F, 55.94F, 69.84F, 85.99F, 101.3F, 115.0F }; // 5 cm diameter classes, 5 m height classes
+                // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
             }
-            PublicApi.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
-            PublicApi.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
+
+            for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
+            {
+                Stand? unthinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
+                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+            }
+            int expectedFirstThinTreeRecordCount = 328; // must be updated if prescription changes
+            for (int periodIndex = firstThinPeriod; periodIndex < oneThinTrajectory.PlanningPeriods; ++periodIndex)
+            {
+                Stand? thinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
+                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
+            }
+
+            PublicApi.Verify(oneThinTrajectory, minimumOneThinQmd, minimumOneThinTopHeight, minimumOneThinStandingVolume, minimumOneThinHarvestVolume, firstThinPeriod, null, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(oneThinTrajectory, minimumOneThinStandingVolume, firstThinPeriod, null);
+
+            // verify two thin trajectory
+            //                                        0      1      2      3       4       5       6       7       8       9
+            float[] minimumTwoThinQmd = new float[] { 6.61F, 8.19F, 9.53F, 11.81F, 13.44F, 14.80F, 16.69F, 18.03F, 19.12F, 20.07F }; // in
+            //                                              0      1      2      3      4      5       6       7       8       9
+            float[] minimumTwoThinTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 88.3F, 98.4F, 108.0F, 113.7F, 121.4F, 129.0F, 136.1F }; // ft
+            float[] minimumTwoThinStandingVolume;
+            float[] minimumTwoThinHarvestVolume;
+            if (twoThinTrajectory.UseFiaVolume)
+            {
+                //                                           0       1       2       3       4       5       6       7       8       9
+                minimumTwoThinStandingVolume = new float[] { 4.428F, 15.02F, 30.50F, 30.64F, 47.26F, 64.81F, 82.54F, 99.87F, 116.3F, 131.7F }; // FIA MBF/ha
+                minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+            }
+            else
+            {
+                // Poudel 2018 + Scribner long log net MBF/ha
+                // nearest 1 cm diameter class and 0.5 m height class
+                // minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 28.25F, 41.77F, 54.37F,  };
+                // bilinear interpolation
+                // minimumThinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 28.22F, 41.68F, 54.31F,  }; // 1 cm diameter classes, 0.5 m height classes
+                // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+                minimumTwoThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 56.79F, 72.22F, 88.0F, 102.4F }; // 1 cm diameter classes, 1 m height classes
+                minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 12.360F, 0.0F, 0.0F, 0.0F }; // TODO
+                // minimumThinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 28.05F, 41.55F, 54.22F,  }; // 2 cm diameter classes, 2 m height classes
+                // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+                // minimumThinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 29.34F, 42.72F, 55.94F,  }; // 5 cm diameter classes, 5 m height classes
+                // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+            }
+
+            for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
+            {
+                Stand? unthinnedStand = twoThinTrajectory.StandByPeriod[periodIndex];
+                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+            }
+            for (int periodIndex = firstThinPeriod; periodIndex < secondThinPeriod; ++periodIndex)
+            {
+                Stand? thinnedStand = twoThinTrajectory.StandByPeriod[periodIndex];
+                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
+            }
+            int expectedSecondThinTreeRecordCount = 263; // must be updated if prescription changes
+            for (int periodIndex = secondThinPeriod; periodIndex < twoThinTrajectory.PlanningPeriods; ++periodIndex)
+            {
+                Stand? thinnedStand = twoThinTrajectory.StandByPeriod[periodIndex];
+                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedSecondThinTreeRecordCount);
+            }
+
+            PublicApi.Verify(twoThinTrajectory, minimumTwoThinQmd, minimumTwoThinTopHeight, minimumTwoThinStandingVolume, minimumTwoThinHarvestVolume, firstThinPeriod, secondThinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(twoThinTrajectory, minimumTwoThinStandingVolume, firstThinPeriod, secondThinPeriod);
         }
 
         [TestMethod]
@@ -417,30 +491,38 @@ namespace Osu.Cof.Ferm.Test
             // verify thinned trajectory
             // find/replace regular expression: \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
             //                                        0      1       2       3       4     
-            float[] minimumThinnedQmd = new float[] { 9.16F, 10.47F, 11.64F, 12.64F, 13.52F }; // in
+            float[] minimumQmd = new float[] { 9.16F, 10.50F, 11.68F, 12.68F, 13.57F }; // in
             //                                              0      1       2       3       4     
-            float[] minimumThinnedTopHeight = new float[] { 92.9F, 101.4F, 110.4F, 118.9F, 126.7F }; // ft
-            float[] minimumThinnedVolume;
+            float[] minimumTopHeight = new float[] { 92.9F, 101.0F, 110.0F, 118.5F, 126.4F }; // ft
+            float[] minimumStandingVolume;
+            float[] minimumHarvestVolume;
             if (thinnedTrajectory.UseFiaVolume)
             {
                 //                                   0       1       2       3       4     
-                minimumThinnedVolume = new float[] { 43.74F, 49.00F, 68.86F, 87.95F, 105.8F }; // Browning 1977 (FIA) MBF/ha
+                minimumStandingVolume = new float[] { 43.74F, 49.00F, 68.86F, 87.95F, 105.8F }; // Browning 1977 (FIA) MBF/ha
+                minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
             }
             else
             {
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // nearest 1 cm diameter class and 0.5 m height class
                 // minimumThinnedVolume = new float[] { 51.59F, 51.75F, 66.71F, 81.88F, 97.72F };
+                // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
                 // bilinear interpolation: 
                 // minimumThinnedVolume = new float[] { 51.333F, 51.521F, 66.819F, 81.757F, 97.212F }; // 1 cm diameter classes, 0.5 m height classes
-                minimumThinnedVolume = new float[] { 51.244F, 51.549F, 66.957F, 81.836F, 97.184F }; // 1 cm diameter classes, 1 m height classes
+                // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+                minimumStandingVolume = new float[] { 51.244F, 51.561F, 67.151F, 81.817F, 97.327F }; // 1 cm diameter classes, 1 m height classes
+                minimumHarvestVolume = new float[] { 0.0F, 15.742F, 0.0F, 0.0F, 0.0F }; // TODO
                 // minimumThinnedVolume = new float[] { 50.444F, 51.261F, 66.582F, 81.800F, 97.521F }; // 2 cm diameter classes, 2 m height classes
+                // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
                 // minimumThinnedVolume = new float[] { 52.466F, 52.364F, 68.895F, 83.383F, 98.442F }; // 5 cm diameter classes, 5 m height classes
+                // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
             }
 
-            PublicApi.Verify(thinnedTrajectory, minimumThinnedQmd, minimumThinnedTopHeight, minimumThinnedVolume, thinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
-            PublicApi.Verify(thinnedTrajectory, minimumThinnedVolume, thinPeriod);
+            PublicApi.Verify(thinnedTrajectory, minimumQmd, minimumTopHeight, minimumStandingVolume, minimumHarvestVolume, thinPeriod, null, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(thinnedTrajectory, minimumStandingVolume, thinPeriod, null);
             Assert.IsTrue(thinnedTrajectory.GetFirstHarvestAge() == 30);
+            Assert.IsTrue(thinnedTrajectory.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
         }
 
         [TestMethod]
@@ -734,11 +816,11 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static void Verify(OrganonStandTrajectory thinnedTrajectory, float[] minimumThinnedVolumeScribner, int thinPeriod)
+        private static void Verify(OrganonStandTrajectory thinnedTrajectory, float[] minimumThinnedVolumeScribner, int firstThinPeriod, int? secondThinPeriod)
         {
             for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
             {
-                if (periodIndex == thinPeriod)
+                if ((periodIndex == firstThinPeriod) || (secondThinPeriod.HasValue && periodIndex == secondThinPeriod.Value))
                 {
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < thinnedTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre); // assume <50% thin by volume
@@ -753,14 +835,14 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static void Verify(OrganonStandTrajectory trajectory, float[] minimumQmd, float[] minimumTopHeight, float[] minimumStandingVolumeScribner, int thinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
+        private static void Verify(OrganonStandTrajectory trajectory, float[] minimumQmd, float[] minimumTopHeight, float[] minimumStandingVolumeScribner, float[] minimumHarvestVolumeScribner, int firstThinPeriod, int? secondThinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
         {
             Assert.IsTrue(trajectory.BasalAreaRemoved.Length == lastPeriod + 1);
             Assert.IsTrue(trajectory.BasalAreaRemoved[0] == 0.0F);
-            Assert.IsTrue(trajectory.HarvestPeriods == thinPeriod + 1); // BUGBUG: clean off by one semantic
+            Assert.IsTrue(trajectory.HarvestPeriods == (secondThinPeriod.HasValue ? Math.Max(firstThinPeriod, secondThinPeriod.Value) + 1 : firstThinPeriod + 1)); // BUGBUG: clean off by one semantic
             Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[0] == 0.0F);
             Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal.Length == lastPeriod + 1);
-            PublicApi.Verify(trajectory.IndividualTreeSelectionBySpecies, thinPeriod, minTrees, maxTrees);
+            PublicApi.Verify(trajectory.IndividualTreeSelectionBySpecies, firstThinPeriod, secondThinPeriod, minTrees, maxTrees);
             Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
             Assert.IsTrue(trajectory.PeriodLengthInYears == timeStepInYears);
             Assert.IsTrue(trajectory.PlanningPeriods == lastPeriod + 1); // BUGBUG: clean off by one semantic
@@ -774,6 +856,8 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
                 Assert.IsTrue(trajectory.StandingVolume.ScribnerTotal[periodIndex] > minimumStandingVolumeScribner[periodIndex]);
                 Assert.IsTrue(trajectory.StandingVolume.ScribnerTotal[periodIndex] < volumeTolerance * minimumStandingVolumeScribner[periodIndex]);
+                Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[periodIndex] >= minimumHarvestVolumeScribner[periodIndex]);
+                Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[periodIndex] <= volumeTolerance * minimumHarvestVolumeScribner[periodIndex]);
 
                 OrganonStand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
                 float qmd = stand.GetQuadraticMeanDiameter();
@@ -792,7 +876,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static void Verify(SortedDictionary<FiaCode, int[]> individualTreeSelectionBySpecies, int harvestPeriod, int minimumTreesSelected, int maximumTreesSelected)
+        private static void Verify(SortedDictionary<FiaCode, int[]> individualTreeSelectionBySpecies, int firstThinPeriod, int? secondThinPeriod, int minimumTreesSelected, int maximumTreesSelected)
         {
             int outOfRangeTrees = 0;
             int treesSelected = 0;
@@ -801,7 +885,11 @@ namespace Osu.Cof.Ferm.Test
                 for (int treeIndex = 0; treeIndex < individualTreeSelection.Length; ++treeIndex)
                 {
                     int treeSelection = individualTreeSelection[treeIndex];
-                    bool isOutOfRange = (treeSelection != 0) && (treeSelection != harvestPeriod);
+                    bool isOutOfRange = (treeSelection != 0) && (treeSelection != firstThinPeriod);
+                    if (secondThinPeriod.HasValue)
+                    {
+                        isOutOfRange &= treeSelection != secondThinPeriod.Value;
+                    }
                     if (isOutOfRange)
                     {
                         ++outOfRangeTrees;

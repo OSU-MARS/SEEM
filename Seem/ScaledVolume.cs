@@ -57,7 +57,7 @@ namespace Osu.Cof.Ferm
             return dibInCm;
         }
 
-        public void GetGradedVolume(Trees trees, int[] individualTreeSelection, out double cubic2saw, out double cubic3saw, out double cubic4saw, out double scribner2saw, out double scribner3saw, out double scribner4saw)
+        public void GetGradedVolume(Trees trees, int[] individualTreeSelection, int harvestPeriod, out double cubic2saw, out double cubic3saw, out double cubic4saw, out double scribner2saw, out double scribner3saw, out double scribner4saw)
         {
             TreeVolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
             cubic2saw = 0.0;
@@ -66,23 +66,23 @@ namespace Osu.Cof.Ferm
             scribner2saw = 0.0;
             scribner3saw = 0.0;
             scribner4saw = 0.0;
-            int selectionIndex = 0;
-            for (int treeIndex = 0; treeIndex < trees.Count; ++selectionIndex, ++treeIndex)
+            for (int compactedTreeIndex = 0; compactedTreeIndex < trees.Count; ++compactedTreeIndex)
             {
-                if (individualTreeSelection[selectionIndex] == 0)
+                int uncompactedTreeIndex = trees.UncompactedIndex[compactedTreeIndex];
+                if (individualTreeSelection[uncompactedTreeIndex] != harvestPeriod)
                 {
-                    // tree is retained rather than thinned
+                    // tree was either removed previously or was retained rather than thinned
                     continue;
                 }
 
-                float dbhInCm = trees.Dbh[treeIndex];
-                float heightInMeters = trees.Height[treeIndex];
+                float dbhInCm = trees.Dbh[compactedTreeIndex];
+                float heightInMeters = trees.Height[compactedTreeIndex];
                 if (trees.Units == Units.English)
                 {
                     dbhInCm *= Constant.CentimetersPerInch;
                     heightInMeters *= Constant.MetersPerFoot;
                 }
-                float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+                float expansionFactor = trees.LiveExpansionFactor[compactedTreeIndex];
                 if (expansionFactor <= 0.0F)
                 {
                     continue;
@@ -91,11 +91,11 @@ namespace Osu.Cof.Ferm
                 // compare greater than or equals to avoid overstep in bilinear interpolation
                 if (dbhInCm >= volumeTable.MaximumDiameterInCentimeters)
                 {
-                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
+                    throw new NotSupportedException(trees.Species + " " + trees.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
                 }
                 if (heightInMeters >= volumeTable.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s height of " + heightInMeters.ToString("0.0") + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
+                    throw new NotSupportedException(trees.Species + " " + trees.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString("0.0") + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
                 }
 
                 // bilinear interpolation
@@ -150,16 +150,16 @@ namespace Osu.Cof.Ferm
             scribner2saw = 0.0;
             scribner3saw = 0.0;
             scribner4saw = 0.0;
-            for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
+            for (int compactedTreeIndex = 0; compactedTreeIndex < trees.Count; ++compactedTreeIndex)
             {
-                float dbhInCm = trees.Dbh[treeIndex];
-                float heightInMeters = trees.Height[treeIndex];
+                float dbhInCm = trees.Dbh[compactedTreeIndex];
+                float heightInMeters = trees.Height[compactedTreeIndex];
                 if (trees.Units == Units.English)
                 {
                     dbhInCm *= Constant.CentimetersPerInch;
                     heightInMeters *= Constant.MetersPerFoot;
                 }
-                float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+                float expansionFactor = trees.LiveExpansionFactor[compactedTreeIndex];
                 if (expansionFactor <= 0.0F)
                 {
                     continue;
@@ -167,11 +167,11 @@ namespace Osu.Cof.Ferm
 
                 if (dbhInCm >= volumeTable.MaximumDiameterInCentimeters)
                 {
-                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + "  cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
+                    throw new NotSupportedException(trees.Species + " " + trees.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + "  cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
                 }
                 if (heightInMeters >= volumeTable.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s height of " + heightInMeters.ToString("0.0") + "  m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
+                    throw new NotSupportedException(trees.Species + " " + trees.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString("0.0") + "  m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
                 }
 
                 // bilinear interpolation
@@ -217,30 +217,29 @@ namespace Osu.Cof.Ferm
             }
         }
 
-        public void GetScribnerVolume(Trees trees, int[] individualTreeSelection, out double scribner2saw, out double scribner3saw, out double scribner4saw)
+        public void GetScribnerVolume(Trees trees, int[] individualTreeSelection, int harvestPeriod, out double scribner2saw, out double scribner3saw, out double scribner4saw)
         {
             TreeVolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
             scribner2saw = 0.0;
             scribner3saw = 0.0;
             scribner4saw = 0.0;
-            int selectionIndex = 0;
-            for (int treeIndex = 0; treeIndex < trees.Count; ++selectionIndex, ++treeIndex)
+            for (int compactedTreeIndex = 0; compactedTreeIndex < trees.Count; ++compactedTreeIndex)
             {
-                if (individualTreeSelection[selectionIndex] == 0)
+                int uncompactedTreeIndex = trees.UncompactedIndex[compactedTreeIndex];
+                if (individualTreeSelection[uncompactedTreeIndex] != harvestPeriod)
                 {
-                    // tree is retained rather than thinned
-                    // TODO: support multiple thinnings
+                    // tree was either harvested previously or was retained rather than thinned
                     continue;
                 }
 
-                float dbhInCm = trees.Dbh[treeIndex];
-                float heightInMeters = trees.Height[treeIndex];
+                float dbhInCm = trees.Dbh[compactedTreeIndex];
+                float heightInMeters = trees.Height[compactedTreeIndex];
                 if (trees.Units == Units.English)
                 {
                     dbhInCm *= Constant.CentimetersPerInch;
                     heightInMeters *= Constant.MetersPerFoot;
                 }
-                float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+                float expansionFactor = trees.LiveExpansionFactor[compactedTreeIndex];
                 if (expansionFactor <= 0.0F)
                 {
                     continue;
@@ -248,11 +247,11 @@ namespace Osu.Cof.Ferm
 
                 if (dbhInCm >= volumeTable.MaximumDiameterInCentimeters)
                 {
-                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + "  cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
+                    throw new NotSupportedException(trees.Species + " " + trees.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + "  cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
                 }
                 if (heightInMeters >= volumeTable.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(trees.Species + " " + trees.Tag[treeIndex] + "'s height of " + heightInMeters.ToString("0.0") + "  m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
+                    throw new NotSupportedException(trees.Species + " " + trees.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString("0.0") + "  m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
                 }
 
                 // bilinear interpolation

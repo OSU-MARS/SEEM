@@ -34,7 +34,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first run is missing highest solution parameters.");
                 }
 
-                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + ",discount rate,thin age,rotation,solution,objective,runtime");
+                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + ",discount rate,first thin age,second thin age,rotation,solution,objective,runtime");
                 writer.WriteLine(line);
             }
 
@@ -47,9 +47,17 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Run " + runIndex + " is missing a highest solution or highest solution parameters.");
                 }
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
+
+                int firstThinAge = highestTrajectory.GetFirstHarvestAge();
+                string? firstThinAgeString = firstThinAge != -1 ? firstThinAge.ToString(CultureInfo.InvariantCulture) : null;
+                int secondThinAge = highestTrajectory.GetSecondHarvestAge();
+                string? secondThinAgeString = secondThinAge != -1 ? secondThinAge.ToString(CultureInfo.InvariantCulture) : null;
                 string linePrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + 
-                    distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectory.TimberValue.DiscountRate.ToString(CultureInfo.InvariantCulture) + "," + 
-                    highestTrajectory.GetFirstHarvestAge().ToString(CultureInfo.InvariantCulture) + "," + highestTrajectory.GetRotationLength().ToString(CultureInfo.InvariantCulture);
+                    distribution.HighestHeuristicParameters.GetCsvValues() + "," + 
+                    highestTrajectory.TimberValue.DiscountRate.ToString(CultureInfo.InvariantCulture) + "," +
+                    firstThinAgeString + "," +
+                    secondThinAgeString + "," +
+                    highestTrajectory.GetRotationLength().ToString(CultureInfo.InvariantCulture);
 
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)

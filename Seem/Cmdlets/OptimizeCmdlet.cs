@@ -3,6 +3,7 @@ using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Management.Automation;
 using System.Runtime.ExceptionServices;
@@ -24,8 +25,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateNotNull]
-        [ValidateRange(1, 100)]
-        public List<int> HarvestPeriods { get; set; }
+        [ValidateRange(Constant.NoThinPeriod, 100)]
+        public List<int> FirstThinPeriod { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, 1.0F)]
@@ -38,9 +39,15 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
         public List<float> ProportionalPercentage { get; set; }
+
+
+        [Parameter]
+        [ValidateNotNull]
+        [ValidateRange(Constant.NoThinPeriod, 100)]
+        public List<int> SecondThinPeriod { get; set; }
+
         [Parameter]
         public SwitchParameter ScaledVolume { get; set; }
-
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public OrganonStand? Stand { get; set; }
@@ -56,28 +63,32 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         public TreeModel TreeModel { get; set; }
 
+        protected bool SupportsSecondThin { get; set; }
+
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
             this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
+            this.SupportsSecondThin = false;
 
             this.DiscountRates = new List<float>() { Constant.DefaultAnnualDiscountRate };
-            this.HarvestPeriods = new List<int>() { 3 };
+            this.FirstThinPeriod = new List<int>() { 3 };
             this.PlanningPeriods = new List<int>() { 9 };
             this.PerturbBy = Constant.MetaheuristicDefault.PerturbBy;
             this.ProportionalPercentage = new List<float>() { Constant.HeuristicDefault.ProportionalPercentage };
             this.ScaledVolume = false;
+            this.SecondThinPeriod = new List<int>() { Constant.NoThinPeriod };
             this.TimberObjective = TimberObjective.LandExpectationValue;
             this.TimberValue = TimberValue.Default;
             this.TreeModel = TreeModel.OrganonNwo;
         }
 
-        protected virtual IHarvest CreateHarvest(int harvestPeriodIndex)
-        {
-            return new ThinByIndividualTreeSelection(this.HarvestPeriods[harvestPeriodIndex]);
-        }
-
         protected abstract Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, TParameters parameters);
+
+        protected virtual IHarvest CreateThin(int thinPeriodIndex)
+        {
+            return new ThinByIndividualTreeSelection(thinPeriodIndex);
+        }
 
         protected IList<HeuristicParameters> GetDefaultParameterCombinations(TimberValue timberValue)
         {
@@ -100,9 +111,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            if (this.HarvestPeriods.Count < 1)
+            if (this.FirstThinPeriod.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.HarvestPeriods));
+                throw new ParameterOutOfRangeException(nameof(this.FirstThinPeriod));
             }
             if ((this.PerturbBy < 0.0F) || (this.PerturbBy > 1.0F))
             {
@@ -115,6 +126,14 @@ namespace Osu.Cof.Ferm.Cmdlets
             if (this.ProportionalPercentage.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.ProportionalPercentage));
+            }
+            if (this.SecondThinPeriod.Count < 1)
+            {
+                throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod));
+            }
+            if ((this.SupportsSecondThin == false) && ((this.SecondThinPeriod.Count != 1) || (this.SecondThinPeriod[0] != Constant.NoThinPeriod)))
+            {
+                throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod));
             }
 
             // for now, if multiple discount rates are specified assume they should override the discount rate on TimberValue
@@ -139,7 +158,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             int treeCount = this.Stand!.GetTreeRecordCount();
             List<TParameters> parameterCombinations = new List<TParameters>();
-            List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(this.HarvestPeriods.Count * this.PlanningPeriods.Count);
+            List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(this.FirstThinPeriod.Count * this.PlanningPeriods.Count);
             for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
             {
                 TimberValue timberValue = new TimberValue(this.TimberValue)
@@ -150,22 +169,48 @@ namespace Osu.Cof.Ferm.Cmdlets
                 for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
                 {
                     int planningPeriods = this.PlanningPeriods[planningPeriodIndex];
-                    for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.HarvestPeriods.Count; ++harvestPeriodIndex)
+                    for (int firstThinIndex = 0; firstThinIndex < this.FirstThinPeriod.Count; ++firstThinIndex)
                     {
-                        int harvestPeriods = this.HarvestPeriods[harvestPeriodIndex];
-                        if (harvestPeriods >= planningPeriods) // minimum 10 years between thinning and final harvest (if five year time step)
+                        int firstThinPeriod = this.FirstThinPeriod[firstThinIndex];
+                        if (firstThinPeriod == 0)
+                        {
+                            throw new ParameterOutOfRangeException(nameof(this.FirstThinPeriod), "First thinning period cannot be zero.");
+                        }
+                        if (firstThinPeriod >= planningPeriods) // minimum 10 years between thinning and final harvest (if five year time step)
                         {
                             continue;
                         }
 
-                        for (int parameterIndex = 0; parameterIndex < parameterCombinationsForDiscountRate.Count; ++parameterIndex)
+                        for (int secondThinIndex = 0; secondThinIndex < this.SecondThinPeriod.Count; ++secondThinIndex)
                         {
-                            distributions.Add(new HeuristicSolutionDistribution(1, harvestPeriods, treeCount)
+                            int secondThinPeriod = this.SecondThinPeriod[secondThinIndex];
+                            if (secondThinPeriod == 0)
                             {
-                                HarvestPeriodIndex = harvestPeriodIndex,
-                                ParameterIndex = parameterCombinations.Count + parameterIndex,
-                                PlanningPeriodIndex = planningPeriodIndex,
-                            });
+                                throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod), "Second thinning period cannot be zero.");
+                            }
+                            if (secondThinPeriod != Constant.NoThinPeriod)
+                            {
+                                if ((firstThinPeriod == Constant.NoThinPeriod) || (firstThinPeriod >= secondThinPeriod) || (secondThinPeriod >= planningPeriods))
+                                {
+                                    // can't perform a second thin if
+                                    // - there was no first thin
+                                    // - the second thin would occur before or in the same period as the first thin
+                                    // - the second thin would occur before or in the same period as final harvest
+                                    continue;
+                                }
+                            }
+
+                            for (int parameterIndex = 0; parameterIndex < parameterCombinationsForDiscountRate.Count; ++parameterIndex)
+                            {
+                                int harvestPeriods = Math.Max(firstThinPeriod, secondThinPeriod);
+                                distributions.Add(new HeuristicSolutionDistribution(1, harvestPeriods, treeCount)
+                                {
+                                    FirstThinPeriodIndex = firstThinIndex,
+                                    ParameterIndex = parameterCombinations.Count + parameterIndex,
+                                    PlanningPeriodIndex = planningPeriodIndex,
+                                    SecondThinPeriodIndex = secondThinIndex
+                                });
+                            }
                         }
                     }
                 }
@@ -190,12 +235,20 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int distributionIndex = iteration / this.BestOf;
                     HeuristicSolutionDistribution distribution = distributions[distributionIndex];
                     OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
-                    organonConfiguration.Treatments.Harvests.Add(this.CreateHarvest(distribution.HarvestPeriodIndex));
+                    if (this.TryCreateFirstThin(distribution.FirstThinPeriodIndex, out IHarvest? firstThin))
+                    {
+                        organonConfiguration.Treatments.Harvests.Add(firstThin);
+                        if (this.TryCreateSecondThin(distribution.SecondThinPeriodIndex, out IHarvest? secondThin))
+                        {
+                            organonConfiguration.Treatments.Harvests.Add(secondThin);
+                        }
+                    }
 
                     Objective objective = new Objective()
                     {
-                        TimberObjective = this.TimberObjective,
-                        PlanningPeriods = this.PlanningPeriods[distribution.PlanningPeriodIndex]
+                        HarvestPeriodSelection = HarvestPeriodSelection.ThinPeriodOrRetain,
+                        PlanningPeriods = this.PlanningPeriods[distribution.PlanningPeriodIndex],
+                        TimberObjective = this.TimberObjective
                     };
                     TParameters runParameters = parameterCombinations[distribution.ParameterIndex];
                     Heuristic currentHeuristic = this.CreateHeuristic(organonConfiguration, objective, runParameters);
@@ -273,9 +326,13 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 this.WriteSingleDistributionSummary(distributions[0], stopwatch.Elapsed);
             }
-            else
+            else if (distributions.Count > 1)
             {
                 this.WriteMultipleDistributionSummary(distributions, stopwatch.Elapsed);
+            }
+            else
+            {
+                this.WriteWarning("No valid parameter combininations found. No runs performed.");
             }
         }
 
@@ -344,6 +401,28 @@ namespace Osu.Cof.Ferm.Cmdlets
             double iterationsPerSecondMultiplier = iterationsPerSecond > 1E3 ? 1E-3 : 1.0;
             string iterationsPerSecondScale = iterationsPerSecond > 1E3 ? "k" : String.Empty;
             this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", distribution.TotalMoves, distribution.TotalCoreSeconds.TotalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
+        }
+
+        private bool TryCreateFirstThin(int firstThinPeriodIndex, [NotNullWhen(true)] out IHarvest? firstThin)
+        {
+            return this.TryCreateThin(this.FirstThinPeriod[firstThinPeriodIndex], out firstThin);
+        }
+
+        private bool TryCreateSecondThin(int secondThinPeriodIndex, [NotNullWhen(true)] out IHarvest? secondThin)
+        {
+            return this.TryCreateThin(this.SecondThinPeriod[secondThinPeriodIndex], out secondThin);
+        }
+
+        private bool TryCreateThin(int thinPeriodIndex, [NotNullWhen(true)] out IHarvest? thin)
+        {
+            if (thinPeriodIndex == Constant.NoThinPeriod)
+            {
+                thin = null;
+                return false;
+            }
+
+            thin = this.CreateThin(thinPeriodIndex);
+            return true;
         }
 
         protected void WriteVerbose(string format, params object[] args)

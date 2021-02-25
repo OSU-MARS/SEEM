@@ -247,31 +247,31 @@ namespace Osu.Cof.Ferm.Test
             float merchantableCubicMetersPerHectare = 0.0F;
             float totalCylinderCubicMeterVolumePerAcre = 0.0F;
             float totalScribnerBoardFeetPerAcre = 0.0F;
-            for (int treeIndex = 0; treeIndex < treeCount; ++treeIndex)
+            for (int compactedTreeIndex = 0; compactedTreeIndex < treeCount; ++compactedTreeIndex)
             {
                 // create trees with a range of expansion factors to catch errors in expansion factor management
-                float treeRatio = (float)treeIndex / (float)treeCount;
-                TreeRecord tree = new TreeRecord(treeIndex, trees.Species, (float)treeIndex, 1.0F - 0.75F * treeRatio, 0.6F + treeIndex);
+                float treeRatio = (float)compactedTreeIndex / (float)treeCount;
+                TreeRecord tree = new TreeRecord(compactedTreeIndex, trees.Species, (float)compactedTreeIndex, 1.0F - 0.75F * treeRatio, 0.6F + compactedTreeIndex);
                 trees.Add(tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
 
                 float dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
                 float heightInMeters = Constant.MetersPerFoot * tree.HeightInFeet;
                 float treeSizedCylinderCubicMeterVolumePerAcre = tree.LiveExpansionFactor * 0.25F * MathF.PI * dbhInMeters * dbhInMeters * heightInMeters;
 
-                fiaMerchantableCubicFeetPerAcre[treeIndex] = tree.LiveExpansionFactor * FiaVolume.GetMerchantableCubicFeet(trees, treeIndex);
-                merchantableCubicFeetPerAcre += fiaMerchantableCubicFeetPerAcre[treeIndex];
-                fiaScribnerBoardFeetPerAcre[treeIndex] = tree.LiveExpansionFactor * FiaVolume.GetScribnerBoardFeet(trees, treeIndex);
-                totalScribnerBoardFeetPerAcre += fiaScribnerBoardFeetPerAcre[treeIndex];
+                fiaMerchantableCubicFeetPerAcre[compactedTreeIndex] = tree.LiveExpansionFactor * FiaVolume.GetMerchantableCubicFeet(trees, compactedTreeIndex);
+                merchantableCubicFeetPerAcre += fiaMerchantableCubicFeetPerAcre[compactedTreeIndex];
+                fiaScribnerBoardFeetPerAcre[compactedTreeIndex] = tree.LiveExpansionFactor * FiaVolume.GetScribnerBoardFeet(trees, compactedTreeIndex);
+                totalScribnerBoardFeetPerAcre += fiaScribnerBoardFeetPerAcre[compactedTreeIndex];
 
-                merchantableCubicMetersPerHectare += OsuVolume.GetCubicVolume(trees, treeIndex);
+                merchantableCubicMetersPerHectare += OsuVolume.GetCubicVolume(trees, compactedTreeIndex);
 
                 // taper coefficient should be in the vicinity of 0.3 for larger trees, but this is not well defined for small trees
                 // Lower bound can be made more stringent if necessary.
-                Assert.IsTrue(fiaMerchantableCubicFeetPerAcre[treeIndex] >= 0.0);
-                Assert.IsTrue(fiaMerchantableCubicFeetPerAcre[treeIndex] <= 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
+                Assert.IsTrue(fiaMerchantableCubicFeetPerAcre[compactedTreeIndex] >= 0.0);
+                Assert.IsTrue(fiaMerchantableCubicFeetPerAcre[compactedTreeIndex] <= 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
 
-                Assert.IsTrue(fiaScribnerBoardFeetPerAcre[treeIndex] >= 0.0);
-                Assert.IsTrue(fiaScribnerBoardFeetPerAcre[treeIndex] <= 6.5 * 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
+                Assert.IsTrue(fiaScribnerBoardFeetPerAcre[compactedTreeIndex] >= 0.0);
+                Assert.IsTrue(fiaScribnerBoardFeetPerAcre[compactedTreeIndex] <= 6.5 * 0.4 * Constant.CubicFeetPerCubicMeter * treeSizedCylinderCubicMeterVolumePerAcre);
                 totalCylinderCubicMeterVolumePerAcre += treeSizedCylinderCubicMeterVolumePerAcre;
             }
 

@@ -22,15 +22,15 @@ namespace Osu.Cof.Ferm
         public TimberValue TimberValue { get; set; }
         public bool TreeSelectionChangedSinceLastSimulation { get; protected set; }
 
-        public StandTrajectory(TimberValue timberValue, int planningPeriods, int thinningPeriod, float plantingDensityInTreesPerHectare)
+        public StandTrajectory(TimberValue timberValue, int planningPeriods, int latestHarvestPeriod, float plantingDensityInTreesPerHectare)
         {
             if (planningPeriods < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(planningPeriods));
             }
-            if (planningPeriods < thinningPeriod)
+            if (planningPeriods < latestHarvestPeriod)
             {
-                throw new ArgumentOutOfRangeException(nameof(thinningPeriod));
+                throw new ArgumentOutOfRangeException(nameof(latestHarvestPeriod));
             }
             if ((plantingDensityInTreesPerHectare <= 0.0F) || (plantingDensityInTreesPerHectare > Constant.Maximum.PlantingDensityInTreesPerHectare))
             {
@@ -39,7 +39,7 @@ namespace Osu.Cof.Ferm
 
             int maximumPlanningPeriodIndex = planningPeriods + 1;
             this.BasalAreaRemoved = new float[planningPeriods + 1];
-            this.HarvestPeriods = thinningPeriod + 1;
+            this.HarvestPeriods = latestHarvestPeriod + 1;
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = null;
             this.PeriodLengthInYears = -1;
@@ -138,6 +138,34 @@ namespace Osu.Cof.Ferm
             return this.GetEndOfPeriodAge(this.PlanningPeriods - 1);
         }
 
+        public int GetSecondHarvestAge()
+        {
+            int secondHarvestPeriod = this.GetSecondHarvestPeriod();
+            if (secondHarvestPeriod == -1)
+            {
+                return -1;
+            }
+            return this.GetStartOfPeriodAge(secondHarvestPeriod);
+        }
+
+
+        public int GetSecondHarvestPeriod()
+        {
+            int harvestsFound = 0;
+            for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
+            {
+                if (this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F)
+                {
+                    ++harvestsFound;
+                    if (harvestsFound == 2)
+                    {
+                        return periodIndex;
+                    }
+                }
+            }
+            return -1;
+        }
+
         protected int GetStartOfPeriodAge(int periodIndex)
         {
             Debug.Assert(periodIndex > 0);
@@ -160,14 +188,14 @@ namespace Osu.Cof.Ferm
             throw new ArgumentOutOfRangeException(nameof(allSpeciesTreeIndex));
         }
 
-        public void SetTreeSelection(int allSpeciesTreeIndex, int harvestPeriod)
+        public void SetTreeSelection(int allSpeciesUncompactedTreeIndex, int harvestPeriod)
         {
             if ((harvestPeriod < 0) || (harvestPeriod >= this.HarvestPeriods))
             {
                 throw new ArgumentOutOfRangeException(nameof(harvestPeriod));
             }
 
-            int treeIndex = allSpeciesTreeIndex;
+            int treeIndex = allSpeciesUncompactedTreeIndex;
             foreach (KeyValuePair<FiaCode, int[]> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
             {
                 if (treeIndex < individualTreeSelection.Value.Length)
@@ -183,18 +211,18 @@ namespace Osu.Cof.Ferm
                 treeIndex -= individualTreeSelection.Value.Length;
             }
 
-            throw new ArgumentOutOfRangeException(nameof(allSpeciesTreeIndex));
+            throw new ArgumentOutOfRangeException(nameof(allSpeciesUncompactedTreeIndex));
         }
 
-        public void SetTreeSelection(FiaCode species, int treeIndex, int harvestPeriod)
+        public void SetTreeSelection(FiaCode species, int uncompactedTreeIndex, int harvestPeriod)
         {
             if ((harvestPeriod < 0) || (harvestPeriod >= this.HarvestPeriods))
             {
                 throw new ArgumentOutOfRangeException(nameof(harvestPeriod));
             }
 
-            int currentPeriod = this.IndividualTreeSelectionBySpecies[species][treeIndex];
-            this.IndividualTreeSelectionBySpecies[species][treeIndex] = harvestPeriod;
+            int currentPeriod = this.IndividualTreeSelectionBySpecies[species][uncompactedTreeIndex];
+            this.IndividualTreeSelectionBySpecies[species][uncompactedTreeIndex] = harvestPeriod;
             if (currentPeriod != harvestPeriod)
             {
                 this.TreeSelectionChangedSinceLastSimulation = true;

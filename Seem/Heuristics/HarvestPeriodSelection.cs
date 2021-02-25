@@ -3,6 +3,6 @@
     public enum HarvestPeriodSelection
     {
         All,
-        NoneOrLast
+        ThinPeriodOrRetain
     }
 }

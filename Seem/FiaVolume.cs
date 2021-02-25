@@ -48,23 +48,23 @@ namespace Osu.Cof.Ferm
         /// Get cubic volume to a 10 centimeter (four inch) top.
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
-        /// <param name="treeIndex">Tree.</param>
+        /// <param name="compactedTreeIndex">Tree.</param>
         /// <returns>Tree's volume in m³.</returns>
-        public static float GetMerchantableCubicFeet(Trees trees, int treeIndex)
+        public static float GetMerchantableCubicFeet(Trees trees, int compactedTreeIndex)
         {
             if (trees.Units != Units.English)
             {
                 throw new NotSupportedException();
             }
 
-            float dbhInInches = trees.Dbh[treeIndex];
+            float dbhInInches = trees.Dbh[compactedTreeIndex];
             if (dbhInInches < Constant.InchesPerCentimeter * Constant.Bucking.MinimumScalingDiameter4Saw)
             {
                 // CV4 regression goes negative, unsurprisingly, for trees less than four inches in diameter
                 return 0.0F;
             }
 
-            float cvts = FiaVolume.GetCubicFeet(trees, treeIndex);
+            float cvts = FiaVolume.GetCubicFeet(trees, compactedTreeIndex);
             if (cvts <= 0.0)
             {
                 return 0.0F;
@@ -211,9 +211,9 @@ namespace Osu.Cof.Ferm
         /// Get Scribner board foot volume for 32 foot logs to a six inch top.
         /// </summary>
         /// <param name="trees">Trees in stand.</param>
-        /// <param name="treeIndex">Tree.</param>
+        /// <param name="compactedTreeIndex">Tree.</param>
         /// <returns>Tree's volume in Scribner board feet</returns>
-        public static float GetScribnerBoardFeet(Trees trees, int treeIndex)
+        public static float GetScribnerBoardFeet(Trees trees, int compactedTreeIndex)
         {
             if (trees.Units != Units.English)
             {
@@ -221,14 +221,14 @@ namespace Osu.Cof.Ferm
             }
 
             // repeat code of GetCubicFeet() as this provides about a 6% speedup
-            float dbhInInches = trees.Dbh[treeIndex];
+            float dbhInInches = trees.Dbh[compactedTreeIndex];
             if (dbhInInches < 6.0F)
             {
                 return 0.0F;
             }
 
             float logDbhInInches = MathV.Log10(dbhInInches);
-            float heightInFeet = trees.Height[treeIndex];
+            float heightInFeet = trees.Height[compactedTreeIndex];
             float logHeightInFeet = MathV.Log10(heightInFeet);
             float cvtsl = trees.Species switch
             {
@@ -274,7 +274,7 @@ namespace Osu.Cof.Ferm
             Debug.Assert(rc6 >= 0.0F);
             Debug.Assert(rc6 <= 1.0F);
             Debug.Assert(rs616 >= 1.0F);
-            Debug.Assert(rs616 <= 6.8F);
+            Debug.Assert(rs616 <= 7.0F);
             Debug.Assert(rs632 >= 0.0F);
             Debug.Assert(rs632 <= 1.0F);
             Debug.Assert(sv632 >= 0.0F);

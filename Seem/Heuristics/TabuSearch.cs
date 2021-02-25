@@ -223,7 +223,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.MaximumTenure));
             }
-            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.NoneOrLast)
+            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.ThinPeriodOrRetain)
             {
                 throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
             }

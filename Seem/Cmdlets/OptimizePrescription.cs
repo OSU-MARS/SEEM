@@ -30,7 +30,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0F, 100.0F)]
         public float ProportionalPercentageUpperLimit { get; set; }
 
-        [Parameter]
+        [Parameter(HelpMessage = "Step size, in percent, of above, proportional, and below percentages of first thinning prescription. If present, a second thinning's step size is scaled to account for trees removed in the first thinning.")]
         [ValidateRange(0.0F, 100.0F)]
         public float Step { get; set; }
 
@@ -39,6 +39,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public OptimizePrescription()
         {
+            this.SupportsSecondThin = true;
+
             this.FromAbovePercentageUpperLimit = 100.0F;
             this.FromBelowPercentageUpperLimit = 100.0F;
             this.Maximum = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };
@@ -50,11 +52,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Units = Constant.PrescriptionEnumerationDefault.Units;
         }
 
-        protected override IHarvest CreateHarvest(int harvestPeriodIndex)
-        {
-            return new ThinByPrescription(this.HarvestPeriods[harvestPeriodIndex]);
-        }
-
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, PrescriptionParameters parameters)
         {
             if (this.BestOf != 1)
@@ -62,6 +59,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 throw new NotSupportedException(nameof(this.BestOf)); // enumeration is deterministic, so no value in repeated runs
             }
             return new PrescriptionEnumeration(this.Stand!, organonConfiguration, objective, parameters);
+        }
+
+        protected override IHarvest CreateThin(int thinPeriodIndex)
+        {
+            return new ThinByPrescription(thinPeriodIndex);
         }
 
         protected override string GetName()
@@ -105,7 +107,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     Minimum = minimumIntensity,
                     Maximum = maximumIntensity,
                     ProportionalPercentageUpperLimit = this.ProportionalPercentageUpperLimit,
-                    Step = this.Step,
+                    StepSize = this.Step,
                     TimberValue = timberValue,
                     Units = this.Units,
                     UseFiaVolume = this.ScaledVolume

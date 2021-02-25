@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -20,13 +21,9 @@ namespace Osu.Cof.Ferm.Organon
 
         public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod, bool useFiaVolume)
             : base(timberValue, lastPlanningPeriod, 
-                  organonConfiguration.Treatments.Harvests.Count == 1 ? organonConfiguration.Treatments.Harvests[0].Period : 0,
+                  organonConfiguration.Treatments.Harvests.Count > 0 ? organonConfiguration.Treatments.Harvests.Max(harvest => harvest.Period) : 0,
                   stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand))) // base does range checks
         {
-            if (organonConfiguration.Treatments.Harvests.Count > 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(organonConfiguration));
-            }
             if (timberValue == null)
             {
                 throw new ArgumentNullException(nameof(timberValue));
@@ -215,13 +212,14 @@ namespace Osu.Cof.Ferm.Organon
                         int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
                         Debug.Assert(individualTreeSelection.Length == previousTreesOfSpecies.Capacity); // tree selection and tree capacities are expected to match
                         Debug.Assert(previousTreesOfSpecies.Capacity - previousTreesOfSpecies.Count < Constant.Simd128x4.Width); // also expected that trees haven't previously been compacted
-                        for (int treeIndex = 0; treeIndex < previousTreesOfSpecies.Count; ++treeIndex)
+                        for (int compactedTreeIndex = 0; compactedTreeIndex < previousTreesOfSpecies.Count; ++compactedTreeIndex)
                         {
-                            if (individualTreeSelection[treeIndex] == periodIndex)
+                            int uncompactedTreeIndex = previousTreesOfSpecies.UncompactedIndex[compactedTreeIndex];
+                            if (individualTreeSelection[uncompactedTreeIndex] == periodIndex)
                             {
-                                float treesPerAcre = previousTreesOfSpecies.LiveExpansionFactor[treeIndex];
+                                float treesPerAcre = previousTreesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
                                 Debug.Assert(treesPerAcre > 0.0F);
-                                harvestedScribner6x32footLogPerAcre += treesPerAcre * FiaVolume.GetScribnerBoardFeet(previousTreesOfSpecies, treeIndex);
+                                harvestedScribner6x32footLogPerAcre += treesPerAcre * FiaVolume.GetScribnerBoardFeet(previousTreesOfSpecies, compactedTreeIndex);
                             }
                         }
                     }
@@ -256,12 +254,12 @@ namespace Osu.Cof.Ferm.Organon
                     throw new NotSupportedException();
                 }
 
-                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                 {
-                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
                     if (expansionFactor > 0.0F)
                     {
-                        standingCvts4perAcre += expansionFactor * FiaVolume.GetMerchantableCubicFeet(treesOfSpecies, treeIndex);
+                        standingCvts4perAcre += expansionFactor * FiaVolume.GetMerchantableCubicFeet(treesOfSpecies, compactedTreeIndex);
                     }
                 }
 
@@ -351,13 +349,25 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         Trees treesOfSpecies = simulationStand.TreesBySpecies[individualTreeSelection.Key];
                         bool atLeastOneTreeRemoved = false;
-                        for (int treeIndex = 0; treeIndex < individualTreeSelection.Value.Length; ++treeIndex) // assumes trailing capacity is set to zero and of insignificant length
+                        for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < individualTreeSelection.Value.Length; ++uncompactedTreeIndex) // assumes trailing capacity is set to zero and of insignificant length
                         {
                             // if needed, this loop can be changed to use either the simulation stand's tree count or a reference tree count rather than capacity
-                            if (individualTreeSelection.Value[treeIndex] == periodIndex)
+                            int treeSelection = individualTreeSelection.Value[uncompactedTreeIndex];
+                            if (treeSelection == periodIndex)
                             {
-                                treesOfSpecies.LiveExpansionFactor[treeIndex] = 0.0F;
+                                // tree is harvested in this period, so set its expansion factor to zero
+                                Debug.Assert(this.StandByPeriod[0]!.TreesBySpecies[treesOfSpecies.Species].Tag[uncompactedTreeIndex] == treesOfSpecies.Tag[compactedTreeIndex]);
+                                Debug.Assert(treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] > 0.0F);
+                                treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] = 0.0F;
                                 atLeastOneTreeRemoved = true;
+                            }
+                            if ((treeSelection == Constant.NoHarvestPeriod) || (treeSelection >= periodIndex))
+                            {
+                                // if tree is retained up to this period it's present in the current, compacted tree list and a compacted index increment 
+                                // is needed
+                                // Conversely, if tree was harvested in a previous period then it will have been removed from the live tree list by 
+                                // compaction and no increment is needed.
+                                ++compactedTreeIndex;
                             }
                         }
                         if (atLeastOneTreeRemoved)

@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm
                 Debug.Assert(previousTreesOfSpecies.Units == Units.English, "TODO: per hectare.");
 
                 int[] individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-                timberValue.ScaledVolumeThinning.GetScribnerVolume(previousTreesOfSpecies, individualTreeSelection, out double scribner2saw, out double scribner3saw, out double scribner4saw);
+                timberValue.ScaledVolumeThinning.GetScribnerVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex, out double scribner2saw, out double scribner3saw, out double scribner4saw);
                 harvested2SawBoardFeetPerAcre += scribner2saw;
                 harvested3SawBoardFeetPerAcre += scribner3saw;
                 harvested4SawBoardFeetPerAcre += scribner4saw;

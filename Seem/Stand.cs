@@ -22,7 +22,7 @@ namespace Osu.Cof.Ferm
         public float GetQuadraticMeanDiameter()
         {
             float dbhSumOfSquares = 0.0F;
-            int treeCount = 1;
+            int treeCount = 0;
             foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)

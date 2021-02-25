@@ -26,6 +26,7 @@ namespace Osu.Cof.Ferm
         public const float MetersPerFoot = 0.3048F;
         public const float NaturalLogOf10 = 2.3025850930F;
         public const int NoHarvestPeriod = 0;
+        public const int NoThinPeriod = -1;
         public const float Pi = 3.14159265F;
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;

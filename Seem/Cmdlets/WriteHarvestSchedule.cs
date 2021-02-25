@@ -40,7 +40,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Cannot generate schedule header because first run has no heuristic parameters.");
                 }
-                line.Append("stand,heuristic," + highestHeuristicParameters.GetCsvHeader() + ",discount rate,thin age,rotation,tree,lowest selection,highest selection,highest thin DBH,highest thin height,highest thin CR,highest thin EF,highest thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
+                line.Append("stand,heuristic," + highestHeuristicParameters.GetCsvHeader() + ",discount rate,first thin age,second thin age,rotation,tree,lowest selection,highest selection,highest thin DBH,highest thin height,highest thin CR,highest thin EF,highest thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
                 writer.WriteLine(line);
             }
 
@@ -57,43 +57,51 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 OrganonStandTrajectory highestTrajectoryN = distribution.HighestSolution.BestTrajectory;
-                int periodBeforeHarvest = highestTrajectoryN.GetFirstHarvestPeriod() - 1;
-                if (periodBeforeHarvest < 0)
+                int periodBeforeFirstThin = highestTrajectoryN.GetFirstHarvestPeriod() - 1;
+                if (periodBeforeFirstThin < 0)
                 {
-                    periodBeforeHarvest = highestTrajectoryN.PlanningPeriods - 1;
+                    periodBeforeFirstThin = highestTrajectoryN.PlanningPeriods - 1;
                 }
+                int firstThinAge = highestTrajectoryN.GetFirstHarvestAge();
+                string? firstThinAgeString = firstThinAge != -1 ? firstThinAge.ToString(CultureInfo.InvariantCulture) : null;
+                int secondThinAge = highestTrajectoryN.GetSecondHarvestAge();
+                string? secondThinAgeString = secondThinAge != -1 ? secondThinAge.ToString(CultureInfo.InvariantCulture) : null;
+
                 string linePrefix = highestTrajectoryN.Name + "," + highestTrajectoryN.Heuristic.GetName() + "," + 
-                    distribution.HighestHeuristicParameters.GetCsvValues() + "," + highestTrajectoryN.TimberValue.DiscountRate.ToString(CultureInfo.InvariantCulture) + "," + 
-                    highestTrajectoryN.GetFirstHarvestAge().ToString(CultureInfo.InvariantCulture) + "," + highestTrajectoryN.GetRotationLength().ToString(CultureInfo.InvariantCulture);
+                    distribution.HighestHeuristicParameters.GetCsvValues() + "," + 
+                    highestTrajectoryN.TimberValue.DiscountRate.ToString(CultureInfo.InvariantCulture) + "," +
+                    firstThinAgeString + "," +
+                    secondThinAgeString + "," +
+                    highestTrajectoryN.GetRotationLength().ToString(CultureInfo.InvariantCulture);
 
                 OrganonStandTrajectory lowestTrajectoryN = distribution.LowestSolution.BestTrajectory;
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> highestTreeSelectionNForSpecies in highestTrajectoryN.IndividualTreeSelectionBySpecies)
                 {
-                    Stand? highestStandNbeforeHarvest = highestTrajectoryN.StandByPeriod[periodBeforeHarvest];
+                    Stand? highestStandNbeforeFirstHarvest = highestTrajectoryN.StandByPeriod[periodBeforeFirstThin];
                     Stand? highestStandNatEnd = highestTrajectoryN.StandByPeriod[^1];
-                    if ((highestStandNbeforeHarvest == null) || (highestStandNatEnd == null))
+                    if ((highestStandNbeforeFirstHarvest == null) || (highestStandNatEnd == null))
                     {
                         throw new ParameterOutOfRangeException(nameof(this.Runs), "Highest stand in run has not been fully simulated. Did the heuristic perform at least one move?");
                     }
-                    Trees highestTreesBeforeThin = highestStandNbeforeHarvest.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
+                    Trees highestTreesBeforeFirstThin = highestStandNbeforeFirstHarvest.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
                     Trees highestTreesAtFinal = highestStandNatEnd.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
-                    if (highestTreesBeforeThin.Units != highestTreesAtFinal.Units)
+                    if (highestTreesBeforeFirstThin.Units != highestTreesAtFinal.Units)
                     {
                         throw new NotSupportedException();
                     }
-                    WriteHarvestSchedule.GetDimensionConversions(highestTreesBeforeThin.Units, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
+                    WriteHarvestSchedule.GetDimensionConversions(highestTreesBeforeFirstThin.Units, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
 
                     // uncompactedTreeIndex: tree index in periods before thinned trees are removed
                     // compactedTreeIndex: index of retained trees in periods after thinning
                     int[] lowestTreeSelectionN = lowestTrajectoryN.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
                     int[] highestTreeSelectionN = highestTreeSelectionNForSpecies.Value;
-                    Debug.Assert(highestTreesBeforeThin.Capacity == highestTreeSelectionN.Length);
-                    for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < highestTreesBeforeThin.Count; ++uncompactedTreeIndex)
+                    Debug.Assert(highestTreesBeforeFirstThin.Capacity == highestTreeSelectionN.Length);
+                    for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < highestTreesBeforeFirstThin.Count; ++uncompactedTreeIndex)
                     {
                         line.Clear();
 
-                        float highestThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesBeforeThin, uncompactedTreeIndex);
+                        float highestThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesBeforeFirstThin, uncompactedTreeIndex);
 
                         string? highestFinalDbh = null;
                         string? highestFinalHeight = null;
@@ -103,7 +111,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         bool isThinnedInHighestTrajectory = highestTreeSelectionN[uncompactedTreeIndex] != Constant.NoHarvestPeriod;
                         if (isThinnedInHighestTrajectory == false)
                         {
-                            Debug.Assert(highestTreesAtFinal.Tag[compactedTreeIndex] == highestTreesBeforeThin.Tag[uncompactedTreeIndex]);
+                            Debug.Assert(highestTreesAtFinal.Tag[compactedTreeIndex] == highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex]);
                             highestFinalDbh = (dbhConversionFactor * highestTreesAtFinal.Dbh[compactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
                             highestFinalHeight = (heightConversionFactor * highestTreesAtFinal.Height[compactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
                             highestFinalCrownRatio = highestTreesAtFinal.CrownRatio[compactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
@@ -113,14 +121,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                         }
 
                         // for now, make best guess of using tree tag or index as unique identifier
-                        int treeID = highestTreesBeforeThin.Tag[uncompactedTreeIndex] < 0 ? previousSpeciesCount + uncompactedTreeIndex : highestTreesBeforeThin.Tag[uncompactedTreeIndex];
+                        int treeID = highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex] < 0 ? previousSpeciesCount + uncompactedTreeIndex : highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex];
                         line.Append(linePrefix + "," + treeID + "," +
                                     lowestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                     highestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    (dbhConversionFactor * highestTreesBeforeThin.Dbh[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                    (heightConversionFactor * highestTreesBeforeThin.Height[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                    highestTreesBeforeThin.CrownRatio[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                    highestTreesBeforeThin.LiveExpansionFactor[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                    (dbhConversionFactor * highestTreesBeforeFirstThin.Dbh[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    (heightConversionFactor * highestTreesBeforeFirstThin.Height[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    highestTreesBeforeFirstThin.CrownRatio[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                    highestTreesBeforeFirstThin.LiveExpansionFactor[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                     highestThinBoardFeet.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                     highestFinalDbh + "," +
                                     highestFinalHeight + "," +

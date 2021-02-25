@@ -8,7 +8,7 @@
 
         public Objective()
         {
-            this.HarvestPeriodSelection = HarvestPeriodSelection.NoneOrLast;
+            this.HarvestPeriodSelection = HarvestPeriodSelection.ThinPeriodOrRetain;
             this.PlanningPeriods = 1;
             this.TimberObjective = TimberObjective.LandExpectationValue;
         }

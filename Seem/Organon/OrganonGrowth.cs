@@ -232,10 +232,10 @@ namespace Osu.Cof.Ferm.Organon
                     PREM = 0.75F;
                 }
             }
-            float THINADJ = 1.0F + b9 * MathF.Pow(PREM, b10) * MathV.Exp(b11 * yearsSinceMostRecentThin);
-            Debug.Assert(THINADJ > 0.6F); // reduced height growth
-            Debug.Assert(THINADJ < 1.0F);
-            return THINADJ;
+            float thinMultiplier = 1.0F + b9 * MathF.Pow(PREM, b10) * MathV.Exp(b11 * yearsSinceMostRecentThin);
+            Debug.Assert(thinMultiplier > 0.6F); // reduced height growth
+            Debug.Assert(thinMultiplier <= 1.0F);
+            return thinMultiplier;
         }
 
         /// <summary>
