@@ -261,11 +261,11 @@ namespace Osu.Cof.Ferm.Test
 
             int firstThinPeriod = 3;
             configuration.Treatments.Harvests.Add(new ThinByPrescription(firstThinPeriod)
-                                                  {
-                                                      FromAbovePercentage = 20.0F, // by basal area
-                                                      ProportionalPercentage = 15.0F,
-                                                      FromBelowPercentage = 10.0F
-                                                  });
+            {
+                FromAbovePercentage = 20.0F, // by basal area
+                ProportionalPercentage = 15.0F,
+                FromBelowPercentage = 10.0F
+            });
             OrganonStandTrajectory oneThinTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             AssertNullable.IsNotNull(oneThinTrajectory.StandByPeriod[0]);
             Assert.IsTrue(oneThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
@@ -368,6 +368,7 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumTwoThinQmd = new float[] { 6.61F, 8.19F, 9.53F, 11.81F, 13.44F, 14.80F, 16.69F, 18.03F, 19.12F, 20.07F }; // in
             //                                              0      1      2      3      4      5       6       7       8       9
             float[] minimumTwoThinTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 88.3F, 98.4F, 108.0F, 113.7F, 121.4F, 129.0F, 136.1F }; // ft
+            float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146983F, 213170F, 168041F, 226421F, 283782F, 286553F, 339725F, 387766F, 431707F }; // kg/ha
             float[] minimumTwoThinStandingVolume;
             float[] minimumTwoThinHarvestVolume;
             if (twoThinTrajectory.UseFiaVolume)
@@ -414,6 +415,14 @@ namespace Osu.Cof.Ferm.Test
 
             PublicApi.Verify(twoThinTrajectory, minimumTwoThinQmd, minimumTwoThinTopHeight, minimumTwoThinStandingVolume, minimumTwoThinHarvestVolume, firstThinPeriod, secondThinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(twoThinTrajectory, minimumTwoThinStandingVolume, firstThinPeriod, secondThinPeriod);
+
+            float biomassTolerance = 1.01F;
+            for (int periodIndex = 0; periodIndex < twoThinTrajectory.PlanningPeriods; ++periodIndex)
+            {
+                float liveBiomass = twoThinTrajectory.StandByPeriod[periodIndex]!.GetLiveBiomass();
+                Assert.IsTrue(liveBiomass > minimumTwoThinLiveBiomass[periodIndex]);
+                Assert.IsTrue(liveBiomass < biomassTolerance * minimumTwoThinLiveBiomass[periodIndex]);
+            }
         }
 
         [TestMethod]

@@ -19,6 +19,16 @@ namespace Osu.Cof.Ferm
             this.TreesBySpecies = new SortedDictionary<FiaCode, Trees>();
         }
 
+        public float GetLiveBiomass()
+        {
+            float liveBiomass = 0.0F;
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
+            {
+                liveBiomass += PoudelRegressions.GetLiveBiomass(treesOfSpecies);
+            }
+            return liveBiomass;
+        }
+
         public float GetQuadraticMeanDiameter()
         {
             float dbhSumOfSquares = 0.0F;

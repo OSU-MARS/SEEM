@@ -263,7 +263,7 @@ namespace Osu.Cof.Ferm.Test
                 fiaScribnerBoardFeetPerAcre[compactedTreeIndex] = tree.LiveExpansionFactor * FiaVolume.GetScribnerBoardFeet(trees, compactedTreeIndex);
                 totalScribnerBoardFeetPerAcre += fiaScribnerBoardFeetPerAcre[compactedTreeIndex];
 
-                merchantableCubicMetersPerHectare += OsuVolume.GetCubicVolume(trees, compactedTreeIndex);
+                merchantableCubicMetersPerHectare += PoudelRegressions.GetCubicVolume(trees, compactedTreeIndex);
 
                 // taper coefficient should be in the vicinity of 0.3 for larger trees, but this is not well defined for small trees
                 // Lower bound can be made more stringent if necessary.
@@ -471,7 +471,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(regenScribnerMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeScribner);
 
                 // ratios must be greater than zero in principle but scaling and CVTS regression error allow crossover
-                float poudelTotalCubic = OsuVolume.GetCubicVolume(psmeMetric, 0);
+                float poudelTotalCubic = PoudelRegressions.GetCubicVolume(psmeMetric, 0);
                 poudelTotalCubic /= tree.ExpansionFactor;
                 Assert.IsTrue(regenCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
                 Assert.IsTrue(thinCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);

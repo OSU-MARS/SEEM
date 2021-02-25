@@ -82,7 +82,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append(",discount rate,first thin age,second thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPH,BA,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S");
+                line.Append(",discount rate,first thin age,second thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPH,BA,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S,live biomass");
                 writer.WriteLine(line);
             }
 
@@ -201,6 +201,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float netPresentValue3Saw = gradedVolumeStanding.NetPresentValue3Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue3Saw[periodIndex];
                     float netPresentValue4Saw = gradedVolumeStanding.NetPresentValue4Saw[periodIndex] + gradedVolumeHarvested.NetPresentValue4Saw[periodIndex];
 
+                    // biomass
+                    float liveBiomass = 0.001F * stand.GetLiveBiomass(); // Mg/ha
+
                     int simulationYear = highestTrajectory.PeriodLengthInYears * periodIndex;
                     line.Append(trajectoryName + "," + heuristicName + ",");
                     if (runsSpecified)
@@ -246,7 +249,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 gradedVolumeHarvested.Scribner4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 netPresentValue2Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                 netPresentValue3Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                netPresentValue4Saw.ToString("0.000", CultureInfo.InvariantCulture));
+                                netPresentValue4Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                liveBiomass.ToString("0.00", CultureInfo.InvariantCulture));
                     writer.WriteLine(line);
                 }
             }
