@@ -13,16 +13,9 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommunications.Write, "HarvestSchedule")]
     public class WriteHarvestSchedule : WriteCmdlet
     {
-        public FiaVolume fiaVolume;
-
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public List<HeuristicSolutionDistribution>? Runs { get; set; }
-
-        public WriteHarvestSchedule()
-        {
-            this.fiaVolume = new FiaVolume();
-        }
 
         protected override void ProcessRecord()
         {

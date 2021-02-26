@@ -19,16 +19,11 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateNotNull]
-        public TimberValue TimberValue { get; set; }
-
-        [Parameter]
-        [ValidateNotNull]
         public List<OrganonStandTrajectory>? Trajectories { get; set; }
 
         public WriteStandTrajectory()
         {
             this.Runs = null;
-            this.TimberValue = TimberValue.Default;
             this.Trajectories = null;
         }
 
@@ -190,10 +185,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                     // NPV and LEV
                     float thinNetPresentValue = highestTrajectory.ThinningVolume.NetPresentValue[periodIndex];
                     totalThinNetPresentValue += thinNetPresentValue;
-                    float standingNetPresentValue = highestTrajectory.StandingVolume.NetPresentValue[periodIndex] - this.TimberValue.FixedReforestationCostPerHectare - this.TimberValue.SeedlingCost * highestTrajectory.PlantingDensityInTreesPerHectare;
+                    float standingNetPresentValue = highestTrajectory.StandingVolume.NetPresentValue[periodIndex] - highestTrajectory.TimberValue.FixedReforestationCostPerHectare - highestTrajectory.TimberValue.SeedlingCost * highestTrajectory.PlantingDensityInTreesPerHectare;
                     float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue;
 
-                    float presentToFutureConversionFactor = MathF.Pow(1.0F + this.TimberValue.DiscountRate, rotationLength);
+                    float presentToFutureConversionFactor = MathF.Pow(1.0F + highestTrajectory.TimberValue.DiscountRate, rotationLength);
                     float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);
 
                     // pond NPV by grade
