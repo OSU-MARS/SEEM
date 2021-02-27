@@ -172,10 +172,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     Stand stand = highestTrajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
                     OrganonStandDensity density = highestTrajectory.DensityByPeriod[periodIndex];
-                    float quadraticMeanDiameter = stand.GetQuadraticMeanDiameter(); // leave in inches for Reineke SDI
+                    float quadraticMeanDiameter = stand.GetQuadraticMeanDiameterInCentimeters(); // leave in inches for Reineke SDI
                     float reinekeStandDensityIndex = areaConversionFactor * density.TreesPerAcre * MathF.Pow(0.1F * quadraticMeanDiameter, Constant.ReinekeExponent);
                     quadraticMeanDiameter *= dbhConversionFactor;
-                    float topHeight = heightConversionFactor * stand.GetTopHeight();
+                    float topHeight = heightConversionFactor * stand.GetTopHeightInMeters();
 
                     float treesPerUnitArea = areaConversionFactor * density.TreesPerAcre;
                     float basalAreaPerUnitArea = basalAreaConversionFactor * density.BasalAreaPerAcre;

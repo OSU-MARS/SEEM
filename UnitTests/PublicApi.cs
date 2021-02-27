@@ -284,14 +284,15 @@ namespace Osu.Cof.Ferm.Test
             twoThinTrajectory.Simulate();
 
             // verify unthinned trajectory
-            // find/replace regular expression for cleaning up watch window copy/paste: \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
-            //                                          0      1      2      3       4       5       6       7       8       9
-            float[] minimumUnthinnedQmd = new float[] { 6.61F, 8.17F, 9.52F, 10.67F, 11.68F, 12.56F, 13.34F, 14.05F, 14.69F, 15.28F }; // in
-            //                                                0      1      2      3      4       5       6       7       8       9
-            float[] minimumUnthinnedTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 91.6F, 101.9F, 111.3F, 119.9F, 127.8F, 135.0F, 141.7F }; // ft
+            // find/replace regular expression for cleaning up watch window copy/paste: \s+\w+\.\w+\[\d+\]\.\w+\(\)\s+(\d+.\d{1,2})\d*\s+float\r?\n -> $1F, 
+            //                                          0       1       2       3       4       5       6       7       8       9
+            float[] minimumUnthinnedQmd = new float[] { 10.71F, 13.34F, 15.67F, 17.77F, 19.73F, 21.61F, 23.46F, 25.28F, 27.10F, 28.90F }; // cm
+            //                                                0       1       2       3       4       5       6       7       8       9
+            float[] minimumUnthinnedTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 27.94F, 31.08F, 33.94F, 36.56F, 38.96F, 41.17F, 43.21F }; // m
             float[] minimumUnthinnedStandingVolume;
             if (unthinnedTrajectory.UseFiaVolume)
             {
+                // find/replace regular expression for cleaning up watch window copy/paste: \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
                 //                                             0       1       2       3       4       5       6       7       8       9
                 minimumUnthinnedStandingVolume = new float[] { 4.428F, 15.02F, 30.49F, 48.39F, 66.72F, 84.45F, 101.1F, 116.4F, 130.6F, 143.6F }; // FIA SV6x32 MBF/ha
             }
@@ -317,10 +318,10 @@ namespace Osu.Cof.Ferm.Test
             PublicApi.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedStandingVolume, minimumUnthinnedHarvestVolume, 0, null, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
 
             // verify one thin trajectory
-            //                                        0      1      2      3       4       5       6       7       8       9
-            float[] minimumOneThinQmd = new float[] { 6.61F, 8.19F, 9.53F, 11.81F, 13.44F, 14.80F, 15.99F, 17.05F, 18.00F, 18.85F }; // in
-            //                                              0      1      2      3      4      5       6       7       8       9
-            float[] minimumOneThinTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 88.3F, 98.4F, 108.0F, 116.9F, 125.0F, 132.5F, 139.4F }; // ft
+            //                                        0       1       2       3       4       5       6       7       8       9
+            float[] minimumOneThinQmd = new float[] { 10.71F, 13.34F, 15.67F, 19.23F, 21.94F, 24.24F, 26.30F, 28.18F, 29.94F, 31.60F }; // cm
+            //                                              0       1       2       3       4       5       6       7       8       9
+            float[] minimumOneThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.64F, 38.12F, 40.40F, 42.51F }; // ft
             float[] minimumOneThinStandingVolume;
             float[] minimumOneThinHarvestVolume;
             if (oneThinTrajectory.UseFiaVolume)
@@ -364,10 +365,10 @@ namespace Osu.Cof.Ferm.Test
             PublicApi.Verify(oneThinTrajectory, minimumOneThinStandingVolume, firstThinPeriod, null);
 
             // verify two thin trajectory
-            //                                        0      1      2      3       4       5       6       7       8       9
-            float[] minimumTwoThinQmd = new float[] { 6.61F, 8.19F, 9.53F, 11.81F, 13.44F, 14.80F, 16.69F, 18.03F, 19.12F, 20.07F }; // in
-            //                                              0      1      2      3      4      5       6       7       8       9
-            float[] minimumTwoThinTopHeight = new float[] { 54.1F, 67.9F, 80.3F, 88.3F, 98.4F, 108.0F, 113.7F, 121.4F, 129.0F, 136.1F }; // ft
+            //                                        0       1       2       3       4       5       6       7       8       9
+            float[] minimumTwoThinQmd = new float[] { 10.71F, 13.34F, 15.67F, 19.23F, 21.94F, 24.24F, 27.38F, 29.69F, 31.63F, 33.40F }; // cm 
+            //                                              0       1       2       3       4       5       6       7       8       9
+            float[] minimumTwoThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 34.68F, 37.03F, 39.33F, 41.49F }; // ft
             float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146983F, 213170F, 168041F, 226421F, 283782F, 286553F, 339725F, 387766F, 431707F }; // kg/ha
             float[] minimumTwoThinStandingVolume;
             float[] minimumTwoThinHarvestVolume;
@@ -499,10 +500,10 @@ namespace Osu.Cof.Ferm.Test
 
             // verify thinned trajectory
             // find/replace regular expression: \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
-            //                                        0      1       2       3       4     
-            float[] minimumQmd = new float[] { 9.16F, 10.50F, 11.68F, 12.68F, 13.57F }; // in
-            //                                              0      1       2       3       4     
-            float[] minimumTopHeight = new float[] { 92.9F, 101.0F, 110.0F, 118.5F, 126.4F }; // ft
+            //                                 0       1       2       3       4     
+            float[] minimumQmd = new float[] { 14.84F, 17.10F, 19.19F, 21.07F, 22.85F }; // in
+            //                                       0       1       2       3       4     
+            float[] minimumTopHeight = new float[] { 28.32F, 30.81F, 33.54F, 36.14F, 38.54F }; // m
             float[] minimumStandingVolume;
             float[] minimumHarvestVolume;
             if (thinnedTrajectory.UseFiaVolume)
@@ -869,13 +870,13 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[periodIndex] <= volumeTolerance * minimumHarvestVolumeScribner[periodIndex]);
 
                 OrganonStand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
-                float qmd = stand.GetQuadraticMeanDiameter();
-                float topHeight = stand.GetTopHeight();
+                float qmdInCm = stand.GetQuadraticMeanDiameterInCentimeters();
+                float topHeight = stand.GetTopHeightInMeters();
                 int treeRecords = stand.GetTreeRecordCount();
 
                 Assert.IsTrue((stand.Name != null) && (trajectory.Name != null) && stand.Name.StartsWith(trajectory.Name));
-                Assert.IsTrue(qmd > minimumQmd[periodIndex]);
-                Assert.IsTrue(qmd < qmdTolerance * minimumQmd[periodIndex]);
+                Assert.IsTrue(qmdInCm > minimumQmd[periodIndex]);
+                Assert.IsTrue(qmdInCm < qmdTolerance * minimumQmd[periodIndex]);
                 Assert.IsTrue(topHeight > minimumTopHeight[periodIndex]);
                 Assert.IsTrue(topHeight < topHeightTolerance * minimumTopHeight[periodIndex]);
                 Assert.IsTrue(treeRecords > 0);
