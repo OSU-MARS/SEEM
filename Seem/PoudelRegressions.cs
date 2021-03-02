@@ -40,6 +40,46 @@ namespace Osu.Cof.Ferm
             return expansionFactor * cvtsPerTreeInCubicM;
         }
 
+        public static float GetDouglasFirDiameterInsideBark(float dbhInCm, float heightInM, float evaluationHeightInM)
+        {
+            // Poudel K, Temesgen H, Gray AN. 2018. Estimating upper stem diameters and volume of Douglas-fir and Western hemlock
+            //   trees in the Pacific northwest. Forest Ecosystems 5:16. https://doi.org/10.1186/s40663-018-0134-2
+            // Table 4: M4 (Kozak 2004) form
+            // regression's fitted diameter range: 1.8-114 cm
+            //                     height range: 2.4-64 m
+            // allow extrapolation beyond fit range in lieu of a better predictor but block height-diameter ratios so high b3 becomes
+            // negative and table generation fails
+            if (dbhInCm > 135.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString("0.0") + " cm exceeds limit of 135.0 cm.");
+            }
+            if (heightInM > 75.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString("0.0") + " m exceeds limit of 75.0 m.");
+            }
+            if ((evaluationHeightInM < 0.0F) || (evaluationHeightInM > heightInM))
+            {
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString("0.00") + " m exceeds tree height of " + heightInM.ToString("0.00") + " m.");
+            }
+
+            const float b1 = 1.04208F;
+            const float b2 = 0.99771F;
+            const float b3 = -0.03111F;
+            const float b4 = 0.53788F;
+            const float b5 = -1.01291F;
+            const float b6 = 0.56813F;
+            const float b7 = 4.96019F;
+            const float b8 = 0.04124F;
+            const float b9 = -0.34417F;
+            float t = evaluationHeightInM / heightInM;
+            float k = 1.3F / heightInM;
+            float oneMinusCubeRootT = 1 - MathV.Pow(t, 1.0F / 3.0F);
+            float tkRatio = oneMinusCubeRootT / (1 - MathV.Pow(k, 1.0F / 3.0F));
+            float dibInCm = b1 * MathV.Pow(dbhInCm, b2) * MathV.Pow(heightInM, b3) * MathV.Pow(tkRatio, b4 * t * t * t * t + b5 / MathV.Exp(dbhInCm / heightInM) + b6 * MathV.Pow(tkRatio, 0.1F) + b7 / dbhInCm + b8 * MathV.Pow(heightInM, oneMinusCubeRootT) + b9 * tkRatio);
+            // float dibMathFcheck = b1 * MathF.Pow(dbhInCm, b2) * MathF.Pow(heightInM, b3) * MathF.Pow(tkRatio, b4 * t * t * t * t + b5 / MathF.Exp(dbhInCm / heightInM) + b6 * MathF.Pow(tkRatio, 0.1F) + b7 / dbhInCm + b8 * MathF.Pow(heightInM, 1 - MathF.Pow(evaluationHeightInM / heightInM, 1.0F / 3.0F)) + b9 * tkRatio);
+            return dibInCm;
+        }
+
         /// <summary>
         /// Find total per hectare biomass of trees.
         /// </summary>

@@ -77,7 +77,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append(",discount rate,first thin age,second thin age,rotation,stand age,sim year,SDI,QMD,Htop,TPH,BA,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S,live biomass");
+                line.Append(",discount rate,first thin,second thin,rotation,stand age,sim year,SDI,QMD,Htop,TPH,BA,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S,live biomass");
                 writer.WriteLine(line);
             }
 
@@ -185,8 +185,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                     // NPV and LEV
                     float thinNetPresentValue = highestTrajectory.ThinningVolume.NetPresentValue[periodIndex];
                     totalThinNetPresentValue += thinNetPresentValue;
-                    float standingNetPresentValue = highestTrajectory.StandingVolume.NetPresentValue[periodIndex] - highestTrajectory.TimberValue.FixedReforestationCostPerHectare - highestTrajectory.TimberValue.SeedlingCost * highestTrajectory.PlantingDensityInTreesPerHectare;
-                    float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue;
+                    float standingNetPresentValue = highestTrajectory.StandingVolume.NetPresentValue[periodIndex];
+                    float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue - highestTrajectory.TimberValue.FixedReforestationCostPerHectare - highestTrajectory.TimberValue.SeedlingCost * highestTrajectory.PlantingDensityInTreesPerHectare;
 
                     float presentToFutureConversionFactor = MathF.Pow(1.0F + highestTrajectory.TimberValue.DiscountRate, rotationLength);
                     float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);

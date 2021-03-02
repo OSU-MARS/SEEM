@@ -44,7 +44,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first run is missing a highest solution, lowest solution, or highest solution parameters.");
                 }
 
-                line.Append("stand,heuristic,discount rate,first thin age,second thin age,rotation," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + ",iteration,count");
+                line.Append("stand,heuristic,discount rate,first thin,second thin,rotation," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + ",iteration,count");
 
                 string lowestMoveLogHeader = "lowest move log";
                 IHeuristicMoveLog? lowestMoveLog = this.Runs[0].LowestSolution!.GetMoveLog();

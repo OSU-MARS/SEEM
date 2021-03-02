@@ -33,7 +33,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Cannot generate schedule header because first run has no heuristic parameters.");
                 }
-                line.Append("stand,heuristic," + highestHeuristicParameters.GetCsvHeader() + ",discount rate,first thin age,second thin age,rotation,tree,lowest selection,highest selection,highest thin DBH,highest thin height,highest thin CR,highest thin EF,highest thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
+                line.Append("stand,heuristic," + highestHeuristicParameters.GetCsvHeader() + ",discount rate,first thin,second thin,rotation,tree,lowest selection,highest selection,highest first thin DBH,highest first thin height,highest first thin CR,highest first thin EF,highest first thin BF,highest second thin DBH,highest second thin height,highest second thin CR,highest second thin EF,highest second thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
                 writer.WriteLine(line);
             }
 
@@ -50,11 +50,19 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 OrganonStandTrajectory highestTrajectoryN = distribution.HighestSolution.BestTrajectory;
-                int periodBeforeFirstThin = highestTrajectoryN.GetFirstHarvestPeriod() - 1;
+                int firstThinPeriod = highestTrajectoryN.GetFirstHarvestPeriod();
+                int periodBeforeFirstThin = firstThinPeriod - 1;
                 if (periodBeforeFirstThin < 0)
                 {
                     periodBeforeFirstThin = highestTrajectoryN.PlanningPeriods - 1;
                 }
+                int secondThinPeriod = highestTrajectoryN.GetSecondHarvestPeriod();
+                int periodBeforeSecondThin = secondThinPeriod - 1;
+                if (periodBeforeSecondThin < 0)
+                {
+                    periodBeforeSecondThin = highestTrajectoryN.PlanningPeriods - 1;
+                }
+
                 int firstThinAge = highestTrajectoryN.GetFirstHarvestAge();
                 string? firstThinAgeString = firstThinAge != -1 ? firstThinAge.ToString(CultureInfo.InvariantCulture) : null;
                 int secondThinAge = highestTrajectoryN.GetSecondHarvestAge();
@@ -67,22 +75,26 @@ namespace Osu.Cof.Ferm.Cmdlets
                     secondThinAgeString + "," +
                     highestTrajectoryN.GetRotationLength().ToString(CultureInfo.InvariantCulture);
 
+                Stand? highestStandNbeforeFirstThin = highestTrajectoryN.StandByPeriod[periodBeforeFirstThin];
+                Stand? highestStandNbeforeSecondThin = highestTrajectoryN.StandByPeriod[periodBeforeSecondThin];
+                Stand? highestStandNatEnd = highestTrajectoryN.StandByPeriod[^1];
+                if ((highestStandNbeforeFirstThin == null) || (highestStandNbeforeSecondThin == null) || (highestStandNatEnd == null))
+                {
+                    throw new ParameterOutOfRangeException(nameof(this.Runs), "Highest stand in run has not been fully simulated. Did the heuristic perform at least one move?");
+                }
+                Units finalUnits = highestStandNatEnd.GetUnits();
+                if ((highestStandNbeforeFirstThin.GetUnits() != finalUnits) || (highestStandNbeforeSecondThin.GetUnits() != finalUnits))
+                {
+                    throw new NotSupportedException("Units differ between simulation periods.");
+                }
+
                 OrganonStandTrajectory lowestTrajectoryN = distribution.LowestSolution.BestTrajectory;
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> highestTreeSelectionNForSpecies in highestTrajectoryN.IndividualTreeSelectionBySpecies)
                 {
-                    Stand? highestStandNbeforeFirstHarvest = highestTrajectoryN.StandByPeriod[periodBeforeFirstThin];
-                    Stand? highestStandNatEnd = highestTrajectoryN.StandByPeriod[^1];
-                    if ((highestStandNbeforeFirstHarvest == null) || (highestStandNatEnd == null))
-                    {
-                        throw new ParameterOutOfRangeException(nameof(this.Runs), "Highest stand in run has not been fully simulated. Did the heuristic perform at least one move?");
-                    }
-                    Trees highestTreesBeforeFirstThin = highestStandNbeforeFirstHarvest.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
+                    Trees highestTreesBeforeFirstThin = highestStandNbeforeFirstThin.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
+                    Trees highestTreesBeforeSecondThin = highestStandNbeforeSecondThin.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
                     Trees highestTreesAtFinal = highestStandNatEnd.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
-                    if (highestTreesBeforeFirstThin.Units != highestTreesAtFinal.Units)
-                    {
-                        throw new NotSupportedException();
-                    }
                     WriteHarvestSchedule.GetDimensionConversions(highestTreesBeforeFirstThin.Units, Units.Metric, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
 
                     // uncompactedTreeIndex: tree index in periods before thinned trees are removed
@@ -90,27 +102,62 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int[] lowestTreeSelectionN = lowestTrajectoryN.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
                     int[] highestTreeSelectionN = highestTreeSelectionNForSpecies.Value;
                     Debug.Assert(highestTreesBeforeFirstThin.Capacity == highestTreeSelectionN.Length);
-                    for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < highestTreesBeforeFirstThin.Count; ++uncompactedTreeIndex)
+                    int secondThinCompactedTreeIndex = 0;
+                    int finalCompactedTreeIndex = 0;
+                    for (int uncompactedTreeIndex = 0; uncompactedTreeIndex < highestTreesBeforeFirstThin.Count; ++uncompactedTreeIndex)
                     {
                         line.Clear();
 
                         float highestThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesBeforeFirstThin, uncompactedTreeIndex);
+
+                        string? highestFirstThinDbh = null;
+                        string? highestFirstThinHeight = null;
+                        string? highestFirstThinCrownRatio = null;
+                        string? highestFirstThinExpansionFactor = null;
+                        string? highestFirstThinBoardFeet = null;
+                        // properties before first thin are undefined if no thinning occurred
+                        if (firstThinAge > 0)
+                        {
+                            highestFirstThinDbh = (dbhConversionFactor * highestTreesBeforeFirstThin.Dbh[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFirstThinHeight = (heightConversionFactor * highestTreesBeforeFirstThin.Height[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFirstThinCrownRatio = highestTreesBeforeFirstThin.CrownRatio[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestFirstThinExpansionFactor = highestTreesBeforeFirstThin.LiveExpansionFactor[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestFirstThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesBeforeFirstThin, uncompactedTreeIndex).ToString("0.00", CultureInfo.InvariantCulture);
+                        }
+
+                        string? highestSecondThinDbh = null;
+                        string? highestSecondThinHeight = null;
+                        string? highestSecondThinCrownRatio = null;
+                        string? highestSecondThinExpansionFactor = null;
+                        string? highestSecondThinBoardFeet = null;
+                        // properties before second thin are undefined if no thinning, only a first thin, or if tree was removed in first thin
+                        bool isRemovedInFirstThin = highestTreeSelectionN[uncompactedTreeIndex] == firstThinPeriod;
+                        if ((secondThinAge > 0) && (isRemovedInFirstThin == false))
+                        {
+                            Debug.Assert(highestTreesBeforeSecondThin.Tag[secondThinCompactedTreeIndex] == highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex]);
+                            highestSecondThinDbh = (dbhConversionFactor * highestTreesBeforeSecondThin.Dbh[secondThinCompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestSecondThinHeight = (heightConversionFactor * highestTreesBeforeSecondThin.Height[secondThinCompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestSecondThinCrownRatio = highestTreesBeforeSecondThin.CrownRatio[secondThinCompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestSecondThinExpansionFactor = highestTreesBeforeSecondThin.LiveExpansionFactor[secondThinCompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestSecondThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesBeforeSecondThin, secondThinCompactedTreeIndex).ToString("0.00", CultureInfo.InvariantCulture);
+                            ++secondThinCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
+                        }
 
                         string? highestFinalDbh = null;
                         string? highestFinalHeight = null;
                         string? highestFinalCrownRatio = null;
                         string? highestFinalExpansionFactor = null;
                         string? highestFinalBoardFeet = null;
-                        bool isThinnedInHighestTrajectory = highestTreeSelectionN[uncompactedTreeIndex] != Constant.NoHarvestPeriod;
-                        if (isThinnedInHighestTrajectory == false)
+                        bool isThinned = highestTreeSelectionN[uncompactedTreeIndex] != Constant.NoHarvestPeriod;
+                        if (isThinned == false)
                         {
-                            Debug.Assert(highestTreesAtFinal.Tag[compactedTreeIndex] == highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex]);
-                            highestFinalDbh = (dbhConversionFactor * highestTreesAtFinal.Dbh[compactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
-                            highestFinalHeight = (heightConversionFactor * highestTreesAtFinal.Height[compactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
-                            highestFinalCrownRatio = highestTreesAtFinal.CrownRatio[compactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
-                            highestFinalExpansionFactor = highestTreesAtFinal.LiveExpansionFactor[compactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
-                            highestFinalBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesAtFinal, compactedTreeIndex).ToString("0.00", CultureInfo.InvariantCulture);
-                            ++compactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
+                            Debug.Assert(highestTreesAtFinal.Tag[finalCompactedTreeIndex] == highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex]);
+                            highestFinalDbh = (dbhConversionFactor * highestTreesAtFinal.Dbh[finalCompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFinalHeight = (heightConversionFactor * highestTreesAtFinal.Height[finalCompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
+                            highestFinalCrownRatio = highestTreesAtFinal.CrownRatio[finalCompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestFinalExpansionFactor = highestTreesAtFinal.LiveExpansionFactor[finalCompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
+                            highestFinalBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesAtFinal, finalCompactedTreeIndex).ToString("0.00", CultureInfo.InvariantCulture);
+                            ++finalCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 
                         // for now, make best guess of using tree tag or index as unique identifier
@@ -118,11 +165,16 @@ namespace Osu.Cof.Ferm.Cmdlets
                         line.Append(linePrefix + "," + treeID + "," +
                                     lowestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                     highestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    (dbhConversionFactor * highestTreesBeforeFirstThin.Dbh[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                    (heightConversionFactor * highestTreesBeforeFirstThin.Height[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                    highestTreesBeforeFirstThin.CrownRatio[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                    highestTreesBeforeFirstThin.LiveExpansionFactor[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                    highestThinBoardFeet.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                    highestFirstThinDbh + "," +
+                                    highestFirstThinHeight + "," +
+                                    highestFirstThinCrownRatio + "," +
+                                    highestFirstThinExpansionFactor + "," +
+                                    highestFirstThinBoardFeet + "," +
+                                    highestSecondThinDbh + "," +
+                                    highestSecondThinHeight + "," +
+                                    highestSecondThinCrownRatio + "," +
+                                    highestSecondThinExpansionFactor + "," +
+                                    highestSecondThinBoardFeet + "," +
                                     highestFinalDbh + "," +
                                     highestFinalHeight + "," +
                                     highestFinalCrownRatio + "," +

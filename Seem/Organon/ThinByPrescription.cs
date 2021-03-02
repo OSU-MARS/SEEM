@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -229,7 +230,7 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             float basalAreaRemoved = basalAreaRemovedFromAbove + basalAreaRemovedProportionally + basalAreaRemovedFromBelow;
-            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || (totalPercentage == 0.0F && basalAreaRemoved == 0.0F));
+            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || ((int)(0.01F * totalPercentage * dbhSortOrderBySpecies.Values.Sum(sortOrder => sortOrder.Length)) == 0 && basalAreaRemoved == 0.0F));
             return basalAreaRemoved;
         }
     }

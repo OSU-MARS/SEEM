@@ -34,7 +34,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first run is missing highest solution parameters.");
                 }
 
-                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + ",discount rate,first thin age,second thin age,rotation,solution,objective,runtime");
+                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + ",discount rate,first thin,second thin,rotation,solution,objective,runtime");
                 writer.WriteLine(line);
             }
 
