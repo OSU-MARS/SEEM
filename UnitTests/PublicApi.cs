@@ -90,8 +90,8 @@ namespace Osu.Cof.Ferm.Test
                 //IsStochastic = true,
                 MaximumIterations = 10
             };
-            //hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
-            hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
+            hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
+            //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
             hero.Run();
 
             this.Verify(hero);
@@ -232,7 +232,7 @@ namespace Osu.Cof.Ferm.Test
             this.Verify(recordTravel);
             this.Verify(tabu);
 
-            HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution(1, thinningPeriod, treeCount);
+            HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution(1, treeCount);
             distribution.AddRun(annealer, annealerRuntime, defaultParameters);
             distribution.AddRun(deluge, delugeRuntime, defaultParameters);
             distribution.AddRun(thresholdAcceptor, acceptorRuntime, defaultParameters);
@@ -315,7 +315,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             }
 
-            PublicApi.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedStandingVolume, minimumUnthinnedHarvestVolume, 0, null, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(unthinnedTrajectory, minimumUnthinnedQmd, minimumUnthinnedTopHeight, minimumUnthinnedStandingVolume, minimumUnthinnedHarvestVolume, Constant.NoThinPeriod, Constant.NoThinPeriod, lastPeriod, 0, 0, configuration.Variant.TimeStepInYears);
 
             // verify one thin trajectory
             //                                        0       1       2       3       4       5       6       7       8       9
@@ -361,7 +361,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
             }
 
-            PublicApi.Verify(oneThinTrajectory, minimumOneThinQmd, minimumOneThinTopHeight, minimumOneThinStandingVolume, minimumOneThinHarvestVolume, firstThinPeriod, null, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(oneThinTrajectory, minimumOneThinQmd, minimumOneThinTopHeight, minimumOneThinStandingVolume, minimumOneThinHarvestVolume, firstThinPeriod, Constant.NoThinPeriod, lastPeriod, 200, 400, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(oneThinTrajectory, minimumOneThinStandingVolume, firstThinPeriod, null);
 
             // verify two thin trajectory
@@ -529,7 +529,7 @@ namespace Osu.Cof.Ferm.Test
                 // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
             }
 
-            PublicApi.Verify(thinnedTrajectory, minimumQmd, minimumTopHeight, minimumStandingVolume, minimumHarvestVolume, thinPeriod, null, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(thinnedTrajectory, minimumQmd, minimumTopHeight, minimumStandingVolume, minimumHarvestVolume, thinPeriod, Constant.NoThinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(thinnedTrajectory, minimumStandingVolume, thinPeriod, null);
             Assert.IsTrue(thinnedTrajectory.GetFirstHarvestAge() == 30);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
@@ -672,7 +672,11 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(endObjectiveFunction <= heuristic.BestObjectiveFunction);
 
             // check harvest schedule
-            int harvestPeriod = heuristic.BestTrajectory.HarvestPeriods - 1;
+            int firstThinningPeriod = heuristic.BestTrajectory.GetFirstHarvestPeriod(); // returns -1 if heuristic selects no trees
+            if (firstThinningPeriod == Constant.NoThinPeriod)
+            {
+                firstThinningPeriod = heuristic.BestTrajectory.Configuration.Treatments.GetValidThinningPeriods()[1];
+            }
             foreach (KeyValuePair<FiaCode, int[]> selectionForSpecies in heuristic.BestTrajectory.IndividualTreeSelectionBySpecies)
             {
                 int[] bestTreeSelection = selectionForSpecies.Value;
@@ -680,13 +684,13 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(bestTreeSelection.Length == currentTreeSelection.Length);
                 for (int treeIndex = 0; treeIndex < bestTreeSelection.Length; ++treeIndex)
                 {
-                    Assert.IsTrue((bestTreeSelection[treeIndex] == 0) || (bestTreeSelection[treeIndex] == harvestPeriod));
-                    Assert.IsTrue((currentTreeSelection[treeIndex] == 0) || (currentTreeSelection[treeIndex] == harvestPeriod));
+                    Assert.IsTrue((bestTreeSelection[treeIndex] == Constant.NoHarvestPeriod) || (bestTreeSelection[treeIndex] == firstThinningPeriod));
+                    Assert.IsTrue((currentTreeSelection[treeIndex] == Constant.NoHarvestPeriod) || (currentTreeSelection[treeIndex] == firstThinningPeriod));
                 }
             }
 
             // check volumes
-            Assert.IsTrue(harvestPeriod > 0);
+            Assert.IsTrue((firstThinningPeriod == Constant.NoThinPeriod) || (firstThinningPeriod > 0));
             heuristic.BestTrajectory.GetGradedVolumes(out StandGradedVolume bestGradedVolumeStanding, out StandGradedVolume bestGradedVolumeHarvested);
             heuristic.CurrentTrajectory.GetGradedVolumes(out StandGradedVolume currentGradedVolumeStanding, out StandGradedVolume currentGradedVolumeHarvested);
             float previousBestCubicStandingVolume = Single.NaN;
@@ -707,7 +711,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(MathF.Abs(currentCubicStandingVolume - currentCubicStandingCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(currentCubicThinningVolume - currentCubicThinningCheckVolume) < 0.000001F);
 
-                if (periodIndex == harvestPeriod)
+                if (periodIndex == firstThinningPeriod)
                 {
                     Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] >= 0.0F); // best selection with debug stand is no harvest
                     Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
@@ -776,7 +780,7 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(currentCubicStandingVolume > 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.ScribnerTotal[periodIndex] > 0.0F);
 
-                    if (periodIndex != harvestPeriod)
+                    if (periodIndex != firstThinningPeriod)
                     {
                         // for now, assume monotonic increase in standing volumes except in harvest periods
                         Assert.IsTrue(bestCubicStandingVolume > previousBestCubicStandingVolume);
@@ -845,17 +849,40 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static void Verify(OrganonStandTrajectory trajectory, float[] minimumQmd, float[] minimumTopHeight, float[] minimumStandingVolumeScribner, float[] minimumHarvestVolumeScribner, int firstThinPeriod, int? secondThinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
+        private static void Verify(OrganonStandTrajectory trajectory, float[] minimumQmd, float[] minimumTopHeight, float[] minimumStandingVolumeScribner, float[] minimumHarvestVolumeScribner, int firstThinPeriod, int secondThinPeriod, int lastPeriod, int minTrees, int maxTrees, int timeStepInYears)
         {
             Assert.IsTrue(trajectory.BasalAreaRemoved.Length == lastPeriod + 1);
             Assert.IsTrue(trajectory.BasalAreaRemoved[0] == 0.0F);
-            Assert.IsTrue(trajectory.HarvestPeriods == (secondThinPeriod.HasValue ? Math.Max(firstThinPeriod, secondThinPeriod.Value) + 1 : firstThinPeriod + 1)); // BUGBUG: clean off by one semantic
             Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[0] == 0.0F);
             Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal.Length == lastPeriod + 1);
-            PublicApi.Verify(trajectory.IndividualTreeSelectionBySpecies, firstThinPeriod, secondThinPeriod, minTrees, maxTrees);
             Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
             Assert.IsTrue(trajectory.PeriodLengthInYears == timeStepInYears);
             Assert.IsTrue(trajectory.PlanningPeriods == lastPeriod + 1); // BUGBUG: clean off by one semantic
+
+            Assert.IsTrue(trajectory.GetFirstHarvestPeriod() == firstThinPeriod);
+            Assert.IsTrue(trajectory.GetSecondHarvestPeriod() == secondThinPeriod);
+
+            IList<int> thinningPeriods = trajectory.Configuration.Treatments.GetValidThinningPeriods();
+            Assert.IsTrue(thinningPeriods[0] == Constant.NoHarvestPeriod);
+            if (firstThinPeriod != Constant.NoThinPeriod)
+            {
+                Assert.IsTrue(thinningPeriods[1] == firstThinPeriod);
+                if (secondThinPeriod != Constant.NoThinPeriod)
+                {
+                    Assert.IsTrue(thinningPeriods[2] == secondThinPeriod);
+                    Assert.IsTrue(thinningPeriods.Count == 3);
+                }
+                else
+                {
+                    Assert.IsTrue(thinningPeriods.Count == 2);
+                }
+            }
+            else
+            {
+                Assert.IsTrue(thinningPeriods.Count == 1);
+            }
+
+            PublicApi.Verify(trajectory.IndividualTreeSelectionBySpecies, firstThinPeriod, secondThinPeriod, minTrees, maxTrees);
 
             float qmdTolerance = 1.01F;
             float topHeightTolerance = 1.01F;

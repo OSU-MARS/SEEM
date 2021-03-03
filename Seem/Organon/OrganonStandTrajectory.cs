@@ -21,7 +21,6 @@ namespace Osu.Cof.Ferm.Organon
 
         public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod, bool useFiaVolume)
             : base(timberValue, lastPlanningPeriod, 
-                  organonConfiguration.Treatments.Harvests.Count > 0 ? organonConfiguration.Treatments.Harvests.Max(harvest => harvest.Period) : 0,
                   stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand))) // base does range checks
         {
             if (timberValue == null)
@@ -141,7 +140,7 @@ namespace Osu.Cof.Ferm.Organon
         {
             Debug.Assert(Object.ReferenceEquals(this, other) == false);
 
-            if ((this.HarvestPeriods != other.HarvestPeriods) || (this.PlanningPeriods != other.PlanningPeriods))
+            if ((this.BasalAreaRemoved.Length != other.BasalAreaRemoved.Length) || (this.PlanningPeriods != other.PlanningPeriods))
             {
                 // TODO: check rest of stand properties
                 throw new ArgumentOutOfRangeException(nameof(other));
@@ -317,6 +316,12 @@ namespace Osu.Cof.Ferm.Organon
             // standing volume
             OrganonStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + "."); 
             this.StandingVolume.FromStand(stand, periodIndex, this.TimberValue, this.GetEndOfPeriodAge(periodIndex));
+        }
+
+        public int GetInitialTreeRecordCount()
+        {
+            Stand initialStand = this.StandByPeriod[0] ?? throw new NotSupportedException("Initial stand infomation is missing.");
+            return initialStand.GetTreeRecordCount();
         }
 
         public void Simulate()

@@ -223,9 +223,11 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.MaximumTenure));
             }
-            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.ThinPeriodOrRetain)
+
+            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            if (thinningPeriods.Count < 2)
             {
-                throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
+                throw new NotSupportedException("A decision between at least two thinning periods is expected.");
             }
 
             Stopwatch stopwatch = new Stopwatch();
@@ -233,8 +235,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
             this.EvaluateInitialSelection(this.Iterations);
 
-            int initialTreeRecordCount = this.GetInitialTreeRecordCount();
-            int[,] remainingTabuTenures = new int[initialTreeRecordCount, this.CurrentTrajectory.HarvestPeriods];
+            int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
+            int[,] remainingTabuTenures = new int[initialTreeRecordCount, thinningPeriods.Max() + 1];
             //List<List<int>> treeIndicesBySubset = this.GetDiameterQuantiles();
             //List<List<int>> treeIndicesBySubset = this.GetDiameterSubsets(); // performs poorly compared to diameter quantiles
             //List<List<int>> treeIndicesBySubset = this.GetHeightSubsets(); // performs worse
@@ -242,7 +244,7 @@ namespace Osu.Cof.Ferm.Heuristics
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             OrganonStandTrajectory bestTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             OrganonStandTrajectory bestNonTabuTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            float tenureScalingFactor = ((float)(this.MaximumTenure - 2) - Constant.RoundTowardsZeroTolerance) / (float)byte.MaxValue;
+            float tenureScalingFactor = (this.MaximumTenure - 2 - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
             //List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
             //for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
             //{
@@ -268,16 +270,16 @@ namespace Osu.Cof.Ferm.Heuristics
                         int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(move.TreeIndex);
                         int newOrExtendedTenure = Math.Max(this.GetTenure(tenureScalingFactor), 
                                                            Math.Max(remainingTabuTenures[move.TreeIndex, currentHarvestPeriod],
-                                                                    remainingTabuTenures[move.TreeIndex, move.HarvestPeriod]));
+                                                                    remainingTabuTenures[move.TreeIndex, move.ThinPeriod]));
                         remainingTabuTenures[move.TreeIndex, currentHarvestPeriod] = newOrExtendedTenure;
-                        remainingTabuTenures[move.TreeIndex, move.HarvestPeriod] = newOrExtendedTenure;
+                        remainingTabuTenures[move.TreeIndex, move.ThinPeriod] = newOrExtendedTenure;
 
                         // TODO: how to log tree IDs?
                         // last set is redundant since performed at end of previous iteration
                         // Last move can also potentially immediately undone since its tenure is only set one way here. The move has
                         // already been applied so the tree's current and move harvest periods are the same.
-                        candidateTrajectory.SetTreeSelection(move.TreeIndex, move.HarvestPeriod);
-                        this.CurrentTrajectory.SetTreeSelection(move.TreeIndex, move.HarvestPeriod);
+                        candidateTrajectory.SetTreeSelection(move.TreeIndex, move.ThinPeriod);
+                        this.CurrentTrajectory.SetTreeSelection(move.TreeIndex, move.ThinPeriod);
                     }
                     iterationsSinceObjectiveImprovedOrEscape = -1; // incremented below
                     bestObjectiveFunctionSinceLastEscape = Single.MinValue;
@@ -303,15 +305,15 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
                     // for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.CurrentTrajectory.HarvestPeriods; ++harvestPeriodIndex)
-                    for (int harvestPeriodIndex = 0; harvestPeriodIndex < this.CurrentTrajectory.HarvestPeriods; harvestPeriodIndex += this.CurrentTrajectory.HarvestPeriods - 1)
+                    foreach (int thinningPeriod in thinningPeriods)
                     {
-                        if (harvestPeriodIndex == currentHarvestPeriod)
+                        if (thinningPeriod == currentHarvestPeriod)
                         {
                             continue;
                         }
 
                         // find objective function for this tree in this period
-                        candidateTrajectory.SetTreeSelection(treeIndex, harvestPeriodIndex);
+                        candidateTrajectory.SetTreeSelection(treeIndex, thinningPeriod);
                         candidateTrajectory.Simulate();
                         float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
 
@@ -320,10 +322,10 @@ namespace Osu.Cof.Ferm.Heuristics
                             bestObjectiveFunction = candidateObjectiveFunction;
                             bestTrajectory.CopyFrom(candidateTrajectory);
                             bestTreeIndex = treeIndex;
-                            bestHarvestPeriod = harvestPeriodIndex;
+                            bestHarvestPeriod = thinningPeriod;
                         }
 
-                        int tabuTenure = remainingTabuTenures[treeIndex, harvestPeriodIndex];
+                        int tabuTenure = remainingTabuTenures[treeIndex, thinningPeriod];
                         if (tabuTenure == 0)
                         {
                             if (bestNonTabuMovesByObjectiveFunction.ContainsKey(candidateObjectiveFunction) == false)
@@ -332,13 +334,13 @@ namespace Osu.Cof.Ferm.Heuristics
                                 // Assume best non-tabu move gets accepted below, so fill move list to escape distance + 1 entries.
                                 if (bestNonTabuMovesByObjectiveFunction.Count <= this.EscapeDistance)
                                 {
-                                    bestNonTabuMovesByObjectiveFunction.Add(candidateObjectiveFunction, new OneOptMove(treeIndex, harvestPeriodIndex));
+                                    bestNonTabuMovesByObjectiveFunction.Add(candidateObjectiveFunction, new OneOptMove(treeIndex, thinningPeriod));
                                     minimumNonTabuObjectiveFunction = Math.Min(minimumNonTabuObjectiveFunction, candidateObjectiveFunction);
                                 }
                                 else if (candidateObjectiveFunction > minimumNonTabuObjectiveFunction)
                                 {
                                     bestNonTabuMovesByObjectiveFunction.Remove(minimumNonTabuObjectiveFunction);
-                                    bestNonTabuMovesByObjectiveFunction.Add(candidateObjectiveFunction, new OneOptMove(treeIndex, harvestPeriodIndex));
+                                    bestNonTabuMovesByObjectiveFunction.Add(candidateObjectiveFunction, new OneOptMove(treeIndex, thinningPeriod));
                                     minimumNonTabuObjectiveFunction = bestNonTabuMovesByObjectiveFunction.Keys.First();
                                 }
                             }
@@ -352,7 +354,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                         if (tabuTenure > 0)
                         {
-                            remainingTabuTenures[treeIndex, harvestPeriodIndex] = tabuTenure - 1;
+                            remainingTabuTenures[treeIndex, thinningPeriod] = tabuTenure - 1;
                         }
 
                         // revert candidate trajectory to current trajectory as no move has yet been accepted
@@ -393,7 +395,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     acceptedObjectiveFunction = bestNonTabuMove.Key;
                     this.CurrentTrajectory.CopyFrom(bestNonTabuTrajectory);
 
-                    remainingTabuTenures[bestNonTabuMove.Value.TreeIndex, bestNonTabuMove.Value.HarvestPeriod] = this.GetTenure(tenureScalingFactor);
+                    remainingTabuTenures[bestNonTabuMove.Value.TreeIndex, bestNonTabuMove.Value.ThinPeriod] = this.GetTenure(tenureScalingFactor);
                     this.CandidateObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
                     this.MoveLog.TreeIDByMove.Add(bestNonTabuMove.Value.TreeIndex);
 

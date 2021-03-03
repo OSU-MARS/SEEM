@@ -38,13 +38,13 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int TotalMoves { get; private set; }
         public int TotalRuns { get; private set; }
 
-        public HeuristicSolutionDistribution(int eliteSolutions, int harvestPeriods, int treeCount)
+        public HeuristicSolutionDistribution(int eliteSolutions, int treeCount)
         {
             int defaultMoveCapacity = 1024;
 
             this.BestObjectiveFunctionBySolution = new List<float>(100);
             this.CountByMove = new List<int>(defaultMoveCapacity);
-            this.EliteSolutions = new Population(eliteSolutions, harvestPeriods, 1.0F, treeCount);
+            this.EliteSolutions = new Population(eliteSolutions, 1.0F, treeCount);
             this.FifthPercentileByMove = new List<float>(defaultMoveCapacity);
             this.HighestHeuristicParameters = null;
             this.HighestSolution = null;

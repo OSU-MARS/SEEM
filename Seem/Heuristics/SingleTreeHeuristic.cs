@@ -1,4 +1,6 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {

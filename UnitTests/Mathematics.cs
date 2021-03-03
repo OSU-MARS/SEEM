@@ -135,28 +135,30 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void Population()
         {
-            Population binaryPopulation = new Population(2, 2, 0.5F, 5);
+            List<int> thinningPeriods = new List<int>() { 0, 1 };
+
+            Population binaryPopulation = new Population(2, 0.5F, 5);
             binaryPopulation.IndividualFitness[0] = 0.0F;
             binaryPopulation.IndividualFitness[1] = 1.0F;
             binaryPopulation.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
             binaryPopulation.IndividualTreeSelections[1] = new int[] { 1, 1, 1, 1, 1 };
 
-            Population clones = new Population(2, 2, 0.5F, 5);
+            Population clones = new Population(2, 0.5F, 5);
             clones.IndividualFitness[0] = 0.0F;
             clones.IndividualFitness[1] = 0.0F;
             clones.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
             clones.IndividualTreeSelections[1] = new int[] { 0, 0, 0, 0, 0 };
 
-            Population heterozygousPopulation = new Population(2, 2, 0.5F, 5);
+            Population heterozygousPopulation = new Population(2, 0.5F, 5);
             heterozygousPopulation.IndividualFitness[0] = 0.4F;
             heterozygousPopulation.IndividualFitness[1] = 0.6F;
             heterozygousPopulation.IndividualTreeSelections[0] = new int[] { 1, 0, 0, 1, 0 };
             heterozygousPopulation.IndividualTreeSelections[1] = new int[] { 1, 0, 1, 0, 1 };
 
             PopulationStatistics statistics = new PopulationStatistics();
-            statistics.AddGeneration(binaryPopulation);
-            statistics.AddGeneration(clones);
-            statistics.AddGeneration(heterozygousPopulation);
+            statistics.AddGeneration(binaryPopulation, thinningPeriods);
+            statistics.AddGeneration(clones, thinningPeriods);
+            statistics.AddGeneration(heterozygousPopulation, thinningPeriods);
 
             Assert.IsTrue(statistics.Generations == 3);
 

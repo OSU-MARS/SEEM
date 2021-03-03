@@ -39,8 +39,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public OptimizePrescription()
         {
-            this.SupportsSecondThin = true;
-
             this.FromAbovePercentageUpperLimit = 100.0F;
             this.FromBelowPercentageUpperLimit = 100.0F;
             this.Maximum = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };

@@ -58,12 +58,6 @@ namespace Osu.Cof.Ferm.Heuristics
             return array;
         }
 
-        protected int GetInitialTreeRecordCount()
-        {
-            OrganonStand initialStand = this.CurrentTrajectory.StandByPeriod[0] ?? throw new NotSupportedException("Initial stand infomation is missing.");
-            return initialStand.GetTreeRecordCount();
-        }
-
         public abstract string GetName();
 
         public float GetObjectiveFunction(StandTrajectory trajectory)
@@ -117,6 +111,30 @@ namespace Osu.Cof.Ferm.Heuristics
             return objectiveFunction;
         }
 
+        protected int GetOneOptCandidateRandom(int currentHarvestPeriod, IList<int> thinningPeriods)
+        {
+            Debug.Assert((thinningPeriods.Count == 2) || (thinningPeriods.Count == 3));
+            if (thinningPeriods.Count == 2)
+            {
+                return currentHarvestPeriod == thinningPeriods[0] ? thinningPeriods[1] : thinningPeriods[0];
+            }
+
+            bool incrementIndex = this.GetPseudorandomByteAsProbability() < 0.5F;
+            if (currentHarvestPeriod == thinningPeriods[0])
+            {
+                return incrementIndex ? thinningPeriods[2] : thinningPeriods[1];
+            }
+            else if (currentHarvestPeriod == thinningPeriods[1])
+            {
+                return incrementIndex ? thinningPeriods[0] : thinningPeriods[2];
+            }
+            else
+            {
+                Debug.Assert(currentHarvestPeriod == thinningPeriods[2]);
+                return incrementIndex ? thinningPeriods[0] : thinningPeriods[1];
+            }
+        }
+
         public virtual IHeuristicMoveLog? GetMoveLog()
         {
             return null;
@@ -134,43 +152,32 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(proportionalPercentage));
             }
 
-            IHarvest? harvest = this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
-            if ((harvest == null) || (harvest is ThinByIndividualTreeSelection == false))
+            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            if (thinningPeriods[0] != Constant.NoHarvestPeriod)
+            {
+                throw new NotSupportedException("First thinning selection is a harvest. Expected it to be the no harvest option.");
+            }
+            if (thinningPeriods.Count == 1)
             {
                 // attempt to randomize an individual tree selection without a corresponding harvest present
                 throw new NotSupportedException("No harvest is specified or the first harvest is not thinning by individual tree selection.");
             }
+            thinningPeriods.RemoveAt(0);
 
-            int initialTreeRecordCount = this.GetInitialTreeRecordCount();
-            float percentageScalingFactor = 100.0F / byte.MaxValue;
-            if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.All)
+            float proportionalFraction = 0.01F * proportionalPercentage;
+            int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
+            float indexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance ) / proportionalFraction;
+            for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
             {
-                float harvestPeriodScalingFactor = (this.CurrentTrajectory.HarvestPeriods - Constant.RoundTowardsZeroTolerance) / proportionalPercentage;
-                for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
+                int thinningPeriod = Constant.NoHarvestPeriod;
+                float probability = this.GetPseudorandomByteAsProbability();
+                if (probability < proportionalFraction)
                 {
-                    float treePercentage = percentageScalingFactor * this.GetPseudorandomByteAsFloat();
-                    if (treePercentage < proportionalPercentage)
-                    {
-                        int harvestPeriod = (int)(harvestPeriodScalingFactor * treePercentage);
-                        this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
-                    }
-                    else
-                    {
-                        this.CurrentTrajectory.SetTreeSelection(treeIndex, 0);
-                    }
+                    // probability falls into the harvest fraction, choose equally among available harvest periods
+                    int periodIndex = (int)(indexScalingFactor * probability);
+                    thinningPeriod = thinningPeriods[periodIndex];
                 }
-            }
-            else if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.ThinPeriodOrRetain)
-            {
-                for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
-                {
-                    int harvestPeriod = percentageScalingFactor * this.GetPseudorandomByteAsFloat() < proportionalPercentage ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
-                    this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
-                }
-            }
-            else
-            {
-                throw new NotSupportedException(String.Format("Unhandled harvest period selection {0}.", this.Objective.HarvestPeriodSelection));
+                this.CurrentTrajectory.SetTreeSelection(treeIndex, thinningPeriod);
             }
         }
 
@@ -180,16 +187,18 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(perturbBy));
             }
-            if (this.Objective.HarvestPeriodSelection == HarvestPeriodSelection.All)
-            {
-                throw new NotSupportedException();
-            }
 
             IHarvest? harvest = this.CurrentTrajectory.Configuration.Treatments.Harvests.FirstOrDefault();
             if ((harvest == null) || (harvest is ThinByIndividualTreeSelection == false))
             {
                 // attempt to randomize an individual tree selection without a corresponding harvest present
                 throw new NotSupportedException("No harvest is specified or the first harvest is not individual tree selection.");
+            }
+
+            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            if (thinningPeriods.Count != 2)
+            {
+                throw new NotSupportedException("Only a single thinning is currently supported.");
             }
 
             int maxPerturbationIndex = (int)(perturbBy * eliteSolutions.TreeCount) + 1;
@@ -202,7 +211,8 @@ namespace Osu.Cof.Ferm.Heuristics
                 int harvestPeriod = treeSelection[treeIndex];
                 if (shuffleIndex < maxPerturbationIndex)
                 {
-                    harvestPeriod = harvestPeriod == 0 ? eliteSolutions.HarvestPeriods : 0;
+                    Debug.Assert((harvestPeriod == thinningPeriods[0]) || (harvestPeriod == thinningPeriods[1]));
+                    harvestPeriod = harvestPeriod == thinningPeriods[0] ? thinningPeriods[1] : thinningPeriods[0];
                 }
                 this.CurrentTrajectory.SetTreeSelection(treeIndex, harvestPeriod);
             }

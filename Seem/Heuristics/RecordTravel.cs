@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -60,10 +61,6 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.IncreaseAfter));
             }
-            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.ThinPeriodOrRetain)
-            {
-                throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
-            }
             if ((this.RelativeDeviation < 0.0) || (this.RelativeDeviation > 1.0))
             {
                 throw new ArgumentOutOfRangeException(nameof(this.RelativeDeviation));
@@ -77,6 +74,12 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(this.StopAfter));
             }
 
+            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
+            {
+                throw new NotSupportedException("Currently, only one or two thins are supported.");
+            }
+
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -87,7 +90,7 @@ namespace Osu.Cof.Ferm.Heuristics
             int iterationsSinceBestObjectiveImproved = 0;
             int iterationsSinceObjectiveImprovedOrReheat = 0;
             float previousObjectiveFunction = Single.MinValue;
-            float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
+            float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             float deviation = this.RelativeDeviation * MathF.Abs(this.BestObjectiveFunction) + this.FixedDeviation;
@@ -100,7 +103,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 switch (this.MoveType)
                 {
                     case MoveType.OneOpt:
-                        firstCandidateHarvestPeriod = firstCurrentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                        firstCandidateHarvestPeriod = this.GetOneOptCandidateRandom(firstCurrentHarvestPeriod, thinningPeriods);
                         candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
                         break;
                     case MoveType.TwoOptExchange:

@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -25,60 +26,109 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Hero";
         }
 
+        private int[] GetPeriodIndices(int allSpeciesTreeCount, IList<int> thinningPeriods)
+        {
+            // this function is inefficient as it reverses RandomizeTreeSelection()'s internal logic
+            // Not currently enough of a performance advantage for refactoring to be worthwhile.
+            int[] periodIndices = new int[allSpeciesTreeCount];
+            for (int allSpeciesUncompactedTreeIndex = 0; allSpeciesUncompactedTreeIndex < periodIndices.Length; ++allSpeciesUncompactedTreeIndex)
+            {
+                int currentTreeHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(allSpeciesUncompactedTreeIndex);
+                for (int periodIndex = 0; periodIndex < thinningPeriods.Count; ++periodIndex)
+                {
+                    if (thinningPeriods[periodIndex] == currentTreeHarvestPeriod)
+                    {
+                        periodIndices[allSpeciesUncompactedTreeIndex] = periodIndex;
+                        break;
+                    }
+                }
+            }
+            return periodIndices;
+        }
+
         public override TimeSpan Run()
         {
             if (this.MaximumIterations < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.MaximumIterations));
             }
-            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.ThinPeriodOrRetain)
-            {
-                throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
-            }
+
+            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+            int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             this.EvaluateInitialSelection(this.MaximumIterations * initialTreeRecordCount);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             float previousBestObjectiveFunction = this.BestObjectiveFunction;
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            int[] treeIndices = Heuristic.CreateSequentialArray(initialTreeRecordCount);
+            bool decrementPeriodIndex = false;
+            int[] uncompactedPeriodIndices = this.GetPeriodIndices(initialTreeRecordCount, thinningPeriods);
+            int[] uncompactedTreeIndices = Heuristic.CreateSequentialArray(initialTreeRecordCount);
             for (int iteration = 0; iteration < this.MaximumIterations; ++iteration)
             {
                 // randomize on every iteration since a single randomization against the order of the data has little effect
                 if (this.IsStochastic)
                 {
-                    this.Pseudorandom.Shuffle(treeIndices);
+                    this.Pseudorandom.Shuffle(uncompactedTreeIndices);
                 }
 
-                for (int iterationMoveIndex = 0; iterationMoveIndex < initialTreeRecordCount; ++iterationMoveIndex)
+                for (int sourceTreeIndex = 0; sourceTreeIndex < initialTreeRecordCount; ++sourceTreeIndex)
                 {
                     // evaluate other cut option
-                    int treeIndex = treeIndices[iterationMoveIndex];
-                    int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
-                    int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
-                    candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
-                    candidateTrajectory.Simulate();
-
-                    float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                    if (candidateObjectiveFunction > acceptedObjectiveFunction)
+                    int treeIndex = uncompactedTreeIndices[sourceTreeIndex];
+                    int currentPeriodIndex = uncompactedPeriodIndices[treeIndex];
+                    int candidatePeriodIndex = decrementPeriodIndex ? currentPeriodIndex - 1 : currentPeriodIndex + 1;
+                    if (this.IsStochastic)
                     {
-                        // accept change of no cut-cut decision if it improves upon the best solution
-                        acceptedObjectiveFunction = candidateObjectiveFunction;
-                        this.CurrentTrajectory.CopyFrom(candidateTrajectory);
-                    }
-                    else
-                    {
-                        // otherwise, revert changes candidate trajectory for considering next tree's move
-                        candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
+                        decrementPeriodIndex = this.GetPseudorandomByteAsProbability() < 0.5F;
                     }
 
-                    this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
-                    this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
-                    this.MoveLog.TreeIDByMove.Add(treeIndex);
+                    for (int periodEvaluationForTree = 0; periodEvaluationForTree < thinningPeriods.Count - 1; ++periodEvaluationForTree)
+                    {
+                        if (candidatePeriodIndex >= thinningPeriods.Count)
+                        {
+                            candidatePeriodIndex = 0;
+                        }
+                        else if (candidatePeriodIndex < 0)
+                        {
+                            candidatePeriodIndex = thinningPeriods.Count - 1;
+                        }
+                        int candidateHarvestPeriod = thinningPeriods[candidatePeriodIndex];
+                        int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex); // capture for revert
+                        Debug.Assert(currentHarvestPeriod != candidateHarvestPeriod);
+                        candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
+                        candidateTrajectory.Simulate();
+
+                        float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
+                        if (candidateObjectiveFunction > acceptedObjectiveFunction)
+                        {
+                            // accept change of no cut-cut decision if it improves upon the best solution
+                            acceptedObjectiveFunction = candidateObjectiveFunction;
+                            uncompactedPeriodIndices[treeIndex] = candidatePeriodIndex;
+                            this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                        }
+                        else
+                        {
+                            // otherwise, revert changes candidate trajectory for considering next tree's move
+                            candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
+                        }
+
+                        this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
+                        this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                        this.MoveLog.TreeIDByMove.Add(treeIndex);
+
+                        if (decrementPeriodIndex)
+                        {
+                            --candidatePeriodIndex;
+                        }
+                        else
+                        {
+                            ++candidatePeriodIndex;
+                        }
+                    }
                 }
 
                 if (acceptedObjectiveFunction <= previousBestObjectiveFunction)

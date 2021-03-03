@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -52,10 +53,6 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.FinalMultiplier));
             }
-            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.ThinPeriodOrRetain)
-            {
-                throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
-            }
             if (this.LowerWaterAfter < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.LowerWaterAfter));
@@ -64,10 +61,16 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.StopAfter));
             }
-            int initialTreeRecordCount = this.GetInitialTreeRecordCount();
+
+            int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             if (initialTreeRecordCount < 2)
             {
                 throw new NotSupportedException();
+            }
+            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
+            {
+                throw new NotSupportedException("Currently, only one or two thins are supported.");
             }
 
             Stopwatch stopwatch = new Stopwatch();
@@ -84,8 +87,8 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
-            //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
-            float treeIndexScalingFactor = ((float)initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
+            //float harvestPeriodScalingFactor = (this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / byte.MaxValue;
+            float treeIndexScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             // initial selection is considered iteration 0, so loop starts with iteration 1
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
@@ -103,7 +106,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 switch (this.MoveType)
                 {
                     case MoveType.OneOpt:
-                        firstCandidateHarvestPeriod = firstCurrentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
+                        firstCandidateHarvestPeriod = this.GetOneOptCandidateRandom(firstCurrentHarvestPeriod, thinningPeriods);
                         candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
                         break;
                     case MoveType.TwoOptExchange:

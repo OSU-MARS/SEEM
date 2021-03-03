@@ -45,10 +45,6 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Iterations));
             }
-            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.ThinPeriodOrRetain)
-            {
-                throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
-            }
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();

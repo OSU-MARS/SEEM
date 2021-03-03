@@ -29,6 +29,11 @@ namespace Osu.Cof.Ferm
 
         public void CopyFrom(StandVolume other)
         {
+            if ((this.NetPresentValue.Length != other.NetPresentValue.Length) ||
+                (this.ScribnerTotal.Length != other.ScribnerTotal.Length))
+            {
+                throw new ArgumentOutOfRangeException(nameof(other));
+            }
             Array.Copy(other.NetPresentValue, 0, this.NetPresentValue, 0, other.NetPresentValue.Length);
             Array.Copy(other.ScribnerTotal, 0, this.ScribnerTotal, 0, other.ScribnerTotal.Length);
         }

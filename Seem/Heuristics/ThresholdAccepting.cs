@@ -31,10 +31,6 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new ArgumentOutOfRangeException(nameof(this.IterationsPerThreshold));
             }
-            if (this.Objective.HarvestPeriodSelection != HarvestPeriodSelection.ThinPeriodOrRetain)
-            {
-                throw new NotSupportedException(nameof(this.Objective.HarvestPeriodSelection));
-            }
             if (this.Thresholds.Count != this.IterationsPerThreshold.Count)
             {
                 throw new ArgumentOutOfRangeException(nameof(this.Thresholds));
@@ -47,14 +43,19 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
+            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
+            {
+                throw new NotSupportedException("Currently, only one or two thins are supported.");
+            }
+
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
             this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum());
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
-            //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
-            float treeIndexScalingFactor = ((float)this.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
+            float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
             for (int thresholdIndex = 0; thresholdIndex < this.Thresholds.Count; ++thresholdIndex)
@@ -63,14 +64,10 @@ namespace Osu.Cof.Ferm.Heuristics
                 float threshold = this.Thresholds[thresholdIndex];
                 for (int iterationInThreshold = 0; iterationInThreshold < iterations; ++iterationInThreshold)
                 {
+                    // if needed, support two opt moves
                     int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
-                    int candidateHarvestPeriod = currentHarvestPeriod == 0 ? this.CurrentTrajectory.HarvestPeriods - 1 : 0;
-                    //int candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
-                    //while (candidateHarvestPeriod == currentHarvestPeriod)
-                    //{
-                    //    candidateHarvestPeriod = (int)(harvestPeriodScalingFactor * this.GetPseudorandomByteAsFloat());
-                    //}
+                    int candidateHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, thinningPeriods);
                     Debug.Assert(candidateHarvestPeriod >= 0);
 
                     candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);

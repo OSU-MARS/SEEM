@@ -142,6 +142,17 @@ namespace Osu.Cof.Ferm.Organon
             return basalAreaRemovedInPeriod;
         }
 
+        public IList<int> GetValidThinningPeriods()
+        {
+            List<int> thinningPeriods = new List<int>(this.Harvests.Count + 1) { Constant.NoHarvestPeriod };
+            foreach (IHarvest harvest in this.Harvests)
+            {
+                Debug.Assert((harvest is ThinByIndividualTreeSelection) || (harvest is ThinByPrescription));
+                thinningPeriods.Add(harvest.Period);
+            }
+            return thinningPeriods;
+        }
+
         public bool IsTriggerInPeriod(int periodJustBeginning)
         {
             foreach (IHarvest harvest in this.Harvests)

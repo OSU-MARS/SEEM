@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Organon;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -16,13 +17,12 @@ namespace Osu.Cof.Ferm.Heuristics
         private float reservedPopulationProportion;
 
         public int Count { get; private set; }
-        public int HarvestPeriods { get; private set; }
         public float[] IndividualFitness { get; private init; }
         public int[][] IndividualTreeSelections { get; private init; }
         public int NewIndividuals { get; set; }
         public int TreeCount { get; private set; }
 
-        public Population(int populationSize, int harvestPeriods, float reservedPopulationProportion, int treeCount)
+        public Population(int populationSize, float reservedPopulationProportion, int treeCount)
         {
             this.individualIndexByFitness = new SortedDictionary<float, List<int>>();
             this.matingDistributionFunction = new float[populationSize];
@@ -32,7 +32,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.nearestNeighborIndex = new int[populationSize];
             this.reservedPopulationProportion = reservedPopulationProportion;
 
-            this.HarvestPeriods = harvestPeriods;
             this.IndividualFitness = new float[populationSize];
             this.IndividualTreeSelections = new int[populationSize][];
             this.NewIndividuals = 0;
@@ -46,7 +45,7 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         public Population(Population other)
-            : this(other.Size, other.HarvestPeriods, other.reservedPopulationProportion, other.TreeCount)
+            : this(other.Size, other.reservedPopulationProportion, other.TreeCount)
         {
             this.CopyFrom(other);
         }
@@ -130,7 +129,6 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(other));
             }
 
-            this.HarvestPeriods = other.HarvestPeriods;
             this.individualIndexByFitness.Clear();
             foreach (KeyValuePair<float, List<int>> individualOfFitness in other.individualIndexByFitness)
             {
@@ -157,7 +155,7 @@ namespace Osu.Cof.Ferm.Heuristics
             Debug.Assert(firstParentHarvestSchedule.Length == secondParentHarvestSchedule.Length);
 
             // find length and position of crossover
-            float treeScalingFactor = ((float)treeRecordCount - Constant.RoundTowardsZeroTolerance) / (float)UInt16.MaxValue;
+            float treeScalingFactor = (treeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
             int[] crossoverPoints = new int[points];
             for (int pointIndex = 0; pointIndex < points; ++pointIndex)
             {
@@ -356,17 +354,25 @@ namespace Osu.Cof.Ferm.Heuristics
             return quantileByTree;
         }
 
-        public void RandomizeSchedules(Stand? standBeforeThinning, PopulationParameters parameters, HarvestPeriodSelection periodSelection)
+        public void RandomizeSchedules(OrganonStandTrajectory standTrajectory, PopulationParameters parameters)
         {
             if (parameters.ProportionalPercentage != Constant.HeuristicDefault.ProportionalPercentage)
             {
                 throw new NotImplementedException(nameof(parameters) + ".ProportionalPercentage is not currently supported.");
             }
 
+            Stand? standBeforeThinning = standTrajectory.StandByPeriod[0];
             if (standBeforeThinning == null)
             {
-                throw new ArgumentNullException(nameof(standBeforeThinning));
+                throw new ArgumentNullException(nameof(standTrajectory));
             }
+
+            IList<int> thinningPeriods = standTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            if (thinningPeriods[0] != Constant.NoHarvestPeriod)
+            {
+                throw new NotSupportedException("First thinning selection is a harvest. Expected it to be the no harvest option.");
+            }
+            thinningPeriods.RemoveAt(0);
 
             // set up selection probabilities
             // With multiple diameter classes:
@@ -392,49 +398,46 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             // select trees
-            float probabilityScalingFactor = 1.0F / byte.MaxValue;
-            if (periodSelection == HarvestPeriodSelection.All)
+            // Code here is quite similar to Heuristic.RandomizeTreeSelection().
+            for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
             {
-                throw new NotImplementedException();
-            }
-            else if (periodSelection == HarvestPeriodSelection.ThinPeriodOrRetain)
-            {
-                for (int individualIndex = 0; individualIndex < this.Size; ++individualIndex)
+                // randomly select this individual's trees based on current diameter class selection probabilities
+                int[] schedule = this.IndividualTreeSelections[individualIndex];
+                Debug.Assert(selectionProbabilityIndexByTree.Count == schedule.Length);
+                for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
                 {
-                    // randomly select this individual's trees based on current diameter class selection probabilities
-                    int[] schedule = this.IndividualTreeSelections[individualIndex];
-                    Debug.Assert(selectionProbabilityIndexByTree.Count == schedule.Length);
-                    for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
+                    int selectionIndex = selectionProbabilityIndexByTree[treeIndex];
+                    if (selectionIndex >= 0) // diameter class of unused capacity is set to -1
                     {
-                        int selectionIndex = selectionProbabilityIndexByTree[treeIndex];
-                        if (selectionIndex >= 0) // diameter class of unused capacity is set to -1
+                        int thinningPeriod = Constant.NoHarvestPeriod;
+                        float probability = this.GetPseudorandomByteAsProbability();
+                        float selectionProbability = selectionProbabilityByIndex[selectionIndex];
+                        if (probability < selectionProbability)
                         {
-                            float selectionProbability = selectionProbabilityByIndex[selectionIndex];
-                            bool isSelected = (probabilityScalingFactor * this.GetPseudorandomByteAsFloat()) < selectionProbability;
-                            schedule[treeIndex] = isSelected ? this.HarvestPeriods - 1 : 0;
+                            // probability falls into the harvest fraction, choose equally among available harvest periods
+                            float indexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / selectionProbability;
+                            int periodIndex = (int)(indexScalingFactor * probability);
+                            thinningPeriod = thinningPeriods[periodIndex];
                         }
-                    }
-
-                    // increment selection class probabilities
-                    for (int selectionClass = 0; selectionClass < parameters.InitializationClasses; ++selectionClass)
-                    {
-                        float nextSelectionProbability = selectionProbabilityByIndex[selectionClass] + selectionProbabilityIncrement;
-                        if (nextSelectionProbability < 1.0F)
-                        {
-                            // no rollover to next diameter class, so stop incrementing
-                            selectionProbabilityByIndex[selectionClass] = nextSelectionProbability;
-                            break;
-                        }
-
-                        // roll over this diameter class and continue on to increment the next largest diameter class
-                        // Use roll over, rather than reset, to avoid creation of individuals with duplicate diameter class selection probabilities.
-                        selectionProbabilityByIndex[selectionClass] = nextSelectionProbability - 1.0F;
+                        schedule[treeIndex] = thinningPeriod;
                     }
                 }
-            }
-            else
-            {
-                throw new NotSupportedException(String.Format("Unhandled harvest period selection {0}.", periodSelection));
+
+                // increment selection class probabilities
+                for (int selectionClass = 0; selectionClass < parameters.InitializationClasses; ++selectionClass)
+                {
+                    float nextSelectionProbability = selectionProbabilityByIndex[selectionClass] + selectionProbabilityIncrement;
+                    if (nextSelectionProbability < 1.0F)
+                    {
+                        // no rollover to next diameter class, so stop incrementing
+                        selectionProbabilityByIndex[selectionClass] = nextSelectionProbability;
+                        break;
+                    }
+
+                    // roll over this diameter class and continue on to increment the next largest diameter class
+                    // Use roll over, rather than reset, to avoid creation of individuals with duplicate diameter class selection probabilities.
+                    selectionProbabilityByIndex[selectionClass] = nextSelectionProbability - 1.0F;
+                }
             }
         }
 

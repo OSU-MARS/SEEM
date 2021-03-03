@@ -63,13 +63,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         public TreeModel TreeModel { get; set; }
 
-        protected bool SupportsSecondThin { get; set; }
-
         public OptimizeCmdlet()
         {
             this.BestOf = 1;
             this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
-            this.SupportsSecondThin = false;
 
             this.DiscountRates = new List<float>() { Constant.DefaultAnnualDiscountRate };
             this.FirstThinPeriod = new List<int>() { 3 };
@@ -128,10 +125,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.ProportionalPercentage));
             }
             if (this.SecondThinPeriod.Count < 1)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod));
-            }
-            if ((this.SupportsSecondThin == false) && ((this.SecondThinPeriod.Count != 1) || (this.SecondThinPeriod[0] != Constant.NoThinPeriod)))
             {
                 throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod));
             }
@@ -202,8 +195,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                             for (int parameterIndex = 0; parameterIndex < parameterCombinationsForDiscountRate.Count; ++parameterIndex)
                             {
-                                int harvestPeriods = Math.Max(firstThinPeriod, secondThinPeriod);
-                                distributions.Add(new HeuristicSolutionDistribution(1, harvestPeriods, treeCount)
+                                distributions.Add(new HeuristicSolutionDistribution(1, treeCount)
                                 {
                                     FirstThinPeriodIndex = firstThinIndex,
                                     ParameterIndex = parameterCombinations.Count + parameterIndex,
@@ -246,7 +238,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     Objective objective = new Objective()
                     {
-                        HarvestPeriodSelection = HarvestPeriodSelection.ThinPeriodOrRetain,
                         PlanningPeriods = this.PlanningPeriods[distribution.PlanningPeriodIndex],
                         TimberObjective = this.TimberObjective
                     };
