@@ -85,7 +85,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 PlanningPeriods = 9
             };
-            Hero hero = new Hero(stand, configuration, landExpectationValue, new HeuristicParameters() { UseFiaVolume = false })
+            Hero hero = new Hero(stand, configuration, landExpectationValue, new HeuristicParameters())
             {
                 //IsStochastic = true,
                 MaximumIterations = 10
@@ -294,7 +294,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 // find/replace regular expression for cleaning up watch window copy/paste: \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
                 //                                             0       1       2       3       4       5       6       7       8       9
-                minimumUnthinnedStandingVolume = new float[] { 4.428F, 15.02F, 30.49F, 48.39F, 66.72F, 84.45F, 101.1F, 116.4F, 130.6F, 143.6F }; // FIA SV6x32 MBF/ha
+                minimumUnthinnedStandingVolume = new float[] { 4.229F, 14.347F, 29.127F, 46.225F, 63.738F, 80.674F, 96.581F, 111.269F, 124.782F, 137.225F }; // FIA SV6x32 MBF/ha
             }
             else
             {
@@ -326,9 +326,9 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumOneThinHarvestVolume;
             if (oneThinTrajectory.UseFiaVolume)
             {
-                //                                           0       1       2       3       4       5       6       7       8       9
-                minimumOneThinStandingVolume = new float[] { 4.428F, 15.02F, 30.50F, 30.64F, 47.26F, 64.81F, 82.54F, 99.87F, 116.3F, 131.7F }; // FIA MBF/ha
-                minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+                //                                           0       1        2        3        4        5        6        7        8         9
+                minimumOneThinStandingVolume = new float[] { 4.229F, 14.347F, 29.127F, 29.270F, 45.133F, 61.895F, 78.831F, 95.376F, 111.103F, 125.814F }; // FIA MBF/ha
+                minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 12.56F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
             }
             else
             {
@@ -374,9 +374,9 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumTwoThinHarvestVolume;
             if (twoThinTrajectory.UseFiaVolume)
             {
-                //                                           0       1       2       3       4       5       6       7       8       9
-                minimumTwoThinStandingVolume = new float[] { 4.428F, 15.02F, 30.50F, 30.64F, 47.26F, 64.81F, 82.54F, 99.87F, 116.3F, 131.7F }; // FIA MBF/ha
-                minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+                //                                           0       1        2        3        4        5        6        7        8        9
+                minimumTwoThinStandingVolume = new float[] { 4.229F, 14.347F, 29.127F, 29.270F, 45.133F, 61.895F, 66.628F, 83.202F, 98.987F, 113.995F }; // FIA MBF/ha
+                minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 12.567F, 0.0F, 0.0F, 12.601F, 0.0F, 0.0F, 0.0F };
             }
             else
             {
@@ -508,9 +508,9 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumHarvestVolume;
             if (thinnedTrajectory.UseFiaVolume)
             {
-                //                                   0       1       2       3       4     
-                minimumStandingVolume = new float[] { 43.74F, 49.00F, 68.86F, 87.95F, 105.8F }; // Browning 1977 (FIA) MBF/ha
-                minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+                //                                    0       1       2       3       4     
+                minimumStandingVolume = new float[] { 41.77F, 46.71F, 65.69F, 83.97F, 101.06F }; // Browning 1977 (FIA) MBF/ha
+                minimumHarvestVolume = new float[] { 0.0F, 12.51F, 0.0F, 0.0F, 0.0F };
             }
             else
             {

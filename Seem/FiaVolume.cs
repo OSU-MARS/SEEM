@@ -13,7 +13,7 @@ namespace Osu.Cof.Ferm
         /// <param name="trees">Trees in stand.</param>
         /// <param name="treeIndex">Tree.</param>
         /// <returns>Tree's volume including top and stump in ft³.</returns>
-        public static float GetCubicFeet(Trees trees, int treeIndex)
+        private static float GetCubicFeet(Trees trees, int treeIndex)
         {
             if (trees.Units != Units.English)
             {

@@ -210,7 +210,6 @@ namespace Osu.Cof.Ferm.Organon
 
                         int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
                         Debug.Assert(individualTreeSelection.Length == previousTreesOfSpecies.Capacity); // tree selection and tree capacities are expected to match
-                        Debug.Assert(previousTreesOfSpecies.Capacity - previousTreesOfSpecies.Count < Constant.Simd128x4.Width); // also expected that trees haven't previously been compacted
                         for (int compactedTreeIndex = 0; compactedTreeIndex < previousTreesOfSpecies.Count; ++compactedTreeIndex)
                         {
                             int uncompactedTreeIndex = previousTreesOfSpecies.UncompactedIndex[compactedTreeIndex];
@@ -223,7 +222,7 @@ namespace Osu.Cof.Ferm.Organon
                         }
                     }
 
-                    this.ThinningVolume.ScribnerTotal[periodIndex] = 0.001F * Constant.AcresPerHectare * (float)harvestedScribner6x32footLogPerAcre;
+                    this.ThinningVolume.ScribnerTotal[periodIndex] = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * (float)harvestedScribner6x32footLogPerAcre;
                     if (harvestedScribner6x32footLogPerAcre <= 0.0001F)
                     {
                         Debug.Assert(harvestedScribner6x32footLogPerAcre == 0.0F);
@@ -265,7 +264,7 @@ namespace Osu.Cof.Ferm.Organon
                 standingScribner6x32footLogPerAcre += FiaVolume.GetScribnerBoardFeetPerAcre(treesOfSpecies);
             }
 
-            this.StandingVolume.ScribnerTotal[periodIndex] = 0.001F * Constant.AcresPerHectare * (float)standingScribner6x32footLogPerAcre;
+            this.StandingVolume.ScribnerTotal[periodIndex] = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * (float)standingScribner6x32footLogPerAcre;
             int harvestAge = this.GetEndOfPeriodAge(periodIndex);
             this.StandingVolume.NetPresentValue[periodIndex] = this.TimberValue.GetNetPresentRegenerationHarvestValue(this.StandingVolume.ScribnerTotal[periodIndex], harvestAge);
         }
