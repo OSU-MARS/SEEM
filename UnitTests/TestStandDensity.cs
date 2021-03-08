@@ -12,8 +12,8 @@ namespace Osu.Cof.Ferm.Test
 
         public StreamWriter WriteToCsv(string filePath, OrganonVariant variant, int year)
         {
-            FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            StreamWriter writer = new StreamWriter(stream);
+            FileStream stream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            StreamWriter writer = new(stream);
             writer.WriteLine("variant,year,TPH,basal area,CCF");
             this.WriteToCsv(writer, variant, year);
             return writer;

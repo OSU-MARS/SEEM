@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Test
         protected static TestStand CreateDefaultStand(OrganonConfiguration configuration)
         {
             // TODO: cover cases with more than one SIMD width per species
-            TestStand stand = new TestStand(configuration.Variant, 0, TestConstant.Default.SiteIndex)
+            TestStand stand = new(configuration.Variant, 0, TestConstant.Default.SiteIndex)
             {
                 PlantingDensityInTreesPerHectare = 939.0F // 380 trees per acre
             };
@@ -83,7 +83,7 @@ namespace Osu.Cof.Ferm.Test
 
         protected static OrganonConfiguration CreateOrganonConfiguration(OrganonVariant variant)
         {
-            OrganonConfiguration configuration = new OrganonConfiguration(variant)
+            OrganonConfiguration configuration = new(variant)
             {
                 DefaultMaximumSdi = TestConstant.Default.MaximumReinekeStandDensityIndex,
                 TrueFirMaximumSdi = TestConstant.Default.MaximumReinekeStandDensityIndex,
@@ -96,8 +96,8 @@ namespace Osu.Cof.Ferm.Test
         protected static void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
         {
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
-            TestStand initialTreeData = new TestStand(stand);
-            TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath();
+            TestStand initialTreeData = new(stand);
+            TreeLifeAndDeath treeGrowth = new();
 
             Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
             if (configuration.IsEvenAge)
@@ -106,9 +106,9 @@ namespace Osu.Cof.Ferm.Test
                 stand.AgeInYears = stand.BreastHeightAgeInYears + 2;
             }
 
-            TestStandDensity density = new TestStandDensity(stand, variant);
+            TestStandDensity density = new(stand, variant);
             using StreamWriter densityWriter = density.WriteToCsv(baseFileName + " density.csv", variant, startYear);
-            TreeQuantiles quantiles = new TreeQuantiles(stand);
+            TreeQuantiles quantiles = new(stand);
             using StreamWriter quantileWriter = quantiles.WriteToCsv(baseFileName + " quantiles.csv", variant, startYear);
             using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
             for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)

@@ -124,7 +124,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             this.thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
 
             int moveCapacity = this.Parameters.MaximumGenerations * this.Parameters.PopulationSize;
@@ -134,9 +134,9 @@ namespace Osu.Cof.Ferm.Heuristics
             // begin with population of random harvest schedules
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             // this.CurrentTrajectory.Configuration.Treatments.Harvests
-            Population currentGeneration = new Population(this.Parameters.PopulationSize, this.Parameters.ReservedProportion, initialTreeRecordCount);
+            Population currentGeneration = new(this.Parameters.PopulationSize, this.Parameters.ReservedProportion, initialTreeRecordCount);
             currentGeneration.RandomizeSchedules(this.CurrentTrajectory, this.Parameters);
-            OrganonStandTrajectory individualTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory individualTrajectory = new(this.CurrentTrajectory);
             this.BestObjectiveFunction = Single.MinValue;
             for (int individualIndex = 0; individualIndex < this.Parameters.PopulationSize; ++individualIndex)
             {
@@ -171,9 +171,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
             // for each generation of size n, perform n fertile matings
             float treeScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
-            Population nextGeneration = new Population(currentGeneration);
+            Population nextGeneration = new(currentGeneration);
             OrganonStandTrajectory firstChildTrajectory = individualTrajectory;
-            OrganonStandTrajectory secondChildTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory secondChildTrajectory = new(this.CurrentTrajectory);
             for (int generationIndex = 1; generationIndex < this.Parameters.MaximumGenerations; ++generationIndex)
             {
                 currentGeneration.RecalculateMatingDistributionFunction();

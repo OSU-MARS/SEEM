@@ -144,7 +144,7 @@ namespace Osu.Cof.Ferm.Organon
 
         public IList<int> GetValidThinningPeriods()
         {
-            List<int> thinningPeriods = new List<int>(this.Harvests.Count + 1) { Constant.NoHarvestPeriod };
+            List<int> thinningPeriods = new(this.Harvests.Count + 1) { Constant.NoHarvestPeriod };
             foreach (IHarvest harvest in this.Harvests)
             {
                 Debug.Assert((harvest is ThinByIndividualTreeSelection) || (harvest is ThinByPrescription));

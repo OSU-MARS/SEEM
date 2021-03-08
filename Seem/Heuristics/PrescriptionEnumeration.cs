@@ -195,7 +195,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new NotSupportedException("Enumeration of more than two thinnings is not currently supported.");
             }
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
 
             IList<IHarvest> harvests = this.CurrentTrajectory.Configuration.Treatments.Harvests;

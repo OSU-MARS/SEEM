@@ -73,7 +73,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new NotSupportedException("Currently, only one or two thins are supported.");
             }
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
 
             this.EvaluateInitialSelection(this.Iterations);
@@ -91,7 +91,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float treeIndexScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             // initial selection is considered iteration 0, so loop starts with iteration 1
-            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             float hillClimbingThreshold = this.BestObjectiveFunction;
             int iterationsSinceBestObjectiveImproved = 0;
             int iterationsSinceObjectiveImprovedOrMoveTypeChanged = 0;

@@ -9,7 +9,7 @@ namespace Osu.Cof.Ferm.Test
         public void RemoveZeroExpansionFactorTrees()
         {
             int treeCount = 147;
-            Trees trees = new Trees(FiaCode.PseudotsugaMenziesii, treeCount, Units.Metric);
+            Trees trees = new(FiaCode.PseudotsugaMenziesii, treeCount, Units.Metric);
             for (int treeIndex = 0; treeIndex < treeCount; ++treeIndex)
             {
                 float treeIndexAsFloat = (float)treeIndex;

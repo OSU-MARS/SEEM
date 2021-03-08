@@ -27,12 +27,12 @@ namespace Osu.Cof.Ferm
 
         public static void ReadWorksheet(string xlsxFilePath, string worksheetName, Action<int, string[]> parseRow)
         {
-            using FileStream stream = new FileStream(xlsxFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using FileStream stream = new(xlsxFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using SpreadsheetDocument xlsx = SpreadsheetDocument.Open(stream, false);
             WorkbookPart workbook = xlsx.WorkbookPart;
 
             // read shared strings
-            List<string> sharedStrings = new List<string>();
+            List<string> sharedStrings = new();
             using Stream sharedStringStream = workbook.SharedStringTablePart.GetStream(FileMode.Open, FileAccess.Read);
             using XmlReader sharedStringReader = XmlReader.Create(sharedStringStream);
             sharedStringReader.MoveToContent();

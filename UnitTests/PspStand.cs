@@ -25,7 +25,7 @@ namespace Osu.Cof.Ferm.Test
             this.plotCount = 0;
             this.yearOfMostRecentIngrowthAdded = Int32.MinValue;
 
-            XlsxReader reader = new XlsxReader();
+            XlsxReader reader = new();
             XlsxReader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
@@ -56,7 +56,7 @@ namespace Osu.Cof.Ferm.Test
 
         private Dictionary<FiaCode, int> CountTreesBySpecies()
         {
-            Dictionary<FiaCode, int> treeCountBySpecies = new Dictionary<FiaCode, int>();
+            Dictionary<FiaCode, int> treeCountBySpecies = new();
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
                 if (treeCountBySpecies.TryGetValue(tree.Species, out int count) == false)
@@ -150,7 +150,7 @@ namespace Osu.Cof.Ferm.Test
             // populate Organon version of stand
             // Currently, PSP stands are assumed to have IsEvenAge = false, which causes Organon to require a stand age of
             // zero years be passed.
-            TestStand stand = new TestStand(configuration.Variant, 0, siteIndex)
+            TestStand stand = new(configuration.Variant, 0, siteIndex)
             {
                 NumberOfPlots = this.plotCount
             };
@@ -188,8 +188,8 @@ namespace Osu.Cof.Ferm.Test
             }
 
             // estimate crown ratios
-            OrganonStandDensity standDensity = new OrganonStandDensity(stand, configuration.Variant);
-            Dictionary<FiaCode, int> indexBySpecies = new Dictionary<FiaCode, int>();
+            OrganonStandDensity standDensity = new(stand, configuration.Variant);
+            Dictionary<FiaCode, int> indexBySpecies = new();
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
                 int firstTreeMeasurementYear = tree.GetFirstMeasurementYear();

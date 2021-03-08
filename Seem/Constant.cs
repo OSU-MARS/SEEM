@@ -35,7 +35,7 @@ namespace Osu.Cof.Ferm
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
         public const float RoundTowardsZeroTolerance = 0.001F;
 
-        public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
+        public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new(new List<FiaCode>()
         {
             FiaCode.PseudotsugaMenziesii,
             FiaCode.AbiesGrandis,
@@ -49,7 +49,7 @@ namespace Osu.Cof.Ferm
             FiaCode.CornusNuttallii,
             FiaCode.Salix
         });
-        public static readonly ReadOnlyCollection<FiaCode> RapSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
+        public static readonly ReadOnlyCollection<FiaCode> RapSpecies = new(new List<FiaCode>()
         {
             FiaCode.AlnusRubra,
             FiaCode.PseudotsugaMenziesii,
@@ -59,7 +59,7 @@ namespace Osu.Cof.Ferm
             FiaCode.CornusNuttallii,
             FiaCode.Salix
         });
-        public static readonly ReadOnlyCollection<FiaCode> SwoSpecies = new ReadOnlyCollection<FiaCode>(new List<FiaCode>()
+        public static readonly ReadOnlyCollection<FiaCode> SwoSpecies = new(new List<FiaCode>()
         {
             FiaCode.PseudotsugaMenziesii,
             FiaCode.AbiesConcolor,

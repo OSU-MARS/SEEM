@@ -230,7 +230,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new NotSupportedException("A decision between at least two thinning periods is expected.");
             }
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
 
             this.EvaluateInitialSelection(this.Iterations);
@@ -241,9 +241,9 @@ namespace Osu.Cof.Ferm.Heuristics
             //List<List<int>> treeIndicesBySubset = this.GetDiameterSubsets(); // performs poorly compared to diameter quantiles
             //List<List<int>> treeIndicesBySubset = this.GetHeightSubsets(); // performs worse
 
-            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            OrganonStandTrajectory bestTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
-            OrganonStandTrajectory bestNonTabuTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
+            OrganonStandTrajectory bestTrajectory = new(this.CurrentTrajectory);
+            OrganonStandTrajectory bestNonTabuTrajectory = new(this.CurrentTrajectory);
             float tenureScalingFactor = (this.MaximumTenure - 2 - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
             //List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
             //for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
@@ -255,7 +255,7 @@ namespace Osu.Cof.Ferm.Heuristics
             //int treeIndexStep = this.Jump;
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
-            SortedDictionary<float, OneOptMove> bestNonTabuMovesByObjectiveFunction = new SortedDictionary<float, OneOptMove>();
+            SortedDictionary<float, OneOptMove> bestNonTabuMovesByObjectiveFunction = new();
             float bestObjectiveFunctionSinceLastEscape = this.BestObjectiveFunction;
             int iterationsSinceObjectiveImprovedOrEscape = 0;
             //int subset = 0;

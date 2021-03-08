@@ -24,7 +24,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             using StreamWriter writer = this.GetWriter();
 
-            StringBuilder line = new StringBuilder();
+            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
                 if (this.Runs[0].HighestHeuristicParameters == null)

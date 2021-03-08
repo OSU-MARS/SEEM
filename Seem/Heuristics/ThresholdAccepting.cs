@@ -49,7 +49,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new NotSupportedException("Currently, only one or two thins are supported.");
             }
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
 
             this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum());
@@ -57,7 +57,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
-            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             for (int thresholdIndex = 0; thresholdIndex < this.Thresholds.Count; ++thresholdIndex)
             {
                 float iterations = this.IterationsPerThreshold[thresholdIndex];

@@ -60,7 +60,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
         {
-            SimulatedAnnealing annealer = new SimulatedAnnealing(this.Stand!, organonConfiguration, objective, parameters);
+            SimulatedAnnealing annealer = new(this.Stand!, organonConfiguration, objective, parameters);
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;

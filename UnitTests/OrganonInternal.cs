@@ -22,7 +22,7 @@ namespace Osu.Cof.Ferm.Test
                 Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    OrganonStandDensity densityStartOfStep = new OrganonStandDensity(stand, variant);
+                    OrganonStandDensity densityStartOfStep = new(stand, variant);
                     Assert.IsTrue(densityStartOfStep.BasalAreaPerAcre > 0.0F);
                     Assert.IsTrue(densityStartOfStep.CrownCompetitionFactor > 0.0F);
                     Assert.IsTrue(densityStartOfStep.TreesPerAcre > 0.0F);
@@ -36,7 +36,7 @@ namespace Osu.Cof.Ferm.Test
                         OrganonTest.Verify(crownCompetitionByHeight, variant);
                     }
 
-                    OrganonStandDensity densityEndOfStep = new OrganonStandDensity(stand, variant);
+                    OrganonStandDensity densityEndOfStep = new(stand, variant);
                     Assert.IsTrue(densityEndOfStep.BasalAreaPerAcre > 0.0F);
                     Assert.IsTrue(densityEndOfStep.CrownCompetitionFactor > 0.0F);
                     Assert.IsTrue(densityEndOfStep.TreesPerAcre > 0.0F);
@@ -59,7 +59,7 @@ namespace Osu.Cof.Ferm.Test
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
                 Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
 
-                Dictionary<FiaCode, float[]> previousTreeDiametersBySpecies = new Dictionary<FiaCode, float[]>();
+                Dictionary<FiaCode, float[]> previousTreeDiametersBySpecies = new();
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
                     previousTreeDiametersBySpecies.Add(treesOfSpecies.Species, new float[treesOfSpecies.Capacity]);
@@ -67,7 +67,7 @@ namespace Osu.Cof.Ferm.Test
 
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    OrganonStandDensity treeCompetition = new OrganonStandDensity(stand, variant);
+                    OrganonStandDensity treeCompetition = new(stand, variant);
                     foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                     {
                         float[] previousTreeDiameters = previousTreeDiametersBySpecies[treesOfSpecies.Species];
@@ -86,7 +86,7 @@ namespace Osu.Cof.Ferm.Test
                     OrganonTest.Verify(calibrationBySpecies);
                 }
 
-                OrganonStandDensity densityForLookup = new OrganonStandDensity(stand, variant);
+                OrganonStandDensity densityForLookup = new(stand, variant);
                 for (float dbhInInches = 0.5F; dbhInInches <= 101.0F; ++dbhInInches)
                 {
                     float basalAreaLarger = densityForLookup.GetBasalAreaLarger(dbhInInches);
@@ -108,7 +108,7 @@ namespace Osu.Cof.Ferm.Test
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
 
                 Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
-                OrganonStandDensity densityStartOfStep = new OrganonStandDensity(stand, variant);
+                OrganonStandDensity densityStartOfStep = new(stand, variant);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
@@ -166,8 +166,8 @@ namespace Osu.Cof.Ferm.Test
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
 
                 float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
-                DouglasFir.SiteConstants psmeSite = new DouglasFir.SiteConstants(stand.SiteIndex);
-                WesternHemlock.SiteConstants tsheSite = new WesternHemlock.SiteConstants(stand.HemlockSiteIndex);
+                DouglasFir.SiteConstants psmeSite = new(stand.SiteIndex);
+                WesternHemlock.SiteConstants tsheSite = new(stand.HemlockSiteIndex);
 
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
@@ -255,7 +255,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
-                OrganonStandDensity density = new OrganonStandDensity(stand, variant);
+                OrganonStandDensity density = new(stand, variant);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     OrganonMortality.ReduceExpansionFactors(configuration, simulationStep, stand, density);
@@ -281,7 +281,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
-                OrganonStandDensity standDensity = new OrganonStandDensity(stand, variant);
+                OrganonStandDensity standDensity = new(stand, variant);
 
                 this.TestContext!.WriteLine("{0},{1} ft²/ac,{2} trees per acre,{3} crown competition factor", variant, standDensity.BasalAreaPerAcre, standDensity.TreesPerAcre, standDensity.CrownCompetitionFactor);
                 this.TestContext.WriteLine("index,large tree BA larger,large tree CCF larger");
@@ -347,7 +347,7 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext!.WriteLine("siteIndex, age, topHeight");
             for (float siteIndexInMeters = 10.0F; siteIndexInMeters < 60.1F; siteIndexInMeters += 10.0F)
             {
-                WesternHemlock.SiteConstants tsheSite = new WesternHemlock.SiteConstants(Constant.FeetPerMeter * siteIndexInMeters);
+                WesternHemlock.SiteConstants tsheSite = new(Constant.FeetPerMeter * siteIndexInMeters);
                 float previousTopHeight = -1.0F;
                 for (float ageInYears = 0.0F; ageInYears < 100.1F; ++ageInYears)
                 {

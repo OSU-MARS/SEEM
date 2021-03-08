@@ -71,7 +71,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.ThinPeriod));
             }
 
-            OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
+            OrganonConfiguration configuration = new(new OrganonVariantNwo());
             if (this.ThinPeriod > 0)
             {
                 configuration.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod)
@@ -98,7 +98,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     };
                 }
 
-                OrganonStandTrajectory trajectory = new OrganonStandTrajectory(this.Stand!, configuration, timberValue, this.PlanningPeriods, this.FiaVolume);
+                OrganonStandTrajectory trajectory = new(this.Stand!, configuration, timberValue, this.PlanningPeriods, this.FiaVolume);
                 if (this.Name != null)
                 {
                     trajectory.Name = this.Name;

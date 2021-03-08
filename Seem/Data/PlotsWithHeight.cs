@@ -226,7 +226,7 @@ namespace Osu.Cof.Ferm.Data
 
         public void Read(string xlsxFilePath, string worksheetName)
         {
-            XlsxReader reader = new XlsxReader();
+            XlsxReader reader = new();
             XlsxReader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
@@ -248,12 +248,12 @@ namespace Osu.Cof.Ferm.Data
             Stand plotAtAge = this.byAge[ageInYears];
             int maximumTreesToCopy = Math.Min(plotAtAge.GetTreeRecordCount(), maximumTreesInStand);
             int treesCopied = 0;
-            StringBuilder plotIDsAsString = new StringBuilder();
+            StringBuilder plotIDsAsString = new();
             foreach (int plotID in this.plotIDs)
             {
                 plotIDsAsString.Append(plotID.ToString(CultureInfo.InvariantCulture));
             }
-            OrganonStand stand = new OrganonStand(ageInYears, siteIndex)
+            OrganonStand stand = new(ageInYears, siteIndex)
             {
                 Name = plotIDsAsString.ToString()
             };
@@ -301,7 +301,7 @@ namespace Osu.Cof.Ferm.Data
             stand.SetSdiMax(configuration);
 
             float defaultOldIndex = 0.0F;
-            OrganonStandDensity density = new OrganonStandDensity(stand, configuration.Variant);
+            OrganonStandDensity density = new(stand, configuration.Variant);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 // initialize crown ratio from Organon variant

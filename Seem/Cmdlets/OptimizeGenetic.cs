@@ -111,7 +111,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.ReservedProportion));
             }
 
-            List<GeneticParameters> parameterCombinations = new List<GeneticParameters>(this.CrossoverProbabilityEnd.Count * this.ExponentK.Count * 
+            List<GeneticParameters> parameterCombinations = new(this.CrossoverProbabilityEnd.Count * this.ExponentK.Count * 
                 this.FlipProbabilityEnd.Count * this.GenerationMultiplier.Count * this.InitializationMethod.Count * this.InitializationClasses.Count * 
                 this.MinCoefficientOfVariation.Count * this.PopulationSize.Count * this.ProportionalPercentage.Count * this.ReservedProportion.Count);
             int treeRecordCount = this.Stand!.GetTreeRecordCount();

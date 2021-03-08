@@ -283,7 +283,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 totalCapacity += treesOfSpecies.Capacity;
             }
 
-            List<int> diameterClassByTree = new List<int>(totalCapacity);
+            List<int> diameterClassByTree = new(totalCapacity);
             float diameterClassWidth = (maximumDbh - minimumDbh) / diameterClasses;
             foreach (Trees treesOfSpecies in standBeforeThinning.TreesBySpecies.Values)
             {
@@ -339,7 +339,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             int[] treeSortOrder = getSortOrder.Invoke();
-            List<int> quantileByTree = new List<int>(treesOfSpecies.Capacity);
+            List<int> quantileByTree = new(treesOfSpecies.Capacity);
             float quantileScalingFactor = (quantiles - Constant.RoundTowardsZeroTolerance) / treesOfSpecies.Count;
             for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
             {
@@ -389,7 +389,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 PopulationInitializationMethod.HeightQuantile => Population.GetTreeHeightQuantiles(standBeforeThinning, parameters.InitializationClasses),
                 _ => throw new NotSupportedException("Unhandled population initialization method " + parameters.InitializationMethod + ".")
             };
-            List<float> selectionProbabilityByIndex = new List<float>(parameters.InitializationClasses);
+            List<float> selectionProbabilityByIndex = new(parameters.InitializationClasses);
             float selectionProbabilityIncrement = (float)parameters.InitializationClasses / this.Size; 
             float initialSelectionProbability = 0.5F * selectionProbabilityIncrement;
             for (int selectionClass = 0; selectionClass < parameters.InitializationClasses; ++selectionClass)

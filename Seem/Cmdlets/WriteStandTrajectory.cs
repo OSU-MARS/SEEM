@@ -48,7 +48,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             // TODO: check for mixed units and support TBH
             // TODO: snags per acre or hectare, live and dead QMD?
             bool runsSpecified = this.Runs != null;
-            StringBuilder line = new StringBuilder();
+            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
                 line.Append("stand,heuristic");

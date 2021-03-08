@@ -80,13 +80,13 @@ namespace Osu.Cof.Ferm.Organon
                 // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                 // BUGBUG: why isn't redcedar also on this code path?
                 float siteIndexFromGround = OrganonVariantNwo.ToHemlockSiteIndexStatic(stand.HemlockSiteIndex); // stand.HemlockSiteIndex is interpreted as PSME site index
-                WesternHemlock.SiteConstants tsheSite = new WesternHemlock.SiteConstants(siteIndexFromGround);
+                WesternHemlock.SiteConstants tsheSite = new(siteIndexFromGround);
                 growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             else
             {
                 // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
-                DouglasFir.SiteConstants psmeSite = new DouglasFir.SiteConstants(stand.HemlockSiteIndex); // stand.HemlockSiteIndex is interpreted as PSME site index
+                DouglasFir.SiteConstants psmeSite = new(stand.HemlockSiteIndex); // stand.HemlockSiteIndex is interpreted as PSME site index
                 growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             return growthEffectiveAge;

@@ -55,7 +55,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             int treeRecords = this.Stand!.GetTreeRecordCount();
 
-            List<TabuParameters> parameterCombinations = new List<TabuParameters>(this.EscapeAfter.Count * this.EscapeBy.Count *
+            List<TabuParameters> parameterCombinations = new(this.EscapeAfter.Count * this.EscapeBy.Count *
                 this.IterationMultipliers.Count * this.MaxTenure.Count * this.ProportionalPercentage.Count);
             foreach (float escapeAfter in this.EscapeAfter)
             {

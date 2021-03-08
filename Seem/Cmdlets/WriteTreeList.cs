@@ -27,7 +27,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
 
             // header
-            StringBuilder line = new StringBuilder();
+            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
                 line.Append("stand,species,tree,age,DBH,height,crown ratio,expansion factor,dead expansion factor");

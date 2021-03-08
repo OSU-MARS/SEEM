@@ -36,7 +36,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
 
             // for now, perform no reduction when Object.ReferenceEquals(lowestSolution, highestSolution) is true
-            StringBuilder line = new StringBuilder();
+            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
                 if ((this.Runs[0].HighestSolution == null) || (this.Runs[0].HighestHeuristicParameters == null) || (this.Runs[0].LowestSolution == null))

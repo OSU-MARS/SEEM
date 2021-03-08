@@ -85,7 +85,7 @@ namespace Osu.Cof.Ferm
                 treesForTopHeight = 40.0F;
             }
 
-            SortedList<float, float> expansionFactorByHeight = new SortedList<float, float>();
+            SortedList<float, float> expansionFactorByHeight = new();
             float topTrees = 0.0F;
             float minimumHeight = Single.MinValue;
             foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)

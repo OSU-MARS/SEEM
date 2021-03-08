@@ -89,7 +89,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected IList<HeuristicParameters> GetDefaultParameterCombinations(TimberValue timberValue)
         {
-            List<HeuristicParameters> parameterCombinations = new List<HeuristicParameters>();
+            List<HeuristicParameters> parameterCombinations = new();
             foreach (float proportionalPercentage in this.ProportionalPercentage)
             {
                 parameterCombinations.Add(new HeuristicParameters()
@@ -146,15 +146,15 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
             }
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
 
             int treeCount = this.Stand!.GetTreeRecordCount();
-            List<TParameters> parameterCombinations = new List<TParameters>();
-            List<HeuristicSolutionDistribution> distributions = new List<HeuristicSolutionDistribution>(this.FirstThinPeriod.Count * this.PlanningPeriods.Count);
+            List<TParameters> parameterCombinations = new();
+            List<HeuristicSolutionDistribution> distributions = new(this.FirstThinPeriod.Count * this.PlanningPeriods.Count);
             for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
             {
-                TimberValue timberValue = new TimberValue(this.TimberValue)
+                TimberValue timberValue = new(this.TimberValue)
                 {
                     DiscountRate = this.DiscountRates[discountRateIndex]
                 };
@@ -209,7 +209,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 parameterCombinations.AddRange(parameterCombinationsForDiscountRate);
             }
-            ParallelOptions parallelOptions = new ParallelOptions()
+            ParallelOptions parallelOptions = new()
             {
                 MaxDegreeOfParallelism = this.Threads
             };
@@ -226,7 +226,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     int distributionIndex = iteration / this.BestOf;
                     HeuristicSolutionDistribution distribution = distributions[distributionIndex];
-                    OrganonConfiguration organonConfiguration = new OrganonConfiguration(OrganonVariant.Create(this.TreeModel));
+                    OrganonConfiguration organonConfiguration = new(OrganonVariant.Create(this.TreeModel));
                     if (this.TryCreateFirstThin(distribution.FirstThinPeriodIndex, out IHarvest? firstThin))
                     {
                         organonConfiguration.Treatments.Harvests.Add(firstThin);
@@ -236,7 +236,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         }
                     }
 
-                    Objective objective = new Objective()
+                    Objective objective = new()
                     {
                         PlanningPeriods = this.PlanningPeriods[distribution.PlanningPeriodIndex],
                         TimberObjective = this.TimberObjective

@@ -135,27 +135,27 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void Population()
         {
-            List<int> thinningPeriods = new List<int>() { 0, 1 };
+            List<int> thinningPeriods = new() { 0, 1 };
 
-            Population binaryPopulation = new Population(2, 0.5F, 5);
+            Population binaryPopulation = new(2, 0.5F, 5);
             binaryPopulation.IndividualFitness[0] = 0.0F;
             binaryPopulation.IndividualFitness[1] = 1.0F;
             binaryPopulation.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
             binaryPopulation.IndividualTreeSelections[1] = new int[] { 1, 1, 1, 1, 1 };
 
-            Population clones = new Population(2, 0.5F, 5);
+            Population clones = new(2, 0.5F, 5);
             clones.IndividualFitness[0] = 0.0F;
             clones.IndividualFitness[1] = 0.0F;
             clones.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
             clones.IndividualTreeSelections[1] = new int[] { 0, 0, 0, 0, 0 };
 
-            Population heterozygousPopulation = new Population(2, 0.5F, 5);
+            Population heterozygousPopulation = new(2, 0.5F, 5);
             heterozygousPopulation.IndividualFitness[0] = 0.4F;
             heterozygousPopulation.IndividualFitness[1] = 0.6F;
             heterozygousPopulation.IndividualTreeSelections[0] = new int[] { 1, 0, 0, 1, 0 };
             heterozygousPopulation.IndividualTreeSelections[1] = new int[] { 1, 0, 1, 0, 1 };
 
-            PopulationStatistics statistics = new PopulationStatistics();
+            PopulationStatistics statistics = new();
             statistics.AddGeneration(binaryPopulation, thinningPeriods);
             statistics.AddGeneration(clones, thinningPeriods);
             statistics.AddGeneration(heterozygousPopulation, thinningPeriods);
@@ -242,7 +242,7 @@ namespace Osu.Cof.Ferm.Test
             int treeCount = 42;
 
             // TODO: TSHE, THPL, ...
-            Trees trees = new Trees(FiaCode.PseudotsugaMenziesii, treeCount, Units.English);
+            Trees trees = new(FiaCode.PseudotsugaMenziesii, treeCount, Units.English);
             float[] fiaMerchantableCubicFeetPerAcre = new float[treeCount];
             float[] fiaScribnerBoardFeetPerAcre = new float[treeCount];
             float merchantableCubicFeetPerAcre = 0.0F;
@@ -253,7 +253,7 @@ namespace Osu.Cof.Ferm.Test
             {
                 // create trees with a range of expansion factors to catch errors in expansion factor management
                 float treeRatio = (float)compactedTreeIndex / (float)treeCount;
-                TreeRecord tree = new TreeRecord(compactedTreeIndex, trees.Species, (float)compactedTreeIndex, 1.0F - 0.75F * treeRatio, 0.6F + compactedTreeIndex);
+                TreeRecord tree = new(compactedTreeIndex, trees.Species, (float)compactedTreeIndex, 1.0F - 0.75F * treeRatio, 0.6F + compactedTreeIndex);
                 trees.Add(tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
 
                 float dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
@@ -303,16 +303,16 @@ namespace Osu.Cof.Ferm.Test
             treeCount = 125;
             #endif
 
-            Trees trees = new Trees(FiaCode.PseudotsugaMenziesii, treeCount, Units.English);
+            Trees trees = new(FiaCode.PseudotsugaMenziesii, treeCount, Units.English);
             float expansionFactor = 0.5F;
             for (int treeIndex = 0; treeIndex < treeCount; ++treeIndex)
             {
                 float dbhInInches = (float)(treeIndex % 36 + 4);
                 trees.Add(treeIndex, dbhInInches, 16.0F * MathF.Sqrt(dbhInInches) + 4.5F, 0.01F * (float)(treeIndex % 100), expansionFactor);
             }
-            FiaVolume volume = new FiaVolume();
+            FiaVolume volume = new();
 
-            Stopwatch runtime = new Stopwatch();
+            Stopwatch runtime = new();
             float accumulatedBoardFeetPerAcre = 0.0F;
             for (int iteration = 0; iteration < iterations; ++iteration)
             {
@@ -346,7 +346,7 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void VolumeTaper()
         {
-            List<ExpectedTreeVolume> trees = new List<ExpectedTreeVolume>()
+            List<ExpectedTreeVolume> trees = new()
             {
                 // trees very near height and diameter class breaks may estimate differently between metric and English due to numerical precision
                 new ExpectedTreeVolume()
@@ -387,9 +387,9 @@ namespace Osu.Cof.Ferm.Test
                 }
             };
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
-            TimberValue timberValue = new TimberValue(Constant.Bucking.DefaultMaximumDiameterInCentimeters, Constant.Bucking.DefaultMaximumHeightInMeters, false);
+            TimberValue timberValue = new(Constant.Bucking.DefaultMaximumDiameterInCentimeters, Constant.Bucking.DefaultMaximumHeightInMeters, false);
             stopwatch.Stop();
             TimeSpan timberValueTabulationTime = stopwatch.Elapsed;
             this.TestContext!.WriteLine("tabulation: {0:s\\.fff}s for {1:0.0} cm diameter classes and {2:0.0} m height classes", timberValueTabulationTime, Constant.Bucking.DiameterClassSizeInCentimeters, Constant.Bucking.HeightClassSizeInMeters);
@@ -419,9 +419,9 @@ namespace Osu.Cof.Ferm.Test
             {
                 float dbhInCentimeters = tree.Dbh;
                 float heightInMeters = tree.Height;
-                Trees psmeEnglish = new Trees(FiaCode.PseudotsugaMenziesii, 1, Units.English);
+                Trees psmeEnglish = new(FiaCode.PseudotsugaMenziesii, 1, Units.English);
                 psmeEnglish.Add(1, Constant.InchesPerCentimeter * dbhInCentimeters, Constant.FeetPerMeter * heightInMeters, 0.5F, tree.ExpansionFactor);
-                Trees psmeMetric = new Trees(FiaCode.PseudotsugaMenziesii, 1, Units.Metric);
+                Trees psmeMetric = new(FiaCode.PseudotsugaMenziesii, 1, Units.Metric);
                 psmeMetric.Add(1, dbhInCentimeters, heightInMeters, 0.5F, tree.ExpansionFactor);
 
                 timberValue.ScaledVolumeRegenerationHarvest.GetScribnerVolume(psmeEnglish, out double regenScribner2SawEnglish, out double regenScribner3SawEnglish, out double regenScribner4SawEnglish);

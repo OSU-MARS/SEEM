@@ -55,7 +55,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
 
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
@@ -63,7 +63,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             float previousBestObjectiveFunction = this.BestObjectiveFunction;
-            OrganonStandTrajectory candidateTrajectory = new OrganonStandTrajectory(this.CurrentTrajectory);
+            OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             bool decrementPeriodIndex = false;
             int[] uncompactedPeriodIndices = this.GetPeriodIndices(initialTreeRecordCount, thinningPeriods);
             int[] uncompactedTreeIndices = Heuristic.CreateSequentialArray(initialTreeRecordCount);

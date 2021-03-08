@@ -91,7 +91,7 @@ namespace Osu.Cof.Ferm.Organon
                 TreeModel.OrganonSwo => Constant.SwoSpecies,
                 _ => throw OrganonVariant.CreateUnhandledModelException(this.Variant.TreeModel),
             };
-            Dictionary<FiaCode, SpeciesCalibration> calibration = new Dictionary<FiaCode, SpeciesCalibration>();
+            Dictionary<FiaCode, SpeciesCalibration> calibration = new();
             foreach (FiaCode species in speciesList)
             {
                 calibration.Add(species, new SpeciesCalibration());

@@ -46,7 +46,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(this.Iterations));
             }
 
-            Stopwatch stopwatch = new Stopwatch();
+            Stopwatch stopwatch = new();
             stopwatch.Start();
 
             this.AcceptedObjectiveFunctionByMove.Capacity = this.Iterations;

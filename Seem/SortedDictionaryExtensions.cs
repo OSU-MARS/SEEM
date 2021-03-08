@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm
     {
         public static TValue GetOrAdd<TKey, TValue>(this SortedDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull where TValue : new()
         {
-            if (dictionary.TryGetValue(key, out TValue value) == false)
+            if (dictionary.TryGetValue(key, out TValue? value) == false)
             {
                 value = new TValue();
                 dictionary.Add(key, value);

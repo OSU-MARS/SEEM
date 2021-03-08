@@ -955,13 +955,13 @@ namespace Osu.Cof.Ferm.Organon
             if (trees.Species == FiaCode.TsugaHeterophylla)
             {
                 // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
-                WesternHemlock.SiteConstants siteConstants = new WesternHemlock.SiteConstants(stand.HemlockSiteIndex);
+                WesternHemlock.SiteConstants siteConstants = new(stand.HemlockSiteIndex);
                 growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(siteConstants, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             else
             {
                 // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
-                DouglasFir.SiteConstants siteConstants = new DouglasFir.SiteConstants(stand.SiteIndex); 
+                DouglasFir.SiteConstants siteConstants = new(stand.SiteIndex); 
                 growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(siteConstants, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             return growthEffectiveAge;

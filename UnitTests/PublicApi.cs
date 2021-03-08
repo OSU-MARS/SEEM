@@ -18,7 +18,7 @@ namespace Osu.Cof.Ferm.Test
         private static PlotsWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp Nelder 1.xlsx");
-            PlotsWithHeight plot = new PlotsWithHeight(new List<int>() { 1 }, 1.327F);
+            PlotsWithHeight plot = new(new List<int>() { 1 }, 1.327F);
             plot.Read(plotFilePath, "1");
             return plot;
         }
@@ -26,7 +26,7 @@ namespace Osu.Cof.Ferm.Test
         private static PlotsWithHeight GetPlot14()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp plots 14-18+34 Ministry.xlsx");
-            PlotsWithHeight plot = new PlotsWithHeight(new List<int>() { 14 }, 4.48F);
+            PlotsWithHeight plot = new(new List<int>() { 14 }, 4.48F);
             plot.Read(plotFilePath, "0.2 ha");
             return plot;
         }
@@ -35,7 +35,7 @@ namespace Osu.Cof.Ferm.Test
         public void HuffmanPeakNobleFir()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "HPNF.xlsx");
-            PspStand huffmanPeak = new PspStand(plotFilePath, "HPNF", 0.2F);
+            PspStand huffmanPeak = new(plotFilePath, "HPNF", 0.2F);
             OrganonVariant variant = new OrganonVariantSwo(); // SWO allows mapping ABAM -> ABGR and ABPR -> ABCO
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
             TestStand stand = huffmanPeak.ToStand(configuration, 80.0F);
@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Test
             stand.WriteCompetitionAsCsv("HPNF initial competition.csv", variant, startYear);
             OrganonTest.GrowPspStand(huffmanPeak, stand, variant, startYear, 2015, Path.GetFileNameWithoutExtension(plotFilePath));
 
-            TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, huffmanPeak, startYear);
+            TreeQuantiles measuredQuantiles = new(stand, huffmanPeak, startYear);
             using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("HPNF measured quantiles.csv", variant, startYear);
             foreach (int measurementYear in huffmanPeak.MeasurementYears)
             {
@@ -76,16 +76,16 @@ namespace Osu.Cof.Ferm.Test
             #endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
-            OrganonConfiguration configuration = new OrganonConfiguration(new OrganonVariantNwo());
+            OrganonConfiguration configuration = new(new OrganonVariantNwo());
             configuration.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            Objective landExpectationValue = new Objective()
+            Objective landExpectationValue = new()
             {
                 PlanningPeriods = 9
             };
-            Hero hero = new Hero(stand, configuration, landExpectationValue, new HeuristicParameters())
+            Hero hero = new(stand, configuration, landExpectationValue, new HeuristicParameters())
             {
                 //IsStochastic = true,
                 MaximumIterations = 10
@@ -135,30 +135,30 @@ namespace Osu.Cof.Ferm.Test
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            Objective landExpectationValue = new Objective()
+            Objective landExpectationValue = new()
             {
                 PlanningPeriods = 9
             };
-            Objective volume = new Objective()
+            Objective volume = new()
             {
                 PlanningPeriods = landExpectationValue.PlanningPeriods,
                 TimberObjective = TimberObjective.ScribnerVolume
             };
-            HeuristicParameters defaultParameters = new HeuristicParameters()
+            HeuristicParameters defaultParameters = new()
             {
                 UseFiaVolume = false
             };
 
-            GeneticParameters geneticParameters = new GeneticParameters(treeCount)
+            GeneticParameters geneticParameters = new(treeCount)
             {
                 PopulationSize = 7,
                 MaximumGenerations = 5,
                 UseFiaVolume = defaultParameters.UseFiaVolume
             };
-            GeneticAlgorithm genetic = new GeneticAlgorithm(stand, configuration, landExpectationValue, geneticParameters);
+            GeneticAlgorithm genetic = new(stand, configuration, landExpectationValue, geneticParameters);
             TimeSpan geneticRuntime = genetic.Run();
 
-            GreatDeluge deluge = new GreatDeluge(stand, configuration, volume, defaultParameters)
+            GreatDeluge deluge = new(stand, configuration, volume, defaultParameters)
             {
                 RainRate = 5,
                 LowerWaterAfter = 9,
@@ -167,25 +167,25 @@ namespace Osu.Cof.Ferm.Test
             deluge.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan delugeRuntime = deluge.Run();
 
-            RecordTravel recordTravel = new RecordTravel(stand, configuration, landExpectationValue, defaultParameters)
+            RecordTravel recordTravel = new(stand, configuration, landExpectationValue, defaultParameters)
             {
                 StopAfter = 10
             };
             recordTravel.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan recordRuntime = recordTravel.Run();
 
-            SimulatedAnnealing annealer = new SimulatedAnnealing(stand, configuration, volume, defaultParameters)
+            SimulatedAnnealing annealer = new(stand, configuration, volume, defaultParameters)
             {
                 Iterations = 100
             };
             annealer.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan annealerRuntime = annealer.Run();
 
-            TabuParameters tabuParameters = new TabuParameters()
+            TabuParameters tabuParameters = new()
             {
                 UseFiaVolume = defaultParameters.UseFiaVolume
             };
-            TabuSearch tabu = new TabuSearch(stand, configuration, landExpectationValue, tabuParameters)
+            TabuSearch tabu = new(stand, configuration, landExpectationValue, tabuParameters)
             {
                 Iterations = 7,
                 //Jump = 2,
@@ -194,7 +194,7 @@ namespace Osu.Cof.Ferm.Test
             tabu.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan tabuRuntime = tabu.Run();
 
-            ThresholdAccepting thresholdAcceptor = new ThresholdAccepting(stand, configuration, volume, defaultParameters);
+            ThresholdAccepting thresholdAcceptor = new(stand, configuration, volume, defaultParameters);
             thresholdAcceptor.IterationsPerThreshold.Clear();
             thresholdAcceptor.Thresholds.Clear();
             thresholdAcceptor.IterationsPerThreshold.Add(10);
@@ -202,7 +202,7 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             TimeSpan acceptorRuntime = thresholdAcceptor.Run();
 
-            RandomGuessing random = new RandomGuessing(stand, configuration, volume, defaultParameters)
+            RandomGuessing random = new(stand, configuration, volume, defaultParameters)
             {
                 Iterations = 4
             };
@@ -210,14 +210,14 @@ namespace Osu.Cof.Ferm.Test
 
             configuration.Treatments.Harvests.Clear();
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
-            PrescriptionParameters prescriptionParameters = new PrescriptionParameters()
+            PrescriptionParameters prescriptionParameters = new()
             {
                 Maximum = 60.0F,
                 Minimum = 50.0F,
                 StepSize = 10.0F,
                 UseFiaVolume = defaultParameters.UseFiaVolume
             };
-            PrescriptionEnumeration enumerator = new PrescriptionEnumeration(stand, configuration, landExpectationValue, prescriptionParameters);
+            PrescriptionEnumeration enumerator = new(stand, configuration, landExpectationValue, prescriptionParameters);
             TimeSpan enumerationRuntime = enumerator.Run();
 
             // heuristics assigned to volume optimization
@@ -232,7 +232,7 @@ namespace Osu.Cof.Ferm.Test
             this.Verify(recordTravel);
             this.Verify(tabu);
 
-            HeuristicSolutionDistribution distribution = new HeuristicSolutionDistribution(1, treeCount);
+            HeuristicSolutionDistribution distribution = new(1, treeCount);
             distribution.AddRun(annealer, annealerRuntime, defaultParameters);
             distribution.AddRun(deluge, delugeRuntime, defaultParameters);
             distribution.AddRun(thresholdAcceptor, acceptorRuntime, defaultParameters);
@@ -256,7 +256,7 @@ namespace Osu.Cof.Ferm.Test
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            OrganonStandTrajectory unthinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             unthinnedTrajectory.Simulate();
 
             int firstThinPeriod = 3;
@@ -266,7 +266,7 @@ namespace Osu.Cof.Ferm.Test
                 ProportionalPercentage = 15.0F,
                 FromBelowPercentage = 10.0F
             });
-            OrganonStandTrajectory oneThinTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            OrganonStandTrajectory oneThinTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             AssertNullable.IsNotNull(oneThinTrajectory.StandByPeriod[0]);
             Assert.IsTrue(oneThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             oneThinTrajectory.Simulate();
@@ -278,7 +278,7 @@ namespace Osu.Cof.Ferm.Test
                 ProportionalPercentage = 20.0F,
                 FromBelowPercentage = 0.0F
             });
-            OrganonStandTrajectory twoThinTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            OrganonStandTrajectory twoThinTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             AssertNullable.IsNotNull(twoThinTrajectory.StandByPeriod[0]);
             Assert.IsTrue(twoThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             twoThinTrajectory.Simulate();
@@ -459,8 +459,8 @@ namespace Osu.Cof.Ferm.Test
                 stand.SetQuantiles();
                 stand.WriteTreesAsCsv(this.TestContext!, variant, 0, false);
 
-                TestStand initialStand = new TestStand(stand);
-                TreeLifeAndDeath treeGrowth = new TreeLifeAndDeath();
+                TestStand initialStand = new(stand);
+                TreeLifeAndDeath treeGrowth = new();
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     OrganonGrowth.Grow(simulationStep, configuration, stand, calibrationBySpecies);
@@ -493,7 +493,7 @@ namespace Osu.Cof.Ferm.Test
                 ProportionalPercentage = 30.0F,
                 FromBelowPercentage = 0.0F
             });
-            OrganonStandTrajectory thinnedTrajectory = new OrganonStandTrajectory(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            OrganonStandTrajectory thinnedTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == 222);
             thinnedTrajectory.Simulate();
@@ -539,15 +539,15 @@ namespace Osu.Cof.Ferm.Test
         public void RS39()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "RS39 lower half.xlsx");
-            PspStand rs39 = new PspStand(plotFilePath, "RS39 lower half", 0.154441F);
+            PspStand rs39 = new(plotFilePath, "RS39 lower half", 0.154441F);
             OrganonVariant variant = new OrganonVariantNwo();
-            OrganonConfiguration configuration = new OrganonConfiguration(variant);
+            OrganonConfiguration configuration = new(variant);
             TestStand stand = rs39.ToStand(configuration, 105.0F);
             int startYear = 1992;
             stand.WriteCompetitionAsCsv("RS39 lower half initial competition.csv", variant, startYear);
             OrganonTest.GrowPspStand(rs39, stand, variant, startYear, 2019, Path.GetFileNameWithoutExtension(plotFilePath));
 
-            TreeQuantiles measuredQuantiles = new TreeQuantiles(stand, rs39, startYear);
+            TreeQuantiles measuredQuantiles = new(stand, rs39, startYear);
             using StreamWriter quantileWriter = measuredQuantiles.WriteToCsv("RS39 lower half measured quantiles.csv", variant, startYear);
             foreach (int measurementYear in rs39.MeasurementYears)
             {
@@ -577,11 +577,11 @@ namespace Osu.Cof.Ferm.Test
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, trees);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            Objective landExpectationValue = new Objective()
+            Objective landExpectationValue = new()
             {
                 PlanningPeriods = 9
             };
-            HeuristicParameters defaultParameters = new HeuristicParameters();
+            HeuristicParameters defaultParameters = new();
 
             TimeSpan runtime = TimeSpan.Zero;
             for (int run = 0; run < runs; ++run)
@@ -589,7 +589,7 @@ namespace Osu.Cof.Ferm.Test
                 // after warmup: 3 runs * 300 trees = 900 measured growth simulations on i7-3770 (4th gen, Sandy Bridge)
                 // dispersion of 5 runs                   min   mean  median  max
                 // .NET 5.0 with removed tree compaction  1.67  1.72  1.72    1.82
-                Hero hero = new Hero(stand, configuration, landExpectationValue, defaultParameters)
+                Hero hero = new(stand, configuration, landExpectationValue, defaultParameters)
                 {
                     IsStochastic = false,
                     MaximumIterations = 2

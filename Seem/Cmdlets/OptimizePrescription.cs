@@ -88,7 +88,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.Step));
             }
 
-            List<PrescriptionParameters> parameterCombinations = new List<PrescriptionParameters>(this.Minimum.Count);
+            List<PrescriptionParameters> parameterCombinations = new(this.Minimum.Count);
             for (int intensityIndex = 0; intensityIndex < this.Minimum.Count; ++intensityIndex)
             {
                 float minimumIntensity = this.Minimum[intensityIndex];

@@ -243,7 +243,7 @@ namespace Osu.Cof.Ferm.Organon
 
             // standing volume
             OrganonStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
-            double standingCvts4perAcre = 0.0F;
+            // double standingCvts4perAcre = 0.0F;
             double standingScribner6x32footLogPerAcre = 0.0F;
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
@@ -252,14 +252,14 @@ namespace Osu.Cof.Ferm.Organon
                     throw new NotSupportedException();
                 }
 
-                for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
-                {
-                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    if (expansionFactor > 0.0F)
-                    {
-                        standingCvts4perAcre += expansionFactor * FiaVolume.GetMerchantableCubicFeet(treesOfSpecies, compactedTreeIndex);
-                    }
-                }
+                // for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
+                // {
+                //     float expansionFactor = treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
+                //     if (expansionFactor > 0.0F)
+                //     {
+                //         standingCvts4perAcre += expansionFactor * FiaVolume.GetMerchantableCubicFeet(treesOfSpecies, compactedTreeIndex);
+                //     }
+                // }
 
                 standingScribner6x32footLogPerAcre += FiaVolume.GetScribnerBoardFeetPerAcre(treesOfSpecies);
             }
@@ -404,7 +404,7 @@ namespace Osu.Cof.Ferm.Organon
                     if (this.StandByPeriod[periodIndex] == null)
                     {
                         // lazy initialization
-                        OrganonStand standForPeriod = new OrganonStand(simulationStand);
+                        OrganonStand standForPeriod = new(simulationStand);
                         Debug.Assert(standForPeriod.Name != null);
                         standForPeriod.Name = standForPeriod.Name[0..^1] + periodIndex;
                         this.StandByPeriod[periodIndex] = standForPeriod;

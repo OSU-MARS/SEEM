@@ -250,10 +250,10 @@ namespace Osu.Cof.Ferm.Organon
             // BUGBUG: simulationStep largely duplicates stand age
             OrganonGrowth.ValidateArguments(simulationStep, configuration, stand, previousCalibrationBySpecies, out int BIG6, out int BNXT);
 
-            Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = new Dictionary<FiaCode, SpeciesCalibration>(previousCalibrationBySpecies.Count);
+            Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = new(previousCalibrationBySpecies.Count);
             foreach (KeyValuePair<FiaCode, SpeciesCalibration> species in previousCalibrationBySpecies)
             {
-                SpeciesCalibration speciesCalibration = new SpeciesCalibration();
+                SpeciesCalibration speciesCalibration = new();
                 calibrationBySpecies.Add(species.Key, speciesCalibration);
 
                 if (configuration.CalibrateHeight)
@@ -272,7 +272,7 @@ namespace Osu.Cof.Ferm.Organon
 
             // density at start of growth
             stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
-            OrganonStandDensity densityBeforeGrowth = new OrganonStandDensity(stand, configuration.Variant);
+            OrganonStandDensity densityBeforeGrowth = new(stand, configuration.Variant);
 
             // crown competition at start of growth
             float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
@@ -702,7 +702,7 @@ namespace Osu.Cof.Ferm.Organon
             float hemlockSiteIndexFromDbh = stand.HemlockSiteIndex - 4.5F;
 
             float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(variant, stand);
-            OrganonStandDensity standDensity = new OrganonStandDensity(stand, variant);
+            OrganonStandDensity standDensity = new(stand, variant);
             FiaCode species = treesOfSpecies.Species;
             for (int treeIndex = treesOfSpecies.Count - ingrowthCount; treeIndex < treesOfSpecies.Count; ++treeIndex)
             {

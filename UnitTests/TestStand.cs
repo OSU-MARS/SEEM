@@ -73,10 +73,10 @@ namespace Osu.Cof.Ferm.Test
 
         public void WriteCompetitionAsCsv(string filePath, OrganonVariant variant, int year)
         {
-            OrganonStandDensity density = new OrganonStandDensity(this, variant);
+            OrganonStandDensity density = new(this, variant);
 
-            FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            using StreamWriter writer = new StreamWriter(stream);
+            FileStream stream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using StreamWriter writer = new(stream);
             writer.WriteLine("variant,year,tree,species,BAL,CCFL,DBH,height,expansion factor,crown ratio");
             foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
@@ -133,8 +133,8 @@ namespace Osu.Cof.Ferm.Test
 
         public StreamWriter WriteTreesToCsv(string filePath, OrganonVariant variant, int year)
         {
-            FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            StreamWriter writer = new StreamWriter(stream);
+            FileStream stream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            StreamWriter writer = new(stream);
             writer.WriteLine("variant,year,tree,species,DBH,height,expansion factor,dead expansion factor,crown ratio,diameter growth,height growth,quantile");
             this.WriteTreesToCsv(writer, variant, year);
             return writer;

@@ -14,7 +14,7 @@ namespace Osu.Cof.Ferm.Test
         public const float Plot14ReplantingDensityInTreesPerHectare = 1277.740F;
         public const float SquareMetersPerSquareFoot = 0.092903F;
 
-        public static ReadOnlyCollection<FiaCode> TreeSpeciesList = new ReadOnlyCollection<FiaCode>(new FiaCode[] {
+        public static ReadOnlyCollection<FiaCode> TreeSpeciesList = new(new FiaCode[] {
                 FiaCode.AbiesGrandis,
                 FiaCode.CalocedrusDecurrens,
                 FiaCode.PinusPonderosa,

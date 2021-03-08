@@ -65,7 +65,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
             plot.Read(this.Xlsx!, this.XlsxSheet);
 
-            OrganonConfiguration configuration = new OrganonConfiguration(OrganonVariant.Create(this.Model));
+            OrganonConfiguration configuration = new(OrganonVariant.Create(this.Model));
             OrganonStand stand;
             if (this.Trees.HasValue)
             {
