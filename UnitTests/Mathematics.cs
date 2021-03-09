@@ -214,6 +214,14 @@ namespace Osu.Cof.Ferm.Test
         }
 
         [TestMethod]
+        public void Reforestation()
+        {
+            float reforestationNpv = TimberValue.Default.GetNetPresentReforestationValue(Constant.AcresPerHectare * 380.0F);
+            Assert.IsTrue(reforestationNpv > -277.76F);
+            Assert.IsTrue(reforestationNpv < -0.999 * 277.76F);
+        }
+
+        [TestMethod]
         public void Simd()
         {
             Vector128<float> broadcastFloat = AvxExtensions.BroadcastScalarToVector128(Constant.ForestersEnglish);

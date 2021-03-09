@@ -73,14 +73,13 @@ namespace Osu.Cof.Ferm.Heuristics
                 // net present value of first rotation
                 // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
                 // TODO: support per species pricing
-                float firstRotationNetPresentValue = -trajectory.TimberValue.FixedReforestationCostPerHectare - trajectory.TimberValue.SeedlingCost * trajectory.PlantingDensityInTreesPerHectare;
+                float firstRotationNetPresentValue = trajectory.TimberValue.GetNetPresentReforestationValue(trajectory.PlantingDensityInTreesPerHectare);
                 for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
                 {
                     firstRotationNetPresentValue += trajectory.ThinningVolume.NetPresentValue[periodIndex];
                 }
                 firstRotationNetPresentValue += trajectory.StandingVolume.NetPresentValue[^1];
 
-                // convert from US$/ac to USk$/ac
                 objectiveFunction = firstRotationNetPresentValue;
 
                 if (this.Objective.TimberObjective == TimberObjective.LandExpectationValue)
@@ -91,6 +90,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     objectiveFunction = landExpectationValue;
                 }
 
+                // convert from US$/ha to USk$/ha
                 objectiveFunction *= 0.001F;
             }
             else if (this.Objective.TimberObjective == TimberObjective.ScribnerVolume)

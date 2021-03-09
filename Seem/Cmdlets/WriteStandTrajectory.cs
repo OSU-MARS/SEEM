@@ -186,7 +186,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float thinNetPresentValue = highestTrajectory.ThinningVolume.NetPresentValue[periodIndex];
                     totalThinNetPresentValue += thinNetPresentValue;
                     float standingNetPresentValue = highestTrajectory.StandingVolume.NetPresentValue[periodIndex];
-                    float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue - highestTrajectory.TimberValue.FixedReforestationCostPerHectare - highestTrajectory.TimberValue.SeedlingCost * highestTrajectory.PlantingDensityInTreesPerHectare;
+                    float reforestationNetPresentValue = highestTrajectory.TimberValue.GetNetPresentReforestationValue(highestTrajectory.PlantingDensityInTreesPerHectare);
+                    float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue + reforestationNetPresentValue;
 
                     float presentToFutureConversionFactor = MathF.Pow(1.0F + highestTrajectory.TimberValue.DiscountRate, rotationLength);
                     float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);

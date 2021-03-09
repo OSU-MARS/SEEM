@@ -60,19 +60,13 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinningPeriod = 4;
             int treeCount = 100;
-            int expectedTreesSelectedWithFiaVolume = 0;
-            float minObjectiveFunctionWithFiaVolume = 4.154F; // USk$/ha
-            float minObjectiveFunctionWithScaledVolume = 3.454F; // USk$/ha
-            float minThinnedMbfWithFiaVolume = 0.0F;
+            float minObjectiveFunctionWithScaledVolume = 4.593F; // USk$/ha
             #if DEBUG
             treeCount = 48;
-            expectedTreesSelectedWithFiaVolume = 0;
-            minObjectiveFunctionWithFiaVolume = 1.790F; // USk$/ha
-            // minObjectiveFunctionWithScaledVolume = 1.357F; // USk$/ha, nearest 1 cm diameter class and 0.5 cm height class
-            minObjectiveFunctionWithScaledVolume = 1.348F; // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-            // minObjectiveFunctionWithScaledVolume = 1.332F; // bilinear interpolation: 2 cm diameter classes, 2 m height classes
-            // minObjectiveFunctionWithScaledVolume = 1.352F; // bilinear interpolation: 5 cm diameter classes, 5 m height classes
-            minThinnedMbfWithFiaVolume = 0.0F;
+            // minObjectiveFunctionWithScaledVolume = ; // USk$/ha, nearest 1 cm diameter class and 0.5 cm height class
+            minObjectiveFunctionWithScaledVolume = 2.482F; // bilinear interpolation: 1 cm diameter classes, 1 m height classes
+            // minObjectiveFunctionWithScaledVolume = ; // bilinear interpolation: 2 cm diameter classes, 2 m height classes
+            // minObjectiveFunctionWithScaledVolume = ; // bilinear interpolation: 5 cm diameter classes, 5 m height classes
             #endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
@@ -93,31 +87,16 @@ namespace Osu.Cof.Ferm.Test
             hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
             //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
             hero.Run();
+            Assert.IsTrue(hero.BestTrajectory.UseFiaVolume == false);
 
             this.Verify(hero);
 
             int[] treeSelection = hero.BestTrajectory.IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesSelected = treeSelection.Sum() / thinningPeriod;
 
-            if (hero.BestTrajectory.UseFiaVolume)
-            {
-                // expected standing volume, MBF, for no trees harvested
-                // 0.122, 0.971, 3.18, 6.749, 11.56, 17.54, 24.56, 32.44, 40.97, 49.98
-                // expected NPV, US$/ha, for no trees harvested
-                // -90.96, 61.62, 373.49, 781.90, 1228.99, 1674.68, 2085.93, 2438.25, 2717.76, 2918.96
-                this.TestContext!.WriteLine("best objective: {0} observed, near {1} expected", hero.BestObjectiveFunction, minObjectiveFunctionWithFiaVolume);
-                Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithFiaVolume);
-                Assert.IsTrue(hero.BestObjectiveFunction < 1.01F * minObjectiveFunctionWithFiaVolume);
-                Assert.IsTrue(hero.BestTrajectory.ThinningVolume.ScribnerTotal[thinningPeriod] >= minThinnedMbfWithFiaVolume);
-                Assert.IsTrue(hero.BestTrajectory.ThinningVolume.ScribnerTotal[thinningPeriod] <= 1.01 * minThinnedMbfWithFiaVolume);
-                Assert.IsTrue(treesSelected == expectedTreesSelectedWithFiaVolume);
-            }
-            else
-            {
-                this.TestContext!.WriteLine("best objective: {0} observed, near {1} expected", hero.BestObjectiveFunction, minObjectiveFunctionWithScaledVolume);
-                Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithScaledVolume);
-                Assert.IsTrue(hero.BestObjectiveFunction < 1.02F * minObjectiveFunctionWithScaledVolume);
-            }
+            this.TestContext!.WriteLine("best objective: {0} observed, near {1} expected", hero.BestObjectiveFunction, minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(hero.BestObjectiveFunction > minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(hero.BestObjectiveFunction < 1.02F * minObjectiveFunctionWithScaledVolume);
         }
 
         [TestMethod]
