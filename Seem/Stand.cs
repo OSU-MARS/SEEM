@@ -57,7 +57,7 @@ namespace Osu.Cof.Ferm
                 }
                 if (treesOfSpecies.Units == Units.English)
                 {
-                    treeSpeciesSumExpansionFactorDbhSquared *= Constant.CentimetersPerInch * Constant.CentimetersPerInch;
+                    treeSpeciesSumExpansionFactorDbhSquared *= Constant.AcresPerHectare * Constant.CentimetersPerInch * Constant.CentimetersPerInch;
                     treeSpeciesSumExpansionFactor *= Constant.AcresPerHectare;
                 }
                 metricSumExpansionFactorDbhSquared += treeSpeciesSumExpansionFactorDbhSquared;

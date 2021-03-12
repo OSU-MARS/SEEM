@@ -87,6 +87,8 @@ namespace Osu.Cof.Ferm
         /// <returns>Live biomass of trees in kg/ha.</returns>
         public static float GetLiveBiomass(Trees treesOfSpecies)
         {
+            // Poudel KP, Temesgen H, Radtke PJ, Gray AN. 2019. Estimating individual-tree aboveground biomass of tree species
+            //  in the western U.S.A. Canadian Journal of Forest Resources 49:701–714. https://dx.doi.org/10.1139/cjfr-2018-0361
             float correctionFactor;
             float a;
             float b;

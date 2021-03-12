@@ -51,6 +51,7 @@ namespace Osu.Cof.Ferm.Species
             {
                 for (int alderIndex = 0; alderIndex < redAlders.Count; ++alderIndex)
                 {
+                    // TODO: why a 100% stand mortality case?
                     redAlders.DeadExpansionFactor[alderIndex] += redAlders.LiveExpansionFactor[alderIndex];
                     redAlders.LiveExpansionFactor[alderIndex] = 0.0F;
                 }
@@ -97,9 +98,9 @@ namespace Osu.Cof.Ferm.Species
                     float previouslyAppliedSurvivalProbability = 1.0F - 1.0F / (1.0F + MathV.Exp(-PMK[alderIndex]));
                     float adjustedSurvivalProbability = 1.0F - 1.0F / (1.0F + MathV.Exp(-(KR1 + PMK[alderIndex])));
                     float revisedLiveExpansionFactor = adjustedSurvivalProbability / previouslyAppliedSurvivalProbability * redAlders.LiveExpansionFactor[alderIndex];
-                    float deadExpansionFactorChange = redAlders.LiveExpansionFactor[alderIndex] - revisedLiveExpansionFactor;
+                    float newlyDeadExpansionFactor = redAlders.LiveExpansionFactor[alderIndex] - revisedLiveExpansionFactor;
 
-                    redAlders.DeadExpansionFactor[alderIndex] += deadExpansionFactorChange;
+                    redAlders.DeadExpansionFactor[alderIndex] += newlyDeadExpansionFactor;
                     redAlders.LiveExpansionFactor[alderIndex] = revisedLiveExpansionFactor;
                 }
             }

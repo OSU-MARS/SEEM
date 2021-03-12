@@ -265,7 +265,7 @@ namespace Osu.Cof.Ferm.Test
             // verify unthinned trajectory
             // find/replace regular expression for cleaning up watch window copy/paste: \s+\w+\.\w+\[\d+\]\.\w+\(\)\s+(\d+.\d{1,2})\d*\s+float\r?\n -> $1F, 
             //                                          0       1       2       3       4       5       6       7       8       9
-            float[] minimumUnthinnedQmd = new float[] { 10.71F, 13.34F, 15.67F, 17.77F, 19.73F, 21.61F, 23.46F, 25.28F, 27.10F, 28.90F }; // cm
+            float[] minimumUnthinnedQmd = new float[] { 16.84F, 20.97F, 24.63F, 27.94F, 31.02F, 33.98F, 36.88F, 39.74F, 42.60F, 45.44F }; // cm
             //                                                0       1       2       3       4       5       6       7       8       9
             float[] minimumUnthinnedTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 27.94F, 31.08F, 33.94F, 36.56F, 38.96F, 41.17F, 43.21F }; // m
             float[] minimumUnthinnedStandingVolume;
@@ -298,7 +298,7 @@ namespace Osu.Cof.Ferm.Test
 
             // verify one thin trajectory
             //                                        0       1       2       3       4       5       6       7       8       9
-            float[] minimumOneThinQmd = new float[] { 10.71F, 13.34F, 15.67F, 19.23F, 21.94F, 24.24F, 26.30F, 28.18F, 29.94F, 31.60F }; // cm
+            float[] minimumOneThinQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 41.35F, 44.31F, 47.06F, 49.67F }; // cm
             //                                              0       1       2       3       4       5       6       7       8       9
             float[] minimumOneThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.64F, 38.12F, 40.40F, 42.51F }; // ft
             float[] minimumOneThinStandingVolume;
@@ -345,7 +345,7 @@ namespace Osu.Cof.Ferm.Test
 
             // verify two thin trajectory
             //                                        0       1       2       3       4       5       6       7       8       9
-            float[] minimumTwoThinQmd = new float[] { 10.71F, 13.34F, 15.67F, 19.23F, 21.94F, 24.24F, 27.38F, 29.69F, 31.63F, 33.40F }; // cm 
+            float[] minimumTwoThinQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 43.04F, 46.67F, 49.73F, 52.50F }; // cm
             //                                              0       1       2       3       4       5       6       7       8       9
             float[] minimumTwoThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 34.68F, 37.03F, 39.33F, 41.49F }; // ft
             float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146983F, 213170F, 168041F, 226421F, 283782F, 286553F, 339725F, 387766F, 431707F }; // kg/ha
@@ -478,9 +478,10 @@ namespace Osu.Cof.Ferm.Test
             thinnedTrajectory.Simulate();
 
             // verify thinned trajectory
-            // find/replace regular expression: \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
+            // find/replace regular expressions: function call \w+\.\w+\[\d+\]\.\w+\(\)\s+(\d+.\d{1,2})\d*\s+float\r?\n
+            //                                   array element \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
             //                                 0       1       2       3       4     
-            float[] minimumQmd = new float[] { 14.84F, 17.10F, 19.19F, 21.07F, 22.85F }; // in
+            float[] minimumQmd = new float[] { 23.33F, 26.88F, 30.17F, 33.13F, 35.93F }; // cm
             //                                       0       1       2       3       4     
             float[] minimumTopHeight = new float[] { 28.32F, 30.81F, 33.54F, 36.14F, 38.54F }; // m
             float[] minimumStandingVolume;
@@ -512,6 +513,10 @@ namespace Osu.Cof.Ferm.Test
             PublicApi.Verify(thinnedTrajectory, minimumStandingVolume, thinPeriod, null);
             Assert.IsTrue(thinnedTrajectory.GetFirstHarvestAge() == 30);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
+
+            // verify snag and log calculations
+            SnagLogTable snagsAndLogs = new(thinnedTrajectory, Constant.Bucking.DefaultMaximumDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
+            PublicApi.Verify(snagsAndLogs, thinnedTrajectory);
         }
 
         [TestMethod]
@@ -889,6 +894,45 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(treeRecords < 666);
 
                 // TODO: check qmd against QMD from basal area
+            }
+        }
+
+        private static void Verify(SnagLogTable snagsAndLogs, OrganonStandTrajectory trajectory)
+        {
+            Assert.IsTrue(snagsAndLogs.DiameterClasses == 121);
+            Assert.IsTrue(snagsAndLogs.DiameterClassSizeInCentimeters == Constant.Bucking.DiameterClassSizeInCentimeters);
+            Assert.IsTrue(snagsAndLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultMaximumDiameterInCentimeters);
+            Assert.IsTrue(snagsAndLogs.Periods == trajectory.PlanningPeriods);
+
+            Assert.IsTrue(snagsAndLogs.LogQmdInCentimetersByPeriod.Length == snagsAndLogs.Periods);
+            Assert.IsTrue(snagsAndLogs.LogsPerHectareByPeriod.Length == snagsAndLogs.Periods);
+            Assert.IsTrue(snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass.Count == 1);
+            Assert.IsTrue(snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(0) == snagsAndLogs.Periods);
+            Assert.IsTrue(snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(1) == snagsAndLogs.DiameterClasses);
+
+            Assert.IsTrue(snagsAndLogs.SnagQmdInCentimetersByPeriod.Length == snagsAndLogs.Periods);
+            Assert.IsTrue(snagsAndLogs.SnagsPerHectareByPeriod.Length == snagsAndLogs.Periods);
+            Assert.IsTrue(snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass.Count == 1);
+            Assert.IsTrue(snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(0) == snagsAndLogs.Periods);
+            Assert.IsTrue(snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(1) == snagsAndLogs.DiameterClasses);
+
+            float initialTreesPerHectare = Constant.AcresPerHectare * trajectory.DensityByPeriod[0].TreesPerAcre;
+            float initialStemsPerHectare = initialTreesPerHectare + snagsAndLogs.LogsPerHectareByPeriod[0] + snagsAndLogs.SnagsPerHectareByPeriod[0];
+            for (int period = 0; period < snagsAndLogs.Periods; ++period)
+            {
+                float logsPerHectare = snagsAndLogs.LogsPerHectareByPeriod[period];
+                float snagPerHectare = snagsAndLogs.SnagsPerHectareByPeriod[period];
+                float treesPerHectare = Constant.AcresPerHectare * trajectory.DensityByPeriod[period].TreesPerAcre;
+                float stemsPerHectare = treesPerHectare + snagPerHectare + logsPerHectare;
+
+                Assert.IsTrue(snagsAndLogs.LogQmdInCentimetersByPeriod[period] >= 0.0F);
+                Assert.IsTrue(logsPerHectare >= 0.0F);
+
+                Assert.IsTrue(snagsAndLogs.SnagQmdInCentimetersByPeriod[period] >= 0.0F);
+                Assert.IsTrue(snagPerHectare >= 0.0F);
+
+                // for now, assume no ingrowth
+                Assert.IsTrue(initialStemsPerHectare >= stemsPerHectare);
             }
         }
 

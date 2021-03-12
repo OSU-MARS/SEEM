@@ -136,7 +136,6 @@ namespace Osu.Cof.Ferm
             //     = C0 * (-1 + 1/7 * (1 / (1 + r) * (0.5 + 1 / (1 + r) * (1 + ... + 1 / (1 + r)^6 + 0.5 / (1 + r)^8)))
             //     = C0 * (-1 + 1/7 * (1 / (1 + r) * (0.5 + 1 / (1 + r) * (1 + 1 / (1 + r) * (1 + ... ))))
             float annualDiscountFactor = 1.0F / (1.0F + this.DiscountRate);
-            // float amortizationFactor = -1.0F;
             float amortizationFactor = -1.0F + 1.0F / 7.0F * (annualDiscountFactor * (0.5F + // amoritzation year 1
                                                               annualDiscountFactor * (1.0F + // year 2
                                                               annualDiscountFactor * (1.0F + // year 3
@@ -145,11 +144,13 @@ namespace Osu.Cof.Ferm
                                                               annualDiscountFactor * (1.0F + // year 6
                                                               annualDiscountFactor * (1.0F + // year 7
                                                               annualDiscountFactor * 0.5F)))))))); // year 8
+            // float amortizationFactor = -1.0F; // disable amoritzation
             float replantingCost = this.FixedSitePrepAndReplantingCostPerHectare + this.SeedlingCost * plantingDensityInTreesPerHectare;
             float reforestationNpv = replantingCost * amortizationFactor;
 
             // 26 USC § 194(c)(3) defines reforestation expenses as site prep and planting, release sprays are therefore excluded
             float releaseSprayCost = this.ReleaseSprayCostPerHectare * annualDiscountFactor * annualDiscountFactor;
+            // releaseSprayCost = this.ReleaseSprayCostPerHectare; // disable discounting
             reforestationNpv -= releaseSprayCost;
 
             return reforestationNpv;

@@ -161,6 +161,12 @@ namespace Osu.Cof.Ferm.Organon
             this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
         }
 
+        public int GetInitialTreeRecordCount()
+        {
+            Stand initialStand = this.StandByPeriod[0] ?? throw new NotSupportedException("Initial stand infomation is missing.");
+            return initialStand.GetTreeRecordCount();
+        }
+
         public Units GetUnits()
         {
             Debug.Assert(this.StandByPeriod[0] != null);
@@ -314,12 +320,6 @@ namespace Osu.Cof.Ferm.Organon
             // standing volume
             OrganonStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + "."); 
             this.StandingVolume.FromStand(stand, periodIndex, this.TimberValue, this.GetEndOfPeriodAge(periodIndex));
-        }
-
-        public int GetInitialTreeRecordCount()
-        {
-            Stand initialStand = this.StandByPeriod[0] ?? throw new NotSupportedException("Initial stand infomation is missing.");
-            return initialStand.GetTreeRecordCount();
         }
 
         public void Simulate()

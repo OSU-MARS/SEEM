@@ -1479,9 +1479,9 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     newLiveExpansionFactor = 0.0F;
                 }
-                float mortalityExpansionFactor = trees.LiveExpansionFactor[treeIndex] - newLiveExpansionFactor;
+                float newlyDeadExpansionFactor = trees.LiveExpansionFactor[treeIndex] - newLiveExpansionFactor;
 
-                trees.DeadExpansionFactor[treeIndex] = mortalityExpansionFactor;
+                trees.DeadExpansionFactor[treeIndex] = newlyDeadExpansionFactor;
                 trees.LiveExpansionFactor[treeIndex] = newLiveExpansionFactor;
             }
 
