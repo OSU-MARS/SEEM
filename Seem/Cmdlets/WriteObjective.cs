@@ -44,7 +44,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first run is missing a highest solution, lowest solution, or highest solution parameters.");
                 }
 
-                line.Append("stand,heuristic,discount rate,first thin,second thin,rotation," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + ",iteration,count");
+                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",iteration,count");
 
                 string lowestMoveLogHeader = "lowest move log";
                 IHeuristicMoveLog? lowestMoveLog = this.Runs[0].LowestSolution!.GetMoveLog();
@@ -82,17 +82,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                 // for now, assume highest and lowest solutions used the same parameters
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
 
-                int firstThinAge = highestTrajectory.GetFirstHarvestAge();
-                string? firstThinAgeString = firstThinAge != -1 ? firstThinAge.ToString(CultureInfo.InvariantCulture) : null;
-                int secondThinAge = highestTrajectory.GetSecondHarvestAge();
-                string? secondThinAgeString = secondThinAge != -1 ? secondThinAge.ToString(CultureInfo.InvariantCulture) : null;
                 string runPrefix = highestTrajectory.Name + "," + 
-                    highestHeuristic.GetName() + "," + 
-                    highestTrajectory.TimberValue.DiscountRate.ToString(CultureInfo.InvariantCulture) + "," + 
-                    firstThinAgeString + "," + 
-                    secondThinAgeString + "," +
-                    highestTrajectory.GetRotationLength().ToString(CultureInfo.InvariantCulture) + "," +
-                    distribution.HighestHeuristicParameters.GetCsvValues();
+                    highestHeuristic.GetName() + "," +
+                    distribution.HighestHeuristicParameters.GetCsvValues() + "," +
+                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
 
                 Debug.Assert(distribution.CountByMove.Count >= lowestHeuristic.AcceptedObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MinimumObjectiveFunctionByMove.Count);

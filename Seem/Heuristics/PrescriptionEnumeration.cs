@@ -20,6 +20,11 @@ namespace Osu.Cof.Ferm.Heuristics
 
         private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float stepSize, Action<float> evaluatePrescriptions)
         {
+            if ((stepSize <= 0.0F) || (stepSize > 100.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(stepSize));
+            }
+
             float maximumPercentage = this.Parameters.Maximum;
             float minimumPercentage = this.Parameters.Minimum;
             switch (this.Parameters.Units)
@@ -80,21 +85,21 @@ namespace Osu.Cof.Ferm.Heuristics
                     for (float fromBelowPercentage = requiredBelowPercentage; fromBelowPercentage <= maximumFromBelowPercentage; fromBelowPercentage += stepSize)
                     {
                         Debug.Assert(fromBelowPercentage >= 0.0F);
-                        float totalIntensity = fromAbovePercentage + proportionalPercentage + fromBelowPercentage;
-                        Debug.Assert(totalIntensity >= minimumPercentage);
-                        Debug.Assert(totalIntensity <= maximumPercentage);
+                        float totalRelativeIntensityOfThisThin = fromAbovePercentage + proportionalPercentage + fromBelowPercentage;
+                        Debug.Assert(totalRelativeIntensityOfThisThin >= minimumPercentage);
+                        Debug.Assert(totalRelativeIntensityOfThisThin <= maximumPercentage);
 
                         thinPrescription.FromAbovePercentage = fromAbovePercentage;
                         thinPrescription.FromBelowPercentage = fromBelowPercentage;
                         thinPrescription.ProportionalPercentage = proportionalPercentage;
 
-                        evaluatePrescriptions.Invoke(totalIntensity);
+                        evaluatePrescriptions.Invoke(totalRelativeIntensityOfThisThin);
                     }
                 }
             }
         }
 
-        private void EvaluateCurrentPrescriptions(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription)
+        private void EvaluateCurrentPrescriptions(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
         {
             this.CurrentTrajectory.DeselectAllTrees();
             this.CurrentTrajectory.Simulate();
@@ -135,6 +140,19 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveLog.FromAbovePercentageByMove2.Add(fromAbovePercentageSecond);
             this.MoveLog.ProportionalPercentageByMove2.Add(proportionalPercentageSecond);
             this.MoveLog.FromBelowPercentageByMove2.Add(fromBelowPercentageSecond);
+
+            float fromAbovePercentageThird = 0.0F;
+            float proportionalPercentageThird = 0.0F;
+            float fromBelowPercentageThird = 0.0F;
+            if (thirdThinPrescription != null)
+            {
+                fromAbovePercentageThird = thirdThinPrescription.FromAbovePercentage;
+                proportionalPercentageThird = thirdThinPrescription.ProportionalPercentage;
+                fromBelowPercentageThird = thirdThinPrescription.FromBelowPercentage;
+            }
+            this.MoveLog.FromAbovePercentageByMove3.Add(fromAbovePercentageThird);
+            this.MoveLog.ProportionalPercentageByMove3.Add(proportionalPercentageThird);
+            this.MoveLog.FromBelowPercentageByMove3.Add(fromBelowPercentageThird);
         }
 
         public override string GetName()
@@ -190,9 +208,9 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException();
             }
 
-            if (this.CurrentTrajectory.Configuration.Treatments.Harvests.Count > 2)
+            if (this.CurrentTrajectory.Configuration.Treatments.Harvests.Count > 3)
             {
-                throw new NotSupportedException("Enumeration of more than two thinnings is not currently supported.");
+                throw new NotSupportedException("Enumeration of more than three thinnings is not currently supported.");
             }
 
             Stopwatch stopwatch = new();
@@ -205,30 +223,53 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 if (harvests.Count > 1)
                 {
-                    // two thins
                     ThinByPrescription secondThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[1];
-                    this.EnumerateThinningIntensities(firstThinPrescription, this.Parameters.StepSize, (float firstIntensity) =>
+
+                    if (harvests.Count > 2)
                     {
-                        float secondStepSize = this.Parameters.StepSize / (1.0F - 0.01F * firstIntensity);
-                        this.EnumerateThinningIntensities(secondThinPrescription!, secondStepSize, (float secondIntensity) =>
+                        // three thins
+                        ThinByPrescription thirdThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[2];
+                        this.EnumerateThinningIntensities(firstThinPrescription, this.Parameters.StepSize, (float firstIntensity) =>
                         {
-                            this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription);
+                            float secondStepSize = MathF.Min(this.Parameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
+                            this.EnumerateThinningIntensities(secondThinPrescription!, secondStepSize, (float secondIntensity) =>
+                            {
+                                // intensities are relative to the number of trees remaining after previous thins, so multiply retentions together
+                                // in denominator
+                                float thirdStepSize = MathF.Min(secondStepSize / (1.0F - 0.01F * secondIntensity), 100.0F);
+                                this.EnumerateThinningIntensities(thirdThinPrescription, thirdStepSize, (float thirdIntensity) =>
+                                {
+                                    this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                                });
+                            });
                         });
-                    });
+                    }
+                    else
+                    {
+                        // two thins
+                        this.EnumerateThinningIntensities(firstThinPrescription, this.Parameters.StepSize, (float firstIntensity) =>
+                        {
+                            float secondStepSize = MathF.Min(this.Parameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
+                            this.EnumerateThinningIntensities(secondThinPrescription!, secondStepSize, (float secondIntensity) =>
+                            {
+                                this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, null);
+                            });
+                        });
+                    }
                 }
                 else
                 {
                     // one thin
                     this.EnumerateThinningIntensities(firstThinPrescription, this.Parameters.StepSize, (float firstIntensity) =>
                     {
-                        this.EvaluateCurrentPrescriptions(firstThinPrescription, null);
+                        this.EvaluateCurrentPrescriptions(firstThinPrescription, null, null);
                     });
                 }
             }
             else
             {
                 // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory
-                this.EvaluateCurrentPrescriptions(null, null);
+                this.EvaluateCurrentPrescriptions(null, null, null);
             }
 
             stopwatch.Stop();

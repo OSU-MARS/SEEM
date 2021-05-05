@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 
@@ -6,6 +7,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 {
     public class WriteCmdlet : Cmdlet
     {
+        protected const string RateAndAgeCsvHeader = "discount rate,first thin,second thin,third thin,rotation";
+
         private bool openedExistingFile;
 
         [Parameter]
@@ -19,6 +22,23 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.Append = false;
             this.openedExistingFile = false;
+        }
+
+        protected static string GetRateAndAgeCsvValues(StandTrajectory trajectory)
+        {
+            float discountRateAsFloat = trajectory.TimberValue.DiscountRate;
+            string discountRate = discountRateAsFloat.ToString(CultureInfo.InvariantCulture);
+
+            int firstThinAgeAsInteger = trajectory.GetFirstThinAge();
+            string? firstThinAge = firstThinAgeAsInteger != -1 ? firstThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
+            int secondThinAgeAsInteger = trajectory.GetSecondThinAge();
+            string? secondThinAge = secondThinAgeAsInteger != -1 ? secondThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
+            int thirdThinAgeAsInteger = trajectory.GetThirdThinAge();
+            string? thirdThinAge = thirdThinAgeAsInteger != -1 ? thirdThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
+            int rotationLengthAsInteger = trajectory.GetRotationLength();
+            string rotationLength = rotationLengthAsInteger.ToString(CultureInfo.InvariantCulture);
+
+            return discountRate + "," + firstThinAge + "," + secondThinAge + "," + thirdThinAge + "," + rotationLength;
         }
 
         protected StreamWriter GetWriter()

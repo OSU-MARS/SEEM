@@ -46,7 +46,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append(",discount rate,first thin,second thin,rotation,stand age,species,diameter class,snags,logs");
+                line.Append("," + WriteCmdlet.RateAndAgeCsvHeader + ",stand age,species,diameter class,snags,logs");
                 writer.WriteLine(line);
             }
 

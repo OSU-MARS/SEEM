@@ -11,6 +11,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int ParameterIndex { get; init; }
         public int PlanningPeriodIndex { get; init; }
         public int SecondThinPeriodIndex { get; init; }
+        public int ThirdThinPeriodIndex { get; init; }
 
         public List<float> BestObjectiveFunctionBySolution { get; private init; }
         public HeuristicParameters? HighestHeuristicParameters { get; private set; }
@@ -40,12 +41,13 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public HeuristicSolutionDistribution(int eliteSolutions, int treeCount)
         {
-            int defaultMoveCapacity = 1024;
+            int defaultMoveCapacity = treeCount;
 
             this.BestObjectiveFunctionBySolution = new List<float>(100);
             this.CountByMove = new List<int>(defaultMoveCapacity);
             this.EliteSolutions = new Population(eliteSolutions, 1.0F, treeCount);
             this.FifthPercentileByMove = new List<float>(defaultMoveCapacity);
+            this.FirstThinPeriodIndex = Constant.NoThinPeriod;
             this.HighestHeuristicParameters = null;
             this.HighestSolution = null;
             this.LowerQuartileByMove = new List<float>(defaultMoveCapacity);
@@ -57,7 +59,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.NinetyFifthPercentileByMove = new List<float>(defaultMoveCapacity);
             this.NinetySevenPointFivePercentileByMove = new List<float>(defaultMoveCapacity);
             this.ObjectiveFunctionValuesByMove = new List<List<float>>(defaultMoveCapacity);
+            this.ParameterIndex = -1;
             this.RuntimeBySolution = new List<TimeSpan>(defaultMoveCapacity);
+            this.SecondThinPeriodIndex = Constant.NoThinPeriod;
+            this.ThirdThinPeriodIndex = Constant.NoThinPeriod;
             this.TotalCoreSeconds = TimeSpan.Zero;
             this.TotalMoves = 0;
             this.TotalRuns = 0;

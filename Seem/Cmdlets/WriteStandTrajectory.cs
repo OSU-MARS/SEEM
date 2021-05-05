@@ -71,13 +71,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                 heuristicParameterString = heuristicParameters.GetCsvValues();
             }
 
-            float discountRate = highestTrajectory.TimberValue.DiscountRate;
-            int firstThinAge = highestTrajectory.GetFirstHarvestAge();
-            string? firstThinAgeString = firstThinAge != -1 ? firstThinAge.ToString(CultureInfo.InvariantCulture) : null;
-            int secondThinAge = highestTrajectory.GetSecondHarvestAge();
-            string? secondThinAgeString = secondThinAge != -1 ? secondThinAge.ToString(CultureInfo.InvariantCulture) : null;
-            int rotationLength = highestTrajectory.GetRotationLength();
-
             string? trajectoryName = highestTrajectory.Name;
             if (trajectoryName == null)
             {
@@ -89,10 +82,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 linePrefix.Append(heuristicParameterString + ",");
             }
-            linePrefix.Append(discountRate.ToString(CultureInfo.InvariantCulture) + "," +
-                              firstThinAgeString + "," +
-                              secondThinAgeString + "," +
-                              rotationLength.ToString(CultureInfo.InvariantCulture));
+            linePrefix.Append(WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory));
 
             return highestTrajectory;
         }
@@ -132,7 +122,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append(",discount rate,first thin,second thin,rotation,stand age,TPH,QMD,Htop,BA,SDI,SPH,snag QMD,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S,live biomass");
+                line.Append("," + WriteCmdlet.RateAndAgeCsvHeader + ",stand age,TPH,QMD,Htop,BA,SDI,SPH,snag QMD,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S,live biomass");
                 writer.WriteLine(line);
             }
 

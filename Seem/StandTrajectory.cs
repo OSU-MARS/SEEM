@@ -104,17 +104,17 @@ namespace Osu.Cof.Ferm
             return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * periodIndex;
         }
 
-        public int GetFirstHarvestAge()
+        public int GetFirstThinAge()
         {
-            int firstHarvestPeriod = this.GetFirstHarvestPeriod();
-            if (firstHarvestPeriod == -1)
+            int firstHarvestPeriod = this.GetFirstThinPeriod();
+            if (firstHarvestPeriod == Constant.NoThinPeriod)
             {
                 return -1;
             }
             return this.GetStartOfPeriodAge(firstHarvestPeriod);
         }
 
-        public int GetFirstHarvestPeriod()
+        public int GetFirstThinPeriod()
         {
             for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
@@ -123,7 +123,7 @@ namespace Osu.Cof.Ferm
                     return periodIndex;
                 }
             }
-            return -1;
+            return Constant.NoThinPeriod;
         }
 
         public int GetRotationLength()
@@ -131,18 +131,34 @@ namespace Osu.Cof.Ferm
             return this.GetEndOfPeriodAge(this.PlanningPeriods - 1);
         }
 
-        public int GetSecondHarvestAge()
+        public int GetSecondThinAge()
         {
-            int secondHarvestPeriod = this.GetSecondHarvestPeriod();
-            if (secondHarvestPeriod == -1)
+            return this.GetThinAge(2);
+        }
+
+        public int GetSecondThinPeriod()
+        {
+            return this.GetThinPeriod(2);
+        }
+
+        protected int GetStartOfPeriodAge(int periodIndex)
+        {
+            Debug.Assert(periodIndex > 0);
+            Debug.Assert((this.PeriodZeroAgeInYears >= 0) && (this.PeriodLengthInYears > 0));
+            return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (periodIndex - 1);
+        }
+
+        private int GetThinAge(int thinning)
+        {
+            int harvestPeriod = this.GetThinPeriod(thinning);
+            if (harvestPeriod == -1)
             {
                 return -1;
             }
-            return this.GetStartOfPeriodAge(secondHarvestPeriod);
+            return this.GetStartOfPeriodAge(harvestPeriod);
         }
 
-
-        public int GetSecondHarvestPeriod()
+        private int GetThinPeriod(int thinning)
         {
             int harvestsFound = 0;
             for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
@@ -150,7 +166,7 @@ namespace Osu.Cof.Ferm
                 if (this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F)
                 {
                     ++harvestsFound;
-                    if (harvestsFound == 2)
+                    if (harvestsFound == thinning)
                     {
                         return periodIndex;
                     }
@@ -159,11 +175,14 @@ namespace Osu.Cof.Ferm
             return -1;
         }
 
-        protected int GetStartOfPeriodAge(int periodIndex)
+        public int GetThirdThinAge()
         {
-            Debug.Assert(periodIndex > 0);
-            Debug.Assert((this.PeriodZeroAgeInYears >= 0) && (this.PeriodLengthInYears > 0));
-            return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (periodIndex - 1);
+            return this.GetThinAge(3);
+        }
+
+        public int GetThirdThinPeriod()
+        {
+            return this.GetThinPeriod(3);
         }
 
         public int GetTreeSelection(int allSpeciesUncompactedTreeIndex)

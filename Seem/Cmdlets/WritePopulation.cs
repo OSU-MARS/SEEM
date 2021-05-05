@@ -32,7 +32,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first run is missing highest solution parameters");
                 }
 
-                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + ",discount rate,first thin,second thin,rotation,generation,highest min,highest mean,highest max,highest cov,highest alleles,highest heterozygosity,highest individuals,highest polymorphism,lowest min,lowest mean,lowest max,lowest cov,lowest alleles,lowest heterozygosity,lowest individuals,lowest polymorphism");
+                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",generation,highest min,highest mean,highest max,highest cov,highest alleles,highest heterozygosity,highest individuals,highest polymorphism,lowest min,lowest mean,lowest max,lowest cov,lowest alleles,lowest heterozygosity,lowest individuals,lowest polymorphism");
                 writer.WriteLine(line);
             }
 
@@ -46,12 +46,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                 GeneticAlgorithm highestHeuristic = (GeneticAlgorithm)distribution.HighestSolution;
                 GeneticAlgorithm lowestHeuristic = (GeneticAlgorithm)distribution.LowestSolution;
                 StandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
-                string linePrefix = highestTrajectory.Name + "," + highestHeuristic.GetName() + "," + 
-                    distribution.HighestHeuristicParameters.GetCsvValues() + "," + 
-                    highestTrajectory.TimberValue.DiscountRate.ToString(CultureInfo.InvariantCulture) + "," + 
-                    highestTrajectory.GetFirstHarvestAge().ToString(CultureInfo.InvariantCulture) + "," +
-                    highestTrajectory.GetSecondHarvestAge().ToString(CultureInfo.InvariantCulture) + "," +
-                    highestTrajectory.GetRotationLength().ToString(CultureInfo.InvariantCulture);
+                string linePrefix = highestTrajectory.Name + "," + 
+                    highestHeuristic.GetName() + "," + 
+                    distribution.HighestHeuristicParameters.GetCsvValues() + "," +
+                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
 
                 PopulationStatistics highestStatistics = highestHeuristic.PopulationStatistics;
                 PopulationStatistics lowestStatistics = lowestHeuristic.PopulationStatistics;
