@@ -5,18 +5,12 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
-    public class HeuristicSolutionDistribution
+    public class HeuristicDistribution : HeuristicSolutionPosition
     {
-        public int FirstThinPeriodIndex { get; init; }
         public int ParameterIndex { get; init; }
-        public int PlanningPeriodIndex { get; init; }
-        public int SecondThinPeriodIndex { get; init; }
-        public int ThirdThinPeriodIndex { get; init; }
 
         public List<float> BestObjectiveFunctionBySolution { get; private init; }
-        public HeuristicParameters? HighestHeuristicParameters { get; private set; }
-        public Heuristic? HighestSolution { get; private set; }
-        public Heuristic? LowestSolution { get; private set; }
+        public HeuristicParameters? HeuristicParameters { get; private set; }
 
         public List<int> CountByMove { get; private init; }
         public List<float> TwoPointFivePercentileByMove { get; private init; }
@@ -32,57 +26,51 @@ namespace Osu.Cof.Ferm.Cmdlets
         public List<float> UpperQuartileByMove { get; private init; }
         public List<float> VarianceByMove { get; private init; }
 
-        public List<TimeSpan> RuntimeBySolution { get; private init; }
-        public Population EliteSolutions { get; private init; }
+        public List<HeuristicPerformanceCounters> PerfCountersBySolution { get; private init; }
 
         public TimeSpan TotalCoreSeconds { get; private set; }
         public int TotalMoves { get; private set; }
         public int TotalRuns { get; private set; }
 
-        public HeuristicSolutionDistribution(int eliteSolutions, int treeCount)
+        public HeuristicDistribution(int treeCount)
         {
             int defaultMoveCapacity = treeCount;
 
-            this.BestObjectiveFunctionBySolution = new List<float>(100);
+            this.BestObjectiveFunctionBySolution = new(100);
             this.CountByMove = new List<int>(defaultMoveCapacity);
-            this.EliteSolutions = new Population(eliteSolutions, 1.0F, treeCount);
-            this.FifthPercentileByMove = new List<float>(defaultMoveCapacity);
-            this.FirstThinPeriodIndex = Constant.NoThinPeriod;
-            this.HighestHeuristicParameters = null;
-            this.HighestSolution = null;
-            this.LowerQuartileByMove = new List<float>(defaultMoveCapacity);
-            this.LowestSolution = null;
-            this.MaximumObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
-            this.MeanObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
-            this.MedianObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
-            this.MinimumObjectiveFunctionByMove = new List<float>(defaultMoveCapacity);
-            this.NinetyFifthPercentileByMove = new List<float>(defaultMoveCapacity);
-            this.NinetySevenPointFivePercentileByMove = new List<float>(defaultMoveCapacity);
-            this.ObjectiveFunctionValuesByMove = new List<List<float>>(defaultMoveCapacity);
+            this.FifthPercentileByMove = new(defaultMoveCapacity);
+            this.HeuristicParameters = null;
+            this.LowerQuartileByMove = new(defaultMoveCapacity);
+            this.MaximumObjectiveFunctionByMove = new(defaultMoveCapacity);
+            this.MeanObjectiveFunctionByMove = new(defaultMoveCapacity);
+            this.MedianObjectiveFunctionByMove = new(defaultMoveCapacity);
+            this.MinimumObjectiveFunctionByMove = new(defaultMoveCapacity);
+            this.NinetyFifthPercentileByMove = new(defaultMoveCapacity);
+            this.NinetySevenPointFivePercentileByMove = new(defaultMoveCapacity);
+            this.ObjectiveFunctionValuesByMove = new(defaultMoveCapacity);
             this.ParameterIndex = -1;
-            this.RuntimeBySolution = new List<TimeSpan>(defaultMoveCapacity);
-            this.SecondThinPeriodIndex = Constant.NoThinPeriod;
-            this.ThirdThinPeriodIndex = Constant.NoThinPeriod;
+            this.PerfCountersBySolution = new(defaultMoveCapacity);
             this.TotalCoreSeconds = TimeSpan.Zero;
             this.TotalMoves = 0;
             this.TotalRuns = 0;
-            this.TwoPointFivePercentileByMove = new List<float>(defaultMoveCapacity);
-            this.UpperQuartileByMove = new List<float>(defaultMoveCapacity);
-            this.VarianceByMove = new List<float>(defaultMoveCapacity);
+            this.TwoPointFivePercentileByMove = new(defaultMoveCapacity);
+            this.UpperQuartileByMove = new(defaultMoveCapacity);
+            this.VarianceByMove = new(defaultMoveCapacity);
         }
 
-        public void AddRun(Heuristic heuristic, TimeSpan coreSeconds, HeuristicParameters runParameters)
+        public void AddRun(Heuristic heuristic, HeuristicPerformanceCounters perfCounters, HeuristicParameters runParameters)
         {
             this.BestObjectiveFunctionBySolution.Add(heuristic.BestObjectiveFunction);
-            if (this.EliteSolutions.Count < this.EliteSolutions.Size)
+            this.PerfCountersBySolution.Add(perfCounters);
+
+            if (this.HeuristicParameters == null)
             {
-                this.EliteSolutions.Add(heuristic.BestObjectiveFunction, heuristic.BestTrajectory);
+                this.HeuristicParameters = heuristic.GetParameters(); // if heuristic reports parameters, prefer them
+                if (this.HeuristicParameters == null)
+                {
+                    this.HeuristicParameters = runParameters; // otherwise, fall back to run parameters
+                }
             }
-            else
-            {
-                this.EliteSolutions.TryReplaceByDiversityOrFitness(heuristic.BestObjectiveFunction, heuristic.BestTrajectory);
-            }
-            this.RuntimeBySolution.Add(coreSeconds);
 
             for (int moveIndex = 0; moveIndex < heuristic.AcceptedObjectiveFunctionByMove.Count; ++moveIndex)
             {
@@ -121,23 +109,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
             }
 
-            this.TotalCoreSeconds += coreSeconds;
+            this.TotalCoreSeconds += perfCounters.Duration;
             this.TotalMoves += heuristic.AcceptedObjectiveFunctionByMove.Count;
             ++this.TotalRuns;
-
-            if ((this.HighestSolution == null) || (heuristic.BestObjectiveFunction > this.HighestSolution.BestObjectiveFunction))
-            {
-                this.HighestSolution = heuristic;
-                this.HighestHeuristicParameters = heuristic.GetParameters(); // if heuristic reports parameters, prefer them
-                if (this.HighestHeuristicParameters == null)
-                {
-                    this.HighestHeuristicParameters = runParameters; // otherwise, fall back to run parameters
-                }
-            }
-            if ((this.LowestSolution == null) || (heuristic.BestObjectiveFunction < this.LowestSolution.BestObjectiveFunction))
-            {
-                this.LowestSolution = heuristic;
-            }
         }
 
         public void OnRunsComplete()

@@ -42,7 +42,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "SimulatedAnnealing";
         }
 
-        public override TimeSpan Run()
+        public override HeuristicPerformanceCounters Run()
         {
             if ((this.Alpha <= 0.0) || (this.Alpha >= 1.0))
             {
@@ -89,8 +89,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
+            HeuristicPerformanceCounters perfCounters = new();
 
-            this.EvaluateInitialSelection(this.Iterations);
+            this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             int iterationsSinceMoveTypeOrObjectiveChange = 0;
@@ -145,7 +146,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     //}
                     Debug.Assert(firstCandidateHarvestPeriod >= 0);
 
-                    candidateTrajectory.Simulate();
+                    perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
                     ++iterationsSinceMoveTypeOrObjectiveChange;
                     ++iterationsSinceReheatOrBestObjectiveImproved;
 
@@ -188,6 +189,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
                         acceptedObjectiveFunction = candidateObjectiveFunction;
                         this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                        ++perfCounters.MovesAccepted;
+
                         if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = acceptedObjectiveFunction;
@@ -213,6 +216,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             default:
                                 throw new NotSupportedException();
                         }
+                        ++perfCounters.MovesRejected;
                     }
 
                     this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
@@ -236,7 +240,8 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             stopwatch.Stop();
-            return stopwatch.Elapsed;
+            perfCounters.Duration = stopwatch.Elapsed;
+            return perfCounters;
         }
     }
 }

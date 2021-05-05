@@ -2,6 +2,7 @@
 using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
@@ -14,13 +15,14 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<HeuristicSolutionDistribution>? Runs { get; set; }
+        public HeuristicResultSet? Results { get; set; }
 
         protected override void ProcessRecord()
         {
-            if (this.Runs!.Count < 1)
+            Debug.Assert(this.Results != null);
+            if (this.Results.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Runs));
+                throw new ParameterOutOfRangeException(nameof(this.Results));
             }
 
             using StreamWriter writer = this.GetWriter();
@@ -28,29 +30,29 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
-                HeuristicParameters? highestParameters = this.Runs[0].HighestHeuristicParameters;
+                HeuristicParameters? highestParameters = this.Results.Distributions[0].HeuristicParameters;
                 if (highestParameters == null)
                 {
-                    throw new NotSupportedException("Cannot generate header because first run is missing highest solution parameters.");
+                    throw new NotSupportedException("Cannot generate header because first result is missing highest solution parameters.");
                 }
 
-                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",solution,objective,runtime");
+                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",solution,objective,accepted,rejected,runtime,timesteps");
                 writer.WriteLine(line);
             }
 
-            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+            for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
             {
-                HeuristicSolutionDistribution distribution = this.Runs[runIndex];
-                Heuristic? highestHeuristic = distribution.HighestSolution;
-                if ((highestHeuristic == null) || (distribution.HighestHeuristicParameters == null))
+                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
+                Heuristic? highestHeuristic = this.Results.Solutions[resultIndex].Highest;
+                if ((highestHeuristic == null) || (distribution.HeuristicParameters == null))
                 {
-                    throw new NotSupportedException("Run " + runIndex + " is missing a highest solution or highest solution parameters.");
+                    throw new NotSupportedException("Run " + resultIndex + " is missing a highest solution or highest solution parameters.");
                 }
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
 
                 string linePrefix = highestTrajectory.Name + "," + 
                     highestHeuristic.GetName() + "," + 
-                    distribution.HighestHeuristicParameters.GetCsvValues() + "," +
+                    distribution.HeuristicParameters.GetCsvValues() + "," +
                     WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
 
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
@@ -58,9 +60,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     line.Clear();
 
-                    string objectiveFunction = bestSolutions[solutionIndex].ToString(CultureInfo.InvariantCulture);
-                    string runtime = distribution.RuntimeBySolution[solutionIndex].TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
-                    line.Append(linePrefix + "," + solutionIndex + "," + objectiveFunction + "," + runtime);
+                    HeuristicPerformanceCounters perfCounters = distribution.PerfCountersBySolution[solutionIndex];
+                    line.Append(linePrefix + "," + 
+                                solutionIndex.ToString(CultureInfo.InvariantCulture) + "," +
+                                bestSolutions[solutionIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                perfCounters.MovesAccepted.ToString(CultureInfo.InvariantCulture) + "," +
+                                perfCounters.MovesRejected.ToString(CultureInfo.InvariantCulture) + "," +
+                                perfCounters.Duration.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                perfCounters.GrowthModelTimesteps.ToString(CultureInfo.InvariantCulture));
                     writer.WriteLine(line);
                 }
             }

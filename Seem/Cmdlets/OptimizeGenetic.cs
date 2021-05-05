@@ -139,6 +139,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                     {
                                                         parameterCombinations.Add(new GeneticParameters()
                                                         {
+                                                            ConstructionRandomness = this.ConstructionRandomness,
                                                             CrossoverProbabilityEnd = crossoverProbabilityEnd,
                                                             ExchangeProbabilityEnd = exchangeProbabilityEnd,
                                                             ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
@@ -149,7 +150,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                             InitializationMethod = initializationMethod,
                                                             MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
                                                             MinimumCoefficientOfVariation = minCoefficientOfVariation,
-                                                            PerturbBy = this.PerturbBy,
                                                             PopulationSize = populationSize,
                                                             ProportionalPercentage = proportionalPercentage,
                                                             ReplacementStrategy = this.ReplacementStrategy,

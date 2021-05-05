@@ -78,7 +78,7 @@ namespace Osu.Cof.Ferm.Heuristics
             //}
         }
 
-        public override TimeSpan Run()
+        public override HeuristicPerformanceCounters Run()
         {
             // TODO: support initialization from existing population?
             if ((this.Parameters.CrossoverProbabilityEnd < 0.0F) || (this.Parameters.CrossoverProbabilityEnd > 1.0F))
@@ -126,6 +126,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
+            HeuristicPerformanceCounters perfCounters = new();
 
             int moveCapacity = this.Parameters.MaximumGenerations * this.Parameters.PopulationSize;
             this.AcceptedObjectiveFunctionByMove.Capacity = moveCapacity;
@@ -145,10 +146,11 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     individualTrajectory.SetTreeSelection(treeIndex, individualTreeSelection[treeIndex]);
                 }
-                individualTrajectory.Simulate();
+                perfCounters.GrowthModelTimesteps += individualTrajectory.Simulate();
 
                 float individualFitness = this.GetObjectiveFunction(individualTrajectory);
                 currentGeneration.AssignFitness(individualIndex, individualFitness);
+                ++perfCounters.MovesAccepted;
 
                 if (individualFitness > this.BestObjectiveFunction)
                 {
@@ -199,31 +201,41 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     // evaluate fitness of offspring
                     // TODO: check for no change breeding and avoid no op stand simulations?
-                    firstChildTrajectory.Simulate();
+                    perfCounters.GrowthModelTimesteps += firstChildTrajectory.Simulate();
                     float firstChildFitness = this.GetObjectiveFunction(firstChildTrajectory);
 
-                    secondChildTrajectory.Simulate();
+                    perfCounters.GrowthModelTimesteps += secondChildTrajectory.Simulate();
                     float secondChildFitness = this.GetObjectiveFunction(secondChildTrajectory);
 
                     // include offspring in next generation if they're more fit than members of the current population
                     if (nextGeneration.TryReplace(firstChildFitness, firstChildTrajectory, this.Parameters.ReplacementStrategy))
                     {
+                        ++perfCounters.MovesAccepted;
                         if (firstChildFitness > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = firstChildFitness;
                             this.BestTrajectory.CopyFrom(firstChildTrajectory);
                         }
                     }
+                    else
+                    {
+                        ++perfCounters.MovesRejected;
+                    }
                     this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
                     this.CandidateObjectiveFunctionByMove.Add(firstChildFitness);
 
                     if (nextGeneration.TryReplace(secondChildFitness, secondChildTrajectory, this.Parameters.ReplacementStrategy))
                     {
+                        ++perfCounters.MovesAccepted;
                         if (secondChildFitness > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = secondChildFitness;
                             this.BestTrajectory.CopyFrom(secondChildTrajectory);
                         }
+                    }
+                    else
+                    {
+                        ++perfCounters.MovesRejected;
                     }
                     this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
                     this.CandidateObjectiveFunctionByMove.Add(secondChildFitness);
@@ -294,7 +306,8 @@ namespace Osu.Cof.Ferm.Heuristics
             this.CurrentTrajectory.CopyFrom(this.BestTrajectory);
 
             stopwatch.Stop();
-            return stopwatch.Elapsed;
+            perfCounters.Duration = stopwatch.Elapsed;
+            return perfCounters;
         }
     }
 }

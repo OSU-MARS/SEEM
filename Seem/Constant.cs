@@ -128,6 +128,12 @@ namespace Osu.Cof.Ferm
             public const float ReservedPopulationProportion = 1.0F;
         }
 
+        public static class GraspDefault
+        {
+            public const float FullyGreedyConstruction = 0.0F;
+            public const float FullyRandomConstruction = 1.0F;
+        }
+
         public static class HeuristicDefault
         {
             public const int HeroMaximumIterations = 25;
@@ -150,11 +156,6 @@ namespace Osu.Cof.Ferm
             public const float PlantingDensityInTreesPerHectare = 40000.0F; // sanity upper bound, 0.5 m spacing
             public const float Sdi = 1000.0F;
             public const float SiteIndexInFeet = 300.0F;
-        }
-
-        public static class MetaheuristicDefault
-        {
-            public const float PerturbBy = 1.0F;
         }
 
         public static class Minimum

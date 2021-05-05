@@ -15,6 +15,39 @@ namespace Osu.Cof.Ferm.Test
     {
         public TestContext? TestContext { get; set; }
 
+        private static HeuristicSolutionPosition CreateDefaultSolutionPosition()
+        {
+            HeuristicSolutionPosition position = new()
+            {
+                DiscountRateIndex = 0,
+                FirstThinPeriodIndex = 0,
+                SecondThinPeriodIndex = 0,
+                ThirdThinPeriodIndex = 0,
+                PlanningPeriodIndex = 0
+            };
+            return position;
+        }
+
+        private static HeuristicResultSet CreateResultsSet(int treeCount, int planningPeriods)
+        {
+            List<float> discountRate = new() { Constant.DefaultAnnualDiscountRate };
+            List<int> noThin = new() { Constant.NoThinPeriod };
+            List<int> planningPeriod = new() { planningPeriods };
+            HeuristicResultSet results = new(discountRate, noThin, noThin, noThin, planningPeriod);
+
+            HeuristicDistribution distribution = new(treeCount)
+            {
+                DiscountRateIndex = 0,
+                FirstThinPeriodIndex = 0,
+                SecondThinPeriodIndex = 0,
+                ThirdThinPeriodIndex = 0,
+                PlanningPeriodIndex = 0
+            };
+            results.Add(distribution);
+            
+            return results;
+        }
+
         private static PlotsWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp Nelder 1.xlsx");
@@ -79,17 +112,18 @@ namespace Osu.Cof.Ferm.Test
             {
                 PlanningPeriods = 9
             };
+            HeuristicResultSet results = PublicApi.CreateResultsSet(stand.GetTreeRecordCount(), landExpectationValue.PlanningPeriods);
             Hero hero = new(stand, configuration, landExpectationValue, new HeuristicParameters())
             {
                 //IsStochastic = true,
                 MaximumIterations = 10
             };
-            hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
+            hero.ConstructTreeSelection(new HeuristicParameters(), PublicApi.CreateDefaultSolutionPosition(), results.SolutionIndex);
             //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
-            hero.Run();
+            HeuristicPerformanceCounters heroCounters = hero.Run();
             Assert.IsTrue(hero.BestTrajectory.UseFiaVolume == false);
 
-            this.Verify(hero);
+            this.Verify(hero, heroCounters);
 
             int[] treeSelection = hero.BestTrajectory.IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesSelected = treeSelection.Sum() / thinningPeriod;
@@ -127,6 +161,9 @@ namespace Osu.Cof.Ferm.Test
             {
                 UseFiaVolume = false
             };
+            HeuristicPerformanceCounters totalCounters = new();
+            HeuristicResultSet results = PublicApi.CreateResultsSet(stand.GetTreeRecordCount(), landExpectationValue.PlanningPeriods);
+            HeuristicSolutionPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
 
             GeneticParameters geneticParameters = new(treeCount)
             {
@@ -135,7 +172,8 @@ namespace Osu.Cof.Ferm.Test
                 UseFiaVolume = defaultParameters.UseFiaVolume
             };
             GeneticAlgorithm genetic = new(stand, configuration, landExpectationValue, geneticParameters);
-            TimeSpan geneticRuntime = genetic.Run();
+            HeuristicPerformanceCounters geneticCounters = genetic.Run();
+            totalCounters += geneticCounters;
 
             GreatDeluge deluge = new(stand, configuration, volume, defaultParameters)
             {
@@ -143,22 +181,24 @@ namespace Osu.Cof.Ferm.Test
                 LowerWaterAfter = 9,
                 StopAfter = 10
             };
-            deluge.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
-            TimeSpan delugeRuntime = deluge.Run();
+            deluge.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
+            HeuristicPerformanceCounters delugeCounters = deluge.Run();
+            totalCounters += delugeCounters;
 
             RecordTravel recordTravel = new(stand, configuration, landExpectationValue, defaultParameters)
             {
                 StopAfter = 10
             };
-            recordTravel.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
-            TimeSpan recordRuntime = recordTravel.Run();
+            recordTravel.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
+            HeuristicPerformanceCounters recordCounters = recordTravel.Run();
 
             SimulatedAnnealing annealer = new(stand, configuration, volume, defaultParameters)
             {
                 Iterations = 100
             };
-            annealer.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
-            TimeSpan annealerRuntime = annealer.Run();
+            annealer.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
+            HeuristicPerformanceCounters annealerCounters = annealer.Run();
+            totalCounters += annealerCounters;
 
             TabuParameters tabuParameters = new()
             {
@@ -170,22 +210,25 @@ namespace Osu.Cof.Ferm.Test
                 //Jump = 2,
                 MaximumTenure = 5
             };
-            tabu.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
-            TimeSpan tabuRuntime = tabu.Run();
+            tabu.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
+            HeuristicPerformanceCounters tabuCounters = tabu.Run();
+            totalCounters += tabuCounters;
 
             ThresholdAccepting thresholdAcceptor = new(stand, configuration, volume, defaultParameters);
             thresholdAcceptor.IterationsPerThreshold.Clear();
             thresholdAcceptor.Thresholds.Clear();
             thresholdAcceptor.IterationsPerThreshold.Add(10);
             thresholdAcceptor.Thresholds.Add(1.0F);
-            thresholdAcceptor.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
-            TimeSpan acceptorRuntime = thresholdAcceptor.Run();
+            thresholdAcceptor.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
+            HeuristicPerformanceCounters throesholdCounters = thresholdAcceptor.Run();
+            totalCounters += throesholdCounters;
 
             RandomGuessing random = new(stand, configuration, volume, defaultParameters)
             {
                 Iterations = 4
             };
-            TimeSpan randomRuntime = random.Run();
+            HeuristicPerformanceCounters randomCounters = random.Run();
+            totalCounters += randomCounters;
 
             configuration.Treatments.Harvests.Clear();
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
@@ -197,29 +240,30 @@ namespace Osu.Cof.Ferm.Test
                 UseFiaVolume = defaultParameters.UseFiaVolume
             };
             PrescriptionEnumeration enumerator = new(stand, configuration, landExpectationValue, prescriptionParameters);
-            TimeSpan enumerationRuntime = enumerator.Run();
+            HeuristicPerformanceCounters enumerationCounters = enumerator.Run();
+            totalCounters += enumerationCounters;
 
             // heuristics assigned to volume optimization
-            this.Verify(deluge);
-            this.Verify(annealer);
-            this.Verify(thresholdAcceptor);
-            this.Verify(random);
+            this.Verify(deluge, delugeCounters);
+            this.Verify(annealer, annealerCounters);
+            this.Verify(thresholdAcceptor, throesholdCounters);
+            this.Verify(random, randomCounters);
 
             // heuristics assigned to net present value optimization
-            this.Verify(genetic);
-            this.Verify(enumerator);
-            this.Verify(recordTravel);
-            this.Verify(tabu);
+            this.Verify(genetic, geneticCounters);
+            this.Verify(enumerator, enumerationCounters);
+            this.Verify(recordTravel, recordCounters);
+            this.Verify(tabu, tabuCounters);
 
-            HeuristicSolutionDistribution distribution = new(1, treeCount);
-            distribution.AddRun(annealer, annealerRuntime, defaultParameters);
-            distribution.AddRun(deluge, delugeRuntime, defaultParameters);
-            distribution.AddRun(thresholdAcceptor, acceptorRuntime, defaultParameters);
-            distribution.AddRun(genetic, geneticRuntime, defaultParameters);
-            distribution.AddRun(enumerator, enumerationRuntime, defaultParameters);
-            distribution.AddRun(recordTravel, recordRuntime, defaultParameters);
-            distribution.AddRun(tabu, tabuRuntime, defaultParameters);
-            distribution.AddRun(random, randomRuntime, defaultParameters);
+            HeuristicDistribution distribution = new(treeCount);
+            distribution.AddRun(annealer, annealerCounters, defaultParameters);
+            distribution.AddRun(deluge, delugeCounters, defaultParameters);
+            distribution.AddRun(thresholdAcceptor, throesholdCounters, defaultParameters);
+            distribution.AddRun(genetic, geneticCounters, defaultParameters);
+            distribution.AddRun(enumerator, enumerationCounters, defaultParameters);
+            distribution.AddRun(recordTravel, recordCounters, defaultParameters);
+            distribution.AddRun(tabu, tabuCounters, defaultParameters);
+            distribution.AddRun(random, randomCounters, defaultParameters);
             distribution.OnRunsComplete();
         }
 
@@ -236,43 +280,49 @@ namespace Osu.Cof.Ferm.Test
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
-            unthinnedTrajectory.Simulate();
+            int unthinnedTimeSteps = unthinnedTrajectory.Simulate();
+            Assert.IsTrue(unthinnedTimeSteps == lastPeriod);
 
             int firstThinPeriod = 3;
-            configuration.Treatments.Harvests.Add(new ThinByPrescription(firstThinPeriod)
+            ThinByPrescription firstThinPrescription = new(firstThinPeriod)
             {
                 FromAbovePercentage = 20.0F, // by basal area
                 ProportionalPercentage = 15.0F,
                 FromBelowPercentage = 10.0F
-            });
-            OrganonStandTrajectory oneThinTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
-            AssertNullable.IsNotNull(oneThinTrajectory.StandByPeriod[0]);
+            };
+            OrganonStandTrajectory oneThinTrajectory = new(unthinnedTrajectory); // cover caching of previously simulated timesteps
+            oneThinTrajectory.Configuration.Treatments.Harvests.Add(firstThinPrescription);
             Assert.IsTrue(oneThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
-            oneThinTrajectory.Simulate();
+            int oneThinTimeSteps = oneThinTrajectory.Simulate();
+            Assert.IsTrue(oneThinTimeSteps == lastPeriod - firstThinPeriod + 1);
 
             int secondThinPeriod = 6;
-            configuration.Treatments.Harvests.Add(new ThinByPrescription(secondThinPeriod)
+            ThinByPrescription secondThinPrescription = new(secondThinPeriod)
             {
                 FromAbovePercentage = 0.0F,
                 ProportionalPercentage = 20.0F,
                 FromBelowPercentage = 0.0F
-            });
+            };
+            configuration.Treatments.Harvests.Add(firstThinPrescription);
+            configuration.Treatments.Harvests.Add(secondThinPrescription);
             OrganonStandTrajectory twoThinTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             AssertNullable.IsNotNull(twoThinTrajectory.StandByPeriod[0]);
             Assert.IsTrue(twoThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
-            twoThinTrajectory.Simulate();
+            int twoThinTimeSteps = twoThinTrajectory.Simulate(); // resimulate as cross check on unthinned trajectory
+            Assert.IsTrue(twoThinTimeSteps == lastPeriod);
 
             int thirdThinPeriod = 8;
-            configuration.Treatments.Harvests.Add(new ThinByPrescription(thirdThinPeriod)
+            OrganonStandTrajectory threeThinTrajectory = new(twoThinTrajectory);  // cover caching of previously simulated timesteps and thinning state
+            threeThinTrajectory.Configuration.Treatments.Harvests.Add(new ThinByPrescription(thirdThinPeriod)
             {
                 FromAbovePercentage = 0.0F,
                 ProportionalPercentage = 10.0F,
                 FromBelowPercentage = 10.0F
             });
-            OrganonStandTrajectory threeThinTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             AssertNullable.IsNotNull(threeThinTrajectory.StandByPeriod[0]);
             Assert.IsTrue(threeThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
-            threeThinTrajectory.Simulate();
+            int threeThinTimeSteps = threeThinTrajectory.Simulate();
+            Assert.IsTrue(threeThinTimeSteps == lastPeriod - thirdThinPeriod + 1);
 
             // verify unthinned trajectory
             // find/replace regular expression for cleaning up watch window copy/paste: \s+\w+\.\w+\[\d+\]\.\w+\(\)\s+(\d+.\d{1,2})\d*\s+float\r?\n -> $1F, 
@@ -357,10 +407,10 @@ namespace Osu.Cof.Ferm.Test
 
             // verify two thin trajectory
             //                                        0       1       2       3       4       5       6       7       8       9
-            float[] minimumTwoThinQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 43.04F, 46.67F, 49.73F, 52.50F }; // cm
+            float[] minimumTwoThinQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 41.92F, 45.34F, 48.40F, 51.22F }; // cm
             //                                              0       1       2       3       4       5       6       7       8       9
-            float[] minimumTwoThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 34.68F, 37.03F, 39.33F, 41.49F }; // ft
-            float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146983F, 213170F, 168041F, 226421F, 283782F, 286553F, 339725F, 387766F, 431707F }; // kg/ha
+            float[] minimumTwoThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.12F, 37.58F, 39.89F, 42.04F }; // ft
+            float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146983F, 213170F, 168041F, 226421F, 283782F, 278175F, 329697F, 378050F, 422956F }; // kg/ha
             float[] minimumTwoThinStandingVolume;
             float[] minimumTwoThinHarvestVolume;
             if (twoThinTrajectory.UseFiaVolume)
@@ -377,7 +427,7 @@ namespace Osu.Cof.Ferm.Test
                 // bilinear interpolation
                 // minimumThinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 28.22F, 41.68F, 54.31F,  }; // 1 cm diameter classes, 0.5 m height classes
                 // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-                minimumTwoThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 56.79F, 72.22F, 88.0F, 102.4F }; // 1 cm diameter classes, 1 m height classes
+                minimumTwoThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 55.84F, 71.49F, 86.87F, 101.5F }; // 1 cm diameter classes, 1 m height classes
                 minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 12.360F, 0.0F, 0.0F, 0.0F };
                 // minimumThinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 28.05F, 41.55F, 54.22F,  }; // 2 cm diameter classes, 2 m height classes
                 // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
@@ -418,9 +468,9 @@ namespace Osu.Cof.Ferm.Test
 
             // verify three thin trajectory
             //                                          0       1       2       3       4       5       6       7       8       9
-            float[] minimumThreeThinQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 43.04F, 46.67F, 54.38F, 57.79F }; // cm
+            float[] minimumThreeThinQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 41.92F, 45.34F, 51.91F, 55.19F }; // cm
             //                                                0       1       2       3       4       5       6       7       8       9
-            float[] minimumThreeThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 34.68F, 37.03F, 38.47F, 40.52F }; // ft
+            float[] minimumThreeThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.12F, 37.58F, 39.42F, 41.54F }; // ft
             float[] minimumThreeThinStandingVolume;
             float[] minimumThreeThinHarvestVolume;
             if (threeThinTrajectory.UseFiaVolume)
@@ -433,8 +483,8 @@ namespace Osu.Cof.Ferm.Test
             {
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation
-                minimumThreeThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 56.79F, 72.22F, 72.61F, 87.66F }; // 1 cm diameter classes, 1 m height classes
-                minimumThreeThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 12.360F, 0.0F, 15.910F, 0.0F };
+                minimumThreeThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 55.84F, 71.49F, 71.01F, 85.07F }; // 1 cm diameter classes, 1 m height classes
+                minimumThreeThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 12.360F, 0.0F, 15.787F, 0.0F };
             }
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
@@ -455,7 +505,7 @@ namespace Osu.Cof.Ferm.Test
                 AssertNullable.IsNotNull(thinnedStand);
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedSecondThinTreeRecordCount);
             }
-            int expectedThirdThinTreeRecordCount = 179; // must be updated if prescription changes
+            int expectedThirdThinTreeRecordCount = 180; // must be updated if prescription changes
             for (int periodIndex = thirdThinPeriod; periodIndex < threeThinTrajectory.PlanningPeriods; ++periodIndex)
             {
                 Stand? thinnedStand = threeThinTrajectory.StandByPeriod[periodIndex];
@@ -504,7 +554,7 @@ namespace Osu.Cof.Ferm.Test
                 TreeLifeAndDeath treeGrowth = new();
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    OrganonGrowth.Grow(simulationStep, configuration, stand, calibrationBySpecies);
+                    OrganonGrowth.Grow(simulationStep + 1, configuration, stand, calibrationBySpecies);
                     treeGrowth.AccumulateGrowthAndMortality(stand);
                     OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, OrganonWarnings.LessThan50TreeRecords, stand, variant);
 
@@ -537,7 +587,8 @@ namespace Osu.Cof.Ferm.Test
             OrganonStandTrajectory thinnedTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
             AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == 222);
-            thinnedTrajectory.Simulate();
+            int immediateThintimeSteps = thinnedTrajectory.Simulate();
+            Assert.IsTrue(immediateThintimeSteps == lastPeriod);
 
             // verify thinned trajectory
             // find/replace regular expressions: function call \w+\.\w+\[\d+\]\.\w+\(\)\s+(\d+.\d{1,2})\d*\s+float\r?\n
@@ -628,6 +679,8 @@ namespace Osu.Cof.Ferm.Test
                 PlanningPeriods = 9
             };
             HeuristicParameters defaultParameters = new();
+            HeuristicResultSet results = PublicApi.CreateResultsSet(stand.GetTreeRecordCount(), landExpectationValue.PlanningPeriods);
+            HeuristicSolutionPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
 
             TimeSpan runtime = TimeSpan.Zero;
             for (int run = 0; run < runs; ++run)
@@ -640,19 +693,20 @@ namespace Osu.Cof.Ferm.Test
                     IsStochastic = false,
                     MaximumIterations = 2
                 };
-                hero.RandomizeTreeSelection(TestConstant.Default.SelectionPercentage);
+                hero.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
                 if (run > 0)
                 {
                     // skip first run as a warmup run
-                    runtime += hero.Run();
+                    HeuristicPerformanceCounters heroCounters = hero.Run();
+                    runtime += heroCounters.Duration;
                 }
             }
             this.TestContext!.WriteLine(runtime.TotalSeconds.ToString());
         }
 
-        private void Verify(GeneticAlgorithm genetic)
+        private void Verify(GeneticAlgorithm genetic, HeuristicPerformanceCounters perfCounters)
         {
-            this.Verify((Heuristic)genetic);
+            this.Verify((Heuristic)genetic, perfCounters);
 
             PopulationStatistics statistics = genetic.PopulationStatistics;
             Assert.IsTrue(statistics.Generations <= genetic.Parameters.MaximumGenerations);
@@ -677,7 +731,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private void Verify(Heuristic heuristic)
+        private void Verify(Heuristic heuristic, HeuristicPerformanceCounters perfCounters)
         {
             // check objective functions
             Assert.IsTrue(heuristic.BestTrajectory.PlantingDensityInTreesPerHectare == heuristic.CurrentTrajectory.PlantingDensityInTreesPerHectare);
@@ -874,6 +928,13 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(String.IsNullOrWhiteSpace(csvHeader) == false);
                 Assert.IsTrue(String.IsNullOrWhiteSpace(csvValues) == false);
             }
+
+            // check performance counters
+            Assert.IsTrue(perfCounters.Duration > TimeSpan.Zero);
+            Assert.IsTrue(perfCounters.GrowthModelTimesteps > 0);
+            Assert.IsTrue(perfCounters.MovesAccepted >= 0); // random guessing may or may not yield improving or disimproving moves
+            Assert.IsTrue(perfCounters.MovesRejected >= 0);
+            Assert.IsTrue((perfCounters.MovesAccepted + perfCounters.MovesRejected) >= 0);
         }
 
         private static void Verify(OrganonStandTrajectory thinnedTrajectory, float[] minimumThinnedVolumeScribner, int firstThinPeriod, int? secondThinPeriod, int? thirdThinPeriod)

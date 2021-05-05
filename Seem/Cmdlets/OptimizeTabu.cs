@@ -73,7 +73,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     EscapeDistance = (int)(escapeBy * treeRecords),
                                     Iterations = (int)(iterationRatio * treeRecords / MathF.Log(treeRecords) + 0.5F),
                                     MaximumTenure = (int)(tenureRatio * treeRecords),
-                                    PerturbBy = this.PerturbBy,
+                                    ConstructionRandomness = this.ConstructionRandomness,
                                     ProportionalPercentage = proportionalPercentage,
                                     Tenure = this.Tenure,
                                     TimberValue = timberValue,

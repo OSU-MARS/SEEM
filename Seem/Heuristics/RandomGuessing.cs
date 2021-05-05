@@ -13,6 +13,11 @@ namespace Osu.Cof.Ferm.Heuristics
         public RandomGuessing(OrganonStand stand, OrganonConfiguration configuration, Objective objective, HeuristicParameters parameters)
             : base(stand, configuration, objective, parameters)
         {
+            if (parameters.ConstructionRandomness != Constant.GraspDefault.FullyRandomConstruction)
+            {
+                throw new NotSupportedException(nameof(parameters));
+            }
+
             this.CentralSelectionPercentage = parameters.ProportionalPercentage;
             this.Iterations = 4 * stand.GetTreeRecordCount();
             this.SelectionPercentageWidth = 20.0F;
@@ -23,7 +28,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Random";
         }
 
-        public override TimeSpan Run()
+        public override HeuristicPerformanceCounters Run()
         {
             if ((this.CentralSelectionPercentage < 0.0F) || (this.CentralSelectionPercentage > 100.0F))
             {
@@ -48,6 +53,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
+            HeuristicPerformanceCounters perfCounters = new();
 
             this.AcceptedObjectiveFunctionByMove.Capacity = this.Iterations;
             this.CandidateObjectiveFunctionByMove.Capacity = this.Iterations;
@@ -55,9 +61,9 @@ namespace Osu.Cof.Ferm.Heuristics
             float selectionPercentageScaling = this.SelectionPercentageWidth / (float)UInt16.MaxValue;
             for (int iteration = 0; iteration < this.Iterations; ++iteration)
             {
-                float selectionPercentage = minSelectionPercentage + selectionPercentageScaling * this.GetTwoPseudorandomBytesAsFloat();
-                this.RandomizeTreeSelection(selectionPercentage);
-                this.CurrentTrajectory.Simulate();
+                float proportionalPercentage = minSelectionPercentage + selectionPercentageScaling * this.GetTwoPseudorandomBytesAsFloat();
+                this.ConstructTreeSelection(1.0F, proportionalPercentage);
+                perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
                 float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
                 if (candidateObjectiveFunction > this.BestObjectiveFunction)
@@ -65,6 +71,11 @@ namespace Osu.Cof.Ferm.Heuristics
                     // accept change of tree selection if it improves upon the best solution
                     this.BestObjectiveFunction = candidateObjectiveFunction;
                     this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                    ++perfCounters.MovesAccepted;
+                }
+                else
+                {
+                    ++perfCounters.MovesRejected;
                 }
 
                 this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
@@ -72,7 +83,8 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             stopwatch.Stop();
-            return stopwatch.Elapsed;
+            perfCounters.Duration = stopwatch.Elapsed;
+            return perfCounters;
         }
     }
 }

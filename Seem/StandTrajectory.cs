@@ -11,6 +11,7 @@ namespace Osu.Cof.Ferm
         // harvest periods by tree, 0 indicates no harvest
         public SortedDictionary<FiaCode, int[]> IndividualTreeSelectionBySpecies { get; private init; }
 
+        public int EarliestPeriodChangedSinceLastSimulation { get; protected set; }
         public string? Name { get; set; }
         public int PeriodLengthInYears { get; set; }
         public int PeriodZeroAgeInYears { get; set; }
@@ -19,7 +20,6 @@ namespace Osu.Cof.Ferm
         public StandVolume StandingVolume { get; private init; }
         public StandVolume ThinningVolume { get; private init; }
         public TimberValue TimberValue { get; set; }
-        public bool TreeSelectionChangedSinceLastSimulation { get; protected set; }
 
         public StandTrajectory(TimberValue timberValue, int lastPlanningPeriod, float plantingDensityInTreesPerHectare)
         {
@@ -34,6 +34,7 @@ namespace Osu.Cof.Ferm
 
             int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
             this.BasalAreaRemoved = new float[maximumPlanningPeriodIndex];
+            this.EarliestPeriodChangedSinceLastSimulation = 0;
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = null;
             this.PeriodLengthInYears = -1;
@@ -42,12 +43,12 @@ namespace Osu.Cof.Ferm
             this.StandingVolume = new StandVolume(maximumPlanningPeriodIndex);
             this.ThinningVolume = new StandVolume(maximumPlanningPeriodIndex);
             this.TimberValue = timberValue;
-            this.TreeSelectionChangedSinceLastSimulation = false;
         }
 
         public StandTrajectory(StandTrajectory other)
         {
             this.BasalAreaRemoved = new float[other.BasalAreaRemoved.Length];
+            this.EarliestPeriodChangedSinceLastSimulation = other.EarliestPeriodChangedSinceLastSimulation;
             this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
             this.Name = other.Name;
             this.PeriodLengthInYears = other.PeriodLengthInYears;
@@ -56,7 +57,6 @@ namespace Osu.Cof.Ferm
             this.StandingVolume = new StandVolume(other.StandingVolume);
             this.ThinningVolume = new StandVolume(other.ThinningVolume);
             this.TimberValue = other.TimberValue; // stateless, thread safe
-            this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
 
             Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, other.BasalAreaRemoved.Length);
 
@@ -90,11 +90,22 @@ namespace Osu.Cof.Ferm
 
         public void DeselectAllTrees()
         {
+            // see remarks in loop
+            Debug.Assert(Constant.NoHarvestPeriod == 0);
+
             foreach (int[] selectionForSpecies in this.IndividualTreeSelectionBySpecies.Values)
             {
-                Array.Clear(selectionForSpecies, 0, selectionForSpecies.Length);
+                for (int treeIndex = 0; treeIndex < selectionForSpecies.Length; ++treeIndex)
+                {
+                    int currentHarvestPeriod = selectionForSpecies[treeIndex];
+                    if (currentHarvestPeriod != Constant.NoHarvestPeriod)
+                    {
+                        selectionForSpecies[treeIndex] = Constant.NoHarvestPeriod;
+                        // if stand has been simulated then the earliest period affected by removing all thinning is the first thin performed
+                        this.EarliestPeriodChangedSinceLastSimulation = Math.Min(this.EarliestPeriodChangedSinceLastSimulation, currentHarvestPeriod);
+                    }
+                }
             }
-            this.TreeSelectionChangedSinceLastSimulation = true;
         }
 
         protected int GetEndOfPeriodAge(int periodIndex)
@@ -200,11 +211,11 @@ namespace Osu.Cof.Ferm
             throw new ArgumentOutOfRangeException(nameof(allSpeciesUncompactedTreeIndex));
         }
 
-        public void SetTreeSelection(int allSpeciesUncompactedTreeIndex, int harvestPeriod)
+        public void SetTreeSelection(int allSpeciesUncompactedTreeIndex, int newHarvestPeriod)
         {
-            if ((harvestPeriod < 0) || (harvestPeriod >= this.ThinningVolume.ScribnerTotal.Length))
+            if ((newHarvestPeriod < 0) || (newHarvestPeriod >= this.ThinningVolume.ScribnerTotal.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(harvestPeriod));
+                throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod));
             }
 
             int treeIndex = allSpeciesUncompactedTreeIndex;
@@ -212,11 +223,11 @@ namespace Osu.Cof.Ferm
             {
                 if (treeIndex < individualTreeSelection.Value.Length)
                 {
-                    int currentPeriod = individualTreeSelection.Value[treeIndex];
-                    individualTreeSelection.Value[treeIndex] = harvestPeriod;
-                    if (currentPeriod != harvestPeriod)
+                    int currentHarvestPeriod = individualTreeSelection.Value[treeIndex];
+                    if (currentHarvestPeriod != newHarvestPeriod)
                     {
-                        this.TreeSelectionChangedSinceLastSimulation = true;
+                        individualTreeSelection.Value[treeIndex] = newHarvestPeriod;
+                        this.UpdateEariestPeriodChanged(currentHarvestPeriod, newHarvestPeriod);
                     }
                     return;
                 }
@@ -226,19 +237,46 @@ namespace Osu.Cof.Ferm
             throw new ArgumentOutOfRangeException(nameof(allSpeciesUncompactedTreeIndex));
         }
 
-        public void SetTreeSelection(FiaCode species, int uncompactedTreeIndex, int harvestPeriod)
+        public void SetTreeSelection(FiaCode species, int uncompactedTreeIndex, int newHarvestPeriod)
         {
-            if ((harvestPeriod < Constant.NoHarvestPeriod) || (harvestPeriod >= this.ThinningVolume.ScribnerTotal.Length))
+            if ((newHarvestPeriod < Constant.NoHarvestPeriod) || (newHarvestPeriod >= this.ThinningVolume.ScribnerTotal.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(harvestPeriod));
+                throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod));
             }
 
-            int currentPeriod = this.IndividualTreeSelectionBySpecies[species][uncompactedTreeIndex];
-            this.IndividualTreeSelectionBySpecies[species][uncompactedTreeIndex] = harvestPeriod;
-            if (currentPeriod != harvestPeriod)
+            int currentHarvestPeriod = this.IndividualTreeSelectionBySpecies[species][uncompactedTreeIndex];
+            if (currentHarvestPeriod != newHarvestPeriod)
             {
-                this.TreeSelectionChangedSinceLastSimulation = true;
+                this.IndividualTreeSelectionBySpecies[species][uncompactedTreeIndex] = newHarvestPeriod;
+                this.UpdateEariestPeriodChanged(currentHarvestPeriod, newHarvestPeriod);
             }
+        }
+
+        private void UpdateEariestPeriodChanged(int currentPeriod, int newPeriod)
+        {
+            // see remarks in loop
+            Debug.Assert(Constant.NoHarvestPeriod == 0);
+
+            // four cases
+            //   1) tree is not scheduled for thinning and becomes scheduled -> earliest affected period is harvest period
+            //   2) tree is scheduled for thinning and becomes unscheduled -> earliest affected period is harvest period
+            //   3) tree is reassinged to an earlier harvest period -> earliest affected period is earliest harvest period
+            //   4) tree is reassinged to a later harvest period -> earliest affected period is still the earliest harvest period
+            int earliestAffectedPeriod;
+            if (currentPeriod == Constant.NoHarvestPeriod)
+            {
+                earliestAffectedPeriod = newPeriod;
+            }
+            else if (newPeriod == Constant.NoHarvestPeriod)
+            {
+                earliestAffectedPeriod = currentPeriod;
+            }
+            else
+            {
+                earliestAffectedPeriod = Math.Min(currentPeriod, newPeriod);
+            }
+
+            this.EarliestPeriodChangedSinceLastSimulation = Math.Min(this.EarliestPeriodChangedSinceLastSimulation, earliestAffectedPeriod);
         }
     }
 }

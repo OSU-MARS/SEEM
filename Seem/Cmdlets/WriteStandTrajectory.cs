@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateNotNull]
-        public List<HeuristicSolutionDistribution>? Runs { get; set; }
+        public HeuristicResultSet? Results { get; set; }
 
         [Parameter]
         [ValidateNotNull]
@@ -33,7 +33,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.DiameterClassSize = Constant.Bucking.DiameterClassSizeInCentimeters;
             this.MaximumDiameter = Constant.Bucking.DefaultMaximumDiameterInCentimeters;
-            this.Runs = null;
+            this.Results = null;
             this.Trajectories = null;
         }
 
@@ -41,15 +41,15 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             OrganonStandTrajectory highestTrajectory;
             HeuristicParameters? heuristicParameters = null;
-            if (this.Runs != null)
+            if (this.Results != null)
             {
-                HeuristicSolutionDistribution distribution = this.Runs![runOrTrajectoryIndex];
-                if (distribution.HighestSolution == null)
+                HeuristicSolutionPool solution = this.Results.Solutions[runOrTrajectoryIndex];
+                if (solution.Highest == null)
                 {
                     throw new NotSupportedException("Run " + runOrTrajectoryIndex + " is missing a highest solution.");
                 }
-                highestTrajectory = distribution.HighestSolution.BestTrajectory;
-                heuristicParameters = distribution.HighestHeuristicParameters;
+                highestTrajectory = solution.Highest.BestTrajectory;
+                heuristicParameters = this.Results.Distributions[runOrTrajectoryIndex].HeuristicParameters;
             }
             else
             {
@@ -96,7 +96,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             // TODO: check for mixed units and support TBH
             // TODO: snags per acre or hectare, live and dead QMD?
-            bool runsSpecified = this.Runs != null;
+            bool runsSpecified = this.Results != null;
             StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
@@ -105,7 +105,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 HeuristicParameters? heuristicParametersForHeader = null;
                 if (runsSpecified)
                 {
-                    heuristicParametersForHeader = this.Runs![0].HighestHeuristicParameters;
+                    heuristicParametersForHeader = this.Results!.Distributions[0].HeuristicParameters;
                 }
                 else if(this.Trajectories![0].Heuristic != null)
                 {
@@ -127,19 +127,15 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             // rows for periods
-            int maxIndex = runsSpecified ? this.Runs!.Count : this.Trajectories!.Count;
+            int maxIndex = runsSpecified ? this.Results!.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
                 OrganonStandTrajectory highestTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix);
-                string runtimeInSeconds = "-1";
+                string coreTimeInSeconds = "";
                 if (runsSpecified)
                 {
-                    HeuristicSolutionDistribution distribution = this.Runs![runOrTrajectoryIndex];
-                    if (distribution.HighestSolution == null)
-                    {
-                        throw new NotSupportedException("Run " + runOrTrajectoryIndex + " is missing a highest solution.");
-                    }
-                    runtimeInSeconds = distribution.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
+                    HeuristicDistribution distribution = this.Results!.Distributions[runOrTrajectoryIndex];
+                    coreTimeInSeconds = distribution.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
                 }
 
                 Units trajectoryUnits = highestTrajectory.GetUnits();
@@ -250,17 +246,17 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected void ValidateParameters()
         {
-            if ((this.Runs == null) && (this.Trajectories == null))
+            if ((this.Results == null) && (this.Trajectories == null))
             {
-                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "Niether of " + nameof(this.Runs) + " or " + nameof(this.Trajectories) + " are specified. Specify one or the other.");
+                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "Niether of " + nameof(this.Results) + " or " + nameof(this.Trajectories) + " are specified. Specify one or the other.");
             }
-            if ((this.Runs != null) && (this.Trajectories != null))
+            if ((this.Results != null) && (this.Trajectories != null))
             {
-                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "Both " + nameof(this.Runs) + " and " + nameof(this.Trajectories) + " are specified. Specify one or the other.");
+                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "Both " + nameof(this.Results) + " and " + nameof(this.Trajectories) + " are specified. Specify one or the other.");
             }
-            if ((this.Runs != null) && (this.Runs.Count < 1))
+            if ((this.Results != null) && (this.Results.Count < 1))
             {
-                throw new ParameterOutOfRangeException(nameof(this.Runs), nameof(this.Runs) + " is empty. At least one run must be present.");
+                throw new ParameterOutOfRangeException(nameof(this.Results), nameof(this.Results) + " is empty. At least one run must be present.");
             }
             if ((this.Trajectories != null) && (this.Trajectories.Count < 1))
             {

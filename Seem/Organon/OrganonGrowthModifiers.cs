@@ -7,12 +7,12 @@ namespace Osu.Cof.Ferm.Organon
         /// <summary>
         /// Get genetic diameter and height growth modifiers.
         /// </summary>
-        /// <param name="TAGE">Tree age in years? (DOUG?)</param>
-        /// <param name="GWDG">Genetic diameter gain factor. (DOUG?)</param>
-        /// <param name="GWHG">Genetic height gain factor. (DOUG?)</param>
+        /// <param name="treeAgeInYears">Tree age in years.</param>
+        /// <param name="GWDG">Genetic diameter gain factor.</param>
+        /// <param name="GWHG">Genetic height gain factor.</param>
         /// <param name="DGMOD">Diameter growth modifier.</param>
         /// <param name="HGMOD">Height growth modifier.</param>
-        public static void GetGeneticModifiers(float TAGE, float GWDG, float GWHG, out float DGMOD, out float HGMOD)
+        public static void GetGeneticModifiers(float treeAgeInYears, float GWDG, float GWHG, out float DGMOD, out float HGMOD)
         {
             float XGWHG = GWDG;
             if (GWHG > 20.0F)
@@ -35,15 +35,15 @@ namespace Osu.Cof.Ferm.Organon
 
             // SET THE PARAMETERS FOR THE DIAMETER GROWTH MODIFIER
             float A1 = 0.0101054F; // VALUE FOR TAGE = 5
-            float A2 = 0.0031F;                          // VALUE FOR TAGE => 10
+            float A2 = 0.0031F;    // VALUE FOR TAGE => 10
             float A;
-            if (TAGE <= Constant.DefaultTimeStepInYears)
+            if (treeAgeInYears <= 5.0F)
             {
                 A = A1;
             }
-            else if ((TAGE > Constant.DefaultTimeStepInYears) && (TAGE < 10.0F))
+            else if ((treeAgeInYears > 5.0F) && (treeAgeInYears < 10.0F))
             {
-                A = A1 - (A1 - A2) * ((TAGE - Constant.DefaultTimeStepInYears) / Constant.DefaultTimeStepInYears);
+                A = A1 - (A1 - A2) * (treeAgeInYears - 5.0F) / 5.0F;
             }
             else
             {
@@ -54,15 +54,15 @@ namespace Osu.Cof.Ferm.Organon
             float B1 = 0.0062770F;                      // VALUE FOR TAGE = 5
             float B2 = 0.0036F;                         // VALUE FOR TAGE => 10
             float B;
-            if (TAGE <= Constant.DefaultTimeStepInYears)
+            if (treeAgeInYears <= 5.0F)
             {
                 B = B1;
             }
             else
             {
-                if ((TAGE > Constant.DefaultTimeStepInYears) && (TAGE < 10.0F))
+                if ((treeAgeInYears > 5.0F) && (treeAgeInYears < 10.0F))
                 {
-                    B = B1 - (B1 - B2) * ((TAGE - Constant.DefaultTimeStepInYears) / Constant.DefaultTimeStepInYears);
+                    B = B1 - (B1 - B2) * (treeAgeInYears - 5.0F) / 5.0F;
                 }
                 else
                 {

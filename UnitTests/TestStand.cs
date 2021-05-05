@@ -73,7 +73,7 @@ namespace Osu.Cof.Ferm.Test
 
         public void WriteCompetitionAsCsv(string filePath, OrganonVariant variant, int year)
         {
-            OrganonStandDensity density = new(this, variant);
+            OrganonStandDensity density = new(variant, this);
 
             FileStream stream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
             using StreamWriter writer = new(stream);

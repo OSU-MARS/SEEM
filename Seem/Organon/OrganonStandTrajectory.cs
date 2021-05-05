@@ -41,7 +41,7 @@ namespace Osu.Cof.Ferm.Organon
             this.StandByPeriod = new OrganonStand[maximumPlanningPeriodIndex];
             this.UseFiaVolume = useFiaVolume;
 
-            this.DensityByPeriod[0] = new OrganonStandDensity(stand, organonConfiguration.Variant);
+            this.DensityByPeriod[0] = new OrganonStandDensity(organonConfiguration.Variant, stand);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 this.IndividualTreeSelectionBySpecies.Add(treesOfSpecies.Species, new int[treesOfSpecies.Capacity]);
@@ -59,9 +59,9 @@ namespace Osu.Cof.Ferm.Organon
         {
             this.fiaVolume = other.fiaVolume;
             this.organonCalibration = other.organonCalibration;
-            this.Configuration = new OrganonConfiguration(other.Configuration);
             this.organonGrowth = other.organonGrowth;
 
+            this.Configuration = new OrganonConfiguration(other.Configuration);
             this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
             this.Heuristic = other.Heuristic;
             this.StandByPeriod = new OrganonStand[other.PlanningPeriods];
@@ -158,7 +158,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
                 Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
             }
-            this.TreeSelectionChangedSinceLastSimulation = other.TreeSelectionChangedSinceLastSimulation;
+            this.EarliestPeriodChangedSinceLastSimulation = other.EarliestPeriodChangedSinceLastSimulation;
         }
 
         public int GetInitialTreeRecordCount()
@@ -322,27 +322,42 @@ namespace Osu.Cof.Ferm.Organon
             this.StandingVolume.FromStand(stand, periodIndex, this.TimberValue, this.GetEndOfPeriodAge(periodIndex));
         }
 
-        public void Simulate()
+        public int Simulate()
         {
-            // TODO: clear volumes and/or basal area?
-            this.Configuration.Treatments.ClearHarvestState();
+            if (this.StandByPeriod.Length < 2)
+            {
+                throw new NotSupportedException("Stand has no periods to simulate.");
+            }
+            if (this.StandByPeriod[0] == null)
+            {
+                throw new NotSupportedException("Pre-simulation information required for stand.");
+            }
 
             // period 0 is the initial condition and therefore never needs to be simulated
             // Since simulation is computationally expensive, the current implementation is lazy and relies on triggers to simulate only on demand. In 
             // particular, in single entry cases no stand modification occurs before the target harvest period and, therefore, periods 1...entry - 1 need
             // to be simulated only once.
-            Debug.Assert(this.StandByPeriod.Length > 1 && this.StandByPeriod[0] != null, "Pre-simulation information expected for stand.");
-            bool standEnteredOrNotSimulated = this.StandByPeriod[1] == null; // not yet simulated case, entry checked in loop below
+            // TODO: make tree selection logic smart enough to track the earliest period needing resimulation
+            bool periodNeedsSimulation = this.StandByPeriod[1] == null; // stands not yet simulated have nulls in StandByPeriod
+
             float[]? crownCompetitionByHeight = null;
-            OrganonStand? simulationStand = standEnteredOrNotSimulated ? new OrganonStand(this.StandByPeriod[0]!) : null;
+            OrganonStand? simulationStand = periodNeedsSimulation ? new OrganonStand(this.StandByPeriod[0]!) : null;
+            int growthModelEvaulations = 0;
             for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
                 OrganonStandDensity standDensity = this.DensityByPeriod[periodIndex - 1];
 
-                // trigger stand resimulation due to change in tree selection
-                if (this.Configuration.Treatments.IsTriggerInPeriod(periodIndex))
+                // if treatments apply to this period, they may or may not have changed the tree selection
+                // In individual tree selection cases, tree selection will have been modified by a heuristic (in GRASP solution construction, by 
+                // local search, by evolutionary operators, or some other mechanism) before this function is called. In thinning by prescription
+                // tree selection occurs when the treatment is applied, likely resulting in a change.
+                if (this.Configuration.Treatments.ApplyToPeriod(periodIndex, this))
                 {
-                    float basalAreaRemoved = this.Configuration.Treatments.EvaluateTriggers(periodIndex, this);
+                    periodNeedsSimulation |= this.EarliestPeriodChangedSinceLastSimulation == periodIndex;
+                }
+
+                if (periodNeedsSimulation)
+                {
                     if (simulationStand == null)
                     {
                         OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
@@ -352,9 +367,10 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         Trees treesOfSpecies = simulationStand.TreesBySpecies[individualTreeSelection.Key];
                         bool atLeastOneTreeRemoved = false;
-                        for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < individualTreeSelection.Value.Length; ++uncompactedTreeIndex) // assumes trailing capacity is set to zero and of insignificant length
+                        // loop assumes trailing capacity is set to zero and of insignificant length
+                        // if needed, loop can be changed to use either the simulation stand's tree count or a reference tree count rather than capacity
+                        for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < individualTreeSelection.Value.Length; ++uncompactedTreeIndex)
                         {
-                            // if needed, this loop can be changed to use either the simulation stand's tree count or a reference tree count rather than capacity
                             int treeSelection = individualTreeSelection.Value[uncompactedTreeIndex];
                             if (treeSelection == periodIndex)
                             {
@@ -379,16 +395,12 @@ namespace Osu.Cof.Ferm.Organon
                         }
                     }
 
-                    this.BasalAreaRemoved[periodIndex] = basalAreaRemoved;
-                    if (this.TreeSelectionChangedSinceLastSimulation)
-                    {
-                        crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(this.Configuration.Variant, simulationStand);
-                        standDensity = new OrganonStandDensity(simulationStand, this.Configuration.Variant);
-                    }
-                    standEnteredOrNotSimulated = true;
+                    this.BasalAreaRemoved[periodIndex] = this.Configuration.Treatments.BasalAreaRemovedByPeriod[periodIndex];
+                    crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(this.Configuration.Variant, simulationStand);
+                    standDensity = new OrganonStandDensity(this.Configuration.Variant, simulationStand);
                 }
 
-                if (standEnteredOrNotSimulated)
+                if (periodNeedsSimulation)
                 {
                     // simulate this period
                     Debug.Assert(simulationStand != null);
@@ -396,7 +408,7 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(this.Configuration.Variant, simulationStand);
                     }
-                    OrganonGrowth.Grow(periodIndex, this.Configuration, simulationStand, standDensity, this.organonCalibration, 
+                    OrganonGrowth.Grow(this.Configuration, simulationStand, standDensity, this.organonCalibration, 
                                        ref crownCompetitionByHeight, out OrganonStandDensity standDensityAfterGrowth, out int _);
 
                     this.DensityByPeriod[periodIndex] = standDensityAfterGrowth;
@@ -419,10 +431,12 @@ namespace Osu.Cof.Ferm.Organon
 
                     Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
                                   this.BasalAreaRemoved[periodIndex] == 0.0F);
+                    ++growthModelEvaulations;
                 }
             }
 
-            this.TreeSelectionChangedSinceLastSimulation = false;
+            this.EarliestPeriodChangedSinceLastSimulation = this.PlanningPeriods;
+            return growthModelEvaulations;
         }
     }
 }

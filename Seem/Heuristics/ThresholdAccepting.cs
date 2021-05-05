@@ -25,7 +25,7 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         // similar to SimulatedAnnealing.Run(), differences are in move acceptance
-        public override TimeSpan Run()
+        public override HeuristicPerformanceCounters Run()
         {
             if (this.IterationsPerThreshold.Count < 1)
             {
@@ -51,8 +51,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
+            HeuristicPerformanceCounters perfCounters = new();
 
-            this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum());
+            this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum(), perfCounters);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
@@ -71,7 +72,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     Debug.Assert(candidateHarvestPeriod >= 0);
 
                     candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
-                    candidateTrajectory.Simulate();
+                    perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
 
                     float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
                     bool acceptMove = candidateObjectiveFunction > threshold * acceptedObjectiveFunction;
@@ -79,6 +80,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     {
                         acceptedObjectiveFunction = candidateObjectiveFunction; 
                         this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                        ++perfCounters.MovesAccepted;
+
                         if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = acceptedObjectiveFunction;
@@ -88,6 +91,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     else
                     {
                         candidateTrajectory.SetTreeSelection(treeIndex, currentHarvestPeriod);
+                        ++perfCounters.MovesRejected;
                     }
 
                     this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
@@ -97,7 +101,8 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             stopwatch.Stop();
-            return stopwatch.Elapsed;
+            perfCounters.Duration = stopwatch.Elapsed;
+            return perfCounters;
         }
     }
 }

@@ -34,17 +34,17 @@ namespace Osu.Cof.Ferm.Species
             return SI / (0.60924F + 19.538F / A);
         }
 
-        public static void ReduceExpansionFactor(Trees redAlders, float RAAGE, float RAN, float[] PMK)
+        public static void ReduceExpansionFactor(Trees redAlders, float growthEffectiveAge, float treesPerAcre, float[] PMK)
         {
             if (redAlders.Species != FiaCode.AlnusRubra)
             {
                 throw new ArgumentOutOfRangeException(nameof(redAlders));
             }
 
-            float RAQMDN1 = 3.313F + 0.18769F * RAAGE - 0.000198F * RAAGE * RAAGE;
-            float RABAN1 = -26.1467F + 5.31482F * RAAGE - 0.037466F * RAAGE * RAAGE;
-            float RAQMDN2 = 3.313F + 0.18769F * (RAAGE + 5.0F) - 0.000198F * (RAAGE + Constant.DefaultTimeStepInYears) * (RAAGE + Constant.DefaultTimeStepInYears);
-            float RABAN2 = -26.1467F + 5.31482F * (RAAGE + 5.0F) - 0.037466F * (RAAGE + Constant.DefaultTimeStepInYears) * (RAAGE + Constant.DefaultTimeStepInYears);
+            float RAQMDN1 = 3.313F + 0.18769F * growthEffectiveAge - 0.000198F * growthEffectiveAge * growthEffectiveAge;
+            float RABAN1 = -26.1467F + 5.31482F * growthEffectiveAge - 0.037466F * growthEffectiveAge * growthEffectiveAge;
+            float RAQMDN2 = 3.313F + 0.18769F * (growthEffectiveAge + 5.0F) - 0.000198F * (growthEffectiveAge + 5.0F) * (growthEffectiveAge + 5.0F);
+            float RABAN2 = -26.1467F + 5.31482F * (growthEffectiveAge + 5.0F) - 0.037466F * (growthEffectiveAge + 5.0F) * (growthEffectiveAge + 5.0F);
             float RATPAN1 = RABAN1 / (Constant.ForestersEnglish * RAQMDN1 * RAQMDN1);
             float RATPAN2 = RABAN2 / (Constant.ForestersEnglish * RAQMDN2 * RAQMDN2);
             if ((RATPAN1 < 0.0F) || (RATPAN2 < 0.0F))
@@ -65,7 +65,7 @@ namespace Osu.Cof.Ferm.Species
                 float PM = 1.0F / (1.0F + MathV.Exp(-PMK[alderIndex]));
                 RAMORT1 += PM * redAlders.LiveExpansionFactor[alderIndex];
             }
-            float RAMORT2 = RAN * (1.0F - RATPAN2 / RATPAN1);
+            float RAMORT2 = treesPerAcre * (1.0F - RATPAN2 / RATPAN1);
 
             if (RAMORT1 < RAMORT2)
             {

@@ -1,7 +1,6 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -15,7 +14,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<HeuristicSolutionDistribution>? Runs { get; set; }
+        public HeuristicResultSet? Results { get; set; }
 
         [Parameter(HelpMessage = "Number of iterations between CSV file lines. Default is 1, which logs every objective function value.")]
         [ValidateRange(1, Int32.MaxValue)]
@@ -28,9 +27,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            if (this.Runs!.Count < 1)
+            if (this.Results!.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Runs));
+                throw new ParameterOutOfRangeException(nameof(this.Results));
             }
 
             using StreamWriter writer = this.GetWriter();
@@ -39,15 +38,17 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
-                if ((this.Runs[0].HighestSolution == null) || (this.Runs[0].HighestHeuristicParameters == null) || (this.Runs[0].LowestSolution == null))
+                HeuristicDistribution distribution = this.Results.Distributions[0];
+                HeuristicSolutionPool solution = this.Results.Solutions[0];
+                if ((solution.Highest == null) || (distribution.HeuristicParameters == null) || (solution.Lowest == null))
                 {
-                    throw new NotSupportedException("Cannot generate header because first run is missing a highest solution, lowest solution, or highest solution parameters.");
+                    throw new NotSupportedException("Cannot generate header because first result is missing a highest solution, lowest solution, or heuristic parameters.");
                 }
 
-                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",iteration,count");
+                line.Append("stand,heuristic," + distribution.HeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",iteration,count");
 
                 string lowestMoveLogHeader = "lowest move log";
-                IHeuristicMoveLog? lowestMoveLog = this.Runs[0].LowestSolution!.GetMoveLog();
+                IHeuristicMoveLog? lowestMoveLog = solution.Lowest!.GetMoveLog();
                 if (lowestMoveLog != null)
                 {
                     lowestMoveLogHeader = lowestMoveLog.GetCsvHeader("lowest ");
@@ -57,7 +58,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 line.Append(",lowest,lowest candidate,min,percentile 2.5,percentile 5,lower quartile,median,mean,upper quartile,percentile 95,percentile 97.5,max");
 
                 string highestMoveLogHeader = "highest move log";
-                IHeuristicMoveLog? highestMoveLog = this.Runs[0].HighestSolution!.GetMoveLog();
+                IHeuristicMoveLog? highestMoveLog = solution.Highest!.GetMoveLog();
                 if (highestMoveLog != null)
                 {
                     highestMoveLogHeader = highestMoveLog.GetCsvHeader("highest ");
@@ -68,14 +69,15 @@ namespace Osu.Cof.Ferm.Cmdlets
                 writer.WriteLine(line);
             }
 
-            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+            for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
             {
-                HeuristicSolutionDistribution distribution = this.Runs[runIndex];
-                Heuristic? highestHeuristic = distribution.HighestSolution;
-                Heuristic? lowestHeuristic = distribution.LowestSolution;
-                if ((distribution.HighestHeuristicParameters == null) || (highestHeuristic == null) || (lowestHeuristic == null))
+                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
+                HeuristicSolutionPool solution = this.Results.Solutions[resultIndex];
+                Heuristic? highestHeuristic = solution.Highest;
+                Heuristic? lowestHeuristic = solution.Lowest;
+                if ((distribution.HeuristicParameters == null) || (highestHeuristic == null) || (lowestHeuristic == null))
                 {
-                    throw new NotSupportedException("Solution distribution for run " + runIndex + " is missing a highest or lowest solution or highest solution parameters.");
+                    throw new NotSupportedException("Result " + resultIndex + " is missing a highest or lowest solution or highest solution parameters.");
                 }
                 IHeuristicMoveLog? highestMoveLog = highestHeuristic.GetMoveLog();
                 IHeuristicMoveLog? lowestMoveLog = lowestHeuristic.GetMoveLog();
@@ -84,7 +86,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 string runPrefix = highestTrajectory.Name + "," + 
                     highestHeuristic.GetName() + "," +
-                    distribution.HighestHeuristicParameters.GetCsvValues() + "," +
+                    distribution.HeuristicParameters.GetCsvValues() + "," +
                     WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
 
                 Debug.Assert(distribution.CountByMove.Count >= lowestHeuristic.AcceptedObjectiveFunctionByMove.Count);

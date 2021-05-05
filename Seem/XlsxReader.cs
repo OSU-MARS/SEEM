@@ -29,7 +29,11 @@ namespace Osu.Cof.Ferm
         {
             using FileStream stream = new(xlsxFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using SpreadsheetDocument xlsx = SpreadsheetDocument.Open(stream, false);
-            WorkbookPart workbook = xlsx.WorkbookPart;
+            WorkbookPart? workbook = xlsx.WorkbookPart;
+            if ((workbook == null) || (workbook.SharedStringTablePart == null) || (workbook.Workbook.Sheets == null))
+            {
+                throw new NotSupportedException("Could not find workbook for worksheet '" + worksheetName + "', it is missing a shared string table, or the workbook is missing a sheets part.");
+            }
 
             // read shared strings
             List<string> sharedStrings = new();
@@ -60,11 +64,11 @@ namespace Osu.Cof.Ferm
 
             // read worksheet
             Sheet? worksheetInfo = workbook.Workbook.Sheets.Elements<Sheet>().FirstOrDefault(sheet => String.Equals(sheet.Name, worksheetName, StringComparison.Ordinal));
-            if (worksheetInfo == null)
+            if ((worksheetInfo == null) || (worksheetInfo.Id!.Value == null)) // StringValue? confuses VS 16.9.6 nullability checking as it is seen as both nullable and non-nullabe
             {
-                throw new XmlException("Worksheet not found.");
+                throw new XmlException("Worksheet not found or worksheet's ID is missing.");
             }
-            WorksheetPart worksheet = (WorksheetPart)workbook.GetPartById(worksheetInfo.Id);
+            WorksheetPart worksheet = (WorksheetPart)workbook.GetPartById(worksheetInfo.Id.Value);
 
             using Stream worksheetStream = worksheet.GetStream();
             using XmlReader worksheetReader = XmlReader.Create(worksheetStream);

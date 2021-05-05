@@ -188,7 +188,7 @@ namespace Osu.Cof.Ferm.Test
             }
 
             // estimate crown ratios
-            OrganonStandDensity standDensity = new(stand, configuration.Variant);
+            OrganonStandDensity standDensity = new(configuration.Variant, stand);
             Dictionary<FiaCode, int> indexBySpecies = new();
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {

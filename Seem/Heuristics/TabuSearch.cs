@@ -201,7 +201,7 @@ namespace Osu.Cof.Ferm.Heuristics
             };
         }
 
-        public override TimeSpan Run()
+        public override HeuristicPerformanceCounters Run()
         {
             if (this.EscapeAfter < 1)
             {
@@ -232,8 +232,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
+            HeuristicPerformanceCounters perfCounters = new();
 
-            this.EvaluateInitialSelection(this.Iterations);
+            this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             int[,] remainingTabuTenures = new int[initialTreeRecordCount, thinningPeriods.Max() + 1];
@@ -314,7 +315,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                         // find objective function for this tree in this period
                         candidateTrajectory.SetTreeSelection(treeIndex, thinningPeriod);
-                        candidateTrajectory.Simulate();
+                        perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
                         float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
 
                         if (candidateObjectiveFunction > bestObjectiveFunction)
@@ -381,6 +382,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     bestObjectiveFunctionSinceLastEscape = bestObjectiveFunction;
                     iterationsSinceObjectiveImprovedOrEscape = 0;
+                    ++perfCounters.MovesAccepted;
                 }
                 else if (bestNonTabuMovesByObjectiveFunction.Count > 0)
                 {
@@ -398,6 +400,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     remainingTabuTenures[bestNonTabuMove.Value.TreeIndex, bestNonTabuMove.Value.ThinPeriod] = this.GetTenure(tenureScalingFactor);
                     this.CandidateObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
                     this.MoveLog.TreeIDByMove.Add(bestNonTabuMove.Value.TreeIndex);
+                    ++perfCounters.MovesRejected;
 
                     if (acceptedObjectiveFunction > bestObjectiveFunctionSinceLastEscape)
                     {
@@ -425,7 +428,8 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             stopwatch.Stop();
-            return stopwatch.Elapsed;
+            perfCounters.Duration = stopwatch.Elapsed;
+            return perfCounters;
         }
     }
 }

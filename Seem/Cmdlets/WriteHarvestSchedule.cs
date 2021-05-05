@@ -15,20 +15,21 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<HeuristicSolutionDistribution>? Runs { get; set; }
+        public HeuristicResultSet? Results { get; set; }
 
         protected override void ProcessRecord()
         {
-            if (this.Runs!.Count < 1)
+            Debug.Assert(this.Results != null);
+            if (this.Results.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Runs));
+                throw new ParameterOutOfRangeException(nameof(this.Results));
             }
 
             using StreamWriter writer = this.GetWriter();
             StringBuilder line = new();
             if (this.Append == false)
             {
-                HeuristicParameters? highestHeuristicParameters = this.Runs![0].HighestHeuristicParameters;
+                HeuristicParameters? highestHeuristicParameters = this.Results.Distributions[0].HeuristicParameters;
                 if (highestHeuristicParameters == null)
                 {
                     throw new NotSupportedException("Cannot generate schedule header because first run has no heuristic parameters.");
@@ -37,50 +38,54 @@ namespace Osu.Cof.Ferm.Cmdlets
                 writer.WriteLine(line);
             }
 
-            for (int runIndex = 0; runIndex < this.Runs!.Count; ++runIndex)
+            for (int resultIndex = 0; resultIndex < this.Results!.Count; ++resultIndex)
             {
-                HeuristicSolutionDistribution distribution = this.Runs[runIndex];
-                if ((distribution.HighestHeuristicParameters == null) ||
-                    (distribution.HighestSolution == null) ||
-                    (distribution.HighestSolution.BestTrajectory == null) ||
-                    (distribution.HighestSolution.BestTrajectory.Heuristic == null) ||
-                    (distribution.LowestSolution == null))
+                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
+                if (distribution.HeuristicParameters == null)
                 {
-                    throw new NotSupportedException("Run " + runIndex + " is missing a highest solution, lowest solution, highest solution parameters, highest heuristic trajectory, or back link from highest trajectory to is generating heuristic.");
+                    throw new NotSupportedException("Result " + resultIndex + " is missing heuristic parameters.");
+                }
+                HeuristicSolutionPool solution = this.Results.Solutions[resultIndex];
+                if ((solution.Highest == null) ||
+                    (solution.Highest.BestTrajectory == null) ||
+                    (solution.Highest.BestTrajectory.Heuristic == null) ||
+                    (solution.Lowest == null))
+                {
+                    throw new NotSupportedException("Result " + resultIndex + " is missing a highest solution, lowest solution, highest heuristic trajectory, or back link from highest trajectory to is generating heuristic.");
                 }
 
-                OrganonStandTrajectory highestTrajectoryN = distribution.HighestSolution.BestTrajectory;
-                int firstThinPeriod = highestTrajectoryN.GetFirstThinPeriod();
+                OrganonStandTrajectory highestTrajectory = solution.Highest.BestTrajectory;
+                int firstThinPeriod = highestTrajectory.GetFirstThinPeriod();
                 int periodBeforeFirstThin = firstThinPeriod - 1;
                 if (periodBeforeFirstThin < 0)
                 {
-                    periodBeforeFirstThin = highestTrajectoryN.PlanningPeriods - 1;
+                    periodBeforeFirstThin = highestTrajectory.PlanningPeriods - 1;
                 }
-                int secondThinPeriod = highestTrajectoryN.GetSecondThinPeriod();
+                int secondThinPeriod = highestTrajectory.GetSecondThinPeriod();
                 int periodBeforeSecondThin = secondThinPeriod - 1;
                 if (periodBeforeSecondThin < 0)
                 {
-                    periodBeforeSecondThin = highestTrajectoryN.PlanningPeriods - 1;
+                    periodBeforeSecondThin = highestTrajectory.PlanningPeriods - 1;
                 }
-                int thirdThinPeriod = highestTrajectoryN.GetThirdThinPeriod();
+                int thirdThinPeriod = highestTrajectory.GetThirdThinPeriod();
                 int periodBeforeThirdThin = thirdThinPeriod - 1;
                 if (periodBeforeThirdThin < 0)
                 {
-                    periodBeforeThirdThin = highestTrajectoryN.PlanningPeriods - 1;
+                    periodBeforeThirdThin = highestTrajectory.PlanningPeriods - 1;
                 }
 
-                string linePrefix = highestTrajectoryN.Name + "," + 
-                    highestTrajectoryN.Heuristic.GetName() + "," + 
-                    distribution.HighestHeuristicParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectoryN);
+                string linePrefix = highestTrajectory.Name + "," + 
+                    highestTrajectory.Heuristic.GetName() + "," + 
+                    distribution.HeuristicParameters.GetCsvValues() + "," +
+                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
 
-                Stand? highestStandNbeforeFirstThin = highestTrajectoryN.StandByPeriod[periodBeforeFirstThin];
-                Stand? highestStandNbeforeSecondThin = highestTrajectoryN.StandByPeriod[periodBeforeSecondThin];
-                Stand? highestStandNbeforeThirdThin = highestTrajectoryN.StandByPeriod[periodBeforeThirdThin];
-                Stand? highestStandNatEnd = highestTrajectoryN.StandByPeriod[^1];
+                Stand? highestStandNbeforeFirstThin = highestTrajectory.StandByPeriod[periodBeforeFirstThin];
+                Stand? highestStandNbeforeSecondThin = highestTrajectory.StandByPeriod[periodBeforeSecondThin];
+                Stand? highestStandNbeforeThirdThin = highestTrajectory.StandByPeriod[periodBeforeThirdThin];
+                Stand? highestStandNatEnd = highestTrajectory.StandByPeriod[^1];
                 if ((highestStandNbeforeFirstThin == null) || (highestStandNbeforeSecondThin == null) || (highestStandNbeforeThirdThin == null) || (highestStandNatEnd == null))
                 {
-                    throw new ParameterOutOfRangeException(nameof(this.Runs), "Highest stand in run has not been fully simulated. Did the heuristic perform at least one move?");
+                    throw new ParameterOutOfRangeException(nameof(this.Results), "Highest stand in run has not been fully simulated. Did the heuristic perform at least one move?");
                 }
                 Units finalUnits = highestStandNatEnd.GetUnits();
                 if ((highestStandNbeforeFirstThin.GetUnits() != finalUnits) || (highestStandNbeforeSecondThin.GetUnits() != finalUnits))
@@ -88,9 +93,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Units differ between simulation periods.");
                 }
 
-                OrganonStandTrajectory lowestTrajectoryN = distribution.LowestSolution.BestTrajectory;
+                OrganonStandTrajectory lowestTrajectory = solution.Lowest.BestTrajectory;
                 int previousSpeciesCount = 0;
-                foreach (KeyValuePair<FiaCode, int[]> highestTreeSelectionNForSpecies in highestTrajectoryN.IndividualTreeSelectionBySpecies)
+                foreach (KeyValuePair<FiaCode, int[]> highestTreeSelectionNForSpecies in highestTrajectory.IndividualTreeSelectionBySpecies)
                 {
                     Trees highestTreesBeforeFirstThin = highestStandNbeforeFirstThin.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
                     Trees highestTreesBeforeSecondThin = highestStandNbeforeSecondThin.TreesBySpecies[highestTreeSelectionNForSpecies.Key];
@@ -100,7 +105,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     // uncompactedTreeIndex: tree index in periods before thinned trees are removed
                     // compactedTreeIndex: index of retained trees in periods after thinning
-                    int[] lowestTreeSelectionN = lowestTrajectoryN.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
+                    int[] lowestTreeSelectionN = lowestTrajectory.IndividualTreeSelectionBySpecies[highestTreeSelectionNForSpecies.Key];
                     int[] highestTreeSelectionN = highestTreeSelectionNForSpecies.Value;
                     Debug.Assert(highestTreesBeforeFirstThin.Capacity == highestTreeSelectionN.Length);
                     int secondThinCompactedTreeIndex = 0;
@@ -118,7 +123,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         string? highestFirstThinExpansionFactor = null;
                         string? highestFirstThinBoardFeet = null;
                         // properties before first thin are undefined if no thinning occurred
-                        if (highestTrajectoryN.GetFirstThinPeriod() != Constant.NoThinPeriod)
+                        if (highestTrajectory.GetFirstThinPeriod() != Constant.NoThinPeriod)
                         {
                             highestFirstThinDbh = (dbhConversionFactor * highestTreesBeforeFirstThin.Dbh[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
                             highestFirstThinHeight = (heightConversionFactor * highestTreesBeforeFirstThin.Height[uncompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
@@ -134,7 +139,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         string? highestSecondThinBoardFeet = null;
                         // properties before second thin are undefined if no thinning, only a first thin, or if tree was removed in first thin
                         bool isRemovedInFirstThin = highestTreeSelectionN[uncompactedTreeIndex] == firstThinPeriod;
-                        if ((highestTrajectoryN.GetSecondThinPeriod() != Constant.NoThinPeriod) && (isRemovedInFirstThin == false))
+                        if ((highestTrajectory.GetSecondThinPeriod() != Constant.NoThinPeriod) && (isRemovedInFirstThin == false))
                         {
                             Debug.Assert(highestTreesBeforeSecondThin.Tag[secondThinCompactedTreeIndex] == highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex]);
                             highestSecondThinDbh = (dbhConversionFactor * highestTreesBeforeSecondThin.Dbh[secondThinCompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);
@@ -152,7 +157,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         string? highestThirdThinBoardFeet = null;
                         // properties before Third thin are undefined if no thinning, only a first thin, or if tree was removed in first thin
                         bool isRemovedInFirstOrSecondThin = isRemovedInFirstThin || (highestTreeSelectionN[uncompactedTreeIndex] == secondThinPeriod);
-                        if ((highestTrajectoryN.GetThirdThinPeriod() != Constant.NoThinPeriod) && (isRemovedInFirstOrSecondThin == false))
+                        if ((highestTrajectory.GetThirdThinPeriod() != Constant.NoThinPeriod) && (isRemovedInFirstOrSecondThin == false))
                         {
                             Debug.Assert(highestTreesBeforeThirdThin.Tag[thirdThinCompactedTreeIndex] == highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex]);
                             highestThirdThinDbh = (dbhConversionFactor * highestTreesBeforeThirdThin.Dbh[thirdThinCompactedTreeIndex]).ToString("0.00", CultureInfo.InvariantCulture);

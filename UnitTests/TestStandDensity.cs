@@ -6,7 +6,7 @@ namespace Osu.Cof.Ferm.Test
     internal class TestStandDensity : OrganonStandDensity
     {
         public TestStandDensity(OrganonStand stand, OrganonVariant variant)
-            : base(stand, variant)
+            : base(variant, stand)
         {
         }
 

@@ -1,6 +1,5 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
@@ -13,13 +12,13 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public List<HeuristicSolutionDistribution>? Runs { get; set; }
+        public HeuristicResultSet? Results { get; set; }
 
         protected override void ProcessRecord()
         {
-            if (this.Runs!.Count < 1)
+            if (this.Results!.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Runs));
+                throw new ParameterOutOfRangeException(nameof(this.Results));
             }
 
             using StreamWriter writer = this.GetWriter();
@@ -27,28 +26,30 @@ namespace Osu.Cof.Ferm.Cmdlets
             StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
-                if (this.Runs[0].HighestHeuristicParameters == null)
+                HeuristicDistribution distribution = this.Results.Distributions[0];
+                if (distribution.HeuristicParameters == null)
                 {
                     throw new NotSupportedException("Cannot generate header because first run is missing highest solution parameters");
                 }
 
-                line.Append("stand,heuristic," + this.Runs[0].HighestHeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",generation,highest min,highest mean,highest max,highest cov,highest alleles,highest heterozygosity,highest individuals,highest polymorphism,lowest min,lowest mean,lowest max,lowest cov,lowest alleles,lowest heterozygosity,lowest individuals,lowest polymorphism");
+                line.Append("stand,heuristic," + distribution.HeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",generation,highest min,highest mean,highest max,highest cov,highest alleles,highest heterozygosity,highest individuals,highest polymorphism,lowest min,lowest mean,lowest max,lowest cov,lowest alleles,lowest heterozygosity,lowest individuals,lowest polymorphism");
                 writer.WriteLine(line);
             }
 
-            for (int runIndex = 0; runIndex < this.Runs.Count; ++runIndex)
+            for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
             {
-                HeuristicSolutionDistribution distribution = this.Runs[runIndex];
-                if ((distribution.HighestSolution == null) || (distribution.LowestSolution == null) || (distribution.HighestHeuristicParameters == null))
+                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
+                HeuristicSolutionPool solution = this.Results.Solutions[resultIndex];
+                if ((solution.Highest == null) || (solution.Lowest == null) || (distribution.HeuristicParameters == null))
                 {
-                    throw new NotSupportedException("Run " + runIndex + " is missing a highest solution, lowest solution, or highest solution parameters");
+                    throw new NotSupportedException("Result " + resultIndex + " is missing a highest solution, lowest solution, or highest solution parameters");
                 }
-                GeneticAlgorithm highestHeuristic = (GeneticAlgorithm)distribution.HighestSolution;
-                GeneticAlgorithm lowestHeuristic = (GeneticAlgorithm)distribution.LowestSolution;
+                GeneticAlgorithm highestHeuristic = (GeneticAlgorithm)solution.Highest;
+                GeneticAlgorithm lowestHeuristic = (GeneticAlgorithm)solution.Lowest;
                 StandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
                 string linePrefix = highestTrajectory.Name + "," + 
                     highestHeuristic.GetName() + "," + 
-                    distribution.HighestHeuristicParameters.GetCsvValues() + "," +
+                    distribution.HeuristicParameters.GetCsvValues() + "," +
                     WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
 
                 PopulationStatistics highestStatistics = highestHeuristic.PopulationStatistics;

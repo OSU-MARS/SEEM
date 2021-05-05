@@ -113,7 +113,7 @@ namespace Osu.Cof.Ferm.Test
             using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
             for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)
             {
-                OrganonGrowth.Grow(simulationStep, configuration, stand, calibrationBySpecies);
+                OrganonGrowth.Grow(simulationStep + 1, configuration, stand, calibrationBySpecies);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
                 OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);

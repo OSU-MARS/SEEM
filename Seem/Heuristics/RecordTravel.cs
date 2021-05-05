@@ -39,7 +39,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "RecordTravel";
         }
 
-        public override TimeSpan Run()
+        public override HeuristicPerformanceCounters Run()
         {
             if ((this.Alpha < 0.0F) || (this.Alpha >  1.0F))
             {
@@ -82,8 +82,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
+            HeuristicPerformanceCounters perfCounters = new();
 
-            this.EvaluateInitialSelection(this.Iterations);
+            this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
@@ -131,7 +132,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 Debug.Assert(firstCandidateHarvestPeriod >= 0);
 
                 candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
-                candidateTrajectory.Simulate();
+                perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
                 ++iterationsSinceBestObjectiveImproved;
                 ++iterationsSinceObjectiveImprovedOrReheat;
 
@@ -143,6 +144,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     acceptedObjectiveFunction = candidateObjectiveFunction;
                     this.CurrentTrajectory.CopyFrom(candidateTrajectory);
                     iterationsSinceObjectiveImprovedOrReheat = 0;
+                    ++perfCounters.MovesAccepted;
 
                     if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                     {
@@ -166,6 +168,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         default:
                             throw new NotSupportedException();
                     }
+                    ++perfCounters.MovesRejected;
                 }
 
                 this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
@@ -185,7 +188,8 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             stopwatch.Stop();
-            return stopwatch.Elapsed;
+            perfCounters.Duration = stopwatch.Elapsed;
+            return perfCounters;
         }
     }
 }

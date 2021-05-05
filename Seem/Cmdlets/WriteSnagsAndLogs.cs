@@ -20,7 +20,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
 
             // header
-            bool runsSpecified = this.Runs != null;
+            bool runsSpecified = this.Results != null;
             StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
@@ -29,7 +29,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 HeuristicParameters? heuristicParametersForHeader = null;
                 if (runsSpecified)
                 {
-                    heuristicParametersForHeader = this.Runs![0].HighestHeuristicParameters;
+                    heuristicParametersForHeader = this.Results!.Distributions[0].HeuristicParameters;
                 }
                 else if (this.Trajectories![0].Heuristic != null)
                 {
@@ -51,7 +51,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             // rows for periods
-            int maxIndex = runsSpecified ? this.Runs!.Count : this.Trajectories!.Count;
+            int maxIndex = runsSpecified ? this.Results!.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
                 OrganonStandTrajectory highestTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix);

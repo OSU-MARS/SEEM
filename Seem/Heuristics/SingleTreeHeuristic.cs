@@ -14,13 +14,13 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveLog = new SingleTreeMoveLog();
         }
 
-        protected void EvaluateInitialSelection(int moveCapacity)
+        protected void EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
         {
             this.AcceptedObjectiveFunctionByMove.Capacity = moveCapacity;
             this.CandidateObjectiveFunctionByMove.Capacity = moveCapacity;
             this.MoveLog.TreeIDByMove.Capacity = moveCapacity;
 
-            this.CurrentTrajectory.Simulate();
+            perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
             this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
             this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);

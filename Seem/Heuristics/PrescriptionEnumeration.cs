@@ -18,7 +18,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveLog = new PrescriptionMoveLog();
         }
 
-        private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float stepSize, Action<float> evaluatePrescriptions)
+        private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float stepSize, Action<float> evaluatePrescriptions, HeuristicPerformanceCounters perfCounters)
         {
             if ((stepSize <= 0.0F) || (stepSize > 100.0F))
             {
@@ -34,7 +34,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (this.CurrentTrajectory.DensityByPeriod[thinPrescription.Period - 1] == null)
                     {
                         // TODO: check for no conflicting other prescriptions
-                        this.CurrentTrajectory.Simulate();
+                        perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
                     }
                     float basalAreaPerAcreBeforeThin = this.CurrentTrajectory.DensityByPeriod[thinPrescription.Period - 1].BasalAreaPerAcre;
                     if (maximumPercentage >= basalAreaPerAcreBeforeThin)
@@ -99,10 +99,11 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        private void EvaluateCurrentPrescriptions(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        private void EvaluateCurrentPrescriptions(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription, HeuristicPerformanceCounters perfCounters)
         {
-            this.CurrentTrajectory.DeselectAllTrees();
-            this.CurrentTrajectory.Simulate();
+            // for now, assume execution with fixed thinning times and rotation lengths, meaning tree selections do not need to be moved between periods
+            // this.CurrentTrajectory.DeselectAllTrees();
+            perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
             float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
             if (candidateObjectiveFunction > this.BestObjectiveFunction)
@@ -110,6 +111,11 @@ namespace Osu.Cof.Ferm.Heuristics
                 // accept change of prescription if it improves upon the best solution
                 this.BestObjectiveFunction = candidateObjectiveFunction;
                 this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                ++perfCounters.MovesAccepted;
+            }
+            else
+            {
+                ++perfCounters.MovesRejected;
             }
 
             this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
@@ -170,7 +176,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.Parameters;
         }
 
-        public override TimeSpan Run()
+        public override HeuristicPerformanceCounters Run()
         {
             if ((this.Parameters.FromAbovePercentageUpperLimit < 0.0F) || (this.Parameters.FromAbovePercentageUpperLimit > 100.0F))
             {
@@ -215,6 +221,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
+            HeuristicPerformanceCounters perfCounters = new();
 
             IList<IHarvest> harvests = this.CurrentTrajectory.Configuration.Treatments.Harvests;
             if (harvests.Count > 0)
@@ -239,10 +246,10 @@ namespace Osu.Cof.Ferm.Heuristics
                                 float thirdStepSize = MathF.Min(secondStepSize / (1.0F - 0.01F * secondIntensity), 100.0F);
                                 this.EnumerateThinningIntensities(thirdThinPrescription, thirdStepSize, (float thirdIntensity) =>
                                 {
-                                    this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
-                                });
-                            });
-                        });
+                                    this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, thirdThinPrescription, perfCounters);
+                                }, perfCounters);
+                            }, perfCounters);
+                        }, perfCounters);
                     }
                     else
                     {
@@ -252,9 +259,9 @@ namespace Osu.Cof.Ferm.Heuristics
                             float secondStepSize = MathF.Min(this.Parameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
                             this.EnumerateThinningIntensities(secondThinPrescription!, secondStepSize, (float secondIntensity) =>
                             {
-                                this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, null);
-                            });
-                        });
+                                this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, null, perfCounters);
+                            }, perfCounters);
+                        }, perfCounters);
                     }
                 }
                 else
@@ -262,18 +269,19 @@ namespace Osu.Cof.Ferm.Heuristics
                     // one thin
                     this.EnumerateThinningIntensities(firstThinPrescription, this.Parameters.StepSize, (float firstIntensity) =>
                     {
-                        this.EvaluateCurrentPrescriptions(firstThinPrescription, null, null);
-                    });
+                        this.EvaluateCurrentPrescriptions(firstThinPrescription, null, null, perfCounters);
+                    }, perfCounters);
                 }
             }
             else
             {
                 // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory
-                this.EvaluateCurrentPrescriptions(null, null, null);
+                this.EvaluateCurrentPrescriptions(null, null, null, perfCounters);
             }
 
             stopwatch.Stop();
-            return stopwatch.Elapsed;
+            perfCounters.Duration = stopwatch.Elapsed;
+            return perfCounters;
         }
     }
 }

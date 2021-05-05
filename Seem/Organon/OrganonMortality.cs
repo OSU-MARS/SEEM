@@ -4,29 +4,28 @@ namespace Osu.Cof.Ferm.Organon
 {
     internal class OrganonMortality
     {
-        private static float GetMortalityFertilizationAdjustment(FiaCode species, TreeModel treeModel, int simulationStep, OrganonTreatments treatments)
+        private static float GetMortalityFertilizationAdjustment(OrganonVariant variant, FiaCode species, OrganonTreatments treatments)
         {
             // fertilization mortality effects currently supported only for non-RAP Douglas-fir
-            if ((treatments.FertilizationsPerformed < 1) || (species != FiaCode.PseudotsugaMenziesii) || (treeModel == TreeModel.OrganonRap))
+            if ((species != FiaCode.PseudotsugaMenziesii) || (variant.TreeModel == TreeModel.OrganonRap))
             {
                 return 0.0F;
             }
 
             // non-RAP Douglas-fir
-            // Hann 2003 Research Contribution 40, Table 37: Parameters for predicting fertlization response of 5-year mortality
+            // Hann 2003 Research Contribution 40, Table 37: Parameters for predicting fertilization response of 5-year mortality
             float c5 = 0.0000552859F;
             float PF2 = 1.5F;
             float PF3 = -0.5F;
 
-            float XTIME = Constant.DefaultTimeStepInYears * (float)simulationStep;
-            float FERTX1 = 0.0F;
-            for (int treatmentIndex = 1; treatmentIndex < 5; ++treatmentIndex)
+            float fertX1 = treatments.GetFertX1(variant, PF3 / PF2, out float mostRecentFertilization, out int yearsSinceMostRecentFertilization);
+            if (mostRecentFertilization == 0.0F)
             {
-                // BUGBUG: summation range doesn't match 13 or 18 year periods given in Hann 2003 Table 3
-                FERTX1 += treatments.PoundsOfNitrogenPerAcre[treatmentIndex] * MathV.Exp(PF3 / PF2 * (treatments.TimeStepsSinceFertilization[0] - treatments.TimeStepsSinceFertilization[treatmentIndex]));
+                return 0.0F;
             }
-            float FERTADJ = c5 * MathV.Pow(treatments.PoundsOfNitrogenPerAcre[0] + FERTX1, PF2) * MathV.Exp(PF3 * (XTIME - treatments.TimeStepsSinceFertilization[0]));
-            return FERTADJ;
+
+            float fertilizationMultiplier = c5 * MathV.Pow(mostRecentFertilization + fertX1, PF2) * MathV.Exp(PF3 * yearsSinceMostRecentFertilization);
+            return fertilizationMultiplier;
         }
 
         /// <summary>
@@ -100,12 +99,12 @@ namespace Osu.Cof.Ferm.Organon
             return oldGrowthIndicator;
         }
 
-        public static void ReduceExpansionFactors(OrganonConfiguration configuration, int simulationStep, OrganonStand stand, OrganonStandDensity densityBeforeGrowth)
+        public static void ReduceExpansionFactors(OrganonConfiguration configuration, OrganonStand stand, OrganonStandDensity densityBeforeGrowth)
         {
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 FiaCode species = treesOfSpecies.Species;
-                float fertilizationExponent = OrganonMortality.GetMortalityFertilizationAdjustment(species, configuration.Variant.TreeModel, simulationStep, configuration.Treatments);
+                float fertilizationExponent = OrganonMortality.GetMortalityFertilizationAdjustment(configuration.Variant, species, configuration.Treatments);
                 configuration.Variant.ReduceExpansionFactors(stand, densityBeforeGrowth, treesOfSpecies, fertilizationExponent);
             }
         }

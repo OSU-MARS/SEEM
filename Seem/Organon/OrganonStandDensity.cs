@@ -52,7 +52,7 @@ namespace Osu.Cof.Ferm.Organon
         /// <remarks>
         /// Trees of DBH larger than 100 inches are treated as if their diameter was 100 inches.
         /// </remarks>
-        public OrganonStandDensity(OrganonStand stand, OrganonVariant variant)
+        public OrganonStandDensity(OrganonVariant variant, OrganonStand stand)
         {
             this.BasalAreaPerAcre = 0.0F;
             this.CrownCompetitionFactor = 0.0F;

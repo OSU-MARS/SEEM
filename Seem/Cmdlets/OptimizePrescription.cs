@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.FromBelowPercentageUpperLimit = 100.0F;
             this.Maximum = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };
             this.Minimum = new List<float>() { Constant.PrescriptionEnumerationDefault.MinimumIntensity };
-            this.PerturbBy = 0.0F;
+            this.ConstructionRandomness = 0.0F;
             this.ProportionalPercentage[0] = 0.0F;
             this.ProportionalPercentageUpperLimit = 100.0F;
             this.Step = Constant.PrescriptionEnumerationDefault.IntensityStep;
@@ -75,9 +75,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ParameterOutOfRangeException(nameof(this.Minimum));
             }
-            if (this.PerturbBy != 0.0F)
+            if (this.ConstructionRandomness != 0.0F)
             {
-                throw new NotSupportedException(nameof(this.PerturbBy));
+                throw new NotSupportedException(nameof(this.ConstructionRandomness));
             }
             if ((this.ProportionalPercentage.Count != 1) || (this.ProportionalPercentage[0] != 0.0F))
             {

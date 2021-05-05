@@ -16,7 +16,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public PrescriptionParameters()
         {
             this.FromAbovePercentageUpperLimit = 100.0F;
-            this.PerturbBy = 0.0F;
+            this.ConstructionRandomness = Constant.GraspDefault.FullyGreedyConstruction;
             this.ProportionalPercentage = Constant.HeuristicDefault.ProportionalPercentage;
             this.ProportionalPercentageUpperLimit = 100.0F;
             this.FromBelowPercentageUpperLimit = 100.0F;

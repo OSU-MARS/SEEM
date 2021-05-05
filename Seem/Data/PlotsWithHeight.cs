@@ -301,7 +301,7 @@ namespace Osu.Cof.Ferm.Data
             stand.SetSdiMax(configuration);
 
             float defaultOldIndex = 0.0F;
-            OrganonStandDensity density = new(stand, configuration.Variant);
+            OrganonStandDensity density = new(configuration.Variant, stand);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 // initialize crown ratio from Organon variant

@@ -142,8 +142,17 @@ namespace Osu.Cof.Ferm.Organon
                 int uncompactedTreeIndex = treesWithLargest.UncompactedIndex[compactedTreeIndex];
                 float basalAreaOfTree = treesWithLargest.GetBasalArea(compactedTreeIndex);
 
-                Debug.Assert(trajectory.IndividualTreeSelectionBySpecies[treesWithLargest.Species][uncompactedTreeIndex] == Constant.NoHarvestPeriod); // can't select trees which have already been harvested
-                Debug.Assert(treesWithLargest.LiveExpansionFactor[compactedTreeIndex] > 0.0F);
+                // selection of previously harvested trees is a defect but trees 1) not selected for thinning, selected for thinning in
+                // 2) this period or 3) later periods are eligible for removal in this period
+                int currentHarvestPeriod = trajectory.IndividualTreeSelectionBySpecies[treesWithLargest.Species][uncompactedTreeIndex];
+                if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
+                {
+                    throw new NotSupportedException("Could not select tree " + treesWithLargest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
+                }
+                if (treesWithLargest.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
+                {
+                    throw new NotSupportedException("Could not select tree " + treesWithLargest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesWithLargest.LiveExpansionFactor[compactedTreeIndex].ToString("0.00") + ".");
+                }
                 trajectory.SetTreeSelection(maximumSpecies, uncompactedTreeIndex, this.Period);
 
                 basalAreaRemovedFromAbove += basalAreaOfTree; // for now, use complete removal of tree's expansion factor
@@ -175,8 +184,15 @@ namespace Osu.Cof.Ferm.Organon
                 int uncompactedTreeIndex = treesWithSmallest.UncompactedIndex[compactedTreeIndex];
                 float basalAreaOfTree = treesWithSmallest.GetBasalArea(compactedTreeIndex);
 
-                Debug.Assert(trajectory.IndividualTreeSelectionBySpecies[treesWithSmallest.Species][uncompactedTreeIndex] == Constant.NoHarvestPeriod); // can't select trees which have already been harvested
-                Debug.Assert(treesWithSmallest.LiveExpansionFactor[compactedTreeIndex] > 0.0F);
+                int currentHarvestPeriod = trajectory.IndividualTreeSelectionBySpecies[treesWithSmallest.Species][uncompactedTreeIndex];
+                if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
+                {
+                    throw new NotSupportedException("Could not select tree " + treesWithSmallest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
+                }
+                if (treesWithSmallest.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
+                {
+                    throw new NotSupportedException("Could not select tree " + treesWithSmallest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesWithSmallest.LiveExpansionFactor[compactedTreeIndex].ToString("0.00") + ".");
+                }
                 trajectory.SetTreeSelection(minimumSpecies, uncompactedTreeIndex, this.Period);
 
                 basalAreaRemovedFromBelow += basalAreaOfTree;
@@ -212,19 +228,38 @@ namespace Osu.Cof.Ferm.Organon
 
                 for (int thinIndex = thinFromBelowIndexBySpecies[speciesDbhSortOrder.Key]; thinIndex < thinFromAboveIndexBySpecies[speciesDbhSortOrder.Key]; ++thinIndex)
                 {
+                    int compactedTreeIndex = dbhSortOrder[thinIndex];
+                    int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
+                    int currentHarvestPeriod = trajectory.IndividualTreeSelectionBySpecies[treesOfSpecies.Species][uncompactedTreeIndex];
+
                     proportionalThinAccumulator += proportionalIncrement;
                     if (proportionalThinAccumulator >= 1.0F)
                     {
-                        int compactedTreeIndex = dbhSortOrder[thinIndex];
-                        int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
                         float basalAreaOfTree = treesOfSpecies.GetBasalArea(compactedTreeIndex);
-
-                        Debug.Assert(trajectory.IndividualTreeSelectionBySpecies[treesOfSpecies.Species][uncompactedTreeIndex] == Constant.NoHarvestPeriod); // can't select trees which have already been harvested
-                        Debug.Assert(treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] > 0.0F);
+                        if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
+                        {
+                            throw new NotSupportedException("Could not select tree " + treesOfSpecies.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
+                        }
+                        if (treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
+                        {
+                            throw new NotSupportedException("Could not select tree " + treesOfSpecies.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesOfSpecies.LiveExpansionFactor[compactedTreeIndex].ToString("0.00") + ".");
+                        }
                         trajectory.SetTreeSelection(speciesDbhSortOrder.Key, uncompactedTreeIndex, this.Period);
 
                         basalAreaRemovedProportionally += basalAreaOfTree;                        
                         proportionalThinAccumulator -= 1.0F;
+                    }
+                    else if (currentHarvestPeriod == this.Period)
+                    {
+                        // for now, assume this is the only harvest prescription active for this period
+                        // This makes the prescription authorative for tree assignments in the period and, therefore, able to release trees from
+                        // harvest.
+                        trajectory.SetTreeSelection(speciesDbhSortOrder.Key, uncompactedTreeIndex, Constant.NoHarvestPeriod);
+                    }
+                    else if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
+                    {
+                        // tree is expected to be retained through this period (but possible harvested later), so prior removal is an error
+                        throw new NotSupportedException("Tree " + treesOfSpecies.Tag[compactedTreeIndex] + " is thinned in period " + currentHarvestPeriod + " but is expected to be retained through period " + this.Period + ".");
                     }
                 }
             }
