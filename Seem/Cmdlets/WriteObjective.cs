@@ -1,6 +1,7 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -12,6 +13,10 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommunications.Write, "Objective")]
     public class WriteObjective : WriteCmdlet
     {
+        [Parameter(HelpMessage = "Maximum size of output file in gigabytes.")]
+        [ValidateRange(0.1F, 100.0F)]
+        public float MaxFileSize { get; set; }
+
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public HeuristicResultSet? Results { get; set; }
@@ -22,6 +27,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public WriteObjective()
         {
+            this.MaxFileSize = 5.0F; // 5 GB, approximate upper bound of what fread() can load in R
             this.Step = 1;
         }
 
@@ -35,7 +41,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
 
             // for now, perform no reduction when Object.ReferenceEquals(lowestSolution, highestSolution) is true
-            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
                 HeuristicDistribution distribution = this.Results.Distributions[0];
@@ -45,7 +50,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first result is missing a highest solution, lowest solution, or heuristic parameters.");
                 }
 
-                line.Append("stand,heuristic," + distribution.HeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",iteration,count");
+                StringBuilder line = new("stand,heuristic," + distribution.HeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",iteration,count");
 
                 string lowestMoveLogHeader = "lowest move log";
                 IHeuristicMoveLog? lowestMoveLog = solution.Lowest!.GetMoveLog();
@@ -69,15 +74,64 @@ namespace Osu.Cof.Ferm.Cmdlets
                 writer.WriteLine(line);
             }
 
+            // sort each iscount rate's runs by decreasing objective function value  
+            List<List<(float Objective, int Index)>> solutionsByDiscountRateIndexAndObjective = new();
             for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
             {
+                Heuristic? highestHeuristic = this.Results.Solutions[resultIndex].Highest;
+                if (highestHeuristic == null)
+                {
+                    throw new NotSupportedException("Result " + resultIndex + " is missing a highest solution.");
+                }
+
                 HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
-                HeuristicSolutionPool solution = this.Results.Solutions[resultIndex];
+                int discountRateIndex = distribution.DiscountRateIndex;
+                while (discountRateIndex >= solutionsByDiscountRateIndexAndObjective.Count)
+                {
+                    solutionsByDiscountRateIndexAndObjective.Add(new());
+                }
+
+                List<(float Objective, int Index)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
+                runsForDiscountRate.Add((highestHeuristic.BestObjectiveFunction, resultIndex));
+            }
+            for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
+            {
+                List<(float Objective, int Index)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
+                runsForDiscountRate.Sort((run1, run2) => run2.Objective.CompareTo(run1.Objective)); // descending
+            }
+
+            // list runs in declining order of objective function value for logging
+            // Runs are listed in groups with each discount rate having the ability to be represented within each group. This controls for reduction in
+            // land expectation values with increasing discount rate, enabling preferentiall logging of the move histories for the most desirable runs.
+            List<int> prioritizedResultIndices = new();
+            int[] resultIndicesByDiscountRate = new int[solutionsByDiscountRateIndexAndObjective.Count];
+            for (bool atLeastOneRunAddedByInnerLoop = true; atLeastOneRunAddedByInnerLoop; )
+            {
+                atLeastOneRunAddedByInnerLoop = false;
+                for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
+                {
+                    List<(float Objective, int Index)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
+                    int resultIndexForDiscountRate = resultIndicesByDiscountRate[discountRateIndex];
+                    if (resultIndexForDiscountRate < runsForDiscountRate.Count)
+                    {
+                        prioritizedResultIndices.Add(runsForDiscountRate[resultIndexForDiscountRate].Index);
+                        resultIndicesByDiscountRate[discountRateIndex] = ++resultIndexForDiscountRate;
+                        atLeastOneRunAddedByInnerLoop = true;
+                    }
+                }
+            }
+
+            // log runs in declining priority order until either all runs are logged or the file size limit is reached
+            long maxFileSizeInBytes = (long)(1E9F * this.MaxFileSize);
+            foreach (int resultIndexToLog in prioritizedResultIndices)
+            {
+                HeuristicDistribution distribution = this.Results.Distributions[resultIndexToLog];
+                HeuristicSolutionPool solution = this.Results.Solutions[resultIndexToLog];
                 Heuristic? highestHeuristic = solution.Highest;
                 Heuristic? lowestHeuristic = solution.Lowest;
                 if ((distribution.HeuristicParameters == null) || (highestHeuristic == null) || (lowestHeuristic == null))
                 {
-                    throw new NotSupportedException("Result " + resultIndex + " is missing a highest or lowest solution or highest solution parameters.");
+                    throw new NotSupportedException("Result " + resultIndexToLog + " is missing a highest or lowest solution or highest solution parameters.");
                 }
                 IHeuristicMoveLog? highestMoveLog = highestHeuristic.GetMoveLog();
                 IHeuristicMoveLog? lowestMoveLog = lowestHeuristic.GetMoveLog();
@@ -103,8 +157,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                 Debug.Assert(distribution.CountByMove.Count >= highestHeuristic.AcceptedObjectiveFunctionByMove.Count);
                 for (int moveIndex = 0; moveIndex < distribution.CountByMove.Count; moveIndex += this.Step)
                 {
-                    line.Clear();
-
                     string runsWithMoveAtIndex = distribution.CountByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
 
                     string? lowestMove = null;
@@ -178,26 +230,31 @@ namespace Osu.Cof.Ferm.Cmdlets
                         highestObjectiveFunctionForMove = highestHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    line.Append(runPrefix + "," + 
-                                moveIndex + "," + 
-                                runsWithMoveAtIndex + "," + 
-                                lowestMove + "," +
-                                lowestObjectiveFunction + "," +
-                                lowestObjectiveFunctionForMove + "," +
-                                minObjectiveFunction + "," + 
-                                twoPointFivePercentileObjectiveFunction + "," +
-                                fifthPercentileObjectiveFunction + "," +
-                                lowerQuartileObjectiveFunction + "," + 
-                                medianObjectiveFunction + "," + 
-                                meanObjectiveFunction + "," + 
-                                upperQuartileObjectiveFunction + "," +
-                                ninetyFifthPercentileObjectiveFunction + "," +
-                                ninetySevenPointFivePercentileObjectiveFunction + "," +
-                                maxObjectiveFunction + "," + 
-                                highestMove + "," +
-                                highestObjectiveFunction + "," +
-                                highestObjectiveFunctionForMove);
-                    writer.WriteLine(line);
+                    writer.WriteLine(runPrefix + "," + 
+                                     moveIndex + "," + 
+                                     runsWithMoveAtIndex + "," + 
+                                     lowestMove + "," +
+                                     lowestObjectiveFunction + "," +
+                                     lowestObjectiveFunctionForMove + "," +
+                                     minObjectiveFunction + "," + 
+                                     twoPointFivePercentileObjectiveFunction + "," +
+                                     fifthPercentileObjectiveFunction + "," +
+                                     lowerQuartileObjectiveFunction + "," + 
+                                     medianObjectiveFunction + "," + 
+                                     meanObjectiveFunction + "," + 
+                                     upperQuartileObjectiveFunction + "," +
+                                     ninetyFifthPercentileObjectiveFunction + "," +
+                                     ninetySevenPointFivePercentileObjectiveFunction + "," +
+                                     maxObjectiveFunction + "," + 
+                                     highestMove + "," +
+                                     highestObjectiveFunction + "," +
+                                     highestObjectiveFunctionForMove);
+                }
+
+                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                {
+                    this.WriteWarning("Maximum file size of " + this.MaxFileSize.ToString("0.00") + " GB reached.");
+                    break;
                 }
             }
         }

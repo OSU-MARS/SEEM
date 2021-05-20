@@ -23,7 +23,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             using StreamWriter writer = this.GetWriter();
 
-            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
                 HeuristicDistribution distribution = this.Results.Distributions[0];
@@ -32,8 +31,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first run is missing highest solution parameters");
                 }
 
-                line.Append("stand,heuristic," + distribution.HeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",generation,highest min,highest mean,highest max,highest cov,highest alleles,highest heterozygosity,highest individuals,highest polymorphism,lowest min,lowest mean,lowest max,lowest cov,lowest alleles,lowest heterozygosity,lowest individuals,lowest polymorphism");
-                writer.WriteLine(line);
+                writer.WriteLine("stand,heuristic," + distribution.HeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",generation,highest min,highest mean,highest max,highest cov,highest alleles,highest heterozygosity,highest individuals,highest polymorphism,lowest min,lowest mean,lowest max,lowest cov,lowest alleles,lowest heterozygosity,lowest individuals,lowest polymorphism");
             }
 
             for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
@@ -57,8 +55,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                 int maxGenerations = Math.Max(highestStatistics.Generations, lowestStatistics.Generations);
                 for (int generationIndex = 0; generationIndex < maxGenerations; ++generationIndex)
                 {
-                    line.Clear();
-
                     string? highestMinimumFitness = null;
                     string? highestMeanFitness = null;
                     string? highestMaximumFitness = null;
@@ -99,25 +95,24 @@ namespace Osu.Cof.Ferm.Cmdlets
                         lowestPolymorphism = lowestStatistics.PolymorphismByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    line.Append(linePrefix + "," + 
-                                generationIndex + "," +
-                                highestMinimumFitness + "," +
-                                highestMeanFitness + "," +
-                                highestMaximumFitness + "," +
-                                highestCoefficientOfVariance + "," +
-                                highestMeanAlleles + "," +
-                                highestMeanHeterozygosity + "," +
-                                highestNewIndividuals + "," +
-                                highestPolymorphism + "," +
-                                lowestMinimumFitness + "," +
-                                lowestMeanFitness + "," +
-                                lowestMaximumFitness + "," +
-                                lowestCoefficientOfVariance + "," +
-                                lowestMeanAlleles + "," +
-                                lowestMeanHeterozygosity + "," +
-                                lowestNewIndividuals + "," +
-                                lowestPolymorphism);
-                    writer.WriteLine(line);
+                    writer.WriteLine(linePrefix + "," + 
+                                     generationIndex + "," +
+                                     highestMinimumFitness + "," +
+                                     highestMeanFitness + "," +
+                                     highestMaximumFitness + "," +
+                                     highestCoefficientOfVariance + "," +
+                                     highestMeanAlleles + "," +
+                                     highestMeanHeterozygosity + "," +
+                                     highestNewIndividuals + "," +
+                                     highestPolymorphism + "," +
+                                     lowestMinimumFitness + "," +
+                                     lowestMeanFitness + "," +
+                                     lowestMaximumFitness + "," +
+                                     lowestCoefficientOfVariance + "," +
+                                     lowestMeanAlleles + "," +
+                                     lowestMeanHeterozygosity + "," +
+                                     lowestNewIndividuals + "," +
+                                     lowestPolymorphism);
                 }
             }
         }

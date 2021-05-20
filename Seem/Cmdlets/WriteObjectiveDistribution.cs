@@ -27,7 +27,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             using StreamWriter writer = this.GetWriter();
 
-            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
                 HeuristicParameters? highestParameters = this.Results.Distributions[0].HeuristicParameters;
@@ -36,8 +35,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first result is missing highest solution parameters.");
                 }
 
-                line.Append("stand,heuristic," + highestParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",solution,objective,accepted,rejected,runtime,timesteps");
-                writer.WriteLine(line);
+                writer.WriteLine("stand,heuristic," + highestParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",solution,objective,accepted,rejected,runtime,timesteps");
             }
 
             for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
@@ -58,17 +56,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)
                 {
-                    line.Clear();
-
                     HeuristicPerformanceCounters perfCounters = distribution.PerfCountersBySolution[solutionIndex];
-                    line.Append(linePrefix + "," + 
-                                solutionIndex.ToString(CultureInfo.InvariantCulture) + "," +
-                                bestSolutions[solutionIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                perfCounters.MovesAccepted.ToString(CultureInfo.InvariantCulture) + "," +
-                                perfCounters.MovesRejected.ToString(CultureInfo.InvariantCulture) + "," +
-                                perfCounters.Duration.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                perfCounters.GrowthModelTimesteps.ToString(CultureInfo.InvariantCulture));
-                    writer.WriteLine(line);
+                    writer.WriteLine(linePrefix + "," + 
+                                     solutionIndex.ToString(CultureInfo.InvariantCulture) + "," +
+                                     bestSolutions[solutionIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                     perfCounters.MovesAccepted.ToString(CultureInfo.InvariantCulture) + "," +
+                                     perfCounters.MovesRejected.ToString(CultureInfo.InvariantCulture) + "," +
+                                     perfCounters.Duration.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     perfCounters.GrowthModelTimesteps.ToString(CultureInfo.InvariantCulture));
                 }
             }
         }

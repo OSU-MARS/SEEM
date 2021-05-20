@@ -26,9 +26,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                StringBuilder line = new();
-                line.Append("log length,species,height,DBH,cubic 2S,cubic 3S,cubic 4S,scribner 2S,scribner 3S,scribner 4S");
-                writer.WriteLine(line);
+                writer.WriteLine("log length,species,height,DBH,cubic 2S,cubic 3S,cubic 4S,scribner 2S,scribner 3S,scribner 4S");
             }
 
             WriteVolumeTable.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeRegenerationHarvest);
@@ -37,8 +35,6 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         private static void WriteScaledVolume(StreamWriter writer, ScaledVolume scaledVolume)
         {
-            StringBuilder line = new();
-
             string logLengthAsString = scaledVolume.PreferredLogLengthInMeters.ToString(CultureInfo.InvariantCulture);
             foreach (KeyValuePair<FiaCode, TreeVolumeTable> species in scaledVolume.VolumeBySpecies)
             {
@@ -57,9 +53,15 @@ namespace Osu.Cof.Ferm.Cmdlets
                         string scribner3saw = volumeTable.Scribner3Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
                         string scribner4saw = volumeTable.Scribner4Saw[dbhIndex, heightIndex].ToString(CultureInfo.InvariantCulture);
 
-                        line.Clear();
-                        line.Append(speciesPrefix + "," + height + "," + dbh + "," + cubic2saw + "," + cubic3saw + "," + cubic4saw + "," + scribner2saw + "," + scribner3saw + "," + scribner4saw);
-                        writer.WriteLine(line);
+                        writer.WriteLine(speciesPrefix + "," + 
+                                         height + "," + 
+                                         dbh + "," + 
+                                         cubic2saw + "," + 
+                                         cubic3saw + "," + 
+                                         cubic4saw + "," + 
+                                         scribner2saw + "," + 
+                                         scribner3saw + "," + 
+                                         scribner4saw);
                     }
                 }
             }

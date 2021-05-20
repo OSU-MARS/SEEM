@@ -21,10 +21,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // header
             bool runsSpecified = this.Results != null;
-            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
-                line.Append("stand,heuristic");
+                StringBuilder line = new("stand,heuristic");
 
                 HeuristicParameters? heuristicParametersForHeader = null;
                 if (runsSpecified)
@@ -75,13 +74,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                             string snagsPerHectare = snags[periodIndex, diameterClassIndex].ToString("0.00", CultureInfo.InvariantCulture);
                             string logsPerHectare = logs[periodIndex, diameterClassIndex].ToString("0.00", CultureInfo.InvariantCulture);
 
-                            line.Clear();
-                            line.Append(linePrefix + "," +
-                                        standAgeAndSpeciesCode + "," +
-                                        diameter + "," +
-                                        snagsPerHectare + "," +
-                                        logsPerHectare);
-                            writer.WriteLine(line);
+                            writer.WriteLine(linePrefix + "," +
+                                             standAgeAndSpeciesCode + "," +
+                                             diameter + "," +
+                                             snagsPerHectare + "," +
+                                             logsPerHectare);
                         }
                     }
                 }

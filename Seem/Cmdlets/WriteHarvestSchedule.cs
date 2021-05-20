@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
-using System.Text;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
@@ -26,16 +25,14 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             using StreamWriter writer = this.GetWriter();
-            StringBuilder line = new();
-            if (this.Append == false)
+            if (this.ShouldWriteHeader())
             {
                 HeuristicParameters? highestHeuristicParameters = this.Results.Distributions[0].HeuristicParameters;
                 if (highestHeuristicParameters == null)
                 {
                     throw new NotSupportedException("Cannot generate schedule header because first run has no heuristic parameters.");
                 }
-                line.Append("stand,heuristic," + highestHeuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",tree,lowest selection,highest selection,highest first thin DBH,highest first thin height,highest first thin CR,highest first thin EF,highest first thin BF,highest second thin DBH,highest second thin height,highest second thin CR,highest second thin EF,highest second thin BF,highest third thin DBH,highest third thin height,highest third thin CR,highest third thin EF,highest third thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
-                writer.WriteLine(line);
+                writer.WriteLine("stand,heuristic," + highestHeuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",tree,lowest selection,highest selection,highest first thin DBH,highest first thin height,highest first thin CR,highest first thin EF,highest first thin BF,highest second thin DBH,highest second thin height,highest second thin CR,highest second thin EF,highest second thin BF,highest third thin DBH,highest third thin height,highest third thin CR,highest third thin EF,highest third thin BF,highest final DBH,highest final height,highest final CR,highest final EF,highest final BF");
             }
 
             for (int resultIndex = 0; resultIndex < this.Results!.Count; ++resultIndex)
@@ -113,8 +110,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int finalCompactedTreeIndex = 0;
                     for (int uncompactedTreeIndex = 0; uncompactedTreeIndex < highestTreesBeforeFirstThin.Count; ++uncompactedTreeIndex)
                     {
-                        line.Clear();
-
                         float highestThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highestTreesBeforeFirstThin, uncompactedTreeIndex);
 
                         string? highestFirstThinDbh = null;
@@ -187,31 +182,29 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                         // for now, make best guess of using tree tag or index as unique identifier
                         int treeID = highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex] < 0 ? previousSpeciesCount + uncompactedTreeIndex : highestTreesBeforeFirstThin.Tag[uncompactedTreeIndex];
-                        line.Append(linePrefix + "," + treeID + "," +
-                                    lowestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    highestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    highestFirstThinDbh + "," +
-                                    highestFirstThinHeight + "," +
-                                    highestFirstThinCrownRatio + "," +
-                                    highestFirstThinExpansionFactor + "," +
-                                    highestFirstThinBoardFeet + "," +
-                                    highestSecondThinDbh + "," +
-                                    highestSecondThinHeight + "," +
-                                    highestSecondThinCrownRatio + "," +
-                                    highestSecondThinExpansionFactor + "," +
-                                    highestSecondThinBoardFeet + "," +
-                                    highestThirdThinDbh + "," +
-                                    highestThirdThinHeight + "," +
-                                    highestThirdThinCrownRatio + "," +
-                                    highestThirdThinExpansionFactor + "," +
-                                    highestThirdThinBoardFeet + "," +
-                                    highestFinalDbh + "," +
-                                    highestFinalHeight + "," +
-                                    highestFinalCrownRatio + "," +
-                                    highestFinalExpansionFactor + "," +
-                                    highestFinalBoardFeet);
-
-                        writer.WriteLine(line);
+                        writer.WriteLine(linePrefix + "," + treeID + "," +
+                                         lowestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                         highestTreeSelectionN[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                         highestFirstThinDbh + "," +
+                                         highestFirstThinHeight + "," +
+                                         highestFirstThinCrownRatio + "," +
+                                         highestFirstThinExpansionFactor + "," +
+                                         highestFirstThinBoardFeet + "," +
+                                         highestSecondThinDbh + "," +
+                                         highestSecondThinHeight + "," +
+                                         highestSecondThinCrownRatio + "," +
+                                         highestSecondThinExpansionFactor + "," +
+                                         highestSecondThinBoardFeet + "," +
+                                         highestThirdThinDbh + "," +
+                                         highestThirdThinHeight + "," +
+                                         highestThirdThinCrownRatio + "," +
+                                         highestThirdThinExpansionFactor + "," +
+                                         highestThirdThinBoardFeet + "," +
+                                         highestFinalDbh + "," +
+                                         highestFinalHeight + "," +
+                                         highestFinalCrownRatio + "," +
+                                         highestFinalExpansionFactor + "," +
+                                         highestFinalBoardFeet);
                     }
 
                     previousSpeciesCount += highestTreeSelectionN.Length;

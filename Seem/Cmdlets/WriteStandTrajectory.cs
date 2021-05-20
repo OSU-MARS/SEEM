@@ -97,10 +97,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             // TODO: check for mixed units and support TBH
             // TODO: snags per acre or hectare, live and dead QMD?
             bool runsSpecified = this.Results != null;
-            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
-                line.Append("stand,heuristic");
+                StringBuilder line = new("stand,heuristic");
 
                 HeuristicParameters? heuristicParametersForHeader = null;
                 if (runsSpecified)
@@ -204,42 +203,40 @@ namespace Osu.Cof.Ferm.Cmdlets
                     // biomass
                     float liveBiomass = 0.001F * stand.GetLiveBiomass(); // Mg/ha
 
-                    line.Clear();
-                    line.Append(linePrefix + "," +
-                                stand.AgeInYears.ToString(CultureInfo.InvariantCulture) + "," +
-                                treesPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                quadraticMeanDiameterInCm.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                topHeightInM.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                basalAreaPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                snagsAndLogs.SnagsPerHectareByPeriod[period].ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                snagsAndLogs.SnagQmdInCentimetersByPeriod[period].ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                standingVolumeCubic.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                harvestVolumeCubic.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                standingVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                harvestVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                treesPerHectareDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                periodNetPresentValue.ToString("0", CultureInfo.InvariantCulture) + "," +
-                                landExpectationValue.ToString("0", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeStanding.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeStanding.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeStanding.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeHarvested.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeHarvested.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeHarvested.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeStanding.Scribner2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeStanding.Scribner3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeStanding.Scribner4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeHarvested.Scribner2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeHarvested.Scribner3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                gradedVolumeHarvested.Scribner4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                netPresentValue2Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                netPresentValue3Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                netPresentValue4Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                liveBiomass.ToString("0.00", CultureInfo.InvariantCulture));
-                    writer.WriteLine(line);
+                    writer.WriteLine(linePrefix + "," +
+                                     stand.AgeInYears.ToString(CultureInfo.InvariantCulture) + "," +
+                                     treesPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     quadraticMeanDiameterInCm.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     topHeightInM.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     basalAreaPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     snagsAndLogs.SnagsPerHectareByPeriod[period].ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     snagsAndLogs.SnagQmdInCentimetersByPeriod[period].ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     standingVolumeCubic.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     harvestVolumeCubic.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     standingVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     harvestVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     treesPerHectareDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     periodNetPresentValue.ToString("0", CultureInfo.InvariantCulture) + "," +
+                                     landExpectationValue.ToString("0", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeStanding.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeStanding.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeStanding.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeHarvested.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeHarvested.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeHarvested.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeStanding.Scribner2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeStanding.Scribner3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeStanding.Scribner4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeHarvested.Scribner2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeHarvested.Scribner3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     gradedVolumeHarvested.Scribner4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     netPresentValue2Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     netPresentValue3Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     netPresentValue4Saw.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     liveBiomass.ToString("0.00", CultureInfo.InvariantCulture));
                 }
             }
         }

@@ -27,11 +27,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
 
             // header
-            StringBuilder line = new();
             if (this.ShouldWriteHeader())
             {
-                line.Append("stand,species,tree,age,DBH,height,crown ratio,expansion factor,dead expansion factor");
-                writer.WriteLine(line);
+                writer.WriteLine("stand,species,tree,age,DBH,height,crown ratio,expansion factor,dead expansion factor");
             }
 
             // rows for trees
@@ -53,17 +51,15 @@ namespace Osu.Cof.Ferm.Cmdlets
                         float liveExpansionFactor = areaConversionFactor * treesOfSpecies.LiveExpansionFactor[treeIndex];
                         float deadExpansionFactor = areaConversionFactor * treesOfSpecies.DeadExpansionFactor[treeIndex];
 
-                        line.Clear();
-                        line.Append(stand.Name + "," +
-                                    species + "," +
-                                    treesOfSpecies.Tag[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    ageAsString + "," +
-                                    dbh.ToString(CultureInfo.InvariantCulture) + "," +
-                                    height.ToString(CultureInfo.InvariantCulture) + "," +
-                                    treesOfSpecies.CrownRatio[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                    liveExpansionFactor.ToString(CultureInfo.InvariantCulture) + "," +
-                                    deadExpansionFactor.ToString(CultureInfo.InvariantCulture));
-                        writer.WriteLine(line);
+                        writer.WriteLine(stand.Name + "," +
+                                         species + "," +
+                                         treesOfSpecies.Tag[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                         ageAsString + "," +
+                                         dbh.ToString(CultureInfo.InvariantCulture) + "," +
+                                         height.ToString(CultureInfo.InvariantCulture) + "," +
+                                         treesOfSpecies.CrownRatio[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                         liveExpansionFactor.ToString(CultureInfo.InvariantCulture) + "," +
+                                         deadExpansionFactor.ToString(CultureInfo.InvariantCulture));
                     }
                 }
 
