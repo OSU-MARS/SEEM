@@ -7,7 +7,6 @@ namespace Osu.Cof.Ferm.Organon
 {
     public class OrganonStandTrajectory : StandTrajectory
     {
-        private FiaVolume fiaVolume;
         private Dictionary<FiaCode, SpeciesCalibration> organonCalibration;
         private OrganonGrowth organonGrowth;
 
@@ -16,9 +15,8 @@ namespace Osu.Cof.Ferm.Organon
 
         public Heuristic? Heuristic { get; set; }
         public OrganonStand?[] StandByPeriod { get; private init; }
-        public bool UseFiaVolume { get; private set; }
 
-        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod, bool useFiaVolume)
+        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod)
             : base(timberValue, lastPlanningPeriod, 
                   stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand))) // base does range checks
         {
@@ -30,7 +28,6 @@ namespace Osu.Cof.Ferm.Organon
             int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
             this.Configuration = new OrganonConfiguration(organonConfiguration);
             this.DensityByPeriod = new OrganonStandDensity[maximumPlanningPeriodIndex];
-            this.fiaVolume = new FiaVolume();
             this.organonCalibration = organonConfiguration.CreateSpeciesCalibration();
             this.organonGrowth = new OrganonGrowth();
 
@@ -39,7 +36,6 @@ namespace Osu.Cof.Ferm.Organon
             this.PeriodLengthInYears = organonConfiguration.Variant.TimeStepInYears;
             this.PeriodZeroAgeInYears = stand.AgeInYears;
             this.StandByPeriod = new OrganonStand[maximumPlanningPeriodIndex];
-            this.UseFiaVolume = useFiaVolume;
 
             this.DensityByPeriod[0] = new OrganonStandDensity(organonConfiguration.Variant, stand);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
@@ -49,7 +45,7 @@ namespace Osu.Cof.Ferm.Organon
             this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
             this.StandByPeriod[0]!.Name += 0;
 
-            this.GetVolumeAndValue(0);
+            this.GetVolume(0);
         }
 
         // shallow copy FIA and Organon for now
@@ -57,7 +53,6 @@ namespace Osu.Cof.Ferm.Organon
         public OrganonStandTrajectory(OrganonStandTrajectory other)
             : base(other)
         {
-            this.fiaVolume = other.fiaVolume;
             this.organonCalibration = other.organonCalibration;
             this.organonGrowth = other.organonGrowth;
 
@@ -65,7 +60,6 @@ namespace Osu.Cof.Ferm.Organon
             this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
             this.Heuristic = other.Heuristic;
             this.StandByPeriod = new OrganonStand[other.PlanningPeriods];
-            this.UseFiaVolume = other.UseFiaVolume;
 
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
@@ -88,7 +82,6 @@ namespace Osu.Cof.Ferm.Organon
             this.CopySelectionsFrom(other);
 
             // for now, shallow copies where feasible
-            this.fiaVolume = other.fiaVolume; // has no state
             this.Heuristic = other.Heuristic; // assumed invariant within OptimizeCmdlet.Run() tasks
             this.organonCalibration = other.organonCalibration; // unused
             this.organonGrowth = other.organonGrowth; // BUGBUG: has no state, should have run state which can be copied
@@ -131,8 +124,6 @@ namespace Osu.Cof.Ferm.Organon
                     this.StandByPeriod[periodIndex] = null;
                 }
             }
-
-            this.UseFiaVolume = other.UseFiaVolume;
         }
 
         public void CopySelectionsFrom(StandTrajectory other)
@@ -182,19 +173,7 @@ namespace Osu.Cof.Ferm.Organon
             return units;
         }
 
-        private void GetVolumeAndValue(int periodIndex)
-        {
-            if (this.UseFiaVolume)
-            {
-                this.GetFiaVolumeAndValue(periodIndex);
-            }
-            else
-            {
-                this.GetScaledVolumeAndValue(periodIndex);
-            }
-        }
-
-        private void GetFiaVolumeAndValue(int periodIndex)
+        private void GetVolume(int periodIndex)
         {
             // harvest volumes, if applicable
             foreach (IHarvest harvest in this.Configuration.Treatments.Harvests)
@@ -205,79 +184,22 @@ namespace Osu.Cof.Ferm.Organon
                     // Use tree's volume at end of the the previous period.
                     // TODO: track per species volumes
                     OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
-                    double harvestedScribner6x32footLogPerAcre = 0.0F;
-                    foreach (Trees previousTreesOfSpecies in previousStand.TreesBySpecies.Values)
-                    {
-                        if (previousTreesOfSpecies.Units != Units.English)
-                        {
-                            throw new NotSupportedException();
-                        }
-
-                        int[] individualTreeSelection = this.IndividualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-                        Debug.Assert(individualTreeSelection.Length == previousTreesOfSpecies.Capacity); // tree selection and tree capacities are expected to match
-                        for (int compactedTreeIndex = 0; compactedTreeIndex < previousTreesOfSpecies.Count; ++compactedTreeIndex)
-                        {
-                            int uncompactedTreeIndex = previousTreesOfSpecies.UncompactedIndex[compactedTreeIndex];
-                            if (individualTreeSelection[uncompactedTreeIndex] == periodIndex)
-                            {
-                                float treesPerAcre = previousTreesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                                Debug.Assert(treesPerAcre > 0.0F);
-                                harvestedScribner6x32footLogPerAcre += treesPerAcre * FiaVolume.GetScribnerBoardFeet(previousTreesOfSpecies, compactedTreeIndex);
-                            }
-                        }
-                    }
-
-                    this.ThinningVolume.ScribnerTotal[periodIndex] = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * (float)harvestedScribner6x32footLogPerAcre;
-                    if (harvestedScribner6x32footLogPerAcre <= 0.0001F)
-                    {
-                        Debug.Assert(harvestedScribner6x32footLogPerAcre == 0.0F);
-                        this.ThinningVolume.NetPresentValue[periodIndex] = 0.0F;
-                    }
-                    else
-                    {
-                        int thinAge = this.GetStartOfPeriodAge(periodIndex);
-                        this.ThinningVolume.NetPresentValue[periodIndex] = this.TimberValue.GetNetPresentThinningValue(this.ThinningVolume.ScribnerTotal[periodIndex], thinAge);
-                    }
-
-                    // could make more specific by checking if harvest removes at least one tree with merchantable volume
-                    // basal area threshold will need to be updated when metric units are supportd
-                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
-                                  this.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F);
+                    this.ThinningVolume.SetScribnerHarvest(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TimberValue);
+                    // could make more specific by checking if harvest removes at least one tree
+                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.GetScribnerTotal(periodIndex) > 0.0F) ||
+                                  this.ThinningVolume.GetScribnerTotal(periodIndex) == 0.0F);
                 }
             }
 
             // standing volume
             OrganonStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
-            // double standingCvts4perAcre = 0.0F;
-            double standingScribner6x32footLogPerAcre = 0.0F;
-            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
-            {
-                if (treesOfSpecies.Units != Units.English)
-                {
-                    throw new NotSupportedException();
-                }
-
-                // for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
-                // {
-                //     float expansionFactor = treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                //     if (expansionFactor > 0.0F)
-                //     {
-                //         standingCvts4perAcre += expansionFactor * FiaVolume.GetMerchantableCubicFeet(treesOfSpecies, compactedTreeIndex);
-                //     }
-                // }
-
-                standingScribner6x32footLogPerAcre += FiaVolume.GetScribnerBoardFeetPerAcre(treesOfSpecies);
-            }
-
-            this.StandingVolume.ScribnerTotal[periodIndex] = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * (float)standingScribner6x32footLogPerAcre;
-            int harvestAge = this.GetEndOfPeriodAge(periodIndex);
-            this.StandingVolume.NetPresentValue[periodIndex] = this.TimberValue.GetNetPresentRegenerationHarvestValue(this.StandingVolume.ScribnerTotal[periodIndex], harvestAge);
+            this.StandingVolume.SetStandingScribnerVolume(stand, periodIndex, this.TimberValue);
         }
 
-        public void GetGradedVolumes(out StandGradedVolume gradedVolumeStanding, out StandGradedVolume gradedVolumeHarvested)
+        public void GetGradedVolumes(out StandCubicAndScribnerVolume gradedVolumeStanding, out StandCubicAndScribnerVolume gradedVolumeHarvested)
         {
-            gradedVolumeHarvested = new StandGradedVolume(this.PlanningPeriods);
-            gradedVolumeStanding = new StandGradedVolume(this.PlanningPeriods);
+            gradedVolumeHarvested = new StandCubicAndScribnerVolume(this.ThinningVolume);
+            gradedVolumeStanding = new StandCubicAndScribnerVolume(this.StandingVolume);
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
                 // harvest volumes, if applicable
@@ -289,37 +211,14 @@ namespace Osu.Cof.Ferm.Organon
                         // Use tree's volume at end of the the previous period.
                         // TODO: track per species volumes
                         OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
-                        gradedVolumeHarvested.FromStand(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TimberValue, this.GetStartOfPeriodAge(periodIndex));
+                        gradedVolumeHarvested.SetCubicVolumeHarvested(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TimberValue);
                     }
                 }
 
                 // standing volume
                 OrganonStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
-                gradedVolumeStanding.FromStand(stand, periodIndex, this.TimberValue, this.GetEndOfPeriodAge(periodIndex));
+                gradedVolumeStanding.SetStandingCubicVolume(stand, periodIndex, this.TimberValue);
             }
-        }
-
-        private void GetScaledVolumeAndValue(int periodIndex)
-        {
-            // harvest volumes, if applicable
-            foreach (IHarvest harvest in this.Configuration.Treatments.Harvests)
-            {
-                if (harvest.Period == periodIndex)
-                {
-                    // tree's expansion factor is set to zero when it's marked for harvest
-                    // Use tree's volume at end of the the previous period.
-                    // TODO: track per species volumes
-                    OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
-                    this.ThinningVolume.FromStand(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TimberValue, this.GetStartOfPeriodAge(periodIndex));
-                    // could make more specific by checking if harvest removes at least one tree
-                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
-                                  this.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F);
-                }
-            }
-
-            // standing volume
-            OrganonStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + "."); 
-            this.StandingVolume.FromStand(stand, periodIndex, this.TimberValue, this.GetEndOfPeriodAge(periodIndex));
         }
 
         public int Simulate()
@@ -427,9 +326,9 @@ namespace Osu.Cof.Ferm.Organon
                     }
 
                     // recalculate volume for this period
-                    this.GetVolumeAndValue(periodIndex);
+                    this.GetVolume(periodIndex);
 
-                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F) ||
+                    Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolume.GetScribnerTotal(periodIndex) > 0.0F) ||
                                   this.BasalAreaRemoved[periodIndex] == 0.0F);
                     ++growthModelEvaulations;
                 }

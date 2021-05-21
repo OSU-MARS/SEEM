@@ -41,9 +41,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Tenure = Constant.TabuDefault.Tenure;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, TabuParameters parameters)
+        protected override Heuristic<TabuParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, TabuParameters heuristicParameters, RunParameters runParameters)
         {
-            return new TabuSearch(this.Stand!, organonConfiguration, objective, parameters);
+            return new TabuSearch(this.Stand!, organonConfiguration, heuristicParameters, runParameters);
         }
 
         protected override string GetName()
@@ -56,7 +56,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             int treeRecords = this.Stand!.GetTreeRecordCount();
 
             List<TabuParameters> parameterCombinations = new(this.EscapeAfter.Count * this.EscapeBy.Count *
-                this.IterationMultipliers.Count * this.MaxTenure.Count * this.ProportionalPercentage.Count);
+                this.IterationMultipliers.Count * this.MaxTenure.Count * this.InitialThinningProbability.Count);
             foreach (float escapeAfter in this.EscapeAfter)
             {
                 foreach (float escapeBy in this.EscapeBy)
@@ -65,7 +65,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         foreach (float tenureRatio in this.MaxTenure)
                         {
-                            foreach (float proportionalPercentage in this.ProportionalPercentage)
+                            foreach (float thinningProbability in this.InitialThinningProbability)
                             {
                                 parameterCombinations.Add(new TabuParameters()
                                 {
@@ -74,10 +74,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     Iterations = (int)(iterationRatio * treeRecords / MathF.Log(treeRecords) + 0.5F),
                                     MaximumTenure = (int)(tenureRatio * treeRecords),
                                     ConstructionRandomness = this.ConstructionRandomness,
-                                    ProportionalPercentage = proportionalPercentage,
+                                    InitialThinningProbability = thinningProbability,
                                     Tenure = this.Tenure,
                                     TimberValue = timberValue,
-                                    UseFiaVolume = this.ScaledVolume
                                 });
                             }
                         }

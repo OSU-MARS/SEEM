@@ -16,9 +16,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         public SwitchParameter Stochastic { get; set; }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters parameters, RunParameters runParameters)
         {
-            Hero hero = new(this.Stand!, organonConfiguration, objective, parameters)
+            Hero hero = new(this.Stand!, organonConfiguration, parameters, runParameters)
             {
                 IsStochastic = this.Stochastic
             };

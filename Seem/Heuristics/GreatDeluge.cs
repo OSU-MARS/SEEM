@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class GreatDeluge : SingleTreeHeuristic
+    public class GreatDeluge : SingleTreeHeuristic<HeuristicParameters>
     {
         public float ChangeToExchangeAfter { get; set; }
         public float FinalMultiplier { get; set; }
@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public float? RainRate { get; set; }
         public int StopAfter { get; set; }
 
-        public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
-            : base(stand, organonConfiguration, objective, parameters)
+        public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, organonConfiguration, heuristicParameters, runParameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.ChangeToExchangeAfter = Int32.MaxValue;
@@ -37,23 +37,23 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Deluge";
         }
 
-        public override HeuristicPerformanceCounters Run()
+        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
             if (this.ChangeToExchangeAfter < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ChangeToExchangeAfter));
+                throw new InvalidOperationException(nameof(this.ChangeToExchangeAfter));
             }
             if (this.FinalMultiplier < this.IntitialMultiplier)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FinalMultiplier));
+                throw new InvalidOperationException(nameof(this.FinalMultiplier));
             }
             if (this.LowerWaterAfter < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.LowerWaterAfter));
+                throw new InvalidOperationException(nameof(this.LowerWaterAfter));
             }
             if (this.StopAfter < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.StopAfter));
+                throw new InvalidOperationException(nameof(this.StopAfter));
             }
 
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
@@ -71,6 +71,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
+            this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.Iterations, perfCounters);
             if (this.RainRate.HasValue == false)
             {
@@ -78,7 +79,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
             if ((this.RainRate.HasValue == false) || (this.RainRate.Value <= 0.0))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.RainRate));
+                throw new InvalidOperationException(nameof(this.RainRate));
             }
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;

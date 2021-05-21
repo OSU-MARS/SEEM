@@ -6,17 +6,16 @@ using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class TabuSearch : SingleTreeHeuristic
+    public class TabuSearch : SingleTreeHeuristic<TabuParameters>
     {
         public int EscapeAfter { get; set; }
         public int EscapeDistance { get; set; }
         public int Iterations { get; set; }
-        //public int Jump { get; set; }
         public int MaximumTenure { get; set; }
         public TabuTenure Tenure { get; set; }
 
-        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, TabuParameters parameters)
-            :  base(stand, organonConfiguration, objective, parameters)
+        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, TabuParameters parameters, RunParameters runParameters)
+            :  base(stand, organonConfiguration, parameters, runParameters)
         {
             this.EscapeAfter = parameters.EscapeAfter;
             this.EscapeDistance = parameters.EscapeDistance;
@@ -201,19 +200,19 @@ namespace Osu.Cof.Ferm.Heuristics
             };
         }
 
-        public override HeuristicPerformanceCounters Run()
+        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
             if (this.EscapeAfter < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.EscapeAfter));
+                throw new InvalidOperationException(nameof(this.EscapeAfter));
             }
             if (this.EscapeDistance < 2)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.EscapeDistance));
+                throw new InvalidOperationException(nameof(this.EscapeDistance));
             }
             if (this.Iterations < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Iterations));
+                throw new InvalidOperationException(nameof(this.Iterations));
             }
             //if (this.Jump < 1)
             //{
@@ -221,7 +220,7 @@ namespace Osu.Cof.Ferm.Heuristics
             //}
             if (this.MaximumTenure < 2)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.MaximumTenure));
+                throw new InvalidOperationException(nameof(this.MaximumTenure));
             }
 
             IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
@@ -234,6 +233,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
+            this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();

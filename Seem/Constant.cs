@@ -15,12 +15,14 @@ namespace Osu.Cof.Ferm
         public const float DbhHeight = 1.37F; // cm
         public const float DefaultAnnualDiscountRate = 0.04F;
         public const string DefaultPercentageFormat = "0.0#";
+        public const int DefaultPlanningPeriods = 9;
         public const string DefaultProbabilityFormat = "0.00##";
+        public const int DefaultThinningPeriod = 3;
         public const int DefaultTimeStepInYears = 5;
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
         public const float HectaresPerAcre = 0.404685F;
-        // must be multiple of SIMD width: multiples of 4 for VEX 128
+        // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128
         public const int HeightStrata = 40;
         public const float InchesPerCentimeter = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
@@ -137,7 +139,7 @@ namespace Osu.Cof.Ferm
         public static class HeuristicDefault
         {
             public const int HeroMaximumIterations = 25;
-            public const float ProportionalPercentage = 50.0F;
+            public const float InitialThinningProbability = 0.5F;
         }
 
         public static class MalcolmKnapp

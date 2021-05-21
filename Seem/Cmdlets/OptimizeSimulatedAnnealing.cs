@@ -58,9 +58,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ReheatBy = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
-            SimulatedAnnealing annealer = new(this.Stand!, organonConfiguration, objective, parameters);
+            SimulatedAnnealing annealer = new(this.Stand!, organonConfiguration, heuristicParameters, runParameters);
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;

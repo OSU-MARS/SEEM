@@ -216,7 +216,7 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void Reforestation()
         {
-            float reforestationNpv = TimberValue.Default.GetNetPresentReforestationValue(Constant.AcresPerHectare * 380.0F);
+            float reforestationNpv = TimberValue.Default.GetNetPresentReforestationValue(Constant.DefaultAnnualDiscountRate, Constant.AcresPerHectare * 380.0F);
             Assert.IsTrue(reforestationNpv > -277.76F);
             Assert.IsTrue(reforestationNpv < -0.999 * 277.76F);
         }
@@ -432,41 +432,41 @@ namespace Osu.Cof.Ferm.Test
                 Trees psmeMetric = new(FiaCode.PseudotsugaMenziesii, 1, Units.Metric);
                 psmeMetric.Add(1, dbhInCentimeters, heightInMeters, 0.5F, tree.ExpansionFactor);
 
-                timberValue.ScaledVolumeRegenerationHarvest.GetScribnerVolume(psmeEnglish, out double regenScribner2SawEnglish, out double regenScribner3SawEnglish, out double regenScribner4SawEnglish);
-                double regenScribnerEnglish = regenScribner2SawEnglish + regenScribner3SawEnglish + regenScribner4SawEnglish;
-                timberValue.ScaledVolumeRegenerationHarvest.GetGradedVolume(psmeEnglish, out double regenCubic2SawEnglish, out double regenCubic3SawEnglish, out double regenCubic4SawEnglish, out regenScribner2SawEnglish, out regenScribner3SawEnglish, out regenScribner4SawEnglish);
+                timberValue.ScaledVolumeRegenerationHarvest.GetStandingScribnerVolume(psmeEnglish, out double standingScribner2SawEnglish, out double standingScribner3SawEnglish, out double standingScribner4SawEnglish);
+                double standingScribnerEnglish = standingScribner2SawEnglish + standingScribner3SawEnglish + standingScribner4SawEnglish;
+                timberValue.ScaledVolumeRegenerationHarvest.GetStandingCubicVolume(psmeEnglish, out double regenCubic2SawEnglish, out double regenCubic3SawEnglish, out double regenCubic4SawEnglish);
                 double regenCubicEnglish = regenCubic2SawEnglish + regenCubic3SawEnglish + regenCubic4SawEnglish;
-                double regenScribnerEnglishCheck = regenScribner2SawEnglish + regenScribner3SawEnglish + regenScribner4SawEnglish;
+                double regenScribnerEnglishCheck = standingScribner2SawEnglish + standingScribner3SawEnglish + standingScribner4SawEnglish;
 
-                timberValue.ScaledVolumeRegenerationHarvest.GetScribnerVolume(psmeMetric, out double regenScribner2SawMetric, out double regenScribner3SawMetric, out double regenScribner4SawMetric);
-                double regenScribnerMetric = regenScribner2SawMetric + regenScribner3SawMetric + regenScribner4SawMetric;
-                timberValue.ScaledVolumeRegenerationHarvest.GetGradedVolume(psmeMetric, out double regenCubic2SawMetric, out double regenCubic3SawMetric, out double regenCubic4SawMetric, out regenScribner2SawMetric, out regenScribner3SawMetric, out regenScribner4SawMetric);
-                double regenCubicMetric = regenCubic2SawMetric + regenCubic3SawMetric + regenCubic4SawMetric;
-                double regenScribnerMetricCheck = regenScribner2SawMetric + regenScribner3SawMetric + regenScribner4SawMetric;
+                timberValue.ScaledVolumeRegenerationHarvest.GetStandingScribnerVolume(psmeMetric, out double standingScribner2SawMetric, out double standingScribner3SawMetric, out double standingScribner4SawMetric);
+                double standingScribnerMetric = standingScribner2SawMetric + standingScribner3SawMetric + standingScribner4SawMetric;
+                timberValue.ScaledVolumeRegenerationHarvest.GetStandingCubicVolume(psmeMetric, out double standingCubic2SawMetric, out double standingCubic3SawMetric, out double standingCubic4SawMetric);
+                double standingCubicMetric = standingCubic2SawMetric + standingCubic3SawMetric + standingCubic4SawMetric;
+                double standingScribnerMetricCheck = standingScribner2SawMetric + standingScribner3SawMetric + standingScribner4SawMetric;
 
-                timberValue.ScaledVolumeThinning.GetScribnerVolume(psmeEnglish, out double thinScribner2SawEnglish, out double thinScribner3SawEnglish, out double thinScribner4SawEnglish);
+                timberValue.ScaledVolumeThinning.GetStandingScribnerVolume(psmeEnglish, out double thinScribner2SawEnglish, out double thinScribner3SawEnglish, out double thinScribner4SawEnglish);
                 double thinScribnerEnglish = thinScribner2SawEnglish + thinScribner3SawEnglish + thinScribner4SawEnglish;
-                timberValue.ScaledVolumeThinning.GetGradedVolume(psmeEnglish, out double thinCubic2SawEnglish, out double thinCubic3SawEnglish, out double thinCubic4SawEnglish, out thinScribner2SawEnglish, out thinScribner3SawEnglish, out thinScribner4SawEnglish);
+                timberValue.ScaledVolumeThinning.GetStandingCubicVolume(psmeEnglish, out double thinCubic2SawEnglish, out double thinCubic3SawEnglish, out double thinCubic4SawEnglish);
                 double thinCubicEnglish = thinCubic2SawEnglish + thinCubic3SawEnglish + thinCubic4SawEnglish;
                 double thinScribnerEnglishCheck = thinScribner2SawEnglish + thinScribner3SawEnglish + thinScribner4SawEnglish;
 
-                timberValue.ScaledVolumeThinning.GetScribnerVolume(psmeMetric, out double thinScribner2SawMetric, out double thinScribner3SawMetric, out double thinScribner4SawMetric);
+                timberValue.ScaledVolumeThinning.GetStandingScribnerVolume(psmeMetric, out double thinScribner2SawMetric, out double thinScribner3SawMetric, out double thinScribner4SawMetric);
                 double thinScribnerMetric = thinScribner2SawMetric + thinScribner3SawMetric + thinScribner4SawMetric;
-                timberValue.ScaledVolumeThinning.GetGradedVolume(psmeMetric, out double thinCubic2SawMetric, out double thinCubic3SawMetric, out double thinCubic4SawMetric, out thinScribner2SawMetric, out thinScribner3SawMetric, out thinScribner4SawMetric);
+                timberValue.ScaledVolumeThinning.GetStandingCubicVolume(psmeMetric, out double thinCubic2SawMetric, out double thinCubic3SawMetric, out double thinCubic4SawMetric);
                 double thinCubicMetric = thinCubic2SawMetric + thinCubic3SawMetric + thinCubic4SawMetric;
                 double thinScribnerMetricCheck = thinScribner2SawMetric + thinScribner3SawMetric + thinScribner4SawMetric;
 
-                Assert.IsTrue(Math.Abs(regenCubicEnglish - regenCubicMetric) < 0.000003 * regenCubicMetric);
-                Assert.IsTrue(Math.Abs(regenScribnerEnglish - regenScribnerMetric) < 0.000003 * regenScribnerMetric);
-                Assert.IsTrue(Math.Abs(regenScribnerEnglish - regenScribnerEnglishCheck) < 0.000002 * regenScribnerEnglishCheck);
-                Assert.IsTrue(Math.Abs(regenScribnerMetric - regenScribnerMetricCheck) < 0.000002 * regenScribnerMetricCheck);
+                Assert.IsTrue(Math.Abs(regenCubicEnglish - standingCubicMetric) < 0.000003 * standingCubicMetric);
+                Assert.IsTrue(Math.Abs(standingScribnerEnglish - standingScribnerMetric) < 0.000003 * standingScribnerMetric);
+                Assert.IsTrue(Math.Abs(standingScribnerEnglish - regenScribnerEnglishCheck) < 0.000002 * regenScribnerEnglishCheck);
+                Assert.IsTrue(Math.Abs(standingScribnerMetric - standingScribnerMetricCheck) < 0.000002 * standingScribnerMetricCheck);
                 Assert.IsTrue(Math.Abs(thinCubicEnglish - thinCubicMetric) < 0.000004 * thinCubicMetric);
                 Assert.IsTrue(Math.Abs(thinScribnerEnglish - thinScribnerMetric) < 0.000003 * thinScribnerMetric);
                 Assert.IsTrue(Math.Abs(thinScribnerEnglish - thinScribnerEnglishCheck) < 0.000002 * thinScribnerEnglishCheck);
                 Assert.IsTrue(Math.Abs(thinScribnerMetric - thinScribnerMetricCheck) < 0.000002 * thinScribnerMetricCheck);
 
-                regenCubicMetric /= tree.ExpansionFactor;
-                regenScribnerMetric /= tree.ExpansionFactor;
+                standingCubicMetric /= tree.ExpansionFactor;
+                standingScribnerMetric /= tree.ExpansionFactor;
                 thinCubicMetric /= tree.ExpansionFactor;
                 thinScribnerMetric /= tree.ExpansionFactor;
 
@@ -475,25 +475,25 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(thinCubicMetric < volumeHighSideTolerance * tree.MinimumThinVolumeCubic);
                 Assert.IsTrue(thinScribnerMetric < volumeHighSideTolerance * tree.MinimumThinVolumeScribner);
 
-                Assert.IsTrue(regenCubicMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeCubic);
-                Assert.IsTrue(regenScribnerMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeScribner);
-                Assert.IsTrue(regenCubicMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeCubic);
-                Assert.IsTrue(regenScribnerMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeScribner);
+                Assert.IsTrue(standingCubicMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeCubic);
+                Assert.IsTrue(standingScribnerMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeScribner);
+                Assert.IsTrue(standingCubicMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeCubic);
+                Assert.IsTrue(standingScribnerMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeScribner);
 
                 // ratios must be greater than zero in principle but scaling and CVTS regression error allow crossover
                 float poudelTotalCubic = PoudelRegressions.GetCubicVolume(psmeMetric, 0);
                 poudelTotalCubic /= tree.ExpansionFactor;
-                Assert.IsTrue(regenCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
+                Assert.IsTrue(standingCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
                 Assert.IsTrue(thinCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
-                Assert.IsTrue(regenCubicMetric / poudelTotalCubic < 1.0F);
+                Assert.IsTrue(standingCubicMetric / poudelTotalCubic < 1.0F);
                 Assert.IsTrue(thinCubicMetric / poudelTotalCubic < 1.0F);
 
                 // log ratios
                 this.TestContext.WriteLine("tree: {0:0.0} cm DBH, {1:0.0} m tall", tree.Dbh, tree.Height);
                 this.TestContext.WriteLine("thin cubic: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", thinCubicMetric, tree.MinimumThinVolumeCubic, thinCubicMetric / tree.MinimumThinVolumeCubic);
-                this.TestContext.WriteLine("regen cubic: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", regenCubicMetric, tree.MinimumRegenVolumeCubic, regenCubicMetric / tree.MinimumRegenVolumeCubic);
+                this.TestContext.WriteLine("regen cubic: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", standingCubicMetric, tree.MinimumRegenVolumeCubic, standingCubicMetric / tree.MinimumRegenVolumeCubic);
                 this.TestContext.WriteLine("thin Scribner: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", thinScribnerMetric, tree.MinimumThinVolumeScribner, thinScribnerMetric / tree.MinimumThinVolumeScribner);
-                this.TestContext.WriteLine("regen Scribner: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", regenScribnerMetric, tree.MinimumRegenVolumeScribner, regenScribnerMetric / tree.MinimumRegenVolumeScribner);
+                this.TestContext.WriteLine("regen Scribner: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", standingScribnerMetric, tree.MinimumRegenVolumeScribner, standingScribnerMetric / tree.MinimumRegenVolumeScribner);
             }
         }
 

@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
-using System.Text;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
@@ -48,10 +47,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
 
+                float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
                 string linePrefix = highestTrajectory.Name + "," + 
-                    highestHeuristic.GetName() + "," + 
-                    distribution.HeuristicParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
+                                    highestHeuristic.GetName() + "," + 
+                                    distribution.HeuristicParameters.GetCsvValues() + "," +
+                                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory, discountRate);
 
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)

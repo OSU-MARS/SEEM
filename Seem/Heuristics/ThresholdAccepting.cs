@@ -6,13 +6,13 @@ using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class ThresholdAccepting : SingleTreeHeuristic
+    public class ThresholdAccepting : SingleTreeHeuristic<HeuristicParameters>
     {
         public List<int> IterationsPerThreshold { get; private init; }
         public List<float> Thresholds { get; private init; }
 
-        public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
-            : base(stand, organonConfiguration, objective, parameters)
+        public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, organonConfiguration, heuristicParameters, runParameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.IterationsPerThreshold = new List<int>() { (int)(11.5F * treeRecords), 25, (int)(7.5F * treeRecords) };
@@ -25,21 +25,21 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         // similar to SimulatedAnnealing.Run(), differences are in move acceptance
-        public override HeuristicPerformanceCounters Run()
+        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
             if (this.IterationsPerThreshold.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.IterationsPerThreshold));
+                throw new InvalidOperationException(nameof(this.IterationsPerThreshold));
             }
             if (this.Thresholds.Count != this.IterationsPerThreshold.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Thresholds));
+                throw new InvalidOperationException(nameof(this.Thresholds));
             }
             foreach (float threshold in this.Thresholds)
             {
                 if ((threshold < 0.0F) || (threshold > 1.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.Thresholds));
+                    throw new InvalidOperationException(nameof(this.Thresholds));
                 }
             }
 
@@ -53,6 +53,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
+            this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum(), perfCounters);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;

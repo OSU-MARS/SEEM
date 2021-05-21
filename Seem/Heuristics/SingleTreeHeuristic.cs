@@ -1,30 +1,22 @@
 ﻿using Osu.Cof.Ferm.Organon;
-using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public abstract class SingleTreeHeuristic : Heuristic
+    public abstract class SingleTreeHeuristic<TParameters> : Heuristic<TParameters> where TParameters : HeuristicParameters
     {
         public SingleTreeMoveLog MoveLog { get; private init; }
 
-        public SingleTreeHeuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
-            : base(stand, organonConfiguration, objective, parameters)
+        public SingleTreeHeuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, TParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, organonConfiguration, heuristicParameters, runParameters)
         {
             this.MoveLog = new SingleTreeMoveLog();
         }
 
-        protected void EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected override void EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
         {
-            this.AcceptedObjectiveFunctionByMove.Capacity = moveCapacity;
-            this.CandidateObjectiveFunctionByMove.Capacity = moveCapacity;
+            base.EvaluateInitialSelection(moveCapacity, perfCounters);
+            
             this.MoveLog.TreeIDByMove.Capacity = moveCapacity;
-
-            perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
-            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
-            this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
-            this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
-            this.CandidateObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             this.MoveLog.TreeIDByMove.Add(-1);
         }
 

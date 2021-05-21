@@ -45,10 +45,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                 GeneticAlgorithm highestHeuristic = (GeneticAlgorithm)solution.Highest;
                 GeneticAlgorithm lowestHeuristic = (GeneticAlgorithm)solution.Lowest;
                 StandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
+
+                float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
                 string linePrefix = highestTrajectory.Name + "," + 
                     highestHeuristic.GetName() + "," + 
                     distribution.HeuristicParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
+                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory, discountRate);
 
                 PopulationStatistics highestStatistics = highestHeuristic.PopulationStatistics;
                 PopulationStatistics lowestStatistics = lowestHeuristic.PopulationStatistics;

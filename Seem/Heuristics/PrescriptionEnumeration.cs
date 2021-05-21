@@ -5,16 +5,13 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class PrescriptionEnumeration : Heuristic
+    public class PrescriptionEnumeration : Heuristic<PrescriptionParameters>
     {
-        public PrescriptionParameters Parameters { get; private init; }
         public PrescriptionMoveLog MoveLog { get; private init; }
 
-        public PrescriptionEnumeration(OrganonStand stand, OrganonConfiguration configuration, Objective objective, PrescriptionParameters parameters)
-            : base(stand, configuration, objective, parameters)
+        public PrescriptionEnumeration(OrganonStand stand, OrganonConfiguration configuration, RunParameters runParameters, PrescriptionParameters parameters)
+            : base(stand, configuration, parameters, runParameters)
         {
-
-            this.Parameters = parameters;
             this.MoveLog = new PrescriptionMoveLog();
         }
 
@@ -25,9 +22,9 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(stepSize));
             }
 
-            float maximumPercentage = this.Parameters.Maximum;
-            float minimumPercentage = this.Parameters.Minimum;
-            switch (this.Parameters.Units)
+            float maximumPercentage = this.HeuristicParameters.Maximum;
+            float minimumPercentage = this.HeuristicParameters.Minimum;
+            switch (this.HeuristicParameters.Units)
             {
                 case PrescriptionUnits.BasalAreaPerAcreRetained:
                     // obtain stand's basal area prior to thinning if it's not already available
@@ -39,7 +36,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     float basalAreaPerAcreBeforeThin = this.CurrentTrajectory.DensityByPeriod[thinPrescription.Period - 1].BasalAreaPerAcre;
                     if (maximumPercentage >= basalAreaPerAcreBeforeThin)
                     {
-                        throw new NotSupportedException(nameof(this.Parameters.Maximum));
+                        throw new NotSupportedException(nameof(this.HeuristicParameters.Maximum));
                     }
                     // convert retained basal area to removed percentage
                     maximumPercentage = 100.0F * (1.0F - maximumPercentage / basalAreaPerAcreBeforeThin);
@@ -49,13 +46,13 @@ namespace Osu.Cof.Ferm.Heuristics
                     // no changes needed
                     break;
                 default:
-                    throw new NotSupportedException(String.Format("Unhandled units {0}.", this.Parameters.Units));
+                    throw new NotSupportedException(String.Format("Unhandled units {0}.", this.HeuristicParameters.Units));
             }
 
-            float maximumAllowedPercentage = this.Parameters.FromAbovePercentageUpperLimit + this.Parameters.ProportionalPercentageUpperLimit + this.Parameters.FromBelowPercentageUpperLimit;
+            float maximumAllowedPercentage = this.HeuristicParameters.FromAbovePercentageUpperLimit + this.HeuristicParameters.ProportionalPercentageUpperLimit + this.HeuristicParameters.FromBelowPercentageUpperLimit;
             if (maximumAllowedPercentage < minimumPercentage)
             {
-                throw new NotSupportedException(nameof(this.Parameters));
+                throw new NotSupportedException(nameof(this.HeuristicParameters));
             }
 
             //int intensityStepsPerThinMethod = 1;
@@ -72,15 +69,15 @@ namespace Osu.Cof.Ferm.Heuristics
             // in such a way that valid combinations will be found within the maximum and minimum intensities and percentage limits and
             // granularity specified by the step size. This is nontrivial and valid parameter combinations may exist which the current
             // code fails to locate.
-            for (float fromAbovePercentage = 0.0F; fromAbovePercentage <= this.Parameters.FromAbovePercentageUpperLimit; fromAbovePercentage += stepSize)
+            for (float fromAbovePercentage = 0.0F; fromAbovePercentage <= this.HeuristicParameters.FromAbovePercentageUpperLimit; fromAbovePercentage += stepSize)
             {
                 float availableProportionalAndBelowPercentage = maximumPercentage - fromAbovePercentage;
-                float maximumProportionalPercentage = MathF.Min(availableProportionalAndBelowPercentage, this.Parameters.ProportionalPercentageUpperLimit);
-                float requiredProportionalPercentage = MathF.Max(minimumPercentage - fromAbovePercentage - this.Parameters.FromBelowPercentageUpperLimit, 0.0F);
+                float maximumProportionalPercentage = MathF.Min(availableProportionalAndBelowPercentage, this.HeuristicParameters.ProportionalPercentageUpperLimit);
+                float requiredProportionalPercentage = MathF.Max(minimumPercentage - fromAbovePercentage - this.HeuristicParameters.FromBelowPercentageUpperLimit, 0.0F);
                 for (float proportionalPercentage = requiredProportionalPercentage; proportionalPercentage <= maximumProportionalPercentage; proportionalPercentage += stepSize)
                 {
                     float availableBelowPercentage = availableProportionalAndBelowPercentage - proportionalPercentage;
-                    float maximumFromBelowPercentage = MathF.Min(availableBelowPercentage, this.Parameters.FromBelowPercentageUpperLimit);
+                    float maximumFromBelowPercentage = MathF.Min(availableBelowPercentage, this.HeuristicParameters.FromBelowPercentageUpperLimit);
                     float requiredBelowPercentage = MathF.Max(minimumPercentage - proportionalPercentage - fromAbovePercentage, 0.0F);
                     for (float fromBelowPercentage = requiredBelowPercentage; fromBelowPercentage <= maximumFromBelowPercentage; fromBelowPercentage += stepSize)
                     {
@@ -173,45 +170,45 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override HeuristicParameters GetParameters()
         {
-            return this.Parameters;
+            return this.HeuristicParameters;
         }
 
-        public override HeuristicPerformanceCounters Run()
+        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
-            if ((this.Parameters.FromAbovePercentageUpperLimit < 0.0F) || (this.Parameters.FromAbovePercentageUpperLimit > 100.0F))
+            if ((this.HeuristicParameters.FromAbovePercentageUpperLimit < 0.0F) || (this.HeuristicParameters.FromAbovePercentageUpperLimit > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Parameters.FromAbovePercentageUpperLimit));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.FromAbovePercentageUpperLimit));
             }
-            if ((this.Parameters.FromBelowPercentageUpperLimit < 0.0F) || (this.Parameters.FromBelowPercentageUpperLimit > 100.0F))
+            if ((this.HeuristicParameters.FromBelowPercentageUpperLimit < 0.0F) || (this.HeuristicParameters.FromBelowPercentageUpperLimit > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Parameters.FromBelowPercentageUpperLimit));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.FromBelowPercentageUpperLimit));
             }
-            if ((this.Parameters.ProportionalPercentageUpperLimit < 0.0F) || (this.Parameters.ProportionalPercentageUpperLimit > 100.0F))
+            if ((this.HeuristicParameters.ProportionalPercentageUpperLimit < 0.0F) || (this.HeuristicParameters.ProportionalPercentageUpperLimit > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Parameters.ProportionalPercentageUpperLimit));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.ProportionalPercentageUpperLimit));
             }
 
-            float intensityUpperBound = this.Parameters.Units switch
+            float intensityUpperBound = this.HeuristicParameters.Units switch
             {
                 PrescriptionUnits.BasalAreaPerAcreRetained => 1000.0F,
                 PrescriptionUnits.TreePercentageRemoved => 100.0F,
-                _ => throw new NotSupportedException(String.Format("Unhandled units {0}.", this.Parameters.Units))
+                _ => throw new NotSupportedException(String.Format("Unhandled units {0}.", this.HeuristicParameters.Units))
             };
-            if ((this.Parameters.StepSize < 0.0F) || (this.Parameters.StepSize > intensityUpperBound))
+            if ((this.HeuristicParameters.StepSize < 0.0F) || (this.HeuristicParameters.StepSize > intensityUpperBound))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Parameters.StepSize));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.StepSize));
             }
-            if ((this.Parameters.Maximum < 0.0F) || (this.Parameters.Maximum > intensityUpperBound))
+            if ((this.HeuristicParameters.Maximum < 0.0F) || (this.HeuristicParameters.Maximum > intensityUpperBound))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Parameters.Maximum));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.Maximum));
             }
-            if ((this.Parameters.Minimum < 0.0F) || (this.Parameters.Minimum > intensityUpperBound))
+            if ((this.HeuristicParameters.Minimum < 0.0F) || (this.HeuristicParameters.Minimum > intensityUpperBound))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Parameters.Minimum));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.Minimum));
             }
-            if (this.Parameters.Maximum < this.Parameters.Minimum)
+            if (this.HeuristicParameters.Maximum < this.HeuristicParameters.Minimum)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.Minimum));
             }
 
             if (this.CurrentTrajectory.Configuration.Treatments.Harvests.Count > 3)
@@ -223,6 +220,8 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
+            // no need to call ConstructTreeSelection() or EvaluateInitialSelection() as tree selection is done by the thinning prescriptions during
+            // stand trajectory simulation
             IList<IHarvest> harvests = this.CurrentTrajectory.Configuration.Treatments.Harvests;
             if (harvests.Count > 0)
             {
@@ -236,9 +235,9 @@ namespace Osu.Cof.Ferm.Heuristics
                     {
                         // three thins
                         ThinByPrescription thirdThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[2];
-                        this.EnumerateThinningIntensities(firstThinPrescription, this.Parameters.StepSize, (float firstIntensity) =>
+                        this.EnumerateThinningIntensities(firstThinPrescription, this.HeuristicParameters.StepSize, (float firstIntensity) =>
                         {
-                            float secondStepSize = MathF.Min(this.Parameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
+                            float secondStepSize = MathF.Min(this.HeuristicParameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
                             this.EnumerateThinningIntensities(secondThinPrescription!, secondStepSize, (float secondIntensity) =>
                             {
                                 // intensities are relative to the number of trees remaining after previous thins, so multiply retentions together
@@ -254,9 +253,9 @@ namespace Osu.Cof.Ferm.Heuristics
                     else
                     {
                         // two thins
-                        this.EnumerateThinningIntensities(firstThinPrescription, this.Parameters.StepSize, (float firstIntensity) =>
+                        this.EnumerateThinningIntensities(firstThinPrescription, this.HeuristicParameters.StepSize, (float firstIntensity) =>
                         {
-                            float secondStepSize = MathF.Min(this.Parameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
+                            float secondStepSize = MathF.Min(this.HeuristicParameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
                             this.EnumerateThinningIntensities(secondThinPrescription!, secondStepSize, (float secondIntensity) =>
                             {
                                 this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, null, perfCounters);
@@ -267,7 +266,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 else
                 {
                     // one thin
-                    this.EnumerateThinningIntensities(firstThinPrescription, this.Parameters.StepSize, (float firstIntensity) =>
+                    this.EnumerateThinningIntensities(firstThinPrescription, this.HeuristicParameters.StepSize, (float firstIntensity) =>
                     {
                         this.EvaluateCurrentPrescriptions(firstThinPrescription, null, null, perfCounters);
                     }, perfCounters);

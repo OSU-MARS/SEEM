@@ -24,10 +24,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.openedExistingFile = false;
         }
 
-        protected static string GetRateAndAgeCsvValues(StandTrajectory trajectory)
+        protected static string GetRateAndAgeCsvValues(StandTrajectory trajectory, float discountRate)
         {
-            float discountRateAsFloat = trajectory.TimberValue.DiscountRate;
-            string discountRate = discountRateAsFloat.ToString(CultureInfo.InvariantCulture);
+            string discountRateAsString = discountRate.ToString(CultureInfo.InvariantCulture);
 
             int firstThinAgeAsInteger = trajectory.GetFirstThinAge();
             string? firstThinAge = firstThinAgeAsInteger != -1 ? firstThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
@@ -38,7 +37,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             int rotationLengthAsInteger = trajectory.GetRotationLength();
             string rotationLength = rotationLengthAsInteger.ToString(CultureInfo.InvariantCulture);
 
-            return discountRate + "," + firstThinAge + "," + secondThinAge + "," + thirdThinAge + "," + rotationLength;
+            return discountRateAsString + "," + firstThinAge + "," + secondThinAge + "," + thirdThinAge + "," + rotationLength;
         }
 
         protected StreamWriter GetWriter()

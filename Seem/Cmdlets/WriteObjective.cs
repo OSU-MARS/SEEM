@@ -138,10 +138,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                 // for now, assume highest and lowest solutions used the same parameters
                 OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
 
+                float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
                 string runPrefix = highestTrajectory.Name + "," + 
                     highestHeuristic.GetName() + "," +
                     distribution.HeuristicParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
+                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory, discountRate);
 
                 Debug.Assert(distribution.CountByMove.Count >= lowestHeuristic.AcceptedObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MinimumObjectiveFunctionByMove.Count);

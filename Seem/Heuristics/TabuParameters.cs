@@ -8,6 +8,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public int EscapeAfter { get; set; }
         public int EscapeDistance { get; set; }
         public int Iterations { get; set; }
+        //public int Jump { get; set; }
         public int MaximumTenure { get; set; }
         public TabuTenure Tenure { get; set; }
 

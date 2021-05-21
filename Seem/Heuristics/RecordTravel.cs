@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class RecordTravel : SingleTreeHeuristic
+    public class RecordTravel : SingleTreeHeuristic<HeuristicParameters>
     {
         public float Alpha { get; set; }
         public float ChangeToExchangeAfter { get; set; }
@@ -18,8 +18,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public float RelativeIncrease { get; set; }
         public int StopAfter { get; set; }
 
-        public RecordTravel(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
-            : base(stand, organonConfiguration, objective, parameters)
+        public RecordTravel(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, organonConfiguration, heuristicParameters, runParameters)
         {
             int treeRecordCount = stand.GetTreeRecordCount();
             this.Alpha = Constant.MonteCarloDefault.RecordTravelAlpha;
@@ -39,39 +39,39 @@ namespace Osu.Cof.Ferm.Heuristics
             return "RecordTravel";
         }
 
-        public override HeuristicPerformanceCounters Run()
+        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
             if ((this.Alpha < 0.0F) || (this.Alpha >  1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Alpha));
+                throw new InvalidOperationException(nameof(this.Alpha));
             }
             if (this.ChangeToExchangeAfter < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ChangeToExchangeAfter));
+                throw new InvalidOperationException(nameof(this.ChangeToExchangeAfter));
             }
             if (this.FixedDeviation < 0.0F)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FixedDeviation));
+                throw new InvalidOperationException(nameof(this.FixedDeviation));
             }
             if (this.FixedIncrease < 0.0F)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FixedIncrease));
+                throw new InvalidOperationException(nameof(this.FixedIncrease));
             }
             if (this.IncreaseAfter < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.IncreaseAfter));
+                throw new InvalidOperationException(nameof(this.IncreaseAfter));
             }
             if ((this.RelativeDeviation < 0.0) || (this.RelativeDeviation > 1.0))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.RelativeDeviation));
+                throw new InvalidOperationException(nameof(this.RelativeDeviation));
             }
             if ((this.RelativeIncrease < 0.0) || (this.RelativeIncrease > 1.0))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.RelativeIncrease));
+                throw new InvalidOperationException(nameof(this.RelativeIncrease));
             }
             if (this.StopAfter < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.StopAfter));
+                throw new InvalidOperationException(nameof(this.StopAfter));
             }
 
             IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
@@ -84,6 +84,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
+            this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;

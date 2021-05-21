@@ -71,10 +71,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                     periodBeforeThirdThin = highestTrajectory.PlanningPeriods - 1;
                 }
 
+                float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
                 string linePrefix = highestTrajectory.Name + "," + 
                     highestTrajectory.Heuristic.GetName() + "," + 
                     distribution.HeuristicParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory);
+                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory, discountRate);
 
                 Stand? highestStandNbeforeFirstThin = highestTrajectory.StandByPeriod[periodBeforeFirstThin];
                 Stand? highestStandNbeforeSecondThin = highestTrajectory.StandByPeriod[periodBeforeSecondThin];

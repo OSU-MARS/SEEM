@@ -5,16 +5,28 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class Hero : SingleTreeHeuristic
+    public class Hero : SingleTreeHeuristic<HeuristicParameters>
     {
         public bool IsStochastic { get; set; }
         public int MaximumIterations { get; set; }
 
-        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
-            : base(stand, organonConfiguration, objective, parameters)
+        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, organonConfiguration, heuristicParameters, runParameters)
         {
             this.IsStochastic = false;
             this.MaximumIterations = Constant.HeuristicDefault.HeroMaximumIterations;
+        }
+
+        private static int[] CreateSequentialArray(int length)
+        {
+            Debug.Assert(length > 0);
+
+            int[] array = new int[length];
+            for (int index = 0; index < length; ++index)
+            {
+                array[index] = index;
+            }
+            return array;
         }
 
         public override string GetName()
@@ -46,11 +58,11 @@ namespace Osu.Cof.Ferm.Heuristics
             return periodIndices;
         }
 
-        public override HeuristicPerformanceCounters Run()
+        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
             if (this.MaximumIterations < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.MaximumIterations));
+                throw new InvalidOperationException(nameof(this.MaximumIterations));
             }
 
             IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
@@ -59,6 +71,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
+            this.ConstructTreeSelection(position, solutionIndex);
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             this.EvaluateInitialSelection(this.MaximumIterations * initialTreeRecordCount, perfCounters);
 
@@ -67,7 +80,7 @@ namespace Osu.Cof.Ferm.Heuristics
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             bool decrementPeriodIndex = false;
             int[] uncompactedPeriodIndices = this.GetPeriodIndices(initialTreeRecordCount, thinningPeriods);
-            int[] uncompactedTreeIndices = Heuristic.CreateSequentialArray(initialTreeRecordCount);
+            int[] uncompactedTreeIndices = Hero.CreateSequentialArray(initialTreeRecordCount);
             for (int iteration = 0; iteration < this.MaximumIterations; ++iteration)
             {
                 // randomize on every iteration since a single randomization against the order of the data has little effect

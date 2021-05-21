@@ -53,9 +53,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters parameters, RunParameters runParameters)
         {
-            GreatDeluge deluge = new(this.Stand!, organonConfiguration, objective, parameters);
+            GreatDeluge deluge = new(this.Stand!, organonConfiguration, parameters, runParameters);
             if (this.ChangeToExchangeAfter.HasValue)
             {
                 deluge.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;

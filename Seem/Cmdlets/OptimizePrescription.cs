@@ -44,19 +44,19 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Maximum = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };
             this.Minimum = new List<float>() { Constant.PrescriptionEnumerationDefault.MinimumIntensity };
             this.ConstructionRandomness = 0.0F;
-            this.ProportionalPercentage[0] = 0.0F;
+            this.InitialThinningProbability[0] = 0.0F;
             this.ProportionalPercentageUpperLimit = 100.0F;
             this.Step = Constant.PrescriptionEnumerationDefault.IntensityStep;
             this.Units = Constant.PrescriptionEnumerationDefault.Units;
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, PrescriptionParameters parameters)
+        protected override Heuristic<PrescriptionParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, PrescriptionParameters heuristicParameters, RunParameters runParameters)
         {
             if (this.BestOf != 1)
             {
                 throw new NotSupportedException(nameof(this.BestOf)); // enumeration is deterministic, so no value in repeated runs
             }
-            return new PrescriptionEnumeration(this.Stand!, organonConfiguration, objective, parameters);
+            return new PrescriptionEnumeration(this.Stand!, organonConfiguration, runParameters, heuristicParameters);
         }
 
         protected override IHarvest CreateThin(int thinPeriodIndex)
@@ -79,9 +79,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new NotSupportedException(nameof(this.ConstructionRandomness));
             }
-            if ((this.ProportionalPercentage.Count != 1) || (this.ProportionalPercentage[0] != 0.0F))
+            if ((this.InitialThinningProbability.Count != 1) || (this.InitialThinningProbability[0] != 0.0F))
             {
-                throw new NotSupportedException(nameof(this.ProportionalPercentage));
+                throw new NotSupportedException(nameof(this.InitialThinningProbability));
             }
             if (this.Step < 0.0F)
             {
@@ -108,7 +108,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                     StepSize = this.Step,
                     TimberValue = timberValue,
                     Units = this.Units,
-                    UseFiaVolume = this.ScaledVolume
                 });
             }
             return parameterCombinations;

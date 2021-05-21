@@ -108,20 +108,19 @@ namespace Osu.Cof.Ferm.Test
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            Objective landExpectationValue = new()
+            RunParameters landExpectationValue = new()
             {
                 PlanningPeriods = 9
             };
             HeuristicResultSet results = PublicApi.CreateResultsSet(stand.GetTreeRecordCount(), landExpectationValue.PlanningPeriods);
-            Hero hero = new(stand, configuration, landExpectationValue, new HeuristicParameters())
+            Hero hero = new(stand, configuration, new HeuristicParameters(), landExpectationValue)
             {
                 //IsStochastic = true,
                 MaximumIterations = 10
             };
-            hero.ConstructTreeSelection(new HeuristicParameters(), PublicApi.CreateDefaultSolutionPosition(), results.SolutionIndex);
+            // debugging note: it can be helpful to set fully greedy heuristic parameters so the initial prescription remains as no trees selected
             //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
-            HeuristicPerformanceCounters heroCounters = hero.Run();
-            Assert.IsTrue(hero.BestTrajectory.UseFiaVolume == false);
+            HeuristicPerformanceCounters heroCounters = hero.Run(PublicApi.CreateDefaultSolutionPosition(), results.SolutionIndex);
 
             this.Verify(hero, heroCounters);
 
@@ -148,19 +147,16 @@ namespace Osu.Cof.Ferm.Test
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            Objective landExpectationValue = new()
+            RunParameters landExpectationValue = new()
             {
                 PlanningPeriods = 9
             };
-            Objective volume = new()
+            RunParameters volume = new()
             {
                 PlanningPeriods = landExpectationValue.PlanningPeriods,
                 TimberObjective = TimberObjective.ScribnerVolume
             };
-            HeuristicParameters defaultParameters = new()
-            {
-                UseFiaVolume = false
-            };
+            HeuristicParameters defaultParameters = new();
             HeuristicPerformanceCounters totalCounters = new();
             HeuristicResultSet results = PublicApi.CreateResultsSet(stand.GetTreeRecordCount(), landExpectationValue.PlanningPeriods);
             HeuristicSolutionPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
@@ -169,66 +165,57 @@ namespace Osu.Cof.Ferm.Test
             {
                 PopulationSize = 7,
                 MaximumGenerations = 5,
-                UseFiaVolume = defaultParameters.UseFiaVolume
             };
-            GeneticAlgorithm genetic = new(stand, configuration, landExpectationValue, geneticParameters);
-            HeuristicPerformanceCounters geneticCounters = genetic.Run();
+            GeneticAlgorithm genetic = new(stand, configuration, geneticParameters, landExpectationValue);
+            HeuristicPerformanceCounters geneticCounters = genetic.Run(defaultPosition, results.SolutionIndex);
             totalCounters += geneticCounters;
 
-            GreatDeluge deluge = new(stand, configuration, volume, defaultParameters)
+            GreatDeluge deluge = new(stand, configuration, defaultParameters, volume)
             {
                 RainRate = 5,
                 LowerWaterAfter = 9,
                 StopAfter = 10
             };
-            deluge.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
-            HeuristicPerformanceCounters delugeCounters = deluge.Run();
+            HeuristicPerformanceCounters delugeCounters = deluge.Run(defaultPosition, results.SolutionIndex);
             totalCounters += delugeCounters;
 
-            RecordTravel recordTravel = new(stand, configuration, landExpectationValue, defaultParameters)
+            RecordTravel recordTravel = new(stand, configuration, defaultParameters, landExpectationValue)
             {
                 StopAfter = 10
             };
-            recordTravel.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
-            HeuristicPerformanceCounters recordCounters = recordTravel.Run();
+            HeuristicPerformanceCounters recordCounters = recordTravel.Run(defaultPosition, results.SolutionIndex);
 
-            SimulatedAnnealing annealer = new(stand, configuration, volume, defaultParameters)
+            SimulatedAnnealing annealer = new(stand, configuration, defaultParameters, volume)
             {
                 Iterations = 100
             };
-            annealer.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
-            HeuristicPerformanceCounters annealerCounters = annealer.Run();
+            HeuristicPerformanceCounters annealerCounters = annealer.Run(defaultPosition, results.SolutionIndex);
             totalCounters += annealerCounters;
 
-            TabuParameters tabuParameters = new()
-            {
-                UseFiaVolume = defaultParameters.UseFiaVolume
-            };
-            TabuSearch tabu = new(stand, configuration, landExpectationValue, tabuParameters)
+            TabuParameters tabuParameters = new();
+            TabuSearch tabu = new(stand, configuration, tabuParameters, landExpectationValue)
             {
                 Iterations = 7,
                 //Jump = 2,
                 MaximumTenure = 5
             };
-            tabu.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
-            HeuristicPerformanceCounters tabuCounters = tabu.Run();
+            HeuristicPerformanceCounters tabuCounters = tabu.Run(defaultPosition, results.SolutionIndex);
             totalCounters += tabuCounters;
 
-            ThresholdAccepting thresholdAcceptor = new(stand, configuration, volume, defaultParameters);
+            ThresholdAccepting thresholdAcceptor = new(stand, configuration, defaultParameters, volume);
             thresholdAcceptor.IterationsPerThreshold.Clear();
             thresholdAcceptor.Thresholds.Clear();
             thresholdAcceptor.IterationsPerThreshold.Add(10);
             thresholdAcceptor.Thresholds.Add(1.0F);
-            thresholdAcceptor.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
-            HeuristicPerformanceCounters throesholdCounters = thresholdAcceptor.Run();
+            HeuristicPerformanceCounters throesholdCounters = thresholdAcceptor.Run(defaultPosition, results.SolutionIndex);
             totalCounters += throesholdCounters;
 
-            RandomGuessing random = new(stand, configuration, volume, defaultParameters)
+            AutocorrelatedWalk autocorrelated = new(stand, configuration, defaultParameters, volume)
             {
                 Iterations = 4
             };
-            HeuristicPerformanceCounters randomCounters = random.Run();
-            totalCounters += randomCounters;
+            HeuristicPerformanceCounters autocorrlatedCounters = autocorrelated.Run(defaultPosition, results.SolutionIndex);
+            totalCounters += autocorrlatedCounters;
 
             configuration.Treatments.Harvests.Clear();
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
@@ -237,17 +224,16 @@ namespace Osu.Cof.Ferm.Test
                 Maximum = 60.0F,
                 Minimum = 50.0F,
                 StepSize = 10.0F,
-                UseFiaVolume = defaultParameters.UseFiaVolume
             };
             PrescriptionEnumeration enumerator = new(stand, configuration, landExpectationValue, prescriptionParameters);
-            HeuristicPerformanceCounters enumerationCounters = enumerator.Run();
+            HeuristicPerformanceCounters enumerationCounters = enumerator.Run(defaultPosition, results.SolutionIndex);
             totalCounters += enumerationCounters;
 
             // heuristics assigned to volume optimization
             this.Verify(deluge, delugeCounters);
             this.Verify(annealer, annealerCounters);
             this.Verify(thresholdAcceptor, throesholdCounters);
-            this.Verify(random, randomCounters);
+            this.Verify(autocorrelated, autocorrlatedCounters);
 
             // heuristics assigned to net present value optimization
             this.Verify(genetic, geneticCounters);
@@ -263,7 +249,7 @@ namespace Osu.Cof.Ferm.Test
             distribution.AddRun(enumerator, enumerationCounters, defaultParameters);
             distribution.AddRun(recordTravel, recordCounters, defaultParameters);
             distribution.AddRun(tabu, tabuCounters, defaultParameters);
-            distribution.AddRun(random, randomCounters, defaultParameters);
+            distribution.AddRun(autocorrelated, autocorrlatedCounters, defaultParameters);
             distribution.OnRunsComplete();
         }
 
@@ -272,14 +258,13 @@ namespace Osu.Cof.Ferm.Test
         {
             int expectedUnthinnedTreeRecordCount = 661;
             int lastPeriod = 9;
-            bool useFiaVolume = false;
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod);
             int unthinnedTimeSteps = unthinnedTrajectory.Simulate();
             Assert.IsTrue(unthinnedTimeSteps == lastPeriod);
 
@@ -305,7 +290,7 @@ namespace Osu.Cof.Ferm.Test
             };
             configuration.Treatments.Harvests.Add(firstThinPrescription);
             configuration.Treatments.Harvests.Add(secondThinPrescription);
-            OrganonStandTrajectory twoThinTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            OrganonStandTrajectory twoThinTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod);
             AssertNullable.IsNotNull(twoThinTrajectory.StandByPeriod[0]);
             Assert.IsTrue(twoThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             int twoThinTimeSteps = twoThinTrajectory.Simulate(); // resimulate as cross check on unthinned trajectory
@@ -330,24 +315,14 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumUnthinnedQmd = new float[] { 16.84F, 20.97F, 24.63F, 27.94F, 31.02F, 33.98F, 36.88F, 39.74F, 42.60F, 45.44F }; // cm
             //                                                0       1       2       3       4       5       6       7       8       9
             float[] minimumUnthinnedTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 27.94F, 31.08F, 33.94F, 36.56F, 38.96F, 41.17F, 43.21F }; // m
-            float[] minimumUnthinnedStandingVolume;
-            if (unthinnedTrajectory.UseFiaVolume)
-            {
-                // find/replace regular expression for cleaning up watch window copy/paste: \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
-                //                                             0       1       2       3       4       5       6       7       8       9
-                minimumUnthinnedStandingVolume = new float[] { 4.229F, 14.347F, 29.127F, 46.225F, 63.738F, 80.674F, 96.581F, 111.269F, 124.782F, 137.225F }; // FIA SV6x32 MBF/ha
-            }
-            else
-            {
-                // Poudel 2018 + Scribner long log net MBF/ha
-                // nearest 1 cm diameter class and 0.5 m height class
-                ///minimumUnthinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 47.24F, 62.21F, 75.09F, 89.64F, 103.7F, 116.5F, 128.9F };
-                // bilinear interpolation
-                // minimumUnthinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 47.22F, 62.24F, 75.22F, 89.55F, 103.8F, 116.7F, 128.8F }; // 0.5 cm diameter classes, 1 m height classes
-                minimumUnthinnedStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 47.24F, 62.33F, 75.18F, 89.45F, 103.8F, 116.8F, 128.7F }; // 1 cm diameter classes, 1 m height classes
-                // minimumUnthinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 46.98F, 61.97F, 75.17F, 89.22F, 103.9F, 116.8F, 128.7F }; // 2 cm diameter classes, 2 m height classes
-                // minimumUnthinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 48.27F, 63.40F, 76.92F, 90.37F, 104.7F, 117.5F, 129.0F }; // 5 cm diameter classes, 5 m height classes
-            }
+            // Poudel 2018 + Scribner long log net MBF/ha
+            // nearest 1 cm diameter class and 0.5 m height class
+            ///minimumUnthinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 47.24F, 62.21F, 75.09F, 89.64F, 103.7F, 116.5F, 128.9F };
+            // bilinear interpolation
+            // minimumUnthinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 47.22F, 62.24F, 75.22F, 89.55F, 103.8F, 116.7F, 128.8F }; // 0.5 cm diameter classes, 1 m height classes
+            float[] minimumUnthinnedStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 47.24F, 62.33F, 75.18F, 89.45F, 103.8F, 116.8F, 128.7F }; // 1 cm diameter classes, 1 m height classes
+            // minimumUnthinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 46.98F, 61.97F, 75.17F, 89.22F, 103.9F, 116.8F, 128.7F }; // 2 cm diameter classes, 2 m height classes
+            // minimumUnthinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 48.27F, 63.40F, 76.92F, 90.37F, 104.7F, 117.5F, 129.0F }; // 5 cm diameter classes, 5 m height classes
             float[] minimumUnthinnedHarvestVolume = new float[minimumUnthinnedStandingVolume.Length];
 
             foreach (Stand? unthinnedStand in unthinnedTrajectory.StandByPeriod)
@@ -363,30 +338,19 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumOneThinQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 41.35F, 44.31F, 47.06F, 49.67F }; // cm
             //                                              0       1       2       3       4       5       6       7       8       9
             float[] minimumOneThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.64F, 38.12F, 40.40F, 42.51F }; // ft
-            float[] minimumOneThinStandingVolume;
-            float[] minimumOneThinHarvestVolume;
-            if (oneThinTrajectory.UseFiaVolume)
-            {
-                //                                           0       1        2        3        4        5        6        7        8         9
-                minimumOneThinStandingVolume = new float[] { 4.229F, 14.347F, 29.127F, 29.270F, 45.133F, 61.895F, 78.831F, 95.376F, 111.103F, 125.814F }; // FIA MBF/ha
-                minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 12.56F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
-            }
-            else
-            {
-                // Poudel 2018 + Scribner long log net MBF/ha
-                // nearest 1 cm diameter class and 0.5 m height class
-                // minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 28.25F, 41.77F, 54.37F, 68.44F, 85.10F, 100.4F, 114.7F };
-                // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-                // bilinear interpolation
-                // minimumThinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 28.22F, 41.68F, 54.31F, 68.33F, 84.91F, 100.5F, 114.6F }; // 1 cm diameter classes, 0.5 m height classes
-                // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
-                minimumOneThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 68.41F, 84.91F, 100.4F, 114.6F }; // 1 cm diameter classes, 1 m height classes
-                minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
-                // minimumThinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 28.05F, 41.55F, 54.22F, 68.39F, 85.09F, 100.0F, 114.7F }; // 2 cm diameter classes, 2 m height classes
-                // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
-                // minimumThinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 29.34F, 42.72F, 55.94F, 69.84F, 85.99F, 101.3F, 115.0F }; // 5 cm diameter classes, 5 m height classes
-                // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
-            }
+            // Poudel 2018 + Scribner long log net MBF/ha
+            // nearest 1 cm diameter class and 0.5 m height class
+            // minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 28.25F, 41.77F, 54.37F, 68.44F, 85.10F, 100.4F, 114.7F };
+            // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+            // bilinear interpolation
+            // minimumThinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 28.22F, 41.68F, 54.31F, 68.33F, 84.91F, 100.5F, 114.6F }; // 1 cm diameter classes, 0.5 m height classes
+            // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
+            float[] minimumOneThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 68.41F, 84.91F, 100.4F, 114.6F }; // 1 cm diameter classes, 1 m height classes
+            float[] minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };
+            // minimumThinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 28.05F, 41.55F, 54.22F, 68.39F, 85.09F, 100.0F, 114.7F }; // 2 cm diameter classes, 2 m height classes
+            // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
+            // minimumThinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 29.34F, 42.72F, 55.94F, 69.84F, 85.99F, 101.3F, 115.0F }; // 5 cm diameter classes, 5 m height classes
+            // minimumOneThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F };  // TODO
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -411,29 +375,18 @@ namespace Osu.Cof.Ferm.Test
             //                                              0       1       2       3       4       5       6       7       8       9
             float[] minimumTwoThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.12F, 37.58F, 39.89F, 42.04F }; // ft
             float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146983F, 213170F, 168041F, 226421F, 283782F, 278175F, 329697F, 378050F, 422956F }; // kg/ha
-            float[] minimumTwoThinStandingVolume;
-            float[] minimumTwoThinHarvestVolume;
-            if (twoThinTrajectory.UseFiaVolume)
-            {
-                //                                           0       1        2        3        4        5        6        7        8        9
-                minimumTwoThinStandingVolume = new float[] { 4.229F, 14.347F, 29.127F, 29.270F, 45.133F, 61.895F, 66.628F, 83.202F, 98.987F, 113.995F }; // FIA MBF/ha
-                minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 12.567F, 0.0F, 0.0F, 12.601F, 0.0F, 0.0F, 0.0F };
-            }
-            else
-            {
-                // Poudel 2018 + Scribner long log net MBF/ha
-                // nearest 1 cm diameter class and 0.5 m height class
-                // minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 28.25F, 41.77F, 54.37F,  };
-                // bilinear interpolation
-                // minimumThinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 28.22F, 41.68F, 54.31F,  }; // 1 cm diameter classes, 0.5 m height classes
-                // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-                minimumTwoThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 55.84F, 71.49F, 86.87F, 101.5F }; // 1 cm diameter classes, 1 m height classes
-                minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 12.360F, 0.0F, 0.0F, 0.0F };
-                // minimumThinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 28.05F, 41.55F, 54.22F,  }; // 2 cm diameter classes, 2 m height classes
-                // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-                // minimumThinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 29.34F, 42.72F, 55.94F,  }; // 5 cm diameter classes, 5 m height classes
-                // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-            }
+            // Poudel 2018 + Scribner long log net MBF/ha
+            // nearest 1 cm diameter class and 0.5 m height class
+            // minimumThinnedVolume = new float[] { 9.758F, 19.01F, 31.07F, 28.25F, 41.77F, 54.37F,  };
+            // bilinear interpolation
+            // minimumThinnedVolume = new float[] { 9.669F, 18.93F, 31.07F, 28.22F, 41.68F, 54.31F,  }; // 1 cm diameter classes, 0.5 m height classes
+            // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+            float[] minimumTwoThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 55.84F, 71.49F, 86.87F, 101.5F }; // 1 cm diameter classes, 1 m height classes
+            float[] minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 12.360F, 0.0F, 0.0F, 0.0F };
+            // minimumThinnedVolume = new float[] { 9.433F, 18.50F, 30.67F, 28.05F, 41.55F, 54.22F,  }; // 2 cm diameter classes, 2 m height classes
+            // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+            // minimumThinnedVolume = new float[] { 9.788F, 18.84F, 32.06F, 29.34F, 42.72F, 55.94F,  }; // 5 cm diameter classes, 5 m height classes
+            // minimumTwoThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -471,21 +424,10 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumThreeThinQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 41.92F, 45.34F, 51.91F, 55.19F }; // cm
             //                                                0       1       2       3       4       5       6       7       8       9
             float[] minimumThreeThinTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.12F, 37.58F, 39.42F, 41.54F }; // ft
-            float[] minimumThreeThinStandingVolume;
-            float[] minimumThreeThinHarvestVolume;
-            if (threeThinTrajectory.UseFiaVolume)
-            {
-                //                                             0       1        2        3        4        5        6        7        8        9
-                minimumThreeThinStandingVolume = new float[] { 4.229F, 14.347F, 29.127F, 29.270F, 45.133F, 61.895F, 66.628F, 83.202F, 98.987F, 113.995F }; // FIA MBF/ha
-                minimumThreeThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 12.567F, 0.0F, 0.0F, 12.601F, 0.0F, 0.0F, 0.0F };
-            }
-            else
-            {
-                // Poudel 2018 + Scribner long log net MBF/ha
-                // bilinear interpolation
-                minimumThreeThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 55.84F, 71.49F, 71.01F, 85.07F }; // 1 cm diameter classes, 1 m height classes
-                minimumThreeThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 12.360F, 0.0F, 15.787F, 0.0F };
-            }
+            // Poudel 2018 + Scribner long log net MBF/ha
+            // bilinear interpolation
+            float[] minimumThreeThinStandingVolume = new float[] { 9.648F, 18.88F, 31.01F, 28.13F, 41.60F, 54.34F, 55.84F, 71.49F, 71.01F, 85.07F }; // 1 cm diameter classes, 1 m height classes
+            float[] minimumThreeThinHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 15.14F, 0.0F, 0.0F, 12.360F, 0.0F, 15.787F, 0.0F };
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -571,7 +513,6 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinPeriod = 1;
             int lastPeriod = 4;
-            bool useFiaVolume = false;
 
             PlotsWithHeight plot14 = PublicApi.GetPlot14();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
@@ -584,7 +525,7 @@ namespace Osu.Cof.Ferm.Test
                 ProportionalPercentage = 30.0F,
                 FromBelowPercentage = 0.0F
             });
-            OrganonStandTrajectory thinnedTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod, useFiaVolume);
+            OrganonStandTrajectory thinnedTrajectory = new(stand, configuration, TimberValue.Default, lastPeriod);
             AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == 222);
             int immediateThintimeSteps = thinnedTrajectory.Simulate();
@@ -597,30 +538,19 @@ namespace Osu.Cof.Ferm.Test
             float[] minimumQmd = new float[] { 23.33F, 26.88F, 30.17F, 33.13F, 35.93F }; // cm
             //                                       0       1       2       3       4     
             float[] minimumTopHeight = new float[] { 28.32F, 30.81F, 33.54F, 36.14F, 38.54F }; // m
-            float[] minimumStandingVolume;
-            float[] minimumHarvestVolume;
-            if (thinnedTrajectory.UseFiaVolume)
-            {
-                //                                    0       1       2       3       4     
-                minimumStandingVolume = new float[] { 41.77F, 46.71F, 65.69F, 83.97F, 101.06F }; // Browning 1977 (FIA) MBF/ha
-                minimumHarvestVolume = new float[] { 0.0F, 12.51F, 0.0F, 0.0F, 0.0F };
-            }
-            else
-            {
-                // Poudel 2018 + Scribner long log net MBF/ha
-                // nearest 1 cm diameter class and 0.5 m height class
-                // minimumThinnedVolume = new float[] { 51.59F, 51.75F, 66.71F, 81.88F, 97.72F };
-                // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-                // bilinear interpolation: 
-                // minimumThinnedVolume = new float[] { 51.333F, 51.521F, 66.819F, 81.757F, 97.212F }; // 1 cm diameter classes, 0.5 m height classes
-                // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-                minimumStandingVolume = new float[] { 51.244F, 51.561F, 67.151F, 81.817F, 97.327F }; // 1 cm diameter classes, 1 m height classes
-                minimumHarvestVolume = new float[] { 0.0F, 15.742F, 0.0F, 0.0F, 0.0F }; // TODO
-                // minimumThinnedVolume = new float[] { 50.444F, 51.261F, 66.582F, 81.800F, 97.521F }; // 2 cm diameter classes, 2 m height classes
-                // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-                // minimumThinnedVolume = new float[] { 52.466F, 52.364F, 68.895F, 83.383F, 98.442F }; // 5 cm diameter classes, 5 m height classes
-                // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
-            }
+            // Poudel 2018 + Scribner long log net MBF/ha
+            // nearest 1 cm diameter class and 0.5 m height class
+            // minimumThinnedVolume = new float[] { 51.59F, 51.75F, 66.71F, 81.88F, 97.72F };
+            // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+            // bilinear interpolation: 
+            // minimumThinnedVolume = new float[] { 51.333F, 51.521F, 66.819F, 81.757F, 97.212F }; // 1 cm diameter classes, 0.5 m height classes
+            // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+            float[] minimumStandingVolume = new float[] { 51.244F, 51.561F, 67.151F, 81.817F, 97.327F }; // 1 cm diameter classes, 1 m height classes
+            float[] minimumHarvestVolume = new float[] { 0.0F, 15.742F, 0.0F, 0.0F, 0.0F }; // TODO
+            // minimumThinnedVolume = new float[] { 50.444F, 51.261F, 66.582F, 81.800F, 97.521F }; // 2 cm diameter classes, 2 m height classes
+            // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
+            // minimumThinnedVolume = new float[] { 52.466F, 52.364F, 68.895F, 83.383F, 98.442F }; // 5 cm diameter classes, 5 m height classes
+            // minimumHarvestVolume = new float[] { 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }; // TODO
 
             PublicApi.Verify(thinnedTrajectory, minimumQmd, minimumTopHeight, minimumStandingVolume, minimumHarvestVolume, thinPeriod, Constant.NoThinPeriod, Constant.NoThinPeriod, lastPeriod, 65, 70, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(thinnedTrajectory, minimumStandingVolume, thinPeriod, null, null);
@@ -674,7 +604,7 @@ namespace Osu.Cof.Ferm.Test
             OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, trees);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            Objective landExpectationValue = new()
+            RunParameters landExpectationValue = new()
             {
                 PlanningPeriods = 9
             };
@@ -688,16 +618,15 @@ namespace Osu.Cof.Ferm.Test
                 // after warmup: 3 runs * 300 trees = 900 measured growth simulations on i7-3770 (4th gen, Sandy Bridge)
                 // dispersion of 5 runs                   min   mean  median  max
                 // .NET 5.0 with removed tree compaction  1.67  1.72  1.72    1.82
-                Hero hero = new(stand, configuration, landExpectationValue, defaultParameters)
+                Hero hero = new(stand, configuration, defaultParameters, landExpectationValue)
                 {
                     IsStochastic = false,
                     MaximumIterations = 2
                 };
-                hero.ConstructTreeSelection(defaultParameters, defaultPosition, results.SolutionIndex);
                 if (run > 0)
                 {
                     // skip first run as a warmup run
-                    HeuristicPerformanceCounters heroCounters = hero.Run();
+                    HeuristicPerformanceCounters heroCounters = hero.Run(defaultPosition, results.SolutionIndex);
                     runtime += heroCounters.Duration;
                 }
             }
@@ -706,10 +635,10 @@ namespace Osu.Cof.Ferm.Test
 
         private void Verify(GeneticAlgorithm genetic, HeuristicPerformanceCounters perfCounters)
         {
-            this.Verify((Heuristic)genetic, perfCounters);
+            this.Verify((Heuristic<GeneticParameters>)genetic, perfCounters);
 
             PopulationStatistics statistics = genetic.PopulationStatistics;
-            Assert.IsTrue(statistics.Generations <= genetic.Parameters.MaximumGenerations);
+            Assert.IsTrue(statistics.Generations <= genetic.HeuristicParameters.MaximumGenerations);
             Assert.IsTrue(statistics.CoefficientOfVarianceByGeneration.Count == statistics.Generations);
             Assert.IsTrue(statistics.MeanAllelesPerLocusByGeneration.Count == statistics.Generations);
             Assert.IsTrue(statistics.MeanHeterozygosityByGeneration.Count == statistics.Generations);
@@ -726,12 +655,12 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(coefficientOfVariation >= 0.0F);
                 Assert.IsTrue((meanAllelesPerLocus >= 0.0F) && (meanAllelesPerLocus <= 2.0F)); // assumes HarvestPeriodSelection.All
                 Assert.IsTrue((meanHeterozygosity >= 0.0F) && (meanHeterozygosity <= 1.0F));
-                Assert.IsTrue((newIndividuals >= 0) && (newIndividuals <= 2 * genetic.Parameters.PopulationSize)); // two children per breeding
+                Assert.IsTrue((newIndividuals >= 0) && (newIndividuals <= 2 * genetic.HeuristicParameters.PopulationSize)); // two children per breeding
                 Assert.IsTrue((polymorphism >= 0.0F) && (polymorphism <= 1.0F));
             }
         }
 
-        private void Verify(Heuristic heuristic, HeuristicPerformanceCounters perfCounters)
+        private void Verify<TParameters>(Heuristic<TParameters> heuristic, HeuristicPerformanceCounters perfCounters) where TParameters : HeuristicParameters
         {
             // check objective functions
             Assert.IsTrue(heuristic.BestTrajectory.PlantingDensityInTreesPerHectare == heuristic.CurrentTrajectory.PlantingDensityInTreesPerHectare);
@@ -740,7 +669,7 @@ namespace Osu.Cof.Ferm.Test
             float recalculatedBestObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.BestTrajectory);
             float bestObjectiveFunctionRatio = heuristic.BestObjectiveFunction / recalculatedBestObjectiveFunction;
             this.TestContext!.WriteLine("best objective: {0}", heuristic.BestObjectiveFunction);
-            if (heuristic.Objective.TimberObjective == TimberObjective.LandExpectationValue)
+            if (heuristic.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
             {
                 Assert.IsTrue(heuristic.BestObjectiveFunction > -0.70F);
             }
@@ -762,7 +691,7 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);
 
             float recalculatedCurrentObjectiveFunction = heuristic.GetObjectiveFunction(heuristic.CurrentTrajectory);
-            if (heuristic is RandomGuessing == false)
+            if (heuristic is AutocorrelatedWalk == false)
             {
                 Assert.IsTrue(recalculatedCurrentObjectiveFunction >= beginObjectiveFunction);
             }
@@ -791,102 +720,116 @@ namespace Osu.Cof.Ferm.Test
 
             // check volumes
             Assert.IsTrue((firstThinningPeriod == Constant.NoThinPeriod) || (firstThinningPeriod > 0));
-            heuristic.BestTrajectory.GetGradedVolumes(out StandGradedVolume bestGradedVolumeStanding, out StandGradedVolume bestGradedVolumeHarvested);
-            heuristic.CurrentTrajectory.GetGradedVolumes(out StandGradedVolume currentGradedVolumeStanding, out StandGradedVolume currentGradedVolumeHarvested);
+            heuristic.BestTrajectory.GetGradedVolumes(out StandCubicAndScribnerVolume bestStandingVolume, out StandCubicAndScribnerVolume bestHarvestedVolume);
+            heuristic.CurrentTrajectory.GetGradedVolumes(out StandCubicAndScribnerVolume currentStandingVolume, out StandCubicAndScribnerVolume currentHarvestedVolume);
             float previousBestCubicStandingVolume = Single.NaN;
             float previousCurrentCubicStandingVolume = Single.NaN;
             for (int periodIndex = 0; periodIndex < heuristic.BestTrajectory.PlanningPeriods; ++periodIndex)
             {
-                float bestCubicStandingVolume = bestGradedVolumeStanding.GetCubicTotal(periodIndex);
-                float bestCubicThinningVolume = bestGradedVolumeHarvested.GetCubicTotal(periodIndex);
-                float currentCubicStandingVolume = currentGradedVolumeStanding.GetCubicTotal(periodIndex);
-                float currentCubicThinningVolume = currentGradedVolumeHarvested.GetCubicTotal(periodIndex);
+                float bestCubicStandingVolume = bestStandingVolume.GetCubicTotal(periodIndex);
+                float bestCubicThinningVolume = bestHarvestedVolume.GetCubicTotal(periodIndex);
+                float currentCubicStandingVolume = currentStandingVolume.GetCubicTotal(periodIndex);
+                float currentCubicThinningVolume = currentHarvestedVolume.GetCubicTotal(periodIndex);
 
-                float bestCubicStandingCheckVolume = bestGradedVolumeStanding.Cubic2Saw[periodIndex] + bestGradedVolumeStanding.Cubic3Saw[periodIndex] + bestGradedVolumeStanding.Cubic4Saw[periodIndex];
-                float bestCubicThinningCheckVolume = bestGradedVolumeHarvested.Cubic2Saw[periodIndex] + bestGradedVolumeHarvested.Cubic3Saw[periodIndex] + bestGradedVolumeHarvested.Cubic4Saw[periodIndex];
-                float currentCubicStandingCheckVolume = currentGradedVolumeStanding.Cubic2Saw[periodIndex] + currentGradedVolumeStanding.Cubic3Saw[periodIndex] + currentGradedVolumeStanding.Cubic4Saw[periodIndex];
-                float currentCubicThinningCheckVolume = currentGradedVolumeHarvested.Cubic2Saw[periodIndex] + currentGradedVolumeHarvested.Cubic3Saw[periodIndex] + currentGradedVolumeHarvested.Cubic4Saw[periodIndex];
+                float bestCubicStandingCheckVolume = bestStandingVolume.Cubic2Saw[periodIndex] + bestStandingVolume.Cubic3Saw[periodIndex] + bestStandingVolume.Cubic4Saw[periodIndex];
+                float bestCubicThinningCheckVolume = bestHarvestedVolume.Cubic2Saw[periodIndex] + bestHarvestedVolume.Cubic3Saw[periodIndex] + bestHarvestedVolume.Cubic4Saw[periodIndex];
+                float currentCubicStandingCheckVolume = currentStandingVolume.Cubic2Saw[periodIndex] + currentStandingVolume.Cubic3Saw[periodIndex] + currentStandingVolume.Cubic4Saw[periodIndex];
+                float currentCubicThinningCheckVolume = currentHarvestedVolume.Cubic2Saw[periodIndex] + currentHarvestedVolume.Cubic3Saw[periodIndex] + currentHarvestedVolume.Cubic4Saw[periodIndex];
                 Assert.IsTrue(MathF.Abs(bestCubicStandingVolume - bestCubicStandingCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(bestCubicThinningVolume - bestCubicThinningCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(currentCubicStandingVolume - currentCubicStandingCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(currentCubicThinningVolume - currentCubicThinningCheckVolume) < 0.000001F);
 
+                float bestThinNpv = heuristic.BestTrajectory.GetNetPresentThinningValue(heuristic.RunParameters.DiscountRate, periodIndex, out float bestThin2SawNpv, out float bestThin3SawNpv, out float bestThin4SawNpv);
+                float currentThinNpv = heuristic.BestTrajectory.GetNetPresentThinningValue(heuristic.RunParameters.DiscountRate, periodIndex, out float currentThin2SawNpv, out float currentThin3SawNpv, out float currentThin4SawNpv);
                 if (periodIndex == firstThinningPeriod)
                 {
                     Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] >= 0.0F); // best selection with debug stand is no harvest
                     Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
-                    Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex] >= 0.0F);
+
+                    Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) >= 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) < heuristic.BestTrajectory.StandingVolume.GetScribnerTotal(periodIndex - 1) + 0.000001F); // allow for numerical error in case where all trees are harvested
+                    Assert.IsTrue(bestHarvestedVolume.Scribner2Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Scribner3Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Scribner4Saw[periodIndex] >= 0.0F);
+
                     Assert.IsTrue(bestCubicThinningVolume <= previousBestCubicStandingVolume);
-                    Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex] < heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex - 1] + 0.000001F); // allow for numerical error in case where all trees are harvested
-                    Assert.IsTrue(bestGradedVolumeHarvested.Cubic2Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Cubic3Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Cubic4Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.NetPresentValue2Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.NetPresentValue3Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.NetPresentValue4Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Scribner2Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Scribner3Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Scribner4Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Cubic2Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] >= 0.0F);
+
+                    Assert.IsTrue(bestThin2SawNpv >= 0.0F);
+                    Assert.IsTrue(bestThin3SawNpv >= 0.0F);
+                    Assert.IsTrue(bestThin4SawNpv >= 0.0F);
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) >= 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) < heuristic.CurrentTrajectory.StandingVolume.GetScribnerTotal(periodIndex - 1) + 0.000001F); // numerical error
+
                     Assert.IsTrue(currentCubicThinningVolume >= 0.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.ScribnerTotal[periodIndex] >= 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume <= previousCurrentCubicStandingVolume);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.ScribnerTotal[periodIndex] < heuristic.CurrentTrajectory.StandingVolume.ScribnerTotal[periodIndex - 1] + 0.000001F); // numerical error
+
+                    Assert.IsTrue(currentThin2SawNpv >= 0.0F);
+                    Assert.IsTrue(currentThin3SawNpv >= 0.0F);
+                    Assert.IsTrue(currentThin4SawNpv >= 0.0F);
                 }
                 else
                 {
                     // for now, harvest should occur only in the one indicated period
                     Assert.IsTrue(heuristic.BestTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) == 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Scribner2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Scribner3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Scribner4Saw[periodIndex] == 0.0F);
+
                     Assert.IsTrue(bestCubicThinningVolume == 0.0F);
-                    Assert.IsTrue(heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Cubic2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Cubic3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Cubic4Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.NetPresentValue2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.NetPresentValue3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.NetPresentValue4Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Scribner2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Scribner3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestGradedVolumeHarvested.Scribner4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Cubic2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] == 0.0F);
+
+                    Assert.IsTrue(bestThin2SawNpv == 0.0F);
+                    Assert.IsTrue(bestThin3SawNpv == 0.0F);
+                    Assert.IsTrue(bestThin4SawNpv == 0.0F);
+
+                    Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) == 0.0F);
+                    Assert.IsTrue(currentHarvestedVolume.Scribner2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentHarvestedVolume.Scribner3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentHarvestedVolume.Scribner4Saw[periodIndex] == 0.0F);
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume == 0.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.Cubic2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.Cubic3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.Cubic4Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.NetPresentValue2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.NetPresentValue3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.NetPresentValue4Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.Scribner2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.Scribner3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentGradedVolumeHarvested.Scribner4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentHarvestedVolume.Cubic2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentHarvestedVolume.Cubic3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentHarvestedVolume.Cubic4Saw[periodIndex] == 0.0F);
+
+                    Assert.IsTrue(currentThin2SawNpv == 0.0F);
+                    Assert.IsTrue(currentThin3SawNpv == 0.0F);
+                    Assert.IsTrue(currentThin4SawNpv == 0.0F);
                 }
 
                 if (periodIndex == 0)
                 {
                     // zero merchantable on Nelder 1 at age 20 with Poudel 2018 net volume
                     Assert.IsTrue(bestCubicStandingVolume >= 0.0F);
-                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex] >= 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.GetScribnerTotal(periodIndex) >= 0.0F);
                     Assert.IsTrue(currentCubicStandingVolume >= 0.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.ScribnerTotal[periodIndex] >= 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.GetScribnerTotal(periodIndex) >= 0.0F);
                 }
                 else
                 {
                     Assert.IsTrue(bestCubicStandingVolume > 0.0F);
-                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.GetScribnerTotal(periodIndex) > 0.0F);
                     Assert.IsTrue(currentCubicStandingVolume > 0.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.ScribnerTotal[periodIndex] > 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.GetScribnerTotal(periodIndex) > 0.0F);
 
                     if (periodIndex != firstThinningPeriod)
                     {
                         // for now, assume monotonic increase in standing volumes except in harvest periods
                         Assert.IsTrue(bestCubicStandingVolume > previousBestCubicStandingVolume);
-                        Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex] > heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex - 1]);
+                        Assert.IsTrue(heuristic.BestTrajectory.StandingVolume.GetScribnerTotal(periodIndex) > heuristic.BestTrajectory.StandingVolume.GetScribnerTotal(periodIndex - 1));
                         Assert.IsTrue(currentCubicStandingVolume > previousCurrentCubicStandingVolume);
-                        Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.ScribnerTotal[periodIndex] > heuristic.CurrentTrajectory.StandingVolume.ScribnerTotal[periodIndex - 1]);
+                        Assert.IsTrue(heuristic.CurrentTrajectory.StandingVolume.GetScribnerTotal(periodIndex) > heuristic.CurrentTrajectory.StandingVolume.GetScribnerTotal(periodIndex - 1));
                     }
                 }
 
@@ -947,13 +890,13 @@ namespace Osu.Cof.Ferm.Test
                 {
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < thinnedTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre); // assume <50% thin by volume
-                    Assert.IsTrue(thinnedTrajectory.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F);
-                    Assert.IsTrue(thinnedTrajectory.ThinningVolume.ScribnerTotal[periodIndex] < minimumThinnedVolumeScribner[periodIndex]);
+                    Assert.IsTrue(thinnedTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) > 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) < minimumThinnedVolumeScribner[periodIndex]);
                 }
                 else
                 {
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
-                    Assert.IsTrue(thinnedTrajectory.ThinningVolume.ScribnerTotal[periodIndex] == 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.ThinningVolume.GetScribnerTotal(periodIndex) == 0.0F);
                 }
             }
         }
@@ -962,8 +905,10 @@ namespace Osu.Cof.Ferm.Test
         {
             Assert.IsTrue(trajectory.BasalAreaRemoved.Length == lastPeriod + 1);
             Assert.IsTrue(trajectory.BasalAreaRemoved[0] == 0.0F);
-            Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[0] == 0.0F);
-            Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal.Length == lastPeriod + 1);
+            Assert.IsTrue(trajectory.ThinningVolume.GetScribnerTotal(0) == 0.0F);
+            Assert.IsTrue(trajectory.ThinningVolume.Scribner2Saw.Length == lastPeriod + 1);
+            Assert.IsTrue(trajectory.ThinningVolume.Scribner3Saw.Length == lastPeriod + 1);
+            Assert.IsTrue(trajectory.ThinningVolume.Scribner4Saw.Length == lastPeriod + 1);
             Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
             Assert.IsTrue(trajectory.PeriodLengthInYears == timeStepInYears);
             Assert.IsTrue(trajectory.PlanningPeriods == lastPeriod + 1); // BUGBUG: clean off by one semantic
@@ -1006,10 +951,10 @@ namespace Osu.Cof.Ferm.Test
             {
                 Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre > 0.0F);
                 Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
-                Assert.IsTrue(trajectory.StandingVolume.ScribnerTotal[periodIndex] > minimumStandingVolumeScribner[periodIndex]);
-                Assert.IsTrue(trajectory.StandingVolume.ScribnerTotal[periodIndex] < volumeTolerance * minimumStandingVolumeScribner[periodIndex]);
-                Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[periodIndex] >= minimumHarvestVolumeScribner[periodIndex]);
-                Assert.IsTrue(trajectory.ThinningVolume.ScribnerTotal[periodIndex] <= volumeTolerance * minimumHarvestVolumeScribner[periodIndex]);
+                Assert.IsTrue(trajectory.StandingVolume.GetScribnerTotal(periodIndex) > minimumStandingVolumeScribner[periodIndex]);
+                Assert.IsTrue(trajectory.StandingVolume.GetScribnerTotal(periodIndex) < volumeTolerance * minimumStandingVolumeScribner[periodIndex]);
+                Assert.IsTrue(trajectory.ThinningVolume.GetScribnerTotal(periodIndex) >= minimumHarvestVolumeScribner[periodIndex]);
+                Assert.IsTrue(trajectory.ThinningVolume.GetScribnerTotal(periodIndex) <= volumeTolerance * minimumHarvestVolumeScribner[periodIndex]);
 
                 OrganonStand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
                 float qmdInCm = stand.GetQuadraticMeanDiameterInCentimeters();

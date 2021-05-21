@@ -10,91 +10,29 @@ namespace Osu.Cof.Ferm.Heuristics
         public List<float> AcceptedObjectiveFunctionByMove { get; protected set; }
         public float BestObjectiveFunction { get; protected set; }
         public OrganonStandTrajectory BestTrajectory { get; private init; }
-        public OrganonStandTrajectory CurrentTrajectory { get; private init; }
-        public Objective Objective { get; private init; }
         public List<float> CandidateObjectiveFunctionByMove { get; protected set; }
+        public OrganonStandTrajectory CurrentTrajectory { get; private init; }
+        public RunParameters RunParameters { get; private init; }
 
-        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
+        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
             this.AcceptedObjectiveFunctionByMove = new List<float>();
-            this.BestObjectiveFunction = Single.MinValue;
+            this.BestObjectiveFunction = Single.MinValue; // for now, assume maximization of objective function
 
-            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, parameters.TimberValue, objective.PlanningPeriods, parameters.UseFiaVolume)
+            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, heuristicParameters.TimberValue, runParameters.PlanningPeriods)
             {
                 Heuristic = this
             };
 
+            this.CandidateObjectiveFunctionByMove = new List<float>();
+
             this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
             this.CurrentTrajectory.Name = this.CurrentTrajectory.Name + "Current";
 
-            this.Objective = objective;
-            this.CandidateObjectiveFunctionByMove = new List<float>();
-        }
-
-        protected static int[] CreateSequentialArray(int length)
-        {
-            Debug.Assert(length > 0);
-
-            int[] array = new int[length];
-            for (int index = 0; index < length; ++index)
-            {
-                array[index] = index;
-            }
-            return array;
+            this.RunParameters = runParameters;
         }
 
         public abstract string GetName();
-
-        public float GetObjectiveFunction(StandTrajectory trajectory)
-        {
-            Debug.Assert(trajectory.PeriodLengthInYears > 0);
-
-            // find objective function value
-            // Volume objective functions are in m³/ha or MBF/ac.
-            float objectiveFunction;
-            if ((this.Objective.TimberObjective == TimberObjective.LandExpectationValue) ||
-                (this.Objective.TimberObjective == TimberObjective.NetPresentValue))
-            {
-                // net present value of first rotation
-                // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
-                // TODO: support per species pricing
-                float firstRotationNetPresentValue = trajectory.TimberValue.GetNetPresentReforestationValue(trajectory.PlantingDensityInTreesPerHectare);
-                for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
-                {
-                    firstRotationNetPresentValue += trajectory.ThinningVolume.NetPresentValue[periodIndex];
-                }
-                firstRotationNetPresentValue += trajectory.StandingVolume.NetPresentValue[^1];
-
-                objectiveFunction = firstRotationNetPresentValue;
-
-                if (this.Objective.TimberObjective == TimberObjective.LandExpectationValue)
-                {
-                    int rotationLengthInYears = trajectory.GetRotationLength();
-                    float presentToFutureConversionFactor = MathF.Pow(1.0F + trajectory.TimberValue.DiscountRate, rotationLengthInYears);
-                    float landExpectationValue = presentToFutureConversionFactor * firstRotationNetPresentValue / (presentToFutureConversionFactor - 1.0F);
-                    objectiveFunction = landExpectationValue;
-                }
-
-                // convert from US$/ha to USk$/ha
-                objectiveFunction *= 0.001F;
-            }
-            else if (this.Objective.TimberObjective == TimberObjective.ScribnerVolume)
-            {
-                // direct volume addition
-                objectiveFunction = 0.0F;
-                for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
-                {
-                    objectiveFunction += trajectory.ThinningVolume.ScribnerTotal[periodIndex];
-                }
-                objectiveFunction += trajectory.StandingVolume.ScribnerTotal[^1];
-            }
-            else 
-            {
-                throw new NotSupportedException("Unhandled timber objective " + this.Objective.TimberObjective + ".");
-            }
-
-            return objectiveFunction;
-        }
 
         protected int GetOneOptCandidateRandom(int currentHarvestPeriod, IList<int> thinningPeriods)
         {
@@ -130,17 +68,32 @@ namespace Osu.Cof.Ferm.Heuristics
             return null;
         }
 
-        protected void ConstructTreeSelection(float constructionRandomness, float proportionalPercentage)
+        public abstract HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex);
+    }
+
+    public abstract class Heuristic<TParameters> : Heuristic where TParameters : HeuristicParameters
+    {
+        public TParameters HeuristicParameters { get; private init; }
+
+        public Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, TParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, organonConfiguration, heuristicParameters, runParameters)
         {
-            if ((constructionRandomness < 0.0F) || (constructionRandomness > 1.0F))
+            if ((heuristicParameters.ConstructionRandomness < 0.0F) || (heuristicParameters.ConstructionRandomness > 1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(constructionRandomness), "Construction greediness is not in [0 and 1].");
+                throw new ArgumentOutOfRangeException(nameof(heuristicParameters), "Construction greediness is not between 0 and 1, inclusive.");
             }
-            if ((proportionalPercentage < 0.0F) || (proportionalPercentage > 100.0F))
+            if ((heuristicParameters.InitialThinningProbability < 0.0F) || (heuristicParameters.InitialThinningProbability > 1.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(proportionalPercentage), "Proportional harvest probability is not between 0 and 100%.");
+                throw new ArgumentOutOfRangeException(nameof(heuristicParameters), "Probability of thinning an individual tree is not between 0 and 1, inclusive.");
             }
 
+            this.HeuristicParameters = heuristicParameters;
+        }
+
+        // exposed as a distinct method for AutocorrelatedWalk
+        protected void ConstructTreeSelection(float constructionRandomness)
+        {
+            // check if there is a thinning to randomize
             IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
             if (thinningPeriods[0] != Constant.NoHarvestPeriod)
             {
@@ -148,22 +101,24 @@ namespace Osu.Cof.Ferm.Heuristics
             }
             if (thinningPeriods.Count == 1)
             {
-                // since no thinning is specified, clear all tree selections
+                // ensure no trees are selected for thinning since no thinning is specified
+                // If needed, checking can be done for conflict between removing trees from thinning and construction greediness. At least for now, the 
+                // scheduling of thins is treated as an override to greediness.
                 this.CurrentTrajectory.DeselectAllTrees();
                 return;
             }
             thinningPeriods.RemoveAt(0);
 
-            if (constructionRandomness == Constant.GraspDefault.FullyGreedyConstruction)
+            if (this.HeuristicParameters.ConstructionRandomness == Constant.GraspDefault.FullyGreedyConstruction)
             {
                 // nothing to do
                 // Could return sooner but it seems best not to bypass argument checking.
                 return;
             }
 
+            // randomize tree selection at level indicated by constructionRandomness
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
-            float proportionalFraction = 0.01F * proportionalPercentage;
-            float thinIndexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / proportionalFraction;
+            float thinIndexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / this.HeuristicParameters.InitialThinningProbability;
             for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
             {
                 if (constructionRandomness != 1.0F)
@@ -177,7 +132,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 int thinningPeriod = Constant.NoHarvestPeriod;
                 float harvestProbability = this.GetPseudorandomByteAsProbability();
-                if (harvestProbability < proportionalFraction)
+                if (harvestProbability < this.HeuristicParameters.InitialThinningProbability)
                 {
                     // probability falls into the harvest fraction, for now choose equally among available harvest periods
                     // TODO: support unequal harvest period probabilities
@@ -188,11 +143,11 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public virtual void ConstructTreeSelection(HeuristicParameters parameters, HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        protected void ConstructTreeSelection(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
             // if there is no existing solution, default to fully random construction
             HeuristicSolutionPool existingSolutions = solutionIndex[position];
-            float constructionRandomness = existingSolutions.Highest == null ? Constant.GraspDefault.FullyRandomConstruction : parameters.ConstructionRandomness;
+            float constructionRandomness = existingSolutions.Highest == null ? Constant.GraspDefault.FullyRandomConstruction : this.HeuristicParameters.ConstructionRandomness;
 
             // if construction isn't fully random, clone the best existing solution for now
             if (constructionRandomness != Constant.GraspDefault.FullyRandomConstruction)
@@ -201,9 +156,64 @@ namespace Osu.Cof.Ferm.Heuristics
                 // If needed, a this.IsMaxmizing property or such could be added.
                 this.CurrentTrajectory.CopyFrom(existingSolutions.Highest!.BestTrajectory);
             }
-            this.ConstructTreeSelection(parameters.ConstructionRandomness, parameters.ProportionalPercentage);
+
+            this.ConstructTreeSelection(constructionRandomness);
         }
 
-        public abstract HeuristicPerformanceCounters Run();
+        protected virtual void EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        {
+            this.AcceptedObjectiveFunctionByMove.Capacity = moveCapacity;
+            this.CandidateObjectiveFunctionByMove.Capacity = moveCapacity;
+
+            perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
+            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+            this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
+            this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+            this.CandidateObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+        }
+
+        public float GetObjectiveFunction(StandTrajectory trajectory)
+        {
+            Debug.Assert(trajectory.PeriodLengthInYears > 0);
+
+            // find objective function value
+            // Volume objective functions are in m³/ha or MBF/ac.
+            float objectiveFunction;
+            if ((this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue) ||
+                (this.RunParameters.TimberObjective == TimberObjective.NetPresentValue))
+            {
+                // net present value of first rotation
+                // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
+                // TODO: support per species pricing
+                objectiveFunction = trajectory.GetNetPresentValue(this.RunParameters.DiscountRate);
+
+                if (this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
+                {
+                    int rotationLengthInYears = trajectory.GetRotationLength();
+                    float presentToFutureConversionFactor = TimberValue.GetAppreciationFactor(this.RunParameters.DiscountRate, rotationLengthInYears);
+                    float landExpectationValue = presentToFutureConversionFactor * objectiveFunction / (presentToFutureConversionFactor - 1.0F);
+                    objectiveFunction = landExpectationValue;
+                }
+
+                // convert from US$/ha to USk$/ha
+                objectiveFunction *= 0.001F;
+            }
+            else if (this.RunParameters.TimberObjective == TimberObjective.ScribnerVolume)
+            {
+                // direct volume addition
+                objectiveFunction = 0.0F;
+                for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
+                {
+                    objectiveFunction += trajectory.ThinningVolume.GetScribnerTotal(periodIndex);
+                }
+                objectiveFunction += trajectory.StandingVolume.GetScribnerTotal(trajectory.PlanningPeriods - 1);
+            }
+            else
+            {
+                throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");
+            }
+
+            return objectiveFunction;
+        }
     }
 }

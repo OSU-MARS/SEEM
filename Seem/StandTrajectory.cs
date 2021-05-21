@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm
         public int PeriodZeroAgeInYears { get; set; }
         public float PlantingDensityInTreesPerHectare { get; private init; } // trees per hectare
 
-        public StandVolume StandingVolume { get; private init; }
-        public StandVolume ThinningVolume { get; private init; }
+        public StandScribnerVolume StandingVolume { get; private init; }
+        public StandScribnerVolume ThinningVolume { get; private init; }
         public TimberValue TimberValue { get; set; }
 
         public StandTrajectory(TimberValue timberValue, int lastPlanningPeriod, float plantingDensityInTreesPerHectare)
@@ -40,8 +40,8 @@ namespace Osu.Cof.Ferm
             this.PeriodLengthInYears = -1;
             this.PeriodZeroAgeInYears = -1;
             this.PlantingDensityInTreesPerHectare = plantingDensityInTreesPerHectare;
-            this.StandingVolume = new StandVolume(maximumPlanningPeriodIndex);
-            this.ThinningVolume = new StandVolume(maximumPlanningPeriodIndex);
+            this.StandingVolume = new StandScribnerVolume(maximumPlanningPeriodIndex);
+            this.ThinningVolume = new StandScribnerVolume(maximumPlanningPeriodIndex);
             this.TimberValue = timberValue;
         }
 
@@ -54,8 +54,8 @@ namespace Osu.Cof.Ferm
             this.PeriodLengthInYears = other.PeriodLengthInYears;
             this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
-            this.StandingVolume = new StandVolume(other.StandingVolume);
-            this.ThinningVolume = new StandVolume(other.ThinningVolume);
+            this.StandingVolume = new StandScribnerVolume(other.StandingVolume);
+            this.ThinningVolume = new StandScribnerVolume(other.ThinningVolume);
             this.TimberValue = other.TimberValue; // stateless, thread safe
 
             Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, other.BasalAreaRemoved.Length);
@@ -73,7 +73,7 @@ namespace Osu.Cof.Ferm
 
         public int PlanningPeriods
         {
-            get { return this.StandingVolume.NetPresentValue.Length; }
+            get { return this.BasalAreaRemoved.Length; }
         }
 
         public void CopyTreeSelectionTo(int[] allTreeSelection)
@@ -108,7 +108,7 @@ namespace Osu.Cof.Ferm
             }
         }
 
-        protected int GetEndOfPeriodAge(int periodIndex)
+        public int GetEndOfPeriodAge(int periodIndex)
         {
             Debug.Assert((periodIndex >= 0) && (periodIndex < this.PlanningPeriods));
             Debug.Assert((this.PeriodZeroAgeInYears >= 0) && (this.PeriodLengthInYears > 0));
@@ -129,12 +129,33 @@ namespace Osu.Cof.Ferm
         {
             for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
-                if (this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F)
+                if (this.ThinningVolume.GetScribnerTotal(periodIndex) > 0.0F)
                 {
                     return periodIndex;
                 }
             }
             return Constant.NoThinPeriod;
+        }
+
+        public float GetRegenerationHarvestValue(float discountRate, int periodIndex, out float npv2Saw, out float npv3Saw, out float npv4Saw)
+        {
+            return this.TimberValue.GetNetPresentRegenerationHarvestValue(this.StandingVolume, discountRate, periodIndex, this.GetEndOfPeriodAge(periodIndex), out npv2Saw, out npv3Saw, out npv4Saw);
+        }
+
+        public float GetNetPresentThinningValue(float discountRate, int periodIndex, out float npv2Saw, out float npv3Saw, out float npv4Saw)
+        {
+            return this.TimberValue.GetNetPresentThinningValue(this.ThinningVolume, discountRate, periodIndex, this.GetStartOfPeriodAge(periodIndex), out npv2Saw, out npv3Saw, out npv4Saw);
+        }
+
+        public float GetNetPresentValue(float discountRate)
+        {
+            float netPresentValue = this.TimberValue.GetNetPresentReforestationValue(discountRate, this.PlantingDensityInTreesPerHectare);
+            for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
+            {
+                netPresentValue += this.GetNetPresentThinningValue(discountRate, periodIndex, out float _, out float _, out float _);
+            }
+            netPresentValue += this.GetRegenerationHarvestValue(discountRate, this.PlanningPeriods - 1, out float _, out float _, out float _);
+            return netPresentValue;
         }
 
         public int GetRotationLength()
@@ -152,9 +173,9 @@ namespace Osu.Cof.Ferm
             return this.GetThinPeriod(2);
         }
 
-        protected int GetStartOfPeriodAge(int periodIndex)
+        public int GetStartOfPeriodAge(int periodIndex)
         {
-            Debug.Assert(periodIndex > 0);
+            Debug.Assert((periodIndex >= 0) && (periodIndex < this.PlanningPeriods));
             Debug.Assert((this.PeriodZeroAgeInYears >= 0) && (this.PeriodLengthInYears > 0));
             return this.PeriodZeroAgeInYears + this.PeriodLengthInYears * (periodIndex - 1);
         }
@@ -174,7 +195,7 @@ namespace Osu.Cof.Ferm
             int harvestsFound = 0;
             for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
-                if (this.ThinningVolume.ScribnerTotal[periodIndex] > 0.0F)
+                if (this.ThinningVolume.GetScribnerTotal(periodIndex) > 0.0F)
                 {
                     ++harvestsFound;
                     if (harvestsFound == thinning)
@@ -213,7 +234,7 @@ namespace Osu.Cof.Ferm
 
         public void SetTreeSelection(int allSpeciesUncompactedTreeIndex, int newHarvestPeriod)
         {
-            if ((newHarvestPeriod < 0) || (newHarvestPeriod >= this.ThinningVolume.ScribnerTotal.Length))
+            if ((newHarvestPeriod < 0) || (newHarvestPeriod >= this.ThinningVolume.Scribner2Saw.Length))
             {
                 throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod));
             }
@@ -239,7 +260,7 @@ namespace Osu.Cof.Ferm
 
         public void SetTreeSelection(FiaCode species, int uncompactedTreeIndex, int newHarvestPeriod)
         {
-            if ((newHarvestPeriod < Constant.NoHarvestPeriod) || (newHarvestPeriod >= this.ThinningVolume.ScribnerTotal.Length))
+            if ((newHarvestPeriod < Constant.NoHarvestPeriod) || (newHarvestPeriod >= this.ThinningVolume.Scribner2Saw.Length))
             {
                 throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod));
             }

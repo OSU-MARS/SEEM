@@ -67,14 +67,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 for (int runIndex = 0; runIndex < this.Results.Count; ++runIndex)
                 {
                     Heuristic heuristic = this.Results.Solutions[runIndex].Highest!;
-                    float harvestVolumeScibner = heuristic.BestTrajectory.ThinningVolume.ScribnerTotal[periodIndex];
+                    float harvestVolumeScibner = heuristic.BestTrajectory.ThinningVolume.GetScribnerTotal(periodIndex);
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 for (int runIndex = 0; runIndex < this.Results.Count; ++runIndex)
                 {
                     Heuristic heuristic = this.Results.Solutions[runIndex].Highest!;
-                    float standingVolumeScribner = heuristic.BestTrajectory.StandingVolume.ScribnerTotal[periodIndex];
+                    float standingVolumeScribner = heuristic.BestTrajectory.StandingVolume.GetScribnerTotal(periodIndex);
                     line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
                 }
 

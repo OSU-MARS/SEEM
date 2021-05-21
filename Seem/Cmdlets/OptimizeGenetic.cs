@@ -66,9 +66,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ReservedProportion = new List<float>() { Constant.GeneticDefault.ReservedPopulationProportion };
         }
 
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, GeneticParameters parameters)
+        protected override Heuristic<GeneticParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, GeneticParameters parameters, RunParameters runParameters)
         {
-            return new GeneticAlgorithm(this.Stand!, organonConfiguration, objective, parameters);
+            return new GeneticAlgorithm(this.Stand!, organonConfiguration, parameters, runParameters);
         }
 
         protected override string GetName()
@@ -113,7 +113,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             List<GeneticParameters> parameterCombinations = new(this.CrossoverProbabilityEnd.Count * this.ExponentK.Count * 
                 this.FlipProbabilityEnd.Count * this.GenerationMultiplier.Count * this.InitializationMethod.Count * this.InitializationClasses.Count * 
-                this.MinCoefficientOfVariation.Count * this.PopulationSize.Count * this.ProportionalPercentage.Count * this.ReservedProportion.Count);
+                this.MinCoefficientOfVariation.Count * this.PopulationSize.Count * this.InitialThinningProbability.Count * this.ReservedProportion.Count);
             int treeRecordCount = this.Stand!.GetTreeRecordCount();
             foreach (float crossoverProbabilityEnd in this.CrossoverProbabilityEnd)
             {
@@ -133,7 +133,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                         {
                                             foreach (int populationSize in this.PopulationSize)
                                             {
-                                                foreach (float proportionalPercentage in this.ProportionalPercentage)
+                                                foreach (float thinningProbability in this.InitialThinningProbability)
                                                 {
                                                     foreach (float reservedProportion in this.ReservedProportion)
                                                     {
@@ -151,11 +151,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                             MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
                                                             MinimumCoefficientOfVariation = minCoefficientOfVariation,
                                                             PopulationSize = populationSize,
-                                                            ProportionalPercentage = proportionalPercentage,
+                                                            InitialThinningProbability = thinningProbability,
                                                             ReplacementStrategy = this.ReplacementStrategy,
                                                             ReservedProportion = reservedProportion,
                                                             TimberValue = timberValue,
-                                                            UseFiaVolume = this.ScaledVolume
                                                         });
                                                     }
                                                 }

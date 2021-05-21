@@ -6,27 +6,19 @@ using System.Management.Automation;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
-    [Cmdlet(VerbsCommon.Optimize, "Random")]
-    public class OptimizeRandom : OptimizeCmdlet<HeuristicParameters>
+    [Cmdlet(VerbsCommon.Optimize, "Walk")]
+    public class OptimizeWalk : OptimizeCmdlet<HeuristicParameters>
     {
         [Parameter]
         [ValidateRange(0, Int32.MaxValue)]
         public int? Iterations { get; set; }
 
-        [Parameter]
-        [ValidateRange(0.0, 1.0)]
-        public float? SelectionProbabilityWidth { get; set; }
-
-        protected override Heuristic CreateHeuristic(OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
-            RandomGuessing random = new(this.Stand!, organonConfiguration, objective, parameters);
+            AutocorrelatedWalk random = new(this.Stand!, organonConfiguration, heuristicParameters, runParameters);
             if (this.Iterations.HasValue)
             {
                 random.Iterations = this.Iterations.Value;
-            }
-            if (this.SelectionProbabilityWidth.HasValue)
-            {
-                random.SelectionPercentageWidth = this.SelectionProbabilityWidth.Value;
             }
             return random;
         }

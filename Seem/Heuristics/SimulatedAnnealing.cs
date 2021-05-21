@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class SimulatedAnnealing : SingleTreeHeuristic
+    public class SimulatedAnnealing : SingleTreeHeuristic<HeuristicParameters>
     {
         public float Alpha { get; set; }
         public float ChangeToExchangeAfter { get; set; }
@@ -18,8 +18,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public int ReheatAfter { get; set; }
         public float ReheatBy { get; set; }
 
-        public SimulatedAnnealing(OrganonStand stand, OrganonConfiguration organonConfiguration, Objective objective, HeuristicParameters parameters)
-            :  base(stand, organonConfiguration, objective, parameters)
+        public SimulatedAnnealing(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            :  base(stand, organonConfiguration, heuristicParameters, runParameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.Alpha = Constant.MonteCarloDefault.AnnealingAlpha;
@@ -42,43 +42,43 @@ namespace Osu.Cof.Ferm.Heuristics
             return "SimulatedAnnealing";
         }
 
-        public override HeuristicPerformanceCounters Run()
+        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
             if ((this.Alpha <= 0.0) || (this.Alpha >= 1.0))
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Alpha));
+                throw new InvalidOperationException(nameof(this.Alpha));
             }
             if (this.ChangeToExchangeAfter < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ChangeToExchangeAfter));
+                throw new InvalidOperationException(nameof(this.ChangeToExchangeAfter));
             }
             if (this.FinalProbability < 0.0)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.FinalProbability));
+                throw new InvalidOperationException(nameof(this.FinalProbability));
             }
             if (this.InitialProbability < this.FinalProbability)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.InitialProbability));
+                throw new InvalidOperationException(nameof(this.InitialProbability));
             }
             if (this.Iterations < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.Iterations));
+                throw new InvalidOperationException(nameof(this.Iterations));
             }
             if (this.IterationsPerTemperature < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.IterationsPerTemperature));
+                throw new InvalidOperationException(nameof(this.IterationsPerTemperature));
             }
             if (this.ProbabilityWindowLength < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ProbabilityWindowLength));
+                throw new InvalidOperationException(nameof(this.ProbabilityWindowLength));
             }
             if (this.ReheatAfter < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ReheatAfter));
+                throw new InvalidOperationException(nameof(this.ReheatAfter));
             }
             if (this.ReheatBy < 0.0F)
             {
-                throw new ArgumentOutOfRangeException(nameof(this.ReheatBy));
+                throw new InvalidOperationException(nameof(this.ReheatBy));
             }
 
             IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
@@ -91,6 +91,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
+            this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
