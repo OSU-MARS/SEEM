@@ -15,15 +15,15 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveLog = new PrescriptionMoveLog();
         }
 
-        private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float stepSize, Action<float> evaluatePrescriptions, HeuristicPerformanceCounters perfCounters)
+        private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float percentIntensityOfPreviousThins, Action<float> evaluatePrescriptions, HeuristicPerformanceCounters perfCounters)
         {
-            if ((stepSize <= 0.0F) || (stepSize > 100.0F))
+            if ((percentIntensityOfPreviousThins < 0.0F) || (percentIntensityOfPreviousThins > 100.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(stepSize));
+                throw new ArgumentOutOfRangeException(nameof(percentIntensityOfPreviousThins));
             }
 
-            float maximumPercentage = this.HeuristicParameters.Maximum;
-            float minimumPercentage = this.HeuristicParameters.Minimum;
+            float maximumPercentage = this.HeuristicParameters.MaximumIntensity;
+            float minimumPercentage = this.HeuristicParameters.MinimumIntensity;
             switch (this.HeuristicParameters.Units)
             {
                 case PrescriptionUnits.BasalAreaPerAcreRetained:
@@ -36,13 +36,13 @@ namespace Osu.Cof.Ferm.Heuristics
                     float basalAreaPerAcreBeforeThin = this.CurrentTrajectory.DensityByPeriod[thinPrescription.Period - 1].BasalAreaPerAcre;
                     if (maximumPercentage >= basalAreaPerAcreBeforeThin)
                     {
-                        throw new NotSupportedException(nameof(this.HeuristicParameters.Maximum));
+                        throw new InvalidOperationException(nameof(this.HeuristicParameters.MaximumIntensity));
                     }
                     // convert retained basal area to removed percentage
                     maximumPercentage = 100.0F * (1.0F - maximumPercentage / basalAreaPerAcreBeforeThin);
                     minimumPercentage = 100.0F * (1.0F - minimumPercentage / basalAreaPerAcreBeforeThin);
                     break;
-                case PrescriptionUnits.TreePercentageRemoved:
+                case PrescriptionUnits.StemPercentageRemoved:
                     // no changes needed
                     break;
                 default:
@@ -52,8 +52,17 @@ namespace Osu.Cof.Ferm.Heuristics
             float maximumAllowedPercentage = this.HeuristicParameters.FromAbovePercentageUpperLimit + this.HeuristicParameters.ProportionalPercentageUpperLimit + this.HeuristicParameters.FromBelowPercentageUpperLimit;
             if (maximumAllowedPercentage < minimumPercentage)
             {
-                throw new NotSupportedException(nameof(this.HeuristicParameters));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters));
             }
+
+            // adjust step size and minimum intensity for trees or basal area removed by earlier things
+            // This is an approximate correction which can be made more detailed if needed.
+            //   1) Both mortality and ingrowth may change tree counts between thins.
+            //   2) Mortality and growth change basal area between thins.
+            float previousIntensityMultiplier = 1.0F / (1.0F - 0.01F * percentIntensityOfPreviousThins);
+            minimumPercentage = MathF.Min(previousIntensityMultiplier * minimumPercentage, maximumPercentage);
+            float stepSize = MathF.Min(previousIntensityMultiplier * this.HeuristicParameters.DefaultIntensityStepSize, this.HeuristicParameters.MaximumIntensityStepSize);
+            Debug.Assert((stepSize > 0.0F) && (stepSize <= 100.0F));
 
             //int intensityStepsPerThinMethod = 1;
             //if (maximumPercentage > minimumPercentage)
@@ -107,7 +116,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 // accept change of prescription if it improves upon the best solution
                 this.BestObjectiveFunction = candidateObjectiveFunction;
-                this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
                 ++perfCounters.MovesAccepted;
             }
             else
@@ -191,24 +200,24 @@ namespace Osu.Cof.Ferm.Heuristics
             float intensityUpperBound = this.HeuristicParameters.Units switch
             {
                 PrescriptionUnits.BasalAreaPerAcreRetained => 1000.0F,
-                PrescriptionUnits.TreePercentageRemoved => 100.0F,
+                PrescriptionUnits.StemPercentageRemoved => 100.0F,
                 _ => throw new NotSupportedException(String.Format("Unhandled units {0}.", this.HeuristicParameters.Units))
             };
-            if ((this.HeuristicParameters.StepSize < 0.0F) || (this.HeuristicParameters.StepSize > intensityUpperBound))
+            if ((this.HeuristicParameters.DefaultIntensityStepSize < 0.0F) || (this.HeuristicParameters.DefaultIntensityStepSize > intensityUpperBound))
             {
-                throw new InvalidOperationException(nameof(this.HeuristicParameters.StepSize));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.DefaultIntensityStepSize));
             }
-            if ((this.HeuristicParameters.Maximum < 0.0F) || (this.HeuristicParameters.Maximum > intensityUpperBound))
+            if ((this.HeuristicParameters.MaximumIntensity < 0.0F) || (this.HeuristicParameters.MaximumIntensity > intensityUpperBound))
             {
-                throw new InvalidOperationException(nameof(this.HeuristicParameters.Maximum));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.MaximumIntensity));
             }
-            if ((this.HeuristicParameters.Minimum < 0.0F) || (this.HeuristicParameters.Minimum > intensityUpperBound))
+            if ((this.HeuristicParameters.MinimumIntensity < 0.0F) || (this.HeuristicParameters.MinimumIntensity > intensityUpperBound))
             {
-                throw new InvalidOperationException(nameof(this.HeuristicParameters.Minimum));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.MinimumIntensity));
             }
-            if (this.HeuristicParameters.Maximum < this.HeuristicParameters.Minimum)
+            if (this.HeuristicParameters.MaximumIntensity < this.HeuristicParameters.MinimumIntensity)
             {
-                throw new InvalidOperationException(nameof(this.HeuristicParameters.Minimum));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.MinimumIntensity));
             }
 
             if (this.CurrentTrajectory.Configuration.Treatments.Harvests.Count > 3)
@@ -220,62 +229,59 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
+            // can't currently copy from existing solutions as doing so results in a call to OrganonConfiguration.CopyFrom(), which overwrites treatments
             // no need to call ConstructTreeSelection() or EvaluateInitialSelection() as tree selection is done by the thinning prescriptions during
             // stand trajectory simulation
             IList<IHarvest> harvests = this.CurrentTrajectory.Configuration.Treatments.Harvests;
-            if (harvests.Count > 0)
+            if (harvests.Count == 0)
+            {
+                // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory
+                this.EvaluateCurrentPrescriptions(null, null, null, perfCounters);
+            }
+            else
             {
                 ThinByPrescription firstThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[0];
 
-                if (harvests.Count > 1)
+                if (harvests.Count == 1)
+                {
+                    // one thin
+                    this.EnumerateThinningIntensities(firstThinPrescription, 0.0F, (float firstIntensity) =>
+                    {
+                        this.EvaluateCurrentPrescriptions(firstThinPrescription, null, null, perfCounters);
+                    }, perfCounters);
+                }
+                else
                 {
                     ThinByPrescription secondThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[1];
 
-                    if (harvests.Count > 2)
+                    if (harvests.Count == 2)
+                    {
+                        // two thins
+                        this.EnumerateThinningIntensities(firstThinPrescription, 0.0F, (float firstIntensity) =>
+                        {
+                            this.EnumerateThinningIntensities(secondThinPrescription!, firstIntensity, (float secondIntensity) =>
+                            {
+                                this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, null, perfCounters);
+                            }, perfCounters);
+                        }, perfCounters);
+                    }
+                    else
                     {
                         // three thins
                         ThinByPrescription thirdThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[2];
-                        this.EnumerateThinningIntensities(firstThinPrescription, this.HeuristicParameters.StepSize, (float firstIntensity) =>
+                        this.EnumerateThinningIntensities(firstThinPrescription, 0.0F, (float firstIntensity) =>
                         {
-                            float secondStepSize = MathF.Min(this.HeuristicParameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
-                            this.EnumerateThinningIntensities(secondThinPrescription!, secondStepSize, (float secondIntensity) =>
+                            this.EnumerateThinningIntensities(secondThinPrescription!, firstIntensity, (float secondIntensity) =>
                             {
-                                // intensities are relative to the number of trees remaining after previous thins, so multiply retentions together
-                                // in denominator
-                                float thirdStepSize = MathF.Min(secondStepSize / (1.0F - 0.01F * secondIntensity), 100.0F);
-                                this.EnumerateThinningIntensities(thirdThinPrescription, thirdStepSize, (float thirdIntensity) =>
+                                float previousIntensity = firstIntensity + (100.0F - firstIntensity) * 0.01F * secondIntensity;
+                                this.EnumerateThinningIntensities(thirdThinPrescription, previousIntensity, (float thirdIntensity) =>
                                 {
                                     this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, thirdThinPrescription, perfCounters);
                                 }, perfCounters);
                             }, perfCounters);
                         }, perfCounters);
                     }
-                    else
-                    {
-                        // two thins
-                        this.EnumerateThinningIntensities(firstThinPrescription, this.HeuristicParameters.StepSize, (float firstIntensity) =>
-                        {
-                            float secondStepSize = MathF.Min(this.HeuristicParameters.StepSize / (1.0F - 0.01F * firstIntensity), 100.0F);
-                            this.EnumerateThinningIntensities(secondThinPrescription!, secondStepSize, (float secondIntensity) =>
-                            {
-                                this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, null, perfCounters);
-                            }, perfCounters);
-                        }, perfCounters);
-                    }
                 }
-                else
-                {
-                    // one thin
-                    this.EnumerateThinningIntensities(firstThinPrescription, this.HeuristicParameters.StepSize, (float firstIntensity) =>
-                    {
-                        this.EvaluateCurrentPrescriptions(firstThinPrescription, null, null, perfCounters);
-                    }, perfCounters);
-                }
-            }
-            else
-            {
-                // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory
-                this.EvaluateCurrentPrescriptions(null, null, null, perfCounters);
             }
 
             stopwatch.Stop();

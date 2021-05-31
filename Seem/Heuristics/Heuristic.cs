@@ -145,16 +145,15 @@ namespace Osu.Cof.Ferm.Heuristics
 
         protected void ConstructTreeSelection(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
-            // if there is no existing solution, default to fully random construction
-            HeuristicSolutionPool existingSolutions = solutionIndex[position];
-            float constructionRandomness = existingSolutions.Highest == null ? Constant.GraspDefault.FullyRandomConstruction : this.HeuristicParameters.ConstructionRandomness;
-
-            // if construction isn't fully random, clone the best existing solution for now
-            if (constructionRandomness != Constant.GraspDefault.FullyRandomConstruction)
+            // default to fully random construction if there is no existing solution
+            float constructionRandomness = Constant.GraspDefault.FullyRandomConstruction;
+            if (solutionIndex.TryFindWithinDiscountRate(position, out HeuristicSolutionPool? existingSolutions) && (existingSolutions.High != null))
             {
-                // default to maximization
-                // If needed, a this.IsMaxmizing property or such could be added.
-                this.CurrentTrajectory.CopyFrom(existingSolutions.Highest!.BestTrajectory);
+                // default to maximization by copying from highest
+                // Copying is most likely beneficial even if constuction is fully random due to reuse of growth model timesteps.
+                // If needed, a this.IsMaxmizing property or such could be added to copy from lowest instead.
+                this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(existingSolutions.High.BestTrajectory);
+                constructionRandomness = this.HeuristicParameters.ConstructionRandomness;
             }
 
             this.ConstructTreeSelection(constructionRandomness);
@@ -166,7 +165,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.CandidateObjectiveFunctionByMove.Capacity = moveCapacity;
 
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
-            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
             this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             this.CandidateObjectiveFunctionByMove.Add(this.BestObjectiveFunction);

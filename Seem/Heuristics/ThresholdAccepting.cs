@@ -80,13 +80,13 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (acceptMove)
                     {
                         acceptedObjectiveFunction = candidateObjectiveFunction; 
-                        this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                        this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
                         if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = acceptedObjectiveFunction;
-                            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
                         }
                     }
                     else

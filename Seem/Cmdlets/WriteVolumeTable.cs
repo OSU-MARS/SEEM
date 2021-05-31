@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
-using System.Text;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
@@ -26,16 +25,17 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine("log length,species,height,DBH,cubic 2S,cubic 3S,cubic 4S,scribner 2S,scribner 3S,scribner 4S");
+                writer.WriteLine("logLength,species,height,DBH,cubic2S,cubic3S,cubic4S,scribner2S,scribner3S,scribner4S");
             }
 
-            WriteVolumeTable.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeRegenerationHarvest);
-            WriteVolumeTable.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeThinning);
+            this.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeRegenerationHarvest);
+            this.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeThinning);
         }
 
-        private static void WriteScaledVolume(StreamWriter writer, ScaledVolume scaledVolume)
+        private void WriteScaledVolume(StreamWriter writer, ScaledVolume scaledVolume)
         {
             string logLengthAsString = scaledVolume.PreferredLogLengthInMeters.ToString(CultureInfo.InvariantCulture);
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             foreach (KeyValuePair<FiaCode, TreeVolumeTable> species in scaledVolume.VolumeBySpecies)
             {
                 string speciesPrefix = String.Concat(logLengthAsString, ",", FiaCodeExtensions.ToFourLetterCode(species.Key));
@@ -63,6 +63,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                                          scribner3saw + "," + 
                                          scribner4saw);
                     }
+                }
+
+                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                {
+                    this.WriteWarning("Write-VolumeTable: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    break;
                 }
             }
         }

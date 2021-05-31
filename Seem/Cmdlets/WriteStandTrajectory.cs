@@ -39,16 +39,16 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected OrganonStandTrajectory GetHighestTrajectoryAndLinePrefix(int runOrTrajectoryIndex, out StringBuilder linePrefix, out float discountRate)
         {
-            OrganonStandTrajectory highestTrajectory;
+            OrganonStandTrajectory highTrajectory;
             HeuristicParameters? heuristicParameters = null;
             if (this.Results != null)
             {
                 HeuristicSolutionPool solution = this.Results.Solutions[runOrTrajectoryIndex];
-                if (solution.Highest == null)
+                if (solution.High == null)
                 {
-                    throw new NotSupportedException("Run " + runOrTrajectoryIndex + " is missing a highest solution.");
+                    throw new NotSupportedException("Run " + runOrTrajectoryIndex + " is missing a high solution.");
                 }
-                highestTrajectory = solution.Highest.BestTrajectory;
+                highTrajectory = solution.High.BestTrajectory;
 
                 HeuristicDistribution distribution = this.Results.Distributions[runOrTrajectoryIndex];
                 discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
@@ -56,10 +56,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
             else
             {
-                highestTrajectory = this.Trajectories![runOrTrajectoryIndex];
-                if (highestTrajectory.Heuristic != null)
+                highTrajectory = this.Trajectories![runOrTrajectoryIndex];
+                if (highTrajectory.Heuristic != null)
                 {
-                    heuristicParameters = highestTrajectory.Heuristic.GetParameters();
+                    heuristicParameters = highTrajectory.Heuristic.GetParameters();
                 }
                 // for now, default to writing a trajectory with the default discount rate
                 // TODO: support logging of trajectory financials with multiple discount rates
@@ -67,9 +67,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             string heuristicName = "none";
-            if (highestTrajectory.Heuristic != null)
+            if (highTrajectory.Heuristic != null)
             {
-                heuristicName = highestTrajectory.Heuristic.GetName();
+                heuristicName = highTrajectory.Heuristic.GetName();
             }
             string? heuristicParameterString = null;
             if (heuristicParameters != null)
@@ -77,7 +77,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 heuristicParameterString = heuristicParameters.GetCsvValues();
             }
 
-            string? trajectoryName = highestTrajectory.Name;
+            string? trajectoryName = highTrajectory.Name;
             if (trajectoryName == null)
             {
                 trajectoryName = runOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
@@ -89,9 +89,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                 linePrefix.Append(heuristicParameterString + ",");
             }
 
-            linePrefix.Append(WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory, discountRate));
+            linePrefix.Append(WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate));
 
-            return highestTrajectory;
+            return highTrajectory;
         }
 
         protected override void ProcessRecord()
@@ -128,15 +128,16 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append("," + WriteCmdlet.RateAndAgeCsvHeader + ",stand age,TPH,QMD,Htop,BA,SDI,SPH,snag QMD,standing CMH,harvest CMH,standing MBFH,harvest MBFH,BA removed,BA intensity,TPH decrease,NPV,LEV,standing 2S CMH,standing 3S CMH,standing 4S CMH,harvest 2S CMH,harvest 3S CMH,harvest 4S CMH,standing 2S MBFH,standing 3S MBFH,standing 4S MBFH,harvest 2S MBFH,harvest 3S MBFH,harvest 4S MBFH,NPV 2S, NPV 3S,NPV 4S,live biomass");
+                line.Append("," + WriteCmdlet.RateAndAgeCsvHeader + ",standAge,TPH,QMD,Htop,BA,SDI,SPH,snagQMD,standingCMH,harvestCMH,standingMBFH,harvestMBFH,BAremoved,BAintensity,TPHdecrease,NPV,LEV,standing2Scmh,standing3Scmh,standing4Scmh,harvest2Scmh,harvest3Scmh,harvest4Scmh,standing2Smbfh,standing3Smbfh,standing4Smbfh,harvest2Smbfh,harvest3Smbfh,harvest4Smbfh,NPV2S,NPV3S,NPV4S,liveBiomass");
                 writer.WriteLine(line);
             }
 
             // rows for periods
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             int maxIndex = runsSpecified ? this.Results!.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
-                OrganonStandTrajectory highestTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix, out float discountRate);
+                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix, out float discountRate);
                 string coreTimeInSeconds = "";
                 if (runsSpecified)
                 {
@@ -144,24 +145,24 @@ namespace Osu.Cof.Ferm.Cmdlets
                     coreTimeInSeconds = distribution.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
                 }
 
-                Units trajectoryUnits = highestTrajectory.GetUnits();
+                Units trajectoryUnits = highTrajectory.GetUnits();
                 if (trajectoryUnits != Units.English)
                 {
                     throw new NotSupportedException("Expected Organon stand trajectory with English Units.");
                 }
-                highestTrajectory.GetGradedVolumes(out StandCubicAndScribnerVolume standingVolume, out StandCubicAndScribnerVolume harvestedVolume);
+                highTrajectory.GetGradedVolumes(out StandCubicAndScribnerVolume standingVolume, out StandCubicAndScribnerVolume harvestedVolume);
 
-                SnagLogTable snagsAndLogs = new(highestTrajectory, this.MaximumDiameter, this.DiameterClassSize);
+                SnagLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
                 
                 float totalThinNetPresentValue = 0.0F;
-                for (int period = 0; period < highestTrajectory.PlanningPeriods; ++period)
+                for (int period = 0; period < highTrajectory.PlanningPeriods; ++period)
                 {
                     // get density and volumes
-                    float basalAreaRemoved = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * highestTrajectory.BasalAreaRemoved[period]; // m²/acre
+                    float basalAreaRemoved = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * highTrajectory.BasalAreaRemoved[period]; // m²/acre
                     float basalAreaIntensity = 0.0F;
                     if (period > 0)
                     {
-                        basalAreaIntensity = basalAreaRemoved / highestTrajectory.DensityByPeriod[period - 1].BasalAreaPerAcre;
+                        basalAreaIntensity = basalAreaRemoved / highTrajectory.DensityByPeriod[period - 1].BasalAreaPerAcre;
                     }
                     float harvestVolumeScribner = harvestedVolume.GetScribnerTotal(period); // MBF/ha
                     Debug.Assert((harvestVolumeScribner == 0.0F && basalAreaRemoved == 0.0F) || (harvestVolumeScribner > 0.0F && basalAreaRemoved > 0.0F));
@@ -169,8 +170,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float treesPerAcreDecrease = 0.0F;
                     if (period > 0)
                     {
-                        OrganonStandDensity previousDensity = highestTrajectory.DensityByPeriod[period - 1];
-                        OrganonStandDensity currentDensity = highestTrajectory.DensityByPeriod[period];
+                        OrganonStandDensity previousDensity = highTrajectory.DensityByPeriod[period - 1];
+                        OrganonStandDensity currentDensity = highTrajectory.DensityByPeriod[period];
                         if ((currentDensity == null) || (previousDensity == null))
                         {
                             throw new ParameterOutOfRangeException(null, "Stand density information is missing. Did the heuristic perform at least one fully simulated move?");
@@ -178,8 +179,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                         treesPerAcreDecrease = 1.0F - currentDensity.TreesPerAcre / previousDensity.TreesPerAcre;
                     }
 
-                    OrganonStand stand = highestTrajectory.StandByPeriod[period] ?? throw new NotSupportedException("Stand information missing for period " + period + ".");
-                    OrganonStandDensity density = highestTrajectory.DensityByPeriod[period];
+                    OrganonStand stand = highTrajectory.StandByPeriod[period] ?? throw new NotSupportedException("Stand information missing for period " + period + ".");
+                    OrganonStandDensity density = highTrajectory.DensityByPeriod[period];
                     float quadraticMeanDiameterInCm = stand.GetQuadraticMeanDiameterInCentimeters(); // 1/(10 in * 2.54 cm/in) = 0.03937008
                     float topHeightInM = stand.GetTopHeightInMeters();
                     float reinekeStandDensityIndex = Constant.AcresPerHectare * density.TreesPerAcre * MathF.Pow(0.03937008F * quadraticMeanDiameterInCm, Constant.ReinekeExponent);
@@ -189,13 +190,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float treesPerHectareDecrease = Constant.AcresPerHectare * treesPerAcreDecrease;
 
                     // NPV and LEV
-                    float thinNetPresentValue = highestTrajectory.GetNetPresentThinningValue(discountRate, period, out float thin2SawNpv, out float thin3SawNpv, out float thin4SawNpv);
+                    float thinNetPresentValue = highTrajectory.GetNetPresentThinningValue(discountRate, period, out float thin2SawNpv, out float thin3SawNpv, out float thin4SawNpv);
                     totalThinNetPresentValue += thinNetPresentValue;
-                    float standingNetPresentValue = highestTrajectory.GetRegenerationHarvestValue(discountRate, period, out float standing2SawNpv, out float standing3SawNpv, out float standing4SawNpv);
-                    float reforestationNetPresentValue = highestTrajectory.TimberValue.GetNetPresentReforestationValue(discountRate, highestTrajectory.PlantingDensityInTreesPerHectare);
+                    float standingNetPresentValue = highTrajectory.GetRegenerationHarvestValue(discountRate, period, out float standing2SawNpv, out float standing3SawNpv, out float standing4SawNpv);
+                    float reforestationNetPresentValue = highTrajectory.TimberValue.GetNetPresentReforestationValue(discountRate, highTrajectory.PlantingDensityInTreesPerHectare);
                     float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue + reforestationNetPresentValue;
 
-                    float presentToFutureConversionFactor = TimberValue.GetAppreciationFactor(discountRate, highestTrajectory.GetRotationLength());
+                    float presentToFutureConversionFactor = TimberValue.GetAppreciationFactor(discountRate, highTrajectory.GetRotationLength());
                     float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);
 
                     // pond NPV by grade
@@ -240,6 +241,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      standing3SawNpv.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standing4SawNpv.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      liveBiomass.ToString("0.00", CultureInfo.InvariantCulture));
+                }
+
+                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                {
+                    this.WriteWarning("Write-StandTrajectory: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    break;
                 }
             }
         }

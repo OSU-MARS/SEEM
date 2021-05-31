@@ -152,7 +152,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 if (individualFitness > this.BestObjectiveFunction)
                 {
                     this.BestObjectiveFunction = individualFitness;
-                    this.BestTrajectory.CopyFrom(individualTrajectory);
+                    this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(individualTrajectory);
                 }
 
                 this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
@@ -211,7 +211,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (firstChildFitness > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = firstChildFitness;
-                            this.BestTrajectory.CopyFrom(firstChildTrajectory);
+                            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(firstChildTrajectory);
                         }
                     }
                     else
@@ -227,7 +227,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (secondChildFitness > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = secondChildFitness;
-                            this.BestTrajectory.CopyFrom(secondChildTrajectory);
+                            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(secondChildTrajectory);
                         }
                     }
                     else
@@ -300,7 +300,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            this.CurrentTrajectory.CopyFrom(this.BestTrajectory);
+            this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.BestTrajectory);
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;

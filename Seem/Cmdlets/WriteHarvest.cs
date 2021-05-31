@@ -29,7 +29,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 // harvest volume headers
                 for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
                 {
-                    Heuristic? highestSolution = this.Results.Solutions[resultIndex].Highest;
+                    Heuristic? highestSolution = this.Results.Solutions[resultIndex].High;
                     if (highestSolution == null)
                     {
                         throw new NotSupportedException("Cannot write harvest becaue no heuristic solution was provided for run " + resultIndex + ".");
@@ -41,7 +41,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 // standing volume headers
                 for (int runIndex = 0; runIndex < this.Results.Count; ++runIndex)
                 {
-                    OrganonStandTrajectory bestTrajectory = this.Results.Solutions[runIndex].Highest!.BestTrajectory;
+                    OrganonStandTrajectory bestTrajectory = this.Results.Solutions[runIndex].High!.BestTrajectory;
                     line.Append("," + bestTrajectory.Name + "standing");
                 }
                 writer.WriteLine(line);
@@ -50,7 +50,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             int maxPlanningPeriod = 0;
             for (int runIndex = 0; runIndex < this.Results!.Count; ++runIndex)
             {
-                Heuristic? highestSolution = this.Results.Solutions[runIndex].Highest;
+                Heuristic? highestSolution = this.Results.Solutions[runIndex].High;
                 if (highestSolution == null)
                 {
                     throw new NotSupportedException("Cannot write harvest becaue no heuristic solution was provided for run " + runIndex + ".");
@@ -59,6 +59,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                 OrganonStandTrajectory bestTrajectory = highestSolution.BestTrajectory;
                 maxPlanningPeriod = Math.Max(maxPlanningPeriod, bestTrajectory.PlanningPeriods);
             }
+
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
             {
                 line.Clear();
@@ -66,19 +68,25 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 for (int runIndex = 0; runIndex < this.Results.Count; ++runIndex)
                 {
-                    Heuristic heuristic = this.Results.Solutions[runIndex].Highest!;
+                    Heuristic heuristic = this.Results.Solutions[runIndex].High!;
                     float harvestVolumeScibner = heuristic.BestTrajectory.ThinningVolume.GetScribnerTotal(periodIndex);
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 for (int runIndex = 0; runIndex < this.Results.Count; ++runIndex)
                 {
-                    Heuristic heuristic = this.Results.Solutions[runIndex].Highest!;
+                    Heuristic heuristic = this.Results.Solutions[runIndex].High!;
                     float standingVolumeScribner = heuristic.BestTrajectory.StandingVolume.GetScribnerTotal(periodIndex);
                     line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 writer.WriteLine(line);
+
+                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                {
+                    this.WriteWarning("Write-Harvest: Maximum file size of " + this.LimitGB.ToString("0.00") + " GB reached.");
+                    break;
+                }
             }
         }
     }

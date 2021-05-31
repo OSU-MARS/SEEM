@@ -51,9 +51,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public string GetCsvHeader(string prefix)
         {
-            return prefix + "thin 1 above," + prefix + "thin 1 proportional," + prefix + "thin 1 below," +
-                   prefix + "thin 2 above," + prefix + "thin 2 proportional," + prefix + "thin 2 below," +
-                   prefix + "thin 3 above," + prefix + "thin 3 proportional," + prefix + "thin 3 below";
+            return prefix + "Thin1above," + prefix + "Thin1proportional," + prefix + "Thin1below," +
+                   prefix + "Thin2above," + prefix + "Thin2proportional," + prefix + "Thin2below," +
+                   prefix + "Thin3above," + prefix + "Thin3proportional," + prefix + "Thin3below";
         }
 
         public string GetCsvValues(int move)

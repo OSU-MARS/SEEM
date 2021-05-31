@@ -143,14 +143,14 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // accept move
                     acceptedObjectiveFunction = candidateObjectiveFunction;
-                    this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                    this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
                     iterationsSinceObjectiveImprovedOrReheat = 0;
                     ++perfCounters.MovesAccepted;
 
                     if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                     {
                         this.BestObjectiveFunction = acceptedObjectiveFunction;
-                        this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                        this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
                     }
                 }

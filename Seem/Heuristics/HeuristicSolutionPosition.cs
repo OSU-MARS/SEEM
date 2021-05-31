@@ -16,5 +16,10 @@
             this.ThirdThinPeriodIndex = Constant.NoThinPeriod;
             this.PlanningPeriodIndex = -1;
         }
+
+        public bool IsUnthinned
+        {
+            get { return (this.FirstThinPeriodIndex == Constant.NoThinPeriod) && (this.SecondThinPeriodIndex == Constant.NoThinPeriod) && (this.ThirdThinPeriodIndex == Constant.NoThinPeriod); }
+        }
     }
 }

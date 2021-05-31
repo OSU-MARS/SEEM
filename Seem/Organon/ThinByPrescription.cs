@@ -138,6 +138,7 @@ namespace Osu.Cof.Ferm.Organon
             {
                 Trees treesWithLargest = standAtEndOfPreviousPeriod.TreesBySpecies[maximumSpecies];
                 int thinIndex = thinFromAboveIndexBySpecies[maximumSpecies] - 1;
+                Debug.Assert(thinIndex >= 0);
                 int compactedTreeIndex = dbhSortOrderBySpecies[maximumSpecies][thinIndex];
                 int uncompactedTreeIndex = treesWithLargest.UncompactedIndex[compactedTreeIndex];
                 float basalAreaOfTree = treesWithLargest.GetBasalArea(compactedTreeIndex);
@@ -158,18 +159,27 @@ namespace Osu.Cof.Ferm.Organon
                 basalAreaRemovedFromAbove += basalAreaOfTree; // for now, use complete removal of tree's expansion factor
                 thinFromAboveIndexBySpecies[maximumSpecies] = thinIndex;
 
+                // find next largest tree (by diameter) which hasn't been thinned
                 maximumDiameter = Single.MinValue;
+                bool foundNextTree = false;
                 foreach (Trees treesOfSpecies in standAtEndOfPreviousPeriod.TreesBySpecies.Values)
                 {
                     int[] dbhSortOrder = dbhSortOrderBySpecies[treesOfSpecies.Species];
                     thinIndex = thinFromAboveIndexBySpecies[treesOfSpecies.Species];
+                    Debug.Assert((thinIndex >= 0) && (thinIndex < dbhSortOrder.Length));
 
                     float largestDbh = treesOfSpecies.Dbh[dbhSortOrder[thinIndex]];
                     if (largestDbh > maximumDiameter)
                     {
                         maximumDiameter = largestDbh;
                         maximumSpecies = treesOfSpecies.Species;
+                        foundNextTree = true;
                     }
+                }
+                if (foundNextTree == false)
+                {
+                    // avoid looping forever if, for some reason, basal area target cannot be reached
+                    break;
                 }
             }
 
@@ -198,18 +208,30 @@ namespace Osu.Cof.Ferm.Organon
                 basalAreaRemovedFromBelow += basalAreaOfTree;
                 thinFromBelowIndexBySpecies[minimumSpecies] = thinIndex + 1;
 
+                // find next smallest tree (by diameter) which hasn't been thinned
                 minimumDiameter = Single.MaxValue;
+                bool foundNextTree = false;
                 foreach (Trees treesOfSpecies in standAtEndOfPreviousPeriod.TreesBySpecies.Values)
                 {
                     int[] dbhSortOrder = dbhSortOrderBySpecies[treesOfSpecies.Species];
                     thinIndex = thinFromBelowIndexBySpecies[treesOfSpecies.Species];
+                    if (thinIndex >= dbhSortOrder.Length)
+                    {
+                        // no more trees to remove in this species
+                        continue;
+                    }
 
                     float smallestDbh = treesOfSpecies.Dbh[dbhSortOrder[thinIndex]];
                     if (smallestDbh < minimumDiameter)
                     {
                         minimumDiameter = smallestDbh;
                         minimumSpecies = treesOfSpecies.Species;
+                        foundNextTree = true;
                     }
+                }
+                if (foundNextTree == false)
+                {
+                    break;
                 }
             }
 

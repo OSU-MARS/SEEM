@@ -140,7 +140,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // accept move
                     acceptedObjectiveFunction = candidateObjectiveFunction;
-                    this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                    this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
                     hillClimbingThreshold = candidateObjectiveFunction;
                     iterationsSinceObjectiveImprovedOrMoveTypeChanged = 0;
                     iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
@@ -149,7 +149,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (candidateObjectiveFunction > this.BestObjectiveFunction)
                     {
                         this.BestObjectiveFunction = candidateObjectiveFunction;
-                        this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                        this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
 
                         iterationsSinceBestObjectiveImproved = 0;
                     }

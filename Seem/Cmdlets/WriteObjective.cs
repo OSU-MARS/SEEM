@@ -13,10 +13,6 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommunications.Write, "Objective")]
     public class WriteObjective : WriteCmdlet
     {
-        [Parameter(HelpMessage = "Maximum size of output file in gigabytes.")]
-        [ValidateRange(0.1F, 100.0F)]
-        public float MaxFileSize { get; set; }
-
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public HeuristicResultSet? Results { get; set; }
@@ -27,7 +23,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public WriteObjective()
         {
-            this.MaxFileSize = 5.0F; // 5 GB, approximate upper bound of what fread() can load in R
+            this.LimitGB = 3.0F; // approximate upper bound of what fread() can load in R
             this.Step = 1;
         }
 
@@ -40,37 +36,37 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             using StreamWriter writer = this.GetWriter();
 
-            // for now, perform no reduction when Object.ReferenceEquals(lowestSolution, highestSolution) is true
+            // for now, perform no reduction when Object.ReferenceEquals(lowSolution, highSolution) is true
             if (this.ShouldWriteHeader())
             {
                 HeuristicDistribution distribution = this.Results.Distributions[0];
                 HeuristicSolutionPool solution = this.Results.Solutions[0];
-                if ((solution.Highest == null) || (distribution.HeuristicParameters == null) || (solution.Lowest == null))
+                if ((solution.High == null) || (distribution.HeuristicParameters == null) || (solution.Low == null))
                 {
-                    throw new NotSupportedException("Cannot generate header because first result is missing a highest solution, lowest solution, or heuristic parameters.");
+                    throw new NotSupportedException("Cannot generate header because first result is missing a high solution, low solution, or heuristic parameters.");
                 }
 
                 StringBuilder line = new("stand,heuristic," + distribution.HeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",iteration,count");
 
-                string lowestMoveLogHeader = "lowest move log";
-                IHeuristicMoveLog? lowestMoveLog = solution.Lowest!.GetMoveLog();
-                if (lowestMoveLog != null)
+                string lowMoveLogHeader = "lowMoveLog";
+                IHeuristicMoveLog? lowMoveLog = solution.Low!.GetMoveLog();
+                if (lowMoveLog != null)
                 {
-                    lowestMoveLogHeader = lowestMoveLog.GetCsvHeader("lowest ");
+                    lowMoveLogHeader = lowMoveLog.GetCsvHeader("low");
                 }
-                line.Append("," + lowestMoveLogHeader);
+                line.Append("," + lowMoveLogHeader);
 
-                line.Append(",lowest,lowest candidate,min,percentile 2.5,percentile 5,lower quartile,median,mean,upper quartile,percentile 95,percentile 97.5,max");
+                line.Append(",low,lowCandidate,min,percentile2.5,percentile5,lowerQuartile,median,mean,upperQuartile,percentile95,percentile97.5,max");
 
-                string highestMoveLogHeader = "highest move log";
-                IHeuristicMoveLog? highestMoveLog = solution.Highest!.GetMoveLog();
-                if (highestMoveLog != null)
+                string highMoveLogHeader = "highMoveLog";
+                IHeuristicMoveLog? highMoveLog = solution.High!.GetMoveLog();
+                if (highMoveLog != null)
                 {
-                    highestMoveLogHeader = highestMoveLog.GetCsvHeader("highest ");
+                    highMoveLogHeader = highMoveLog.GetCsvHeader("high");
                 }
-                line.Append("," + highestMoveLogHeader);
+                line.Append("," + highMoveLogHeader);
 
-                line.Append(",highest,highest candidate");
+                line.Append(",high,highCandidate");
                 writer.WriteLine(line);
             }
 
@@ -78,10 +74,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             List<List<(float Objective, int Index)>> solutionsByDiscountRateIndexAndObjective = new();
             for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
             {
-                Heuristic? highestHeuristic = this.Results.Solutions[resultIndex].Highest;
-                if (highestHeuristic == null)
+                Heuristic? highHeuristic = this.Results.Solutions[resultIndex].High;
+                if (highHeuristic == null)
                 {
-                    throw new NotSupportedException("Result " + resultIndex + " is missing a highest solution.");
+                    throw new NotSupportedException("Result " + resultIndex + " is missing a high solution.");
                 }
 
                 HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
@@ -92,7 +88,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 List<(float Objective, int Index)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
-                runsForDiscountRate.Add((highestHeuristic.BestObjectiveFunction, resultIndex));
+                runsForDiscountRate.Add((highHeuristic.BestObjectiveFunction, resultIndex));
             }
             for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
             {
@@ -122,29 +118,29 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             // log runs in declining priority order until either all runs are logged or the file size limit is reached
-            long maxFileSizeInBytes = (long)(1E9F * this.MaxFileSize);
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             foreach (int resultIndexToLog in prioritizedResultIndices)
             {
                 HeuristicDistribution distribution = this.Results.Distributions[resultIndexToLog];
                 HeuristicSolutionPool solution = this.Results.Solutions[resultIndexToLog];
-                Heuristic? highestHeuristic = solution.Highest;
-                Heuristic? lowestHeuristic = solution.Lowest;
-                if ((distribution.HeuristicParameters == null) || (highestHeuristic == null) || (lowestHeuristic == null))
+                Heuristic? highHeuristic = solution.High;
+                Heuristic? lowHeuristic = solution.Low;
+                if ((distribution.HeuristicParameters == null) || (highHeuristic == null) || (lowHeuristic == null))
                 {
-                    throw new NotSupportedException("Result " + resultIndexToLog + " is missing a highest or lowest solution or highest solution parameters.");
+                    throw new NotSupportedException("Result " + resultIndexToLog + " is missing a high or low solution or heuristic parameters.");
                 }
-                IHeuristicMoveLog? highestMoveLog = highestHeuristic.GetMoveLog();
-                IHeuristicMoveLog? lowestMoveLog = lowestHeuristic.GetMoveLog();
-                // for now, assume highest and lowest solutions used the same parameters
-                OrganonStandTrajectory highestTrajectory = highestHeuristic.BestTrajectory;
+                IHeuristicMoveLog? highMoveLog = highHeuristic.GetMoveLog();
+                IHeuristicMoveLog? lowMoveLog = lowHeuristic.GetMoveLog();
+                // for now, assume high and low solutions used the same parameters
+                OrganonStandTrajectory highTrajectory = highHeuristic.BestTrajectory;
 
                 float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
-                string runPrefix = highestTrajectory.Name + "," + 
-                    highestHeuristic.GetName() + "," +
+                string runPrefix = highTrajectory.Name + "," + 
+                    highHeuristic.GetName() + "," +
                     distribution.HeuristicParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highestTrajectory, discountRate);
+                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate);
 
-                Debug.Assert(distribution.CountByMove.Count >= lowestHeuristic.AcceptedObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= lowHeuristic.AcceptedObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MinimumObjectiveFunctionByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count >= distribution.TwoPointFivePercentileByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count >= distribution.FifthPercentileByMove.Count);
@@ -155,25 +151,25 @@ namespace Osu.Cof.Ferm.Cmdlets
                 Debug.Assert(distribution.CountByMove.Count >= distribution.NinetySevenPointFivePercentileByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count >= distribution.UpperQuartileByMove.Count);
                 Debug.Assert(distribution.CountByMove.Count == distribution.MaximumObjectiveFunctionByMove.Count);
-                Debug.Assert(distribution.CountByMove.Count >= highestHeuristic.AcceptedObjectiveFunctionByMove.Count);
+                Debug.Assert(distribution.CountByMove.Count >= highHeuristic.AcceptedObjectiveFunctionByMove.Count);
                 for (int moveIndex = 0; moveIndex < distribution.CountByMove.Count; moveIndex += this.Step)
                 {
                     string runsWithMoveAtIndex = distribution.CountByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
 
-                    string? lowestMove = null;
-                    if ((lowestMoveLog != null) && (lowestMoveLog.Count > moveIndex))
+                    string? lowMove = null;
+                    if ((lowMoveLog != null) && (lowMoveLog.Count > moveIndex))
                     {
-                        lowestMove = lowestMoveLog.GetCsvValues(moveIndex);
+                        lowMove = lowMoveLog.GetCsvValues(moveIndex);
                     }
-                    string? lowestObjectiveFunction = null;
-                    if (lowestHeuristic.AcceptedObjectiveFunctionByMove.Count > moveIndex)
+                    string? lowObjectiveFunction = null;
+                    if (lowHeuristic.AcceptedObjectiveFunctionByMove.Count > moveIndex)
                     {
-                        lowestObjectiveFunction = lowestHeuristic.AcceptedObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        lowObjectiveFunction = lowHeuristic.AcceptedObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
-                    string? lowestObjectiveFunctionForMove = null;
-                    if (lowestHeuristic.CandidateObjectiveFunctionByMove.Count > moveIndex)
+                    string? lowObjectiveFunctionForMove = null;
+                    if (lowHeuristic.CandidateObjectiveFunctionByMove.Count > moveIndex)
                     {
-                        lowestObjectiveFunctionForMove = lowestHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        lowObjectiveFunctionForMove = lowHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
                     string minObjectiveFunction = distribution.MinimumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
@@ -215,28 +211,28 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     string maxObjectiveFunction = distribution.MaximumObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
 
-                    string? highestMove = null;
-                    if ((highestMoveLog != null) && (highestMoveLog.Count > moveIndex))
+                    string? highMove = null;
+                    if ((highMoveLog != null) && (highMoveLog.Count > moveIndex))
                     {
-                        highestMove = highestMoveLog.GetCsvValues(moveIndex);
+                        highMove = highMoveLog.GetCsvValues(moveIndex);
                     }
-                    string highestObjectiveFunction = String.Empty;
-                    if (highestHeuristic.AcceptedObjectiveFunctionByMove.Count > moveIndex)
+                    string highObjectiveFunction = String.Empty;
+                    if (highHeuristic.AcceptedObjectiveFunctionByMove.Count > moveIndex)
                     {
-                        highestObjectiveFunction = highestHeuristic.AcceptedObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        highObjectiveFunction = highHeuristic.AcceptedObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
-                    string? highestObjectiveFunctionForMove = null;
-                    if (highestHeuristic.CandidateObjectiveFunctionByMove.Count > moveIndex)
+                    string? highObjectiveFunctionForMove = null;
+                    if (highHeuristic.CandidateObjectiveFunctionByMove.Count > moveIndex)
                     {
-                        highestObjectiveFunctionForMove = highestHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        highObjectiveFunctionForMove = highHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
                     writer.WriteLine(runPrefix + "," + 
                                      moveIndex + "," + 
                                      runsWithMoveAtIndex + "," + 
-                                     lowestMove + "," +
-                                     lowestObjectiveFunction + "," +
-                                     lowestObjectiveFunctionForMove + "," +
+                                     lowMove + "," +
+                                     lowObjectiveFunction + "," +
+                                     lowObjectiveFunctionForMove + "," +
                                      minObjectiveFunction + "," + 
                                      twoPointFivePercentileObjectiveFunction + "," +
                                      fifthPercentileObjectiveFunction + "," +
@@ -247,14 +243,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      ninetyFifthPercentileObjectiveFunction + "," +
                                      ninetySevenPointFivePercentileObjectiveFunction + "," +
                                      maxObjectiveFunction + "," + 
-                                     highestMove + "," +
-                                     highestObjectiveFunction + "," +
-                                     highestObjectiveFunctionForMove);
+                                     highMove + "," +
+                                     highObjectiveFunction + "," +
+                                     highObjectiveFunctionForMove);
                 }
 
                 if (writer.BaseStream.Length > maxFileSizeInBytes)
                 {
-                    this.WriteWarning("Maximum file size of " + this.MaxFileSize.ToString("0.00") + " GB reached.");
+                    this.WriteWarning("Write-Objective: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;
                 }
             }

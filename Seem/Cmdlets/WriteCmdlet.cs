@@ -7,7 +7,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 {
     public class WriteCmdlet : Cmdlet
     {
-        protected const string RateAndAgeCsvHeader = "discount rate,first thin,second thin,third thin,rotation";
+        protected const string RateAndAgeCsvHeader = "discountRate,thin1,thin2,thin3,rotation";
 
         private bool openedExistingFile;
 
@@ -18,10 +18,20 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateNotNullOrEmpty]
         public string? CsvFile;
 
+        [Parameter(HelpMessage = "Maximum size of output file in gigabytes.")]
+        [ValidateRange(0.1F, 100.0F)]
+        public float LimitGB { get; set; }
+
         public WriteCmdlet()
         {
             this.Append = false;
+            this.LimitGB = 1.0F; // sanity default, may be set higher in derived classes
             this.openedExistingFile = false;
+        }
+
+        protected long GetMaxFileSizeInBytes()
+        {
+            return (long)(1E9F * this.LimitGB);
         }
 
         protected static string GetRateAndAgeCsvValues(StandTrajectory trajectory, float discountRate)

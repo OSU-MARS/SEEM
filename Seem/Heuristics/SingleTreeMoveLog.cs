@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public string GetCsvHeader(string prefix)
         {
-            return prefix + "tree evaluated";
+            return prefix + "TreeEvaluated";
         }
 
         public string GetCsvValues(int move)

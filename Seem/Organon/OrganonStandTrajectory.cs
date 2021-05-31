@@ -77,16 +77,44 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public void CopyFrom(OrganonStandTrajectory other)
+        // this function doesn't currently copy Heuristic, Name, PeriodLengthInYears, PeriodZeroAgeInYears, PlantingDensityInTreesPerHectare, TimberValue
+        public void CopyTreeGrowthAndTreatmentsFrom(OrganonStandTrajectory other)
         {
-            this.CopySelectionsFrom(other);
+            Debug.Assert(Object.ReferenceEquals(this, other) == false);
+
+            if ((this.BasalAreaRemoved.Length != other.BasalAreaRemoved.Length) ||
+                (this.PeriodLengthInYears != other.PeriodLengthInYears) ||
+                (this.PeriodZeroAgeInYears != other.PeriodZeroAgeInYears) ||
+                (this.PlanningPeriods != other.PlanningPeriods) ||
+                (this.PlantingDensityInTreesPerHectare != other.PlantingDensityInTreesPerHectare) ||
+                (Object.ReferenceEquals(this.TimberValue, other.TimberValue) == false))
+            {
+                // no apparent need to check heuristics for compatibility
+                throw new ArgumentOutOfRangeException(nameof(other));
+            }
 
             // for now, shallow copies where feasible
-            this.Heuristic = other.Heuristic; // assumed invariant within OptimizeCmdlet.Run() tasks
-            this.organonCalibration = other.organonCalibration; // unused
+            this.organonCalibration = other.organonCalibration;
             this.organonGrowth = other.organonGrowth; // BUGBUG: has no state, should have run state which can be copied
 
             // deep copies of mutable state changed by modified tree selection and resimulation
+            // May need deep copy of treatment because 
+            // 1) thinning prescriptions are being evaluated and therefore the best prescription needs to be reported
+            // 2) BUGBUG: no Organon run state object has been implemented
+            Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.BasalAreaRemoved.Length);
+            this.Configuration.CopyFrom(other.Configuration);
+
+            foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
+            {
+                int[] thisSelectionForSpecies = this.IndividualTreeSelectionBySpecies[otherSelectionForSpecies.Key];
+                if (otherSelectionForSpecies.Value.Length != thisSelectionForSpecies.Length)
+                {
+                    throw new NotSupportedException("Individual tree selections are of different lengths.");
+                }
+                Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
+            }
+            this.EarliestPeriodChangedSinceLastSimulation = other.EarliestPeriodChangedSinceLastSimulation;
+
             for (int periodIndex = 0; periodIndex < this.StandByPeriod.Length; ++periodIndex)
             {
                 OrganonStandDensity otherDensity = other.DensityByPeriod[periodIndex];
@@ -101,11 +129,6 @@ namespace Osu.Cof.Ferm.Organon
                         this.DensityByPeriod[periodIndex].CopyFrom(otherDensity);
                     }
                 }
-
-                // may need deep copy of treatment because 
-                // 1) thinning prescriptions are being evaluated and therefore the best prescription needs to be reported
-                // 2) BUGBUG: no Organon run state object has been implemented
-                this.Configuration.CopyFrom(other.Configuration);
 
                 OrganonStand? otherStand = other.StandByPeriod[periodIndex];
                 if (otherStand != null)
@@ -124,32 +147,9 @@ namespace Osu.Cof.Ferm.Organon
                     this.StandByPeriod[periodIndex] = null;
                 }
             }
-        }
 
-        public void CopySelectionsFrom(StandTrajectory other)
-        {
-            Debug.Assert(Object.ReferenceEquals(this, other) == false);
-
-            if ((this.BasalAreaRemoved.Length != other.BasalAreaRemoved.Length) || (this.PlanningPeriods != other.PlanningPeriods))
-            {
-                // TODO: check rest of stand properties
-                throw new ArgumentOutOfRangeException(nameof(other));
-            }
-
-            Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.BasalAreaRemoved.Length);
-            this.ThinningVolume.CopyFrom(other.ThinningVolume);
             this.StandingVolume.CopyFrom(other.StandingVolume);
-
-            foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
-            {
-                int[] thisSelectionForSpecies = this.IndividualTreeSelectionBySpecies[otherSelectionForSpecies.Key];
-                if (otherSelectionForSpecies.Value.Length != thisSelectionForSpecies.Length)
-                {
-                    throw new NotSupportedException("Individual tree selections are of different lengths.");
-                }
-                Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
-            }
-            this.EarliestPeriodChangedSinceLastSimulation = other.EarliestPeriodChangedSinceLastSimulation;
+            this.ThinningVolume.CopyFrom(other.ThinningVolume);
         }
 
         public int GetInitialTreeRecordCount()

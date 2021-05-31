@@ -91,14 +91,15 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 for (int sourceTreeIndex = 0; sourceTreeIndex < initialTreeRecordCount; ++sourceTreeIndex)
                 {
-                    // evaluate other cut option
-                    int treeIndex = uncompactedTreeIndices[sourceTreeIndex];
-                    int currentPeriodIndex = uncompactedPeriodIndices[treeIndex];
-                    int candidatePeriodIndex = decrementPeriodIndex ? currentPeriodIndex - 1 : currentPeriodIndex + 1;
                     if (this.IsStochastic)
                     {
                         decrementPeriodIndex = this.GetPseudorandomByteAsProbability() < 0.5F;
                     }
+
+                    // evaluate other cut option
+                    int treeIndex = uncompactedTreeIndices[sourceTreeIndex];
+                    int currentPeriodIndex = uncompactedPeriodIndices[treeIndex];
+                    int candidatePeriodIndex = decrementPeriodIndex ? currentPeriodIndex - 1 : currentPeriodIndex + 1;
 
                     for (int periodEvaluationForTree = 0; periodEvaluationForTree < thinningPeriods.Count - 1; ++periodEvaluationForTree)
                     {
@@ -122,7 +123,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             // accept change of no cut-cut decision if it improves upon the best solution
                             acceptedObjectiveFunction = candidateObjectiveFunction;
                             uncompactedPeriodIndices[treeIndex] = candidatePeriodIndex;
-                            this.CurrentTrajectory.CopyFrom(candidateTrajectory);
+                            this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
                             ++perfCounters.MovesAccepted;
                         }
                         else
@@ -156,7 +157,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             this.BestObjectiveFunction = acceptedObjectiveFunction;
-            this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;

@@ -2,24 +2,24 @@
 {
     public class HeuristicSolutionPool
     {
-        public Heuristic? Lowest { get; private set; }
-        public Heuristic? Highest { get; private set; }
+        public Heuristic? Low { get; private set; }
+        public Heuristic? High { get; private set; }
 
         public HeuristicSolutionPool()
         {
-            this.Lowest = null;
-            this.Highest = null;
+            this.Low = null;
+            this.High = null;
         }
 
         public void AddRun(Heuristic heuristic)
         {
-            if ((this.Highest == null) || (heuristic.BestObjectiveFunction > this.Highest.BestObjectiveFunction))
+            if ((this.High == null) || (heuristic.BestObjectiveFunction > this.High.BestObjectiveFunction))
             {
-                this.Highest = heuristic;
+                this.High = heuristic;
             }
-            if ((this.Lowest == null) || (heuristic.BestObjectiveFunction < this.Lowest.BestObjectiveFunction))
+            if ((this.Low == null) || (heuristic.BestObjectiveFunction < this.Low.BestObjectiveFunction))
             {
-                this.Lowest = heuristic;
+                this.Low = heuristic;
             }
         }
     }

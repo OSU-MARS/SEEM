@@ -51,7 +51,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // accept change of tree selection if it improves upon the best solution
                     this.BestObjectiveFunction = candidateObjectiveFunction;
-                    this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                    this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
                     ++perfCounters.MovesAccepted;
                 }
                 else

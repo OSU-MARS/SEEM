@@ -45,11 +45,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                 }
 
-                line.Append("," + WriteCmdlet.RateAndAgeCsvHeader + ",stand age,species,diameter class,snags,logs");
+                line.Append("," + WriteCmdlet.RateAndAgeCsvHeader + ",standAge,species,diameter class,snags,logs");
                 writer.WriteLine(line);
             }
 
             // rows for periods
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             int maxIndex = runsSpecified ? this.Results!.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
@@ -81,6 +82,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                                              logsPerHectare);
                         }
                     }
+                }
+
+                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                {
+                    this.WriteWarning("Write-SnagsAndLogs: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    break;
                 }
             }
         }

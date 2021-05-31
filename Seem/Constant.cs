@@ -183,10 +183,11 @@ namespace Osu.Cof.Ferm
 
         public static class PrescriptionEnumerationDefault
         {
-            public static float IntensityStep = 5.0F;
-            public static float MaximumIntensity = 90.0F;
-            public static float MinimumIntensity = 30.0F;
-            public static PrescriptionUnits Units = PrescriptionUnits.TreePercentageRemoved;
+            public static float DefaultIntensityStepSize = 5.0F;
+            public static float MaximumIntensity = 80.0F;
+            public static float MaximumIntensityStepSize = 100.0F; // default to no limiting
+            public static float MinimumIntensity = 20.0F;
+            public static PrescriptionUnits Units = PrescriptionUnits.StemPercentageRemoved;
         }
 
         public static class OpenXml

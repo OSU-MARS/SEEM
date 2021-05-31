@@ -28,10 +28,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine("stand,species,tree,age,DBH,height,crown ratio,expansion factor,dead expansion factor");
+                writer.WriteLine("stand,species,tree,age,DBH,height,crownRatio,EF,deadEF");
             }
 
             // rows for trees
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             int age = this.Trajectory!.PeriodZeroAgeInYears;
             for (int periodIndex = 0; periodIndex < this.Trajectory.PlanningPeriods; ++periodIndex)
             {
@@ -63,6 +64,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 age += this.Trajectory.PeriodLengthInYears;
+
+                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                {
+                    this.WriteWarning("Write-TreeList: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    break;
+                }
             }
         }
     }

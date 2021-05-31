@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         public HeuristicResultSet(List<float> discountRates, List<int> firstThinPeriod, List<int> secondThinPeriod, List<int> thirdThinPeriod, List<int> planningPeriods)
         {
             this.Distributions = new();
-            this.SolutionIndex = new(discountRates.Count, firstThinPeriod.Count, secondThinPeriod.Count, thirdThinPeriod.Count, planningPeriods.Count);
+            this.SolutionIndex = new(discountRates, firstThinPeriod, secondThinPeriod, thirdThinPeriod, planningPeriods);
             this.Solutions = new();
 
             this.DiscountRates = discountRates;
@@ -42,8 +42,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.Distributions.Add(distribution);
 
-            HeuristicSolutionPool solution = new();
-            this.SolutionIndex.Add(distribution, solution);
+            HeuristicSolutionPool solution = this.SolutionIndex[distribution];
             this.Solutions.Add(solution);
         }
     }

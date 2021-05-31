@@ -321,7 +321,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (candidateObjectiveFunction > bestObjectiveFunction)
                         {
                             bestObjectiveFunction = candidateObjectiveFunction;
-                            bestTrajectory.CopyFrom(candidateTrajectory);
+                            bestTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
                             bestTreeIndex = treeIndex;
                             bestHarvestPeriod = thinningPeriod;
                         }
@@ -349,7 +349,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             if (candidateObjectiveFunction > bestNonTabuObjectiveFunction)
                             {
                                 bestNonTabuObjectiveFunction = candidateObjectiveFunction;
-                                bestNonTabuTrajectory.CopyFrom(candidateTrajectory);
+                                bestNonTabuTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
                             }
                         }
 
@@ -370,12 +370,12 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // always accept best candidate if it improves upon the best solution
                     acceptedObjectiveFunction = bestObjectiveFunction;
-                    this.CurrentTrajectory.CopyFrom(bestTrajectory);
+                    this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(bestTrajectory);
 
                     remainingTabuTenures[bestTreeIndex, bestHarvestPeriod] = this.GetTenure(tenureScalingFactor);
 
                     this.BestObjectiveFunction = bestObjectiveFunction;
-                    this.BestTrajectory.CopyFrom(this.CurrentTrajectory);
+                    this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
 
                     this.CandidateObjectiveFunctionByMove.Add(bestObjectiveFunction);
                     this.MoveLog.TreeIDByMove.Add(bestTreeIndex);
@@ -395,7 +395,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     //}
                     KeyValuePair<float, OneOptMove> bestNonTabuMove = bestNonTabuMovesByObjectiveFunction.Last();
                     acceptedObjectiveFunction = bestNonTabuMove.Key;
-                    this.CurrentTrajectory.CopyFrom(bestNonTabuTrajectory);
+                    this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(bestNonTabuTrajectory);
 
                     remainingTabuTenures[bestNonTabuMove.Value.TreeIndex, bestNonTabuMove.Value.ThinPeriod] = this.GetTenure(tenureScalingFactor);
                     this.CandidateObjectiveFunctionByMove.Add(acceptedObjectiveFunction);

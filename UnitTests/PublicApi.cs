@@ -221,9 +221,9 @@ namespace Osu.Cof.Ferm.Test
             configuration.Treatments.Harvests.Add(new ThinByPrescription(thinningPeriod));
             PrescriptionParameters prescriptionParameters = new()
             {
-                Maximum = 60.0F,
-                Minimum = 50.0F,
-                StepSize = 10.0F,
+                MaximumIntensity = 60.0F,
+                MinimumIntensity = 50.0F,
+                DefaultIntensityStepSize = 10.0F,
             };
             PrescriptionEnumeration enumerator = new(stand, configuration, landExpectationValue, prescriptionParameters);
             HeuristicPerformanceCounters enumerationCounters = enumerator.Run(defaultPosition, results.SolutionIndex);
@@ -851,7 +851,7 @@ namespace Osu.Cof.Ferm.Test
             IHeuristicMoveLog? moveLog = heuristic.GetMoveLog();
             if (moveLog != null)
             {
-                string csvHeader = moveLog.GetCsvHeader("prefix ");
+                string csvHeader = moveLog.GetCsvHeader("prefix");
                 Assert.IsTrue(String.IsNullOrWhiteSpace(csvHeader) == false);
 
                 for (int moveIndex = 0; moveIndex < heuristic.AcceptedObjectiveFunctionByMove.Count; ++moveIndex)

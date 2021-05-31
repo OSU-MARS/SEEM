@@ -3,6 +3,6 @@
     public enum PrescriptionUnits
     {
         BasalAreaPerAcreRetained,
-        TreePercentageRemoved
+        StemPercentageRemoved
     }
 }
