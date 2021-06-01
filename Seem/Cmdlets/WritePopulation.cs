@@ -15,7 +15,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            if (this.Results!.Count < 1)
+            if (this.Results!.Distributions.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results));
             }
@@ -34,10 +34,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
+            for (int resultIndex = 0; resultIndex < this.Results.Distributions.Count; ++resultIndex)
             {
                 HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
-                HeuristicSolutionPool solution = this.Results.Solutions[resultIndex];
+                HeuristicSolutionPool solution = this.Results.SolutionIndex[distribution];
                 if ((solution.High == null) || (solution.Low == null) || (distribution.HeuristicParameters == null))
                 {
                     throw new NotSupportedException("Result " + resultIndex + " is missing a high solution, low solution, or high heuristic parameters");

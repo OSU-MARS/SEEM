@@ -26,15 +26,16 @@ namespace Osu.Cof.Ferm
 
         public void CopyFrom(StandScribnerVolume other)
         {
-            if ((this.Scribner2Saw.Length != other.Scribner2Saw.Length) || 
-                (this.Scribner3Saw.Length != other.Scribner3Saw.Length) ||
-                (this.Scribner4Saw.Length != other.Scribner4Saw.Length))
+            int minPeriods = Math.Min(this.Scribner2Saw.Length, other.Scribner2Saw.Length);
+            Array.Copy(other.Scribner2Saw, 0, this.Scribner2Saw, 0, minPeriods);
+            Array.Copy(other.Scribner3Saw, 0, this.Scribner3Saw, 0, minPeriods);
+            Array.Copy(other.Scribner4Saw, 0, this.Scribner4Saw, 0, minPeriods);
+            if (this.Scribner2Saw.Length > minPeriods)
             {
-                throw new ArgumentOutOfRangeException(nameof(other));
+                Array.Clear(this.Scribner2Saw, minPeriods, this.Scribner2Saw.Length - minPeriods);
+                Array.Clear(this.Scribner3Saw, minPeriods, this.Scribner3Saw.Length - minPeriods);
+                Array.Clear(this.Scribner4Saw, minPeriods, this.Scribner4Saw.Length - minPeriods);
             }
-            Array.Copy(other.Scribner2Saw, 0, this.Scribner2Saw, 0, other.Scribner2Saw.Length);
-            Array.Copy(other.Scribner3Saw, 0, this.Scribner3Saw, 0, other.Scribner3Saw.Length);
-            Array.Copy(other.Scribner4Saw, 0, this.Scribner4Saw, 0, other.Scribner4Saw.Length);
         }
 
         public float GetScribnerTotal(int periodIndex)

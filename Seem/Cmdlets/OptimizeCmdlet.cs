@@ -7,18 +7,117 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Management.Automation;
 using System.Runtime.ExceptionServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
-    public class OptimizeCmdlet : Cmdlet
+    public abstract class OptimizeCmdlet<TParameters> : Cmdlet where TParameters : HeuristicParameters
     {
+        [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public int BestOf { get; set; }
+
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(Constant.Grasp.FullyRandomConstructionForMaximization, Constant.Grasp.FullyGreedyConstructionForMaximization)]
+        public List<float> ConstructionGreediness { get; set; }
+
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(0.0F, 100.0F)]
+        public List<float> DiscountRates { get; set; }
+
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(Constant.NoThinPeriod, 100)]
+        public List<int> FirstThinPeriod { get; set; }
+
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(0.0F, 1.0F)]
+        public List<float> InitialThinningProbability { get; set; }
+
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(1, 100)]
+        public List<int> PlanningPeriods { get; set; }
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(Constant.NoThinPeriod, 100)]
+        public List<int> SecondThinPeriod { get; set; }
+
+        [Parameter]
+        [ValidateRange(1, 100)]
+        public int SolutionPoolSize { get; set; }
+
+        [Parameter(Mandatory = true)]
+        [ValidateNotNull]
+        public OrganonStand? Stand { get; set; }
+
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(Constant.NoThinPeriod, 100)]
+        public List<int> ThirdThinPeriod { get; set; }
+
+        [Parameter]
+        public int Threads { get; set; }
+
+        [Parameter]
+        public TimberObjective TimberObjective { get; set; }
+        [Parameter]
+        [ValidateNotNull]
+        public TimberValue TimberValue { get; set; }
+        [Parameter]
+        public TreeModel TreeModel { get; set; }
+
+        public OptimizeCmdlet()
+        {
+            this.BestOf = 1;
+            this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
+
+            this.DiscountRates = new List<float>() { Constant.DefaultAnnualDiscountRate };
+            this.FirstThinPeriod = new List<int>() { Constant.DefaultThinningPeriod };
+            this.PlanningPeriods = new List<int>() { Constant.DefaultPlanningPeriods };
+            this.ConstructionGreediness = new List<float>() { Constant.Grasp.FullyRandomConstructionForMaximization };
+            this.InitialThinningProbability = new List<float>() { Constant.HeuristicDefault.InitialThinningProbability };
+            this.SecondThinPeriod = new List<int>() { Constant.NoThinPeriod };
+            this.SolutionPoolSize = Constant.DefaultSolutionPoolSize;
+            this.ThirdThinPeriod = new List<int>() { Constant.NoThinPeriod };
+            this.TimberObjective = TimberObjective.LandExpectationValue;
+            this.TimberValue = TimberValue.Default;
+            this.TreeModel = TreeModel.OrganonNwo;
+        }
+
+        protected abstract Heuristic<TParameters> CreateHeuristic(TParameters heuristicParameters, RunParameters runParameters);
+
+        protected virtual IHarvest CreateThin(int thinPeriodIndex)
+        {
+            return new ThinByIndividualTreeSelection(thinPeriodIndex);
+        }
+
+        protected IList<HeuristicParameters> GetDefaultParameterCombinations()
+        {
+            List<HeuristicParameters> parameterCombinations = new();
+            foreach (float constructionGreediness in this.ConstructionGreediness)
+            {
+                foreach (float thinningProbability in this.InitialThinningProbability)
+                {
+                    parameterCombinations.Add(new HeuristicParameters()
+                    {
+                        ConstructionGreediness = constructionGreediness,
+                        InitialThinningProbability = thinningProbability
+                    });
+                }
+            }
+            return parameterCombinations;
+        }
+
         // for now, assume runtime complexity is linear with the number of periods requiring thinning optimization
         // This is simplified, but it's more accurate than assuming all runs have equal cost regardless of the number of timesteps required and is
-        // a reasonable approximation for hero, Monte Carlo heuristics, and genetic algorithms. For prescription enumeration costs multiply rather
-        // than add: (R - T1)(R - T2)... where R = rotation length, T = thinning timing.
-        protected static int EstimateRuntimeCost(HeuristicSolutionPosition position, HeuristicResultSet results)
+        // a reasonable approximation for hero, Monte Carlo heuristics, prescription enumeration, and genetic algorithms.
+        protected static int EstimateRuntimeCost(HeuristicSolutionPosition position, HeuristicResultSet<TParameters> results)
         {
             int periodWeight = 0; // no thins so only a single trajectory need be simulated; assume cost is negligible as no optimization occurs
             int firstThinPeriod = results.FirstThinPeriod[position.FirstThinPeriodIndex];
@@ -42,140 +141,22 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             return periodWeight;
         }
-    }
-
-    public abstract class OptimizeCmdlet<TParameters> : OptimizeCmdlet where TParameters : HeuristicParameters
-    {
-        [Parameter]
-        [ValidateRange(1, Int32.MaxValue)]
-        public int BestOf { get; set; }
-        [Parameter]
-        [ValidateRange(0.0F, 1.0F)]
-        public float ConstructionRandomness { get; set; }
-
-        [Parameter]
-        [ValidateNotNull]
-        [ValidateRange(0.0F, 100.0F)]
-        public List<float> DiscountRates { get; set; }
-
-        [Parameter]
-        [ValidateNotNull]
-        [ValidateRange(Constant.NoThinPeriod, 100)]
-        public List<int> FirstThinPeriod { get; set; }
-
-        [Parameter]
-        [ValidateRange(0.0F, 1.0F)]
-        public List<float> InitialThinningProbability { get; set; }
-
-        [Parameter]
-        [ValidateNotNull]
-        [ValidateRange(1, 100)]
-        public List<int> PlanningPeriods { get; set; }
-
-        [Parameter]
-        [ValidateNotNull]
-        [ValidateRange(Constant.NoThinPeriod, 100)]
-        public List<int> SecondThinPeriod { get; set; }
-
-        [Parameter(Mandatory = true)]
-        [ValidateNotNull]
-        public OrganonStand? Stand { get; set; }
-
-        [Parameter]
-        [ValidateNotNull]
-        [ValidateRange(Constant.NoThinPeriod, 100)]
-        public List<int> ThirdThinPeriod { get; set; }
-
-        [Parameter]
-        public int Threads { get; set; }
-
-        [Parameter]
-        public TimberObjective TimberObjective { get; set; }
-        [Parameter]
-        [ValidateNotNull]
-        public TimberValue TimberValue { get; set; }
-        [Parameter]
-        public TreeModel TreeModel { get; set; }
-
-        public OptimizeCmdlet()
-        {
-            this.BestOf = 1;
-            this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
-
-            this.DiscountRates = new List<float>() { Constant.DefaultAnnualDiscountRate };
-            this.FirstThinPeriod = new List<int>() { Constant.DefaultThinningPeriod };
-            this.PlanningPeriods = new List<int>() { Constant.DefaultPlanningPeriods };
-            this.ConstructionRandomness = Constant.GraspDefault.FullyRandomConstruction;
-            this.InitialThinningProbability = new List<float>() { Constant.HeuristicDefault.InitialThinningProbability };
-            this.SecondThinPeriod = new List<int>() { Constant.NoThinPeriod };
-            this.ThirdThinPeriod = new List<int>() { Constant.NoThinPeriod };
-            this.TimberObjective = TimberObjective.LandExpectationValue;
-            this.TimberValue = TimberValue.Default;
-            this.TreeModel = TreeModel.OrganonNwo;
-        }
-
-        protected abstract Heuristic<TParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, TParameters heuristicParameters, RunParameters runParameters);
-
-        protected virtual IHarvest CreateThin(int thinPeriodIndex)
-        {
-            return new ThinByIndividualTreeSelection(thinPeriodIndex);
-        }
-
-        protected IList<HeuristicParameters> GetDefaultParameterCombinations(TimberValue timberValue)
-        {
-            List<HeuristicParameters> parameterCombinations = new();
-            foreach (float thinningProbability in this.InitialThinningProbability)
-            {
-                parameterCombinations.Add(new HeuristicParameters()
-                {
-                    ConstructionRandomness = this.ConstructionRandomness,
-                    InitialThinningProbability = thinningProbability,
-                    TimberValue = timberValue,
-                });
-            }
-            return parameterCombinations;
-        }
 
         protected abstract string GetName();
 
         // ideally this would be virtual but, as of C# 9.0, the nature of C# generics requires GetDefaultParameterCombinations() to be separate
-        protected abstract IList<TParameters> GetParameterCombinations(TimberValue timberValue);
+        protected abstract IList<TParameters> GetParameterCombinations();
 
         protected override void ProcessRecord()
         {
-            if (this.FirstThinPeriod.Count < 1)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.FirstThinPeriod));
-            }
-            if ((this.ConstructionRandomness < 0.0F) || (this.ConstructionRandomness > 1.0F))
-            {
-                throw new ParameterOutOfRangeException(nameof(this.ConstructionRandomness));
-            }
-            if (this.PlanningPeriods.Count < 1)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.PlanningPeriods));
-            }
-            if (this.InitialThinningProbability.Count < 1)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.InitialThinningProbability));
-            }
-            if (this.SecondThinPeriod.Count < 1)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod));
-            }
-            if (this.ThirdThinPeriod.Count < 1)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod));
-            }
-
             Stopwatch stopwatch = new();
             stopwatch.Start();
             HeuristicPerformanceCounters totalPerfCounters = new();
             int totalRuntimeCost = 0;
 
             int treeCount = this.Stand!.GetTreeRecordCount();
-            IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations(this.TimberValue);
-            HeuristicResultSet results = new(this.DiscountRates, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.PlanningPeriods);
+            IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
+            HeuristicResultSet<TParameters> results = new(parameterCombinationsForHeuristic, this.DiscountRates, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.PlanningPeriods, this.SolutionPoolSize);
             for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
             {
                 int planningPeriods = this.PlanningPeriods[planningPeriodIndex];
@@ -233,6 +214,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                             {
                                 for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
                                 {
+                                    // distributions are unique per combination of run tuple (discount rate, thins 1, 2, 3, and rotation)
+                                    // and heuristic parameters but solution pools are shared across heuristic parameters
+                                    // TODO: include parameter index in solution pool
                                     HeuristicDistribution distribution = new(treeCount)
                                     {
                                         DiscountRateIndex = discountRateIndex,
@@ -242,8 +226,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                         SecondThinPeriodIndex = secondThinIndex,
                                         ThirdThinPeriodIndex = thirdThinIndex
                                     };
-                                    results.Add(distribution);
-                                    totalRuntimeCost += OptimizeCmdlet.EstimateRuntimeCost(distribution, results);
+                                    results.Distributions.Add(distribution);
+                                    totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(distribution, results);
                                 }
                             }
                         }
@@ -258,6 +242,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             totalRuntimeCost *= this.BestOf;
             int runsCompleted = 0;
             int runtimeCostCompleted = 0;
+            OrganonConfiguration organonConfiguration = new(OrganonVariant.Create(this.TreeModel));
             Task runs = Task.Run(() =>
             {
                 Parallel.For(0, totalRuns, parallelOptions, (int iteration, ParallelLoopState loopState) =>
@@ -266,40 +251,40 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         return;
                     }
-                    int distributionAndSolutionIndex = iteration / this.BestOf;
-                    HeuristicDistribution distribution = results.Distributions[distributionAndSolutionIndex];
-                    OrganonConfiguration organonConfiguration = new(OrganonVariant.Create(this.TreeModel));
-                    if (this.TryCreateFirstThin(distribution.FirstThinPeriodIndex, out IHarvest? firstThin))
-                    {
-                        organonConfiguration.Treatments.Harvests.Add(firstThin);
-                        if (this.TryCreateSecondThin(distribution.SecondThinPeriodIndex, out IHarvest? secondThin))
-                        {
-                            organonConfiguration.Treatments.Harvests.Add(secondThin);
-                            if (this.TryCreateThirdThin(distribution.ThirdThinPeriodIndex, out IHarvest? thirdThin))
-                            {
-                                organonConfiguration.Treatments.Harvests.Add(thirdThin);
-                            }
-                        }
-                    }
+                    int distributionIndex = iteration / this.BestOf;
+                    HeuristicDistribution distribution = results.Distributions[distributionIndex];
 
                     try
                     {
-                        RunParameters runParameters = new()
+                        RunParameters runParameters = new(organonConfiguration)
                         {
                             DiscountRate = results.DiscountRates[distribution.DiscountRateIndex],
                             PlanningPeriods = this.PlanningPeriods[distribution.PlanningPeriodIndex],
-                            TimberObjective = this.TimberObjective
+                            TimberObjective = this.TimberObjective,
+                            TimberValue = this.TimberValue
                         };
+                        if (this.TryCreateFirstThin(distribution.FirstThinPeriodIndex, out IHarvest? firstThin))
+                        {
+                            runParameters.Treatments.Harvests.Add(firstThin);
+                            if (this.TryCreateSecondThin(distribution.SecondThinPeriodIndex, out IHarvest? secondThin))
+                            {
+                                runParameters.Treatments.Harvests.Add(secondThin);
+                                if (this.TryCreateThirdThin(distribution.ThirdThinPeriodIndex, out IHarvest? thirdThin))
+                                {
+                                    runParameters.Treatments.Harvests.Add(thirdThin);
+                                }
+                            }
+                        }
                         TParameters heuristicParameters = parameterCombinationsForHeuristic[distribution.ParameterIndex];
-                        Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(organonConfiguration, heuristicParameters, runParameters);
+                        Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(heuristicParameters, runParameters);
                         HeuristicPerformanceCounters perfCounters = currentHeuristic.Run(distribution, results.SolutionIndex);
 
-                        HeuristicSolutionPool solutionPool = results.Solutions[distributionAndSolutionIndex];
-                        int estimatedRuntimeCost = OptimizeCmdlet.EstimateRuntimeCost(distribution, results);
+                        HeuristicSolutionPool solutionPool = results.SolutionIndex[results.Distributions[distributionIndex]];
+                        int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(distribution, results);
                         lock (results)
                         {
                             distribution.AddRun(currentHeuristic, perfCounters, heuristicParameters);
-                            solutionPool.AddRun(currentHeuristic);
+                            solutionPool.TryAddOrReplace(currentHeuristic);
                             totalPerfCounters += perfCounters;
                             ++runsCompleted;
                             runtimeCostCompleted += estimatedRuntimeCost;
@@ -322,7 +307,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             });
 
-            string name = this.GetName();
+            string cmdletName = this.GetName();
+            StringBuilder mostRecentEvaluationPoint = new();
             int sleepsSinceLastStatusUpdate = 0;
             while (runs.IsCompleted == false)
             {
@@ -337,10 +323,42 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 if (sleepsSinceLastStatusUpdate > 30)
                 {
+                    int currentRun = Math.Min(runsCompleted + 1, totalRuns);
+                    int currentDistributionIndex = Math.Min(currentRun / this.BestOf, results.Distributions.Count - 1);
+                    HeuristicDistribution mostRecentDistribution = results.Distributions[currentDistributionIndex];
+
+                    mostRecentEvaluationPoint.Clear();
+                    mostRecentEvaluationPoint.Append("run " + currentRun + "/" + totalRuns);
+                    if (this.PlanningPeriods.Count > 1)
+                    {
+                        mostRecentEvaluationPoint.Append(", rotation " + mostRecentDistribution.PlanningPeriodIndex + "/" + this.PlanningPeriods.Count);
+                    }
+                    if (this.FirstThinPeriod.Count > 1)
+                    {
+                        mostRecentEvaluationPoint.Append(", thin 1 " + mostRecentDistribution.FirstThinPeriodIndex + "/" + this.FirstThinPeriod.Count);
+                    }
+                    if (this.SecondThinPeriod.Count > 1)
+                    {
+                        mostRecentEvaluationPoint.Append(", 2 " + mostRecentDistribution.SecondThinPeriodIndex + "/" + this.SecondThinPeriod.Count);
+                    }
+                    if (this.ThirdThinPeriod.Count > 1)
+                    {
+                        mostRecentEvaluationPoint.Append(", 3 " + mostRecentDistribution.ThirdThinPeriodIndex + "/" + this.ThirdThinPeriod.Count);
+                    }
+                    if (parameterCombinationsForHeuristic.Count > 1)
+                    {
+                        mostRecentEvaluationPoint.Append(", parameters " + mostRecentDistribution.ParameterIndex + "/" + parameterCombinationsForHeuristic.Count);
+                    }
+                    if (this.DiscountRates.Count > 1)
+                    {
+                        mostRecentEvaluationPoint.Append(", rate " + mostRecentDistribution.DiscountRateIndex + "/" + this.DiscountRates.Count);
+                    }
+                    mostRecentEvaluationPoint.Append(" (" + this.Threads + " threads)");
+
                     double fractionComplete = (double)runtimeCostCompleted / (double)totalRuntimeCost;
                     double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
                     double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
-                    this.WriteProgress(new ProgressRecord(0, name, String.Format(runsCompleted + " of " + totalRuns + " runs completed by " + this.Threads + " threads."))
+                    this.WriteProgress(new ProgressRecord(0, cmdletName,  mostRecentEvaluationPoint.ToString())
                     {
                         PercentComplete = (int)(100.0 * fractionComplete),
                         SecondsRemaining = (int)Math.Round(secondsRemaining)
@@ -360,7 +378,8 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.WriteObject(results);
             if (results.Distributions.Count == 1)
             {
-                this.WriteSingleDistributionSummary(results.Solutions[0].High, results.Distributions[0], totalPerfCounters, stopwatch.Elapsed);
+                HeuristicDistribution firstDistribution = results.Distributions[0];
+                this.WriteSingleDistributionSummary(results.SolutionIndex[firstDistribution].High, firstDistribution, totalPerfCounters, stopwatch.Elapsed);
             }
             else if (results.Distributions.Count > 1)
             {
@@ -372,17 +391,17 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
         }
 
-        private void WriteMultipleDistributionSummary(HeuristicResultSet results, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
+        private void WriteMultipleDistributionSummary(HeuristicResultSet<TParameters> results, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
         {
-            Heuristic? firstHeuristic = results.Solutions[0].High;
-            if (firstHeuristic == null)
+            Heuristic? highHeuristic = results.SolutionIndex[results.Distributions[0]].High;
+            if (highHeuristic == null)
             {
                 throw new ArgumentOutOfRangeException(nameof(results));
             }
 
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             this.WriteVerbose("{0}: {1} configurations with {2} runs in {3:0.00} minutes ({4:0.00}M timesteps in {5:0.00} core-minutes, {6:0.00}% move acceptance).",
-                              firstHeuristic.GetName(),
+                              highHeuristic.GetName(),
                               results.Distributions.Count,
                               this.BestOf * results.Distributions.Count,
                               elapsedTime.TotalMinutes,

@@ -29,7 +29,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            if (this.Results!.Count < 1)
+            if (this.Results!.Distributions.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results));
             }
@@ -40,7 +40,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             if (this.ShouldWriteHeader())
             {
                 HeuristicDistribution distribution = this.Results.Distributions[0];
-                HeuristicSolutionPool solution = this.Results.Solutions[0];
+                HeuristicSolutionPool solution = this.Results.SolutionIndex[distribution];
                 if ((solution.High == null) || (distribution.HeuristicParameters == null) || (solution.Low == null))
                 {
                     throw new NotSupportedException("Cannot generate header because first result is missing a high solution, low solution, or heuristic parameters.");
@@ -72,15 +72,15 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // sort each iscount rate's runs by decreasing objective function value  
             List<List<(float Objective, int Index)>> solutionsByDiscountRateIndexAndObjective = new();
-            for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
+            for (int resultIndex = 0; resultIndex < this.Results.Distributions.Count; ++resultIndex)
             {
-                Heuristic? highHeuristic = this.Results.Solutions[resultIndex].High;
+                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
+                Heuristic? highHeuristic = this.Results.SolutionIndex[distribution].High;
                 if (highHeuristic == null)
                 {
                     throw new NotSupportedException("Result " + resultIndex + " is missing a high solution.");
                 }
 
-                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
                 int discountRateIndex = distribution.DiscountRateIndex;
                 while (discountRateIndex >= solutionsByDiscountRateIndexAndObjective.Count)
                 {
@@ -122,7 +122,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             foreach (int resultIndexToLog in prioritizedResultIndices)
             {
                 HeuristicDistribution distribution = this.Results.Distributions[resultIndexToLog];
-                HeuristicSolutionPool solution = this.Results.Solutions[resultIndexToLog];
+                HeuristicSolutionPool solution = this.Results.SolutionIndex[distribution];
                 Heuristic? highHeuristic = solution.High;
                 Heuristic? lowHeuristic = solution.Low;
                 if ((distribution.HeuristicParameters == null) || (highHeuristic == null) || (lowHeuristic == null))
@@ -227,6 +227,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                         highObjectiveFunctionForMove = highHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
+                    Debug.Assert(distribution.MaximumObjectiveFunctionByMove[moveIndex] >= lowHeuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
+                    Debug.Assert(distribution.MinimumObjectiveFunctionByMove[moveIndex] <= highHeuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
                     writer.WriteLine(runPrefix + "," + 
                                      moveIndex + "," + 
                                      runsWithMoveAtIndex + "," + 

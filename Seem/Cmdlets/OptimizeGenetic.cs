@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -66,9 +65,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ReservedProportion = new List<float>() { Constant.GeneticDefault.ReservedPopulationProportion };
         }
 
-        protected override Heuristic<GeneticParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, GeneticParameters parameters, RunParameters runParameters)
+        protected override Heuristic<GeneticParameters> CreateHeuristic(GeneticParameters heuristicParameters, RunParameters runParameters)
         {
-            return new GeneticAlgorithm(this.Stand!, organonConfiguration, parameters, runParameters);
+            return new GeneticAlgorithm(this.Stand!, heuristicParameters, runParameters);
         }
 
         protected override string GetName()
@@ -76,7 +75,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Genetic";
         }
 
-        protected override IList<GeneticParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<GeneticParameters> GetParameterCombinations()
         {
             if (this.ExchangeProbabilityEnd.Count < 1)
             {
@@ -133,29 +132,31 @@ namespace Osu.Cof.Ferm.Cmdlets
                                         {
                                             foreach (int populationSize in this.PopulationSize)
                                             {
-                                                foreach (float thinningProbability in this.InitialThinningProbability)
+                                                foreach (float reservedProportion in this.ReservedProportion)
                                                 {
-                                                    foreach (float reservedProportion in this.ReservedProportion)
+                                                    foreach (float constructionGreediness in this.ConstructionGreediness)
                                                     {
-                                                        parameterCombinations.Add(new GeneticParameters()
+                                                        foreach (float thinningProbability in this.InitialThinningProbability)
                                                         {
-                                                            ConstructionRandomness = this.ConstructionRandomness,
-                                                            CrossoverProbabilityEnd = crossoverProbabilityEnd,
-                                                            ExchangeProbabilityEnd = exchangeProbabilityEnd,
-                                                            ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
-                                                            ExponentK = exponent,
-                                                            FlipProbabilityEnd = flipProbabilityEnd,
-                                                            FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
-                                                            InitializationClasses = initializationClassCount,
-                                                            InitializationMethod = initializationMethod,
-                                                            MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
-                                                            MinimumCoefficientOfVariation = minCoefficientOfVariation,
-                                                            PopulationSize = populationSize,
-                                                            InitialThinningProbability = thinningProbability,
-                                                            ReplacementStrategy = this.ReplacementStrategy,
-                                                            ReservedProportion = reservedProportion,
-                                                            TimberValue = timberValue,
-                                                        });
+                                                            parameterCombinations.Add(new GeneticParameters()
+                                                            {
+                                                                ConstructionGreediness = constructionGreediness,
+                                                                CrossoverProbabilityEnd = crossoverProbabilityEnd,
+                                                                ExchangeProbabilityEnd = exchangeProbabilityEnd,
+                                                                ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
+                                                                ExponentK = exponent,
+                                                                FlipProbabilityEnd = flipProbabilityEnd,
+                                                                FlipProbabilityStart = Constant.GeneticDefault.FlipProbabilityStart,
+                                                                InitializationClasses = initializationClassCount,
+                                                                InitializationMethod = initializationMethod,
+                                                                MaximumGenerations = (int)(generationMultiplier * MathF.Pow(treeRecordCount, Constant.GeneticDefault.GenerationPower) + 0.5F),
+                                                                MinimumCoefficientOfVariation = minCoefficientOfVariation,
+                                                                PopulationSize = populationSize,
+                                                                InitialThinningProbability = thinningProbability,
+                                                                ReplacementStrategy = this.ReplacementStrategy,
+                                                                ReservedProportion = reservedProportion
+                                                            });
+                                                        }
                                                     }
                                                 }
                                             }

@@ -51,7 +51,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // rows for periods
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxIndex = runsSpecified ? this.Results!.Count : this.Trajectories!.Count;
+            int maxIndex = runsSpecified ? this.Results!.Distributions.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
                 OrganonStandTrajectory highestTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix, out float _);

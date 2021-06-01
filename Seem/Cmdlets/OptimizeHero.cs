@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -16,9 +15,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         public SwitchParameter Stochastic { get; set; }
 
-        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters parameters, RunParameters runParameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
-            Hero hero = new(this.Stand!, organonConfiguration, parameters, runParameters)
+            Hero hero = new(this.Stand!, heuristicParameters, runParameters)
             {
                 IsStochastic = this.Stochastic
             };
@@ -34,9 +33,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Hero";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.GetDefaultParameterCombinations(timberValue);
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

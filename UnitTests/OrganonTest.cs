@@ -19,58 +19,58 @@ namespace Osu.Cof.Ferm.Test
             {
                 case TreeModel.OrganonNwo:
                 case TreeModel.OrganonSmc:
-                    stand.Add(new TreeRecord(1, FiaCode.PseudotsugaMenziesii, 0.1F, 0.4F, 10.0F));
-                    stand.Add(new TreeRecord(2, FiaCode.PseudotsugaMenziesii, 0.2F, 0.5F, 20.0F));
-                    stand.Add(new TreeRecord(3, FiaCode.PseudotsugaMenziesii, 0.3F, 0.6F, 10.0F));
-                    stand.Add(new TreeRecord(4, FiaCode.PseudotsugaMenziesii, 10.0F, 0.5F, 10.0F));
-                    stand.Add(new TreeRecord(5, FiaCode.AbiesGrandis, 0.1F, 0.6F, 1.0F));
-                    stand.Add(new TreeRecord(6, FiaCode.AbiesGrandis, 1.0F, 0.7F, 2.0F));
-                    stand.Add(new TreeRecord(7, FiaCode.TsugaHeterophylla, 0.1F, 0.6F, 5.0F));
-                    stand.Add(new TreeRecord(8, FiaCode.TsugaHeterophylla, 0.5F, 0.7F, 10.0F));
-                    stand.Add(new TreeRecord(9, FiaCode.ThujaPlicata, 0.1F, 0.4F, 10.0F));
-                    stand.Add(new TreeRecord(10, FiaCode.ThujaPlicata, 1.0F, 0.5F, 15.0F));
+                    stand.Add(new TreeRecord(1, 1, FiaCode.PseudotsugaMenziesii, 0.1F, 0.4F, 10.0F));
+                    stand.Add(new TreeRecord(1, 2, FiaCode.PseudotsugaMenziesii, 0.2F, 0.5F, 20.0F));
+                    stand.Add(new TreeRecord(1, 3, FiaCode.PseudotsugaMenziesii, 0.3F, 0.6F, 10.0F));
+                    stand.Add(new TreeRecord(1, 4, FiaCode.PseudotsugaMenziesii, 10.0F, 0.5F, 10.0F));
+                    stand.Add(new TreeRecord(1, 5, FiaCode.AbiesGrandis, 0.1F, 0.6F, 1.0F));
+                    stand.Add(new TreeRecord(1, 6, FiaCode.AbiesGrandis, 1.0F, 0.7F, 2.0F));
+                    stand.Add(new TreeRecord(1, 7, FiaCode.TsugaHeterophylla, 0.1F, 0.6F, 5.0F));
+                    stand.Add(new TreeRecord(1, 8, FiaCode.TsugaHeterophylla, 0.5F, 0.7F, 10.0F));
+                    stand.Add(new TreeRecord(1, 9, FiaCode.ThujaPlicata, 0.1F, 0.4F, 10.0F));
+                    stand.Add(new TreeRecord(1, 10, FiaCode.ThujaPlicata, 1.0F, 0.5F, 15.0F));
 
-                    stand.Add(new TreeRecord(11, FiaCode.TaxusBrevifolia, 0.1F, 0.7F, 2.0F));
-                    stand.Add(new TreeRecord(12, FiaCode.ArbutusMenziesii, 1.0F, 0.5F, 2.0F));
-                    stand.Add(new TreeRecord(13, FiaCode.AcerMacrophyllum, 0.1F, 0.5F, 2.0F));
-                    stand.Add(new TreeRecord(14, FiaCode.QuercusGarryana, 10.0F, 0.5F, 2.0F));
-                    stand.Add(new TreeRecord(15, FiaCode.AlnusRubra, 0.1F, 0.5F, 2.0F));
-                    stand.Add(new TreeRecord(16, FiaCode.CornusNuttallii, 0.1F, 0.5F, 2.0F));
-                    stand.Add(new TreeRecord(17, FiaCode.Salix, 0.1F, 0.5F, 2.0F));
+                    stand.Add(new TreeRecord(1, 11, FiaCode.TaxusBrevifolia, 0.1F, 0.7F, 2.0F));
+                    stand.Add(new TreeRecord(1, 12, FiaCode.ArbutusMenziesii, 1.0F, 0.5F, 2.0F));
+                    stand.Add(new TreeRecord(1, 13, FiaCode.AcerMacrophyllum, 0.1F, 0.5F, 2.0F));
+                    stand.Add(new TreeRecord(1, 14, FiaCode.QuercusGarryana, 10.0F, 0.5F, 2.0F));
+                    stand.Add(new TreeRecord(1, 15, FiaCode.AlnusRubra, 0.1F, 0.5F, 2.0F));
+                    stand.Add(new TreeRecord(1, 16, FiaCode.CornusNuttallii, 0.1F, 0.5F, 2.0F));
+                    stand.Add(new TreeRecord(1, 17, FiaCode.Salix, 0.1F, 0.5F, 2.0F));
                     break;
                 case TreeModel.OrganonRap:
-                    stand.Add(new TreeRecord(1, FiaCode.AlnusRubra, 0.1F, 0.3F, 30.0F));
-                    stand.Add(new TreeRecord(2, FiaCode.AlnusRubra, 0.2F, 0.4F, 40.0F));
-                    stand.Add(new TreeRecord(3, FiaCode.AlnusRubra, 0.3F, 0.5F, 30.0F));
+                    stand.Add(new TreeRecord(1, 1, FiaCode.AlnusRubra, 0.1F, 0.3F, 30.0F));
+                    stand.Add(new TreeRecord(1, 2, FiaCode.AlnusRubra, 0.2F, 0.4F, 40.0F));
+                    stand.Add(new TreeRecord(1, 3, FiaCode.AlnusRubra, 0.3F, 0.5F, 30.0F));
 
-                    stand.Add(new TreeRecord(4, FiaCode.PseudotsugaMenziesii, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(5, FiaCode.TsugaHeterophylla, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(6, FiaCode.ThujaPlicata, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(7, FiaCode.AcerMacrophyllum, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(8, FiaCode.CornusNuttallii, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(9, FiaCode.Salix, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 4, FiaCode.PseudotsugaMenziesii, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 5, FiaCode.TsugaHeterophylla, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 6, FiaCode.ThujaPlicata, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 7, FiaCode.AcerMacrophyllum, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 8, FiaCode.CornusNuttallii, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 9, FiaCode.Salix, 0.1F, 0.5F, 1.0F));
                     break;
                 case TreeModel.OrganonSwo:
-                    stand.Add(new TreeRecord(1, FiaCode.PseudotsugaMenziesii, 0.1F, 0.5F, 5.0F));
-                    stand.Add(new TreeRecord(2, FiaCode.AbiesConcolor, 0.1F, 0.5F, 5.0F));
-                    stand.Add(new TreeRecord(3, FiaCode.AbiesGrandis, 0.1F, 0.5F, 5.0F));
-                    stand.Add(new TreeRecord(4, FiaCode.PinusPonderosa, 0.1F, 0.5F, 10.0F));
-                    stand.Add(new TreeRecord(5, FiaCode.PinusLambertiana, 0.1F, 0.5F, 10.0F));
-                    stand.Add(new TreeRecord(6, FiaCode.CalocedrusDecurrens, 0.1F, 0.5F, 10.0F));
+                    stand.Add(new TreeRecord(1, 1, FiaCode.PseudotsugaMenziesii, 0.1F, 0.5F, 5.0F));
+                    stand.Add(new TreeRecord(1, 2, FiaCode.AbiesConcolor, 0.1F, 0.5F, 5.0F));
+                    stand.Add(new TreeRecord(1, 3, FiaCode.AbiesGrandis, 0.1F, 0.5F, 5.0F));
+                    stand.Add(new TreeRecord(1, 4, FiaCode.PinusPonderosa, 0.1F, 0.5F, 10.0F));
+                    stand.Add(new TreeRecord(1, 5, FiaCode.PinusLambertiana, 0.1F, 0.5F, 10.0F));
+                    stand.Add(new TreeRecord(1, 6, FiaCode.CalocedrusDecurrens, 0.1F, 0.5F, 10.0F));
 
-                    stand.Add(new TreeRecord(7, FiaCode.TsugaHeterophylla, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(8, FiaCode.ThujaPlicata, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(9, FiaCode.TaxusBrevifolia, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(10, FiaCode.ArbutusMenziesii, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(11, FiaCode.ChrysolepisChrysophyllaVarChrysophylla, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(12, FiaCode.NotholithocarpusDensiflorus, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(13, FiaCode.QuercusChrysolepis, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(14, FiaCode.AcerMacrophyllum, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(15, FiaCode.QuercusGarryana, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(16, FiaCode.QuercusKelloggii, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(17, FiaCode.AlnusRubra, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(18, FiaCode.CornusNuttallii, 0.1F, 0.5F, 1.0F));
-                    stand.Add(new TreeRecord(19, FiaCode.Salix, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 7, FiaCode.TsugaHeterophylla, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 8, FiaCode.ThujaPlicata, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 9, FiaCode.TaxusBrevifolia, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 10, FiaCode.ArbutusMenziesii, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 11, FiaCode.ChrysolepisChrysophyllaVarChrysophylla, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 12, FiaCode.NotholithocarpusDensiflorus, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 13, FiaCode.QuercusChrysolepis, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 14, FiaCode.AcerMacrophyllum, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 15, FiaCode.QuercusGarryana, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 16, FiaCode.QuercusKelloggii, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 17, FiaCode.AlnusRubra, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 18, FiaCode.CornusNuttallii, 0.1F, 0.5F, 1.0F));
+                    stand.Add(new TreeRecord(1, 19, FiaCode.Salix, 0.1F, 0.5F, 1.0F));
                     break;
                 default:
                     throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
@@ -96,6 +96,7 @@ namespace Osu.Cof.Ferm.Test
         protected static void GrowPspStand(PspStand huffmanPeak, TestStand stand, OrganonVariant variant, int startYear, int endYear, string baseFileName)
         {
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
+            OrganonTreatments treatments = new();
             TestStand initialTreeData = new(stand);
             TreeLifeAndDeath treeGrowth = new();
 
@@ -113,7 +114,7 @@ namespace Osu.Cof.Ferm.Test
             using StreamWriter treeGrowthWriter = stand.WriteTreesToCsv(baseFileName + " tree growth.csv", variant, startYear);
             for (int simulationStep = 0, year = startYear + variant.TimeStepInYears; year <= endYear; year += variant.TimeStepInYears, ++simulationStep)
             {
-                OrganonGrowth.Grow(simulationStep + 1, configuration, stand, calibrationBySpecies);
+                OrganonGrowth.Grow(simulationStep + 1, configuration, treatments, stand, calibrationBySpecies);
                 treeGrowth.AccumulateGrowthAndMortality(stand);
                 huffmanPeak.AddIngrowth(year, stand, density);
                 OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowthOrNoChange | ExpectedTreeChanges.HeightGrowthOrNoChange, stand, variant);

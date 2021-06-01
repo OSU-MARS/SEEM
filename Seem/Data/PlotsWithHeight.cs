@@ -201,6 +201,7 @@ namespace Osu.Cof.Ferm.Data
                 plotAtAge.TreesBySpecies.Add(species, treesOfSpecies);
             }
 
+            // for now, assume data is clean so that tag numbers are unique within each plot
             int tag = Int32.Parse(rowAsStrings[this.treeColumnIndex]);
             string dbhAsString = rowAsStrings[this.dbhColumnIndex];
             float dbh = Single.NaN;
@@ -221,7 +222,7 @@ namespace Osu.Cof.Ferm.Data
             }
 
             // add trees with placeholder crown ratio
-            treesOfSpecies.Add(tag, dbh, height, this.defaultCrownRatio, expansionFactor);
+            treesOfSpecies.Add(plot, tag, dbh, height, this.defaultCrownRatio, expansionFactor);
         }
 
         public void Read(string xlsxFilePath, string worksheetName)
@@ -248,10 +249,10 @@ namespace Osu.Cof.Ferm.Data
             Stand plotAtAge = this.byAge[ageInYears];
             int maximumTreesToCopy = Math.Min(plotAtAge.GetTreeRecordCount(), maximumTreesInStand);
             int treesCopied = 0;
-            StringBuilder plotIDsAsString = new();
-            foreach (int plotID in this.plotIDs)
+            StringBuilder plotIDsAsString = new(this.plotIDs[0].ToString(CultureInfo.InvariantCulture));
+            for (int index = 1; index < this.plotIDs.Count; ++index)
             {
-                plotIDsAsString.Append(plotID.ToString(CultureInfo.InvariantCulture));
+                plotIDsAsString.Append("y" + this.plotIDs[index].ToString(CultureInfo.InvariantCulture));
             }
             OrganonStand stand = new(ageInYears, siteIndex)
             {
@@ -267,6 +268,7 @@ namespace Osu.Cof.Ferm.Data
                 }
                 for (int treeIndex = 0; treeIndex < plotTreesOfSpecies.Count; ++treeIndex)
                 {
+                    int plot = plotTreesOfSpecies.Plot[treeIndex];
                     int tag = plotTreesOfSpecies.Tag[treeIndex];
                     float dbhInInches = Constant.InchesPerCentimeter * plotTreesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = Constant.FeetPerMeter * plotTreesOfSpecies.Height[treeIndex];
@@ -277,7 +279,7 @@ namespace Osu.Cof.Ferm.Data
                         throw new NotSupportedException("Tree " + tag + " has a missing, zero, or negative height or diameter at age " + ageInYears + ".");
                     }
 
-                    standTreesOfSpecies.Add(tag, dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactor);
+                    standTreesOfSpecies.Add(plot, tag, dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactor);
                     if (++treesCopied >= maximumTreesToCopy)
                     {
                         break; // break inner for loop

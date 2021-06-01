@@ -8,14 +8,9 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public int Iterations { get; set; }
 
-        public AutocorrelatedWalk(OrganonStand stand, OrganonConfiguration configuration, HeuristicParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, configuration, heuristicParameters, runParameters)
+        public AutocorrelatedWalk(OrganonStand stand, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, heuristicParameters, runParameters)
         {
-            if (heuristicParameters.ConstructionRandomness != Constant.GraspDefault.FullyRandomConstruction)
-            {
-                throw new NotSupportedException(nameof(heuristicParameters));
-            }
-
             this.Iterations = 4 * stand.GetTreeRecordCount();
         }
 
@@ -38,12 +33,12 @@ namespace Osu.Cof.Ferm.Heuristics
             this.AcceptedObjectiveFunctionByMove.Capacity = this.Iterations;
             this.CandidateObjectiveFunctionByMove.Capacity = this.Iterations;
 
-            this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             for (int iteration = 1; iteration < this.Iterations; ++iteration)
             {
-                this.ConstructTreeSelection(this.HeuristicParameters.ConstructionRandomness);
+                this.ConstructTreeSelection(this.HeuristicParameters.ConstructionGreediness);
                 perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
                 float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
@@ -51,7 +46,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // accept change of tree selection if it improves upon the best solution
                     this.BestObjectiveFunction = candidateObjectiveFunction;
-                    this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
+                    this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                     ++perfCounters.MovesAccepted;
                 }
                 else

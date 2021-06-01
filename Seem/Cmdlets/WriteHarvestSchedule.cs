@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Results != null);
-            if (this.Results.Count < 1)
+            if (this.Results.Distributions.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results));
             }
@@ -32,17 +32,17 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Cannot generate schedule header because first run has no heuristic parameters.");
                 }
-                writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",tree,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1bf,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2bf,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3bf,highFinalDbh,highFinalHeight,highFinalCR,highFinalEF,highFinalBF");
+                writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1bf,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2bf,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3bf,highFinalDbh,highFinalHeight,highFinalCR,highFinalEF,highFinalBF");
             }
 
-            for (int resultIndex = 0; resultIndex < this.Results!.Count; ++resultIndex)
+            for (int resultIndex = 0; resultIndex < this.Results!.Distributions.Count; ++resultIndex)
             {
                 HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
                 if (distribution.HeuristicParameters == null)
                 {
                     throw new NotSupportedException("Result " + resultIndex + " is missing heuristic parameters.");
                 }
-                HeuristicSolutionPool solution = this.Results.Solutions[resultIndex];
+                HeuristicSolutionPool solution = this.Results.SolutionIndex[this.Results.Distributions[resultIndex]];
                 if ((solution.High == null) ||
                     (solution.High.BestTrajectory == null) ||
                     (solution.High.BestTrajectory.Heuristic == null) ||
@@ -111,6 +111,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int finalCompactedTreeIndex = 0;
                     for (int uncompactedTreeIndex = 0; uncompactedTreeIndex < highTreesBeforeFirstThin.Count; ++uncompactedTreeIndex)
                     {
+                        // TODO: replace FiaVolume calls with single-tree version of highTrajectory.TimberValue.ScaledVolumeThinning.GetHarvestedScribnerVolume();
                         float highThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highTreesBeforeFirstThin, uncompactedTreeIndex);
 
                         string? highFirstThinDbh = null;
@@ -181,9 +182,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                             ++finalCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 
-                        // for now, make best guess of using tree tag or index as unique identifier
-                        int treeID = highTreesBeforeFirstThin.Tag[uncompactedTreeIndex] < 0 ? previousSpeciesCount + uncompactedTreeIndex : highTreesBeforeFirstThin.Tag[uncompactedTreeIndex];
-                        writer.WriteLine(linePrefix + "," + treeID + "," +
+                        // for now, make best guess of using tree tag or index as unique identifier 
+                        int tag = highTreesBeforeFirstThin.Tag[uncompactedTreeIndex] < 0 ? previousSpeciesCount + uncompactedTreeIndex : highTreesBeforeFirstThin.Tag[uncompactedTreeIndex];
+                        writer.WriteLine(linePrefix + "," +
+                                         highTreesBeforeFirstThin.Plot[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                         tag.ToString(CultureInfo.InvariantCulture) + "," +
                                          lowTreeSelection[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                          highTreeSelection[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                          highFirstThinDbh + "," +

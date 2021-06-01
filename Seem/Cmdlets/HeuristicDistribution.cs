@@ -7,9 +7,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 {
     public class HeuristicDistribution : HeuristicSolutionPosition
     {
-        public int ParameterIndex { get; init; }
-
         public List<float> BestObjectiveFunctionBySolution { get; private init; }
+        // TODO: remove since this is now available on HeuristicResultSet
         public HeuristicParameters? HeuristicParameters { get; private set; }
 
         public List<int> CountByMove { get; private init; }
@@ -48,7 +47,6 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.NinetyFifthPercentileByMove = new(defaultMoveCapacity);
             this.NinetySevenPointFivePercentileByMove = new(defaultMoveCapacity);
             this.ObjectiveFunctionValuesByMove = new(defaultMoveCapacity);
-            this.ParameterIndex = -1;
             this.PerfCountersBySolution = new(defaultMoveCapacity);
             this.TotalCoreSeconds = TimeSpan.Zero;
             this.TotalMoves = 0;

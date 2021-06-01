@@ -11,8 +11,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public PopulationStatistics PopulationStatistics { get; private init; }
 
-        public GeneticAlgorithm(OrganonStand stand, OrganonConfiguration organonConfiguration, GeneticParameters heuristicPparameters, RunParameters runParameters)
-            : base(stand, organonConfiguration, heuristicPparameters, runParameters)
+        public GeneticAlgorithm(OrganonStand stand, GeneticParameters heuristicPparameters, RunParameters runParameters)
+            : base(stand, heuristicPparameters, runParameters)
         {
             this.thinningPeriods = null;
 
@@ -32,17 +32,17 @@ namespace Osu.Cof.Ferm.Heuristics
             float flipProbabilityRemaining = flipProbability;
             for (; flipProbabilityRemaining >= 1.0F; --flipProbabilityRemaining)
             {
-                int uncompactedTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int uncompactedTreeIndex = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                 int currentHarvestPeriod = childTrajectory.GetTreeSelection(uncompactedTreeIndex);
                 int newHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, this.thinningPeriods);
                 childTrajectory.SetTreeSelection(uncompactedTreeIndex, newHarvestPeriod);
             }
 
             // remaining flip mutation probability
-            float mutationProbability = this.GetPseudorandomByteAsProbability();
+            float mutationProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
             if (mutationProbability < flipProbabilityRemaining)
             {
-                int uncompactedTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int uncompactedTreeIndex = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                 int currentHarvestPeriod = childTrajectory.GetTreeSelection(uncompactedTreeIndex);
                 int newHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, this.thinningPeriods);
                 childTrajectory.SetTreeSelection(uncompactedTreeIndex, newHarvestPeriod);
@@ -65,10 +65,10 @@ namespace Osu.Cof.Ferm.Heuristics
             //else
             //{
             // flip and exchange mutations independent
-            if (this.GetPseudorandomByteAsProbability() < exchangeProbability)
+            if (this.Pseudorandom.GetPseudorandomByteAsProbability() < exchangeProbability)
             {
-                int firstTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
-                int secondTreeIndex = (int)(treeScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int firstTreeIndex = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
+                int secondTreeIndex = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                 int firstHarvestPeriod = childTrajectory.GetTreeSelection(firstTreeIndex);
                 childTrajectory.SetTreeSelection(firstTreeIndex, childTrajectory.GetTreeSelection(secondTreeIndex));
                 childTrajectory.SetTreeSelection(secondTreeIndex, firstHarvestPeriod);
@@ -120,7 +120,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.HeuristicParameters.ReservedProportion));
             }
 
-            this.thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            this.thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
@@ -133,7 +133,7 @@ namespace Osu.Cof.Ferm.Heuristics
             // begin with population of tree selections randomized across a proportional harvest intensity gradient
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             Population currentGeneration = new(this.HeuristicParameters.PopulationSize, this.HeuristicParameters.ReservedProportion, initialTreeRecordCount);
-            currentGeneration.ConstructTreeSelections(this.CurrentTrajectory, this.HeuristicParameters);
+            perfCounters.TreesRandomizedInConstruction += currentGeneration.ConstructTreeSelections(this.CurrentTrajectory, this.HeuristicParameters);
             OrganonStandTrajectory individualTrajectory = new(this.CurrentTrajectory);
             this.BestObjectiveFunction = Single.MinValue;
             for (int individualIndex = 0; individualIndex < this.HeuristicParameters.PopulationSize; ++individualIndex)
@@ -146,18 +146,19 @@ namespace Osu.Cof.Ferm.Heuristics
                 perfCounters.GrowthModelTimesteps += individualTrajectory.Simulate();
 
                 float individualFitness = this.GetObjectiveFunction(individualTrajectory);
-                currentGeneration.AssignFitness(individualIndex, individualFitness);
+                currentGeneration.InsertFitness(individualIndex, individualFitness);
                 ++perfCounters.MovesAccepted;
 
                 if (individualFitness > this.BestObjectiveFunction)
                 {
                     this.BestObjectiveFunction = individualFitness;
-                    this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(individualTrajectory);
+                    this.BestTrajectory.CopyTreeGrowthFrom(individualTrajectory);
                 }
 
                 this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
                 this.CandidateObjectiveFunctionByMove.Add(individualFitness);
             }
+            Debug.Assert(currentGeneration.SolutionsAccepted == currentGeneration.SolutionsInPool);
             this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
 
             // get sort order for K-point crossover
@@ -182,7 +183,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 float crossoverProbability = 0.5F + (this.HeuristicParameters.CrossoverProbabilityEnd - 0.5F) * exponent;
                 float exchangeProbability = this.HeuristicParameters.ExchangeProbabilityEnd - (this.HeuristicParameters.ExchangeProbabilityEnd - this.HeuristicParameters.ExchangeProbabilityStart) * exponent;
                 float flipProbability = this.HeuristicParameters.FlipProbabilityEnd - (this.HeuristicParameters.FlipProbabilityEnd - this.HeuristicParameters.FlipProbabilityStart) * exponent;
-                for (int matingIndex = 0; matingIndex < currentGeneration.Size; ++matingIndex)
+                for (int matingIndex = 0; matingIndex < currentGeneration.SolutionsInPool; ++matingIndex)
                 {
                     // crossover parents' genetic material to create offsprings' genetic material
                     currentGeneration.FindParents(out int firstParentIndex, out int secondParentIndex);
@@ -197,7 +198,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     // the second thinning then interior relinking would remove the tree in the first thin.
 
                     // evaluate fitness of offspring
-                    // TODO: check for no change breeding and avoid no op stand simulations?
+                    // If crossover and mutation induced no changes simulation will be a no op. While this is handled by timestep caching additional checks
+                    // could be made here.
                     perfCounters.GrowthModelTimesteps += firstChildTrajectory.Simulate();
                     float firstChildFitness = this.GetObjectiveFunction(firstChildTrajectory);
 
@@ -211,7 +213,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (firstChildFitness > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = firstChildFitness;
-                            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(firstChildTrajectory);
+                            this.BestTrajectory.CopyTreeGrowthFrom(firstChildTrajectory);
                         }
                     }
                     else
@@ -227,7 +229,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (secondChildFitness > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = secondChildFitness;
-                            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(secondChildTrajectory);
+                            this.BestTrajectory.CopyTreeGrowthFrom(secondChildTrajectory);
                         }
                     }
                     else
@@ -291,7 +293,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
 
                 currentGeneration.CopyFrom(nextGeneration);
-                nextGeneration.NewIndividuals = 0;
+                nextGeneration.SolutionsAccepted = 0;
                 
                 float coefficientOfVariation = this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
                 if (coefficientOfVariation < this.HeuristicParameters.MinimumCoefficientOfVariation)
@@ -300,7 +302,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.BestTrajectory);
+            this.CurrentTrajectory.CopyTreeGrowthFrom(this.BestTrajectory);
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;

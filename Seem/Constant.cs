@@ -17,12 +17,13 @@ namespace Osu.Cof.Ferm
         public const string DefaultPercentageFormat = "0.0#";
         public const int DefaultPlanningPeriods = 9;
         public const string DefaultProbabilityFormat = "0.00##";
+        public const int DefaultSolutionPoolSize = 4;
         public const int DefaultThinningPeriod = 3;
         public const int DefaultTimeStepInYears = 5;
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
         public const float HectaresPerAcre = 0.404685F;
-        // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128
+        // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128, 8 for VEX 256
         public const int HeightStrata = 40;
         public const float InchesPerCentimeter = 0.393701F;
         public const float MetersPerFoot = 0.3048F;
@@ -130,10 +131,11 @@ namespace Osu.Cof.Ferm
             public const float ReservedPopulationProportion = 1.0F;
         }
 
-        public static class GraspDefault
+        public static class Grasp
         {
-            public const float FullyGreedyConstruction = 0.0F;
-            public const float FullyRandomConstruction = 1.0F;
+            public const float DefaultConstructionForMaximization = 0.9F;
+            public const float FullyGreedyConstructionForMaximization = 1.0F;
+            public const float FullyRandomConstructionForMaximization = 0.0F;
         }
 
         public static class HeuristicDefault
@@ -185,7 +187,7 @@ namespace Osu.Cof.Ferm
         {
             public static float DefaultIntensityStepSize = 5.0F;
             public static float MaximumIntensity = 80.0F;
-            public static float MaximumIntensityStepSize = 100.0F; // default to no limiting
+            public static float MaximumIntensityStepSize = 100.0F; // default to no limiting by percentage
             public static float MinimumIntensity = 20.0F;
             public static PrescriptionUnits Units = PrescriptionUnits.StemPercentageRemoved;
         }

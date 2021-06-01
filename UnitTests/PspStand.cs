@@ -48,7 +48,7 @@ namespace Osu.Cof.Ferm.Test
 
                 float dbhInInches = Constant.InchesPerCentimeter * tree.DbhInCentimetersByYear.Values[0];
                 float heightInFeet = TestConstant.FeetPerMeter * TreeRecord.EstimateHeightInMeters(tree.Species, dbhInInches);
-                treesOfSpecies.Add(tree.Tag, dbhInInches, heightInFeet, tree.EstimateInitialCrownRatio(standDensity), fixedPlotExpansionFactor);
+                treesOfSpecies.Add(tree.Plot, tree.Tag, dbhInInches, heightInFeet, tree.EstimateInitialCrownRatio(standDensity), fixedPlotExpansionFactor);
             }
 
             this.yearOfMostRecentIngrowthAdded = ingrowthYear;
@@ -122,7 +122,7 @@ namespace Osu.Cof.Ferm.Test
                     // remap Alnus viridis ssp sinuata to Alnus rubra as no Organon variant has support
                     species = FiaCode.AlnusRubra;
                 }
-                tree = new PspTreeMeasurementSeries(tag, species);
+                tree = new PspTreeMeasurementSeries(plot, tag, species);
                 this.MeasurementsByTag.Add(tag, tree);
             }
 
@@ -184,7 +184,7 @@ namespace Osu.Cof.Ferm.Test
                 Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
                 float dbhInInches = TestConstant.InchesPerCm * tree.DbhInCentimetersByYear[firstPlotMeasurementYear];
                 float heightInFeet = TreeRecord.EstimateHeightInFeet(species, dbhInInches);
-                treesOfSpecies.Add(tree.Tag, dbhInInches, heightInFeet, TestConstant.Default.CrownRatio, fixedPlotExpansionFactor);
+                treesOfSpecies.Add(tree.Plot, tree.Tag, dbhInInches, heightInFeet, TestConstant.Default.CrownRatio, fixedPlotExpansionFactor);
             }
 
             // estimate crown ratios

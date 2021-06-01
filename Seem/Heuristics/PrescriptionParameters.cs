@@ -23,6 +23,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public PrescriptionParameters()
         {
+            this.ConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
+            this.InitialThinningProbability = 0.0F;
+
             this.FromAbovePercentageUpperLimit = 100.0F;
             this.ProportionalPercentageUpperLimit = 100.0F;
             this.FromBelowPercentageUpperLimit = 100.0F;

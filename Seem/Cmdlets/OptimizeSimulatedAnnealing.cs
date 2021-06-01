@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -58,9 +57,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ReheatBy = null;
         }
 
-        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
-            SimulatedAnnealing annealer = new(this.Stand!, organonConfiguration, heuristicParameters, runParameters);
+            SimulatedAnnealing annealer = new(this.Stand!, heuristicParameters, runParameters);
             if (this.Alpha.HasValue)
             {
                 annealer.Alpha = this.Alpha.Value;
@@ -105,9 +104,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-SimulatedAnnealing";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.GetDefaultParameterCombinations(timberValue);
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

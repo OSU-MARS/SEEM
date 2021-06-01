@@ -56,21 +56,21 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
-            if (this.ThinPeriod != Constant.NoThinPeriod)
-            {
-                configuration.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod)
-                {
-                    FromAbovePercentage = this.ThinFromAbovePercentage, 
-                    ProportionalPercentage = this.ProportionalThinPercentage, 
-                    FromBelowPercentage = this.ThinFromBelowPercentage
-                });
-            }
-
             OrganonStandTrajectory trajectory = new(this.Stand!, configuration, this.TimberValue, this.PlanningPeriods);
             if (this.Name != null)
             {
                 trajectory.Name = this.Name;
             }
+            if (this.ThinPeriod != Constant.NoThinPeriod)
+            {
+                trajectory.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod)
+                {
+                    FromAbovePercentage = this.ThinFromAbovePercentage,
+                    ProportionalPercentage = this.ProportionalThinPercentage,
+                    FromBelowPercentage = this.ThinFromBelowPercentage
+                });
+            }
+
             // performance: if needed, remove unnecessary repetition of stand simulation for each discount rate
             // Only one growth simulation is necessary but StandTrajectory lacks an API to recompute its net present value arrays
             // for a new discount rate.

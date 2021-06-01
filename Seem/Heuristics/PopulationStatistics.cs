@@ -38,7 +38,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public float AddGeneration(Population population, IList<int> thinningPeriods)
         {
-            if (population.Size < 1)
+            if (population.SolutionsInPool < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(population));
             }
@@ -51,7 +51,7 @@ namespace Osu.Cof.Ferm.Heuristics
             double meanFitness = population.IndividualFitness[0];
             float minimumFitness = Single.MaxValue;
             double sumOfSquares = 0.0F;
-            for (int individualIndex = 0; individualIndex < population.Size; ++individualIndex)
+            for (int individualIndex = 0; individualIndex < population.SolutionsInPool; ++individualIndex)
             {
                 float individualFitness = population.IndividualFitness[individualIndex];
                 if (individualFitness > maximumFitness)
@@ -85,7 +85,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     int alleleCount = alleleCounts[treeIndex, periodIndex];
                     if (alleleCount > 0)
                     {
-                        float frequency = (float)alleleCount / (float)population.Size;
+                        float frequency = (float)alleleCount / (float)population.SolutionsInPool;
                         if (frequency < Constant.PolymorphicLocusThreshold)
                         {
                             isPolymorphicLocus = true;
@@ -105,15 +105,15 @@ namespace Osu.Cof.Ferm.Heuristics
             float coeffcientOfVariation = 0.0F;
             if (sumOfSquares != 0.0)
             {
-                double variance = sumOfSquares / population.Size;
+                double variance = sumOfSquares / population.SolutionsInPool;
                 double fitnessStandardDeviation = Math.Sqrt(variance);
                 Debug.Assert(Double.IsNaN(fitnessStandardDeviation) == false);
                 coeffcientOfVariation = (float)(fitnessStandardDeviation / Math.Abs(meanFitness));
             }
             this.CoefficientOfVarianceByGeneration.Add(coeffcientOfVariation);
 
-            this.NewIndividualsByGeneration.Add(population.NewIndividuals);
-            population.NewIndividuals = 0;
+            this.NewIndividualsByGeneration.Add(population.SolutionsAccepted);
+            population.SolutionsAccepted = 0;
 
             this.MaximumFitnessByGeneration.Add(maximumFitness);
             float meanAllelesPerLocus = (float)uniqueAllelesPresent / (float)population.TreeCount;

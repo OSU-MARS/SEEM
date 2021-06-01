@@ -56,7 +56,7 @@ namespace Osu.Cof.Ferm
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
             this.StandingVolume = new StandScribnerVolume(other.StandingVolume);
             this.ThinningVolume = new StandScribnerVolume(other.ThinningVolume);
-            this.TimberValue = other.TimberValue; // stateless, thread safe
+            this.TimberValue = other.TimberValue; // runtime immutable, assumed thread safe for shallow copy
 
             Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, other.BasalAreaRemoved.Length);
 

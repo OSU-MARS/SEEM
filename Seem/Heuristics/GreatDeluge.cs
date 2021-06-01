@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public float? RainRate { get; set; }
         public int StopAfter { get; set; }
 
-        public GreatDeluge(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, organonConfiguration, heuristicParameters, runParameters)
+        public GreatDeluge(OrganonStand stand, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, heuristicParameters, runParameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.ChangeToExchangeAfter = Int32.MaxValue;
@@ -61,7 +61,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new NotSupportedException();
             }
-            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
             if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
             {
                 throw new NotSupportedException("Currently, only one or two thins are supported.");
@@ -71,7 +71,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.Iterations, perfCounters);
             if (this.RainRate.HasValue == false)
             {
@@ -95,7 +95,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float waterLevel = this.IntitialMultiplier * this.BestObjectiveFunction;
             for (int iteration = 1; iteration < this.Iterations; ++iteration, waterLevel += this.RainRate.Value)
             {
-                int firstTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                int firstTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                 int firstCurrentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(firstTreeIndex);
                 int firstCandidateHarvestPeriod;
                 int secondTreeIndex = -1;
@@ -106,14 +106,14 @@ namespace Osu.Cof.Ferm.Heuristics
                         candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
                         break;
                     case MoveType.TwoOptExchange:
-                        secondTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                        secondTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                         firstCandidateHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(secondTreeIndex);
                         while (firstCandidateHarvestPeriod == firstCurrentHarvestPeriod)
                         {
                             // retry until a modifying exchange is found
                             // This also excludes the case where a tree is exchanged with itself.
                             // BUGBUG: infinite loop if all trees have the same selection
-                            secondTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                            secondTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                             firstCandidateHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(secondTreeIndex);
                         }
                         candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
@@ -140,7 +140,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // accept move
                     acceptedObjectiveFunction = candidateObjectiveFunction;
-                    this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
+                    this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                     hillClimbingThreshold = candidateObjectiveFunction;
                     iterationsSinceObjectiveImprovedOrMoveTypeChanged = 0;
                     iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
@@ -149,7 +149,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (candidateObjectiveFunction > this.BestObjectiveFunction)
                     {
                         this.BestObjectiveFunction = candidateObjectiveFunction;
-                        this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
+                        this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
                         iterationsSinceBestObjectiveImproved = 0;
                     }

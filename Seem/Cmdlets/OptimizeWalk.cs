@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -13,9 +12,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0, Int32.MaxValue)]
         public int? Iterations { get; set; }
 
-        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
-            AutocorrelatedWalk random = new(this.Stand!, organonConfiguration, heuristicParameters, runParameters);
+            AutocorrelatedWalk random = new(this.Stand!, heuristicParameters, runParameters);
             if (this.Iterations.HasValue)
             {
                 random.Iterations = this.Iterations.Value;
@@ -28,9 +27,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Random";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.GetDefaultParameterCombinations(timberValue);
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

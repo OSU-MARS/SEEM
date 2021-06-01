@@ -138,22 +138,28 @@ namespace Osu.Cof.Ferm.Test
             List<int> thinningPeriods = new() { 0, 1 };
 
             Population binaryPopulation = new(2, 0.5F, 5);
-            binaryPopulation.IndividualFitness[0] = 0.0F;
-            binaryPopulation.IndividualFitness[1] = 1.0F;
             binaryPopulation.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
             binaryPopulation.IndividualTreeSelections[1] = new int[] { 1, 1, 1, 1, 1 };
+            binaryPopulation.UpdateNearestNeighborDistances(0);
+            binaryPopulation.UpdateNearestNeighborDistances(1);
+            binaryPopulation.InsertFitness(0, 0.0F);
+            binaryPopulation.InsertFitness(1, 1.0F);
 
             Population clones = new(2, 0.5F, 5);
-            clones.IndividualFitness[0] = 0.0F;
-            clones.IndividualFitness[1] = 0.0F;
             clones.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
             clones.IndividualTreeSelections[1] = new int[] { 0, 0, 0, 0, 0 };
+            clones.UpdateNearestNeighborDistances(0);
+            clones.UpdateNearestNeighborDistances(1);
+            clones.InsertFitness(0, 0.0F);
+            clones.InsertFitness(1, 0.0F);
 
             Population heterozygousPopulation = new(2, 0.5F, 5);
-            heterozygousPopulation.IndividualFitness[0] = 0.4F;
-            heterozygousPopulation.IndividualFitness[1] = 0.6F;
             heterozygousPopulation.IndividualTreeSelections[0] = new int[] { 1, 0, 0, 1, 0 };
             heterozygousPopulation.IndividualTreeSelections[1] = new int[] { 1, 0, 1, 0, 1 };
+            heterozygousPopulation.UpdateNearestNeighborDistances(0);
+            heterozygousPopulation.UpdateNearestNeighborDistances(1);
+            heterozygousPopulation.InsertFitness(0, 0.4F);
+            heterozygousPopulation.InsertFitness(1, 0.6F);
 
             PopulationStatistics statistics = new();
             statistics.AddGeneration(binaryPopulation, thinningPeriods);
@@ -167,7 +173,7 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(statistics.MeanFitnessByGeneration[0] == 0.5F);
             Assert.IsTrue(statistics.MinimumFitnessByGeneration[0] == 0.0F);
             Assert.IsTrue(statistics.MeanHeterozygosityByGeneration[0] == 0.5F);
-            Assert.IsTrue(statistics.NewIndividualsByGeneration[0] == 0);
+            Assert.IsTrue(statistics.NewIndividualsByGeneration[0] == 2);
             Assert.IsTrue(statistics.PolymorphismByGeneration[0] == 1.0F);
 
             Assert.IsTrue(statistics.CoefficientOfVarianceByGeneration[1] == 0.0F);
@@ -175,7 +181,7 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(statistics.MeanFitnessByGeneration[1] == 0.0F);
             Assert.IsTrue(statistics.MinimumFitnessByGeneration[1] == 0.0F);
             Assert.IsTrue(statistics.MeanHeterozygosityByGeneration[1] == 0.0F);
-            Assert.IsTrue(statistics.NewIndividualsByGeneration[1] == 0);
+            Assert.IsTrue(statistics.NewIndividualsByGeneration[1] == 2);
             Assert.IsTrue(statistics.PolymorphismByGeneration[1] == 0.0F);
 
             Assert.IsTrue(MathF.Round(statistics.CoefficientOfVarianceByGeneration[2], 6) == 0.2F);
@@ -183,7 +189,7 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(statistics.MeanFitnessByGeneration[2] == 0.5F);
             Assert.IsTrue(statistics.MinimumFitnessByGeneration[2] == 0.4F);
             Assert.IsTrue(statistics.MeanHeterozygosityByGeneration[2] == 0.3F);
-            Assert.IsTrue(statistics.NewIndividualsByGeneration[2] == 0);
+            Assert.IsTrue(statistics.NewIndividualsByGeneration[2] == 2);
             Assert.IsTrue(statistics.PolymorphismByGeneration[2] == 0.6F);
         }
 
@@ -261,8 +267,8 @@ namespace Osu.Cof.Ferm.Test
             {
                 // create trees with a range of expansion factors to catch errors in expansion factor management
                 float treeRatio = (float)compactedTreeIndex / (float)treeCount;
-                TreeRecord tree = new(compactedTreeIndex, trees.Species, (float)compactedTreeIndex, 1.0F - 0.75F * treeRatio, 0.6F + compactedTreeIndex);
-                trees.Add(tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
+                TreeRecord tree = new(1, compactedTreeIndex, trees.Species, (float)compactedTreeIndex, 1.0F - 0.75F * treeRatio, 0.6F + compactedTreeIndex);
+                trees.Add(tree.Plot, tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
 
                 float dbhInMeters = TestConstant.MetersPerInch * tree.DbhInInches;
                 float heightInMeters = Constant.MetersPerFoot * tree.HeightInFeet;
@@ -316,7 +322,7 @@ namespace Osu.Cof.Ferm.Test
             for (int treeIndex = 0; treeIndex < treeCount; ++treeIndex)
             {
                 float dbhInInches = (float)(treeIndex % 36 + 4);
-                trees.Add(treeIndex, dbhInInches, 16.0F * MathF.Sqrt(dbhInInches) + 4.5F, 0.01F * (float)(treeIndex % 100), expansionFactor);
+                trees.Add(1, treeIndex, dbhInInches, 16.0F * MathF.Sqrt(dbhInInches) + 4.5F, 0.01F * (float)(treeIndex % 100), expansionFactor);
             }
             FiaVolume volume = new();
 
@@ -428,9 +434,9 @@ namespace Osu.Cof.Ferm.Test
                 float dbhInCentimeters = tree.Dbh;
                 float heightInMeters = tree.Height;
                 Trees psmeEnglish = new(FiaCode.PseudotsugaMenziesii, 1, Units.English);
-                psmeEnglish.Add(1, Constant.InchesPerCentimeter * dbhInCentimeters, Constant.FeetPerMeter * heightInMeters, 0.5F, tree.ExpansionFactor);
+                psmeEnglish.Add(1, 1, Constant.InchesPerCentimeter * dbhInCentimeters, Constant.FeetPerMeter * heightInMeters, 0.5F, tree.ExpansionFactor);
                 Trees psmeMetric = new(FiaCode.PseudotsugaMenziesii, 1, Units.Metric);
-                psmeMetric.Add(1, dbhInCentimeters, heightInMeters, 0.5F, tree.ExpansionFactor);
+                psmeMetric.Add(1, 1, dbhInCentimeters, heightInMeters, 0.5F, tree.ExpansionFactor);
 
                 timberValue.ScaledVolumeRegenerationHarvest.GetStandingScribnerVolume(psmeEnglish, out double standingScribner2SawEnglish, out double standingScribner3SawEnglish, out double standingScribner4SawEnglish);
                 double standingScribnerEnglish = standingScribner2SawEnglish + standingScribner3SawEnglish + standingScribner4SawEnglish;

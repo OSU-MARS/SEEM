@@ -6,8 +6,8 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public SingleTreeMoveLog MoveLog { get; private init; }
 
-        public SingleTreeHeuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, TParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, organonConfiguration, heuristicParameters, runParameters)
+        public SingleTreeHeuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, heuristicParameters, runParameters)
         {
             this.MoveLog = new SingleTreeMoveLog();
         }

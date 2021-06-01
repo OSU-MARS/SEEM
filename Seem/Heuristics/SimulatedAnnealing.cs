@@ -18,8 +18,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public int ReheatAfter { get; set; }
         public float ReheatBy { get; set; }
 
-        public SimulatedAnnealing(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
-            :  base(stand, organonConfiguration, heuristicParameters, runParameters)
+        public SimulatedAnnealing(OrganonStand stand, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            :  base(stand, heuristicParameters, runParameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.Alpha = Constant.MonteCarloDefault.AnnealingAlpha;
@@ -81,7 +81,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.ReheatBy));
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
             if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
             {
                 throw new NotSupportedException("Currently, only one or two thins are supported.");
@@ -91,7 +91,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
@@ -113,7 +113,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 for (int iterationAtTemperature = 0; iterationAtTemperature < this.IterationsPerTemperature; ++iteration, ++iterationAtTemperature)
                 {
-                    int firstTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                    int firstTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                     int firstCurrentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(firstTreeIndex);
                     int firstCandidateHarvestPeriod;
                     int secondTreeIndex = -1;
@@ -124,14 +124,14 @@ namespace Osu.Cof.Ferm.Heuristics
                             candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
                             break;
                         case MoveType.TwoOptExchange:
-                            secondTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                            secondTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                             firstCandidateHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(secondTreeIndex);
                             while (firstCandidateHarvestPeriod == firstCurrentHarvestPeriod)
                             {
                                 // retry until a modifying exchange is found
                                 // This also excludes the case where a tree is exchanged with itself.
                                 // BUGBUG: infinite loop if all trees have the same selection
-                                secondTreeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                                secondTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                                 firstCandidateHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(secondTreeIndex);
                             }
                             candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
@@ -166,7 +166,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             // exponent is small enough not to round acceptance probabilities down to zero
                             // 1/e^10 accepts 1 in 22,026 moves.
                             float acceptanceProbability = 1.0F / MathV.Exp(exponent);
-                            float moveProbability = this.GetPseudorandomByteAsProbability();
+                            float moveProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
                             if (moveProbability < acceptanceProbability)
                             {
                                 acceptMove = true;
@@ -189,13 +189,13 @@ namespace Osu.Cof.Ferm.Heuristics
                         }
 
                         acceptedObjectiveFunction = candidateObjectiveFunction;
-                        this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
+                        this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
                         if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = acceptedObjectiveFunction;
-                            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
+                            this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                             iterationsSinceReheatOrBestObjectiveImproved = 0;
                         }
 

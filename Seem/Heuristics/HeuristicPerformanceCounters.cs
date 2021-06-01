@@ -8,6 +8,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public int GrowthModelTimesteps { get; set; }
         public int MovesAccepted { get; set; }
         public int MovesRejected { get; set; }
+        public int TreesRandomizedInConstruction { get; set; }
 
         public HeuristicPerformanceCounters()
         {
@@ -15,6 +16,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.GrowthModelTimesteps = 0;
             this.MovesAccepted = 0;
             this.MovesRejected = 0;
+            this.TreesRandomizedInConstruction = 0;
         }
 
         public static HeuristicPerformanceCounters operator +(HeuristicPerformanceCounters counters1, HeuristicPerformanceCounters counters2)
@@ -24,7 +26,8 @@ namespace Osu.Cof.Ferm.Heuristics
                 Duration = counters1.Duration + counters2.Duration,
                 GrowthModelTimesteps = counters1.GrowthModelTimesteps + counters2.GrowthModelTimesteps,
                 MovesAccepted = counters1.MovesAccepted + counters2.MovesAccepted,
-                MovesRejected = counters1.MovesRejected + counters2.MovesRejected
+                MovesRejected = counters1.MovesRejected + counters2.MovesRejected,
+                TreesRandomizedInConstruction = counters1.TreesRandomizedInConstruction + counters2.TreesRandomizedInConstruction
             };
         }
     }

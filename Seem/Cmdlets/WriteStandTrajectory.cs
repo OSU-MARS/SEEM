@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             HeuristicParameters? heuristicParameters = null;
             if (this.Results != null)
             {
-                HeuristicSolutionPool solution = this.Results.Solutions[runOrTrajectoryIndex];
+                HeuristicSolutionPool solution = this.Results.SolutionIndex[this.Results.Distributions[runOrTrajectoryIndex]];
                 if (solution.High == null)
                 {
                     throw new NotSupportedException("Run " + runOrTrajectoryIndex + " is missing a high solution.");
@@ -134,7 +134,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // rows for periods
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxIndex = runsSpecified ? this.Results!.Count : this.Trajectories!.Count;
+            int maxIndex = runsSpecified ? this.Results!.Distributions.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
                 OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix, out float discountRate);
@@ -261,7 +261,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ParameterOutOfRangeException(nameof(this.Trajectories), "Both " + nameof(this.Results) + " and " + nameof(this.Trajectories) + " are specified. Specify one or the other.");
             }
-            if ((this.Results != null) && (this.Results.Count < 1))
+            if ((this.Results != null) && (this.Results.Distributions.Count < 1))
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results), nameof(this.Results) + " is empty. At least one run must be present.");
             }

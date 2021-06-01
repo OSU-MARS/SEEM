@@ -14,8 +14,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public int MaximumTenure { get; set; }
         public TabuTenure Tenure { get; set; }
 
-        public TabuSearch(OrganonStand stand, OrganonConfiguration organonConfiguration, TabuParameters parameters, RunParameters runParameters)
-            :  base(stand, organonConfiguration, parameters, runParameters)
+        public TabuSearch(OrganonStand stand, TabuParameters parameters, RunParameters runParameters)
+            :  base(stand, parameters, runParameters)
         {
             this.EscapeAfter = parameters.EscapeAfter;
             this.EscapeDistance = parameters.EscapeDistance;
@@ -195,7 +195,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.Tenure switch
             {
                 TabuTenure.Fixed => this.MaximumTenure,
-                TabuTenure.Stochastic => (int)(tenureScalingFactor * this.GetPseudorandomByteAsFloat()) + 2,
+                TabuTenure.Stochastic => (int)(tenureScalingFactor * this.Pseudorandom.GetPseudorandomByteAsFloat()) + 2,
                 _ => throw new NotSupportedException(String.Format("Unhandled tenure mode {0}.", this.Tenure))
             };
         }
@@ -223,7 +223,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.MaximumTenure));
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
             if (thinningPeriods.Count < 2)
             {
                 throw new NotSupportedException("A decision between at least two thinning periods is expected.");
@@ -233,7 +233,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
@@ -321,7 +321,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (candidateObjectiveFunction > bestObjectiveFunction)
                         {
                             bestObjectiveFunction = candidateObjectiveFunction;
-                            bestTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
+                            bestTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                             bestTreeIndex = treeIndex;
                             bestHarvestPeriod = thinningPeriod;
                         }
@@ -349,7 +349,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             if (candidateObjectiveFunction > bestNonTabuObjectiveFunction)
                             {
                                 bestNonTabuObjectiveFunction = candidateObjectiveFunction;
-                                bestNonTabuTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
+                                bestNonTabuTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                             }
                         }
 
@@ -370,12 +370,12 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // always accept best candidate if it improves upon the best solution
                     acceptedObjectiveFunction = bestObjectiveFunction;
-                    this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(bestTrajectory);
+                    this.CurrentTrajectory.CopyTreeGrowthFrom(bestTrajectory);
 
                     remainingTabuTenures[bestTreeIndex, bestHarvestPeriod] = this.GetTenure(tenureScalingFactor);
 
                     this.BestObjectiveFunction = bestObjectiveFunction;
-                    this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
+                    this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
                     this.CandidateObjectiveFunctionByMove.Add(bestObjectiveFunction);
                     this.MoveLog.TreeIDByMove.Add(bestTreeIndex);
@@ -395,7 +395,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     //}
                     KeyValuePair<float, OneOptMove> bestNonTabuMove = bestNonTabuMovesByObjectiveFunction.Last();
                     acceptedObjectiveFunction = bestNonTabuMove.Key;
-                    this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(bestNonTabuTrajectory);
+                    this.CurrentTrajectory.CopyTreeGrowthFrom(bestNonTabuTrajectory);
 
                     remainingTabuTenures[bestNonTabuMove.Value.TreeIndex, bestNonTabuMove.Value.ThinPeriod] = this.GetTenure(tenureScalingFactor);
                     this.CandidateObjectiveFunctionByMove.Add(acceptedObjectiveFunction);

@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -53,9 +52,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters parameters, RunParameters runParameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
-            GreatDeluge deluge = new(this.Stand!, organonConfiguration, parameters, runParameters);
+            GreatDeluge deluge = new(this.Stand!, heuristicParameters, runParameters);
             if (this.ChangeToExchangeAfter.HasValue)
             {
                 deluge.ChangeToExchangeAfter = this.ChangeToExchangeAfter.Value;
@@ -98,9 +97,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-GreatDeluge";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.GetDefaultParameterCombinations(timberValue);
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

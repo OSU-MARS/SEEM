@@ -20,7 +20,7 @@ namespace Osu.Cof.Ferm.Test
                     crownRatio = 0.01F;
                     expansionFactor = 0.0F;
                 }
-                trees.Add(treeIndex, treeIndexAsFloat, treeIndexAsFloat, crownRatio, expansionFactor);
+                trees.Add(1, treeIndex, treeIndexAsFloat, treeIndexAsFloat, crownRatio, expansionFactor);
                 trees.DbhGrowth[treeIndex] = treeIndexAsFloat;
                 trees.DeadExpansionFactor[treeIndex] = treeIndexAsFloat;
                 trees.HeightGrowth[treeIndex] = treeIndexAsFloat;

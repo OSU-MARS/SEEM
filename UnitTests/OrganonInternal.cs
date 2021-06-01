@@ -53,6 +53,7 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void DiameterGrowthApi()
         {
+            OrganonTreatments treatments = new();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
@@ -71,7 +72,7 @@ namespace Osu.Cof.Ferm.Test
                     foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                     {
                         float[] previousTreeDiameters = previousTreeDiametersBySpecies[treesOfSpecies.Species];
-                        OrganonGrowth.GrowDiameter(configuration, stand, treesOfSpecies, treeCompetition, calibrationBySpecies[treesOfSpecies.Species].Diameter);
+                        OrganonGrowth.GrowDiameter(configuration, treatments, stand, treesOfSpecies, treeCompetition, calibrationBySpecies[treesOfSpecies.Species].Diameter);
                         stand.SetSdiMax(configuration);
                         for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                         {
@@ -102,6 +103,7 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void GrowApi()
         {
+            OrganonTreatments treatments = new();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
@@ -112,7 +114,7 @@ namespace Osu.Cof.Ferm.Test
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
-                    OrganonGrowth.Grow(configuration, stand, densityStartOfStep, calibrationBySpecies, ref crownCompetitionByHeight, 
+                    OrganonGrowth.Grow(configuration, treatments, stand, densityStartOfStep, calibrationBySpecies, ref crownCompetitionByHeight, 
                                        out OrganonStandDensity densityEndOfStep, out int _);
                     stand.SetSdiMax(configuration);
 
@@ -159,6 +161,7 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void HeightGrowthApi()
         {
+            OrganonTreatments treatments = new();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
@@ -223,7 +226,7 @@ namespace Osu.Cof.Ferm.Test
                         if (variant.IsBigSixSpecies(treesOfSpecies.Species))
                         {
                             // TODO: why no height calibration in Organon API?
-                            OrganonGrowth.GrowHeightBigSixSpecies(configuration, stand, treesOfSpecies, 1.0F, crownCompetitionByHeight, out _);
+                            OrganonGrowth.GrowHeightBigSixSpecies(configuration, treatments, stand, treesOfSpecies, 1.0F, crownCompetitionByHeight, out _);
                         }
                         else
                         {
@@ -251,6 +254,7 @@ namespace Osu.Cof.Ferm.Test
         [TestMethod]
         public void MortalityApi()
         {
+            OrganonTreatments treatments = new();
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
@@ -258,7 +262,7 @@ namespace Osu.Cof.Ferm.Test
                 OrganonStandDensity density = new(variant, stand);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
-                    OrganonMortality.ReduceExpansionFactors(configuration, stand, density);
+                    OrganonMortality.ReduceExpansionFactors(configuration, treatments, stand, density);
                     stand.SetSdiMax(configuration);
                     OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
                     float oldGrowthIndicator  = OrganonMortality.GetOldGrowthIndicator(variant, stand);

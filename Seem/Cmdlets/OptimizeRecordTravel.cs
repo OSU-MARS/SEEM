@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -57,9 +56,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.StopAfter = null;
         }
 
-        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
-            RecordTravel recordTravel = new(this.Stand!, organonConfiguration, heuristicParameters, runParameters);
+            RecordTravel recordTravel = new(this.Stand!, heuristicParameters, runParameters);
             if (this.Alpha.HasValue)
             {
                 recordTravel.Alpha = this.Alpha.Value;
@@ -104,9 +103,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-RecordTravel";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.GetDefaultParameterCombinations(timberValue);
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

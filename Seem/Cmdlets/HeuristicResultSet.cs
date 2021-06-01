@@ -1,26 +1,24 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
+    // provide a non-template base class to allow PowerShell cmdlets to accept results from any heuristic as a parameter
     public class HeuristicResultSet
     {
-        public List<HeuristicDistribution> Distributions { get; private init; }
+        public IList<HeuristicDistribution> Distributions { get; private init; }
         public HeuristicSolutionIndex SolutionIndex { get; private init; }
-        public List<HeuristicSolutionPool> Solutions { get; private init; }
 
-        public List<float> DiscountRates { get; private init; }
-        public List<int> FirstThinPeriod { get; private init; }
-        public List<int> PlanningPeriods { get; private init; }
-        public List<int> SecondThinPeriod { get; private init; }
-        public List<int> ThirdThinPeriod { get; private init; }
+        public IList<float> DiscountRates { get; private init; }
+        public IList<int> FirstThinPeriod { get; private init; }
+        public IList<int> PlanningPeriods { get; private init; }
+        public IList<int> SecondThinPeriod { get; private init; }
+        public IList<int> ThirdThinPeriod { get; private init; }
 
-        public HeuristicResultSet(List<float> discountRates, List<int> firstThinPeriod, List<int> secondThinPeriod, List<int> thirdThinPeriod, List<int> planningPeriods)
+        protected HeuristicResultSet(int parameterCombinations, IList<float> discountRates, IList<int> firstThinPeriod, IList<int> secondThinPeriod, IList<int> thirdThinPeriod, IList<int> planningPeriods, int individualSolutionPoolSize)
         {
-            this.Distributions = new();
-            this.SolutionIndex = new(discountRates, firstThinPeriod, secondThinPeriod, thirdThinPeriod, planningPeriods);
-            this.Solutions = new();
+            this.Distributions = new List<HeuristicDistribution>();
+            this.SolutionIndex = new(parameterCombinations, discountRates.Count, firstThinPeriod.Count, secondThinPeriod.Count, thirdThinPeriod.Count, planningPeriods.Count, individualSolutionPoolSize);
 
             this.DiscountRates = discountRates;
             this.FirstThinPeriod = firstThinPeriod;
@@ -28,22 +26,16 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.SecondThinPeriod = secondThinPeriod;
             this.ThirdThinPeriod = thirdThinPeriod;
         }
+    }
 
-        public int Count
+    public class HeuristicResultSet<TParameters> : HeuristicResultSet where TParameters : HeuristicParameters
+    {
+        public IList<TParameters> ParameterCombinations { get; private init; }
+
+        public HeuristicResultSet(IList<TParameters> parameterCombinations, IList<float> discountRates, IList<int> firstThinPeriod, IList<int> secondThinPeriod, IList<int> thirdThinPeriod, IList<int> planningPeriods, int individualSolutionPoolSize)
+            : base(parameterCombinations.Count, discountRates, firstThinPeriod, secondThinPeriod, thirdThinPeriod, planningPeriods, individualSolutionPoolSize)
         {
-            get 
-            {
-                Debug.Assert(this.Distributions.Count == this.Solutions.Count);
-                return this.Distributions.Count; 
-            }
-        }
-
-        public void Add(HeuristicDistribution distribution)
-        {
-            this.Distributions.Add(distribution);
-
-            HeuristicSolutionPool solution = this.SolutionIndex[distribution];
-            this.Solutions.Add(solution);
+            this.ParameterCombinations = parameterCombinations;
         }
     }
 }

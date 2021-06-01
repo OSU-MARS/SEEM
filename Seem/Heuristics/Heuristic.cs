@@ -14,15 +14,16 @@ namespace Osu.Cof.Ferm.Heuristics
         public OrganonStandTrajectory CurrentTrajectory { get; private init; }
         public RunParameters RunParameters { get; private init; }
 
-        protected Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+        protected Heuristic(OrganonStand stand, RunParameters runParameters)
         {
             this.AcceptedObjectiveFunctionByMove = new List<float>();
             this.BestObjectiveFunction = Single.MinValue; // for now, assume maximization of objective function
 
-            this.BestTrajectory = new OrganonStandTrajectory(stand, organonConfiguration, heuristicParameters.TimberValue, runParameters.PlanningPeriods)
+            this.BestTrajectory = new OrganonStandTrajectory(stand, runParameters.OrganonConfiguration, runParameters.TimberValue, runParameters.PlanningPeriods)
             {
                 Heuristic = this
             };
+            this.BestTrajectory.Treatments.CopyFrom(runParameters.Treatments);
 
             this.CandidateObjectiveFunctionByMove = new List<float>();
 
@@ -42,7 +43,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 return currentHarvestPeriod == thinningPeriods[0] ? thinningPeriods[1] : thinningPeriods[0];
             }
 
-            bool incrementIndex = this.GetPseudorandomByteAsProbability() < 0.5F;
+            bool incrementIndex = this.Pseudorandom.GetPseudorandomByteAsProbability() < 0.5F;
             if (currentHarvestPeriod == thinningPeriods[0])
             {
                 return incrementIndex ? thinningPeriods[2] : thinningPeriods[1];
@@ -75,10 +76,10 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public TParameters HeuristicParameters { get; private init; }
 
-        public Heuristic(OrganonStand stand, OrganonConfiguration organonConfiguration, TParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, organonConfiguration, heuristicParameters, runParameters)
+        public Heuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, runParameters)
         {
-            if ((heuristicParameters.ConstructionRandomness < 0.0F) || (heuristicParameters.ConstructionRandomness > 1.0F))
+            if ((heuristicParameters.ConstructionGreediness < Constant.Grasp.FullyRandomConstructionForMaximization) || (heuristicParameters.ConstructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
             {
                 throw new ArgumentOutOfRangeException(nameof(heuristicParameters), "Construction greediness is not between 0 and 1, inclusive.");
             }
@@ -91,10 +92,15 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         // exposed as a distinct method for AutocorrelatedWalk
-        protected void ConstructTreeSelection(float constructionRandomness)
+        protected int ConstructTreeSelection(float constructionGreediness)
         {
+            if ((constructionGreediness <Constant.Grasp.FullyRandomConstructionForMaximization) || (constructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
+            {
+                throw new ArgumentOutOfRangeException(nameof(constructionGreediness));
+            }
+
             // check if there is a thinning to randomize
-            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
             if (thinningPeriods[0] != Constant.NoHarvestPeriod)
             {
                 throw new NotSupportedException("First thinning selection is a harvest. Expected it to be the no harvest option.");
@@ -105,33 +111,34 @@ namespace Osu.Cof.Ferm.Heuristics
                 // If needed, checking can be done for conflict between removing trees from thinning and construction greediness. At least for now, the 
                 // scheduling of thins is treated as an override to greediness.
                 this.CurrentTrajectory.DeselectAllTrees();
-                return;
+                return 0;
             }
             thinningPeriods.RemoveAt(0);
 
-            if (this.HeuristicParameters.ConstructionRandomness == Constant.GraspDefault.FullyGreedyConstruction)
+            if (this.HeuristicParameters.ConstructionGreediness == Constant.Grasp.FullyGreedyConstructionForMaximization)
             {
                 // nothing to do
                 // Could return sooner but it seems best not to bypass argument checking.
-                return;
+                return 0;
             }
 
-            // randomize tree selection at level indicated by constructionRandomness
+            // randomize tree selection at level indicated by constructionGreediness
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             float thinIndexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / this.HeuristicParameters.InitialThinningProbability;
+            int treeSelectionsRandomized = 0;
             for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
             {
-                if (constructionRandomness != 1.0F)
+                if (constructionGreediness != Constant.Grasp.FullyRandomConstructionForMaximization)
                 {
-                    float modificationProbability = this.GetPseudorandomByteAsProbability();
-                    if (modificationProbability < constructionRandomness)
+                    float modificationProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
+                    if (modificationProbability < constructionGreediness)
                     {
                         continue;
                     }
                 }
 
                 int thinningPeriod = Constant.NoHarvestPeriod;
-                float harvestProbability = this.GetPseudorandomByteAsProbability();
+                float harvestProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
                 if (harvestProbability < this.HeuristicParameters.InitialThinningProbability)
                 {
                     // probability falls into the harvest fraction, for now choose equally among available harvest periods
@@ -140,23 +147,27 @@ namespace Osu.Cof.Ferm.Heuristics
                     thinningPeriod = thinningPeriods[periodIndex];
                 }
                 this.CurrentTrajectory.SetTreeSelection(treeIndex, thinningPeriod);
+                ++treeSelectionsRandomized;
             }
+
+            return treeSelectionsRandomized;
         }
 
-        protected void ConstructTreeSelection(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        protected int ConstructTreeSelection(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
             // default to fully random construction if there is no existing solution
-            float constructionRandomness = Constant.GraspDefault.FullyRandomConstruction;
-            if (solutionIndex.TryFindWithinDiscountRate(position, out HeuristicSolutionPool? existingSolutions) && (existingSolutions.High != null))
+            float constructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
+            // attempt to find an existing solution with the same set of thinning timings
+            // If found, the existing solution's discount rate and number of planning periods may differ.
+            if (solutionIndex.TryFindMatchingThinnings(position, out HeuristicSolutionPool? existingSolutions))
             {
-                // default to maximization by copying from highest
-                // Copying is most likely beneficial even if constuction is fully random due to reuse of growth model timesteps.
-                // If needed, a this.IsMaxmizing property or such could be added to copy from lowest instead.
-                this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(existingSolutions.High.BestTrajectory);
-                constructionRandomness = this.HeuristicParameters.ConstructionRandomness;
+                Debug.Assert(existingSolutions.SolutionsInPool > 0);
+                OrganonStandTrajectory eliteSolution = existingSolutions.GetEliteSolution();
+                this.CurrentTrajectory.CopyTreeGrowthFrom(eliteSolution);
+                constructionGreediness = this.HeuristicParameters.ConstructionGreediness;
             }
 
-            this.ConstructTreeSelection(constructionRandomness);
+            return this.ConstructTreeSelection(constructionGreediness);
         }
 
         protected virtual void EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
@@ -165,7 +176,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.CandidateObjectiveFunctionByMove.Capacity = moveCapacity;
 
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
-            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
+            this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
             this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             this.CandidateObjectiveFunctionByMove.Add(this.BestObjectiveFunction);

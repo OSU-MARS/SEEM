@@ -8,15 +8,17 @@ namespace Osu.Cof.Ferm.Test
         public float DbhInInches { get; private set; }
         public float HeightInFeet { get; private set; }
         public float LiveExpansionFactor { get; private set; }
+        public int Plot { get; private set; }
         public FiaCode Species { get; private set; }
         public int Tag { get; private set; }
 
-        public TreeRecord(int tag, FiaCode species, float dbhInInches, float crownRatio, float expansionFactor)
+        public TreeRecord(int plot, int tag, FiaCode species, float dbhInInches, float crownRatio, float expansionFactor)
         {
             this.CrownRatio = crownRatio;
             this.DbhInInches = dbhInInches;
             this.HeightInFeet = TreeRecord.EstimateHeightInFeet(species, dbhInInches);
             this.LiveExpansionFactor = expansionFactor;
+            this.Plot = plot;
             this.Species = species;
             this.Tag = tag;
         }

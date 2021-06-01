@@ -7,13 +7,15 @@ namespace Osu.Cof.Ferm.Test
     public class PspTreeMeasurementSeries
     {
         public SortedList<int, float> DbhInCentimetersByYear { get; private set; }
+        public int Plot { get; private set; }
         public FiaCode Species { get; private set; }
         public int Tag { get; private set; }
 
-        public PspTreeMeasurementSeries(int tag, FiaCode species)
+        public PspTreeMeasurementSeries(int plot, int tag, FiaCode species)
         {
             this.DbhInCentimetersByYear = new SortedList<int, float>(Constant.Psp.DefaultNumberOfStandMeasurements);
             this.Species = species;
+            this.Plot = plot;
             this.Tag = tag;
         }
 

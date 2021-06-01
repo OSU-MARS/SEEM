@@ -11,8 +11,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public List<int> IterationsPerThreshold { get; private init; }
         public List<float> Thresholds { get; private init; }
 
-        public ThresholdAccepting(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, organonConfiguration, heuristicParameters, runParameters)
+        public ThresholdAccepting(OrganonStand stand, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, heuristicParameters, runParameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
             this.IterationsPerThreshold = new List<int>() { (int)(11.5F * treeRecords), 25, (int)(7.5F * treeRecords) };
@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
             if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
             {
                 throw new NotSupportedException("Currently, only one or two thins are supported.");
@@ -53,7 +53,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
             this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum(), perfCounters);
 
             float acceptedObjectiveFunction = this.BestObjectiveFunction;
@@ -67,7 +67,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 for (int iterationInThreshold = 0; iterationInThreshold < iterations; ++iterationInThreshold)
                 {
                     // if needed, support two opt moves
-                    int treeIndex = (int)(treeIndexScalingFactor * this.GetTwoPseudorandomBytesAsFloat());
+                    int treeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
                     int candidateHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, thinningPeriods);
                     Debug.Assert(candidateHarvestPeriod >= 0);
@@ -80,13 +80,13 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (acceptMove)
                     {
                         acceptedObjectiveFunction = candidateObjectiveFunction; 
-                        this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
+                        this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
                         if (acceptedObjectiveFunction > this.BestObjectiveFunction)
                         {
                             this.BestObjectiveFunction = acceptedObjectiveFunction;
-                            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
+                            this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                         }
                     }
                     else

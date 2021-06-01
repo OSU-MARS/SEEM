@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -22,9 +21,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Thresholds = null;
         }
 
-        protected override Heuristic<HeuristicParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
+        protected override Heuristic<HeuristicParameters> CreateHeuristic(HeuristicParameters heuristicParameters, RunParameters runParameters)
         {
-            ThresholdAccepting acceptor = new(this.Stand!, organonConfiguration, heuristicParameters, runParameters);
+            ThresholdAccepting acceptor = new(this.Stand!, heuristicParameters, runParameters);
             if (this.IterationsPerThreshold != null)
             {
                 acceptor.IterationsPerThreshold.Clear();
@@ -43,9 +42,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-ThresholdAccepting";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<HeuristicParameters> GetParameterCombinations()
         {
-            return this.GetDefaultParameterCombinations(timberValue);
+            return this.GetDefaultParameterCombinations();
         }
     }
 }

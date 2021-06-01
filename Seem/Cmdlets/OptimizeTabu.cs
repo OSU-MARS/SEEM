@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
@@ -41,9 +40,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Tenure = Constant.TabuDefault.Tenure;
         }
 
-        protected override Heuristic<TabuParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, TabuParameters heuristicParameters, RunParameters runParameters)
+        protected override Heuristic<TabuParameters> CreateHeuristic(TabuParameters heuristicParameters, RunParameters runParameters)
         {
-            return new TabuSearch(this.Stand!, organonConfiguration, heuristicParameters, runParameters);
+            return new TabuSearch(this.Stand!, heuristicParameters, runParameters);
         }
 
         protected override string GetName()
@@ -51,7 +50,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Tabu";
         }
 
-        protected override IList<TabuParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<TabuParameters> GetParameterCombinations()
         {
             int treeRecords = this.Stand!.GetTreeRecordCount();
 
@@ -65,19 +64,21 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         foreach (float tenureRatio in this.MaxTenure)
                         {
-                            foreach (float thinningProbability in this.InitialThinningProbability)
+                            foreach (float constructionGreediness in this.ConstructionGreediness)
                             {
-                                parameterCombinations.Add(new TabuParameters()
+                                foreach (float thinningProbability in this.InitialThinningProbability)
                                 {
-                                    EscapeAfter = (int)(escapeAfter * treeRecords),
-                                    EscapeDistance = (int)(escapeBy * treeRecords),
-                                    Iterations = (int)(iterationRatio * treeRecords / MathF.Log(treeRecords) + 0.5F),
-                                    MaximumTenure = (int)(tenureRatio * treeRecords),
-                                    ConstructionRandomness = this.ConstructionRandomness,
-                                    InitialThinningProbability = thinningProbability,
-                                    Tenure = this.Tenure,
-                                    TimberValue = timberValue,
-                                });
+                                    parameterCombinations.Add(new TabuParameters()
+                                    {
+                                        EscapeAfter = (int)(escapeAfter * treeRecords),
+                                        EscapeDistance = (int)(escapeBy * treeRecords),
+                                        Iterations = (int)(iterationRatio * treeRecords / MathF.Log(treeRecords) + 0.5F),
+                                        MaximumTenure = (int)(tenureRatio * treeRecords),
+                                        ConstructionGreediness = constructionGreediness,
+                                        InitialThinningProbability = thinningProbability,
+                                        Tenure = this.Tenure
+                                    });
+                                }
                             }
                         }
                     }

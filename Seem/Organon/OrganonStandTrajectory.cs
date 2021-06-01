@@ -15,27 +15,30 @@ namespace Osu.Cof.Ferm.Organon
 
         public Heuristic? Heuristic { get; set; }
         public OrganonStand?[] StandByPeriod { get; private init; }
+        public OrganonTreatments Treatments { get; private init; }
 
         public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TimberValue timberValue, int lastPlanningPeriod)
             : base(timberValue, lastPlanningPeriod, 
-                  stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand))) // base does range checks
+                  stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand), "Stand's planting density is not specified.")) // base does range checks
         {
             if (timberValue == null)
             {
                 throw new ArgumentNullException(nameof(timberValue));
             }
 
+            this.organonCalibration = organonConfiguration.CreateSpeciesCalibration();
+            this.organonGrowth = new OrganonGrowth();
+
             int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
             this.Configuration = new OrganonConfiguration(organonConfiguration);
             this.DensityByPeriod = new OrganonStandDensity[maximumPlanningPeriodIndex];
-            this.organonCalibration = organonConfiguration.CreateSpeciesCalibration();
-            this.organonGrowth = new OrganonGrowth();
 
             this.Heuristic = null;
             this.Name = stand.Name;
             this.PeriodLengthInYears = organonConfiguration.Variant.TimeStepInYears;
             this.PeriodZeroAgeInYears = stand.AgeInYears;
             this.StandByPeriod = new OrganonStand[maximumPlanningPeriodIndex];
+            this.Treatments = new OrganonTreatments();
 
             this.DensityByPeriod[0] = new OrganonStandDensity(organonConfiguration.Variant, stand);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
@@ -60,6 +63,7 @@ namespace Osu.Cof.Ferm.Organon
             this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
             this.Heuristic = other.Heuristic;
             this.StandByPeriod = new OrganonStand[other.PlanningPeriods];
+            this.Treatments = new();
 
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
@@ -75,22 +79,34 @@ namespace Osu.Cof.Ferm.Organon
                     this.StandByPeriod[periodIndex] = new OrganonStand(otherStand);
                 }
             }
+
+            this.Treatments.CopyFrom(other.Treatments);
         }
 
-        // this function doesn't currently copy Heuristic, Name, PeriodLengthInYears, PeriodZeroAgeInYears, PlantingDensityInTreesPerHectare, TimberValue
-        public void CopyTreeGrowthAndTreatmentsFrom(OrganonStandTrajectory other)
+        // this function doesn't currently copy
+        //   Heuristic, Name, PeriodLengthInYears, PeriodZeroAgeInYears, PlantingDensityInTreesPerHectare, TimberValue, Treatments
+        public void CopyTreeGrowthFrom(OrganonStandTrajectory other)
         {
             Debug.Assert(Object.ReferenceEquals(this, other) == false);
 
-            if ((this.BasalAreaRemoved.Length != other.BasalAreaRemoved.Length) ||
-                (this.PeriodLengthInYears != other.PeriodLengthInYears) ||
+            if ((this.PeriodLengthInYears != other.PeriodLengthInYears) ||
                 (this.PeriodZeroAgeInYears != other.PeriodZeroAgeInYears) ||
-                (this.PlanningPeriods != other.PlanningPeriods) ||
                 (this.PlantingDensityInTreesPerHectare != other.PlantingDensityInTreesPerHectare) ||
-                (Object.ReferenceEquals(this.TimberValue, other.TimberValue) == false))
+                (Object.ReferenceEquals(this.TimberValue, other.TimberValue) == false) ||
+                (this.Treatments.Harvests.Count != other.Treatments.Harvests.Count))
             {
                 // no apparent need to check heuristics for compatibility
+                // number of planning periods may differ: as many periods are copied as possible
                 throw new ArgumentOutOfRangeException(nameof(other));
+            }
+            for (int harvestIndex = 0; harvestIndex < this.Treatments.Harvests.Count; ++harvestIndex)
+            {
+                IHarvest thisHarvest = this.Treatments.Harvests[harvestIndex];
+                IHarvest otherHarvest = other.Treatments.Harvests[harvestIndex];
+                if (thisHarvest.Period != otherHarvest.Period)
+                {
+                    throw new NotSupportedException(nameof(other));
+                }
             }
 
             // for now, shallow copies where feasible
@@ -101,7 +117,11 @@ namespace Osu.Cof.Ferm.Organon
             // May need deep copy of treatment because 
             // 1) thinning prescriptions are being evaluated and therefore the best prescription needs to be reported
             // 2) BUGBUG: no Organon run state object has been implemented
-            Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, this.BasalAreaRemoved.Length);
+            int copyablePeriods = Math.Min(this.PlanningPeriods, other.PlanningPeriods);
+            Debug.Assert((this.BasalAreaRemoved.Length == this.PlanningPeriods) &&
+                         (this.DensityByPeriod.Length == this.PlanningPeriods) &&
+                         (this.StandByPeriod.Length == this.PlanningPeriods));
+
             this.Configuration.CopyFrom(other.Configuration);
 
             foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
@@ -113,10 +133,12 @@ namespace Osu.Cof.Ferm.Organon
                 }
                 Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
             }
-            this.EarliestPeriodChangedSinceLastSimulation = other.EarliestPeriodChangedSinceLastSimulation;
+            this.EarliestPeriodChangedSinceLastSimulation = Math.Min(other.EarliestPeriodChangedSinceLastSimulation, this.PlanningPeriods + 1);
 
-            for (int periodIndex = 0; periodIndex < this.StandByPeriod.Length; ++periodIndex)
+            for (int periodIndex = 0; periodIndex < copyablePeriods; ++periodIndex)
             {
+                this.BasalAreaRemoved[periodIndex] = other.BasalAreaRemoved[periodIndex];
+
                 OrganonStandDensity otherDensity = other.DensityByPeriod[periodIndex];
                 if (otherDensity != null)
                 {
@@ -147,6 +169,14 @@ namespace Osu.Cof.Ferm.Organon
                     this.StandByPeriod[periodIndex] = null;
                 }
             }
+            for (int periodIndex = copyablePeriods; periodIndex < this.PlanningPeriods; ++periodIndex)
+            {
+                this.BasalAreaRemoved[periodIndex] = 0;
+                // this.DensityByPeriod and StandByPeriod do not require clearing so long as EarliestPeriodChangedSinceLastSimulation is set correctly
+                // However, this is a potentially confusing state while debugging.
+                // this.DensityByPeriod[periodIndex] = ?
+                // this.StandByPeriod[periodIndex] = null;
+            }
 
             this.StandingVolume.CopyFrom(other.StandingVolume);
             this.ThinningVolume.CopyFrom(other.ThinningVolume);
@@ -176,7 +206,7 @@ namespace Osu.Cof.Ferm.Organon
         private void GetVolume(int periodIndex)
         {
             // harvest volumes, if applicable
-            foreach (IHarvest harvest in this.Configuration.Treatments.Harvests)
+            foreach (IHarvest harvest in this.Treatments.Harvests)
             {
                 if (harvest.Period == periodIndex)
                 {
@@ -203,7 +233,7 @@ namespace Osu.Cof.Ferm.Organon
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
                 // harvest volumes, if applicable
-                foreach (IHarvest harvest in this.Configuration.Treatments.Harvests)
+                foreach (IHarvest harvest in this.Treatments.Harvests)
                 {
                     if (harvest.Period == periodIndex)
                     {
@@ -250,7 +280,7 @@ namespace Osu.Cof.Ferm.Organon
                 // In individual tree selection cases, tree selection will have been modified by a heuristic (in GRASP solution construction, by 
                 // local search, by evolutionary operators, or some other mechanism) before this function is called. In thinning by prescription
                 // tree selection occurs when the treatment is applied, likely resulting in a change.
-                if (this.Configuration.Treatments.ApplyToPeriod(periodIndex, this))
+                if (this.Treatments.ApplyToPeriod(periodIndex, this))
                 {
                     periodNeedsSimulation |= this.EarliestPeriodChangedSinceLastSimulation == periodIndex;
                 }
@@ -294,7 +324,7 @@ namespace Osu.Cof.Ferm.Organon
                         }
                     }
 
-                    this.BasalAreaRemoved[periodIndex] = this.Configuration.Treatments.BasalAreaRemovedByPeriod[periodIndex];
+                    this.BasalAreaRemoved[periodIndex] = this.Treatments.BasalAreaRemovedByPeriod[periodIndex];
                     crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(this.Configuration.Variant, simulationStand);
                     standDensity = new OrganonStandDensity(this.Configuration.Variant, simulationStand);
                 }
@@ -307,7 +337,7 @@ namespace Osu.Cof.Ferm.Organon
                     {
                         crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(this.Configuration.Variant, simulationStand);
                     }
-                    OrganonGrowth.Grow(this.Configuration, simulationStand, standDensity, this.organonCalibration, 
+                    OrganonGrowth.Grow(this.Configuration, this.Treatments, simulationStand, standDensity, this.organonCalibration, 
                                        ref crownCompetitionByHeight, out OrganonStandDensity standDensityAfterGrowth, out int _);
 
                     this.DensityByPeriod[periodIndex] = standDensityAfterGrowth;

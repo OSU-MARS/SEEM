@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Results != null);
-            if (this.Results.Count < 1)
+            if (this.Results.Distributions.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results));
             }
@@ -34,14 +34,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Cannot generate header because first result is missing heuristic parameters.");
                 }
 
-                writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",solution,objective,moveAccepted,movesRejected,runtime,timesteps");
+                writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",solution,objective,moveAccepted,movesRejected,runtime,timesteps,treesRandomized");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            for (int resultIndex = 0; resultIndex < this.Results.Count; ++resultIndex)
+            for (int resultIndex = 0; resultIndex < this.Results.Distributions.Count; ++resultIndex)
             {
                 HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
-                Heuristic? highHeuristic = this.Results.Solutions[resultIndex].High;
+                Heuristic? highHeuristic = this.Results.SolutionIndex[distribution].High;
                 if ((highHeuristic == null) || (distribution.HeuristicParameters == null))
                 {
                     throw new NotSupportedException("Run " + resultIndex + " is missing a high solution or high heuristic parameters.");
@@ -64,7 +64,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      perfCounters.MovesAccepted.ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.MovesRejected.ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.Duration.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     perfCounters.GrowthModelTimesteps.ToString(CultureInfo.InvariantCulture));
+                                     perfCounters.GrowthModelTimesteps.ToString(CultureInfo.InvariantCulture) + "," +
+                                     perfCounters.TreesRandomizedInConstruction.ToString(CultureInfo.InvariantCulture));
                 }
             }
         }

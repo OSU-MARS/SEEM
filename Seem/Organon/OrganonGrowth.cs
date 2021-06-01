@@ -34,7 +34,7 @@ namespace Osu.Cof.Ferm.Organon
             return crownRatioAdjustment;
         }
 
-        private static float GetDiameterFertilizationMultiplier(OrganonConfiguration configuration, FiaCode species, float siteIndexFromDbh)
+        private static float GetDiameterFertilizationMultiplier(OrganonConfiguration configuration, OrganonTreatments treatments, FiaCode species, float siteIndexFromDbh)
         {
             // fertilization diameter effects currently supported only for non-RAP Douglas-fir
             if ((species != FiaCode.PseudotsugaMenziesii) || (configuration.Variant.TreeModel != TreeModel.OrganonRap))
@@ -49,7 +49,7 @@ namespace Osu.Cof.Ferm.Organon
             float PF3 = -0.214741684F;
             float PF4 = -0.851736558F;
 
-            float fertX1 = configuration.Treatments.GetFertX1(configuration.Variant, PF3 / PF2, out float mostRecentFertilization, out int yearsSinceMostRecentFertilization);
+            float fertX1 = treatments.GetFertX1(configuration.Variant, PF3 / PF2, out float mostRecentFertilization, out int yearsSinceMostRecentFertilization);
             if (mostRecentFertilization == 0.0F)
             {
                 // no fertilization treatment
@@ -71,7 +71,7 @@ namespace Osu.Cof.Ferm.Organon
         /// <remarks>
         /// Has special cases for Douglas-fir, western hemlock, and red alder (only for RAP).
         /// </remarks>
-        private static float GetDiameterThinningMultiplier(OrganonConfiguration configuration, FiaCode species)
+        private static float GetDiameterThinningMultiplier(OrganonConfiguration configuration, OrganonTreatments treatments, FiaCode species)
         {
             // Hann DW, Marshall DD, Hanus ML. 2003. Equations for predicting height-to-crown-base, 5-year diameter-growth rate, 5 year height
             //   growth rate, 5-year mortality rate, and maximum size-density trajectory for Douglas-fir and western hemlock in the coastal region
@@ -101,7 +101,7 @@ namespace Osu.Cof.Ferm.Organon
                 a9 = -0.2644085320F;
             }
 
-            float prem = configuration.Treatments.GetPrem(configuration.Variant, a9, out int yearsSinceMostRecentThin);
+            float prem = treatments.GetPrem(configuration.Variant, a9, out int yearsSinceMostRecentThin);
             if (prem == 0.0F)
             {
                 return 1.0F;
@@ -113,10 +113,9 @@ namespace Osu.Cof.Ferm.Organon
             return diameterGrowthMultiplier;
         }
 
-        private static float GetHeightFertilizationMultiplier(OrganonConfiguration configuration, FiaCode species, float siteIndexFromBreastHeight)
+        private static float GetHeightFertilizationMultiplier(OrganonConfiguration configuration, OrganonTreatments treatments, FiaCode species, float siteIndexFromBreastHeight)
         {
             // fertilization height effects currently supported only for non-RAP Douglas-fir
-            OrganonTreatments treatments = configuration.Treatments;
             if ((species != FiaCode.PseudotsugaMenziesii) || (configuration.Variant.TreeModel != TreeModel.OrganonRap))
             {
                 return 1.0F;
@@ -129,7 +128,7 @@ namespace Osu.Cof.Ferm.Organon
             float PF4 = -2.133334346F;
             float PF5 = 1.5F;
 
-            float fertX1 = configuration.Treatments.GetFertX1(configuration.Variant, PF3 / PF2, out float mostRecentFertilization, out int yearsSinceMostRecentFertilization);
+            float fertX1 = treatments.GetFertX1(configuration.Variant, PF3 / PF2, out float mostRecentFertilization, out int yearsSinceMostRecentFertilization);
             if (mostRecentFertilization == 0.0F)
             {
                 // no fertilization treatment
@@ -143,7 +142,7 @@ namespace Osu.Cof.Ferm.Organon
             return heightFertilizationMultiplier;
         }
 
-        private static float GetHeightThinningMultiplier(OrganonConfiguration configuration, FiaCode species)
+        private static float GetHeightThinningMultiplier(OrganonConfiguration configuration, OrganonTreatments treatments, FiaCode species)
         {
             float b9;
             float b10;
@@ -183,7 +182,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
             }
 
-            float prem = configuration.Treatments.GetPrem(configuration.Variant, b11 / b10, out int yearsSinceMostRecentThin);
+            float prem = treatments.GetPrem(configuration.Variant, b11 / b10, out int yearsSinceMostRecentThin);
             if (prem == 0.0F)
             {
                 return 1.0F;
@@ -202,10 +201,10 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="configuration">Organon growth simulation options and site settings.</param>
         /// <param name="stand"></param>
         /// <param name="previousCalibrationBySpecies">Array of calibration coefficients. Values must be between 0.5 and 2.0.</param>
-        public static void Grow(int periodIndex, OrganonConfiguration configuration, OrganonStand stand, Dictionary<FiaCode, SpeciesCalibration> previousCalibrationBySpecies)
+        public static void Grow(int periodIndex, OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, Dictionary<FiaCode, SpeciesCalibration> previousCalibrationBySpecies)
         {
             // BUGBUG: simulationStep largely duplicates stand age
-            OrganonGrowth.ValidateArguments(periodIndex, configuration, stand, previousCalibrationBySpecies, out int BIG6, out int BNXT);
+            OrganonGrowth.ValidateArguments(periodIndex, configuration, treatments, stand, previousCalibrationBySpecies, out int BIG6, out int BNXT);
 
             Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = new(previousCalibrationBySpecies.Count);
             foreach (KeyValuePair<FiaCode, SpeciesCalibration> species in previousCalibrationBySpecies)
@@ -233,7 +232,7 @@ namespace Osu.Cof.Ferm.Organon
 
             // crown competition at start of growth
             float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
-            OrganonGrowth.Grow(configuration, stand, densityBeforeGrowth, calibrationBySpecies, ref crownCompetitionByHeight, out OrganonStandDensity _, out int oldTreeRecordCount);
+            OrganonGrowth.Grow(configuration, treatments, stand, densityBeforeGrowth, calibrationBySpecies, ref crownCompetitionByHeight, out OrganonStandDensity _, out int oldTreeRecordCount);
 
             if (configuration.IsEvenAge == false)
             {
@@ -272,13 +271,14 @@ namespace Osu.Cof.Ferm.Organon
         /// 
         /// </summary>
         /// <param name="configuration">Organon configuration settings.</param>
+        /// <param name="treatments"></param>
         /// <param name="stand">Stand data.</param>
         /// <param name="densityInPreviousPeriod">Stand density at end of previous timestep or the initial stand density if this is the first timestep.</param>
         /// <param name="calibrationBySpecies"></param>
         /// <param name="crownCompetitionByHeight"></param>
         /// <param name="densityAfterGrowth"></param>
         /// <param name="oldTreeRecordCount"></param>
-        public static void Grow(OrganonConfiguration configuration, OrganonStand stand, OrganonStandDensity densityInPreviousPeriod,
+        public static void Grow(OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, OrganonStandDensity densityInPreviousPeriod,
                                 Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies, ref float[] crownCompetitionByHeight, out OrganonStandDensity densityAfterGrowth, 
                                 out int oldTreeRecordCount)
         {
@@ -327,7 +327,7 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     geneticDiseaseAndCalibrationMultiplier *= DGMODgenetic * DGMODSwissNeedleCast;
                 }
-                OrganonGrowth.GrowDiameter(configuration, stand, treesOfSpecies, densityInPreviousPeriod, geneticDiseaseAndCalibrationMultiplier);
+                OrganonGrowth.GrowDiameter(configuration, treatments, stand, treesOfSpecies, densityInPreviousPeriod, geneticDiseaseAndCalibrationMultiplier);
             }
 
             // height growth for big six species
@@ -345,13 +345,13 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     geneticAndDiseaseMultiplier = HGMODgenetic * HGMODSwissNeedleCast;
                 }
-                OrganonGrowth.GrowHeightBigSixSpecies(configuration, stand, treesOfSpecies, geneticAndDiseaseMultiplier, crownCompetitionByHeight, out int oldTreeRecordCountForSpecies);
+                OrganonGrowth.GrowHeightBigSixSpecies(configuration, treatments, stand, treesOfSpecies, geneticAndDiseaseMultiplier, crownCompetitionByHeight, out int oldTreeRecordCountForSpecies);
                 oldTreeRecordCount += oldTreeRecordCountForSpecies;
             }
 
             // determine mortality
             // Sets configuration.NO.
-            OrganonMortality.ReduceExpansionFactors(configuration, stand, densityInPreviousPeriod);
+            OrganonMortality.ReduceExpansionFactors(configuration, treatments, stand, densityInPreviousPeriod);
 
             // grow tree diameters
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
@@ -408,7 +408,7 @@ namespace Osu.Cof.Ferm.Organon
             return OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
         }
 
-        public static void GrowDiameter(OrganonConfiguration configuration, OrganonStand stand, Trees trees, OrganonStandDensity densityBeforeGrowth, float geneticDiseaseAndCalibrationMultiplier)
+        public static void GrowDiameter(OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, Trees trees, OrganonStandDensity densityBeforeGrowth, float geneticDiseaseAndCalibrationMultiplier)
         {
             FiaCode species = trees.Species;
             float siteIndex = stand.SiteIndex;
@@ -420,8 +420,8 @@ namespace Osu.Cof.Ferm.Organon
             // - ponderosa index isn't used for SWO
             // - red alder index isn't used for red alder
 
-            float fertilizationMultiplier = OrganonGrowth.GetDiameterFertilizationMultiplier(configuration, species, stand.SiteIndex - 4.5F);
-            float thinningMultiplier = OrganonGrowth.GetDiameterThinningMultiplier(configuration, species);
+            float fertilizationMultiplier = OrganonGrowth.GetDiameterFertilizationMultiplier(configuration, treatments, species, stand.SiteIndex - 4.5F);
+            float thinningMultiplier = OrganonGrowth.GetDiameterThinningMultiplier(configuration, treatments, species);
             float combinedMultiplier = geneticDiseaseAndCalibrationMultiplier * fertilizationMultiplier * thinningMultiplier;
             configuration.Variant.GrowDiameter(trees, combinedMultiplier, siteIndex, densityBeforeGrowth);
         }
@@ -430,21 +430,22 @@ namespace Osu.Cof.Ferm.Organon
         /// 
         /// </summary>
         /// <param name="configuration">Organon configuration.</param>
+        /// <param name="treatments"></param>
         /// <param name="periodIndex">Simulation cycle.</param>
         /// <param name="stand">Stand data.</param>
         /// <param name="trees">Trees to calculate height growth of.</param>
         /// <param name="geneticAndDiseaseMultiplier">Direct multiplier for genetic and disease height growth effects.</param>
         /// <param name="crownCompetitionByHeight"></param>
         /// <param name="oldTreeRecordCount"></param>
-        public static void GrowHeightBigSixSpecies(OrganonConfiguration configuration, OrganonStand stand, Trees trees, 
+        public static void GrowHeightBigSixSpecies(OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, Trees trees, 
                                                    float geneticAndDiseaseMultiplier, float[] crownCompetitionByHeight, out int oldTreeRecordCount)
         {
             FiaCode species = trees.Species;
             Debug.Assert(configuration.Variant.IsBigSixSpecies(species));
             oldTreeRecordCount = configuration.Variant.GrowHeightBigSix(configuration, stand, trees, crownCompetitionByHeight);
 
-            float fertilizationMultiplier = OrganonGrowth.GetHeightFertilizationMultiplier(configuration, species, stand.SiteIndex);
-            float thinningMultiplier = OrganonGrowth.GetHeightThinningMultiplier(configuration, species);
+            float fertilizationMultiplier = OrganonGrowth.GetHeightFertilizationMultiplier(configuration, treatments, species, stand.SiteIndex);
+            float thinningMultiplier = OrganonGrowth.GetHeightThinningMultiplier(configuration, treatments, species);
             float combinedMultiplier = geneticAndDiseaseMultiplier * thinningMultiplier * fertilizationMultiplier;
             OrganonGrowth.LimitAndApplyHeightGrowth(configuration.Variant, trees, combinedMultiplier);
         }
@@ -688,11 +689,13 @@ namespace Osu.Cof.Ferm.Organon
         /// </summary>
         /// <param name="periodIndex"></param>
         /// <param name="configuration">Organon configuration settings.</param>
+        /// <param name="treatments"></param>
         /// <param name="stand"></param>
         /// <param name="calibrationBySpecies"></param>
         /// <param name="bigSixSpeciesTreeCount"></param>
         /// <param name="bigSixTreesWithNegativeExpansionFactor"></param>
-        private static void ValidateArguments(int periodIndex, OrganonConfiguration configuration, OrganonStand stand, Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies, 
+        private static void ValidateArguments(int periodIndex, OrganonConfiguration configuration, OrganonTreatments treatments, 
+                                              OrganonStand stand, Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies, 
                                               out int bigSixSpeciesTreeCount, out int bigSixTreesWithNegativeExpansionFactor)
         {
             if (stand.GetTreeRecordCount() < 1)
@@ -736,7 +739,6 @@ namespace Osu.Cof.Ferm.Organon
                 }
             }
 
-            OrganonTreatments treatments = configuration.Treatments;
             for (int fertilizationindex = 0; fertilizationindex < treatments.PoundsOfNitrogenPerAcreByPeriod.Count; ++fertilizationindex)
             {
                 if (fertilizationindex == 0) // TODO: why is only the first treatments subject to range limits?
@@ -809,7 +811,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
                 if ((treatments.PoundsOfNitrogenPerAcreByPeriod.Count > 0) && (configuration.FR < 3.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration), nameof(configuration.FR) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(configuration.Treatments.PoundsOfNitrogenPerAcreByPeriod) + " isn't empty.");
+                    throw new ArgumentOutOfRangeException(nameof(configuration), nameof(configuration.FR) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(treatments.PoundsOfNitrogenPerAcreByPeriod) + " isn't empty.");
                 }
             }
             else

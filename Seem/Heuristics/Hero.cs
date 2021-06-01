@@ -10,8 +10,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public bool IsStochastic { get; set; }
         public int MaximumIterations { get; set; }
 
-        public Hero(OrganonStand stand, OrganonConfiguration organonConfiguration, HeuristicParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, organonConfiguration, heuristicParameters, runParameters)
+        public Hero(OrganonStand stand, HeuristicParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, heuristicParameters, runParameters)
         {
             this.IsStochastic = false;
             this.MaximumIterations = Constant.HeuristicDefault.HeroMaximumIterations;
@@ -65,13 +65,13 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.MaximumIterations));
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Configuration.Treatments.GetValidThinningPeriods();
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             this.EvaluateInitialSelection(this.MaximumIterations * initialTreeRecordCount, perfCounters);
 
@@ -93,7 +93,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     if (this.IsStochastic)
                     {
-                        decrementPeriodIndex = this.GetPseudorandomByteAsProbability() < 0.5F;
+                        decrementPeriodIndex = this.Pseudorandom.GetPseudorandomByteAsProbability() < 0.5F;
                     }
 
                     // evaluate other cut option
@@ -123,7 +123,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             // accept change of no cut-cut decision if it improves upon the best solution
                             acceptedObjectiveFunction = candidateObjectiveFunction;
                             uncompactedPeriodIndices[treeIndex] = candidatePeriodIndex;
-                            this.CurrentTrajectory.CopyTreeGrowthAndTreatmentsFrom(candidateTrajectory);
+                            this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                             ++perfCounters.MovesAccepted;
                         }
                         else
@@ -157,7 +157,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             this.BestObjectiveFunction = acceptedObjectiveFunction;
-            this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
+            this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;

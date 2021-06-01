@@ -51,6 +51,11 @@ namespace Osu.Cof.Ferm
         public float[] LiveExpansionFactor { get; private set; }
 
         /// <summary>
+        /// Trees' plot numbers, if specified.
+        /// </summary>
+        public int[] Plot { get; private set; }
+
+        /// <summary>
         /// Species of this set of trees.
         /// </summary>
         public FiaCode Species { get; private init; }
@@ -82,6 +87,7 @@ namespace Osu.Cof.Ferm
             this.LiveExpansionFactor = new float[this.Capacity];
             this.Height = new float[this.Capacity];
             this.HeightGrowth = new float[this.Capacity];
+            this.Plot = new int[this.Capacity];
             this.Species = species;
             this.Tag = new int[this.Capacity];
             this.UncompactedIndex = new int[this.Capacity];
@@ -100,6 +106,7 @@ namespace Osu.Cof.Ferm
             other.LiveExpansionFactor.CopyTo(this.LiveExpansionFactor, 0);
             other.Height.CopyTo(this.Height, 0);
             other.HeightGrowth.CopyTo(this.HeightGrowth, 0);
+            other.Plot.CopyTo(this.Plot, 0);
             other.Tag.CopyTo(this.Tag, 0);
             other.UncompactedIndex.CopyTo(this.UncompactedIndex, 0);
         }
@@ -120,6 +127,7 @@ namespace Osu.Cof.Ferm
             Array.Copy(other.Height, 0, this.Height, 0, other.Count);
             Array.Copy(other.HeightGrowth, 0, this.HeightGrowth, 0, other.Count);
             Array.Copy(other.LiveExpansionFactor, 0, this.LiveExpansionFactor, 0, other.Count);
+            Array.Copy(other.Plot, 0, this.Plot, 0, other.Count);
             Array.Copy(other.Tag, 0, this.Tag, 0, other.Count);
             Array.Copy(other.UncompactedIndex, 0, this.UncompactedIndex, 0, other.Count);
 
@@ -135,7 +143,7 @@ namespace Osu.Cof.Ferm
             return new NotSupportedException(String.Format("Unhandled species {0}.", species));
         }
 
-        public void Add(int tag, float dbh, float height, float crownRatio, float liveExpansionFactor)
+        public void Add(int plot, int tag, float dbh, float height, float crownRatio, float liveExpansionFactor)
         {
             Debug.Assert(Single.IsNaN(dbh) || ((dbh >= 0.0F) && (dbh < 500.0F)));
             Debug.Assert(Single.IsNaN(height) || ((height >= 0.0F) && (height < 380.0F)));
@@ -155,6 +163,7 @@ namespace Osu.Cof.Ferm
                 this.LiveExpansionFactor = this.LiveExpansionFactor.Extend(this.Capacity);
                 this.Height = this.Height.Extend(this.Capacity);
                 this.HeightGrowth = this.HeightGrowth.Extend(this.Capacity);
+                this.Plot = this.Plot.Extend(this.Capacity);
                 this.Tag = this.Tag.Extend(this.Capacity);
                 this.UncompactedIndex = this.UncompactedIndex.Extend(this.Capacity);
             }
@@ -164,6 +173,7 @@ namespace Osu.Cof.Ferm
                 throw new NotSupportedException("Uncompacted index is nonzero. Is this an attempt to add a tree after trees have been removed?");
             }
 
+            this.Plot[this.Count] = plot;
             this.Tag[this.Count] = tag;
             this.Dbh[this.Count] = dbh;
             this.Height[this.Count] = height;

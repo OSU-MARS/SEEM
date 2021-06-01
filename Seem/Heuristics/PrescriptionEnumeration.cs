@@ -9,8 +9,8 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public PrescriptionMoveLog MoveLog { get; private init; }
 
-        public PrescriptionEnumeration(OrganonStand stand, OrganonConfiguration configuration, RunParameters runParameters, PrescriptionParameters parameters)
-            : base(stand, configuration, parameters, runParameters)
+        public PrescriptionEnumeration(OrganonStand stand, RunParameters runParameters, PrescriptionParameters parameters)
+            : base(stand, parameters, runParameters)
         {
             this.MoveLog = new PrescriptionMoveLog();
         }
@@ -62,6 +62,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float previousIntensityMultiplier = 1.0F / (1.0F - 0.01F * percentIntensityOfPreviousThins);
             minimumPercentage = MathF.Min(previousIntensityMultiplier * minimumPercentage, maximumPercentage);
             float stepSize = MathF.Min(previousIntensityMultiplier * this.HeuristicParameters.DefaultIntensityStepSize, this.HeuristicParameters.MaximumIntensityStepSize);
+            Debug.Assert(previousIntensityMultiplier >= 1.0F);
             Debug.Assert((stepSize > 0.0F) && (stepSize <= 100.0F));
 
             //int intensityStepsPerThinMethod = 1;
@@ -116,7 +117,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 // accept change of prescription if it improves upon the best solution
                 this.BestObjectiveFunction = candidateObjectiveFunction;
-                this.BestTrajectory.CopyTreeGrowthAndTreatmentsFrom(this.CurrentTrajectory);
+                this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                 ++perfCounters.MovesAccepted;
             }
             else
@@ -184,6 +185,15 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
         {
+            if (this.HeuristicParameters.ConstructionGreediness != Constant.Grasp.FullyGreedyConstructionForMaximization)
+            {
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.ConstructionGreediness));
+            }
+            if (this.HeuristicParameters.InitialThinningProbability != 0.0F)
+            {
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.InitialThinningProbability));
+            }
+
             if ((this.HeuristicParameters.FromAbovePercentageUpperLimit < 0.0F) || (this.HeuristicParameters.FromAbovePercentageUpperLimit > 100.0F))
             {
                 throw new InvalidOperationException(nameof(this.HeuristicParameters.FromAbovePercentageUpperLimit));
@@ -220,7 +230,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.HeuristicParameters.MinimumIntensity));
             }
 
-            if (this.CurrentTrajectory.Configuration.Treatments.Harvests.Count > 3)
+            if (this.CurrentTrajectory.Treatments.Harvests.Count > 3)
             {
                 throw new NotSupportedException("Enumeration of more than three thinnings is not currently supported.");
             }
@@ -232,7 +242,7 @@ namespace Osu.Cof.Ferm.Heuristics
             // can't currently copy from existing solutions as doing so results in a call to OrganonConfiguration.CopyFrom(), which overwrites treatments
             // no need to call ConstructTreeSelection() or EvaluateInitialSelection() as tree selection is done by the thinning prescriptions during
             // stand trajectory simulation
-            IList<IHarvest> harvests = this.CurrentTrajectory.Configuration.Treatments.Harvests;
+            IList<IHarvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
             if (harvests.Count == 0)
             {
                 // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory
@@ -240,7 +250,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
             else
             {
-                ThinByPrescription firstThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[0];
+                ThinByPrescription firstThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Treatments.Harvests[0];
 
                 if (harvests.Count == 1)
                 {
@@ -252,7 +262,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
                 else
                 {
-                    ThinByPrescription secondThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[1];
+                    ThinByPrescription secondThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Treatments.Harvests[1];
 
                     if (harvests.Count == 2)
                     {
@@ -268,7 +278,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     else
                     {
                         // three thins
-                        ThinByPrescription thirdThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Configuration.Treatments.Harvests[2];
+                        ThinByPrescription thirdThinPrescription = (ThinByPrescription)this.CurrentTrajectory.Treatments.Harvests[2];
                         this.EnumerateThinningIntensities(firstThinPrescription, 0.0F, (float firstIntensity) =>
                         {
                             this.EnumerateThinningIntensities(secondThinPrescription!, firstIntensity, (float secondIntensity) =>

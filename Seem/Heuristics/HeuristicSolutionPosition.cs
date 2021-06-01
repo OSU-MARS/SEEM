@@ -4,6 +4,7 @@
     {
         public int DiscountRateIndex { get; init; }
         public int FirstThinPeriodIndex { get; init; }
+        public int ParameterIndex { get; init; }
         public int PlanningPeriodIndex { get; init; }
         public int SecondThinPeriodIndex { get; init; }
         public int ThirdThinPeriodIndex { get; init; }
@@ -14,12 +15,8 @@
             this.FirstThinPeriodIndex = Constant.NoThinPeriod;
             this.SecondThinPeriodIndex = Constant.NoThinPeriod;
             this.ThirdThinPeriodIndex = Constant.NoThinPeriod;
+            this.ParameterIndex = -1;
             this.PlanningPeriodIndex = -1;
-        }
-
-        public bool IsUnthinned
-        {
-            get { return (this.FirstThinPeriodIndex == Constant.NoThinPeriod) && (this.SecondThinPeriodIndex == Constant.NoThinPeriod) && (this.ThirdThinPeriodIndex == Constant.NoThinPeriod); }
         }
     }
 }

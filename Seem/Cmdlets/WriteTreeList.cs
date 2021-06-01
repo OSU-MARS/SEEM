@@ -28,7 +28,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine("stand,species,tree,age,DBH,height,crownRatio,EF,deadEF");
+                writer.WriteLine("stand,plot,tag,species,age,DBH,height,crownRatio,EF,deadEF");
             }
 
             // rows for trees
@@ -52,8 +52,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                         float deadExpansionFactor = areaConversionFactor * treesOfSpecies.DeadExpansionFactor[treeIndex];
 
                         writer.WriteLine(stand.Name + "," +
-                                         species + "," +
+                                         treesOfSpecies.Plot[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                          treesOfSpecies.Tag[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                         species + "," +
                                          ageAsString + "," +
                                          dbh.ToString(CultureInfo.InvariantCulture) + "," +
                                          height.ToString(CultureInfo.InvariantCulture) + "," +

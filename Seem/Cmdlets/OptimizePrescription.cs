@@ -48,20 +48,20 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.FromBelowPercentageUpperLimit = 100.0F;
             this.MaximumIntensity = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };
             this.MinimumIntensity = new List<float>() { Constant.PrescriptionEnumerationDefault.MinimumIntensity };
-            this.ConstructionRandomness = 0.0F;
+            this.ConstructionGreediness = new List<float>() { Constant.Grasp.FullyGreedyConstructionForMaximization };
             this.InitialThinningProbability[0] = 0.0F;
             this.ProportionalPercentageUpperLimit = 100.0F;
             this.MaximumStep = Constant.PrescriptionEnumerationDefault.MaximumIntensityStepSize;
             this.Units = Constant.PrescriptionEnumerationDefault.Units;
         }
 
-        protected override Heuristic<PrescriptionParameters> CreateHeuristic(OrganonConfiguration organonConfiguration, PrescriptionParameters heuristicParameters, RunParameters runParameters)
+        protected override Heuristic<PrescriptionParameters> CreateHeuristic(PrescriptionParameters heuristicParameters, RunParameters runParameters)
         {
             if (this.BestOf != 1)
             {
                 throw new NotSupportedException(nameof(this.BestOf)); // enumeration is deterministic, so no value in repeated runs
             }
-            return new PrescriptionEnumeration(this.Stand!, organonConfiguration, runParameters, heuristicParameters);
+            return new PrescriptionEnumeration(this.Stand!, runParameters, heuristicParameters);
         }
 
         protected override IHarvest CreateThin(int thinPeriodIndex)
@@ -74,19 +74,19 @@ namespace Osu.Cof.Ferm.Cmdlets
             return "Optimize-Prescription";
         }
 
-        protected override IList<PrescriptionParameters> GetParameterCombinations(TimberValue timberValue)
+        protected override IList<PrescriptionParameters> GetParameterCombinations()
         {
             if (this.MinimumIntensity.Count != this.MaximumIntensity.Count)
             {
                 throw new ParameterOutOfRangeException(nameof(this.MinimumIntensity));
             }
-            if (this.ConstructionRandomness != 0.0F)
+            if ((this.ConstructionGreediness.Count != 1) || (this.ConstructionGreediness[0] != Constant.Grasp.FullyGreedyConstructionForMaximization))
             {
-                throw new NotSupportedException(nameof(this.ConstructionRandomness));
+                throw new ParameterOutOfRangeException(nameof(this.ConstructionGreediness));
             }
             if ((this.InitialThinningProbability.Count != 1) || (this.InitialThinningProbability[0] != 0.0F))
             {
-                throw new NotSupportedException(nameof(this.InitialThinningProbability));
+                throw new ParameterOutOfRangeException(nameof(this.InitialThinningProbability));
             }
             if (this.DefaultStep < 0.0F)
             {
@@ -112,7 +112,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                     MaximumIntensity = maximumIntensity,
                     MaximumIntensityStepSize = this.MaximumStep,
                     ProportionalPercentageUpperLimit = this.ProportionalPercentageUpperLimit,
-                    TimberValue = timberValue,
                     Units = this.Units,
                 });
             }

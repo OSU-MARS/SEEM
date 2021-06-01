@@ -99,12 +99,12 @@ namespace Osu.Cof.Ferm.Organon
             return oldGrowthIndicator;
         }
 
-        public static void ReduceExpansionFactors(OrganonConfiguration configuration, OrganonStand stand, OrganonStandDensity densityBeforeGrowth)
+        public static void ReduceExpansionFactors(OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, OrganonStandDensity densityBeforeGrowth)
         {
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 FiaCode species = treesOfSpecies.Species;
-                float fertilizationExponent = OrganonMortality.GetMortalityFertilizationAdjustment(configuration.Variant, species, configuration.Treatments);
+                float fertilizationExponent = OrganonMortality.GetMortalityFertilizationAdjustment(configuration.Variant, species, treatments);
                 configuration.Variant.ReduceExpansionFactors(stand, densityBeforeGrowth, treesOfSpecies, fertilizationExponent);
             }
         }

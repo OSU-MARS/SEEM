@@ -37,7 +37,7 @@ namespace Osu.Cof.Ferm.Test
             }
 
             Debug.Assert(treesOfSpecies.Units == Units.English);
-            treesOfSpecies.Add(tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
+            treesOfSpecies.Add(tree.Plot, tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
         }
 
         public void SetQuantiles()
