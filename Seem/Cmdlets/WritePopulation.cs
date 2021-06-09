@@ -7,12 +7,8 @@ using System.Management.Automation;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Population")]
-    public class WritePopulation : WriteCmdlet
+    public class WritePopulation : WriteHeuristicResultsCmdlet
     {
-        [Parameter(Mandatory = true)]
-        [ValidateNotNull]
-        public HeuristicResultSet? Results { get; set; }
-
         protected override void ProcessRecord()
         {
             if (this.Results!.Distributions.Count < 1)
@@ -24,32 +20,28 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                HeuristicDistribution distribution = this.Results.Distributions[0];
-                if (distribution.HeuristicParameters == null)
-                {
-                    throw new NotSupportedException("Cannot generate header because first run is missing heuristic parameters");
-                }
-
-                writer.WriteLine("stand,heuristic," + distribution.HeuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
+                HeuristicParameters heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
+                writer.WriteLine("stand,heuristic," + heuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int resultIndex = 0; resultIndex < this.Results.Distributions.Count; ++resultIndex)
             {
-                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
+                HeuristicObjectiveDistribution distribution = this.Results.Distributions[resultIndex];
                 HeuristicSolutionPool solution = this.Results.SolutionIndex[distribution];
-                if ((solution.High == null) || (solution.Low == null) || (distribution.HeuristicParameters == null))
+                if ((solution.High == null) || (solution.Low == null))
                 {
-                    throw new NotSupportedException("Result " + resultIndex + " is missing a high solution, low solution, or high heuristic parameters");
+                    throw new NotSupportedException("Result " + resultIndex + " is missing a high solution or a low solution.");
                 }
                 GeneticAlgorithm highHeuristic = (GeneticAlgorithm)solution.High;
-                GeneticAlgorithm lowHeuristic = (GeneticAlgorithm)solution.Low;
+                HeuristicParameters highParameters = highHeuristic.GetParameters();
                 StandTrajectory highTrajectory = highHeuristic.BestTrajectory;
+                GeneticAlgorithm lowHeuristic = (GeneticAlgorithm)solution.Low;
 
                 float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
                 string linePrefix = highTrajectory.Name + "," + 
-                    highHeuristic.GetName() + "," + 
-                    distribution.HeuristicParameters.GetCsvValues() + "," +
+                    highHeuristic.GetName() + "," +
+                    highParameters.GetCsvValues() + "," +
                     WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate);
 
                 PopulationStatistics highStatistics = highHeuristic.PopulationStatistics;

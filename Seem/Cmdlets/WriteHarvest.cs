@@ -10,12 +10,8 @@ using System.Text;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Harvest")]
-    public class WriteHarvest : WriteCmdlet
+    public class WriteHarvest : WriteHeuristicResultsCmdlet
     {
-        [Parameter(Mandatory = true)]
-        [ValidateNotNull]
-        public HeuristicResultSet? Results { get; set; }
-
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Results != null);

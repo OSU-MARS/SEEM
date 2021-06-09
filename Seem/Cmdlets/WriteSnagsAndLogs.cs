@@ -28,7 +28,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 HeuristicParameters? heuristicParametersForHeader = null;
                 if (runsSpecified)
                 {
-                    heuristicParametersForHeader = this.Results!.Distributions[0].HeuristicParameters;
+                    heuristicParametersForHeader = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
                 }
                 else if (this.Trajectories![0].Heuristic != null)
                 {

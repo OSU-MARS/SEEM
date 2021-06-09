@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Heuristics;
+using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
@@ -27,6 +29,18 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Append = false;
             this.LimitGB = 1.0F; // sanity default, may be set higher in derived classes
             this.openedExistingFile = false;
+        }
+
+        protected static HeuristicParameters GetFirstHeuristicParameters(HeuristicResultSet? results)
+        {
+            Debug.Assert(results != null);
+
+            Heuristic? highHeuristic = results!.SolutionIndex[results!.Distributions[0]].High;
+            if (highHeuristic == null)
+            {
+                throw new NotSupportedException("Can't obtain heuristic parameters.");
+            }
+            return highHeuristic.GetParameters();
         }
 
         protected long GetMaxFileSizeInBytes()

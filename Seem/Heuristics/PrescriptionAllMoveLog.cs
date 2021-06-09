@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using Osu.Cof.Ferm.Organon;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class PrescriptionMoveLog : IHeuristicMoveLog
+    public class PrescriptionAllMoveLog : IHeuristicMoveLog
     {
         public List<float> FromAbovePercentageByMove1 { get; private init; }
         public List<float> FromBelowPercentageByMove1 { get; private init; }
@@ -18,7 +19,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public List<float> FromBelowPercentageByMove3 { get; private init; }
         public List<float> ProportionalPercentageByMove3 { get; private init; }
 
-        public PrescriptionMoveLog()
+        public PrescriptionAllMoveLog()
         {
             this.FromAbovePercentageByMove1 = new List<float>();
             this.FromBelowPercentageByMove1 = new List<float>();
@@ -47,6 +48,48 @@ namespace Osu.Cof.Ferm.Heuristics
                 Debug.Assert(this.FromBelowPercentageByMove3.Count == this.ProportionalPercentageByMove3.Count);
                 return this.ProportionalPercentageByMove1.Count; 
             }
+        }
+
+        public void Add(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        {
+            float fromAbovePercentageFirst = 0.0F;
+            float proportionalPercentageFirst = 0.0F;
+            float fromBelowPercentageFirst = 0.0F;
+            if (firstThinPrescription != null)
+            {
+                fromAbovePercentageFirst = firstThinPrescription.FromAbovePercentage;
+                proportionalPercentageFirst = firstThinPrescription.ProportionalPercentage;
+                fromBelowPercentageFirst = firstThinPrescription.FromBelowPercentage;
+            }
+            this.FromAbovePercentageByMove1.Add(fromAbovePercentageFirst);
+            this.ProportionalPercentageByMove1.Add(proportionalPercentageFirst);
+            this.FromBelowPercentageByMove1.Add(fromBelowPercentageFirst);
+
+            float fromAbovePercentageSecond = 0.0F;
+            float proportionalPercentageSecond = 0.0F;
+            float fromBelowPercentageSecond = 0.0F;
+            if (secondThinPrescription != null)
+            {
+                fromAbovePercentageSecond = secondThinPrescription.FromAbovePercentage;
+                proportionalPercentageSecond = secondThinPrescription.ProportionalPercentage;
+                fromBelowPercentageSecond = secondThinPrescription.FromBelowPercentage;
+            }
+            this.FromAbovePercentageByMove2.Add(fromAbovePercentageSecond);
+            this.ProportionalPercentageByMove2.Add(proportionalPercentageSecond);
+            this.FromBelowPercentageByMove2.Add(fromBelowPercentageSecond);
+
+            float fromAbovePercentageThird = 0.0F;
+            float proportionalPercentageThird = 0.0F;
+            float fromBelowPercentageThird = 0.0F;
+            if (thirdThinPrescription != null)
+            {
+                fromAbovePercentageThird = thirdThinPrescription.FromAbovePercentage;
+                proportionalPercentageThird = thirdThinPrescription.ProportionalPercentage;
+                fromBelowPercentageThird = thirdThinPrescription.FromBelowPercentage;
+            }
+            this.FromAbovePercentageByMove3.Add(fromAbovePercentageThird);
+            this.ProportionalPercentageByMove3.Add(proportionalPercentageThird);
+            this.FromBelowPercentageByMove3.Add(fromBelowPercentageThird);
         }
 
         public string GetCsvHeader(string prefix)

@@ -16,6 +16,9 @@ namespace Osu.Cof.Ferm.Heuristics
         // case, halving the step size increases compute time by a factor of 512. If the full step size takes one hour to run the half step will take
         // 21 days.
         public float DefaultIntensityStepSize { get; set; }
+
+        public bool LogAllMoves { get; set; }
+
         public float MaximumIntensity { get; set; }
         public float MaximumIntensityStepSize { get; set; }
         public float MinimumIntensity { get; set; }
@@ -25,6 +28,7 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             this.ConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
             this.InitialThinningProbability = 0.0F;
+            this.LogAllMoves = false;
 
             this.FromAbovePercentageUpperLimit = 100.0F;
             this.ProportionalPercentageUpperLimit = 100.0F;

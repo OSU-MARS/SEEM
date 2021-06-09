@@ -64,11 +64,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return null;
         }
 
-        public virtual HeuristicParameters? GetParameters()
-        {
-            return null;
-        }
-
+        public abstract HeuristicParameters GetParameters();
         public abstract HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex);
     }
 
@@ -180,6 +176,11 @@ namespace Osu.Cof.Ferm.Heuristics
             this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
             this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             this.CandidateObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+        }
+
+        public override HeuristicParameters GetParameters()
+        {
+            return this.HeuristicParameters;
         }
 
         public float GetObjectiveFunction(StandTrajectory trajectory)

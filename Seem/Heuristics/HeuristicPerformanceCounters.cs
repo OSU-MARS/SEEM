@@ -5,7 +5,10 @@ namespace Osu.Cof.Ferm.Heuristics
     public class HeuristicPerformanceCounters
     {
         public TimeSpan Duration { get; set; }
-        public int GrowthModelTimesteps { get; set; }
+        // an i7-3770 can easily exceed 2^31 steps per a day with Organon
+        // While single heuristic runs are not expected to approach 2^31 timesteps, top level performance counter accumulation across all runs
+        // therefore would occasionally result in integer rollover with an Int32 or UInt32.
+        public long GrowthModelTimesteps { get; set; }
         public int MovesAccepted { get; set; }
         public int MovesRejected { get; set; }
         public int TreesRandomizedInConstruction { get; set; }

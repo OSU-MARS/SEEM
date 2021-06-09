@@ -217,7 +217,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     // distributions are unique per combination of run tuple (discount rate, thins 1, 2, 3, and rotation)
                                     // and heuristic parameters but solution pools are shared across heuristic parameters
                                     // TODO: include parameter index in solution pool
-                                    HeuristicDistribution distribution = new(treeCount)
+                                    HeuristicObjectiveDistribution distribution = new()
                                     {
                                         DiscountRateIndex = discountRateIndex,
                                         FirstThinPeriodIndex = firstThinIndex,
@@ -252,7 +252,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         return;
                     }
                     int distributionIndex = iteration / this.BestOf;
-                    HeuristicDistribution distribution = results.Distributions[distributionIndex];
+                    HeuristicObjectiveDistribution distribution = results.Distributions[distributionIndex];
 
                     try
                     {
@@ -279,11 +279,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                         Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(heuristicParameters, runParameters);
                         HeuristicPerformanceCounters perfCounters = currentHeuristic.Run(distribution, results.SolutionIndex);
 
+                        // accumulate run into results and tracking counters
                         HeuristicSolutionPool solutionPool = results.SolutionIndex[results.Distributions[distributionIndex]];
                         int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(distribution, results);
                         lock (results)
                         {
-                            distribution.AddRun(currentHeuristic, perfCounters, heuristicParameters);
+                            distribution.AddSolution(currentHeuristic, perfCounters);
                             solutionPool.TryAddOrReplace(currentHeuristic);
                             totalPerfCounters += perfCounters;
                             ++runsCompleted;
@@ -325,7 +326,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     int currentRun = Math.Min(runsCompleted + 1, totalRuns);
                     int currentDistributionIndex = Math.Min(currentRun / this.BestOf, results.Distributions.Count - 1);
-                    HeuristicDistribution mostRecentDistribution = results.Distributions[currentDistributionIndex];
+                    HeuristicObjectiveDistribution mostRecentDistribution = results.Distributions[currentDistributionIndex];
 
                     mostRecentEvaluationPoint.Clear();
                     mostRecentEvaluationPoint.Append("run " + currentRun + "/" + totalRuns);
@@ -367,18 +368,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
             }
             runs.GetAwaiter().GetResult(); // propagate any exceptions since last IsFaulted check
-
-            foreach (HeuristicDistribution distribution in results.Distributions)
-            {
-                distribution.OnRunsComplete();
-            }
             stopwatch.Stop();
-
 
             this.WriteObject(results);
             if (results.Distributions.Count == 1)
             {
-                HeuristicDistribution firstDistribution = results.Distributions[0];
+                HeuristicObjectiveDistribution firstDistribution = results.Distributions[0];
                 this.WriteSingleDistributionSummary(results.SolutionIndex[firstDistribution].High, firstDistribution, totalPerfCounters, stopwatch.Elapsed);
             }
             else if (results.Distributions.Count > 1)
@@ -398,19 +393,22 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ArgumentOutOfRangeException(nameof(results));
             }
+            results.SolutionIndex.GetPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected);
 
-            base.WriteVerbose(String.Empty); // Visual Studio code workaround
-            this.WriteVerbose("{0}: {1} configurations with {2} runs in {3:0.00} minutes ({4:0.00}M timesteps in {5:0.00} core-minutes, {6:0.00}% move acceptance).",
+            base.WriteVerbose(String.Empty); // Visual Studio Code display mangling workaround
+            this.WriteVerbose("{0}: {1} configurations with {2} runs in {3:0.00} minutes ({4:0.00}M timesteps in {5:0.00} core-minutes, {6:0.00}% move acceptance, {7} solutions pooled, {8:0.00}% pool acceptance).",
                               highHeuristic.GetName(),
                               results.Distributions.Count,
                               this.BestOf * results.Distributions.Count,
                               elapsedTime.TotalMinutes,
                               1E-6F * totalPerfCounters.GrowthModelTimesteps,
                               totalPerfCounters.Duration.TotalMinutes,
-                              100.0F * totalPerfCounters.MovesAccepted / (totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected));
+                              100.0F * totalPerfCounters.MovesAccepted / (totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected),
+                              solutionsCached,
+                              100.0F * solutionsAccepted / (solutionsAccepted + solutionsRejected));
         }
 
-        private void WriteSingleDistributionSummary(Heuristic? heuristic, HeuristicDistribution distribution, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
+        private void WriteSingleDistributionSummary(Heuristic? heuristic, HeuristicObjectiveDistribution distribution, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
         {
             if (heuristic == null)
             {
@@ -441,10 +439,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.BestObjectiveFunction, distribution.BestObjectiveFunctionBySolution.Average(), heuristic.AcceptedObjectiveFunctionByMove.Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 
-            double iterationsPerSecond = distribution.TotalMoves / distribution.TotalCoreSeconds.TotalSeconds;
+            double totalSeconds = totalPerfCounters.Duration.TotalSeconds;
+            double iterationsPerSecond = totalMoves / totalSeconds;
             double iterationsPerSecondMultiplier = iterationsPerSecond > 1E3 ? 1E-3 : 1.0;
             string iterationsPerSecondScale = iterationsPerSecond > 1E3 ? "k" : String.Empty;
-            this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", distribution.TotalMoves, distribution.TotalCoreSeconds.TotalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
+            this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", totalMoves, totalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
         }
 
         private bool TryCreateFirstThin(int firstThinPeriodIndex, [NotNullWhen(true)] out IHarvest? firstThin)

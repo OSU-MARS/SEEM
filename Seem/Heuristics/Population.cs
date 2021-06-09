@@ -536,6 +536,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 ((nearestLowerNeighborIndex != SolutionPool.UnknownNeighbor) && (neighborDistances[nearestLowerNeighborIndex] == 0)))
             {
                 // no solution to replace if 1) new trajectory is not improving or 2) this solution is already known
+                ++this.SolutionsRejected;
                 return false;
             }
 

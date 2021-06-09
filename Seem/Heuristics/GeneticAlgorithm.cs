@@ -294,6 +294,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 currentGeneration.CopyFrom(nextGeneration);
                 nextGeneration.SolutionsAccepted = 0;
+                nextGeneration.SolutionsRejected = 0;
                 
                 float coefficientOfVariation = this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
                 if (coefficientOfVariation < this.HeuristicParameters.MinimumCoefficientOfVariation)

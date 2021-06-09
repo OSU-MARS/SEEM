@@ -10,12 +10,8 @@ using System.Management.Automation;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "ObjectiveDistribution")]
-    public class WriteObjectiveDistribution : WriteCmdlet
+    public class WriteObjectiveDistribution : WriteHeuristicResultsCmdlet
     {
-        [Parameter(Mandatory = true)]
-        [ValidateNotNull]
-        public HeuristicResultSet? Results { get; set; }
-
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Results != null);
@@ -28,30 +24,25 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                HeuristicParameters? heuristicParameters = this.Results.Distributions[0].HeuristicParameters;
-                if (heuristicParameters == null)
-                {
-                    throw new NotSupportedException("Cannot generate header because first result is missing heuristic parameters.");
-                }
-
+                HeuristicParameters heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
                 writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",solution,objective,moveAccepted,movesRejected,runtime,timesteps,treesRandomized");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int resultIndex = 0; resultIndex < this.Results.Distributions.Count; ++resultIndex)
             {
-                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
+                HeuristicObjectiveDistribution distribution = this.Results.Distributions[resultIndex];
                 Heuristic? highHeuristic = this.Results.SolutionIndex[distribution].High;
-                if ((highHeuristic == null) || (distribution.HeuristicParameters == null))
+                if (highHeuristic == null)
                 {
-                    throw new NotSupportedException("Run " + resultIndex + " is missing a high solution or high heuristic parameters.");
+                    throw new NotSupportedException("Run " + resultIndex + " is missing a high solution.");
                 }
                 OrganonStandTrajectory highTrajectory = highHeuristic.BestTrajectory;
 
                 float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
                 string linePrefix = highTrajectory.Name + "," + 
-                                    highHeuristic.GetName() + "," + 
-                                    distribution.HeuristicParameters.GetCsvValues() + "," +
+                                    highHeuristic.GetName() + "," +
+                                    highHeuristic.GetParameters().GetCsvValues() + "," +
                                     WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate);
 
                 List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;

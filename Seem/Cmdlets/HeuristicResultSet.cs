@@ -6,7 +6,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     // provide a non-template base class to allow PowerShell cmdlets to accept results from any heuristic as a parameter
     public class HeuristicResultSet
     {
-        public IList<HeuristicDistribution> Distributions { get; private init; }
+        public IList<HeuristicObjectiveDistribution> Distributions { get; private init; }
         public HeuristicSolutionIndex SolutionIndex { get; private init; }
 
         public IList<float> DiscountRates { get; private init; }
@@ -17,7 +17,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected HeuristicResultSet(int parameterCombinations, IList<float> discountRates, IList<int> firstThinPeriod, IList<int> secondThinPeriod, IList<int> thirdThinPeriod, IList<int> planningPeriods, int individualSolutionPoolSize)
         {
-            this.Distributions = new List<HeuristicDistribution>();
+            this.Distributions = new List<HeuristicObjectiveDistribution>();
             this.SolutionIndex = new(parameterCombinations, discountRates.Count, firstThinPeriod.Count, secondThinPeriod.Count, thirdThinPeriod.Count, planningPeriods.Count, individualSolutionPoolSize);
 
             this.DiscountRates = discountRates;

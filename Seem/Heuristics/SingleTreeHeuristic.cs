@@ -20,7 +20,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveLog.TreeIDByMove.Add(-1);
         }
 
-        public override IHeuristicMoveLog GetMoveLog()
+        public override IHeuristicMoveLog? GetMoveLog()
         {
             return this.MoveLog;
         }

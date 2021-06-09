@@ -7,12 +7,23 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class PrescriptionEnumeration : Heuristic<PrescriptionParameters>
     {
-        public PrescriptionMoveLog MoveLog { get; private init; }
+        private readonly PrescriptionAllMoveLog? allMoveLog;
+        private readonly PrescriptionSingleMoveLog? singleMoveLog;
 
-        public PrescriptionEnumeration(OrganonStand stand, RunParameters runParameters, PrescriptionParameters parameters)
-            : base(stand, parameters, runParameters)
+        public PrescriptionEnumeration(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters)
+            : base(stand, heuristicParameters, runParameters)
         {
-            this.MoveLog = new PrescriptionMoveLog();
+            if (heuristicParameters.LogAllMoves)
+            {
+                this.allMoveLog = new PrescriptionAllMoveLog();
+            }
+            else
+            {
+                // by default, store prescription intensities for only the highest LEV combination of thinning intensities found
+                // This substantially reduces memory footprint in runs where many prescriptions are enumerated and helps to reduce the
+                // size of objective log files. If needed, this can be changed to storing a larger number of prescriptions.
+                this.singleMoveLog = new PrescriptionSingleMoveLog();
+            }
         }
 
         private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float percentIntensityOfPreviousThins, Action<float> evaluatePrescriptions, HeuristicPerformanceCounters perfCounters)
@@ -118,6 +129,12 @@ namespace Osu.Cof.Ferm.Heuristics
                 // accept change of prescription if it improves upon the best solution
                 this.BestObjectiveFunction = candidateObjectiveFunction;
                 this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+
+                if (this.singleMoveLog != null)
+                {
+                    this.singleMoveLog.Add(perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                }
+
                 ++perfCounters.MovesAccepted;
             }
             else
@@ -128,44 +145,10 @@ namespace Osu.Cof.Ferm.Heuristics
             this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
             this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
 
-            float fromAbovePercentageFirst = 0.0F;
-            float proportionalPercentageFirst = 0.0F;
-            float fromBelowPercentageFirst = 0.0F;
-            if (firstThinPrescription != null)
+            if (this.allMoveLog != null)
             {
-                fromAbovePercentageFirst = firstThinPrescription.FromAbovePercentage;
-                proportionalPercentageFirst = firstThinPrescription.ProportionalPercentage;
-                fromBelowPercentageFirst = firstThinPrescription.FromBelowPercentage;
+                this.allMoveLog.Add(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
             }
-            this.MoveLog.FromAbovePercentageByMove1.Add(fromAbovePercentageFirst);
-            this.MoveLog.ProportionalPercentageByMove1.Add(proportionalPercentageFirst);
-            this.MoveLog.FromBelowPercentageByMove1.Add(fromBelowPercentageFirst);
-
-            float fromAbovePercentageSecond = 0.0F;
-            float proportionalPercentageSecond = 0.0F;
-            float fromBelowPercentageSecond = 0.0F;
-            if (secondThinPrescription != null)
-            {
-                fromAbovePercentageSecond = secondThinPrescription.FromAbovePercentage;
-                proportionalPercentageSecond = secondThinPrescription.ProportionalPercentage;
-                fromBelowPercentageSecond = secondThinPrescription.FromBelowPercentage;
-            }
-            this.MoveLog.FromAbovePercentageByMove2.Add(fromAbovePercentageSecond);
-            this.MoveLog.ProportionalPercentageByMove2.Add(proportionalPercentageSecond);
-            this.MoveLog.FromBelowPercentageByMove2.Add(fromBelowPercentageSecond);
-
-            float fromAbovePercentageThird = 0.0F;
-            float proportionalPercentageThird = 0.0F;
-            float fromBelowPercentageThird = 0.0F;
-            if (thirdThinPrescription != null)
-            {
-                fromAbovePercentageThird = thirdThinPrescription.FromAbovePercentage;
-                proportionalPercentageThird = thirdThinPrescription.ProportionalPercentage;
-                fromBelowPercentageThird = thirdThinPrescription.FromBelowPercentage;
-            }
-            this.MoveLog.FromAbovePercentageByMove3.Add(fromAbovePercentageThird);
-            this.MoveLog.ProportionalPercentageByMove3.Add(proportionalPercentageThird);
-            this.MoveLog.FromBelowPercentageByMove3.Add(fromBelowPercentageThird);
         }
 
         public override string GetName()
@@ -173,14 +156,16 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Prescription";
         }
 
-        public override IHeuristicMoveLog GetMoveLog()
+        public override IHeuristicMoveLog? GetMoveLog()
         {
-            return this.MoveLog;
-        }
-
-        public override HeuristicParameters GetParameters()
-        {
-            return this.HeuristicParameters;
+            if (this.HeuristicParameters.LogAllMoves)
+            {
+                return this.allMoveLog;
+            }
+            else
+            {
+                return this.singleMoveLog;
+            }
         }
 
         public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
@@ -296,6 +281,11 @@ namespace Osu.Cof.Ferm.Heuristics
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;
+            if (this.singleMoveLog != null)
+            {
+                // since this.singleMoveLog.Add() is called only on improving moves it has no way of setting its count
+                this.singleMoveLog.Count = perfCounters.MovesAccepted + perfCounters.MovesRejected;
+            }
             return perfCounters;
         }
     }

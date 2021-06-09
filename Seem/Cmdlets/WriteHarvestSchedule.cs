@@ -10,12 +10,8 @@ using System.Management.Automation;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "HarvestSchedule")]
-    public class WriteHarvestSchedule : WriteCmdlet
+    public class WriteHarvestSchedule : WriteHeuristicResultsCmdlet
     {
-        [Parameter(Mandatory = true)]
-        [ValidateNotNull]
-        public HeuristicResultSet? Results { get; set; }
-
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Results != null);
@@ -27,21 +23,13 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
             if (this.ShouldWriteHeader())
             {
-                HeuristicParameters? heuristicParameters = this.Results.Distributions[0].HeuristicParameters;
-                if (heuristicParameters == null)
-                {
-                    throw new NotSupportedException("Cannot generate schedule header because first run has no heuristic parameters.");
-                }
+                HeuristicParameters heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
                 writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1bf,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2bf,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3bf,highFinalDbh,highFinalHeight,highFinalCR,highFinalEF,highFinalBF");
             }
 
             for (int resultIndex = 0; resultIndex < this.Results!.Distributions.Count; ++resultIndex)
             {
-                HeuristicDistribution distribution = this.Results.Distributions[resultIndex];
-                if (distribution.HeuristicParameters == null)
-                {
-                    throw new NotSupportedException("Result " + resultIndex + " is missing heuristic parameters.");
-                }
+                HeuristicObjectiveDistribution distribution = this.Results.Distributions[resultIndex];
                 HeuristicSolutionPool solution = this.Results.SolutionIndex[this.Results.Distributions[resultIndex]];
                 if ((solution.High == null) ||
                     (solution.High.BestTrajectory == null) ||
@@ -72,9 +60,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
+                HeuristicParameters highParameters = solution.High.GetParameters();
                 string linePrefix = highTrajectory.Name + "," + 
                     highTrajectory.Heuristic.GetName() + "," + 
-                    distribution.HeuristicParameters.GetCsvValues() + "," +
+                    highParameters.GetCsvValues() + "," +
                     WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate);
 
                 Stand? highStandBeforeFirstThin = highTrajectory.StandByPeriod[periodBeforeFirstThin];

@@ -63,10 +63,11 @@ namespace Osu.Cof.Ferm.Heuristics
             // pool is empty (first time TryAddOrReplace() is called)
             if (this.SolutionsInPool == 0)
             {
-                this.SolutionsInPool = 1;
                 this.eliteSolutions[0] = heuristic;
                 this.lowestEliteIndex = 0;
                 this.lowestEliteObjectiveFunction = heuristic.BestObjectiveFunction;
+                this.SolutionsAccepted = 1;
+                this.SolutionsInPool = 1;
 
                 this.Low = heuristic;
                 this.High = heuristic;
@@ -129,6 +130,10 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++this.SolutionsAccepted;
 
                 Debug.Assert(heuristic.BestObjectiveFunction >= this.Low!.BestObjectiveFunction);
+            }
+            else
+            {
+                ++this.SolutionsRejected;
             }
             Debug.Assert(heuristic.BestObjectiveFunction <= this.High!.BestObjectiveFunction);
 

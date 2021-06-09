@@ -39,7 +39,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static HeuristicResultSet<HeuristicParameters> CreateResultsSet(HeuristicParameters parameters, int treeCount, int planningPeriods)
+        private static HeuristicResultSet<HeuristicParameters> CreateResultsSet(HeuristicParameters parameters, int planningPeriods)
         {
             List<HeuristicParameters> parameterCombinations = new() { parameters };
             List<float> discountRate = new() { Constant.DefaultAnnualDiscountRate };
@@ -47,7 +47,7 @@ namespace Osu.Cof.Ferm.Test
             List<int> planningPeriod = new() { planningPeriods };
             HeuristicResultSet<HeuristicParameters> results = new(parameterCombinations, discountRate, noThin, noThin, noThin, planningPeriod, TestConstant.SolutionPoolSize);
 
-            HeuristicDistribution distribution = new(treeCount)
+            HeuristicObjectiveDistribution distribution = new()
             {
                 DiscountRateIndex = 0,
                 FirstThinPeriodIndex = 0,
@@ -126,7 +126,7 @@ namespace Osu.Cof.Ferm.Test
             };
             landExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
 
-            HeuristicResultSet<HeuristicParameters> results = PublicApi.CreateResultsSet(new(), stand.GetTreeRecordCount(), landExpectationValue.PlanningPeriods);
+            HeuristicResultSet<HeuristicParameters> results = PublicApi.CreateResultsSet(new(), landExpectationValue.PlanningPeriods);
             Hero hero = new(stand, results.ParameterCombinations[0], landExpectationValue)
             {
                 //IsStochastic = true,
@@ -166,8 +166,8 @@ namespace Osu.Cof.Ferm.Test
                 PlanningPeriods = 9
             };
             runForLandExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            HeuristicResultSet<HeuristicParameters> levResults = PublicApi.CreateResultsSet(new(), stand.GetTreeRecordCount(), runForLandExpectationValue.PlanningPeriods);
-            HeuristicDistribution levDistribution = levResults.Distributions[0]; 
+            HeuristicResultSet<HeuristicParameters> levResults = PublicApi.CreateResultsSet(new(), runForLandExpectationValue.PlanningPeriods);
+            HeuristicObjectiveDistribution levDistribution = levResults.Distributions[0]; 
             int levSolutionsAccepted = 0;
             HeuristicPerformanceCounters totalCounters = new();
 
@@ -179,7 +179,7 @@ namespace Osu.Cof.Ferm.Test
             GeneticAlgorithm genetic = new(stand, geneticParameters, runForLandExpectationValue);
             HeuristicPerformanceCounters geneticCounters = genetic.Run(levDistribution, levResults.SolutionIndex);
             totalCounters += geneticCounters;
-            levDistribution.AddRun(genetic, geneticCounters, levResults.ParameterCombinations[0]);
+            levDistribution.AddSolution(genetic, geneticCounters);
             if (levResults.SolutionIndex[levDistribution].TryAddOrReplace(genetic))
             {
                 ++levSolutionsAccepted;
@@ -193,7 +193,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters delugeCounters = deluge.Run(levDistribution, levResults.SolutionIndex);
             totalCounters += delugeCounters;
-            levDistribution.AddRun(deluge, delugeCounters, levResults.ParameterCombinations[0]);
+            levDistribution.AddSolution(deluge, delugeCounters);
             if (levResults.SolutionIndex[levDistribution].TryAddOrReplace(deluge))
             {
                 ++levSolutionsAccepted;
@@ -204,7 +204,7 @@ namespace Osu.Cof.Ferm.Test
                 StopAfter = 10
             };
             HeuristicPerformanceCounters recordCounters = recordTravel.Run(levDistribution, levResults.SolutionIndex);
-            levDistribution.AddRun(recordTravel, recordCounters, levResults.ParameterCombinations[0]);
+            levDistribution.AddSolution(recordTravel, recordCounters);
             if (levResults.SolutionIndex[levDistribution].TryAddOrReplace(recordTravel))
             {
                 ++levSolutionsAccepted;
@@ -216,7 +216,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters annealerCounters = annealer.Run(levDistribution, levResults.SolutionIndex);
             totalCounters += annealerCounters;
-            levDistribution.AddRun(annealer, annealerCounters, levResults.ParameterCombinations[0]);
+            levDistribution.AddSolution(annealer, annealerCounters);
             if (levResults.SolutionIndex[levDistribution].TryAddOrReplace(annealer))
             {
                 ++levSolutionsAccepted;
@@ -231,7 +231,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters tabuCounters = tabu.Run(levDistribution, levResults.SolutionIndex);
             totalCounters += tabuCounters;
-            levDistribution.AddRun(tabu, tabuCounters, levResults.ParameterCombinations[0]);
+            levDistribution.AddSolution(tabu, tabuCounters);
             if (levResults.SolutionIndex[levDistribution].TryAddOrReplace(tabu))
             {
                 ++levSolutionsAccepted;
@@ -244,7 +244,7 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.Thresholds.Add(1.0F);
             HeuristicPerformanceCounters thresholdCounters = thresholdAcceptor.Run(levDistribution, levResults.SolutionIndex);
             totalCounters += thresholdCounters;
-            levDistribution.AddRun(thresholdAcceptor, thresholdCounters, levResults.ParameterCombinations[0]);
+            levDistribution.AddSolution(thresholdAcceptor, thresholdCounters);
             if (levResults.SolutionIndex[levDistribution].TryAddOrReplace(thresholdAcceptor))
             {
                 ++levSolutionsAccepted;
@@ -257,10 +257,10 @@ namespace Osu.Cof.Ferm.Test
                 DefaultIntensityStepSize = 10.0F,
             };
             runForLandExpectationValue.Treatments.Harvests[0] = new ThinByPrescription(thinningPeriod); // must change from individual tree selection
-            PrescriptionEnumeration enumerator = new(stand, runForLandExpectationValue, prescriptionParameters);
+            PrescriptionEnumeration enumerator = new(stand, prescriptionParameters, runForLandExpectationValue);
             HeuristicPerformanceCounters enumerationCounters = enumerator.Run(levDistribution, levResults.SolutionIndex);
             totalCounters += enumerationCounters;
-            levDistribution.AddRun(enumerator, enumerationCounters, levResults.ParameterCombinations[0]);
+            levDistribution.AddSolution(enumerator, enumerationCounters);
             if (levResults.SolutionIndex[levDistribution].TryAddOrReplace(enumerator))
             {
                 ++levSolutionsAccepted;
@@ -271,7 +271,6 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(levEliteSolutions!.SolutionsInPool == Math.Min(levSolutionsAccepted, TestConstant.SolutionPoolSize));
             OrganonStandTrajectory eliteSolution = levEliteSolutions.GetEliteSolution();
             Assert.IsTrue(eliteSolution.EarliestPeriodChangedSinceLastSimulation == runForLandExpectationValue.PlanningPeriods + 1);
-            levDistribution.OnRunsComplete();
 
             // heuristic optimizing for volume
             RunParameters runForVolume = new(configuration)
@@ -281,15 +280,15 @@ namespace Osu.Cof.Ferm.Test
             };
             runForVolume.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
 
-            HeuristicResultSet<HeuristicParameters> volumeResults = PublicApi.CreateResultsSet(new(), stand.GetTreeRecordCount(), runForLandExpectationValue.PlanningPeriods);
-            HeuristicDistribution volumeDistribution = volumeResults.Distributions[0];
+            HeuristicResultSet<HeuristicParameters> volumeResults = PublicApi.CreateResultsSet(new(), runForLandExpectationValue.PlanningPeriods);
+            HeuristicObjectiveDistribution volumeDistribution = volumeResults.Distributions[0];
             AutocorrelatedWalk autocorrelated = new(stand, volumeResults.ParameterCombinations[0], runForVolume)
             {
                 Iterations = 4
             };
             HeuristicPerformanceCounters autocorrlatedCounters = autocorrelated.Run(volumeDistribution, volumeResults.SolutionIndex);
             totalCounters += autocorrlatedCounters;
-            volumeDistribution.AddRun(autocorrelated, autocorrlatedCounters, volumeResults.ParameterCombinations[0]);
+            volumeDistribution.AddSolution(autocorrelated, autocorrlatedCounters);
             volumeResults.SolutionIndex[volumeDistribution].TryAddOrReplace(autocorrelated);
 
             // heuristics assigned to net present value optimization
@@ -309,10 +308,11 @@ namespace Osu.Cof.Ferm.Test
             float maxLevInDistribution = levDistribution.BestObjectiveFunctionBySolution.Max();
             Assert.IsTrue(maxHeuristicLev == maxLevInDistribution);
             Assert.IsTrue(maxHeuristicLev == levEliteSolutions.High!.BestObjectiveFunction);
-            Assert.IsTrue(Object.ReferenceEquals(levDistribution.HeuristicParameters, levResults.ParameterCombinations[0]));
 
+            int maxMove = levDistribution.GetMaximumMoves();
+            Assert.IsTrue(maxMove > 0);
             List<float> levObjectives = new(8);
-            for (int moveIndex = 0; moveIndex < levDistribution.CountByMove.Count; ++moveIndex)
+            for (int moveIndex = 0; moveIndex < maxMove; ++moveIndex)
             {
                 PublicApi.AppendObjective(levObjectives, deluge, moveIndex);
                 PublicApi.AppendObjective(levObjectives, annealer, moveIndex);
@@ -324,23 +324,29 @@ namespace Osu.Cof.Ferm.Test
                 maxHeuristicLev = levObjectives.Max();
                 float minHeuristicLev = levObjectives.Min();
 
-                maxLevInDistribution = levDistribution.MaximumObjectiveFunctionByMove[moveIndex];
-                float minDistributionObjective = levDistribution.MinimumObjectiveFunctionByMove[moveIndex];
-                int distributionRunCount = levDistribution.CountByMove[moveIndex];
+                Statistics moveStatistics = levDistribution.GetObjectiveFunctionStatisticsForMove(moveIndex);
+                maxLevInDistribution = moveStatistics.Maximum;
+                float minDistributionObjective = moveStatistics.Minimum;
+                int distributionRunCount = moveStatistics.Count;
 
                 Assert.IsTrue(distributionRunCount > 0);
                 Assert.IsTrue(distributionRunCount <= 8);
                 Assert.IsTrue(maxLevInDistribution <= maxHeuristicLev);
                 Assert.IsTrue(minDistributionObjective >= minHeuristicLev);
-                Assert.IsTrue(levDistribution.MeanObjectiveFunctionByMove[moveIndex] >= minHeuristicLev);
-                Assert.IsTrue(levDistribution.MeanObjectiveFunctionByMove[moveIndex] <= maxHeuristicLev);
-                Assert.IsTrue(levDistribution.MedianObjectiveFunctionByMove[moveIndex] >= minHeuristicLev);
-                Assert.IsTrue(levDistribution.MedianObjectiveFunctionByMove[moveIndex] <= maxHeuristicLev);
+                Assert.IsTrue(moveStatistics.Mean >= minHeuristicLev);
+                Assert.IsTrue(moveStatistics.Mean <= maxHeuristicLev);
+                Assert.IsTrue(moveStatistics.Median >= minHeuristicLev);
+                Assert.IsTrue(moveStatistics.Median <= maxHeuristicLev);
                 // not enough heuristic runs to check percentiles
-                Assert.IsTrue(distributionRunCount == levDistribution.ObjectiveFunctionValuesByMove[moveIndex].Count);
 
                 levObjectives.Clear();
             }
+
+            // verify solution pooling
+            levResults.SolutionIndex.GetPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected);
+            Assert.IsTrue(solutionsCached <= TestConstant.SolutionPoolSize);
+            Assert.IsTrue(solutionsAccepted >= solutionsCached);
+            Assert.IsTrue(solutionsRejected >= 0);
         }
 
         [TestMethod]
@@ -619,7 +625,7 @@ namespace Osu.Cof.Ferm.Test
             });
             AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == 222);
-            int immediateThintimeSteps = thinnedTrajectory.Simulate();
+            long immediateThintimeSteps = thinnedTrajectory.Simulate();
             Assert.IsTrue(immediateThintimeSteps == lastPeriod);
 
             // verify thinned trajectory
@@ -699,7 +705,7 @@ namespace Osu.Cof.Ferm.Test
                 PlanningPeriods = 9
             };
             landExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            HeuristicResultSet<HeuristicParameters> results = PublicApi.CreateResultsSet(new(), stand.GetTreeRecordCount(), landExpectationValue.PlanningPeriods);
+            HeuristicResultSet<HeuristicParameters> results = PublicApi.CreateResultsSet(new(), landExpectationValue.PlanningPeriods);
             HeuristicSolutionPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
 
             TimeSpan runtime = TimeSpan.Zero;
@@ -789,11 +795,11 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(heuristic.BestObjectiveFunction > 0.95F * heuristic.AcceptedObjectiveFunctionByMove[^1]);
                 if (heuristic is AutocorrelatedWalk)
                 {
-                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.5F * beginObjectiveFunction);
+                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.50F * beginObjectiveFunction);
                 }
                 else if (heuristic is SimulatedAnnealing)
                 {
-                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.75F * beginObjectiveFunction);
+                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.72F * beginObjectiveFunction);
                 }
                 else
                 {
@@ -955,26 +961,23 @@ namespace Osu.Cof.Ferm.Test
             IHeuristicMoveLog? moveLog = heuristic.GetMoveLog();
             if (moveLog != null)
             {
-                string csvHeader = moveLog.GetCsvHeader("prefix");
-                Assert.IsTrue(String.IsNullOrWhiteSpace(csvHeader) == false);
+                string moveCsvHeader = moveLog.GetCsvHeader("prefix");
+                Assert.IsTrue(String.IsNullOrWhiteSpace(moveCsvHeader) == false);
 
                 for (int moveIndex = 0; moveIndex < heuristic.AcceptedObjectiveFunctionByMove.Count; ++moveIndex)
                 {
-                    string csvValues = moveLog.GetCsvValues(moveIndex);
-                    Assert.IsTrue(String.IsNullOrWhiteSpace(csvValues) == false);
+                    string moveCsvValues = moveLog.GetCsvValues(moveIndex);
+                    Assert.IsTrue(String.IsNullOrWhiteSpace(moveCsvValues) == false);
                 }
             }
 
             // check parameters
-            HeuristicParameters? parameters = heuristic.GetParameters();
-            if (parameters != null)
-            {
-                string csvHeader = parameters.GetCsvHeader();
-                string csvValues = parameters.GetCsvValues();
+            HeuristicParameters parameters = heuristic.GetParameters();
+            string parameterCsvHeader = parameters.GetCsvHeader();
+            string parameterCsvValues = parameters.GetCsvValues();
 
-                Assert.IsTrue(String.IsNullOrWhiteSpace(csvHeader) == false);
-                Assert.IsTrue(String.IsNullOrWhiteSpace(csvValues) == false);
-            }
+            Assert.IsTrue(String.IsNullOrWhiteSpace(parameterCsvHeader) == false);
+            Assert.IsTrue(String.IsNullOrWhiteSpace(parameterCsvValues) == false);
 
             // check performance counters
             Assert.IsTrue(perfCounters.Duration > TimeSpan.Zero);

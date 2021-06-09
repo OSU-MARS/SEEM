@@ -50,20 +50,19 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 highTrajectory = solution.High.BestTrajectory;
 
-                HeuristicDistribution distribution = this.Results.Distributions[runOrTrajectoryIndex];
+                HeuristicObjectiveDistribution distribution = this.Results.Distributions[runOrTrajectoryIndex];
                 discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
-                heuristicParameters = distribution.HeuristicParameters;
             }
             else
             {
                 highTrajectory = this.Trajectories![runOrTrajectoryIndex];
-                if (highTrajectory.Heuristic != null)
-                {
-                    heuristicParameters = highTrajectory.Heuristic.GetParameters();
-                }
                 // for now, default to writing a trajectory with the default discount rate
                 // TODO: support logging of trajectory financials with multiple discount rates
                 discountRate = Constant.DefaultAnnualDiscountRate;
+            }
+            if (highTrajectory.Heuristic != null)
+            {
+                heuristicParameters = highTrajectory.Heuristic.GetParameters();
             }
 
             string heuristicName = "none";
@@ -103,15 +102,15 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             // TODO: check for mixed units and support TBH
             // TODO: snags per acre or hectare, live and dead QMD?
-            bool runsSpecified = this.Results != null;
+            bool resultsSpecified = this.Results != null;
             if (this.ShouldWriteHeader())
             {
                 StringBuilder line = new("stand,heuristic");
 
                 HeuristicParameters? heuristicParametersForHeader = null;
-                if (runsSpecified)
+                if (resultsSpecified)
                 {
-                    heuristicParametersForHeader = this.Results!.Distributions[0].HeuristicParameters;
+                    heuristicParametersForHeader = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
                 }
                 else if(this.Trajectories![0].Heuristic != null)
                 {
@@ -134,17 +133,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // rows for periods
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxIndex = runsSpecified ? this.Results!.Distributions.Count : this.Trajectories!.Count;
+            int maxIndex = resultsSpecified ? this.Results!.Distributions.Count : this.Trajectories!.Count;
             for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
             {
                 OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix, out float discountRate);
-                string coreTimeInSeconds = "";
-                if (runsSpecified)
-                {
-                    HeuristicDistribution distribution = this.Results!.Distributions[runOrTrajectoryIndex];
-                    coreTimeInSeconds = distribution.TotalCoreSeconds.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture);
-                }
-
                 Units trajectoryUnits = highTrajectory.GetUnits();
                 if (trajectoryUnits != Units.English)
                 {

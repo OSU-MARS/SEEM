@@ -22,6 +22,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0F, 100.0F)]
         public float FromBelowPercentageUpperLimit { get; set; }
 
+        [Parameter]
+        public bool LogAllMoves { get; set; }
+
         [Parameter(HelpMessage = "Maximum thinning intensity to evaluate. Paired with minimum intensities rather than used combinatorially.")]
         [ValidateRange(0.0F, 1000.0F)]
         public List<float> MaximumIntensity { get; set; }
@@ -46,6 +49,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.DefaultStep = Constant.PrescriptionEnumerationDefault.DefaultIntensityStepSize;
             this.FromAbovePercentageUpperLimit = 100.0F;
             this.FromBelowPercentageUpperLimit = 100.0F;
+            this.LogAllMoves = false;
             this.MaximumIntensity = new List<float>() { Constant.PrescriptionEnumerationDefault.MaximumIntensity };
             this.MinimumIntensity = new List<float>() { Constant.PrescriptionEnumerationDefault.MinimumIntensity };
             this.ConstructionGreediness = new List<float>() { Constant.Grasp.FullyGreedyConstructionForMaximization };
@@ -61,7 +65,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new NotSupportedException(nameof(this.BestOf)); // enumeration is deterministic, so no value in repeated runs
             }
-            return new PrescriptionEnumeration(this.Stand!, runParameters, heuristicParameters);
+            return new PrescriptionEnumeration(this.Stand!, heuristicParameters, runParameters);
         }
 
         protected override IHarvest CreateThin(int thinPeriodIndex)
@@ -108,6 +112,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     DefaultIntensityStepSize = this.DefaultStep,
                     FromAbovePercentageUpperLimit = this.FromAbovePercentageUpperLimit,
                     FromBelowPercentageUpperLimit = this.FromBelowPercentageUpperLimit,
+                    LogAllMoves = this.LogAllMoves,
                     MinimumIntensity = minimumIntensity,
                     MaximumIntensity = maximumIntensity,
                     MaximumIntensityStepSize = this.MaximumStep,

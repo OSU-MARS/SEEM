@@ -14,7 +14,8 @@ namespace Osu.Cof.Ferm.Heuristics
         protected int MinimumNeighborIndex { get; set; }
         protected int[] NearestNeighborIndex { get; private init; }
 
-        public int SolutionsAccepted { get; set; } // public setter to allow reset between generations
+        public int SolutionsAccepted { get; set; } // public setters to allow reset between generations
+        public int SolutionsRejected { get; set; }
         public int SolutionsInPool { get; protected set; }
 
         protected SolutionPool(int poolCapacity)

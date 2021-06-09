@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -7,6 +6,10 @@ namespace Osu.Cof.Ferm.Heuristics
     public class HeuristicSolutionIndex
     {
         private readonly int discountRates;
+        private readonly int firstThins;
+        private readonly int parameterCombinations;
+        private readonly int secondThins;
+        private readonly int thirdThins;
         private readonly int planningPeriods;
 
         // indices are: parameter combination, discount rate, first thin, second thin, third thin, planning periods
@@ -15,6 +18,10 @@ namespace Osu.Cof.Ferm.Heuristics
         public HeuristicSolutionIndex(int parameterCombinations, int discountRates, int firstThins, int secondThins, int thirdThins, int planningPeriods, int individualPoolSize)
         {
             this.discountRates = discountRates;
+            this.parameterCombinations = parameterCombinations;
+            this.firstThins = firstThins;
+            this.secondThins = secondThins;
+            this.thirdThins = thirdThins;
             this.planningPeriods = planningPeriods;
             this.solutionsByIndices = new HeuristicSolutionPool[parameterCombinations][][][][][];
 
@@ -66,6 +73,36 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             get { return this.solutionsByIndices[parameterIndex][discountRateIndex][firstThinPeriodIndex][secondThinPeriodIndex][thirdThinPeriodIndex][planningPeriodIndex]; }
             set { this.solutionsByIndices[parameterIndex][discountRateIndex][firstThinPeriodIndex][secondThinPeriodIndex][thirdThinPeriodIndex][planningPeriodIndex] = value; }
+        }
+
+        public void GetPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected)
+        {
+            solutionsAccepted = 0;
+            solutionsCached = 0;
+            solutionsRejected = 0;
+
+            for (int parameterIndex = 0; parameterIndex < parameterCombinations; ++parameterIndex)
+            {
+                for (int discountRateIndex = 0; discountRateIndex < discountRates; ++discountRateIndex)
+                {
+                    for (int firstThinIndex = 0; firstThinIndex < firstThins; ++firstThinIndex)
+                    {
+                        for (int secondThinIndex = 0; secondThinIndex < secondThins; ++secondThinIndex)
+                        {
+                            for (int thirdThinIndex = 0; thirdThinIndex < thirdThins; ++thirdThinIndex)
+                            {
+                                for (int planningPeriodIndex = 0; planningPeriodIndex < planningPeriods; ++planningPeriodIndex)
+                                {
+                                    HeuristicSolutionPool solutionPool = this[parameterIndex, discountRateIndex, firstThinIndex, secondThinIndex, thirdThinIndex, planningPeriodIndex];
+                                    solutionsAccepted += solutionPool.SolutionsAccepted;
+                                    solutionsCached += solutionPool.SolutionsInPool;
+                                    solutionsRejected += solutionPool.SolutionsRejected;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // searches among discount rates for solutions assigned to the same set of heuristic parameters, thinnings, and rotation length
