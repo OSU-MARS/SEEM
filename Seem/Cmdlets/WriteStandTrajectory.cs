@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateNotNull]
-        public HeuristicResultSet? Results { get; set; }
+        public HeuristicResults? Results { get; set; }
 
         [Parameter]
         [ValidateNotNull]
@@ -37,28 +37,29 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Trajectories = null;
         }
 
-        protected OrganonStandTrajectory GetHighestTrajectoryAndLinePrefix(int runOrTrajectoryIndex, out StringBuilder linePrefix, out float discountRate)
+        protected OrganonStandTrajectory GetHighestTrajectoryAndLinePrefix(int positionOrTrajectoryIndex, out StringBuilder linePrefix, out int endOfRotationPeriod, out float discountRate)
         {
             OrganonStandTrajectory highTrajectory;
             HeuristicParameters? heuristicParameters = null;
             if (this.Results != null)
             {
-                HeuristicSolutionPool solution = this.Results.SolutionIndex[this.Results.Distributions[runOrTrajectoryIndex]];
-                if (solution.High == null)
+                HeuristicResultPosition position = this.Results.CombinationsEvaluated[positionOrTrajectoryIndex];
+                HeuristicSolutionPool solutionPool = this.Results[position].Pool;
+                if (solutionPool.High == null)
                 {
-                    throw new NotSupportedException("Run " + runOrTrajectoryIndex + " is missing a high solution.");
+                    throw new NotSupportedException("Run " + positionOrTrajectoryIndex + " is missing a high solution.");
                 }
-                highTrajectory = solution.High.BestTrajectory;
-
-                HeuristicObjectiveDistribution distribution = this.Results.Distributions[runOrTrajectoryIndex];
-                discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
+                highTrajectory = solutionPool.High.BestTrajectory;
+                discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
+                endOfRotationPeriod = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
             }
             else
             {
-                highTrajectory = this.Trajectories![runOrTrajectoryIndex];
+                highTrajectory = this.Trajectories![positionOrTrajectoryIndex];
                 // for now, default to writing a trajectory with the default discount rate
                 // TODO: support logging of trajectory financials with multiple discount rates
                 discountRate = Constant.DefaultAnnualDiscountRate;
+                endOfRotationPeriod = highTrajectory.PlanningPeriods - 1;
             }
             if (highTrajectory.Heuristic != null)
             {
@@ -79,7 +80,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             string? trajectoryName = highTrajectory.Name;
             if (trajectoryName == null)
             {
-                trajectoryName = runOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
+                trajectoryName = positionOrTrajectoryIndex.ToString(CultureInfo.InvariantCulture);
             }
 
             linePrefix = new(trajectoryName + "," + heuristicName + ",");
@@ -88,7 +89,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 linePrefix.Append(heuristicParameterString + ",");
             }
 
-            linePrefix.Append(WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate));
+            linePrefix.Append(WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endOfRotationPeriod, discountRate));
 
             return highTrajectory;
         }
@@ -133,10 +134,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // rows for periods
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxIndex = resultsSpecified ? this.Results!.Distributions.Count : this.Trajectories!.Count;
-            for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
+            int maxDistributionOrTrajectoryIndex = resultsSpecified ? this.Results!.CombinationsEvaluated.Count : this.Trajectories!.Count;
+            for (int distributionOrTrajectoryIndex = 0; distributionOrTrajectoryIndex < maxDistributionOrTrajectoryIndex; ++distributionOrTrajectoryIndex)
             {
-                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix, out float discountRate);
+                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(distributionOrTrajectoryIndex, out StringBuilder linePrefix, out int endOfRotationPeriod, out float discountRate);
                 Units trajectoryUnits = highTrajectory.GetUnits();
                 if (trajectoryUnits != Units.English)
                 {
@@ -145,7 +146,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 highTrajectory.GetGradedVolumes(out StandCubicAndScribnerVolume standingVolume, out StandCubicAndScribnerVolume harvestedVolume);
 
                 SnagLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
-                
+
                 float totalThinNetPresentValue = 0.0F;
                 for (int period = 0; period < highTrajectory.PlanningPeriods; ++period)
                 {
@@ -188,7 +189,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float reforestationNetPresentValue = highTrajectory.TimberValue.GetNetPresentReforestationValue(discountRate, highTrajectory.PlantingDensityInTreesPerHectare);
                     float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue + reforestationNetPresentValue;
 
-                    float presentToFutureConversionFactor = TimberValue.GetAppreciationFactor(discountRate, highTrajectory.GetRotationLength());
+                    float presentToFutureConversionFactor = TimberValue.GetAppreciationFactor(discountRate, highTrajectory.GetEndOfPeriodAge(endOfRotationPeriod));
                     float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);
 
                     // pond NPV by grade
@@ -253,7 +254,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ParameterOutOfRangeException(nameof(this.Trajectories), "Both " + nameof(this.Results) + " and " + nameof(this.Trajectories) + " are specified. Specify one or the other.");
             }
-            if ((this.Results != null) && (this.Results.Distributions.Count < 1))
+            if ((this.Results != null) && (this.Results.CombinationsEvaluated.Count < 1))
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results), nameof(this.Results) + " is empty. At least one run must be present.");
             }

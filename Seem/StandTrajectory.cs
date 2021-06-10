@@ -147,20 +147,15 @@ namespace Osu.Cof.Ferm
             return this.TimberValue.GetNetPresentThinningValue(this.ThinningVolume, discountRate, periodIndex, this.GetStartOfPeriodAge(periodIndex), out npv2Saw, out npv3Saw, out npv4Saw);
         }
 
-        public float GetNetPresentValue(float discountRate)
+        public float GetNetPresentValue(float discountRate, int endOfRotationPeriod)
         {
             float netPresentValue = this.TimberValue.GetNetPresentReforestationValue(discountRate, this.PlantingDensityInTreesPerHectare);
-            for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
+            for (int periodIndex = 1; periodIndex < endOfRotationPeriod; ++periodIndex)
             {
                 netPresentValue += this.GetNetPresentThinningValue(discountRate, periodIndex, out float _, out float _, out float _);
             }
-            netPresentValue += this.GetRegenerationHarvestValue(discountRate, this.PlanningPeriods - 1, out float _, out float _, out float _);
+            netPresentValue += this.GetRegenerationHarvestValue(discountRate, endOfRotationPeriod, out float _, out float _, out float _);
             return netPresentValue;
-        }
-
-        public int GetRotationLength()
-        {
-            return this.GetEndOfPeriodAge(this.PlanningPeriods - 1);
         }
 
         public int GetSecondThinAge()

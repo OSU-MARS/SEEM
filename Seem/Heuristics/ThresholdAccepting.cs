@@ -25,7 +25,7 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         // similar to SimulatedAnnealing.Run(), differences are in move acceptance
-        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
         {
             if (this.IterationsPerThreshold.Count < 1)
             {
@@ -54,9 +54,9 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum(), perfCounters);
+            this.EvaluateInitialSelection(Constant.HeuristicDefault.DiscountRateIndex, this.IterationsPerThreshold.Sum(), perfCounters);
 
-            float acceptedObjectiveFunction = this.BestObjectiveFunction;
+            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
@@ -75,17 +75,17 @@ namespace Osu.Cof.Ferm.Heuristics
                     candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
                     perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
 
-                    float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                    bool acceptMove = candidateObjectiveFunction > threshold * acceptedObjectiveFunction;
+                    float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                    bool acceptMove = candidateFinancialValue > threshold * acceptedFinancialValue;
                     if (acceptMove)
                     {
-                        acceptedObjectiveFunction = candidateObjectiveFunction; 
+                        acceptedFinancialValue = candidateFinancialValue; 
                         this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
-                        if (acceptedObjectiveFunction > this.BestObjectiveFunction)
+                        if (acceptedFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
                         {
-                            this.BestObjectiveFunction = acceptedObjectiveFunction;
+                            this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = acceptedFinancialValue;
                             this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                         }
                     }
@@ -95,8 +95,8 @@ namespace Osu.Cof.Ferm.Heuristics
                         ++perfCounters.MovesRejected;
                     }
 
-                    this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
-                    this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                    this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
+                    this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
                     this.MoveLog.TreeIDByMove.Add(treeIndex);
                 }
             }

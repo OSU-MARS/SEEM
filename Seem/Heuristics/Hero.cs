@@ -58,7 +58,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return periodIndices;
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
         {
             if (this.MaximumIterations < 1)
             {
@@ -73,10 +73,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
-            this.EvaluateInitialSelection(this.MaximumIterations * initialTreeRecordCount, perfCounters);
+            this.EvaluateInitialSelection(position.DiscountRateIndex, this.MaximumIterations * initialTreeRecordCount, perfCounters);
 
-            float acceptedObjectiveFunction = this.BestObjectiveFunction;
-            float previousBestObjectiveFunction = this.BestObjectiveFunction;
+            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
+            float previousBestObjectiveFunction = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             bool decrementPeriodIndex = false;
             int[] uncompactedPeriodIndices = this.GetPeriodIndices(initialTreeRecordCount, thinningPeriods);
@@ -117,11 +117,11 @@ namespace Osu.Cof.Ferm.Heuristics
                         candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
                         perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
 
-                        float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                        if (candidateObjectiveFunction > acceptedObjectiveFunction)
+                        float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                        if (candidateFinancialValue > acceptedFinancialValue)
                         {
                             // accept change of no cut-cut decision if it improves upon the best solution
-                            acceptedObjectiveFunction = candidateObjectiveFunction;
+                            acceptedFinancialValue = candidateFinancialValue;
                             uncompactedPeriodIndices[treeIndex] = candidatePeriodIndex;
                             this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                             ++perfCounters.MovesAccepted;
@@ -133,8 +133,8 @@ namespace Osu.Cof.Ferm.Heuristics
                             ++perfCounters.MovesRejected;
                         }
 
-                        this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
-                        this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                        this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
+                        this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
                         this.MoveLog.TreeIDByMove.Add(treeIndex);
 
                         if (decrementPeriodIndex)
@@ -148,15 +148,15 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                 }
 
-                if (acceptedObjectiveFunction <= previousBestObjectiveFunction)
+                if (acceptedFinancialValue <= previousBestObjectiveFunction)
                 {
                     // convergence: stop if no improvement
                     break;
                 }
-                previousBestObjectiveFunction = acceptedObjectiveFunction;
+                previousBestObjectiveFunction = acceptedFinancialValue;
             }
 
-            this.BestObjectiveFunction = acceptedObjectiveFunction;
+            this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = acceptedFinancialValue;
             this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
             stopwatch.Stop();

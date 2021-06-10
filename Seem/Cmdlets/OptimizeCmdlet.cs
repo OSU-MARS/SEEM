@@ -41,7 +41,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         [Parameter]
         [ValidateNotNullOrEmpty]
-        [ValidateRange(1, 100)]
+        [ValidateRange(0, 100)]
         public List<int> PlanningPeriods { get; set; }
         [Parameter]
         [ValidateNotNullOrEmpty]
@@ -90,6 +90,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.TreeModel = TreeModel.OrganonNwo;
         }
 
+        protected virtual bool HeuristicEvaluatesDiscountRates
+        {
+            get { return false; }
+        }
+
         protected abstract Heuristic<TParameters> CreateHeuristic(TParameters heuristicParameters, RunParameters runParameters);
 
         protected virtual IHarvest CreateThin(int thinPeriodIndex)
@@ -117,21 +122,21 @@ namespace Osu.Cof.Ferm.Cmdlets
         // for now, assume runtime complexity is linear with the number of periods requiring thinning optimization
         // This is simplified, but it's more accurate than assuming all runs have equal cost regardless of the number of timesteps required and is
         // a reasonable approximation for hero, Monte Carlo heuristics, prescription enumeration, and genetic algorithms.
-        protected static int EstimateRuntimeCost(HeuristicSolutionPosition position, HeuristicResultSet<TParameters> results)
+        protected static int EstimateRuntimeCost(HeuristicResultPosition position, HeuristicResults<TParameters> results)
         {
             int periodWeight = 0; // no thins so only a single trajectory need be simulated; assume cost is negligible as no optimization occurs
-            int firstThinPeriod = results.FirstThinPeriod[position.FirstThinPeriodIndex];
+            int firstThinPeriod = results.FirstThinPeriods[position.FirstThinPeriodIndex];
             if (firstThinPeriod != Constant.NoThinPeriod)
             {
                 int planningPeriods = results.PlanningPeriods[position.PlanningPeriodIndex];
                 periodWeight = planningPeriods - firstThinPeriod;
 
-                int secondThinPeriod = results.SecondThinPeriod[position.SecondThinPeriodIndex];
+                int secondThinPeriod = results.SecondThinPeriods[position.SecondThinPeriodIndex];
                 if (secondThinPeriod != Constant.NoThinPeriod)
                 {
                     periodWeight += planningPeriods - secondThinPeriod;
 
-                    int thirdThinPeriod = results.ThirdThinPeriod[position.ThirdThinPeriodIndex];
+                    int thirdThinPeriod = results.ThirdThinPeriods[position.ThirdThinPeriodIndex];
                     if (thirdThinPeriod == Constant.NoThinPeriod)
                     {
                         return planningPeriods - thirdThinPeriod;
@@ -149,27 +154,29 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
+            if ((this.TimberObjective == TimberObjective.ScribnerVolume) && (this.DiscountRates.Count > 1) && (this.HeuristicEvaluatesDiscountRates == false))
+            {
+                // low priority to improve this but at least warn about limited support
+                this.WriteWarning("Timber optimization objective is " + this.TimberObjective + " but multiple discount rates are specified. Optimization will be unnecessarily repeated for each discount rate.");
+            }
+
             Stopwatch stopwatch = new();
             stopwatch.Start();
             HeuristicPerformanceCounters totalPerfCounters = new();
             int totalRuntimeCost = 0;
 
             int treeCount = this.Stand!.GetTreeRecordCount();
+            List<HeuristicResultPosition> combinationsToEvaluate = new();
             IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
-            HeuristicResultSet<TParameters> results = new(parameterCombinationsForHeuristic, this.DiscountRates, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.PlanningPeriods, this.SolutionPoolSize);
-            for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
+            HeuristicResults<TParameters> results = new(parameterCombinationsForHeuristic, this.DiscountRates, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.PlanningPeriods, this.SolutionPoolSize);
+            for (int parameterIndex = 0; parameterIndex < parameterCombinationsForHeuristic.Count; ++parameterIndex)
             {
-                int planningPeriods = this.PlanningPeriods[planningPeriodIndex];
                 for (int firstThinIndex = 0; firstThinIndex < this.FirstThinPeriod.Count; ++firstThinIndex)
                 {
                     int firstThinPeriod = this.FirstThinPeriod[firstThinIndex];
                     if (firstThinPeriod == 0)
                     {
                         throw new ParameterOutOfRangeException(nameof(this.FirstThinPeriod), "First thinning period cannot be zero.");
-                    }
-                    if (firstThinPeriod >= planningPeriods) // minimum 10 years between thinning and final harvest (if five year time step)
-                    {
-                        continue;
                     }
 
                     for (int secondThinIndex = 0; secondThinIndex < this.SecondThinPeriod.Count; ++secondThinIndex)
@@ -181,7 +188,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         }
                         if (secondThinPeriod != Constant.NoThinPeriod)
                         {
-                            if ((firstThinPeriod == Constant.NoThinPeriod) || (firstThinPeriod >= secondThinPeriod) || (secondThinPeriod >= planningPeriods))
+                            if ((firstThinPeriod == Constant.NoThinPeriod) || (firstThinPeriod >= secondThinPeriod))
                             {
                                 // can't perform a second thin if
                                 // - there was no first thin
@@ -191,6 +198,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                             }
                         }
 
+                        int lastOfFirstOrSecondThinPeriod = Math.Max(firstThinPeriod, secondThinPeriod);
                         for (int thirdThinIndex = 0; thirdThinIndex < this.ThirdThinPeriod.Count; ++thirdThinIndex)
                         {
                             int thirdThinPeriod = this.ThirdThinPeriod[thirdThinIndex];
@@ -200,7 +208,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                             }
                             if (thirdThinPeriod != Constant.NoThinPeriod)
                             {
-                                if ((secondThinPeriod == Constant.NoThinPeriod) || (secondThinPeriod >= thirdThinPeriod) || (thirdThinPeriod >= planningPeriods))
+                                if ((secondThinPeriod == Constant.NoThinPeriod) || (secondThinPeriod >= thirdThinPeriod))
                                 {
                                     // can't perform a third thin if
                                     // - there was no second thin
@@ -210,39 +218,65 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 }
                             }
 
-                            for (int parameterIndex = 0; parameterIndex < parameterCombinationsForHeuristic.Count; ++parameterIndex)
+                            int lastOfFirstSecondOrThirdThinPeriod = Math.Max(lastOfFirstOrSecondThinPeriod, thirdThinPeriod);
+                            for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
                             {
-                                for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
+                                int planningPeriods = this.PlanningPeriods[planningPeriodIndex];
+                                if (lastOfFirstSecondOrThirdThinPeriod >= planningPeriods)
                                 {
-                                    // distributions are unique per combination of run tuple (discount rate, thins 1, 2, 3, and rotation)
-                                    // and heuristic parameters but solution pools are shared across heuristic parameters
-                                    // TODO: include parameter index in solution pool
-                                    HeuristicObjectiveDistribution distribution = new()
+                                    // last thin would occur before or in the same period as the final harvest
+                                    continue;
+                                }
+
+                                if (this.HeuristicEvaluatesDiscountRates)
+                                {
+                                    HeuristicResultPosition position = new()
                                     {
-                                        DiscountRateIndex = discountRateIndex,
+                                        DiscountRateIndex = Constant.AllDiscountRatePosition,
                                         FirstThinPeriodIndex = firstThinIndex,
                                         ParameterIndex = parameterIndex,
                                         PlanningPeriodIndex = planningPeriodIndex,
                                         SecondThinPeriodIndex = secondThinIndex,
                                         ThirdThinPeriodIndex = thirdThinIndex
                                     };
-                                    results.Distributions.Add(distribution);
-                                    totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(distribution, results);
+                                    combinationsToEvaluate.Add(position);
+                                    totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
+                                }
+                                else
+                                {
+                                    // heuristic optimizes for one discount rate at a time
+                                    for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
+                                    {
+                                        // distributions are unique per combination of run tuple (discount rate, thins 1, 2, 3, and rotation)
+                                        // and heuristic parameters but solution pools are shared across heuristic parameters
+                                        HeuristicResultPosition position = new()
+                                        {
+                                            DiscountRateIndex = discountRateIndex,
+                                            FirstThinPeriodIndex = firstThinIndex,
+                                            ParameterIndex = parameterIndex,
+                                            PlanningPeriodIndex = planningPeriodIndex,
+                                            SecondThinPeriodIndex = secondThinIndex,
+                                            ThirdThinPeriodIndex = thirdThinIndex
+                                        };
+                                        combinationsToEvaluate.Add(position);
+                                        totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+
+            OrganonConfiguration organonConfiguration = new(OrganonVariant.Create(this.TreeModel));
             ParallelOptions parallelOptions = new()
             {
                 MaxDegreeOfParallelism = this.Threads
             };
-            int totalRuns = this.BestOf * results.Distributions.Count;
-            totalRuntimeCost *= this.BestOf;
             int runsCompleted = 0;
             int runtimeCostCompleted = 0;
-            OrganonConfiguration organonConfiguration = new(OrganonVariant.Create(this.TreeModel));
+            int totalRuns = this.BestOf * combinationsToEvaluate.Count;
+            totalRuntimeCost *= this.BestOf;
             Task runs = Task.Run(() =>
             {
                 Parallel.For(0, totalRuns, parallelOptions, (int iteration, ParallelLoopState loopState) =>
@@ -251,41 +285,65 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         return;
                     }
-                    int distributionIndex = iteration / this.BestOf;
-                    HeuristicObjectiveDistribution distribution = results.Distributions[distributionIndex];
+                    int resultPositionIndex = iteration / this.BestOf;
+                    HeuristicResultPosition position = combinationsToEvaluate[resultPositionIndex];
 
                     try
                     {
-                        RunParameters runParameters = new(organonConfiguration)
+                        RunParameters runParameters = new(this.DiscountRates, organonConfiguration)
                         {
-                            DiscountRate = results.DiscountRates[distribution.DiscountRateIndex],
-                            PlanningPeriods = this.PlanningPeriods[distribution.PlanningPeriodIndex],
+                            LastPlanningPeriod = this.PlanningPeriods[position.PlanningPeriodIndex],
+                            MaximizeForPlanningPeriod = this.PlanningPeriods[position.PlanningPeriodIndex],
                             TimberObjective = this.TimberObjective,
                             TimberValue = this.TimberValue
                         };
-                        if (this.TryCreateFirstThin(distribution.FirstThinPeriodIndex, out IHarvest? firstThin))
+                        if (this.TryCreateFirstThin(position.FirstThinPeriodIndex, out IHarvest? firstThin))
                         {
                             runParameters.Treatments.Harvests.Add(firstThin);
-                            if (this.TryCreateSecondThin(distribution.SecondThinPeriodIndex, out IHarvest? secondThin))
+                            if (this.TryCreateSecondThin(position.SecondThinPeriodIndex, out IHarvest? secondThin))
                             {
                                 runParameters.Treatments.Harvests.Add(secondThin);
-                                if (this.TryCreateThirdThin(distribution.ThirdThinPeriodIndex, out IHarvest? thirdThin))
+                                if (this.TryCreateThirdThin(position.ThirdThinPeriodIndex, out IHarvest? thirdThin))
                                 {
                                     runParameters.Treatments.Harvests.Add(thirdThin);
                                 }
                             }
                         }
-                        TParameters heuristicParameters = parameterCombinationsForHeuristic[distribution.ParameterIndex];
+                        TParameters heuristicParameters = parameterCombinationsForHeuristic[position.ParameterIndex];
                         Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(heuristicParameters, runParameters);
-                        HeuristicPerformanceCounters perfCounters = currentHeuristic.Run(distribution, results.SolutionIndex);
+                        HeuristicPerformanceCounters perfCounters = currentHeuristic.Run(position, results);
 
                         // accumulate run into results and tracking counters
-                        HeuristicSolutionPool solutionPool = results.SolutionIndex[results.Distributions[distributionIndex]];
-                        int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(distribution, results);
+                        int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
                         lock (results)
                         {
-                            distribution.AddSolution(currentHeuristic, perfCounters);
-                            solutionPool.TryAddOrReplace(currentHeuristic);
+                            if (this.HeuristicEvaluatesDiscountRates)
+                            {
+                                // scatter heuristic's results to discount rates
+                                // For now, only log perf counters once as counts are merged across discount rates. If needed, move acceptance
+                                // and rejection can be tracked by discount rate.
+                                for (int discountRateIndex = 0; discountRateIndex < results.DiscountRates.Count; ++discountRateIndex)
+                                {
+                                    HeuristicResultPosition discountRatePosition = new(position)
+                                    {
+                                        DiscountRateIndex = discountRateIndex
+                                    };
+                                    HeuristicPerformanceCounters perfCountersToAssmilate = perfCounters;
+                                    if (discountRateIndex > 0)
+                                    {
+                                        perfCountersToAssmilate = HeuristicPerformanceCounters.Zero;
+                                    }
+                                    results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCountersToAssmilate, discountRatePosition);
+                                    results.CombinationsEvaluated.Add(discountRatePosition);
+                                }
+                            }
+                            else
+                            {
+                                // heuristic is specific to a single discount rate
+                                results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCounters, position);
+                                results.CombinationsEvaluated.Add(position);
+                            }
+
                             totalPerfCounters += perfCounters;
                             ++runsCompleted;
                             runtimeCostCompleted += estimatedRuntimeCost;
@@ -293,11 +351,16 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     catch (Exception exception)
                     {
-                        throw new AggregateException("Exception encountered during optimization. Discount rate " + results.DiscountRates[distribution.DiscountRateIndex] +
-                                                     ", first thin period " + results.FirstThinPeriod[distribution.FirstThinPeriodIndex] +
-                                                     ", second thin period " + results.SecondThinPeriod[distribution.SecondThinPeriodIndex] +
-                                                     ", third thin period " + results.ThirdThinPeriod[distribution.ThirdThinPeriodIndex] +
-                                                     ", planning length " + results.PlanningPeriods[distribution.PlanningPeriodIndex] +
+                        string discountRate = "vectorized";
+                        if (this.HeuristicEvaluatesDiscountRates == false)
+                        {
+                            discountRate = results.DiscountRates[position.DiscountRateIndex].ToString();
+                        }
+                        throw new AggregateException("Exception encountered during optimization. Discount rate " + discountRate +
+                                                     ", first thin period " + results.FirstThinPeriods[position.FirstThinPeriodIndex] +
+                                                     ", second thin period " + results.SecondThinPeriods[position.SecondThinPeriodIndex] +
+                                                     ", third thin period " + results.ThirdThinPeriods[position.ThirdThinPeriodIndex] +
+                                                     ", planning length " + results.PlanningPeriods[position.PlanningPeriodIndex] +
                                                      ".", 
                                                      exception);
                     }
@@ -325,34 +388,34 @@ namespace Osu.Cof.Ferm.Cmdlets
                 if (sleepsSinceLastStatusUpdate > 30)
                 {
                     int currentRun = Math.Min(runsCompleted + 1, totalRuns);
-                    int currentDistributionIndex = Math.Min(currentRun / this.BestOf, results.Distributions.Count - 1);
-                    HeuristicObjectiveDistribution mostRecentDistribution = results.Distributions[currentDistributionIndex];
+                    int currentPositionIndex = Math.Min(currentRun / this.BestOf, combinationsToEvaluate.Count - 1);
+                    HeuristicResultPosition mostRecentCombination = combinationsToEvaluate[currentPositionIndex];
 
                     mostRecentEvaluationPoint.Clear();
                     mostRecentEvaluationPoint.Append("run " + currentRun + "/" + totalRuns);
                     if (this.PlanningPeriods.Count > 1)
                     {
-                        mostRecentEvaluationPoint.Append(", rotation " + mostRecentDistribution.PlanningPeriodIndex + "/" + this.PlanningPeriods.Count);
+                        mostRecentEvaluationPoint.Append(", rotation " + mostRecentCombination.PlanningPeriodIndex + "/" + this.PlanningPeriods.Count);
                     }
                     if (this.FirstThinPeriod.Count > 1)
                     {
-                        mostRecentEvaluationPoint.Append(", thin 1 " + mostRecentDistribution.FirstThinPeriodIndex + "/" + this.FirstThinPeriod.Count);
+                        mostRecentEvaluationPoint.Append(", thin 1 " + mostRecentCombination.FirstThinPeriodIndex + "/" + this.FirstThinPeriod.Count);
                     }
                     if (this.SecondThinPeriod.Count > 1)
                     {
-                        mostRecentEvaluationPoint.Append(", 2 " + mostRecentDistribution.SecondThinPeriodIndex + "/" + this.SecondThinPeriod.Count);
+                        mostRecentEvaluationPoint.Append(", 2 " + mostRecentCombination.SecondThinPeriodIndex + "/" + this.SecondThinPeriod.Count);
                     }
                     if (this.ThirdThinPeriod.Count > 1)
                     {
-                        mostRecentEvaluationPoint.Append(", 3 " + mostRecentDistribution.ThirdThinPeriodIndex + "/" + this.ThirdThinPeriod.Count);
+                        mostRecentEvaluationPoint.Append(", 3 " + mostRecentCombination.ThirdThinPeriodIndex + "/" + this.ThirdThinPeriod.Count);
                     }
                     if (parameterCombinationsForHeuristic.Count > 1)
                     {
-                        mostRecentEvaluationPoint.Append(", parameters " + mostRecentDistribution.ParameterIndex + "/" + parameterCombinationsForHeuristic.Count);
+                        mostRecentEvaluationPoint.Append(", parameters " + mostRecentCombination.ParameterIndex + "/" + parameterCombinationsForHeuristic.Count);
                     }
-                    if (this.DiscountRates.Count > 1)
+                    if ((this.HeuristicEvaluatesDiscountRates == false) && (this.DiscountRates.Count > 1))
                     {
-                        mostRecentEvaluationPoint.Append(", rate " + mostRecentDistribution.DiscountRateIndex + "/" + this.DiscountRates.Count);
+                        mostRecentEvaluationPoint.Append(", rate " + mostRecentCombination.DiscountRateIndex + "/" + this.DiscountRates.Count);
                     }
                     mostRecentEvaluationPoint.Append(" (" + this.Threads + " threads)");
 
@@ -371,12 +434,12 @@ namespace Osu.Cof.Ferm.Cmdlets
             stopwatch.Stop();
 
             this.WriteObject(results);
-            if (results.Distributions.Count == 1)
+            if (results.CombinationsEvaluated.Count == 1)
             {
-                HeuristicObjectiveDistribution firstDistribution = results.Distributions[0];
-                this.WriteSingleDistributionSummary(results.SolutionIndex[firstDistribution].High, firstDistribution, totalPerfCounters, stopwatch.Elapsed);
+                HeuristicResultPosition firstPosition = results.CombinationsEvaluated[0];
+                this.WriteSingleDistributionSummary(results[firstPosition], totalPerfCounters, stopwatch.Elapsed);
             }
-            else if (results.Distributions.Count > 1)
+            else if (results.CombinationsEvaluated.Count > 1)
             {
                 this.WriteMultipleDistributionSummary(results, totalPerfCounters, stopwatch.Elapsed);
             }
@@ -386,20 +449,15 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
         }
 
-        private void WriteMultipleDistributionSummary(HeuristicResultSet<TParameters> results, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
+        private void WriteMultipleDistributionSummary(HeuristicResults<TParameters> results, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
         {
-            Heuristic? highHeuristic = results.SolutionIndex[results.Distributions[0]].High;
-            if (highHeuristic == null)
-            {
-                throw new ArgumentOutOfRangeException(nameof(results));
-            }
-            results.SolutionIndex.GetPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected);
+            results.GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected);
 
             base.WriteVerbose(String.Empty); // Visual Studio Code display mangling workaround
             this.WriteVerbose("{0}: {1} configurations with {2} runs in {3:0.00} minutes ({4:0.00}M timesteps in {5:0.00} core-minutes, {6:0.00}% move acceptance, {7} solutions pooled, {8:0.00}% pool acceptance).",
-                              highHeuristic.GetName(),
-                              results.Distributions.Count,
-                              this.BestOf * results.Distributions.Count,
+                              this.GetName(),
+                              results.CombinationsEvaluated.Count,
+                              this.BestOf * results.CombinationsEvaluated.Count,
                               elapsedTime.TotalMinutes,
                               1E-6F * totalPerfCounters.GrowthModelTimesteps,
                               totalPerfCounters.Duration.TotalMinutes,
@@ -408,11 +466,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                               100.0F * solutionsAccepted / (solutionsAccepted + solutionsRejected));
         }
 
-        private void WriteSingleDistributionSummary(Heuristic? heuristic, HeuristicObjectiveDistribution distribution, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
+        private void WriteSingleDistributionSummary(HeuristicResult result, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
         {
+            Heuristic? heuristic = result.Pool.High;
             if (heuristic == null)
             {
-                throw new ArgumentNullException(nameof(heuristic));
+                throw new ArgumentNullException(nameof(result), "Result's solution pool does not have a high heuristic.");
             }
 
             float maximumHarvest = Single.MinValue;
@@ -436,7 +495,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             int totalMoves = totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected;
             this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", heuristic.GetName(), totalMoves, totalPerfCounters.MovesAccepted, (float)totalPerfCounters.MovesAccepted / (float)totalMoves, totalPerfCounters.MovesRejected, (float)totalPerfCounters.MovesRejected / (float)totalMoves);
-            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.BestObjectiveFunction, distribution.BestObjectiveFunctionBySolution.Average(), heuristic.AcceptedObjectiveFunctionByMove.Last());
+            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.HighestFinancialValueByDiscountRate, result.Distribution.HighestFinancialValueBySolution.Average(), heuristic.AcceptedFinancialValueByDiscountRateAndMove.Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 
             double totalSeconds = totalPerfCounters.Duration.TotalSeconds;

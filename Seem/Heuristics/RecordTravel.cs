@@ -39,7 +39,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "RecordTravel";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
         {
             if ((this.Alpha < 0.0F) || (this.Alpha >  1.0F))
             {
@@ -85,17 +85,17 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            this.EvaluateInitialSelection(position.DiscountRateIndex, this.Iterations, perfCounters);
 
-            float acceptedObjectiveFunction = this.BestObjectiveFunction;
+            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
-            int iterationsSinceObjectiveImprovedOrReheat = 0;
+            int iterationsSinceFinancialValueIncreaseOrReheat = 0;
             float previousObjectiveFunction = Single.MinValue;
             float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
-            float deviation = this.RelativeDeviation * MathF.Abs(this.BestObjectiveFunction) + this.FixedDeviation;
+            float deviation = this.RelativeDeviation * MathF.Abs(this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex]) + this.FixedDeviation;
             for (int iteration = 1; (iteration < this.Iterations) && (iterationsSinceBestObjectiveImproved < this.StopAfter); deviation *= this.Alpha, ++iteration)
             {
                 int firstTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
@@ -135,21 +135,21 @@ namespace Osu.Cof.Ferm.Heuristics
                 candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
                 perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
                 ++iterationsSinceBestObjectiveImproved;
-                ++iterationsSinceObjectiveImprovedOrReheat;
+                ++iterationsSinceFinancialValueIncreaseOrReheat;
 
-                float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                float minimumAcceptableObjectiveFunction = this.BestObjectiveFunction - deviation;
-                if ((candidateObjectiveFunction > minimumAcceptableObjectiveFunction) || (candidateObjectiveFunction > previousObjectiveFunction))
+                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                float minimumAcceptableFinancialVlue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] - deviation;
+                if ((candidateFinancialValue > minimumAcceptableFinancialVlue) || (candidateFinancialValue > previousObjectiveFunction))
                 {
                     // accept move
-                    acceptedObjectiveFunction = candidateObjectiveFunction;
+                    acceptedFinancialValue = candidateFinancialValue;
                     this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
-                    iterationsSinceObjectiveImprovedOrReheat = 0;
+                    iterationsSinceFinancialValueIncreaseOrReheat = 0;
                     ++perfCounters.MovesAccepted;
 
-                    if (acceptedObjectiveFunction > this.BestObjectiveFunction)
+                    if (acceptedFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
                     {
-                        this.BestObjectiveFunction = acceptedObjectiveFunction;
+                        this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = acceptedFinancialValue;
                         this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
                     }
@@ -172,20 +172,20 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
-                this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
+                this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
                 this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
                 if (iterationsSinceBestObjectiveImproved > this.ChangeToExchangeAfter)
                 {
                     this.MoveType = MoveType.TwoOptExchange;
                 }
-                if (iterationsSinceObjectiveImprovedOrReheat == this.IncreaseAfter)
+                if (iterationsSinceFinancialValueIncreaseOrReheat == this.IncreaseAfter)
                 {
-                    deviation += this.RelativeIncrease * MathF.Abs(this.BestObjectiveFunction) + this.FixedIncrease;
-                    iterationsSinceObjectiveImprovedOrReheat = 0;
+                    deviation += this.RelativeIncrease * MathF.Abs(this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex]) + this.FixedIncrease;
+                    iterationsSinceFinancialValueIncreaseOrReheat = 0;
                 }
-                previousObjectiveFunction = acceptedObjectiveFunction;
+                previousObjectiveFunction = acceptedFinancialValue;
             }
 
             stopwatch.Stop();

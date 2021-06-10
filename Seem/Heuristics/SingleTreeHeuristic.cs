@@ -12,9 +12,9 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveLog = new SingleTreeMoveLog();
         }
 
-        protected override void EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected override void EvaluateInitialSelection(int discountRateIndex, int moveCapacity, HeuristicPerformanceCounters perfCounters)
         {
-            base.EvaluateInitialSelection(moveCapacity, perfCounters);
+            base.EvaluateInitialSelection(discountRateIndex, moveCapacity, perfCounters);
             
             this.MoveLog.TreeIDByMove.Capacity = moveCapacity;
             this.MoveLog.TreeIDByMove.Add(-1);

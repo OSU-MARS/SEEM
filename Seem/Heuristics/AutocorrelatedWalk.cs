@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "AutocorrelatedWalk";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
         {
             if (this.Iterations < 1)
             {
@@ -30,22 +30,22 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            this.AcceptedObjectiveFunctionByMove.Capacity = this.Iterations;
-            this.CandidateObjectiveFunctionByMove.Capacity = this.Iterations;
+            this.AcceptedFinancialValueByDiscountRateAndMove.Capacity = this.Iterations;
+            this.CandidateFinancialValueByDiscountRateAndMove.Capacity = this.Iterations;
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            this.EvaluateInitialSelection(Constant.HeuristicDefault.DiscountRateIndex, this.Iterations, perfCounters);
 
             for (int iteration = 1; iteration < this.Iterations; ++iteration)
             {
                 this.ConstructTreeSelection(this.HeuristicParameters.ConstructionGreediness);
                 perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-                float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
-                if (candidateObjectiveFunction > this.BestObjectiveFunction)
+                float candidateFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, position.DiscountRateIndex);
+                if (candidateFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
                 {
                     // accept change of tree selection if it improves upon the best solution
-                    this.BestObjectiveFunction = candidateObjectiveFunction;
+                    this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = candidateFinancialValue;
                     this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                     ++perfCounters.MovesAccepted;
                 }
@@ -54,8 +54,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
-                this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex]);
+                this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
             }
 
             stopwatch.Stop();

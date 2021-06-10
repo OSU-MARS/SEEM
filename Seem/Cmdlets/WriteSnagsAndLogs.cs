@@ -20,13 +20,13 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
 
             // header
-            bool runsSpecified = this.Results != null;
+            bool resultsSpecified = this.Results != null;
             if (this.ShouldWriteHeader())
             {
                 StringBuilder line = new("stand,heuristic");
 
                 HeuristicParameters? heuristicParametersForHeader = null;
-                if (runsSpecified)
+                if (resultsSpecified)
                 {
                     heuristicParametersForHeader = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
                 }
@@ -51,15 +51,15 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // rows for periods
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxIndex = runsSpecified ? this.Results!.Distributions.Count : this.Trajectories!.Count;
-            for (int runOrTrajectoryIndex = 0; runOrTrajectoryIndex < maxIndex; ++runOrTrajectoryIndex)
+            int maxIndex = resultsSpecified ? this.Results!.CombinationsEvaluated.Count : this.Trajectories!.Count;
+            for (int positionOrTrajectoryIndex = 0; positionOrTrajectoryIndex < maxIndex; ++positionOrTrajectoryIndex)
             {
-                OrganonStandTrajectory highestTrajectory = this.GetHighestTrajectoryAndLinePrefix(runOrTrajectoryIndex, out StringBuilder linePrefix, out float _);
+                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionOrTrajectoryIndex, out StringBuilder linePrefix, out int _, out float _);
 
-                SnagLogTable snagsAndLogs = new(highestTrajectory, this.MaximumDiameter, this.DiameterClassSize);
-                for (int periodIndex = 0; periodIndex < highestTrajectory.PlanningPeriods; ++periodIndex)
+                SnagLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
+                for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)
                 {
-                    OrganonStand? stand = highestTrajectory.StandByPeriod[periodIndex];
+                    OrganonStand? stand = highTrajectory.StandByPeriod[periodIndex];
                     Debug.Assert(stand != null);
                     string standAge = stand.AgeInYears.ToString(CultureInfo.InvariantCulture);
 

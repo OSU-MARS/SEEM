@@ -8,12 +8,12 @@ namespace Osu.Cof.Ferm.Heuristics
     public class PrescriptionEnumeration : Heuristic<PrescriptionParameters>
     {
         private readonly PrescriptionAllMoveLog? allMoveLog;
-        private readonly PrescriptionSingleMoveLog? singleMoveLog;
+        private readonly PrescriptionSparseMoveLog? highestFinancialValueMoveLog;
 
         public PrescriptionEnumeration(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters)
             : base(stand, heuristicParameters, runParameters)
         {
-            if (heuristicParameters.LogAllMoves)
+            if (this.HeuristicParameters.LogAllMoves)
             {
                 this.allMoveLog = new PrescriptionAllMoveLog();
             }
@@ -22,7 +22,14 @@ namespace Osu.Cof.Ferm.Heuristics
                 // by default, store prescription intensities for only the highest LEV combination of thinning intensities found
                 // This substantially reduces memory footprint in runs where many prescriptions are enumerated and helps to reduce the
                 // size of objective log files. If needed, this can be changed to storing a larger number of prescriptions.
-                this.singleMoveLog = new PrescriptionSingleMoveLog();
+                this.highestFinancialValueMoveLog = new PrescriptionSparseMoveLog(runParameters.DiscountRates.Count);
+            }
+
+            // extend objective function distribution arrays to all discount rates
+            for (int discountRateIndex = 1; discountRateIndex < runParameters.DiscountRates.Count; ++discountRateIndex)
+            {
+                this.AcceptedFinancialValueByDiscountRateAndMove.Add(new());
+                this.CandidateFinancialValueByDiscountRateAndMove.Add(new());
             }
         }
 
@@ -123,27 +130,31 @@ namespace Osu.Cof.Ferm.Heuristics
             // this.CurrentTrajectory.DeselectAllTrees();
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-            float candidateObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
-            if (candidateObjectiveFunction > this.BestObjectiveFunction)
+            List<float> financialValueByDiscountRate = this.GetFinancialValueByDiscountRate(this.CurrentTrajectory);
+            for (int discountRateIndex = 0; discountRateIndex < this.HighestFinancialValueByDiscountRate.Count; ++discountRateIndex)
             {
-                // accept change of prescription if it improves upon the best solution
-                this.BestObjectiveFunction = candidateObjectiveFunction;
-                this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
-
-                if (this.singleMoveLog != null)
+                float candidateFinancialValue = financialValueByDiscountRate[discountRateIndex];
+                if (candidateFinancialValue > this.HighestFinancialValueByDiscountRate[discountRateIndex])
                 {
-                    this.singleMoveLog.Add(perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                    // accept change of prescription if it improves upon the best solution
+                    this.HighestFinancialValueByDiscountRate[discountRateIndex] = candidateFinancialValue;
+                    this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+
+                    if (this.highestFinancialValueMoveLog != null)
+                    {
+                        this.highestFinancialValueMoveLog.SetPrescription(discountRateIndex, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                    }
+
+                    ++perfCounters.MovesAccepted;
+                }
+                else
+                {
+                    ++perfCounters.MovesRejected;
                 }
 
-                ++perfCounters.MovesAccepted;
+                this.AcceptedFinancialValueByDiscountRateAndMove[discountRateIndex].Add(this.HighestFinancialValueByDiscountRate[discountRateIndex]);
+                this.CandidateFinancialValueByDiscountRateAndMove[discountRateIndex].Add(financialValueByDiscountRate[discountRateIndex]);
             }
-            else
-            {
-                ++perfCounters.MovesRejected;
-            }
-
-            this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
-            this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
 
             if (this.allMoveLog != null)
             {
@@ -164,11 +175,11 @@ namespace Osu.Cof.Ferm.Heuristics
             }
             else
             {
-                return this.singleMoveLog;
+                return this.highestFinancialValueMoveLog;
             }
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
         {
             if (this.HeuristicParameters.ConstructionGreediness != Constant.Grasp.FullyGreedyConstructionForMaximization)
             {
@@ -281,10 +292,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;
-            if (this.singleMoveLog != null)
+            if (this.highestFinancialValueMoveLog != null)
             {
                 // since this.singleMoveLog.Add() is called only on improving moves it has no way of setting its count
-                this.singleMoveLog.Count = perfCounters.MovesAccepted + perfCounters.MovesRejected;
+                this.highestFinancialValueMoveLog.LengthInMoves = perfCounters.MovesAccepted + perfCounters.MovesRejected;
             }
             return perfCounters;
         }

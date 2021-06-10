@@ -9,7 +9,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 {
     public class WriteCmdlet : Cmdlet
     {
-        protected const string RateAndAgeCsvHeader = "discountRate,thin1,thin2,thin3,rotation";
+        protected const string RateAndAgeCsvHeader = "thin1,thin2,thin3,rotation,discountRate";
 
         private bool openedExistingFile;
 
@@ -31,11 +31,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.openedExistingFile = false;
         }
 
-        protected static HeuristicParameters GetFirstHeuristicParameters(HeuristicResultSet? results)
+        protected static HeuristicParameters GetFirstHeuristicParameters(HeuristicResults? results)
         {
             Debug.Assert(results != null);
 
-            Heuristic? highHeuristic = results!.SolutionIndex[results!.Distributions[0]].High;
+            Heuristic? highHeuristic = results[results.CombinationsEvaluated[0]].Pool.High;
             if (highHeuristic == null)
             {
                 throw new NotSupportedException("Can't obtain heuristic parameters.");
@@ -48,20 +48,20 @@ namespace Osu.Cof.Ferm.Cmdlets
             return (long)(1E9F * this.LimitGB);
         }
 
-        protected static string GetRateAndAgeCsvValues(StandTrajectory trajectory, float discountRate)
+        protected static string GetRateAndAgeCsvValues(StandTrajectory trajectory, int endPeriodIndex, float discountRate)
         {
-            string discountRateAsString = discountRate.ToString(CultureInfo.InvariantCulture);
-
             int firstThinAgeAsInteger = trajectory.GetFirstThinAge();
             string? firstThinAge = firstThinAgeAsInteger != -1 ? firstThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
             int secondThinAgeAsInteger = trajectory.GetSecondThinAge();
             string? secondThinAge = secondThinAgeAsInteger != -1 ? secondThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
             int thirdThinAgeAsInteger = trajectory.GetThirdThinAge();
             string? thirdThinAge = thirdThinAgeAsInteger != -1 ? thirdThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
-            int rotationLengthAsInteger = trajectory.GetRotationLength();
-            string rotationLength = rotationLengthAsInteger.ToString(CultureInfo.InvariantCulture);
 
-            return discountRateAsString + "," + firstThinAge + "," + secondThinAge + "," + thirdThinAge + "," + rotationLength;
+            int rotationLengthAsInteger = trajectory.GetEndOfPeriodAge(endPeriodIndex);
+            string rotationLength = rotationLengthAsInteger.ToString(CultureInfo.InvariantCulture);
+            string discountRateAsString = discountRate.ToString(CultureInfo.InvariantCulture);
+
+            return firstThinAge + "," + secondThinAge + "," + thirdThinAge + "," + rotationLength + "," + discountRateAsString;
         }
 
         protected StreamWriter GetWriter()

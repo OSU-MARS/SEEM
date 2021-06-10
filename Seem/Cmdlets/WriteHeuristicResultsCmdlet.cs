@@ -1,4 +1,5 @@
-﻿using System.Management.Automation;
+﻿using Osu.Cof.Ferm.Heuristics;
+using System.Management.Automation;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
@@ -6,6 +7,6 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public HeuristicResultSet? Results { get; set; }
+        public HeuristicResults? Results { get; set; }
     }
 }

@@ -25,7 +25,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            if (this.Results!.Distributions.Count < 1)
+            if (this.Results!.CombinationsEvaluated.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results));
             }
@@ -35,8 +35,8 @@ namespace Osu.Cof.Ferm.Cmdlets
             // for now, perform no reduction when Object.ReferenceEquals(lowSolution, highSolution) is true
             if (this.ShouldWriteHeader())
             {
-                HeuristicObjectiveDistribution distribution = this.Results.Distributions[0];
-                HeuristicSolutionPool solution = this.Results.SolutionIndex[distribution];
+                HeuristicResultPosition position = this.Results.CombinationsEvaluated[0];
+                HeuristicSolutionPool solution = this.Results[position].Pool;
                 if ((solution.High == null) || (solution.Low == null))
                 {
                     throw new NotSupportedException("Cannot generate header because first result is missing a high solution or a low solution.");
@@ -66,47 +66,49 @@ namespace Osu.Cof.Ferm.Cmdlets
                 writer.WriteLine(line);
             }
 
-            // sort each iscount rate's runs by decreasing objective function value  
-            List<List<(float Objective, int Index)>> solutionsByDiscountRateIndexAndObjective = new();
-            for (int resultIndex = 0; resultIndex < this.Results.Distributions.Count; ++resultIndex)
+            // sort each discount rate's runs by decreasing objective function value  
+            List<List<(float, HeuristicResultPosition)>> solutionsByDiscountRateIndexAndObjective = new();
+            for (int positionIndex = 0; positionIndex < this.Results.CombinationsEvaluated.Count; ++positionIndex)
             {
-                HeuristicObjectiveDistribution distribution = this.Results.Distributions[resultIndex];
-                Heuristic? highHeuristic = this.Results.SolutionIndex[distribution].High;
-                if (highHeuristic == null)
-                {
-                    throw new NotSupportedException("Result " + resultIndex + " is missing a high solution.");
-                }
-
-                int discountRateIndex = distribution.DiscountRateIndex;
-                while (discountRateIndex >= solutionsByDiscountRateIndexAndObjective.Count)
+                HeuristicResultPosition position = this.Results.CombinationsEvaluated[positionIndex];
+                HeuristicResult result = this.Results[position];
+                HeuristicObjectiveDistribution distribution = result.Distribution;
+                int maxDiscountRateIndex = position.DiscountRateIndex;
+                while (maxDiscountRateIndex >= solutionsByDiscountRateIndexAndObjective.Count)
                 {
                     solutionsByDiscountRateIndexAndObjective.Add(new());
                 }
 
-                List<(float Objective, int Index)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
-                runsForDiscountRate.Add((highHeuristic.BestObjectiveFunction, resultIndex));
+                Heuristic? highHeuristic = result.Pool.High;
+                if (highHeuristic == null)
+                {
+                    throw new NotSupportedException("Result at position " + positionIndex + " is missing a high solution.");
+                }
+
+                List<(float, HeuristicResultPosition)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[maxDiscountRateIndex];
+                runsForDiscountRate.Add((highHeuristic.HighestFinancialValueByDiscountRate[maxDiscountRateIndex], position));
             }
             for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
             {
-                List<(float Objective, int Index)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
-                runsForDiscountRate.Sort((run1, run2) => run2.Objective.CompareTo(run1.Objective)); // descending
+                List<(float Objective, HeuristicResultPosition)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
+                runsForDiscountRate.Sort((run1, run2) => run2.Objective.CompareTo(run1.Objective)); // sort descending
             }
 
             // list runs in declining order of objective function value for logging
             // Runs are listed in groups with each discount rate having the ability to be represented within each group. This controls for reduction in
             // land expectation values with increasing discount rate, enabling preferentiall logging of the move histories for the most desirable runs.
-            List<int> prioritizedResultIndices = new();
+            List<HeuristicResultPosition> prioritizedResults = new();
             int[] resultIndicesByDiscountRate = new int[solutionsByDiscountRateIndexAndObjective.Count];
             for (bool atLeastOneRunAddedByInnerLoop = true; atLeastOneRunAddedByInnerLoop; )
             {
                 atLeastOneRunAddedByInnerLoop = false;
                 for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
                 {
-                    List<(float Objective, int Index)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
+                    List<(float Objective, HeuristicResultPosition Position)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
                     int resultIndexForDiscountRate = resultIndicesByDiscountRate[discountRateIndex];
                     if (resultIndexForDiscountRate < runsForDiscountRate.Count)
                     {
-                        prioritizedResultIndices.Add(runsForDiscountRate[resultIndexForDiscountRate].Index);
+                        prioritizedResults.Add(runsForDiscountRate[resultIndexForDiscountRate].Position);
                         resultIndicesByDiscountRate[discountRateIndex] = ++resultIndexForDiscountRate;
                         atLeastOneRunAddedByInnerLoop = true;
                     }
@@ -115,50 +117,67 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // log runs in declining priority order until either all runs are logged or the file size limit is reached
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            foreach (int resultIndexToLog in prioritizedResultIndices)
+            for (int positionIndex = 0; positionIndex < prioritizedResults.Count; ++positionIndex)
             {
-                HeuristicObjectiveDistribution distribution = this.Results.Distributions[resultIndexToLog];
-                HeuristicSolutionPool solution = this.Results.SolutionIndex[distribution];
-                Heuristic? highHeuristic = solution.High;
-                Heuristic? lowHeuristic = solution.Low;
+                HeuristicResultPosition position = prioritizedResults[positionIndex];
+                HeuristicResult result = this.Results[position];
+                Heuristic? highHeuristic = result.Pool.High;
+                Heuristic? lowHeuristic = result.Pool.Low;
                 if ((highHeuristic == null) || (lowHeuristic == null))
                 {
-                    throw new NotSupportedException("Result " + resultIndexToLog + " is missing a high or low solution.");
+                    throw new NotSupportedException("Result at position " + positionIndex + " is missing a high or low solution.");
                 }
 
-                float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
+                int endPeriodIndex = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
+                float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
                 HeuristicParameters highParameters = highHeuristic.GetParameters();
                 OrganonStandTrajectory highTrajectory = highHeuristic.BestTrajectory;
-                string runPrefix = highTrajectory.Name + "," + 
+                string runPrefix = highTrajectory.Name + "," +
                     highHeuristic.GetName() + "," +
                     highParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate);
+                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
 
-                // for now, assume high and low solutions used the same parameters
+                // solution distribution is informative and should be logged in this case
+                // for now, assume high and low solutions use the same parameters
+                List<float> acceptedFinancialValueByMoveLow = lowHeuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex];
+                List<float> candidateFinancialValueByMoveLow = lowHeuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex];
+                if (lowHeuristic.AcceptedFinancialValueByDiscountRateAndMove.Count > 1)
+                {
+                    acceptedFinancialValueByMoveLow = lowHeuristic.AcceptedFinancialValueByDiscountRateAndMove[position.DiscountRateIndex];
+                    candidateFinancialValueByMoveLow = lowHeuristic.CandidateFinancialValueByDiscountRateAndMove[position.DiscountRateIndex];
+                }
+                List<float> acceptedFinancialValueByMoveHigh = highHeuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex];
+                List<float> candidateFinancialValueByMoveHigh = highHeuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex];
+                if (highHeuristic.AcceptedFinancialValueByDiscountRateAndMove.Count > 1)
+                {
+                    acceptedFinancialValueByMoveHigh = highHeuristic.AcceptedFinancialValueByDiscountRateAndMove[position.DiscountRateIndex];
+                    candidateFinancialValueByMoveHigh = highHeuristic.CandidateFinancialValueByDiscountRateAndMove[position.DiscountRateIndex];
+                }
+
                 IHeuristicMoveLog? highMoveLog = highHeuristic.GetMoveLog();
                 IHeuristicMoveLog? lowMoveLog = lowHeuristic.GetMoveLog();
-                int maximumMoves = distribution.GetMaximumMoves();
-                Debug.Assert(maximumMoves >= lowHeuristic.AcceptedObjectiveFunctionByMove.Count);
-                Debug.Assert(maximumMoves >= highHeuristic.AcceptedObjectiveFunctionByMove.Count);
+                int maximumMoves = result.Distribution.GetMaximumMoves();
+                Debug.Assert((maximumMoves >= acceptedFinancialValueByMoveLow.Count) && (maximumMoves >= candidateFinancialValueByMoveLow.Count));
+                Debug.Assert((maximumMoves >= acceptedFinancialValueByMoveHigh.Count) && (maximumMoves >= candidateFinancialValueByMoveHigh.Count));
                 for (int moveIndex = 0; moveIndex < maximumMoves; moveIndex += this.Step)
                 {
                     string? lowMove = null;
-                    if ((lowMoveLog != null) && (lowMoveLog.Count > moveIndex))
+                    if ((lowMoveLog != null) && (lowMoveLog.LengthInMoves > moveIndex))
                     {
                         lowMove = lowMoveLog.GetCsvValues(moveIndex);
                     }
                     string? lowObjectiveFunction = null;
-                    if (lowHeuristic.AcceptedObjectiveFunctionByMove.Count > moveIndex)
+                    if (acceptedFinancialValueByMoveLow.Count > moveIndex)
                     {
-                        lowObjectiveFunction = lowHeuristic.AcceptedObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        lowObjectiveFunction = acceptedFinancialValueByMoveLow[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
                     string? lowObjectiveFunctionForMove = null;
-                    if (lowHeuristic.CandidateObjectiveFunctionByMove.Count > moveIndex)
+                    if (candidateFinancialValueByMoveLow.Count > moveIndex)
                     {
-                        lowObjectiveFunctionForMove = lowHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        lowObjectiveFunctionForMove = candidateFinancialValueByMoveLow[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    Statistics moveStatistics = distribution.GetObjectiveFunctionStatisticsForMove(moveIndex);
+                    Statistics moveStatistics = result.Distribution.GetObjectiveFunctionStatisticsForMove(moveIndex);
                     string runsWithMoveAtIndex = moveStatistics.Count.ToString(CultureInfo.InvariantCulture);
                     string minObjectiveFunction = moveStatistics.Minimum.ToString(CultureInfo.InvariantCulture);
                     string? lowerQuartileObjectiveFunction = null;
@@ -197,39 +216,39 @@ namespace Osu.Cof.Ferm.Cmdlets
                     string maxObjectiveFunction = moveStatistics.Maximum.ToString(CultureInfo.InvariantCulture);
 
                     string? highMove = null;
-                    if ((highMoveLog != null) && (highMoveLog.Count > moveIndex))
+                    if ((highMoveLog != null) && (highMoveLog.LengthInMoves > moveIndex))
                     {
                         highMove = highMoveLog.GetCsvValues(moveIndex);
                     }
                     string highObjectiveFunction = String.Empty;
-                    if (highHeuristic.AcceptedObjectiveFunctionByMove.Count > moveIndex)
+                    if (acceptedFinancialValueByMoveHigh.Count > moveIndex)
                     {
-                        highObjectiveFunction = highHeuristic.AcceptedObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        highObjectiveFunction = acceptedFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
                     string? highObjectiveFunctionForMove = null;
-                    if (highHeuristic.CandidateObjectiveFunctionByMove.Count > moveIndex)
+                    if (candidateFinancialValueByMoveHigh.Count > moveIndex)
                     {
-                        highObjectiveFunctionForMove = highHeuristic.CandidateObjectiveFunctionByMove[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        highObjectiveFunctionForMove = candidateFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    Debug.Assert(moveStatistics.Maximum >= lowHeuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
-                    Debug.Assert(moveStatistics.Minimum <= highHeuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
-                    writer.WriteLine(runPrefix + "," + 
-                                     moveIndex + "," + 
-                                     runsWithMoveAtIndex + "," + 
+                    Debug.Assert(moveStatistics.Maximum >= acceptedFinancialValueByMoveLow[moveIndex]);
+                    Debug.Assert(moveStatistics.Minimum <= acceptedFinancialValueByMoveHigh[moveIndex]);
+                    writer.WriteLine(runPrefix + "," +
+                                     moveIndex + "," +
+                                     runsWithMoveAtIndex + "," +
                                      lowMove + "," +
                                      lowObjectiveFunction + "," +
                                      lowObjectiveFunctionForMove + "," +
-                                     minObjectiveFunction + "," + 
+                                     minObjectiveFunction + "," +
                                      twoPointFivePercentileObjectiveFunction + "," +
                                      fifthPercentileObjectiveFunction + "," +
-                                     lowerQuartileObjectiveFunction + "," + 
-                                     medianObjectiveFunction + "," + 
-                                     meanObjectiveFunction + "," + 
+                                     lowerQuartileObjectiveFunction + "," +
+                                     medianObjectiveFunction + "," +
+                                     meanObjectiveFunction + "," +
                                      upperQuartileObjectiveFunction + "," +
                                      ninetyFifthPercentileObjectiveFunction + "," +
                                      ninetySevenPointFivePercentileObjectiveFunction + "," +
-                                     maxObjectiveFunction + "," + 
+                                     maxObjectiveFunction + "," +
                                      highMove + "," +
                                      highObjectiveFunction + "," +
                                      highObjectiveFunctionForMove);

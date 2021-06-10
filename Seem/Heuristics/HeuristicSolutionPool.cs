@@ -40,7 +40,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.eliteSolutions[solutionIndex]!.BestTrajectory;
         }
 
-        private void Replace(int replacementIndex, Heuristic heuristic, int[] neighborDistances, int nearestNeighborIndex)
+        private void Replace(int replacementIndex, Heuristic heuristic, int discountRateIndex, int[] neighborDistances, int nearestNeighborIndex)
         {
             this.eliteSolutions[replacementIndex] = heuristic;
             this.UpdateNearestNeighborDistances(replacementIndex, neighborDistances, nearestNeighborIndex);
@@ -49,7 +49,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.lowestEliteObjectiveFunction = Single.MaxValue;
             for (int index = 0; index < this.eliteSolutions.Length; ++index)
             {
-                float solutionObjective = this.eliteSolutions[index]!.BestObjectiveFunction;
+                float solutionObjective = this.eliteSolutions[index]!.HighestFinancialValueByDiscountRate[discountRateIndex];
                 if (solutionObjective < this.lowestEliteObjectiveFunction)
                 {
                     this.lowestEliteObjectiveFunction = solutionObjective;
@@ -58,14 +58,14 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public bool TryAddOrReplace(Heuristic heuristic)
+        public bool TryAddOrReplace(Heuristic heuristic, int discountRateIndex)
         {
             // pool is empty (first time TryAddOrReplace() is called)
             if (this.SolutionsInPool == 0)
             {
                 this.eliteSolutions[0] = heuristic;
                 this.lowestEliteIndex = 0;
-                this.lowestEliteObjectiveFunction = heuristic.BestObjectiveFunction;
+                this.lowestEliteObjectiveFunction = heuristic.HighestFinancialValueByDiscountRate[discountRateIndex];
                 this.SolutionsAccepted = 1;
                 this.SolutionsInPool = 1;
 
@@ -87,7 +87,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (distanceToSolution == 0)
                     {
                         // this solution is already in the pool and therefore doesn't need to be added
-                        Debug.Assert((heuristic.BestObjectiveFunction >= this.Low!.BestObjectiveFunction) && (heuristic.BestObjectiveFunction <= this.High!.BestObjectiveFunction));
+                        Debug.Assert((heuristic.HighestFinancialValueByDiscountRate[discountRateIndex] >= this.Low!.HighestFinancialValueByDiscountRate[discountRateIndex]) && (heuristic.HighestFinancialValueByDiscountRate[discountRateIndex] <= this.High!.HighestFinancialValueByDiscountRate[discountRateIndex]));
                         return false;
                     }
 
@@ -101,9 +101,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 // add solution since pool is still filling
                 this.eliteSolutions[this.SolutionsInPool] = heuristic;
-                if (heuristic.BestObjectiveFunction < this.lowestEliteObjectiveFunction)
+                if (heuristic.HighestFinancialValueByDiscountRate[discountRateIndex] < this.lowestEliteObjectiveFunction)
                 {
-                    this.lowestEliteObjectiveFunction = heuristic.BestObjectiveFunction;
+                    this.lowestEliteObjectiveFunction = heuristic.HighestFinancialValueByDiscountRate[discountRateIndex];
                     this.lowestEliteIndex = this.SolutionsInPool;
                 }
 
@@ -114,33 +114,33 @@ namespace Osu.Cof.Ferm.Heuristics
             }
             else
             {
-                solutionAccepted = this.TryReplaceByDiversityOrObjective(heuristic);
+                solutionAccepted = this.TryReplaceByDiversityOrObjective(heuristic, discountRateIndex);
             }
 
             if (solutionAccepted)
             {
-                if (heuristic.BestObjectiveFunction > this.High!.BestObjectiveFunction)
+                if (heuristic.HighestFinancialValueByDiscountRate[discountRateIndex] > this.High!.HighestFinancialValueByDiscountRate[discountRateIndex])
                 {
                     this.High = heuristic;
                 }
-                else if (heuristic.BestObjectiveFunction < this.Low!.BestObjectiveFunction)
+                else if (heuristic.HighestFinancialValueByDiscountRate[discountRateIndex] < this.Low!.HighestFinancialValueByDiscountRate[discountRateIndex])
                 {
                     this.Low = heuristic;
                 }
                 ++this.SolutionsAccepted;
 
-                Debug.Assert(heuristic.BestObjectiveFunction >= this.Low!.BestObjectiveFunction);
+                Debug.Assert(heuristic.HighestFinancialValueByDiscountRate[discountRateIndex] >= this.Low!.HighestFinancialValueByDiscountRate[discountRateIndex]);
             }
             else
             {
                 ++this.SolutionsRejected;
             }
-            Debug.Assert(heuristic.BestObjectiveFunction <= this.High!.BestObjectiveFunction);
+            Debug.Assert(heuristic.HighestFinancialValueByDiscountRate[discountRateIndex] <= this.High!.HighestFinancialValueByDiscountRate[discountRateIndex]);
 
             return solutionAccepted;
         }
 
-        private bool TryReplaceByDiversityOrObjective(Heuristic heuristic)
+        private bool TryReplaceByDiversityOrObjective(Heuristic heuristic, int discountRateIndex)
         {
             int[] distancesToSolutionsInPool = new int[this.SolutionsInPool];
             int nearestLowerNeighborDistance = SolutionPool.UnknownDistance;
@@ -148,8 +148,8 @@ namespace Osu.Cof.Ferm.Heuristics
             for (int solutionIndex = 0; solutionIndex < this.SolutionsInPool; ++solutionIndex)
             {
                 Heuristic eliteSolution = this.eliteSolutions[solutionIndex]!;
-                float eliteObjective = eliteSolution.BestObjectiveFunction;
-                if (eliteObjective > heuristic.BestObjectiveFunction)
+                float eliteObjective = eliteSolution.HighestFinancialValueByDiscountRate[discountRateIndex];
+                if (eliteObjective > heuristic.HighestFinancialValueByDiscountRate[discountRateIndex])
                 {
                     // for now, treat distances to solutions with more preferable objective functions as irrelevant
                     distancesToSolutionsInPool[solutionIndex] = SolutionPool.UnknownDistance;
@@ -176,14 +176,14 @@ namespace Osu.Cof.Ferm.Heuristics
             // replace on contribution to diversity
             if ((nearestLowerNeighborIndex >= 0) && (nearestLowerNeighborDistance > this.MinimumNeighborDistance))
             {
-                this.Replace(nearestLowerNeighborIndex, heuristic, distancesToSolutionsInPool, nearestLowerNeighborIndex);
+                this.Replace(nearestLowerNeighborIndex, heuristic, discountRateIndex, distancesToSolutionsInPool, nearestLowerNeighborIndex);
                 return true;
             }
 
             // replace worst if this is a new solution
-            if ((heuristic.BestObjectiveFunction > this.lowestEliteObjectiveFunction) && (nearestLowerNeighborDistance != 0))
+            if ((heuristic.HighestFinancialValueByDiscountRate[discountRateIndex] > this.lowestEliteObjectiveFunction) && (nearestLowerNeighborDistance != 0))
             {
-                this.Replace(this.lowestEliteIndex, heuristic, distancesToSolutionsInPool, nearestLowerNeighborIndex);
+                this.Replace(this.lowestEliteIndex, heuristic, discountRateIndex, distancesToSolutionsInPool, nearestLowerNeighborIndex);
                 return true;
             }
 

@@ -42,7 +42,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "SimulatedAnnealing";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
         {
             if ((this.Alpha <= 0.0) || (this.Alpha >= 1.0))
             {
@@ -92,11 +92,11 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            this.EvaluateInitialSelection(position.DiscountRateIndex, this.Iterations, perfCounters);
 
-            float acceptedObjectiveFunction = this.BestObjectiveFunction;
+            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             int iterationsSinceMoveTypeOrObjectiveChange = 0;
-            int iterationsSinceReheatOrBestObjectiveImproved = 0;
+            int iterationsSinceReheatOrFinancialValueIncreased = 0;
             float meanAcceptanceProbability = this.InitialProbability;
             float movingAverageOfObjectiveChange = -1.0F;
             float movingAverageMemory = 1.0F - 1.0F / this.ProbabilityWindowLength;
@@ -149,16 +149,16 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
                     ++iterationsSinceMoveTypeOrObjectiveChange;
-                    ++iterationsSinceReheatOrBestObjectiveImproved;
+                    ++iterationsSinceReheatOrFinancialValueIncreased;
 
-                    float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
+                    float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
 
-                    bool acceptMove = candidateObjectiveFunction > acceptedObjectiveFunction;
+                    bool acceptMove = candidateFinancialValue > acceptedFinancialValue;
                     // require at least one improving move be accepted to set moving average before accepting disimproving moves
                     if ((acceptMove == false) && (logMeanAcceptanceProbability > Single.NegativeInfinity) && (movingAverageOfObjectiveChange > 0.0F))
                     {
                         // objective function increase is negative and log of acceptance probability is negative or zero, so exponent is positive or zero
-                        float objectiveFunctionIncrease = candidateObjectiveFunction - acceptedObjectiveFunction;
+                        float objectiveFunctionIncrease = candidateFinancialValue - acceptedFinancialValue;
                         float exponent = logMeanAcceptanceProbability * objectiveFunctionIncrease / movingAverageOfObjectiveChange;
                         Debug.Assert(exponent >= 0.0F);
                         if (exponent < 10.0F)
@@ -176,7 +176,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     if (acceptMove)
                     {
-                        float objectiveFunctionChange = MathF.Abs(acceptedObjectiveFunction - candidateObjectiveFunction);
+                        float objectiveFunctionChange = MathF.Abs(acceptedFinancialValue - candidateFinancialValue);
                         if (movingAverageOfObjectiveChange < 0.0F)
                         {
                             // acceptance of first move
@@ -188,15 +188,15 @@ namespace Osu.Cof.Ferm.Heuristics
                             movingAverageOfObjectiveChange = movingAverageMemory * movingAverageOfObjectiveChange + (1.0F - movingAverageMemory) * objectiveFunctionChange;
                         }
 
-                        acceptedObjectiveFunction = candidateObjectiveFunction;
+                        acceptedFinancialValue = candidateFinancialValue;
                         this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
-                        if (acceptedObjectiveFunction > this.BestObjectiveFunction)
+                        if (acceptedFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
                         {
-                            this.BestObjectiveFunction = acceptedObjectiveFunction;
+                            this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = acceptedFinancialValue;
                             this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
-                            iterationsSinceReheatOrBestObjectiveImproved = 0;
+                            iterationsSinceReheatOrFinancialValueIncreased = 0;
                         }
 
                         iterationsSinceMoveTypeOrObjectiveChange = 0;
@@ -220,8 +220,8 @@ namespace Osu.Cof.Ferm.Heuristics
                         ++perfCounters.MovesRejected;
                     }
 
-                    this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
-                    this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                    this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
+                    this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
                     this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
                     if (iterationsSinceMoveTypeOrObjectiveChange > this.ChangeToExchangeAfter)
@@ -229,13 +229,13 @@ namespace Osu.Cof.Ferm.Heuristics
                         this.MoveType = MoveType.TwoOptExchange;
                         iterationsSinceMoveTypeOrObjectiveChange = 0;
                     }
-                    if (iterationsSinceReheatOrBestObjectiveImproved > this.ReheatAfter)
+                    if (iterationsSinceReheatOrFinancialValueIncreased > this.ReheatAfter)
                     {
                         // while it's unlikely alpha would be close enough to 1 and reheat intervals short enough to drive the acceptance probability
                         // above one, it is possible
                         meanAcceptanceProbability = Math.Min(meanAcceptanceProbability + this.ReheatBy, 1.0F);
                         logMeanAcceptanceProbability = MathV.Ln(meanAcceptanceProbability);
-                        iterationsSinceReheatOrBestObjectiveImproved = 0;
+                        iterationsSinceReheatOrFinancialValueIncreased = 0;
                     }
                 }
             }

@@ -4,6 +4,8 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class HeuristicPerformanceCounters
     {
+        public static readonly HeuristicPerformanceCounters Zero = new();
+
         public TimeSpan Duration { get; set; }
         // an i7-3770 can easily exceed 2^31 steps per a day with Organon
         // While single heuristic runs are not expected to approach 2^31 timesteps, top level performance counter accumulation across all runs

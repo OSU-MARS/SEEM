@@ -1,9 +1,8 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Osu.Cof.Ferm.Heuristics
 {
     /// <summary>
     /// Distribution of heuristic objective function values at a given tuple and their associated performance counters.
@@ -31,18 +30,18 @@ namespace Osu.Cof.Ferm.Cmdlets
     // Generation of 5th and 95th percentiles at 20 runs requires two more runs be released. Two runs must also be released for the 2.5 and 97.5
     // percentiles at 40 runs total. It's more likely calculating these percentiles will release memory but this will not be the case when
     // solution pool sizes are large enough.
-    public class HeuristicObjectiveDistribution : HeuristicSolutionPosition
+    public class HeuristicObjectiveDistribution
     {
-        private readonly List<List<float>> acceptedObjectivesBySolution;
+        private readonly List<List<float>> acceptedFinancialValueBySolution;
 
-        public List<float> BestObjectiveFunctionBySolution { get; private init; }
+        public List<float> HighestFinancialValueBySolution { get; private init; }
         public List<HeuristicPerformanceCounters> PerfCountersBySolution { get; private init; }
 
         public HeuristicObjectiveDistribution()
         {
-            this.acceptedObjectivesBySolution = new();
+            this.acceptedFinancialValueBySolution = new();
 
-            this.BestObjectiveFunctionBySolution = new();
+            this.HighestFinancialValueBySolution = new();
             this.PerfCountersBySolution = new();
         }
 
@@ -50,22 +49,28 @@ namespace Osu.Cof.Ferm.Cmdlets
         { 
             get 
             {
-                Debug.Assert(this.BestObjectiveFunctionBySolution.Count == this.PerfCountersBySolution.Count);
-                return this.BestObjectiveFunctionBySolution.Count; 
+                Debug.Assert(this.HighestFinancialValueBySolution.Count == this.PerfCountersBySolution.Count);
+                return this.HighestFinancialValueBySolution.Count; 
             }
         }
 
-        public void AddSolution(Heuristic heuristic, HeuristicPerformanceCounters perfCounters)
+        public void AddSolution(Heuristic heuristic, int discountRateIndex, HeuristicPerformanceCounters perfCounters)
         {
-            this.BestObjectiveFunctionBySolution.Add(heuristic.BestObjectiveFunction);
-            this.acceptedObjectivesBySolution.Add(heuristic.AcceptedObjectiveFunctionByMove);
+            int moveDiscountRateIndex = discountRateIndex;
+            if (heuristic.AcceptedFinancialValueByDiscountRateAndMove.Count == 1)
+            {
+                moveDiscountRateIndex = 0; // heuristic does not report objective functions across discount rates
+            }
+            this.acceptedFinancialValueBySolution.Add(heuristic.AcceptedFinancialValueByDiscountRateAndMove[moveDiscountRateIndex]);
+
+            this.HighestFinancialValueBySolution.Add(heuristic.HighestFinancialValueByDiscountRate[discountRateIndex]);
             this.PerfCountersBySolution.Add(perfCounters);
         }
 
         public int GetMaximumMoves()
         {
             int maximumMoves = Int32.MinValue;
-            foreach (List<float> acceptedObjectives in this.acceptedObjectivesBySolution)
+            foreach (List<float> acceptedObjectives in this.acceptedFinancialValueBySolution)
             {
                 if (acceptedObjectives.Count > maximumMoves)
                 {
@@ -79,7 +84,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             // assemble objective functions for this move
             List<float> objectiveFunctions = new();
-            foreach (List<float> acceptedObjectives in this.acceptedObjectivesBySolution)
+            foreach (List<float> acceptedObjectives in this.acceptedFinancialValueBySolution)
             {
                 if (moveIndex < acceptedObjectives.Count)
                 {

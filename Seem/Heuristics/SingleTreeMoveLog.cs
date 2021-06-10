@@ -12,7 +12,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.TreeIDByMove = new List<int>();
         }
 
-        public int Count
+        public int LengthInMoves
         {
             get { return this.TreeIDByMove.Count; }
         }

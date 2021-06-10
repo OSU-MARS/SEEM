@@ -7,33 +7,98 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public abstract class Heuristic : PseudorandomizingTask
     {
-        public List<float> AcceptedObjectiveFunctionByMove { get; protected set; }
-        public float BestObjectiveFunction { get; protected set; }
+        public List<List<float>> AcceptedFinancialValueByDiscountRateAndMove { get; protected set; }
         public OrganonStandTrajectory BestTrajectory { get; private init; }
-        public List<float> CandidateObjectiveFunctionByMove { get; protected set; }
+        public List<List<float>> CandidateFinancialValueByDiscountRateAndMove { get; protected set; }
         public OrganonStandTrajectory CurrentTrajectory { get; private init; }
+        public List<float> HighestFinancialValueByDiscountRate { get; protected set; }
         public RunParameters RunParameters { get; private init; }
 
         protected Heuristic(OrganonStand stand, RunParameters runParameters)
         {
-            this.AcceptedObjectiveFunctionByMove = new List<float>();
-            this.BestObjectiveFunction = Single.MinValue; // for now, assume maximization of objective function
+            this.AcceptedFinancialValueByDiscountRateAndMove = new() { new List<float>() };
 
-            this.BestTrajectory = new OrganonStandTrajectory(stand, runParameters.OrganonConfiguration, runParameters.TimberValue, runParameters.PlanningPeriods)
+            this.BestTrajectory = new OrganonStandTrajectory(stand, runParameters.OrganonConfiguration, runParameters.TimberValue, runParameters.LastPlanningPeriod)
             {
                 Heuristic = this
             };
             this.BestTrajectory.Treatments.CopyFrom(runParameters.Treatments);
 
-            this.CandidateObjectiveFunctionByMove = new List<float>();
+            this.CandidateFinancialValueByDiscountRateAndMove = new() { new List<float>() };
 
             this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
             this.CurrentTrajectory.Name = this.CurrentTrajectory.Name + "Current";
 
+            this.HighestFinancialValueByDiscountRate = new(runParameters.DiscountRates.Count);
             this.RunParameters = runParameters;
+
+            for (int discountRateIndex = 0; discountRateIndex < runParameters.DiscountRates.Count; ++discountRateIndex)
+            {
+                this.HighestFinancialValueByDiscountRate.Add(Single.MinValue);
+            }
         }
 
         public abstract string GetName();
+
+        public float GetFinancialValue(StandTrajectory trajectory, int discountRateIndex)
+        {
+            return this.GetFinancialValue(trajectory, this.RunParameters.DiscountRates[discountRateIndex]);
+        }
+
+        protected float GetFinancialValue(StandTrajectory trajectory, float discountRate)
+        {
+            Debug.Assert(trajectory.PeriodLengthInYears > 0);
+
+            // find objective function value
+            // Volume objective functions are in m³/ha or MBF/ac.
+            float objectiveFunction;
+            if ((this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue) ||
+                (this.RunParameters.TimberObjective == TimberObjective.NetPresentValue))
+            {
+                // net present value of first rotation
+                // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
+                // TODO: support per species pricing
+                objectiveFunction = trajectory.GetNetPresentValue(discountRate, this.RunParameters.MaximizeForPlanningPeriod);
+
+                if (this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
+                {
+                    int rotationLengthInYears = trajectory.GetEndOfPeriodAge(this.RunParameters.MaximizeForPlanningPeriod);
+                    float presentToFutureConversionFactor = TimberValue.GetAppreciationFactor(discountRate, rotationLengthInYears);
+                    float landExpectationValue = presentToFutureConversionFactor * objectiveFunction / (presentToFutureConversionFactor - 1.0F);
+                    objectiveFunction = landExpectationValue;
+                }
+
+                // convert from US$/ha to USk$/ha
+                objectiveFunction *= 0.001F;
+            }
+            else if (this.RunParameters.TimberObjective == TimberObjective.ScribnerVolume)
+            {
+                // TODO: move this out of financial objective calculations, left here as legacy support for now 
+                // direct volume addition
+                objectiveFunction = 0.0F;
+                for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
+                {
+                    objectiveFunction += trajectory.ThinningVolume.GetScribnerTotal(periodIndex);
+                }
+                objectiveFunction += trajectory.StandingVolume.GetScribnerTotal(trajectory.PlanningPeriods - 1);
+            }
+            else
+            {
+                throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");
+            }
+
+            return objectiveFunction;
+        }
+
+        protected List<float> GetFinancialValueByDiscountRate(StandTrajectory trajectory)
+        {
+            List<float> objectiveFunctionByDiscountRate = new(this.RunParameters.DiscountRates.Count);
+            for (int discountRateIndex = 0; discountRateIndex < this.RunParameters.DiscountRates.Count; ++discountRateIndex)
+            {
+                objectiveFunctionByDiscountRate.Add(this.GetFinancialValue(trajectory, this.RunParameters.DiscountRates[discountRateIndex]));
+            }
+            return objectiveFunctionByDiscountRate;
+        }
 
         protected int GetOneOptCandidateRandom(int currentHarvestPeriod, IList<int> thinningPeriods)
         {
@@ -65,7 +130,7 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         public abstract HeuristicParameters GetParameters();
-        public abstract HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex);
+        public abstract HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex);
     }
 
     public abstract class Heuristic<TParameters> : Heuristic where TParameters : HeuristicParameters
@@ -149,13 +214,13 @@ namespace Osu.Cof.Ferm.Heuristics
             return treeSelectionsRandomized;
         }
 
-        protected int ConstructTreeSelection(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        protected int ConstructTreeSelection(HeuristicResultPosition position, HeuristicResults solutionIndex)
         {
             // default to fully random construction if there is no existing solution
             float constructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
             // attempt to find an existing solution with the same set of thinning timings
             // If found, the existing solution's discount rate and number of planning periods may differ.
-            if (solutionIndex.TryFindMatchingThinnings(position, out HeuristicSolutionPool? existingSolutions))
+            if (solutionIndex.TryFindSolutionsMatchingThinnings(position, out HeuristicSolutionPool? existingSolutions))
             {
                 Debug.Assert(existingSolutions.SolutionsInPool > 0);
                 OrganonStandTrajectory eliteSolution = existingSolutions.GetEliteSolution();
@@ -166,65 +231,22 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.ConstructTreeSelection(constructionGreediness);
         }
 
-        protected virtual void EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected virtual void EvaluateInitialSelection(int discountRateIndex, int moveCapacity, HeuristicPerformanceCounters perfCounters)
         {
-            this.AcceptedObjectiveFunctionByMove.Capacity = moveCapacity;
-            this.CandidateObjectiveFunctionByMove.Capacity = moveCapacity;
+            this.AcceptedFinancialValueByDiscountRateAndMove[discountRateIndex].Capacity = moveCapacity;
+            this.CandidateFinancialValueByDiscountRateAndMove[discountRateIndex].Capacity = moveCapacity;
 
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
             this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
-            this.BestObjectiveFunction = this.GetObjectiveFunction(this.CurrentTrajectory);
-            this.AcceptedObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
-            this.CandidateObjectiveFunctionByMove.Add(this.BestObjectiveFunction);
+            float objectiveFunction = this.GetFinancialValue(this.CurrentTrajectory, discountRateIndex);
+            this.AcceptedFinancialValueByDiscountRateAndMove[discountRateIndex].Add(objectiveFunction);
+            this.CandidateFinancialValueByDiscountRateAndMove[discountRateIndex].Add(objectiveFunction);
+            this.HighestFinancialValueByDiscountRate[discountRateIndex] = objectiveFunction;
         }
 
         public override HeuristicParameters GetParameters()
         {
             return this.HeuristicParameters;
-        }
-
-        public float GetObjectiveFunction(StandTrajectory trajectory)
-        {
-            Debug.Assert(trajectory.PeriodLengthInYears > 0);
-
-            // find objective function value
-            // Volume objective functions are in m³/ha or MBF/ac.
-            float objectiveFunction;
-            if ((this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue) ||
-                (this.RunParameters.TimberObjective == TimberObjective.NetPresentValue))
-            {
-                // net present value of first rotation
-                // Harvest and standing volumes are in board feet and prices are in MBF, hence multiplications by 0.001.
-                // TODO: support per species pricing
-                objectiveFunction = trajectory.GetNetPresentValue(this.RunParameters.DiscountRate);
-
-                if (this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
-                {
-                    int rotationLengthInYears = trajectory.GetRotationLength();
-                    float presentToFutureConversionFactor = TimberValue.GetAppreciationFactor(this.RunParameters.DiscountRate, rotationLengthInYears);
-                    float landExpectationValue = presentToFutureConversionFactor * objectiveFunction / (presentToFutureConversionFactor - 1.0F);
-                    objectiveFunction = landExpectationValue;
-                }
-
-                // convert from US$/ha to USk$/ha
-                objectiveFunction *= 0.001F;
-            }
-            else if (this.RunParameters.TimberObjective == TimberObjective.ScribnerVolume)
-            {
-                // direct volume addition
-                objectiveFunction = 0.0F;
-                for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
-                {
-                    objectiveFunction += trajectory.ThinningVolume.GetScribnerTotal(periodIndex);
-                }
-                objectiveFunction += trajectory.StandingVolume.GetScribnerTotal(trajectory.PlanningPeriods - 1);
-            }
-            else
-            {
-                throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");
-            }
-
-            return objectiveFunction;
         }
     }
 }

@@ -7,6 +7,7 @@ namespace Osu.Cof.Ferm
     internal static class Constant
     {
         public const float AcresPerHectare = 2.47105F;
+        public const int AllDiscountRatePosition = -2;
         public const float CentimetersPerInch = 2.54000F;
         // 100 * pi / (4 * 43560), from definition of crown competition factor
         public const float CrownCompetionConstantEnglish = 0.001803026F;
@@ -140,6 +141,7 @@ namespace Osu.Cof.Ferm
 
         public static class HeuristicDefault
         {
+            public const int DiscountRateIndex = 0;
             public const int HeroMaximumIterations = 25;
             public const float InitialThinningProbability = 0.5F;
         }

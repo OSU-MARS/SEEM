@@ -15,7 +15,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Results != null);
-            if (this.Results.Distributions.Count < 1)
+            if (this.Results.CombinationsEvaluated.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results));
             }
@@ -27,16 +27,17 @@ namespace Osu.Cof.Ferm.Cmdlets
                 writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1bf,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2bf,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3bf,highFinalDbh,highFinalHeight,highFinalCR,highFinalEF,highFinalBF");
             }
 
-            for (int resultIndex = 0; resultIndex < this.Results!.Distributions.Count; ++resultIndex)
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            for (int positionIndex = 0; positionIndex < this.Results!.CombinationsEvaluated.Count; ++positionIndex)
             {
-                HeuristicObjectiveDistribution distribution = this.Results.Distributions[resultIndex];
-                HeuristicSolutionPool solution = this.Results.SolutionIndex[this.Results.Distributions[resultIndex]];
+                HeuristicResultPosition position = this.Results!.CombinationsEvaluated[positionIndex];
+                HeuristicSolutionPool solution = this.Results[position].Pool;
                 if ((solution.High == null) ||
                     (solution.High.BestTrajectory == null) ||
                     (solution.High.BestTrajectory.Heuristic == null) ||
                     (solution.Low == null))
                 {
-                    throw new NotSupportedException("Result " + resultIndex + " is missing a high solution, low solution, high heuristic trajectory, or back link from high trajectory to its generating heuristic.");
+                    throw new NotSupportedException("Result distribution " + positionIndex + " is missing a high solution, low solution, high heuristic trajectory, or back link from high trajectory to its generating heuristic.");
                 }
 
                 OrganonStandTrajectory highTrajectory = solution.High.BestTrajectory;
@@ -59,12 +60,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                     periodBeforeThirdThin = highTrajectory.PlanningPeriods - 1;
                 }
 
-                float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
+                int endPeriodIndex = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
+                float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
                 HeuristicParameters highParameters = solution.High.GetParameters();
-                string linePrefix = highTrajectory.Name + "," + 
-                    highTrajectory.Heuristic.GetName() + "," + 
+                string linePrefix = highTrajectory.Name + "," +
+                    highTrajectory.Heuristic.GetName() + "," +
                     highParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate);
+                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
 
                 Stand? highStandBeforeFirstThin = highTrajectory.StandByPeriod[periodBeforeFirstThin];
                 Stand? highStandBeforeSecondThin = highTrajectory.StandByPeriod[periodBeforeSecondThin];
@@ -202,6 +204,13 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     previousSpeciesCount += highTreeSelection.Length;
                 }
+
+                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                {
+                    this.WriteWarning("Write-Objective: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    break;
+                }
+
             }
         }
     }

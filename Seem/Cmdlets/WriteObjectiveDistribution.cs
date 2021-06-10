@@ -15,7 +15,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Results != null);
-            if (this.Results.Distributions.Count < 1)
+            if (this.Results.CombinationsEvaluated.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results));
             }
@@ -29,27 +29,30 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            for (int resultIndex = 0; resultIndex < this.Results.Distributions.Count; ++resultIndex)
+            for (int positionIndex = 0; positionIndex < this.Results.CombinationsEvaluated.Count; ++positionIndex)
             {
-                HeuristicObjectiveDistribution distribution = this.Results.Distributions[resultIndex];
-                Heuristic? highHeuristic = this.Results.SolutionIndex[distribution].High;
+                HeuristicResultPosition position = this.Results.CombinationsEvaluated[positionIndex];
+                HeuristicResult result = this.Results[position];
+                Heuristic? highHeuristic = result.Pool.High;
                 if (highHeuristic == null)
                 {
-                    throw new NotSupportedException("Run " + resultIndex + " is missing a high solution.");
+                    throw new NotSupportedException("Result at position " + positionIndex + " is missing a high solution.");
                 }
                 OrganonStandTrajectory highTrajectory = highHeuristic.BestTrajectory;
 
-                float discountRate = this.Results.DiscountRates[distribution.DiscountRateIndex];
-                string linePrefix = highTrajectory.Name + "," + 
+                int endPeriodIndex = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
+                float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
+                string linePrefix = highTrajectory.Name + "," +
                                     highHeuristic.GetName() + "," +
                                     highHeuristic.GetParameters().GetCsvValues() + "," +
-                                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, discountRate);
+                                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
 
-                List<float> bestSolutions = distribution.BestObjectiveFunctionBySolution;
+                HeuristicObjectiveDistribution distribution = result.Distribution;
+                List<float> bestSolutions = distribution.HighestFinancialValueBySolution;
                 for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)
                 {
                     HeuristicPerformanceCounters perfCounters = distribution.PerfCountersBySolution[solutionIndex];
-                    writer.WriteLine(linePrefix + "," + 
+                    writer.WriteLine(linePrefix + "," +
                                      solutionIndex.ToString(CultureInfo.InvariantCulture) + "," +
                                      bestSolutions[solutionIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.MovesAccepted.ToString(CultureInfo.InvariantCulture) + "," +
@@ -57,6 +60,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      perfCounters.Duration.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      perfCounters.GrowthModelTimesteps.ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.TreesRandomizedInConstruction.ToString(CultureInfo.InvariantCulture));
+                }
+
+                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                {
+                    this.WriteWarning("Write-ObjectiveDistribution: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    break;
                 }
             }
         }

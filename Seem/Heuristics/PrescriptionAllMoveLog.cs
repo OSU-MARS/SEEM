@@ -34,7 +34,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.ProportionalPercentageByMove3 = new List<float>();
         }
 
-        public int Count
+        public int LengthInMoves
         {
             get 
             {

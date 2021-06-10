@@ -37,7 +37,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Deluge";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicSolutionPosition position, HeuristicSolutionIndex solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
         {
             if (this.ChangeToExchangeAfter < 0)
             {
@@ -72,27 +72,27 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            this.EvaluateInitialSelection(position.DiscountRateIndex, this.Iterations, perfCounters);
             if (this.RainRate.HasValue == false)
             {
-                this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.BestObjectiveFunction / this.Iterations;
+                this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] / this.Iterations;
             }
             if ((this.RainRate.HasValue == false) || (this.RainRate.Value <= 0.0))
             {
                 throw new InvalidOperationException(nameof(this.RainRate));
             }
 
-            float acceptedObjectiveFunction = this.BestObjectiveFunction;
+            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             //float harvestPeriodScalingFactor = (this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / byte.MaxValue;
             float treeIndexScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             // initial selection is considered iteration 0, so loop starts with iteration 1
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
-            float hillClimbingThreshold = this.BestObjectiveFunction;
-            int iterationsSinceBestObjectiveImproved = 0;
-            int iterationsSinceObjectiveImprovedOrMoveTypeChanged = 0;
+            float hillClimbingThreshold = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
+            int iterationsSinceFinancialValueIncrease = 0;
+            int iterationsSinceFinancialValueIncreaseOrMoveTypeChanged = 0;
             int iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
-            float waterLevel = this.IntitialMultiplier * this.BestObjectiveFunction;
+            float waterLevel = this.IntitialMultiplier * this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             for (int iteration = 1; iteration < this.Iterations; ++iteration, waterLevel += this.RainRate.Value)
             {
                 int firstTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
@@ -131,27 +131,27 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
                 perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
-                ++iterationsSinceBestObjectiveImproved;
-                ++iterationsSinceObjectiveImprovedOrMoveTypeChanged;
+                ++iterationsSinceFinancialValueIncrease;
+                ++iterationsSinceFinancialValueIncreaseOrMoveTypeChanged;
                 ++iterationsSinceObjectiveImprovedOrWaterLevelLowered;
 
-                float candidateObjectiveFunction = this.GetObjectiveFunction(candidateTrajectory);
-                if ((candidateObjectiveFunction > waterLevel) || (candidateObjectiveFunction > hillClimbingThreshold))
+                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                if ((candidateFinancialValue > waterLevel) || (candidateFinancialValue > hillClimbingThreshold))
                 {
                     // accept move
-                    acceptedObjectiveFunction = candidateObjectiveFunction;
+                    acceptedFinancialValue = candidateFinancialValue;
                     this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
-                    hillClimbingThreshold = candidateObjectiveFunction;
-                    iterationsSinceObjectiveImprovedOrMoveTypeChanged = 0;
+                    hillClimbingThreshold = candidateFinancialValue;
+                    iterationsSinceFinancialValueIncreaseOrMoveTypeChanged = 0;
                     iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
                     ++perfCounters.MovesAccepted;
 
-                    if (candidateObjectiveFunction > this.BestObjectiveFunction)
+                    if (candidateFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
                     {
-                        this.BestObjectiveFunction = candidateObjectiveFunction;
+                        this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = candidateFinancialValue;
                         this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
-                        iterationsSinceBestObjectiveImproved = 0;
+                        iterationsSinceFinancialValueIncrease = 0;
                     }
                 }
                 else
@@ -172,24 +172,24 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.AcceptedObjectiveFunctionByMove.Add(acceptedObjectiveFunction);
-                this.CandidateObjectiveFunctionByMove.Add(candidateObjectiveFunction);
+                this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
+                this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
                 this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
-                if (iterationsSinceBestObjectiveImproved > this.StopAfter)
+                if (iterationsSinceFinancialValueIncrease > this.StopAfter)
                 {
                     break;
                 }
-                else if (iterationsSinceObjectiveImprovedOrMoveTypeChanged > this.ChangeToExchangeAfter)
+                else if (iterationsSinceFinancialValueIncreaseOrMoveTypeChanged > this.ChangeToExchangeAfter)
                 {
                     // will fire repeatedly but no importa since this is idempotent
                     this.MoveType = MoveType.TwoOptExchange;
-                    iterationsSinceObjectiveImprovedOrMoveTypeChanged = 0;
+                    iterationsSinceFinancialValueIncreaseOrMoveTypeChanged = 0;
                 }
                 else if (iterationsSinceObjectiveImprovedOrWaterLevelLowered > this.LowerWaterAfter)
                 {
                     // could also adjust rain rate but there but does not seem to be a clear need to do so
-                    waterLevel = (1.0F - this.LowerWaterBy) * this.BestObjectiveFunction;
+                    waterLevel = (1.0F - this.LowerWaterBy) * this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
                     hillClimbingThreshold = waterLevel;
                     iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
                 }

@@ -59,6 +59,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Units = Constant.PrescriptionEnumerationDefault.Units;
         }
 
+        protected override bool HeuristicEvaluatesDiscountRates
+        {
+            get { return true; }
+        }
+
         protected override Heuristic<PrescriptionParameters> CreateHeuristic(PrescriptionParameters heuristicParameters, RunParameters runParameters)
         {
             if (this.BestOf != 1)
