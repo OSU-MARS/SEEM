@@ -3,7 +3,6 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm
 {
-
     public class TreeVolumeTable
     {
         // Scribner lumber recovery from BC Firmwood cubic scale

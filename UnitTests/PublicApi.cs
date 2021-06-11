@@ -29,16 +29,6 @@ namespace Osu.Cof.Ferm.Test
             return position;
         }
 
-        private static void AppendObjective(List<float> objectives, Heuristic heuristic, int moveIndex)
-        {
-            if (heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Count > moveIndex)
-            {
-                objectives.Add(heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][moveIndex]);
-
-                Assert.IsTrue(heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][moveIndex] >= heuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][moveIndex]);
-            }
-        }
-
         private static HeuristicResults<HeuristicParameters> CreateResultsSet(HeuristicParameters parameters, int planningPeriods)
         {
             List<HeuristicParameters> parameterCombinations = new() { parameters };
@@ -143,10 +133,10 @@ namespace Osu.Cof.Ferm.Test
             int[] treeSelection = hero.BestTrajectory.IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesSelected = treeSelection.Sum() / thinningPeriod;
 
-            this.TestContext!.WriteLine("best objective: {0} observed, near {1} expected", hero.HighestFinancialValueByDiscountRate, minObjectiveFunctionWithScaledVolume);
-            Assert.IsTrue(hero.HighestFinancialValueByDiscountRate.Count == 1);
-            Assert.IsTrue(hero.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] > minObjectiveFunctionWithScaledVolume);
-            Assert.IsTrue(hero.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] < 1.02F * minObjectiveFunctionWithScaledVolume);
+            float highestFinancialValue = hero.FinancialValue.GetHighestValueForDefaultDiscountRate();
+            this.TestContext!.WriteLine("best objective: {0} observed, near {1} expected", highestFinancialValue, minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(highestFinancialValue > minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(highestFinancialValue < 1.02F * minObjectiveFunctionWithScaledVolume);
         }
 
         [TestMethod]
@@ -311,25 +301,25 @@ namespace Osu.Cof.Ferm.Test
             this.Verify(autocorrelated, autocorrlatedCounters);
 
             // verify distribution
-            float maxHeuristicLev = new float[] { deluge.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex], annealer.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex], thresholdAcceptor.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex], genetic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex], enumerator.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex], recordTravel.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex], tabu.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] }.Max();
+            float maxHeuristicLev = new float[] { deluge.FinancialValue.GetHighestValueForDefaultDiscountRate(), annealer.FinancialValue.GetHighestValueForDefaultDiscountRate(), thresholdAcceptor.FinancialValue.GetHighestValueForDefaultDiscountRate(), genetic.FinancialValue.GetHighestValueForDefaultDiscountRate(), enumerator.FinancialValue.GetHighestValueForDefaultDiscountRate(), recordTravel.FinancialValue.GetHighestValueForDefaultDiscountRate(), tabu.FinancialValue.GetHighestValueForDefaultDiscountRate() }.Max();
             float maxLevInDistribution = levDistribution.HighestFinancialValueBySolution.Max();
             Assert.IsTrue(maxHeuristicLev == maxLevInDistribution);
-            Assert.IsTrue(maxHeuristicLev == levEliteSolutions.High!.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex]);
+            Assert.IsTrue(maxHeuristicLev == levEliteSolutions.High!.FinancialValue.GetHighestValueForDefaultDiscountRate());
 
             int maxMove = levDistribution.GetMaximumMoves();
             Assert.IsTrue(maxMove > 0);
-            List<float> levObjectives = new(8);
+            List<float> landExpectationVaues = new(8);
             for (int moveIndex = 0; moveIndex < maxMove; ++moveIndex)
             {
-                PublicApi.AppendObjective(levObjectives, deluge, moveIndex);
-                PublicApi.AppendObjective(levObjectives, annealer, moveIndex);
-                PublicApi.AppendObjective(levObjectives, thresholdAcceptor, moveIndex);
-                PublicApi.AppendObjective(levObjectives, genetic, moveIndex);
-                PublicApi.AppendObjective(levObjectives, enumerator, moveIndex);
-                PublicApi.AppendObjective(levObjectives, recordTravel, moveIndex);
-                PublicApi.AppendObjective(levObjectives, tabu, moveIndex);
-                maxHeuristicLev = levObjectives.Max();
-                float minHeuristicLev = levObjectives.Min();
+                PublicApi.TryAppendAcceptedFinancialValue(landExpectationVaues, deluge, moveIndex);
+                PublicApi.TryAppendAcceptedFinancialValue(landExpectationVaues, annealer, moveIndex);
+                PublicApi.TryAppendAcceptedFinancialValue(landExpectationVaues, thresholdAcceptor, moveIndex);
+                PublicApi.TryAppendAcceptedFinancialValue(landExpectationVaues, genetic, moveIndex);
+                PublicApi.TryAppendAcceptedFinancialValue(landExpectationVaues, enumerator, moveIndex);
+                PublicApi.TryAppendAcceptedFinancialValue(landExpectationVaues, recordTravel, moveIndex);
+                PublicApi.TryAppendAcceptedFinancialValue(landExpectationVaues, tabu, moveIndex);
+                maxHeuristicLev = landExpectationVaues.Max();
+                float minHeuristicLev = landExpectationVaues.Min();
 
                 Statistics moveStatistics = levDistribution.GetObjectiveFunctionStatisticsForMove(moveIndex);
                 maxLevInDistribution = moveStatistics.Maximum;
@@ -346,7 +336,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(moveStatistics.Median <= maxHeuristicLev);
                 // not enough heuristic runs to check percentiles
 
-                levObjectives.Clear();
+                landExpectationVaues.Clear();
             }
 
             // verify solution pooling
@@ -738,6 +728,17 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext!.WriteLine(runtime.TotalSeconds.ToString());
         }
 
+        private static void TryAppendAcceptedFinancialValue(List<float> objectives, Heuristic heuristic, int moveIndex)
+        {
+            IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(Constant.HeuristicDefault.DiscountRateIndex);
+            if (acceptedMoveFinancialValues.Count > moveIndex)
+            {
+                objectives.Add(acceptedMoveFinancialValues[moveIndex]);
+
+                Assert.IsTrue(acceptedMoveFinancialValues[moveIndex] >= heuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(Constant.HeuristicDefault.DiscountRateIndex)[moveIndex]);
+            }
+        }
+
         private void Verify(GeneticAlgorithm genetic, HeuristicPerformanceCounters perfCounters)
         {
             this.Verify((Heuristic<GeneticParameters>)genetic, perfCounters);
@@ -771,37 +772,40 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(heuristic.BestTrajectory.PlantingDensityInTreesPerHectare == heuristic.CurrentTrajectory.PlantingDensityInTreesPerHectare);
             Assert.IsTrue(heuristic.BestTrajectory.PlantingDensityInTreesPerHectare >= TestConstant.NelderReplantingDensityInTreesPerHectare);
 
-            float recalculatedBestObjectiveFunction = heuristic.GetFinancialValue(heuristic.BestTrajectory, 0);
-            float bestObjectiveFunctionRatio = heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] / recalculatedBestObjectiveFunction;
-            this.TestContext!.WriteLine("best objective: {0}", heuristic.HighestFinancialValueByDiscountRate);
+            float recalculatedHighestFinancialValue = heuristic.GetFinancialValue(heuristic.BestTrajectory, 0);
+            float highestFinancialValue = heuristic.FinancialValue.GetHighestValueForDefaultDiscountRate();
+            float highestFinancialValueRatio = highestFinancialValue / recalculatedHighestFinancialValue;
+            this.TestContext!.WriteLine("best objective: {0} with ratio {1}", highestFinancialValue, highestFinancialValueRatio);
             if (heuristic.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
             {
-                Assert.IsTrue(heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] > -0.70F);
+                Assert.IsTrue(highestFinancialValue > -0.70F);
             }
             else
             {
-                Assert.IsTrue(heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] > 0.0F);
+                Assert.IsTrue(highestFinancialValue > 0.0F);
             }
 
-            float beginObjectiveFunction = heuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][0];
-            Assert.IsTrue(heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] >= beginObjectiveFunction);
+            IList<float> candidateMoveFinancialValues = heuristic.FinancialValue.GetCandidateValueForDiscountRateOrDefault(Constant.HeuristicDefault.DiscountRateIndex);
+            float beginObjectiveFunction = candidateMoveFinancialValues[0];
+            Assert.IsTrue(highestFinancialValue >= beginObjectiveFunction);
 
-            Assert.IsTrue(heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Count >= 3);
-            Assert.IsTrue(bestObjectiveFunctionRatio > 0.99999);
-            Assert.IsTrue(bestObjectiveFunctionRatio < 1.00001);
+            Assert.IsTrue(heuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(Constant.HeuristicDefault.DiscountRateIndex).Count >= 3);
+            Assert.IsTrue(highestFinancialValueRatio > 0.99999);
+            Assert.IsTrue(highestFinancialValueRatio < 1.00001);
 
             float recalculatedCurrentObjectiveFunction = heuristic.GetFinancialValue(heuristic.CurrentTrajectory, 0);
-            Assert.IsTrue(recalculatedCurrentObjectiveFunction <= heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex]);
+            Assert.IsTrue(recalculatedCurrentObjectiveFunction <= highestFinancialValue);
 
             // only guaranteed for monotonic heuristics: hero, prescription enumeration, others depending on configuration
+            IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(Constant.HeuristicDefault.DiscountRateIndex);
             if ((heuristic is Hero) || (heuristic is PrescriptionEnumeration) || (heuristic is ThresholdAccepting))
             {
-                Assert.IsTrue(heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] == heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][^1]);
+                Assert.IsTrue(highestFinancialValue == acceptedMoveFinancialValues[^1]);
                 Assert.IsTrue(recalculatedCurrentObjectiveFunction >= beginObjectiveFunction);
             }
             else
             {
-                Assert.IsTrue(heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex] > 0.95F * heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][^1]);
+                Assert.IsTrue(highestFinancialValue > 0.95F * acceptedMoveFinancialValues[^1]);
                 if (heuristic is AutocorrelatedWalk)
                 {
                     Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.50F * beginObjectiveFunction);
@@ -816,8 +820,8 @@ namespace Osu.Cof.Ferm.Test
                 }
             }
 
-            float endObjectiveFunction = heuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][^1];
-            Assert.IsTrue(endObjectiveFunction <= heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex]);
+            float endCandidateFinancialValue = candidateMoveFinancialValues[^1];
+            Assert.IsTrue(endCandidateFinancialValue <= highestFinancialValue);
 
             // check harvest schedule
             int firstThinningPeriod = heuristic.BestTrajectory.GetFirstThinPeriod(); // returns -1 if heuristic selects no trees
@@ -957,14 +961,17 @@ namespace Osu.Cof.Ferm.Test
             }
 
             // check moves
-            Assert.IsTrue(heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Count == heuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Count);
-            Assert.IsTrue(heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][0] == heuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][0]);
-            for (int moveIndex = 1; moveIndex < heuristic.AcceptedFinancialValueByDiscountRateAndMove.Count; ++moveIndex)
+            Assert.IsTrue(acceptedMoveFinancialValues.Count == candidateMoveFinancialValues.Count);
+            Assert.IsTrue(acceptedMoveFinancialValues[0] == candidateMoveFinancialValues[0]);
+            for (int moveIndex = 1; moveIndex < acceptedMoveFinancialValues.Count; ++moveIndex)
             {
-                Assert.IsTrue(heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][moveIndex] <= heuristic.HighestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex]);
-                // doesn't necessarily apply to tabu search
-                // Assert.IsTrue(heuristic.AcceptedObjectiveFunctionByMove[moveIndex - 1] <= heuristic.AcceptedObjectiveFunctionByMove[moveIndex]);
-                Assert.IsTrue(heuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][moveIndex] <= heuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex][moveIndex]);
+                Assert.IsTrue(acceptedMoveFinancialValues[moveIndex] <= highestFinancialValue);
+                // heuristics capable of reheating and tabu search do not have monotonically increasing accepted move values
+                if ((heuristic is GeneticAlgorithm) || (heuristic is Hero))
+                {
+                    Assert.IsTrue(acceptedMoveFinancialValues[moveIndex - 1] <= acceptedMoveFinancialValues[moveIndex]);
+                }
+                Assert.IsTrue(candidateMoveFinancialValues[moveIndex] <= acceptedMoveFinancialValues[moveIndex]);
             }
 
             IHeuristicMoveLog? moveLog = heuristic.GetMoveLog();
@@ -973,7 +980,7 @@ namespace Osu.Cof.Ferm.Test
                 string moveCsvHeader = moveLog.GetCsvHeader("prefix");
                 Assert.IsTrue(String.IsNullOrWhiteSpace(moveCsvHeader) == false);
 
-                for (int moveIndex = 0; moveIndex < heuristic.AcceptedFinancialValueByDiscountRateAndMove.Count; ++moveIndex)
+                for (int moveIndex = 0; moveIndex < acceptedMoveFinancialValues.Count; ++moveIndex)
                 {
                     string moveCsvValues = moveLog.GetCsvValues(moveIndex);
                     Assert.IsTrue(String.IsNullOrWhiteSpace(moveCsvValues) == false);

@@ -11,7 +11,7 @@ namespace Osu.Cof.Ferm.Heuristics
         private readonly PrescriptionSparseMoveLog? highestFinancialValueMoveLog;
 
         public PrescriptionEnumeration(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, heuristicParameters, runParameters)
+            : base(stand, heuristicParameters, runParameters, true)
         {
             if (this.HeuristicParameters.LogAllMoves)
             {
@@ -23,13 +23,6 @@ namespace Osu.Cof.Ferm.Heuristics
                 // This substantially reduces memory footprint in runs where many prescriptions are enumerated and helps to reduce the
                 // size of objective log files. If needed, this can be changed to storing a larger number of prescriptions.
                 this.highestFinancialValueMoveLog = new PrescriptionSparseMoveLog(runParameters.DiscountRates.Count);
-            }
-
-            // extend objective function distribution arrays to all discount rates
-            for (int discountRateIndex = 1; discountRateIndex < runParameters.DiscountRates.Count; ++discountRateIndex)
-            {
-                this.AcceptedFinancialValueByDiscountRateAndMove.Add(new());
-                this.CandidateFinancialValueByDiscountRateAndMove.Add(new());
             }
         }
 
@@ -131,13 +124,14 @@ namespace Osu.Cof.Ferm.Heuristics
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
             List<float> financialValueByDiscountRate = this.GetFinancialValueByDiscountRate(this.CurrentTrajectory);
-            for (int discountRateIndex = 0; discountRateIndex < this.HighestFinancialValueByDiscountRate.Count; ++discountRateIndex)
+            for (int discountRateIndex = 0; discountRateIndex < this.RunParameters.DiscountRates.Count; ++discountRateIndex)
             {
                 float candidateFinancialValue = financialValueByDiscountRate[discountRateIndex];
-                if (candidateFinancialValue > this.HighestFinancialValueByDiscountRate[discountRateIndex])
+                float acceptedFinancialValue = this.FinancialValue.GetHighestValueForDiscountRate(discountRateIndex);
+                if (candidateFinancialValue > acceptedFinancialValue)
                 {
                     // accept change of prescription if it improves upon the best solution
-                    this.HighestFinancialValueByDiscountRate[discountRateIndex] = candidateFinancialValue;
+                    acceptedFinancialValue = candidateFinancialValue;
                     this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
                     if (this.highestFinancialValueMoveLog != null)
@@ -152,8 +146,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.AcceptedFinancialValueByDiscountRateAndMove[discountRateIndex].Add(this.HighestFinancialValueByDiscountRate[discountRateIndex]);
-                this.CandidateFinancialValueByDiscountRateAndMove[discountRateIndex].Add(financialValueByDiscountRate[discountRateIndex]);
+                this.FinancialValue.AddMoveToDiscountRate(discountRateIndex, acceptedFinancialValue, candidateFinancialValue);
             }
 
             if (this.allMoveLog != null)

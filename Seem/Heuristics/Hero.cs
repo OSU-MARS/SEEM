@@ -73,10 +73,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
-            this.EvaluateInitialSelection(position.DiscountRateIndex, this.MaximumIterations * initialTreeRecordCount, perfCounters);
-
-            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
-            float previousBestObjectiveFunction = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
+            float acceptedFinancialValue = this.EvaluateInitialSelection(this.MaximumIterations * initialTreeRecordCount, perfCounters);
+            float previousBestObjectiveFunction = acceptedFinancialValue;
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             bool decrementPeriodIndex = false;
             int[] uncompactedPeriodIndices = this.GetPeriodIndices(initialTreeRecordCount, thinningPeriods);
@@ -133,8 +131,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             ++perfCounters.MovesRejected;
                         }
 
-                        this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
-                        this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
+                        this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
                         this.MoveLog.TreeIDByMove.Add(treeIndex);
 
                         if (decrementPeriodIndex)
@@ -156,7 +153,6 @@ namespace Osu.Cof.Ferm.Heuristics
                 previousBestObjectiveFunction = acceptedFinancialValue;
             }
 
-            this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = acceptedFinancialValue;
             this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
             stopwatch.Stop();

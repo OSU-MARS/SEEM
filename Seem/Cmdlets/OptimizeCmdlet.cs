@@ -495,7 +495,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             int totalMoves = totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected;
             this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", heuristic.GetName(), totalMoves, totalPerfCounters.MovesAccepted, (float)totalPerfCounters.MovesAccepted / (float)totalMoves, totalPerfCounters.MovesRejected, (float)totalPerfCounters.MovesRejected / (float)totalMoves);
-            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.HighestFinancialValueByDiscountRate, result.Distribution.HighestFinancialValueBySolution.Average(), heuristic.AcceptedFinancialValueByDiscountRateAndMove.Last());
+            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.FinancialValue.GetHighestValueForDefaultDiscountRate(), result.Distribution.HighestFinancialValueBySolution.Average(), heuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(Constant.HeuristicDefault.DiscountRateIndex).Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 
             double totalSeconds = totalPerfCounters.Duration.TotalSeconds;

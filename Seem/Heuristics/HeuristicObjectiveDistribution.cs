@@ -32,7 +32,7 @@ namespace Osu.Cof.Ferm.Heuristics
     // solution pool sizes are large enough.
     public class HeuristicObjectiveDistribution
     {
-        private readonly List<List<float>> acceptedFinancialValueBySolution;
+        private readonly List<IList<float>> acceptedFinancialValueBySolution;
 
         public List<float> HighestFinancialValueBySolution { get; private init; }
         public List<HeuristicPerformanceCounters> PerfCountersBySolution { get; private init; }
@@ -56,14 +56,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public void AddSolution(Heuristic heuristic, int discountRateIndex, HeuristicPerformanceCounters perfCounters)
         {
-            int moveDiscountRateIndex = discountRateIndex;
-            if (heuristic.AcceptedFinancialValueByDiscountRateAndMove.Count == 1)
-            {
-                moveDiscountRateIndex = 0; // heuristic does not report objective functions across discount rates
-            }
-            this.acceptedFinancialValueBySolution.Add(heuristic.AcceptedFinancialValueByDiscountRateAndMove[moveDiscountRateIndex]);
+            this.acceptedFinancialValueBySolution.Add(heuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(discountRateIndex));
 
-            this.HighestFinancialValueBySolution.Add(heuristic.HighestFinancialValueByDiscountRate[discountRateIndex]);
+            this.HighestFinancialValueBySolution.Add(heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex));
             this.PerfCountersBySolution.Add(perfCounters);
         }
 

@@ -7,35 +7,24 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public abstract class Heuristic : PseudorandomizingTask
     {
-        public List<List<float>> AcceptedFinancialValueByDiscountRateAndMove { get; protected set; }
         public OrganonStandTrajectory BestTrajectory { get; private init; }
-        public List<List<float>> CandidateFinancialValueByDiscountRateAndMove { get; protected set; }
         public OrganonStandTrajectory CurrentTrajectory { get; private init; }
-        public List<float> HighestFinancialValueByDiscountRate { get; protected set; }
+        public FinancialValueTrajectory FinancialValue { get; protected set; }
         public RunParameters RunParameters { get; private init; }
 
-        protected Heuristic(OrganonStand stand, RunParameters runParameters)
+        protected Heuristic(OrganonStand stand, RunParameters runParameters, bool evaluateAcrossDiscountRates)
         {
-            this.AcceptedFinancialValueByDiscountRateAndMove = new() { new List<float>() };
-
             this.BestTrajectory = new OrganonStandTrajectory(stand, runParameters.OrganonConfiguration, runParameters.TimberValue, runParameters.LastPlanningPeriod)
             {
                 Heuristic = this
             };
             this.BestTrajectory.Treatments.CopyFrom(runParameters.Treatments);
 
-            this.CandidateFinancialValueByDiscountRateAndMove = new() { new List<float>() };
-
             this.CurrentTrajectory = new OrganonStandTrajectory(this.BestTrajectory);
             this.CurrentTrajectory.Name = this.CurrentTrajectory.Name + "Current";
 
-            this.HighestFinancialValueByDiscountRate = new(runParameters.DiscountRates.Count);
+            this.FinancialValue = new(evaluateAcrossDiscountRates ? runParameters.DiscountRates.Count : 1);
             this.RunParameters = runParameters;
-
-            for (int discountRateIndex = 0; discountRateIndex < runParameters.DiscountRates.Count; ++discountRateIndex)
-            {
-                this.HighestFinancialValueByDiscountRate.Add(Single.MinValue);
-            }
         }
 
         public abstract string GetName();
@@ -137,8 +126,8 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public TParameters HeuristicParameters { get; private init; }
 
-        public Heuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, runParameters)
+        public Heuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters, bool evaluateAcrossDiscountRates)
+            : base(stand, runParameters, evaluateAcrossDiscountRates)
         {
             if ((heuristicParameters.ConstructionGreediness < Constant.Grasp.FullyRandomConstructionForMaximization) || (heuristicParameters.ConstructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
             {
@@ -231,17 +220,21 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.ConstructTreeSelection(constructionGreediness);
         }
 
-        protected virtual void EvaluateInitialSelection(int discountRateIndex, int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected float EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
         {
-            this.AcceptedFinancialValueByDiscountRateAndMove[discountRateIndex].Capacity = moveCapacity;
-            this.CandidateFinancialValueByDiscountRateAndMove[discountRateIndex].Capacity = moveCapacity;
+            return this.EvaluateInitialSelection(Constant.HeuristicDefault.DiscountRateIndex, moveCapacity, perfCounters);
+        }
+
+        protected virtual float EvaluateInitialSelection(int discountRateIndex, int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        {
+            this.FinancialValue.SetMoveCapacityForDiscountRate(discountRateIndex, moveCapacity);
 
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
             this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
-            float objectiveFunction = this.GetFinancialValue(this.CurrentTrajectory, discountRateIndex);
-            this.AcceptedFinancialValueByDiscountRateAndMove[discountRateIndex].Add(objectiveFunction);
-            this.CandidateFinancialValueByDiscountRateAndMove[discountRateIndex].Add(objectiveFunction);
-            this.HighestFinancialValueByDiscountRate[discountRateIndex] = objectiveFunction;
+
+            float financialValue = this.GetFinancialValue(this.CurrentTrajectory, discountRateIndex);
+            this.FinancialValue.AddMoveToDiscountRate(discountRateIndex, financialValue, financialValue);
+            return financialValue;
         }
 
         public override HeuristicParameters GetParameters()

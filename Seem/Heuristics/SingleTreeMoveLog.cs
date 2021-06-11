@@ -5,6 +5,7 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class SingleTreeMoveLog : IHeuristicMoveLog
     {
+        // if needed, also track tree's plot ID by move
         public List<int> TreeIDByMove { get; protected set; }
 
         public SingleTreeMoveLog()

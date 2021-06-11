@@ -72,27 +72,27 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(position.DiscountRateIndex, this.Iterations, perfCounters);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
             if (this.RainRate.HasValue == false)
             {
-                this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] / this.Iterations;
+                this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * acceptedFinancialValue / this.Iterations;
             }
             if ((this.RainRate.HasValue == false) || (this.RainRate.Value <= 0.0))
             {
                 throw new InvalidOperationException(nameof(this.RainRate));
             }
 
-            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             //float harvestPeriodScalingFactor = (this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / byte.MaxValue;
             float treeIndexScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             // initial selection is considered iteration 0, so loop starts with iteration 1
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
-            float hillClimbingThreshold = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
+            float highestFinancialValue = acceptedFinancialValue;
+            float hillClimbingThreshold = acceptedFinancialValue;
             int iterationsSinceFinancialValueIncrease = 0;
             int iterationsSinceFinancialValueIncreaseOrMoveTypeChanged = 0;
             int iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
-            float waterLevel = this.IntitialMultiplier * this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
+            float waterLevel = this.IntitialMultiplier * acceptedFinancialValue;
             for (int iteration = 1; iteration < this.Iterations; ++iteration, waterLevel += this.RainRate.Value)
             {
                 int firstTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
@@ -146,9 +146,9 @@ namespace Osu.Cof.Ferm.Heuristics
                     iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
                     ++perfCounters.MovesAccepted;
 
-                    if (candidateFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
+                    if (candidateFinancialValue > highestFinancialValue)
                     {
-                        this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = candidateFinancialValue;
+                        highestFinancialValue = candidateFinancialValue;
                         this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
                         iterationsSinceFinancialValueIncrease = 0;
@@ -172,8 +172,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
-                this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
+                this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
                 this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
                 if (iterationsSinceFinancialValueIncrease > this.StopAfter)
@@ -189,7 +188,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 else if (iterationsSinceObjectiveImprovedOrWaterLevelLowered > this.LowerWaterAfter)
                 {
                     // could also adjust rain rate but there but does not seem to be a clear need to do so
-                    waterLevel = (1.0F - this.LowerWaterBy) * this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
+                    waterLevel = (1.0F - this.LowerWaterBy) * acceptedFinancialValue;
                     hillClimbingThreshold = waterLevel;
                     iterationsSinceObjectiveImprovedOrWaterLevelLowered = 0;
                 }

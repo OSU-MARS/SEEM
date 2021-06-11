@@ -85,9 +85,8 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(position.DiscountRateIndex, this.Iterations, perfCounters);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
-            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
             int iterationsSinceFinancialValueIncreaseOrReheat = 0;
@@ -95,7 +94,7 @@ namespace Osu.Cof.Ferm.Heuristics
             float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
-            float deviation = this.RelativeDeviation * MathF.Abs(this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex]) + this.FixedDeviation;
+            float deviation = this.RelativeDeviation * MathF.Abs(acceptedFinancialValue) + this.FixedDeviation;
             for (int iteration = 1; (iteration < this.Iterations) && (iterationsSinceBestObjectiveImproved < this.StopAfter); deviation *= this.Alpha, ++iteration)
             {
                 int firstTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
@@ -138,8 +137,9 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++iterationsSinceFinancialValueIncreaseOrReheat;
 
                 float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
-                float minimumAcceptableFinancialVlue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] - deviation;
-                if ((candidateFinancialValue > minimumAcceptableFinancialVlue) || (candidateFinancialValue > previousObjectiveFunction))
+                float highestFinancialValue = this.FinancialValue.GetHighestValueForDefaultDiscountRate();
+                float minimumAcceptableFinancialValue = highestFinancialValue - deviation;
+                if ((candidateFinancialValue > minimumAcceptableFinancialValue) || (candidateFinancialValue > previousObjectiveFunction))
                 {
                     // accept move
                     acceptedFinancialValue = candidateFinancialValue;
@@ -147,9 +147,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     iterationsSinceFinancialValueIncreaseOrReheat = 0;
                     ++perfCounters.MovesAccepted;
 
-                    if (acceptedFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
+                    if (acceptedFinancialValue > highestFinancialValue)
                     {
-                        this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = acceptedFinancialValue;
                         this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
                     }
@@ -172,8 +171,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
-                this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
+                this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
                 this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
                 if (iterationsSinceBestObjectiveImproved > this.ChangeToExchangeAfter)
@@ -182,7 +180,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
                 if (iterationsSinceFinancialValueIncreaseOrReheat == this.IncreaseAfter)
                 {
-                    deviation += this.RelativeIncrease * MathF.Abs(this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex]) + this.FixedIncrease;
+                    deviation += this.RelativeIncrease * MathF.Abs(highestFinancialValue) + this.FixedIncrease;
                     iterationsSinceFinancialValueIncreaseOrReheat = 0;
                 }
                 previousObjectiveFunction = acceptedFinancialValue;

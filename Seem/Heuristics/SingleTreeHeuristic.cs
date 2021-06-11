@@ -7,17 +7,18 @@ namespace Osu.Cof.Ferm.Heuristics
         public SingleTreeMoveLog MoveLog { get; private init; }
 
         public SingleTreeHeuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, heuristicParameters, runParameters)
+            : base(stand, heuristicParameters, runParameters, false)
         {
             this.MoveLog = new SingleTreeMoveLog();
         }
 
-        protected override void EvaluateInitialSelection(int discountRateIndex, int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected override float EvaluateInitialSelection(int discountRateIndex, int moveCapacity, HeuristicPerformanceCounters perfCounters)
         {
-            base.EvaluateInitialSelection(discountRateIndex, moveCapacity, perfCounters);
+            float financialValue = base.EvaluateInitialSelection(discountRateIndex, moveCapacity, perfCounters);
             
             this.MoveLog.TreeIDByMove.Capacity = moveCapacity;
             this.MoveLog.TreeIDByMove.Add(-1);
+            return financialValue;
         }
 
         public override IHeuristicMoveLog? GetMoveLog()

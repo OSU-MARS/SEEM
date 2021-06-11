@@ -92,9 +92,8 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(position.DiscountRateIndex, this.Iterations, perfCounters);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
-            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
             int iterationsSinceMoveTypeOrObjectiveChange = 0;
             int iterationsSinceReheatOrFinancialValueIncreased = 0;
             float meanAcceptanceProbability = this.InitialProbability;
@@ -192,9 +191,8 @@ namespace Osu.Cof.Ferm.Heuristics
                         this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
-                        if (acceptedFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
+                        if (acceptedFinancialValue > this.FinancialValue.GetHighestValueForDefaultDiscountRate())
                         {
-                            this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = acceptedFinancialValue;
                             this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                             iterationsSinceReheatOrFinancialValueIncreased = 0;
                         }
@@ -220,8 +218,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         ++perfCounters.MovesRejected;
                     }
 
-                    this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
-                    this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
+                    this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
                     this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
                     if (iterationsSinceMoveTypeOrObjectiveChange > this.ChangeToExchangeAfter)

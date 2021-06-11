@@ -86,7 +86,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 List<(float, HeuristicResultPosition)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[maxDiscountRateIndex];
-                runsForDiscountRate.Add((highHeuristic.HighestFinancialValueByDiscountRate[maxDiscountRateIndex], position));
+                runsForDiscountRate.Add((highHeuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(maxDiscountRateIndex), position));
             }
             for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
             {
@@ -139,20 +139,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 // solution distribution is informative and should be logged in this case
                 // for now, assume high and low solutions use the same parameters
-                List<float> acceptedFinancialValueByMoveLow = lowHeuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex];
-                List<float> candidateFinancialValueByMoveLow = lowHeuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex];
-                if (lowHeuristic.AcceptedFinancialValueByDiscountRateAndMove.Count > 1)
-                {
-                    acceptedFinancialValueByMoveLow = lowHeuristic.AcceptedFinancialValueByDiscountRateAndMove[position.DiscountRateIndex];
-                    candidateFinancialValueByMoveLow = lowHeuristic.CandidateFinancialValueByDiscountRateAndMove[position.DiscountRateIndex];
-                }
-                List<float> acceptedFinancialValueByMoveHigh = highHeuristic.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex];
-                List<float> candidateFinancialValueByMoveHigh = highHeuristic.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex];
-                if (highHeuristic.AcceptedFinancialValueByDiscountRateAndMove.Count > 1)
-                {
-                    acceptedFinancialValueByMoveHigh = highHeuristic.AcceptedFinancialValueByDiscountRateAndMove[position.DiscountRateIndex];
-                    candidateFinancialValueByMoveHigh = highHeuristic.CandidateFinancialValueByDiscountRateAndMove[position.DiscountRateIndex];
-                }
+                IList<float> acceptedFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(position);
+                IList<float> acceptedFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(position);
+                IList<float> candidateFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetCandidateValueForDiscountRateOrDefault(position);
+                IList<float> candidateFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetCandidateValueForDiscountRateOrDefault(position);
 
                 IHeuristicMoveLog? highMoveLog = highHeuristic.GetMoveLog();
                 IHeuristicMoveLog? lowMoveLog = lowHeuristic.GetMoveLog();

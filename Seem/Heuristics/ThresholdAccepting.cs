@@ -54,9 +54,9 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(Constant.HeuristicDefault.DiscountRateIndex, this.IterationsPerThreshold.Sum(), perfCounters);
+            this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum(), perfCounters);
 
-            float acceptedFinancialValue = this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex];
+            float acceptedFinancialValue = this.FinancialValue.GetHighestValueForDefaultDiscountRate();
             float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
@@ -83,9 +83,8 @@ namespace Osu.Cof.Ferm.Heuristics
                         this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
-                        if (acceptedFinancialValue > this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex])
+                        if (acceptedFinancialValue > this.FinancialValue.GetHighestValueForDefaultDiscountRate())
                         {
-                            this.HighestFinancialValueByDiscountRate[position.DiscountRateIndex] = acceptedFinancialValue;
                             this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
                         }
                     }
@@ -95,8 +94,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         ++perfCounters.MovesRejected;
                     }
 
-                    this.AcceptedFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(acceptedFinancialValue);
-                    this.CandidateFinancialValueByDiscountRateAndMove[Constant.HeuristicDefault.DiscountRateIndex].Add(candidateFinancialValue);
+                    this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
                     this.MoveLog.TreeIDByMove.Add(treeIndex);
                 }
             }
