@@ -200,7 +200,7 @@ namespace Osu.Cof.Ferm.Heuristics
             };
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             if (this.EscapeAfter < 1)
             {
@@ -233,8 +233,8 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
-            this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
+            float highestFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             int[,] remainingTabuTenures = new int[initialTreeRecordCount, thinningPeriods.Max() + 1];
@@ -244,7 +244,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             OrganonStandTrajectory bestTrajectory = new(this.CurrentTrajectory);
-            OrganonStandTrajectory bestNonTabuTrajectory = new(this.CurrentTrajectory);
+            OrganonStandTrajectory highestNonTabuTrajectory = new(this.CurrentTrajectory);
             float tenureScalingFactor = (this.MaximumTenure - 2 - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
             //List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
             //for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
@@ -255,8 +255,8 @@ namespace Osu.Cof.Ferm.Heuristics
             //List<List<int>> subsets = new List<List<int>>();
             //int treeIndexStep = this.Jump;
 
-            float highestFinancialValue = this.FinancialValue.GetHighestValueForDefaultDiscountRate();
-            SortedDictionary<float, OneOptMove> bestNonTabuMovesByObjectiveFunction = new();
+            float acceptedFinancialValue = Single.MinValue;
+            SortedDictionary<float, OneOptMove> highestNonTabuMovesByFinancialValue = new();
             float highestFinancialValueSinceLastEscape = highestFinancialValue;
             int iterationsSinceFinancialValueIncreasedOrEscape = 0;
             //int subset = 0;
@@ -265,7 +265,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 // attempt escape if needed
                 if (iterationsSinceFinancialValueIncreasedOrEscape > this.EscapeAfter)
                 {
-                    foreach (OneOptMove move in bestNonTabuMovesByObjectiveFunction.Values)
+                    foreach (OneOptMove move in highestNonTabuMovesByFinancialValue.Values)
                     {
                         // tenure all harvest periods for tree to block immediate undos
                         int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(move.TreeIndex);
@@ -287,12 +287,12 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
 
                 // evaluate potential moves in neighborhood
-                float highestCandidateFinancialValue = Single.MinValue;
+                float highestUnrestrictedFinancialValue = Single.MinValue;
                 int bestTreeIndex = -1;
                 int bestHarvestPeriod = -1;
 
-                bestNonTabuMovesByObjectiveFunction.Clear();
-                float bestNonTabuObjectiveFunction = Single.MinValue;
+                highestNonTabuMovesByFinancialValue.Clear();
+                float highestNonTabuFinancialValue = Single.MinValue;
                 float minimumNonTabuObjectiveFunction = Single.MaxValue;
                 //List<int> treesInNeighborhood = allTreeIndices;
                 //if ((this.Jump > 1) && (treeIndexStep == this.Jump))
@@ -318,9 +318,9 @@ namespace Osu.Cof.Ferm.Heuristics
                         perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
                         float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
 
-                        if (candidateFinancialValue > highestCandidateFinancialValue)
+                        if (candidateFinancialValue > highestUnrestrictedFinancialValue)
                         {
-                            highestCandidateFinancialValue = candidateFinancialValue;
+                            highestUnrestrictedFinancialValue = candidateFinancialValue;
                             bestTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                             bestTreeIndex = treeIndex;
                             bestHarvestPeriod = thinningPeriod;
@@ -329,27 +329,27 @@ namespace Osu.Cof.Ferm.Heuristics
                         int tabuTenure = remainingTabuTenures[treeIndex, thinningPeriod];
                         if (tabuTenure == 0)
                         {
-                            if (bestNonTabuMovesByObjectiveFunction.ContainsKey(candidateFinancialValue) == false)
+                            if (highestNonTabuMovesByFinancialValue.ContainsKey(candidateFinancialValue) == false)
                             {
                                 // TODO: random resolution for colliding objective functions rather than ignore?
                                 // Assume best non-tabu move gets accepted below, so fill move list to escape distance + 1 entries.
-                                if (bestNonTabuMovesByObjectiveFunction.Count <= this.EscapeDistance)
+                                if (highestNonTabuMovesByFinancialValue.Count <= this.EscapeDistance)
                                 {
-                                    bestNonTabuMovesByObjectiveFunction.Add(candidateFinancialValue, new OneOptMove(treeIndex, thinningPeriod));
+                                    highestNonTabuMovesByFinancialValue.Add(candidateFinancialValue, new OneOptMove(treeIndex, thinningPeriod));
                                     minimumNonTabuObjectiveFunction = Math.Min(minimumNonTabuObjectiveFunction, candidateFinancialValue);
                                 }
                                 else if (candidateFinancialValue > minimumNonTabuObjectiveFunction)
                                 {
-                                    bestNonTabuMovesByObjectiveFunction.Remove(minimumNonTabuObjectiveFunction);
-                                    bestNonTabuMovesByObjectiveFunction.Add(candidateFinancialValue, new OneOptMove(treeIndex, thinningPeriod));
-                                    minimumNonTabuObjectiveFunction = bestNonTabuMovesByObjectiveFunction.Keys.First();
+                                    highestNonTabuMovesByFinancialValue.Remove(minimumNonTabuObjectiveFunction);
+                                    highestNonTabuMovesByFinancialValue.Add(candidateFinancialValue, new OneOptMove(treeIndex, thinningPeriod));
+                                    minimumNonTabuObjectiveFunction = highestNonTabuMovesByFinancialValue.Keys.First();
                                 }
                             }
 
-                            if (candidateFinancialValue > bestNonTabuObjectiveFunction)
+                            if (candidateFinancialValue > highestNonTabuFinancialValue)
                             {
-                                bestNonTabuObjectiveFunction = candidateFinancialValue;
-                                bestNonTabuTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
+                                highestNonTabuFinancialValue = candidateFinancialValue;
+                                highestNonTabuTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                             }
                         }
 
@@ -366,22 +366,23 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++iterationsSinceFinancialValueIncreasedOrEscape;
 
                 // make best move and update tabu table
-                float acceptedFinancialValue = highestCandidateFinancialValue;
-                if (highestCandidateFinancialValue > highestFinancialValue)
+                if (highestUnrestrictedFinancialValue > highestFinancialValue)
                 {
                     // always accept best candidate if it improves upon the best solution
-                    highestFinancialValue = highestCandidateFinancialValue;
+                    acceptedFinancialValue = highestUnrestrictedFinancialValue;
+                    highestFinancialValue = highestUnrestrictedFinancialValue;
+                    highestNonTabuFinancialValue = highestUnrestrictedFinancialValue;
                     this.CurrentTrajectory.CopyTreeGrowthFrom(bestTrajectory);
 
                     remainingTabuTenures[bestTreeIndex, bestHarvestPeriod] = this.GetTenure(tenureScalingFactor);
-                    this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+                    this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
 
-                    highestFinancialValueSinceLastEscape = highestCandidateFinancialValue;
+                    highestFinancialValueSinceLastEscape = highestUnrestrictedFinancialValue;
                     iterationsSinceFinancialValueIncreasedOrEscape = 0;
                     this.MoveLog.TreeIDByMove.Add(bestTreeIndex);
                     ++perfCounters.MovesAccepted;
                 }
-                else if (bestNonTabuMovesByObjectiveFunction.Count > 0)
+                else if (highestNonTabuMovesByFinancialValue.Count > 0)
                 {
                     // otherwise, accept the best non-tabu move when one exists
                     // This is either a disimproving move or an improving move which does not exceed the best objective function observed.
@@ -390,12 +391,12 @@ namespace Osu.Cof.Ferm.Heuristics
                     //{
                     //    stochasticTenure = true;
                     //}
-                    KeyValuePair<float, OneOptMove> bestNonTabuMove = bestNonTabuMovesByObjectiveFunction.Last();
-                    acceptedFinancialValue = bestNonTabuMove.Key;
-                    this.CurrentTrajectory.CopyTreeGrowthFrom(bestNonTabuTrajectory);
+                    acceptedFinancialValue = highestNonTabuFinancialValue;
+                    this.CurrentTrajectory.CopyTreeGrowthFrom(highestNonTabuTrajectory);
 
-                    remainingTabuTenures[bestNonTabuMove.Value.TreeIndex, bestNonTabuMove.Value.ThinPeriod] = this.GetTenure(tenureScalingFactor);
-                    this.MoveLog.TreeIDByMove.Add(bestNonTabuMove.Value.TreeIndex);
+                    KeyValuePair<float, OneOptMove> highestValueNonTabuMove = highestNonTabuMovesByFinancialValue.Last();
+                    remainingTabuTenures[highestValueNonTabuMove.Value.TreeIndex, highestValueNonTabuMove.Value.ThinPeriod] = this.GetTenure(tenureScalingFactor);
+                    this.MoveLog.TreeIDByMove.Add(highestValueNonTabuMove.Value.TreeIndex);
                     ++perfCounters.MovesRejected;
 
                     if (acceptedFinancialValue > highestFinancialValueSinceLastEscape)
@@ -405,7 +406,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                 }
 
-                this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, highestCandidateFinancialValue);
+                this.FinancialValue.AddMove(acceptedFinancialValue, highestNonTabuFinancialValue);
 
                 //if (++jumpBase >= this.Jump)
                 //{

@@ -38,9 +38,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Result at position " + positionIndex + " is missing a high solution.");
                 }
-                OrganonStandTrajectory highTrajectory = highHeuristic.BestTrajectory;
+                OrganonStandTrajectory highTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
 
-                int endPeriodIndex = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
+                int endPeriodIndex = this.Results.RotationLengths[position.RotationIndex];
                 float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
                 string linePrefix = highTrajectory.Name + "," +
                                     highHeuristic.GetName() + "," +
@@ -48,13 +48,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
 
                 HeuristicObjectiveDistribution distribution = result.Distribution;
-                List<float> bestSolutions = distribution.HighestFinancialValueBySolution;
-                for (int solutionIndex = 0; solutionIndex < bestSolutions.Count; ++solutionIndex)
+                List<float> highestFinancialValues = distribution.HighestFinancialValueBySolution;
+                for (int financialIndex = 0; financialIndex < highestFinancialValues.Count; ++financialIndex)
                 {
-                    HeuristicPerformanceCounters perfCounters = distribution.PerfCountersBySolution[solutionIndex];
+                    HeuristicPerformanceCounters perfCounters = distribution.PerfCountersBySolution[financialIndex];
                     writer.WriteLine(linePrefix + "," +
-                                     solutionIndex.ToString(CultureInfo.InvariantCulture) + "," +
-                                     bestSolutions[solutionIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                     financialIndex.ToString(CultureInfo.InvariantCulture) + "," +
+                                     highestFinancialValues[financialIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.MovesAccepted.ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.MovesRejected.ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.Duration.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture) + "," +

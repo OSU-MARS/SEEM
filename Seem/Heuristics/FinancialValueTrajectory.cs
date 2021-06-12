@@ -5,97 +5,100 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class FinancialValueTrajectory
     {
-        private readonly List<float>[] acceptedValueByDiscountRate;
-        private readonly List<float>[] candidateValueByDiscountRate;
-        private readonly float[] highestFinancialValueByDiscountRate;
+        private readonly List<float>[,] acceptedValueByRotationAndDiscount;
+        private readonly List<float>[,] candidateValueByRotationAndDiscount;
+        private readonly float[,] highestFinancialValueByRotationAndDiscount;
 
-        public FinancialValueTrajectory(int capacity)
+        public FinancialValueTrajectory(int rotationCapacity, int discountRateCapacity)
         {
-            this.acceptedValueByDiscountRate = new List<float>[capacity];
-            this.candidateValueByDiscountRate = new List<float>[capacity];
-            this.highestFinancialValueByDiscountRate = new float[capacity];
+            this.acceptedValueByRotationAndDiscount = new List<float>[rotationCapacity, discountRateCapacity];
+            this.candidateValueByRotationAndDiscount = new List<float>[rotationCapacity, discountRateCapacity];
+            this.highestFinancialValueByRotationAndDiscount = new float[rotationCapacity, discountRateCapacity];
 
-            for (int discountRateIndex = 0; discountRateIndex < capacity; ++discountRateIndex)
+            for (int rotationIndex = 0; rotationIndex < rotationCapacity; ++rotationIndex)
             {
-                this.acceptedValueByDiscountRate[discountRateIndex] = new();
-                this.candidateValueByDiscountRate[discountRateIndex] = new();
-                this.highestFinancialValueByDiscountRate[discountRateIndex] = Single.MinValue;
+                for (int discountRateIndex = 0; discountRateIndex < discountRateCapacity; ++discountRateIndex)
+                {
+                    this.acceptedValueByRotationAndDiscount[rotationIndex, discountRateIndex] = new();
+                    this.candidateValueByRotationAndDiscount[rotationIndex, discountRateIndex] = new();
+                    this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex] = Single.MinValue;
+                }
             }
         }
 
-        public void AddMoveToDefaultDiscountRate(float acceptedValue, float candidateValue)
+        public void AddMove(float acceptedValue, float candidateValue)
         {
-            this.AddMoveToDiscountRate(Constant.HeuristicDefault.DiscountRateIndex, acceptedValue, candidateValue);
+            this.AddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex, acceptedValue, candidateValue);
         }
 
-        public void AddMoveToDiscountRate(int discountRateIndex, float acceptedValue, float candidateValue)
+        public void AddMove(int rotationIndex, int discountRateIndex, float acceptedValue, float candidateValue)
         {
             // typically, acceptedValue >= candidateValue but this does not hold for tabu search
-            this.acceptedValueByDiscountRate[discountRateIndex].Add(acceptedValue);
-            this.candidateValueByDiscountRate[discountRateIndex].Add(candidateValue);
+            this.acceptedValueByRotationAndDiscount[rotationIndex, discountRateIndex].Add(acceptedValue);
+            this.candidateValueByRotationAndDiscount[rotationIndex, discountRateIndex].Add(candidateValue);
 
-            if (acceptedValue > this.highestFinancialValueByDiscountRate[discountRateIndex])
+            if (acceptedValue > this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex])
             {
-                this.highestFinancialValueByDiscountRate[discountRateIndex] = acceptedValue;
+                this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex] = acceptedValue;
             }
         }
 
-        public IList<float> GetAcceptedValueForDiscountRateOrDefault(HeuristicResultPosition position)
+        public IList<float> GetAcceptedValuesWithDefaulting(HeuristicResultPosition position)
         {
-            return this.GetAcceptedValueForDiscountRateOrDefault(position.DiscountRateIndex);
+            return this.GetAcceptedValuesWithDefaulting(position.RotationIndex, position.DiscountRateIndex);
         }
 
-        public IList<float> GetAcceptedValueForDiscountRateOrDefault(int discountRateIndex)
+        public IList<float> GetAcceptedValuesWithDefaulting(int rotationIndex, int discountRateIndex)
         {
-            if (this.acceptedValueByDiscountRate.Length == 1)
+            if (this.acceptedValueByRotationAndDiscount.Length == 1)
             {
-                return this.acceptedValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex];
+                return this.acceptedValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex];
             }
-            return this.acceptedValueByDiscountRate[discountRateIndex];
+            return this.acceptedValueByRotationAndDiscount[rotationIndex, discountRateIndex];
         }
 
-        public IList<float> GetCandidateValueForDiscountRateOrDefault(HeuristicResultPosition position)
+        public IList<float> GetCandidateValuesWithDefaulting(HeuristicResultPosition position)
         {
-            return this.GetCandidateValueForDiscountRateOrDefault(position.DiscountRateIndex);
+            return this.GetCandidateValuesWithDefaulting(position.RotationIndex, position.DiscountRateIndex);
         }
 
-        public IList<float> GetCandidateValueForDiscountRateOrDefault(int discountRateIndex)
+        public IList<float> GetCandidateValuesWithDefaulting(int rotationIndex, int discountRateIndex)
         {
-            if (this.candidateValueByDiscountRate.Length == 1)
+            if (this.candidateValueByRotationAndDiscount.Length == 1)
             {
-                return this.candidateValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex];
+                return this.candidateValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex];
             }
-            return this.candidateValueByDiscountRate[discountRateIndex];
+            return this.candidateValueByRotationAndDiscount[rotationIndex, discountRateIndex];
         }
 
-        public float GetHighestValueForDefaultDiscountRate()
+        public float GetHighestValue()
         {
-            return this.highestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex];
+            return this.highestFinancialValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex];
         }
 
-        public float GetHighestValueForDiscountRate(int discountRateIndex)
+        public float GetHighestValue(int rotationIndex, int discountRateIndex)
         {
-            return this.highestFinancialValueByDiscountRate[discountRateIndex];
+            return this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex];
         }
 
-        public float GetHighestValueForDiscountRateOrDefault(int discountRateIndex)
+        public float GetHighestValueWithDefaulting(HeuristicResultPosition position)
         {
-            if (this.highestFinancialValueByDiscountRate.Length == 1)
+            return this.GetHighestValueWithDefaulting(position.RotationIndex, position.DiscountRateIndex);
+        }
+
+        public float GetHighestValueWithDefaulting(int rotationIndex, int discountRateIndex)
+        {
+            if (this.highestFinancialValueByRotationAndDiscount.Length == 1)
             {
-                return this.highestFinancialValueByDiscountRate[Constant.HeuristicDefault.DiscountRateIndex];
+                return this.highestFinancialValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex];
             }
-            return this.highestFinancialValueByDiscountRate[discountRateIndex];
+            return this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex];
         }
 
-        public void SetMoveCapacityForDefaultDiscountRate(int capacity)
+        public void SetMoveCapacity(int capacity)
         {
-            this.SetMoveCapacityForDiscountRate(Constant.HeuristicDefault.DiscountRateIndex, capacity);
-        }
-
-        public void SetMoveCapacityForDiscountRate(int discountRateIndex, int capacity)
-        {
-            this.acceptedValueByDiscountRate[discountRateIndex].Capacity = capacity;
-            this.candidateValueByDiscountRate[discountRateIndex].Capacity = capacity;
+            this.acceptedValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex].Capacity = capacity;
+            this.candidateValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex].Capacity = capacity;
         }
     }
 }

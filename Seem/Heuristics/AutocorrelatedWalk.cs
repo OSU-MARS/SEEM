@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "AutocorrelatedWalk";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             if (this.Iterations < 1)
             {
@@ -30,10 +30,9 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            this.FinancialValue.SetMoveCapacityForDefaultDiscountRate(this.Iterations);
-            this.FinancialValue.SetMoveCapacityForDefaultDiscountRate(this.Iterations);
+            this.FinancialValue.SetMoveCapacity(this.Iterations);
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
             float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             for (int iteration = 1; iteration < this.Iterations; ++iteration)
@@ -46,7 +45,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // for now, accept change of tree selection if it increases financial value
                     acceptedFinancialValue = candidateFinancialValue;
-                    this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+                    this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
                     ++perfCounters.MovesAccepted;
                 }
                 else
@@ -54,7 +53,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
+                this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
             }
 
             stopwatch.Stop();

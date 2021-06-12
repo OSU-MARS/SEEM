@@ -8,6 +8,7 @@ namespace Osu.Cof.Ferm
     {
         public const float AcresPerHectare = 2.47105F;
         public const int AllDiscountRatePosition = -2;
+        public const int AllRotationPosition = -2;
         public const float CentimetersPerInch = 2.54000F;
         // 100 * pi / (4 * 43560), from definition of crown competition factor
         public const float CrownCompetionConstantEnglish = 0.001803026F;
@@ -27,6 +28,7 @@ namespace Osu.Cof.Ferm
         // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128, 8 for VEX 256
         public const int HeightStrata = 40;
         public const float InchesPerCentimeter = 0.393701F;
+        public const int MaximizeForAllPlanningPeriods = -2;
         public const float MetersPerFoot = 0.3048F;
         public const float NaturalLogOf10 = 2.3025850930F;
         public const int NoHarvestPeriod = 0;
@@ -144,6 +146,7 @@ namespace Osu.Cof.Ferm
             public const int DiscountRateIndex = 0;
             public const int HeroMaximumIterations = 25;
             public const float InitialThinningProbability = 0.5F;
+            public const int RotationIndex = 0;
         }
 
         public static class MalcolmKnapp

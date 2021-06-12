@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -24,7 +25,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.High = null;
         }
 
-        public OrganonStandTrajectory GetEliteSolution()
+        public OrganonStandTrajectory GetEliteSolution(HeuristicResultPosition position)
         {
             if (this.SolutionsInPool < 1)
             {
@@ -32,15 +33,15 @@ namespace Osu.Cof.Ferm.Heuristics
             }
             if (this.SolutionsInPool == 1)
             {
-                return this.eliteSolutions[0]!.BestTrajectory;
+                return this.eliteSolutions[0]!.GetBestTrajectoryWithDefaulting(position);
             }
 
             float solutionIndexScalingFactor = (this.SolutionsInPool - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
             int solutionIndex = (int)(solutionIndexScalingFactor * this.Pseudorandom.GetPseudorandomByteAsFloat());
-            return this.eliteSolutions[solutionIndex]!.BestTrajectory;
+            return this.eliteSolutions[solutionIndex]!.GetBestTrajectoryWithDefaulting(position);
         }
 
-        private void Replace(int replacementIndex, Heuristic heuristic, int discountRateIndex, int[] neighborDistances, int nearestNeighborIndex)
+        private void Replace(int replacementIndex, Heuristic heuristic, HeuristicResultPosition position, int[] neighborDistances, int nearestNeighborIndex)
         {
             this.eliteSolutions[replacementIndex] = heuristic;
             this.UpdateNearestNeighborDistances(replacementIndex, neighborDistances, nearestNeighborIndex);
@@ -49,7 +50,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.lowestEliteFinancialValue = Single.MaxValue;
             for (int index = 0; index < this.eliteSolutions.Length; ++index)
             {
-                float solutionOFinancialValue = this.eliteSolutions[index]!.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex);
+                float solutionOFinancialValue = this.eliteSolutions[index]!.FinancialValue.GetHighestValueWithDefaulting(position);
                 if (solutionOFinancialValue < this.lowestEliteFinancialValue)
                 {
                     this.lowestEliteFinancialValue = solutionOFinancialValue;
@@ -58,14 +59,14 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public bool TryAddOrReplace(Heuristic heuristic, int discountRateIndex)
+        public bool TryAddOrReplace(Heuristic heuristic, HeuristicResultPosition position)
         {
             // pool is empty (first time TryAddOrReplace() is called)
             if (this.SolutionsInPool == 0)
             {
                 this.eliteSolutions[0] = heuristic;
                 this.lowestEliteIndex = 0;
-                this.lowestEliteFinancialValue = heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex);
+                this.lowestEliteFinancialValue = heuristic.FinancialValue.GetHighestValueWithDefaulting(position);
                 this.SolutionsAccepted = 1;
                 this.SolutionsInPool = 1;
 
@@ -79,16 +80,18 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 // calculate distances to solutions already in pool
                 int[] distancesToSolutionsInPool = new int[this.SolutionsInPool];
+                SortedDictionary<FiaCode, int[]> heuristicTreeSelection = heuristic.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
                 int nearestNeighborDistance = Int32.MaxValue;
                 int nearestNeighborIndex = -1;
                 for (int solutionIndex = 0; solutionIndex < this.SolutionsInPool; ++solutionIndex)
                 {
-                    int distanceToSolution = SolutionPool.GetHammingDistance(heuristic.BestTrajectory.IndividualTreeSelectionBySpecies, this.eliteSolutions[solutionIndex]!.BestTrajectory.IndividualTreeSelectionBySpecies);
+                    SortedDictionary<FiaCode, int[]> eliteTreeSelection = this.eliteSolutions[solutionIndex]!.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
+                    int distanceToSolution = SolutionPool.GetHammingDistance(heuristicTreeSelection, eliteTreeSelection);
                     if (distanceToSolution == 0)
                     {
                         // this solution is already in the pool and therefore doesn't need to be added
-                        Debug.Assert((heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex) >= this.Low!.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex)) && 
-                                     (heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex) <= this.High!.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex)));
+                        Debug.Assert((heuristic.FinancialValue.GetHighestValueWithDefaulting(position) >= this.Low!.FinancialValue.GetHighestValueWithDefaulting(position)) && 
+                                     (heuristic.FinancialValue.GetHighestValueWithDefaulting(position) <= this.High!.FinancialValue.GetHighestValueWithDefaulting(position)));
                         return false;
                     }
 
@@ -102,7 +105,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 // add solution since pool is still filling
                 this.eliteSolutions[this.SolutionsInPool] = heuristic;
-                float heuristicFinancialValue = heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex);
+                float heuristicFinancialValue = heuristic.FinancialValue.GetHighestValueWithDefaulting(position);
                 if (heuristicFinancialValue < this.lowestEliteFinancialValue)
                 {
                     this.lowestEliteFinancialValue = heuristicFinancialValue;
@@ -116,43 +119,44 @@ namespace Osu.Cof.Ferm.Heuristics
             }
             else
             {
-                solutionAccepted = this.TryReplaceByDiversityOrObjective(heuristic, discountRateIndex);
+                solutionAccepted = this.TryReplaceByDiversityOrObjective(heuristic, position);
             }
 
             if (solutionAccepted)
             {
-                float heuristicFinancialValue = heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex);
-                if (heuristicFinancialValue > this.High!.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex))
+                float heuristicFinancialValue = heuristic.FinancialValue.GetHighestValueWithDefaulting(position);
+                if (heuristicFinancialValue > this.High!.FinancialValue.GetHighestValueWithDefaulting(position))
                 {
                     this.High = heuristic;
                 }
-                else if (heuristicFinancialValue < this.Low!.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex))
+                else if (heuristicFinancialValue < this.Low!.FinancialValue.GetHighestValueWithDefaulting(position))
                 {
                     this.Low = heuristic;
                 }
                 ++this.SolutionsAccepted;
 
-                Debug.Assert(heuristicFinancialValue >= this.Low!.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex));
+                Debug.Assert(heuristicFinancialValue >= this.Low!.FinancialValue.GetHighestValueWithDefaulting(position));
             }
             else
             {
                 ++this.SolutionsRejected;
             }
-            Debug.Assert(heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex) <= this.High!.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex));
+            Debug.Assert(heuristic.FinancialValue.GetHighestValueWithDefaulting(position) <= this.High!.FinancialValue.GetHighestValueWithDefaulting(position));
 
             return solutionAccepted;
         }
 
-        private bool TryReplaceByDiversityOrObjective(Heuristic heuristic, int discountRateIndex)
+        private bool TryReplaceByDiversityOrObjective(Heuristic heuristic, HeuristicResultPosition position)
         {
             int[] distancesToSolutionsInPool = new int[this.SolutionsInPool];
-            float heuristicFinancialValue = heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex);
+            float heuristicFinancialValue = heuristic.FinancialValue.GetHighestValueWithDefaulting(position);
+            SortedDictionary<FiaCode, int[]> heuristicTreeSelection = heuristic.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
             int nearestLowerNeighborDistance = SolutionPool.UnknownDistance;
             int nearestLowerNeighborIndex = SolutionPool.UnknownNeighbor;
             for (int solutionIndex = 0; solutionIndex < this.SolutionsInPool; ++solutionIndex)
             {
                 Heuristic eliteSolution = this.eliteSolutions[solutionIndex]!;
-                float eliteFinancialValue = eliteSolution.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex);
+                float eliteFinancialValue = eliteSolution.FinancialValue.GetHighestValueWithDefaulting(position);
                 if (eliteFinancialValue > heuristicFinancialValue)
                 {
                     // for now, treat distances to solutions with more preferable objective functions as irrelevant
@@ -162,7 +166,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 // for now, use Hamming distance as it's interchangeable with Euclidean distance for binary decision variables
                 // If needed, Euclidean distance can be used when multiple thinnings are allowed.
-                int distanceToSolution = SolutionPool.GetHammingDistance(heuristic.BestTrajectory.IndividualTreeSelectionBySpecies, eliteSolution.BestTrajectory.IndividualTreeSelectionBySpecies);
+                SortedDictionary<FiaCode, int[]> eliteTreeSelection = eliteSolution.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
+                int distanceToSolution = SolutionPool.GetHammingDistance(heuristicTreeSelection, eliteTreeSelection);
                 if (distanceToSolution == 0)
                 {
                     // solution is already in the pool
@@ -180,14 +185,14 @@ namespace Osu.Cof.Ferm.Heuristics
             // replace on contribution to diversity
             if ((nearestLowerNeighborIndex >= 0) && (nearestLowerNeighborDistance > this.MinimumNeighborDistance))
             {
-                this.Replace(nearestLowerNeighborIndex, heuristic, discountRateIndex, distancesToSolutionsInPool, nearestLowerNeighborIndex);
+                this.Replace(nearestLowerNeighborIndex, heuristic, position, distancesToSolutionsInPool, nearestLowerNeighborIndex);
                 return true;
             }
 
             // replace worst if this is a new solution
             if ((heuristicFinancialValue > this.lowestEliteFinancialValue) && (nearestLowerNeighborDistance != 0))
             {
-                this.Replace(this.lowestEliteIndex, heuristic, discountRateIndex, distancesToSolutionsInPool, nearestLowerNeighborIndex);
+                this.Replace(this.lowestEliteIndex, heuristic, position, distancesToSolutionsInPool, nearestLowerNeighborIndex);
                 return true;
             }
 

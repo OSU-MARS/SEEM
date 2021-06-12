@@ -8,10 +8,10 @@ namespace Osu.Cof.Ferm.Heuristics
     public class PrescriptionEnumeration : Heuristic<PrescriptionParameters>
     {
         private readonly PrescriptionAllMoveLog? allMoveLog;
-        private readonly PrescriptionSparseMoveLog? highestFinancialValueMoveLog;
+        private readonly PrescriptionFirstInFirstOutMoveLog? highestFinancialValueMoveLog;
 
         public PrescriptionEnumeration(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, heuristicParameters, runParameters, true)
+            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndDiscountRates: true)
         {
             if (this.HeuristicParameters.LogAllMoves)
             {
@@ -22,7 +22,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 // by default, store prescription intensities for only the highest LEV combination of thinning intensities found
                 // This substantially reduces memory footprint in runs where many prescriptions are enumerated and helps to reduce the
                 // size of objective log files. If needed, this can be changed to storing a larger number of prescriptions.
-                this.highestFinancialValueMoveLog = new PrescriptionSparseMoveLog(runParameters.DiscountRates.Count);
+                this.highestFinancialValueMoveLog = new PrescriptionFirstInFirstOutMoveLog(runParameters.RotationLengths.Count, runParameters.DiscountRates.Count, Constant.DefaultSolutionPoolSize);
             }
         }
 
@@ -117,36 +117,45 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        private void EvaluateCurrentPrescriptions(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription, HeuristicPerformanceCounters perfCounters)
+        private void EvaluateCurrentPrescriptions(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription, IList<int> rotationLengths, HeuristicPerformanceCounters perfCounters)
         {
             // for now, assume execution with fixed thinning times and rotation lengths, meaning tree selections do not need to be moved between periods
             // this.CurrentTrajectory.DeselectAllTrees();
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-            List<float> financialValueByDiscountRate = this.GetFinancialValueByDiscountRate(this.CurrentTrajectory);
-            for (int discountRateIndex = 0; discountRateIndex < this.RunParameters.DiscountRates.Count; ++discountRateIndex)
+            float[,] financialValueByDiscountRate = this.GetFinancialValueByRotationAndRate(this.CurrentTrajectory);
+            for (int rotationIndex = 0; rotationIndex < this.RunParameters.RotationLengths.Count; ++rotationIndex)
             {
-                float candidateFinancialValue = financialValueByDiscountRate[discountRateIndex];
-                float acceptedFinancialValue = this.FinancialValue.GetHighestValueForDiscountRate(discountRateIndex);
-                if (candidateFinancialValue > acceptedFinancialValue)
+                int endOfRotationPeriod = rotationLengths[rotationIndex];
+                if (endOfRotationPeriod <= this.RunParameters.LastThinPeriod)
                 {
-                    // accept change of prescription if it improves upon the best solution
-                    acceptedFinancialValue = candidateFinancialValue;
-                    this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+                    continue; // not a valid rotation length because it doesn't include the last thinning scheduled
+                }
 
-                    if (this.highestFinancialValueMoveLog != null)
+                for (int discountRateIndex = 0; discountRateIndex < this.RunParameters.DiscountRates.Count; ++discountRateIndex)
+                {
+                    float candidateFinancialValue = financialValueByDiscountRate[rotationIndex, discountRateIndex];
+                    float acceptedFinancialValue = this.FinancialValue.GetHighestValue(rotationIndex, discountRateIndex);
+                    if (candidateFinancialValue > acceptedFinancialValue)
                     {
-                        this.highestFinancialValueMoveLog.SetPrescription(discountRateIndex, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                        // accept change of prescription if it improves upon the best solution
+                        acceptedFinancialValue = candidateFinancialValue;
+                        this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory, rotationIndex, discountRateIndex);
+
+                        if (this.highestFinancialValueMoveLog != null)
+                        {
+                            this.highestFinancialValueMoveLog.SetPrescription(rotationIndex, discountRateIndex, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                        }
+
+                        ++perfCounters.MovesAccepted;
+                    }
+                    else
+                    {
+                        ++perfCounters.MovesRejected;
                     }
 
-                    ++perfCounters.MovesAccepted;
+                    this.FinancialValue.AddMove(rotationIndex, discountRateIndex, acceptedFinancialValue, candidateFinancialValue);
                 }
-                else
-                {
-                    ++perfCounters.MovesRejected;
-                }
-
-                this.FinancialValue.AddMoveToDiscountRate(discountRateIndex, acceptedFinancialValue, candidateFinancialValue);
             }
 
             if (this.allMoveLog != null)
@@ -172,7 +181,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             if (this.HeuristicParameters.ConstructionGreediness != Constant.Grasp.FullyGreedyConstructionForMaximization)
             {
@@ -235,7 +244,7 @@ namespace Osu.Cof.Ferm.Heuristics
             if (harvests.Count == 0)
             {
                 // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory
-                this.EvaluateCurrentPrescriptions(null, null, null, perfCounters);
+                this.EvaluateCurrentPrescriptions(null, null, null, results.RotationLengths, perfCounters);
             }
             else
             {
@@ -246,7 +255,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     // one thin
                     this.EnumerateThinningIntensities(firstThinPrescription, 0.0F, (float firstIntensity) =>
                     {
-                        this.EvaluateCurrentPrescriptions(firstThinPrescription, null, null, perfCounters);
+                        this.EvaluateCurrentPrescriptions(firstThinPrescription, null, null, results.RotationLengths, perfCounters);
                     }, perfCounters);
                 }
                 else
@@ -260,7 +269,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         {
                             this.EnumerateThinningIntensities(secondThinPrescription!, firstIntensity, (float secondIntensity) =>
                             {
-                                this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, null, perfCounters);
+                                this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, null, results.RotationLengths, perfCounters);
                             }, perfCounters);
                         }, perfCounters);
                     }
@@ -275,7 +284,7 @@ namespace Osu.Cof.Ferm.Heuristics
                                 float previousIntensity = firstIntensity + (100.0F - firstIntensity) * 0.01F * secondIntensity;
                                 this.EnumerateThinningIntensities(thirdThinPrescription, previousIntensity, (float thirdIntensity) =>
                                 {
-                                    this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, thirdThinPrescription, perfCounters);
+                                    this.EvaluateCurrentPrescriptions(firstThinPrescription, secondThinPrescription, thirdThinPrescription, results.RotationLengths, perfCounters);
                                 }, perfCounters);
                             }, perfCounters);
                         }, perfCounters);

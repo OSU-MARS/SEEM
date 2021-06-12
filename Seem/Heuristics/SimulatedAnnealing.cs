@@ -42,7 +42,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "SimulatedAnnealing";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             if ((this.Alpha <= 0.0) || (this.Alpha >= 1.0))
             {
@@ -91,7 +91,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
             float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
 
             int iterationsSinceMoveTypeOrObjectiveChange = 0;
@@ -191,9 +191,9 @@ namespace Osu.Cof.Ferm.Heuristics
                         this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
-                        if (acceptedFinancialValue > this.FinancialValue.GetHighestValueForDefaultDiscountRate())
+                        if (acceptedFinancialValue > this.FinancialValue.GetHighestValue())
                         {
-                            this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+                            this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
                             iterationsSinceReheatOrFinancialValueIncreased = 0;
                         }
 
@@ -218,7 +218,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         ++perfCounters.MovesRejected;
                     }
 
-                    this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
+                    this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
                     this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
                     if (iterationsSinceMoveTypeOrObjectiveChange > this.ChangeToExchangeAfter)

@@ -54,11 +54,11 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public void AddSolution(Heuristic heuristic, int discountRateIndex, HeuristicPerformanceCounters perfCounters)
+        public void AddSolution(Heuristic heuristic, HeuristicResultPosition position, HeuristicPerformanceCounters perfCounters)
         {
-            this.acceptedFinancialValueBySolution.Add(heuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(discountRateIndex));
+            this.acceptedFinancialValueBySolution.Add(heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position));
 
-            this.HighestFinancialValueBySolution.Add(heuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(discountRateIndex));
+            this.HighestFinancialValueBySolution.Add(heuristic.FinancialValue.GetHighestValueWithDefaulting(position));
             this.PerfCountersBySolution.Add(perfCounters);
         }
 
@@ -75,19 +75,19 @@ namespace Osu.Cof.Ferm.Heuristics
             return maximumMoves;
         }
 
-        public Statistics GetObjectiveFunctionStatisticsForMove(int moveIndex)
+        public DistributionStatistics GetFinancialStatisticsForMove(int moveIndex)
         {
             // assemble objective functions for this move
-            List<float> objectiveFunctions = new();
+            List<float> financialValues = new();
             foreach (List<float> acceptedObjectives in this.acceptedFinancialValueBySolution)
             {
                 if (moveIndex < acceptedObjectives.Count)
                 {
-                    objectiveFunctions.Add(acceptedObjectives[moveIndex]);
+                    financialValues.Add(acceptedObjectives[moveIndex]);
                 }
             }
 
-            return new(objectiveFunctions);
+            return new(financialValues);
         }
     }
 }

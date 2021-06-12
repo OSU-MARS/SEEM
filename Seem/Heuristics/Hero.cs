@@ -58,7 +58,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return periodIndices;
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             if (this.MaximumIterations < 1)
             {
@@ -71,7 +71,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             float acceptedFinancialValue = this.EvaluateInitialSelection(this.MaximumIterations * initialTreeRecordCount, perfCounters);
             float previousBestObjectiveFunction = acceptedFinancialValue;
@@ -131,7 +131,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             ++perfCounters.MovesRejected;
                         }
 
-                        this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
+                        this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
                         this.MoveLog.TreeIDByMove.Add(treeIndex);
 
                         if (decrementPeriodIndex)
@@ -153,7 +153,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 previousBestObjectiveFunction = acceptedFinancialValue;
             }
 
-            this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+            this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;

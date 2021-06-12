@@ -24,27 +24,30 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 line.Append("period");
                 // harvest volume headers
-                for (int distributionIndex = 0; distributionIndex < this.Results.CombinationsEvaluated.Count; ++distributionIndex)
+                for (int resultIndex = 0; resultIndex < this.Results.CombinationsEvaluated.Count; ++resultIndex)
                 {
-                    Heuristic? highHeuristic = this.Results[this.Results.CombinationsEvaluated[distributionIndex]].Pool.High;
+                    HeuristicResultPosition position = this.Results.CombinationsEvaluated[resultIndex];
+                    Heuristic? highHeuristic = this.Results[position].Pool.High;
                     if (highHeuristic == null)
                     {
-                        throw new NotSupportedException("Cannot write harvest becaue no heuristic solution was provided for run " + distributionIndex + ".");
+                        throw new NotSupportedException("Cannot write harvest becaue no heuristic solution was provided for run " + resultIndex + ".");
                     }
 
-                    OrganonStandTrajectory bestTrajectory = highHeuristic.BestTrajectory;
+                    
+                    OrganonStandTrajectory bestTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
                     line.Append("," + bestTrajectory.Name + "harvest");
                 }
                 // standing volume headers
-                for (int distributionIndex = 0; distributionIndex < this.Results.CombinationsEvaluated.Count; ++distributionIndex)
+                for (int resultIndex = 0; resultIndex < this.Results.CombinationsEvaluated.Count; ++resultIndex)
                 {
-                    OrganonStandTrajectory bestTrajectory = this.Results[this.Results.CombinationsEvaluated[distributionIndex]].Pool.High!.BestTrajectory;
+                    HeuristicResultPosition position = this.Results.CombinationsEvaluated[resultIndex];
+                    OrganonStandTrajectory bestTrajectory = this.Results[position].Pool.High!.GetBestTrajectoryWithDefaulting(position);
                     line.Append("," + bestTrajectory.Name + "standing");
                 }
                 writer.WriteLine(line);
             }
 
-            int maxPlanningPeriod = this.Results.PlanningPeriods.Max();
+            int maxPlanningPeriod = this.Results.RotationLengths.Max();
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
             {
@@ -54,14 +57,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                 foreach (HeuristicResultPosition position in this.Results.CombinationsEvaluated)
                 {
                     Heuristic highHeuristic = this.Results[position].Pool.High!;
-                    float harvestVolumeScibner = highHeuristic.BestTrajectory.ThinningVolume.GetScribnerTotal(periodIndex);
+                    float harvestVolumeScibner = highHeuristic.GetBestTrajectoryWithDefaulting(position).ThinningVolume.GetScribnerTotal(periodIndex);
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 foreach (HeuristicResultPosition position in this.Results.CombinationsEvaluated)
                 {
                     Heuristic highHeuristic = this.Results[position].Pool.High!;
-                    float standingVolumeScribner = highHeuristic.BestTrajectory.StandingVolume.GetScribnerTotal(periodIndex);
+                    float standingVolumeScribner = highHeuristic.GetBestTrajectoryWithDefaulting(position).StandingVolume.GetScribnerTotal(periodIndex);
                     line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
                 }
 

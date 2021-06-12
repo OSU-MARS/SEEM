@@ -37,7 +37,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Deluge";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             if (this.ChangeToExchangeAfter < 0)
             {
@@ -71,7 +71,7 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
             float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
             if (this.RainRate.HasValue == false)
             {
@@ -149,7 +149,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (candidateFinancialValue > highestFinancialValue)
                     {
                         highestFinancialValue = candidateFinancialValue;
-                        this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+                        this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
 
                         iterationsSinceFinancialValueIncrease = 0;
                     }
@@ -172,7 +172,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
+                this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
                 this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
 
                 if (iterationsSinceFinancialValueIncrease > this.StopAfter)

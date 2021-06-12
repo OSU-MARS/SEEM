@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return prefix + "TreeEvaluated";
         }
 
-        public string GetCsvValues(int move)
+        public string GetCsvValues(HeuristicResultPosition position, int move)
         {
             return this.TreeIDByMove[move].ToString(CultureInfo.InvariantCulture);
         }

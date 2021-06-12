@@ -2,10 +2,10 @@
 {
     public class HeuristicResultPosition
     {
-        public int DiscountRateIndex { get; init; }
+        public int DiscountRateIndex { get; set; }
         public int FirstThinPeriodIndex { get; init; }
         public int ParameterIndex { get; init; }
-        public int PlanningPeriodIndex { get; init; }
+        public int RotationIndex { get; set; }
         public int SecondThinPeriodIndex { get; init; }
         public int ThirdThinPeriodIndex { get; init; }
 
@@ -16,7 +16,7 @@
             this.SecondThinPeriodIndex = Constant.NoThinPeriod;
             this.ThirdThinPeriodIndex = Constant.NoThinPeriod;
             this.ParameterIndex = -1;
-            this.PlanningPeriodIndex = -1;
+            this.RotationIndex = -1;
         }
 
         public HeuristicResultPosition(HeuristicResultPosition other)
@@ -26,7 +26,7 @@
             this.SecondThinPeriodIndex = other.SecondThinPeriodIndex;
             this.ThirdThinPeriodIndex = other.ThirdThinPeriodIndex;
             this.ParameterIndex = other.ParameterIndex;
-            this.PlanningPeriodIndex = other.PlanningPeriodIndex;
+            this.RotationIndex = other.RotationIndex;
         }
     }
 }

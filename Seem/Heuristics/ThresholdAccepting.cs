@@ -25,7 +25,7 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         // similar to SimulatedAnnealing.Run(), differences are in move acceptance
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             if (this.IterationsPerThreshold.Count < 1)
             {
@@ -53,10 +53,10 @@ namespace Osu.Cof.Ferm.Heuristics
             stopwatch.Start();
             HeuristicPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, solutionIndex);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
             this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum(), perfCounters);
 
-            float acceptedFinancialValue = this.FinancialValue.GetHighestValueForDefaultDiscountRate();
+            float acceptedFinancialValue = this.FinancialValue.GetHighestValue();
             float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
@@ -83,9 +83,9 @@ namespace Osu.Cof.Ferm.Heuristics
                         this.CurrentTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
                         ++perfCounters.MovesAccepted;
 
-                        if (acceptedFinancialValue > this.FinancialValue.GetHighestValueForDefaultDiscountRate())
+                        if (acceptedFinancialValue > this.FinancialValue.GetHighestValue())
                         {
-                            this.BestTrajectory.CopyTreeGrowthFrom(this.CurrentTrajectory);
+                            this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
                         }
                     }
                     else
@@ -94,7 +94,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         ++perfCounters.MovesRejected;
                     }
 
-                    this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, candidateFinancialValue);
+                    this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
                     this.MoveLog.TreeIDByMove.Add(treeIndex);
                 }
             }

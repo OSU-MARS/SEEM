@@ -86,7 +86,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
 
                 List<(float, HeuristicResultPosition)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[maxDiscountRateIndex];
-                runsForDiscountRate.Add((highHeuristic.FinancialValue.GetHighestValueForDiscountRateOrDefault(maxDiscountRateIndex), position));
+                runsForDiscountRate.Add((highHeuristic.FinancialValue.GetHighestValueWithDefaulting(position.RotationIndex, maxDiscountRateIndex), position));
             }
             for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
             {
@@ -128,10 +128,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Result at position " + positionIndex + " is missing a high or low solution.");
                 }
 
-                int endPeriodIndex = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
+                int endPeriodIndex = this.Results.RotationLengths[position.RotationIndex];
                 float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
                 HeuristicParameters highParameters = highHeuristic.GetParameters();
-                OrganonStandTrajectory highTrajectory = highHeuristic.BestTrajectory;
+                OrganonStandTrajectory highTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
                 string runPrefix = highTrajectory.Name + "," +
                     highHeuristic.GetName() + "," +
                     highParameters.GetCsvValues() + "," +
@@ -139,10 +139,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 // solution distribution is informative and should be logged in this case
                 // for now, assume high and low solutions use the same parameters
-                IList<float> acceptedFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(position);
-                IList<float> acceptedFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(position);
-                IList<float> candidateFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetCandidateValueForDiscountRateOrDefault(position);
-                IList<float> candidateFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetCandidateValueForDiscountRateOrDefault(position);
+                IList<float> acceptedFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
+                IList<float> acceptedFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
+                IList<float> candidateFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
+                IList<float> candidateFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
 
                 IHeuristicMoveLog? highMoveLog = highHeuristic.GetMoveLog();
                 IHeuristicMoveLog? lowMoveLog = lowHeuristic.GetMoveLog();
@@ -154,7 +154,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     string? lowMove = null;
                     if ((lowMoveLog != null) && (lowMoveLog.LengthInMoves > moveIndex))
                     {
-                        lowMove = lowMoveLog.GetCsvValues(moveIndex);
+                        lowMove = lowMoveLog.GetCsvValues(position, moveIndex);
                     }
                     string? lowObjectiveFunction = null;
                     if (acceptedFinancialValueByMoveLow.Count > moveIndex)
@@ -167,7 +167,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         lowObjectiveFunctionForMove = candidateFinancialValueByMoveLow[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    Statistics moveStatistics = result.Distribution.GetObjectiveFunctionStatisticsForMove(moveIndex);
+                    DistributionStatistics moveStatistics = result.Distribution.GetFinancialStatisticsForMove(moveIndex);
                     string runsWithMoveAtIndex = moveStatistics.Count.ToString(CultureInfo.InvariantCulture);
                     string minObjectiveFunction = moveStatistics.Minimum.ToString(CultureInfo.InvariantCulture);
                     string? lowerQuartileObjectiveFunction = null;
@@ -208,7 +208,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     string? highMove = null;
                     if ((highMoveLog != null) && (highMoveLog.LengthInMoves > moveIndex))
                     {
-                        highMove = highMoveLog.GetCsvValues(moveIndex);
+                        highMove = highMoveLog.GetCsvValues(position, moveIndex);
                     }
                     string highObjectiveFunction = String.Empty;
                     if (acceptedFinancialValueByMoveHigh.Count > moveIndex)
@@ -221,8 +221,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                         highObjectiveFunctionForMove = candidateFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    Debug.Assert(moveStatistics.Maximum >= acceptedFinancialValueByMoveLow[moveIndex]);
-                    Debug.Assert(moveStatistics.Minimum <= acceptedFinancialValueByMoveHigh[moveIndex]);
+                    Debug.Assert((acceptedFinancialValueByMoveLow.Count <= moveIndex) || (moveStatistics.Maximum >= acceptedFinancialValueByMoveLow[moveIndex]));
+                    Debug.Assert((acceptedFinancialValueByMoveHigh.Count <= moveIndex) || (moveStatistics.Minimum <= acceptedFinancialValueByMoveHigh[moveIndex]));
                     writer.WriteLine(runPrefix + "," +
                                      moveIndex + "," +
                                      runsWithMoveAtIndex + "," +

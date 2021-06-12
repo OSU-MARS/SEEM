@@ -5,6 +5,6 @@
         int LengthInMoves { get; }
 
         string GetCsvHeader(string prefix);
-        string GetCsvValues(int move);
+        string GetCsvValues(HeuristicResultPosition position, int move);
     }
 }

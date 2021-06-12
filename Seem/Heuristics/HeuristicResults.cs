@@ -17,11 +17,11 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public IList<float> DiscountRates { get; private init; }
         public IList<int> FirstThinPeriods { get; private init; }
-        public IList<int> PlanningPeriods { get; private init; }
+        public IList<int> RotationLengths { get; private init; }
         public IList<int> SecondThinPeriods { get; private init; }
         public IList<int> ThirdThinPeriods { get; private init; }
 
-        protected HeuristicResults(int parameterCombinationCount, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> planningPeriods, IList<float> discountRates, int individualPoolSize)
+        protected HeuristicResults(int parameterCombinationCount, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, IList<float> discountRates, int individualPoolSize)
         {
             this.parameterCombinationCount = parameterCombinationCount;
             this.results = new HeuristicResult[parameterCombinationCount][][][][][];
@@ -29,7 +29,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.CombinationsEvaluated = new List<HeuristicResultPosition>();
             this.DiscountRates = discountRates;
             this.FirstThinPeriods = firstThinPeriods;
-            this.PlanningPeriods = planningPeriods;
+            this.RotationLengths = rotationLengths;
             this.SecondThinPeriods = secondThinPeriods;
             this.ThirdThinPeriods = thirdThinPeriods;
 
@@ -65,21 +65,21 @@ namespace Osu.Cof.Ferm.Heuristics
                                 int thirdThinPeriod = this.ThirdThinPeriods[thirdThinIndex];
                                 if ((thirdThinPeriod == Constant.NoThinPeriod) || (thirdThinPeriod > secondThinPeriod))
                                 {
-                                    HeuristicResult[][] thirdThinResults = new HeuristicResult[this.PlanningPeriods.Count][];
+                                    HeuristicResult[][] thirdThinResults = new HeuristicResult[this.RotationLengths.Count][];
                                     secondThinResults[thirdThinIndex] = thirdThinResults;
 
                                     int lastOfFirstSecondOrThirdThinPeriod = Math.Max(lastOfFirstOrSecondThinPeriod, thirdThinPeriod);
-                                    for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
+                                    for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
                                     {
-                                        int planningPeriod = this.PlanningPeriods[planningPeriodIndex];
-                                        if (planningPeriod > lastOfFirstSecondOrThirdThinPeriod)
+                                        int endOfRotationPeriodPeriod = this.RotationLengths[rotationIndex];
+                                        if (endOfRotationPeriodPeriod > lastOfFirstSecondOrThirdThinPeriod)
                                         {
-                                            HeuristicResult[] planningPeriodResults = new HeuristicResult[this.DiscountRates.Count];
-                                            thirdThinResults[planningPeriodIndex] = planningPeriodResults;
+                                            HeuristicResult[] rotationLengthResults = new HeuristicResult[this.DiscountRates.Count];
+                                            thirdThinResults[rotationIndex] = rotationLengthResults;
 
                                             for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
                                             {
-                                                planningPeriodResults[discountRateIndex] = new HeuristicResult(individualPoolSize);
+                                                rotationLengthResults[discountRateIndex] = new HeuristicResult(individualPoolSize);
                                             }
                                         }
                                     }
@@ -93,21 +93,47 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public HeuristicResult this[HeuristicResultPosition position]
         {
-            get { return this[position.ParameterIndex, position.FirstThinPeriodIndex, position.SecondThinPeriodIndex, position.ThirdThinPeriodIndex, position.PlanningPeriodIndex, position.DiscountRateIndex]; }
+            get { return this[position.ParameterIndex, position.FirstThinPeriodIndex, position.SecondThinPeriodIndex, position.ThirdThinPeriodIndex, position.RotationIndex, position.DiscountRateIndex]; }
         }
 
-        private HeuristicResult this[int parameterIndex, int firstThinPeriodIndex, int secondThinPeriodIndex, int thirdThinPeriodIndex, int planningPeriodIndex, int discountRateIndex]
+        private HeuristicResult this[int parameterIndex, int firstThinPeriodIndex, int secondThinPeriodIndex, int thirdThinPeriodIndex, int rotationIndex, int discountRateIndex]
         {
-            get { return this.results[parameterIndex][firstThinPeriodIndex][secondThinPeriodIndex][thirdThinPeriodIndex][planningPeriodIndex][discountRateIndex]; }
-            set { this.results[parameterIndex][firstThinPeriodIndex][secondThinPeriodIndex][thirdThinPeriodIndex][planningPeriodIndex][discountRateIndex] = value; }
+            get 
+            {
+                HeuristicResult[][][][][] parameterResults = this.results[parameterIndex];
+                Debug.Assert(parameterResults != null, "Invalid parameter index " + parameterIndex + ".");
+                HeuristicResult[][][][] firstThinResults = parameterResults[firstThinPeriodIndex];
+                Debug.Assert(firstThinResults != null, "Invalid first thin index " + firstThinPeriodIndex + ".");
+                HeuristicResult[][][] secondThinResults = firstThinResults[secondThinPeriodIndex];
+                Debug.Assert(secondThinResults != null, "Invalid second thin index " + secondThinPeriodIndex + ".");
+                HeuristicResult[][] thirdThinResults = secondThinResults[thirdThinPeriodIndex];
+                Debug.Assert(thirdThinResults != null, "Invalid third thin index " + thirdThinPeriodIndex + ".");
+                HeuristicResult[] rotationLengthResults = thirdThinResults[rotationIndex];
+                Debug.Assert(rotationLengthResults != null, "Invalid rotation index " + rotationIndex + ".");
+                return rotationLengthResults[discountRateIndex]; 
+            }
+            set
+            {
+                HeuristicResult[][][][][] parameterResults = this.results[parameterIndex];
+                Debug.Assert(parameterResults != null, "Invalid parameter index " + parameterIndex + ".");
+                HeuristicResult[][][][] firstThinResults = parameterResults[firstThinPeriodIndex];
+                Debug.Assert(firstThinResults != null, "Invalid first thin index " + firstThinPeriodIndex + ".");
+                HeuristicResult[][][] secondThinResults = firstThinResults[secondThinPeriodIndex];
+                Debug.Assert(secondThinResults != null, "Invalid second thin index " + secondThinPeriodIndex + ".");
+                HeuristicResult[][] thirdThinResults = secondThinResults[thirdThinPeriodIndex];
+                Debug.Assert(thirdThinResults != null, "Invalid third thin index " + thirdThinPeriodIndex + ".");
+                HeuristicResult[] rotationLengthResults = thirdThinResults[rotationIndex];
+                Debug.Assert(rotationLengthResults != null, "Invalid rotation index " + rotationIndex + ".");
+                rotationLengthResults[discountRateIndex] = value; 
+            }
         }
 
         public void AssimilateHeuristicRunIntoPosition(Heuristic heuristic, HeuristicPerformanceCounters perfCounters, HeuristicResultPosition position)
         {
             HeuristicResult result = this[position];
             Debug.Assert(result != null);
-            result.Distribution.AddSolution(heuristic, position.DiscountRateIndex, perfCounters);
-            result.Pool.TryAddOrReplace(heuristic, position.DiscountRateIndex);
+            result.Distribution.AddSolution(heuristic, position, perfCounters);
+            result.Pool.TryAddOrReplace(heuristic, position);
         }
 
         public void GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected)
@@ -132,14 +158,14 @@ namespace Osu.Cof.Ferm.Heuristics
                                 HeuristicResult[][] thirdThinResults = secondThinResults[thirdThinIndex];
                                 if (thirdThinResults != null)
                                 {
-                                    for (int planningPeriodIndex = 0; planningPeriodIndex < thirdThinResults.Length; ++planningPeriodIndex)
+                                    for (int rotationIndex = 0; rotationIndex < thirdThinResults.Length; ++rotationIndex)
                                     {
-                                        HeuristicResult[] planningPeriodResults = thirdThinResults[planningPeriodIndex];
-                                        if (planningPeriodResults != null)
+                                        HeuristicResult[] rotationLengthResults = thirdThinResults[rotationIndex];
+                                        if (rotationLengthResults != null)
                                         {
-                                            for (int discountRateIndex = 0; discountRateIndex < planningPeriodResults.Length; ++discountRateIndex)
+                                            for (int discountRateIndex = 0; discountRateIndex < rotationLengthResults.Length; ++discountRateIndex)
                                             {
-                                                HeuristicResult result = planningPeriodResults[discountRateIndex];
+                                                HeuristicResult result = rotationLengthResults[discountRateIndex];
                                                 solutionsAccepted += result.Pool.SolutionsAccepted;
                                                 solutionsCached += result.Pool.SolutionsInPool;
                                                 solutionsRejected += result.Pool.SolutionsRejected;
@@ -155,7 +181,7 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         // searches among discount rates for solutions assigned to the same set of heuristic parameters, thinnings, and rotation length
-        private bool TryFindSolutionsMatchingStandEntries(HeuristicResultPosition position, int planningPeriodIndex, [NotNullWhen(true)] out HeuristicSolutionPool? pool)
+        private bool TryFindSolutionsMatchingStandEntries(HeuristicResultPosition position, int rotationIndex, [NotNullWhen(true)] out HeuristicSolutionPool? pool)
         {
             pool = null;
 
@@ -174,22 +200,22 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 return false;
             }
-            HeuristicResult[] planningPeriodResults = thirdThinResults[planningPeriodIndex];
-            if (planningPeriodResults == null)
+            HeuristicResult[] rotationLengthResults = thirdThinResults[rotationIndex];
+            if (rotationLengthResults == null)
             {
                 return false;
             }
 
             // search among discount rates
-            int maxDiscountRateOffset = Math.Max(position.DiscountRateIndex, planningPeriodResults.Length - position.DiscountRateIndex);
+            int maxDiscountRateOffset = Math.Max(position.DiscountRateIndex, rotationLengthResults.Length - position.DiscountRateIndex);
             for (int discountRateOffset = 0; discountRateOffset <= maxDiscountRateOffset; ++discountRateOffset)
             {
                 // for now, arbitrarily define the next following discount rate as closer than the previous discount rate
                 // If needed, this can be made intelligent enough to look at the actual discount rates.
                 int discountRateIndex = position.DiscountRateIndex + discountRateOffset;
-                if (discountRateIndex < planningPeriodResults.Length)
+                if (discountRateIndex < rotationLengthResults.Length)
                 {
-                    pool = planningPeriodResults[discountRateIndex].Pool;
+                    pool = rotationLengthResults[discountRateIndex].Pool;
                     if (pool.SolutionsInPool > 0)
                     {
                         return true;
@@ -200,7 +226,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         discountRateIndex = position.DiscountRateIndex - discountRateOffset;
                         if (discountRateIndex >= 0)
                         {
-                            pool = planningPeriodResults[discountRateIndex].Pool;
+                            pool = rotationLengthResults[discountRateIndex].Pool;
                             if (pool.SolutionsInPool > 0)
                             {
                                 return true;
@@ -219,16 +245,16 @@ namespace Osu.Cof.Ferm.Heuristics
         // by earlier runs. It's assumed parameter set evaluations should always be independent of each other.
         public bool TryFindSolutionsMatchingThinnings(HeuristicResultPosition position, [NotNullWhen(true)] out HeuristicSolutionPool? solutions)
         {
-            int maxPlanningPeriodOffset = Math.Max(position.PlanningPeriodIndex, this.PlanningPeriods.Count - position.PlanningPeriodIndex);
-            for (int planningPeriodOffset = 0; planningPeriodOffset <= maxPlanningPeriodOffset; ++planningPeriodOffset)
+            int maxRotationOffset = Math.Max(position.RotationIndex, this.RotationLengths.Count - position.RotationIndex);
+            for (int rotationOffset = 0; rotationOffset <= maxRotationOffset; ++rotationOffset)
             {
-                int planningPeriodIndex = position.PlanningPeriodIndex + planningPeriodOffset;
-                if ((planningPeriodIndex < this.PlanningPeriods.Count) && this.TryFindSolutionsMatchingStandEntries(position, planningPeriodIndex, out solutions))
+                int rotationIndex = position.RotationIndex + rotationOffset;
+                if ((rotationIndex < this.RotationLengths.Count) && this.TryFindSolutionsMatchingStandEntries(position, rotationIndex, out solutions))
                 {
                     return true;
                 }
-                planningPeriodIndex = position.PlanningPeriodIndex - planningPeriodOffset;
-                if ((planningPeriodIndex >= 0) && this.TryFindSolutionsMatchingStandEntries(position, planningPeriodIndex, out solutions))
+                rotationIndex = position.RotationIndex - rotationOffset;
+                if ((rotationIndex >= 0) && this.TryFindSolutionsMatchingStandEntries(position, rotationIndex, out solutions))
                 {
                     return true;
                 }
@@ -243,8 +269,8 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public IList<TParameters> ParameterCombinations { get; private init; }
 
-        public HeuristicResults(IList<TParameters> parameterCombinations, IList<float> discountRates, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> planningPeriods, int individualSolutionPoolSize)
-            : base(parameterCombinations.Count, firstThinPeriods, secondThinPeriods, thirdThinPeriods, planningPeriods, discountRates, individualSolutionPoolSize)
+        public HeuristicResults(IList<TParameters> parameterCombinations, IList<float> discountRates, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, int individualSolutionPoolSize)
+            : base(parameterCombinations.Count, firstThinPeriods, secondThinPeriods, thirdThinPeriods, rotationLengths, discountRates, individualSolutionPoolSize)
         {
             this.ParameterCombinations = parameterCombinations;
         }

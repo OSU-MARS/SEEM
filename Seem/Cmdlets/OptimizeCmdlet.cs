@@ -90,12 +90,44 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.TreeModel = TreeModel.OrganonNwo;
         }
 
-        protected virtual bool HeuristicEvaluatesDiscountRates
+        protected virtual bool HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates
         {
             get { return false; }
         }
 
         protected abstract Heuristic<TParameters> CreateHeuristic(TParameters heuristicParameters, RunParameters runParameters);
+
+        private RunParameters CreateRunParameters(HeuristicResultPosition position, OrganonConfiguration organonConfiguration)
+        {
+            RunParameters runParameters = new(this.PlanningPeriods, this.DiscountRates, organonConfiguration)
+            {
+                MaximizeForPlanningPeriod = this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates ? Constant.MaximizeForAllPlanningPeriods : this.PlanningPeriods[position.RotationIndex],
+                TimberObjective = this.TimberObjective,
+                TimberValue = this.TimberValue
+            };
+
+            int lastThinPeriod = Constant.NoThinPeriod;
+            if (this.TryCreateFirstThin(position.FirstThinPeriodIndex, out IHarvest? firstThin))
+            {
+                lastThinPeriod = Math.Max(lastThinPeriod, this.FirstThinPeriod[position.FirstThinPeriodIndex]);
+                runParameters.Treatments.Harvests.Add(firstThin);
+
+                if (this.TryCreateSecondThin(position.SecondThinPeriodIndex, out IHarvest? secondThin))
+                {
+                    lastThinPeriod = Math.Max(lastThinPeriod, this.SecondThinPeriod[position.SecondThinPeriodIndex]);
+                    runParameters.Treatments.Harvests.Add(secondThin);
+
+                    if (this.TryCreateThirdThin(position.ThirdThinPeriodIndex, out IHarvest? thirdThin))
+                    {
+                        lastThinPeriod = Math.Max(lastThinPeriod, this.ThirdThinPeriod[position.ThirdThinPeriodIndex]);
+                        runParameters.Treatments.Harvests.Add(thirdThin);
+                    }
+                }
+            }
+
+            runParameters.LastThinPeriod = lastThinPeriod;
+            return runParameters;
+        }
 
         protected virtual IHarvest CreateThin(int thinPeriodIndex)
         {
@@ -128,18 +160,26 @@ namespace Osu.Cof.Ferm.Cmdlets
             int firstThinPeriod = results.FirstThinPeriods[position.FirstThinPeriodIndex];
             if (firstThinPeriod != Constant.NoThinPeriod)
             {
-                int planningPeriods = results.PlanningPeriods[position.PlanningPeriodIndex];
-                periodWeight = planningPeriods - firstThinPeriod;
+                int endOfRotationPeriod;
+                if (position.RotationIndex == Constant.AllRotationPosition)
+                {
+                    endOfRotationPeriod = results.RotationLengths.Max();
+                }
+                else
+                {
+                    endOfRotationPeriod = results.RotationLengths[position.RotationIndex];
+                }
+                periodWeight = endOfRotationPeriod - firstThinPeriod;
 
                 int secondThinPeriod = results.SecondThinPeriods[position.SecondThinPeriodIndex];
                 if (secondThinPeriod != Constant.NoThinPeriod)
                 {
-                    periodWeight += planningPeriods - secondThinPeriod;
+                    periodWeight += endOfRotationPeriod - secondThinPeriod;
 
                     int thirdThinPeriod = results.ThirdThinPeriods[position.ThirdThinPeriodIndex];
                     if (thirdThinPeriod == Constant.NoThinPeriod)
                     {
-                        return planningPeriods - thirdThinPeriod;
+                        return endOfRotationPeriod - thirdThinPeriod;
                     }
                 }
             }
@@ -152,9 +192,43 @@ namespace Osu.Cof.Ferm.Cmdlets
         // ideally this would be virtual but, as of C# 9.0, the nature of C# generics requires GetDefaultParameterCombinations() to be separate
         protected abstract IList<TParameters> GetParameterCombinations();
 
+        private string GetStatusDescription(IList<TParameters> parameterCombinations, HeuristicResultPosition currentPosition)
+        {
+            string mostRecentEvaluationDescription = String.Empty;
+            if (parameterCombinations.Count > 1)
+            {
+                mostRecentEvaluationDescription += ", parameters " + currentPosition.ParameterIndex + "/" + parameterCombinations.Count;
+            }
+            if (this.FirstThinPeriod.Count > 1)
+            {
+                mostRecentEvaluationDescription += ", thin 1 " + currentPosition.FirstThinPeriodIndex + "/" + this.FirstThinPeriod.Count;
+            }
+            if (this.SecondThinPeriod.Count > 1)
+            {
+                mostRecentEvaluationDescription += ", 2 " + currentPosition.SecondThinPeriodIndex + "/" + this.SecondThinPeriod.Count;
+            }
+            if (this.ThirdThinPeriod.Count > 1)
+            {
+                mostRecentEvaluationDescription += ", 3 " + currentPosition.ThirdThinPeriodIndex + "/" + this.ThirdThinPeriod.Count;
+            }
+            if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates == false)
+            {
+                if (this.PlanningPeriods.Count > 1)
+                {
+                    mostRecentEvaluationDescription += ", rotation " + currentPosition.RotationIndex + "/" + this.PlanningPeriods.Count;
+                }
+                if (this.DiscountRates.Count > 1)
+                {
+                    mostRecentEvaluationDescription += ", rate " + currentPosition.DiscountRateIndex + "/" + this.DiscountRates.Count;
+                }
+            }
+            mostRecentEvaluationDescription += " (" + this.Threads + " threads)";
+            return mostRecentEvaluationDescription;
+        }
+
         protected override void ProcessRecord()
         {
-            if ((this.TimberObjective == TimberObjective.ScribnerVolume) && (this.DiscountRates.Count > 1) && (this.HeuristicEvaluatesDiscountRates == false))
+            if ((this.TimberObjective == TimberObjective.ScribnerVolume) && (this.DiscountRates.Count > 1) && (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates == false))
             {
                 // low priority to improve this but at least warn about limited support
                 this.WriteWarning("Timber optimization objective is " + this.TimberObjective + " but multiple discount rates are specified. Optimization will be unnecessarily repeated for each discount rate.");
@@ -218,32 +292,32 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 }
                             }
 
-                            int lastOfFirstSecondOrThirdThinPeriod = Math.Max(lastOfFirstOrSecondThinPeriod, thirdThinPeriod);
-                            for (int planningPeriodIndex = 0; planningPeriodIndex < this.PlanningPeriods.Count; ++planningPeriodIndex)
+                            if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates)
                             {
-                                int planningPeriods = this.PlanningPeriods[planningPeriodIndex];
-                                if (lastOfFirstSecondOrThirdThinPeriod >= planningPeriods)
+                                HeuristicResultPosition position = new()
                                 {
-                                    // last thin would occur before or in the same period as the final harvest
-                                    continue;
-                                }
-
-                                if (this.HeuristicEvaluatesDiscountRates)
+                                    DiscountRateIndex = Constant.AllDiscountRatePosition,
+                                    FirstThinPeriodIndex = firstThinIndex,
+                                    ParameterIndex = parameterIndex,
+                                    RotationIndex = Constant.AllRotationPosition,
+                                    SecondThinPeriodIndex = secondThinIndex,
+                                    ThirdThinPeriodIndex = thirdThinIndex
+                                };
+                                combinationsToEvaluate.Add(position);
+                                totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
+                            }
+                            else
+                            {
+                                int lastOfFirstSecondOrThirdThinPeriod = Math.Max(lastOfFirstOrSecondThinPeriod, thirdThinPeriod);
+                                for (int rotationIndex = 0; rotationIndex < this.PlanningPeriods.Count; ++rotationIndex)
                                 {
-                                    HeuristicResultPosition position = new()
+                                    int planningPeriods = this.PlanningPeriods[rotationIndex];
+                                    if (lastOfFirstSecondOrThirdThinPeriod >= planningPeriods)
                                     {
-                                        DiscountRateIndex = Constant.AllDiscountRatePosition,
-                                        FirstThinPeriodIndex = firstThinIndex,
-                                        ParameterIndex = parameterIndex,
-                                        PlanningPeriodIndex = planningPeriodIndex,
-                                        SecondThinPeriodIndex = secondThinIndex,
-                                        ThirdThinPeriodIndex = thirdThinIndex
-                                    };
-                                    combinationsToEvaluate.Add(position);
-                                    totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
-                                }
-                                else
-                                {
+                                        // last thin would occur before or in the same period as the final harvest
+                                        continue;
+                                    }
+
                                     // heuristic optimizes for one discount rate at a time
                                     for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
                                     {
@@ -254,7 +328,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                             DiscountRateIndex = discountRateIndex,
                                             FirstThinPeriodIndex = firstThinIndex,
                                             ParameterIndex = parameterIndex,
-                                            PlanningPeriodIndex = planningPeriodIndex,
+                                            RotationIndex = rotationIndex,
                                             SecondThinPeriodIndex = secondThinIndex,
                                             ThirdThinPeriodIndex = thirdThinIndex
                                         };
@@ -285,31 +359,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         return;
                     }
+
                     int resultPositionIndex = iteration / this.BestOf;
                     HeuristicResultPosition position = combinationsToEvaluate[resultPositionIndex];
-
                     try
                     {
-                        RunParameters runParameters = new(this.DiscountRates, organonConfiguration)
-                        {
-                            LastPlanningPeriod = this.PlanningPeriods[position.PlanningPeriodIndex],
-                            MaximizeForPlanningPeriod = this.PlanningPeriods[position.PlanningPeriodIndex],
-                            TimberObjective = this.TimberObjective,
-                            TimberValue = this.TimberValue
-                        };
-                        if (this.TryCreateFirstThin(position.FirstThinPeriodIndex, out IHarvest? firstThin))
-                        {
-                            runParameters.Treatments.Harvests.Add(firstThin);
-                            if (this.TryCreateSecondThin(position.SecondThinPeriodIndex, out IHarvest? secondThin))
-                            {
-                                runParameters.Treatments.Harvests.Add(secondThin);
-                                if (this.TryCreateThirdThin(position.ThirdThinPeriodIndex, out IHarvest? thirdThin))
-                                {
-                                    runParameters.Treatments.Harvests.Add(thirdThin);
-                                }
-                            }
-                        }
                         TParameters heuristicParameters = parameterCombinationsForHeuristic[position.ParameterIndex];
+                        RunParameters runParameters = this.CreateRunParameters(position, organonConfiguration);
                         Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(heuristicParameters, runParameters);
                         HeuristicPerformanceCounters perfCounters = currentHeuristic.Run(position, results);
 
@@ -317,24 +373,36 @@ namespace Osu.Cof.Ferm.Cmdlets
                         int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
                         lock (results)
                         {
-                            if (this.HeuristicEvaluatesDiscountRates)
+                            if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates)
                             {
-                                // scatter heuristic's results to discount rates
-                                // For now, only log perf counters once as counts are merged across discount rates. If needed, move acceptance
-                                // and rejection can be tracked by discount rate.
-                                for (int discountRateIndex = 0; discountRateIndex < results.DiscountRates.Count; ++discountRateIndex)
+                                // scatter heuristic's results to rotation lengths and discount rates
+                                HeuristicPerformanceCounters perfCountersToAssmilate = perfCounters;
+                                bool perfCountersLogged = false;
+                                for (int rotationIndex = 0; rotationIndex < this.PlanningPeriods.Count; ++rotationIndex)
                                 {
-                                    HeuristicResultPosition discountRatePosition = new(position)
+                                    int endOfRotationPeriod = this.PlanningPeriods[rotationIndex];
+                                    if (endOfRotationPeriod <= runParameters.LastThinPeriod)
                                     {
-                                        DiscountRateIndex = discountRateIndex
-                                    };
-                                    HeuristicPerformanceCounters perfCountersToAssmilate = perfCounters;
-                                    if (discountRateIndex > 0)
-                                    {
-                                        perfCountersToAssmilate = HeuristicPerformanceCounters.Zero;
+                                        continue; // not a valid position because end of rotation would occur before or in the same period as the last thin
                                     }
-                                    results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCountersToAssmilate, discountRatePosition);
-                                    results.CombinationsEvaluated.Add(discountRatePosition);
+
+                                    for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
+                                    {
+                                        HeuristicResultPosition assimilationPosition = new(position) // must be new each time to populate results.CombinationsEvaluated
+                                        {
+                                            DiscountRateIndex = discountRateIndex,
+                                            RotationIndex = rotationIndex
+                                        };
+
+                                        results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCountersToAssmilate, assimilationPosition);
+                                        results.CombinationsEvaluated.Add(assimilationPosition);
+
+                                        if (perfCountersLogged == false)
+                                        {
+                                            perfCountersLogged = true;
+                                            perfCountersToAssmilate = HeuristicPerformanceCounters.Zero;
+                                        }
+                                    }
                                 }
                             }
                             else
@@ -351,19 +419,23 @@ namespace Osu.Cof.Ferm.Cmdlets
                     }
                     catch (Exception exception)
                     {
+                        string rotationLength = "vectorized";
                         string discountRate = "vectorized";
-                        if (this.HeuristicEvaluatesDiscountRates == false)
+                        if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates == false)
                         {
                             discountRate = results.DiscountRates[position.DiscountRateIndex].ToString();
+                            rotationLength = results.RotationLengths[position.RotationIndex].ToString();
                         }
-                        throw new AggregateException("Exception encountered during optimization. Discount rate " + discountRate +
+                        throw new AggregateException("Exception encountered during optimization. Parameters " + position.ParameterIndex +
                                                      ", first thin period " + results.FirstThinPeriods[position.FirstThinPeriodIndex] +
                                                      ", second thin period " + results.SecondThinPeriods[position.SecondThinPeriodIndex] +
                                                      ", third thin period " + results.ThirdThinPeriods[position.ThirdThinPeriodIndex] +
-                                                     ", planning length " + results.PlanningPeriods[position.PlanningPeriodIndex] +
+                                                     ", rotation length " + rotationLength +
+                                                     ", discount rate " + discountRate +
                                                      ".", 
                                                      exception);
                     }
+
                     if (this.Stopping)
                     {
                         loopState.Stop();
@@ -372,7 +444,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             });
 
             string cmdletName = this.GetName();
-            StringBuilder mostRecentEvaluationPoint = new();
+            bool progressWritten = false;
             int sleepsSinceLastStatusUpdate = 0;
             while (runs.IsCompleted == false)
             {
@@ -391,49 +463,35 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int currentPositionIndex = Math.Min(currentRun / this.BestOf, combinationsToEvaluate.Count - 1);
                     HeuristicResultPosition mostRecentCombination = combinationsToEvaluate[currentPositionIndex];
 
-                    mostRecentEvaluationPoint.Clear();
-                    mostRecentEvaluationPoint.Append("run " + currentRun + "/" + totalRuns);
-                    if (this.PlanningPeriods.Count > 1)
-                    {
-                        mostRecentEvaluationPoint.Append(", rotation " + mostRecentCombination.PlanningPeriodIndex + "/" + this.PlanningPeriods.Count);
-                    }
-                    if (this.FirstThinPeriod.Count > 1)
-                    {
-                        mostRecentEvaluationPoint.Append(", thin 1 " + mostRecentCombination.FirstThinPeriodIndex + "/" + this.FirstThinPeriod.Count);
-                    }
-                    if (this.SecondThinPeriod.Count > 1)
-                    {
-                        mostRecentEvaluationPoint.Append(", 2 " + mostRecentCombination.SecondThinPeriodIndex + "/" + this.SecondThinPeriod.Count);
-                    }
-                    if (this.ThirdThinPeriod.Count > 1)
-                    {
-                        mostRecentEvaluationPoint.Append(", 3 " + mostRecentCombination.ThirdThinPeriodIndex + "/" + this.ThirdThinPeriod.Count);
-                    }
-                    if (parameterCombinationsForHeuristic.Count > 1)
-                    {
-                        mostRecentEvaluationPoint.Append(", parameters " + mostRecentCombination.ParameterIndex + "/" + parameterCombinationsForHeuristic.Count);
-                    }
-                    if ((this.HeuristicEvaluatesDiscountRates == false) && (this.DiscountRates.Count > 1))
-                    {
-                        mostRecentEvaluationPoint.Append(", rate " + mostRecentCombination.DiscountRateIndex + "/" + this.DiscountRates.Count);
-                    }
-                    mostRecentEvaluationPoint.Append(" (" + this.Threads + " threads)");
-
+                    string mostRecentEvaluationDescription = "run " + currentRun + "/" + totalRuns + this.GetStatusDescription(parameterCombinationsForHeuristic, mostRecentCombination);
                     double fractionComplete = (double)runtimeCostCompleted / (double)totalRuntimeCost;
                     double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
                     double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
-                    this.WriteProgress(new ProgressRecord(0, cmdletName,  mostRecentEvaluationPoint.ToString())
+                    this.WriteProgress(new ProgressRecord(0, cmdletName, mostRecentEvaluationDescription.ToString())
                     {
                         PercentComplete = (int)(100.0 * fractionComplete),
                         SecondsRemaining = (int)Math.Round(secondsRemaining)
                     });
+
+                    progressWritten = true;
                     sleepsSinceLastStatusUpdate = 0;
                 }
             }
             runs.GetAwaiter().GetResult(); // propagate any exceptions since last IsFaulted check
             stopwatch.Stop();
-
             this.WriteObject(results);
+            
+            if (progressWritten)
+            {
+                // write progress complete
+                string mostRecentEvaluationDescription = totalRuns + " runs " + this.GetStatusDescription(parameterCombinationsForHeuristic, combinationsToEvaluate[^1]);
+                this.WriteProgress(new ProgressRecord(0, cmdletName, mostRecentEvaluationDescription)
+                {
+                    PercentComplete = 100,
+                    SecondsRemaining = 0
+                });
+            }
+
             if (results.CombinationsEvaluated.Count == 1)
             {
                 HeuristicResultPosition firstPosition = results.CombinationsEvaluated[0];
@@ -453,7 +511,6 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             results.GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected);
 
-            base.WriteVerbose(String.Empty); // Visual Studio Code display mangling workaround
             this.WriteVerbose("{0}: {1} configurations with {2} runs in {3:0.00} minutes ({4:0.00}M timesteps in {5:0.00} core-minutes, {6:0.00}% move acceptance, {7} solutions pooled, {8:0.00}% pool acceptance).",
                               this.GetName(),
                               results.CombinationsEvaluated.Count,
@@ -478,15 +535,16 @@ namespace Osu.Cof.Ferm.Cmdlets
             float minimumHarvest = Single.MaxValue;
             float harvestSum = 0.0F;
             float harvestSumOfSquares = 0.0F;
-            for (int periodIndex = 1; periodIndex < heuristic.BestTrajectory.PlanningPeriods; ++periodIndex)
+            OrganonStandTrajectory bestTrajectory = heuristic.BestTrajectoryByRotationAndRate[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex]!;
+            for (int periodIndex = 1; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
             {
-                float harvestVolumeScribner = heuristic.BestTrajectory.ThinningVolume.GetScribnerTotal(periodIndex);
+                float harvestVolumeScribner = bestTrajectory.ThinningVolume.GetScribnerTotal(periodIndex);
                 maximumHarvest = Math.Max(harvestVolumeScribner, maximumHarvest);
                 harvestSum += harvestVolumeScribner;
                 harvestSumOfSquares += harvestVolumeScribner * harvestVolumeScribner;
                 minimumHarvest = Math.Min(harvestVolumeScribner, minimumHarvest);
             }
-            float periods = (float)(heuristic.BestTrajectory.PlanningPeriods - 1);
+            float periods = (float)(bestTrajectory.PlanningPeriods - 1);
             float meanHarvest = harvestSum / periods;
             float variance = harvestSumOfSquares / periods - meanHarvest * meanHarvest;
             float standardDeviation = MathF.Sqrt(variance);
@@ -495,7 +553,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             int totalMoves = totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected;
             this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", heuristic.GetName(), totalMoves, totalPerfCounters.MovesAccepted, (float)totalPerfCounters.MovesAccepted / (float)totalMoves, totalPerfCounters.MovesRejected, (float)totalPerfCounters.MovesRejected / (float)totalMoves);
-            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.FinancialValue.GetHighestValueForDefaultDiscountRate(), result.Distribution.HighestFinancialValueBySolution.Average(), heuristic.FinancialValue.GetAcceptedValueForDiscountRateOrDefault(Constant.HeuristicDefault.DiscountRateIndex).Last());
+            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", heuristic.FinancialValue.GetHighestValue(), result.Distribution.HighestFinancialValueBySolution.Average(), heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex).Last());
             this.WriteVerbose("flow: {0:0.0#} mean, {1:0.000} σ, {2:0.000}% even, {3:0.0#}-{4:0.0#} = range {5:0.0}.", meanHarvest, standardDeviation, 1E2 * flowEvenness, minimumHarvest, maximumHarvest, maximumHarvest - minimumHarvest);
 
             double totalSeconds = totalPerfCounters.Duration.TotalSeconds;

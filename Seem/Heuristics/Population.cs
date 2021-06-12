@@ -484,18 +484,18 @@ namespace Osu.Cof.Ferm.Heuristics
             int nearestLowerNeighborDistance = Int32.MaxValue;
             int nearestLowerNeighborIndex = -1;
             KeyValuePair<float, List<int>> nearestNeighbor = default;
-            foreach (KeyValuePair<float, List<int>> individual in this.individualIndexByFitness)
+            foreach (KeyValuePair<float, List<int>> fitnessSortedIndividual in this.individualIndexByFitness)
             {
-                float individualFitness = individual.Key;
+                float individualFitness = fitnessSortedIndividual.Key;
                 if (individualFitness > newFitness)
                 {
                     // under current replacement logic, distances to solutions with more preferable objective functions are irrelevant
                     // and therefore don't need to be evaluated
                     break;
                 }
-                for (int solutionIndex = 0; solutionIndex < individual.Value.Count; ++solutionIndex)
+                for (int solutionIndex = 0; solutionIndex < fitnessSortedIndividual.Value.Count; ++solutionIndex)
                 {
-                    int individualIndex = individual.Value[solutionIndex];
+                    int individualIndex = fitnessSortedIndividual.Value[solutionIndex];
 
                     // for now, use Hamming distance as it's interchangeable with Euclidean distance for binary decision variables
                     // If needed, Euclidean distance or stand entry distance can be used when multiple thinnings are allowed.
@@ -509,7 +509,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     distancesToIndividuals[solutionIndex] = Math.Min(distanceToSolution, distancesToIndividuals[solutionIndex]);
                     if (distanceToSolution < nearestLowerNeighborDistance)
                     {
-                        nearestNeighbor = individual;
+                        nearestNeighbor = fitnessSortedIndividual;
                         nearestLowerNeighborDistance = distanceToSolution;
                         nearestLowerNeighborIndex = individualIndex;
                     }

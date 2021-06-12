@@ -6,7 +6,7 @@ namespace Osu.Cof.Ferm
 {
     // get basic statistics from a list of values sampling a distribution
     // Immutable, so could be made a struct if needed.
-    public class Statistics
+    public class DistributionStatistics
     {
         public int Count{ get; private init; }
         public float Maximum{ get; private init; }
@@ -24,128 +24,128 @@ namespace Osu.Cof.Ferm
         public float? NinetySevenPointFivePercentile{ get; private init; }
 
         // if not already sorted ascending, values will be reordered to ascending
-        public Statistics(List<float> values)
+        public DistributionStatistics(List<float> sampledValues)
         {
-            values.Sort(); // sort ascending
+            sampledValues.Sort(); // sort ascending
 
             // find statistics
             // count, min, max, and mean
-            this.Count = values.Count;
-            this.Maximum = values[^1];
-            this.Minimum = values[0];
+            this.Count = sampledValues.Count;
+            this.Maximum = sampledValues[^1];
+            this.Minimum = sampledValues[0];
             this.Mean = 0.0F;
-            foreach (float objective in values)
+            foreach (float objective in sampledValues)
             {
                 this.Mean += objective;
             }
             this.Mean /= this.Count;
 
             // median
-            bool exactMedian = (values.Count % 2) == 1;
+            bool exactMedian = (sampledValues.Count % 2) == 1;
             if (exactMedian)
             {
-                this.Median = values[values.Count / 2]; // x.5 truncates to x, matching middle element due to zero based indexing
+                this.Median = sampledValues[sampledValues.Count / 2]; // x.5 truncates to x, matching middle element due to zero based indexing
             }
             else
             {
-                int halfIndex = values.Count / 2;
-                this.Median = 0.5F * values[halfIndex - 1] + 0.5F * values[halfIndex];
+                int halfIndex = sampledValues.Count / 2;
+                this.Median = 0.5F * sampledValues[halfIndex - 1] + 0.5F * sampledValues[halfIndex];
 
-                Debug.Assert(Median >= values[0]);
-                Debug.Assert(Median <= values[^1]);
+                Debug.Assert(this.Median >= sampledValues[0]);
+                Debug.Assert(this.Median <= sampledValues[^1]);
             }
 
             // quantiles
-            if (values.Count > 4)
+            if (sampledValues.Count > 4)
             {
-                bool exactQuartiles = (values.Count % 4) == 0;
+                bool exactQuartiles = (sampledValues.Count % 4) == 0;
                 if (exactQuartiles)
                 {
-                    this.LowerQuartile = values[values.Count / 4];
-                    this.UpperQuartile = values[3 * values.Count / 4];
+                    this.LowerQuartile = sampledValues[sampledValues.Count / 4];
+                    this.UpperQuartile = sampledValues[3 * sampledValues.Count / 4];
                 }
                 else
                 {
-                    float lowerQuartilePosition = 0.25F * values.Count;
+                    float lowerQuartilePosition = 0.25F * sampledValues.Count;
                     float ceilingIndex = MathF.Ceiling(lowerQuartilePosition);
                     float floorIndex = MathF.Floor(lowerQuartilePosition);
                     float ceilingWeight = 1.0F + lowerQuartilePosition - ceilingIndex;
                     float floorWeight = 1.0F - lowerQuartilePosition + floorIndex;
-                    this.LowerQuartile = floorWeight * values[(int)floorIndex] + ceilingWeight * values[(int)ceilingIndex];
+                    this.LowerQuartile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
 
-                    float upperQuartilePosition = 0.75F * values.Count;
+                    float upperQuartilePosition = 0.75F * sampledValues.Count;
                     ceilingIndex = MathF.Ceiling(upperQuartilePosition);
                     floorIndex = MathF.Floor(upperQuartilePosition);
                     ceilingWeight = 1.0F + upperQuartilePosition - ceilingIndex;
                     floorWeight = 1.0F - upperQuartilePosition + floorIndex;
-                    this.UpperQuartile = floorWeight * values[(int)floorIndex] + ceilingWeight * values[(int)ceilingIndex];
+                    this.UpperQuartile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
 
-                    Debug.Assert(LowerQuartile >= values[0]);
-                    Debug.Assert(LowerQuartile <= Median);
-                    Debug.Assert(UpperQuartile >= Median);
-                    Debug.Assert(UpperQuartile <= values[^1]);
+                    Debug.Assert(this.LowerQuartile >= sampledValues[0]);
+                    Debug.Assert(this.LowerQuartile <= Median);
+                    Debug.Assert(this.UpperQuartile >= Median);
+                    Debug.Assert(this.UpperQuartile <= sampledValues[^1]);
                 }
 
-                if (values.Count > 19)
+                if (sampledValues.Count > 19)
                 {
-                    bool exactPercentiles = (values.Count % 20) == 0;
+                    bool exactPercentiles = (sampledValues.Count % 20) == 0;
                     if (exactPercentiles)
                     {
-                        this.FifthPercentile = values[values.Count / 20];
-                        this.NinetyFifthPercentile = values[19 * values.Count / 20];
+                        this.FifthPercentile = sampledValues[sampledValues.Count / 20];
+                        this.NinetyFifthPercentile = sampledValues[19 * sampledValues.Count / 20];
                     }
                     else
                     {
-                        float fifthPercentilePosition = 0.05F * values.Count;
+                        float fifthPercentilePosition = 0.05F * sampledValues.Count;
                         float ceilingIndex = MathF.Ceiling(fifthPercentilePosition);
                         float floorIndex = MathF.Floor(fifthPercentilePosition);
                         float ceilingWeight = 1.0F + fifthPercentilePosition - ceilingIndex;
                         float floorWeight = 1.0F - fifthPercentilePosition + floorIndex;
-                        this.FifthPercentile = floorWeight * values[(int)floorIndex] + ceilingWeight * values[(int)ceilingIndex];
+                        this.FifthPercentile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
 
-                        float ninetyFifthPercentilePosition = 0.95F * values.Count;
+                        float ninetyFifthPercentilePosition = 0.95F * sampledValues.Count;
                         ceilingIndex = MathF.Ceiling(ninetyFifthPercentilePosition);
                         floorIndex = MathF.Floor(ninetyFifthPercentilePosition);
                         ceilingWeight = 1.0F + ninetyFifthPercentilePosition - ceilingIndex;
                         floorWeight = 1.0F - ninetyFifthPercentilePosition + floorIndex;
-                        this.NinetyFifthPercentile = floorWeight * values[(int)floorIndex] + ceilingWeight * values[(int)ceilingIndex];
+                        this.NinetyFifthPercentile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
 
-                        Debug.Assert(this.FifthPercentile >= values[0]);
+                        Debug.Assert(this.FifthPercentile >= sampledValues[0]);
                         Debug.Assert(this.FifthPercentile <= Median);
                         Debug.Assert(this.NinetyFifthPercentile >= Median);
-                        Debug.Assert(this.NinetyFifthPercentile <= values[^1]);
+                        Debug.Assert(this.NinetyFifthPercentile <= sampledValues[^1]);
                     }
 
-                    if (values.Count > 39)
+                    if (sampledValues.Count > 39)
                     {
-                        exactPercentiles = (values.Count % 40) == 0;
+                        exactPercentiles = (sampledValues.Count % 40) == 0;
                         if (exactPercentiles)
                         {
-                            this.TwoPointFivePercentile = values[values.Count / 40];
-                            this.NinetySevenPointFivePercentile = values[39 * values.Count / 40];
+                            this.TwoPointFivePercentile = sampledValues[sampledValues.Count / 40];
+                            this.NinetySevenPointFivePercentile = sampledValues[39 * sampledValues.Count / 40];
                         }
                         else
                         {
-                            float twoPointFivePercentilePosition = 0.025F * values.Count;
+                            float twoPointFivePercentilePosition = 0.025F * sampledValues.Count;
                             float ceilingIndex = MathF.Ceiling(twoPointFivePercentilePosition);
                             float floorIndex = MathF.Floor(twoPointFivePercentilePosition);
                             float ceilingWeight = 1.0F + twoPointFivePercentilePosition - ceilingIndex;
                             float floorWeight = 1.0F - twoPointFivePercentilePosition + floorIndex;
-                            float twoPointFivePercentile = floorWeight * values[(int)floorIndex] + ceilingWeight * values[(int)ceilingIndex];
+                            float twoPointFivePercentile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
                             this.TwoPointFivePercentile = twoPointFivePercentile;
 
-                            float ninetySevenPointFivePercentilePosition = 0.975F * values.Count;
+                            float ninetySevenPointFivePercentilePosition = 0.975F * sampledValues.Count;
                             ceilingIndex = MathF.Ceiling(ninetySevenPointFivePercentilePosition);
                             floorIndex = MathF.Floor(ninetySevenPointFivePercentilePosition);
                             ceilingWeight = 1.0F + ninetySevenPointFivePercentilePosition - ceilingIndex;
                             floorWeight = 1.0F - ninetySevenPointFivePercentilePosition + floorIndex;
-                            float ninetySevenPointFivePercentile = floorWeight * values[(int)floorIndex] + ceilingWeight * values[(int)ceilingIndex];
+                            float ninetySevenPointFivePercentile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
                             this.NinetySevenPointFivePercentile = ninetySevenPointFivePercentile;
 
-                            Debug.Assert(twoPointFivePercentile >= values[0]);
+                            Debug.Assert(twoPointFivePercentile >= sampledValues[0]);
                             Debug.Assert(twoPointFivePercentile <= Median);
                             Debug.Assert(ninetySevenPointFivePercentile >= Median);
-                            Debug.Assert(ninetySevenPointFivePercentile <= values[^1]);
+                            Debug.Assert(ninetySevenPointFivePercentile <= sampledValues[^1]);
                         }
                     }
                 }

@@ -35,10 +35,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 GeneticAlgorithm highHeuristic = (GeneticAlgorithm)result.Pool.High;
                 HeuristicParameters highParameters = highHeuristic.GetParameters();
-                StandTrajectory highTrajectory = highHeuristic.BestTrajectory;
+                StandTrajectory highTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
                 GeneticAlgorithm lowHeuristic = (GeneticAlgorithm)result.Pool.Low;
 
-                int endPeriodIndex = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
+                int endPeriodIndex = this.Results.RotationLengths[position.RotationIndex];
                 float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
                 string linePrefix = highTrajectory.Name + "," +
                     highHeuristic.GetName() + "," +

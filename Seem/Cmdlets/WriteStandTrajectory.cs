@@ -49,9 +49,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Run " + positionOrTrajectoryIndex + " is missing a high solution.");
                 }
-                highTrajectory = solutionPool.High.BestTrajectory;
+                highTrajectory = solutionPool.High.GetBestTrajectoryWithDefaulting(position);
                 discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
-                endOfRotationPeriod = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
+                endOfRotationPeriod = this.Results.RotationLengths[position.RotationIndex];
             }
             else
             {
@@ -148,7 +148,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 SnagLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
 
                 float totalThinNetPresentValue = 0.0F;
-                for (int period = 0; period < highTrajectory.PlanningPeriods; ++period)
+                for (int period = 0; period <= endOfRotationPeriod; ++period)
                 {
                     // get density and volumes
                     float basalAreaRemoved = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * highTrajectory.BasalAreaRemoved[period]; // m²/acre

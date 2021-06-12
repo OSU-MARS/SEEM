@@ -76,7 +76,7 @@ namespace Osu.Cof.Ferm.Heuristics
             //}
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults solutionIndex)
+        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             // TODO: support initialization from existing population?
             if ((this.HeuristicParameters.CrossoverProbabilityEnd < 0.0F) || (this.HeuristicParameters.CrossoverProbabilityEnd > 1.0F))
@@ -127,8 +127,7 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             int moveCapacity = this.HeuristicParameters.MaximumGenerations * this.HeuristicParameters.PopulationSize;
-            this.FinancialValue.SetMoveCapacityForDefaultDiscountRate(moveCapacity);
-            this.FinancialValue.SetMoveCapacityForDefaultDiscountRate(moveCapacity);
+            this.FinancialValue.SetMoveCapacity(moveCapacity);
 
             // begin with population of tree selections randomized across a proportional harvest intensity gradient
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
@@ -153,10 +152,10 @@ namespace Osu.Cof.Ferm.Heuristics
                 if (individualFinancialValue > acceptedFinancialValue)
                 {
                     acceptedFinancialValue = individualFinancialValue;
-                    this.BestTrajectory.CopyTreeGrowthFrom(individualTrajectory);
+                    this.CopyTreeGrowthToBestTrajectory(individualTrajectory);
                 }
 
-                this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, individualFinancialValue);
+                this.FinancialValue.AddMove(acceptedFinancialValue, individualFinancialValue);
             }
             Debug.Assert(currentGeneration.SolutionsAccepted == currentGeneration.SolutionsInPool);
             this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
@@ -213,14 +212,14 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (firstChildFinancialValue > acceptedFinancialValue)
                         {
                             acceptedFinancialValue = firstChildFinancialValue;
-                            this.BestTrajectory.CopyTreeGrowthFrom(firstChildTrajectory);
+                            this.CopyTreeGrowthToBestTrajectory(firstChildTrajectory);
                         }
                     }
                     else
                     {
                         ++perfCounters.MovesRejected;
                     }
-                    this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, firstChildFinancialValue);
+                    this.FinancialValue.AddMove(acceptedFinancialValue, firstChildFinancialValue);
 
                     if (nextGeneration.TryReplace(secondChildFinancialValue, secondChildTrajectory, this.HeuristicParameters.ReplacementStrategy))
                     {
@@ -228,14 +227,14 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (secondChildFinancialValue > acceptedFinancialValue)
                         {
                             acceptedFinancialValue = secondChildFinancialValue;
-                            this.BestTrajectory.CopyTreeGrowthFrom(secondChildTrajectory);
+                            this.CopyTreeGrowthToBestTrajectory(secondChildTrajectory);
                         }
                     }
                     else
                     {
                         ++perfCounters.MovesRejected;
                     }
-                    this.FinancialValue.AddMoveToDefaultDiscountRate(acceptedFinancialValue, secondChildFinancialValue);
+                    this.FinancialValue.AddMove(acceptedFinancialValue, secondChildFinancialValue);
 
                     // identify the fittest individual among the two parents and the two offspring and place it in the next generation
                     //float firstParentFitness = currentGeneration.IndividualFitness[firstParentIndex];
@@ -301,7 +300,8 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            this.CurrentTrajectory.CopyTreeGrowthFrom(this.BestTrajectory);
+            OrganonStandTrajectory bestTrajectory = this.GetBestTrajectory(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex);
+            this.CurrentTrajectory.CopyTreeGrowthFrom(bestTrajectory);
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;

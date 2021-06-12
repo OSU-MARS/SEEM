@@ -32,15 +32,12 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 HeuristicResultPosition position = this.Results!.CombinationsEvaluated[positionIndex];
                 HeuristicSolutionPool solution = this.Results[position].Pool;
-                if ((solution.High == null) ||
-                    (solution.High.BestTrajectory == null) ||
-                    (solution.High.BestTrajectory.Heuristic == null) ||
-                    (solution.Low == null))
+                if ((solution.High == null) || (solution.Low == null))
                 {
-                    throw new NotSupportedException("Result distribution " + positionIndex + " is missing a high solution, low solution, high heuristic trajectory, or back link from high trajectory to its generating heuristic.");
+                    throw new NotSupportedException("Result distribution " + positionIndex + " is missing a high solution or low solution to its generating heuristic.");
                 }
 
-                OrganonStandTrajectory highTrajectory = solution.High.BestTrajectory;
+                OrganonStandTrajectory highTrajectory = solution.High.GetBestTrajectoryWithDefaulting(position);
                 int firstThinPeriod = highTrajectory.GetFirstThinPeriod();
                 int periodBeforeFirstThin = firstThinPeriod - 1;
                 if (periodBeforeFirstThin < 0)
@@ -60,11 +57,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                     periodBeforeThirdThin = highTrajectory.PlanningPeriods - 1;
                 }
 
-                int endPeriodIndex = this.Results.PlanningPeriods[position.PlanningPeriodIndex];
+                int endPeriodIndex = this.Results.RotationLengths[position.RotationIndex];
                 float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
                 HeuristicParameters highParameters = solution.High.GetParameters();
                 string linePrefix = highTrajectory.Name + "," +
-                    highTrajectory.Heuristic.GetName() + "," +
+                    solution.High.GetName() + "," +
                     highParameters.GetCsvValues() + "," +
                     WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
 
@@ -82,7 +79,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Units differ between simulation periods.");
                 }
 
-                OrganonStandTrajectory lowTrajectory = solution.Low.BestTrajectory;
+                OrganonStandTrajectory lowTrajectory = solution.Low.GetBestTrajectoryWithDefaulting(position);
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> highTreeSelectionNForSpecies in highTrajectory.IndividualTreeSelectionBySpecies)
                 {
