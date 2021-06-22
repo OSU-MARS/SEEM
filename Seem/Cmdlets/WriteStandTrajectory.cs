@@ -89,8 +89,18 @@ namespace Osu.Cof.Ferm.Cmdlets
                 linePrefix.Append(heuristicParameterString + ",");
             }
 
-            linePrefix.Append(WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endOfRotationPeriod, discountRate));
+            int firstThinAgeAsInteger = highTrajectory.GetFirstThinAge();
+            string? firstThinAge = firstThinAgeAsInteger != Constant.NoThinPeriod ? firstThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
+            int secondThinAgeAsInteger = highTrajectory.GetSecondThinAge();
+            string? secondThinAge = secondThinAgeAsInteger != Constant.NoThinPeriod ? secondThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
+            int thirdThinAgeAsInteger = highTrajectory.GetThirdThinAge();
+            string? thirdThinAge = thirdThinAgeAsInteger != Constant.NoThinPeriod ? thirdThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
 
+            int rotationLengthAsInteger = highTrajectory.GetEndOfPeriodAge(endOfRotationPeriod);
+            string rotationLength = rotationLengthAsInteger.ToString(CultureInfo.InvariantCulture);
+            string discountRateAsString = discountRate.ToString(CultureInfo.InvariantCulture);
+
+            linePrefix.Append(firstThinAge + "," + secondThinAge + "," + thirdThinAge + "," + rotationLength + "," + discountRateAsString);
             return highTrajectory;
         }
 
@@ -101,35 +111,20 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
 
             // header
-            // TODO: check for mixed units and support TBH
-            // TODO: snags per acre or hectare, live and dead QMD?
             bool resultsSpecified = this.Results != null;
             if (this.ShouldWriteHeader())
             {
-                StringBuilder line = new("stand,heuristic");
-
-                HeuristicParameters? heuristicParametersForHeader = null;
+                HeuristicParameters? heuristicParameters = null;
                 if (resultsSpecified)
                 {
-                    heuristicParametersForHeader = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
+                    heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
                 }
                 else if(this.Trajectories![0].Heuristic != null)
                 {
-                    heuristicParametersForHeader = this.Trajectories[0].Heuristic!.GetParameters();
+                    heuristicParameters = this.Trajectories[0].Heuristic!.GetParameters();
                 }
 
-                if (heuristicParametersForHeader != null)
-                {
-                    string heuristicParameters = heuristicParametersForHeader.GetCsvHeader();
-                    if (String.IsNullOrEmpty(heuristicParameters) == false)
-                    {
-                        // TODO: if needed, check if heuristics have different parameters
-                        line.Append("," + heuristicParameters);
-                    }
-                }
-
-                line.Append("," + WriteCmdlet.RateAndAgeCsvHeader + ",standAge,TPH,QMD,Htop,BA,SDI,SPH,snagQMD,standingCMH,harvestCMH,standingMBFH,harvestMBFH,BAremoved,BAintensity,TPHdecrease,NPV,LEV,standing2Scmh,standing3Scmh,standing4Scmh,harvest2Scmh,harvest3Scmh,harvest4Scmh,standing2Smbfh,standing3Smbfh,standing4Smbfh,harvest2Smbfh,harvest3Smbfh,harvest4Smbfh,NPV2S,NPV3S,NPV4S,liveBiomass");
-                writer.WriteLine(line);
+                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(heuristicParameters) + ",standAge,TPH,QMD,Htop,BA,SDI,SPH,snagQMD,standingCMH,harvestCMH,standingMBFH,harvestMBFH,BAremoved,BAintensity,TPHdecrease,NPV,LEV,standing2Scmh,standing3Scmh,standing4Scmh,harvest2Scmh,harvest3Scmh,harvest4Scmh,standing2Smbfh,standing3Smbfh,standing4Smbfh,harvest2Smbfh,harvest3Smbfh,harvest4Smbfh,NPV2S,NPV3S,NPV4S,liveBiomass");
             }
 
             // rows for periods

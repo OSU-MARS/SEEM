@@ -24,8 +24,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                HeuristicParameters heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
-                writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",solution,objective,moveAccepted,movesRejected,runtime,timesteps,treesRandomized");
+                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",solution,objective,moveAccepted,movesRejected,runtime,timesteps,treesRandomized");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
@@ -33,26 +32,16 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 HeuristicResultPosition position = this.Results.CombinationsEvaluated[positionIndex];
                 HeuristicResult result = this.Results[position];
-                Heuristic? highHeuristic = result.Pool.High;
-                if (highHeuristic == null)
-                {
-                    throw new NotSupportedException("Result at position " + positionIndex + " is missing a high solution.");
-                }
+                string heuristicAndPosition = WriteCmdlet.GetHeuristicAndPositionCsvValues(result.Pool, this.Results, position);
+                Heuristic highHeuristic = result.Pool.High!;
                 OrganonStandTrajectory highTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
-
-                int endPeriodIndex = this.Results.RotationLengths[position.RotationIndex];
-                float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
-                string linePrefix = highTrajectory.Name + "," +
-                                    highHeuristic.GetName() + "," +
-                                    highHeuristic.GetParameters().GetCsvValues() + "," +
-                                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
 
                 HeuristicObjectiveDistribution distribution = result.Distribution;
                 List<float> highestFinancialValues = distribution.HighestFinancialValueBySolution;
                 for (int financialIndex = 0; financialIndex < highestFinancialValues.Count; ++financialIndex)
                 {
                     HeuristicPerformanceCounters perfCounters = distribution.PerfCountersBySolution[financialIndex];
-                    writer.WriteLine(linePrefix + "," +
+                    writer.WriteLine(heuristicAndPosition + "," +
                                      financialIndex.ToString(CultureInfo.InvariantCulture) + "," +
                                      highestFinancialValues[financialIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.MovesAccepted.ToString(CultureInfo.InvariantCulture) + "," +

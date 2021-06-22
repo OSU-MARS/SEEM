@@ -6,14 +6,14 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class SolutionPool : PseudorandomizingTask
     {
-        protected const int UnknownDistance = Int32.MaxValue;
-        protected const int UnknownNeighbor = -1;
+        public const int UnknownDistance = Int32.MaxValue;
+        public const int UnknownNeighbor = -1;
 
-        protected int[,] DistanceMatrix { get; private init; }
         protected int MinimumNeighborDistance { get; set; }
         protected int MinimumNeighborIndex { get; set; }
-        protected int[] NearestNeighborIndex { get; private init; }
 
+        public int[,] DistanceMatrix { get; private init; }
+        public int[] NearestNeighborIndex { get; private init; }
         public int SolutionsAccepted { get; set; } // public setters to allow reset between generations
         public int SolutionsRejected { get; set; }
         public int SolutionsInPool { get; protected set; }
@@ -35,10 +35,12 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.DistanceMatrix[index1, index2] = SolutionPool.UnknownDistance;
                     this.DistanceMatrix[index2, index1] = SolutionPool.UnknownDistance;
                 }
+
+                this.NearestNeighborIndex[index1] = SolutionPool.UnknownNeighbor;
             }
         }
 
-        protected int PoolCapacity
+        public int PoolCapacity
         {
             get { return this.NearestNeighborIndex.Length; }
         }
@@ -89,53 +91,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return hammingDistance;
         }
 
-        protected void UpdateNearestNeighborDistances(int newSolutionIndex, int[] neighborDistances, int nearestNeighborIndex)
-        {
-            Debug.Assert((nearestNeighborIndex >= SolutionPool.UnknownNeighbor) && (nearestNeighborIndex < this.PoolCapacity));
-
-            int minimumNeighborDistance = SolutionPool.UnknownDistance;
-            int minimumNeighborIndex = SolutionPool.UnknownNeighbor;
-            for (int neighborIndex = 0; neighborIndex < this.SolutionsInPool; ++neighborIndex)
-            {
-                if (neighborIndex == newSolutionIndex)
-                {
-                    // equivalent of call to this.UpdateNearestNeighborIndex() below
-                    // Could be hoisted but placed here for readablity.
-                    this.NearestNeighborIndex[newSolutionIndex] = nearestNeighborIndex;
-                    continue;
-                }
-
-                // update the distance matrix and the new solution's nearest neighbor
-                if (nearestNeighborIndex != SolutionPool.UnknownNeighbor)
-                {
-                    int distanceToNeighbor = neighborDistances[neighborIndex];
-                    Debug.Assert(distanceToNeighbor > 0);
-                    this.DistanceMatrix[newSolutionIndex, nearestNeighborIndex] = distanceToNeighbor;
-                    this.DistanceMatrix[nearestNeighborIndex, newSolutionIndex] = distanceToNeighbor;
-                }
-
-                // update minimum distance if this neighbor had the replaced individual as its nearest neighbor
-                int nearestNeighborOfIndividual = this.NearestNeighborIndex[neighborIndex];
-                if (nearestNeighborOfIndividual == newSolutionIndex)
-                {
-                    this.UpdateNearestNeighborIndex(neighborIndex);
-                }
-            }
-
-            // if needed, update least diverse solution
-            if (minimumNeighborDistance < this.MinimumNeighborDistance)
-            {
-                Debug.Assert(minimumNeighborIndex != SolutionPool.UnknownNeighbor);
-
-                this.MinimumNeighborDistance = minimumNeighborDistance;
-                // could also be set to newSolutionIndex since both the new solution and its neighbor are equidistant
-                // For now, default to pointing to the solution which has been in the pool for longer. Objective function information could
-                // potentially be used to make a decision here.
-                this.MinimumNeighborIndex = minimumNeighborIndex;
-            }
-        }
-
-        private void UpdateNearestNeighborIndex(int solutionIndex)
+        private int GetNearestNeighborIndex(int solutionIndex)
         {
             int nearestLowerNeighborDistance = SolutionPool.UnknownDistance;
             int nearestLowerNeighborIndex = SolutionPool.UnknownNeighbor;
@@ -154,7 +110,140 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            this.NearestNeighborIndex[solutionIndex] = nearestLowerNeighborIndex;
+            Debug.Assert(solutionIndex != nearestLowerNeighborIndex);
+            return nearestLowerNeighborIndex;
+        }
+
+        protected void UpdateNeighborDistances(int newSolutionIndex, int[] neighborDistances, int nearestNeighborIndex)
+        {
+            Debug.Assert((nearestNeighborIndex >= SolutionPool.UnknownNeighbor) && 
+                         (nearestNeighborIndex < this.SolutionsInPool) &&
+                         ((nearestNeighborIndex == SolutionPool.UnknownNeighbor) || (neighborDistances[nearestNeighborIndex] != SolutionPool.UnknownDistance)) &&
+                         ((neighborDistances.Length == this.SolutionsInPool) || (neighborDistances.Length == this.SolutionsInPool + 1))); // insert or append new solution
+
+            // update distance matrix and neighbors based on information in neighborDistances
+            int minimumNeighborDistance = SolutionPool.UnknownDistance;
+            int minimumNeighborIndex = SolutionPool.UnknownNeighbor;
+            for (int solutionIndex = 0; solutionIndex < neighborDistances.Length; ++solutionIndex)
+            {
+                int distanceToNeighbor = neighborDistances[solutionIndex];
+                Debug.Assert(distanceToNeighbor > 0);
+
+                if (solutionIndex == newSolutionIndex)
+                {
+                    if (newSolutionIndex == nearestNeighborIndex)
+                    {
+                        // if solution is replacing its nearest neighbor, try to find the next nearest neighbor
+                        int minimumDistance = SolutionPool.UnknownDistance;
+                        int minimumIndex = SolutionPool.UnknownNeighbor;
+                        for (int neighborIndex = 0; neighborIndex < this.SolutionsInPool; ++neighborIndex)
+                        {
+                            if (newSolutionIndex == neighborIndex)
+                            {
+                                continue;
+                            }
+
+                            int neighborDistance = neighborDistances[neighborIndex];
+                            if (neighborDistance < minimumDistance)
+                            {
+                                minimumIndex = neighborIndex;
+                            }
+                        }
+
+                        this.NearestNeighborIndex[newSolutionIndex] = minimumIndex; // may be unknown
+                    }
+                    else
+                    {
+                        // on diagonal of distance matrix so no distance matrix or minimum distance updates needed
+                        this.NearestNeighborIndex[newSolutionIndex] = nearestNeighborIndex;
+                    }
+
+                    // no check on minimumNeighborDistance as distanceToNeighbor is set to the distance between the new solution and
+                    // the solution it's replacing
+                }
+                else
+                {
+                    // update the distance matrix and set the new solution as the nearest neighbor where needed
+                    // There are three cases here:
+                    //   1) The new solution is being added and, therefore, newSolutionIndex != nearestNeighborIndex.
+                    //   2) The new solution is being inserted but not replacing the least diverse solution in the pool.
+                    //      newSolutionIndex != nearestNeighborIndex also holds.
+                    //   3) The new solution is replacing the least diverse solution, so newSolutionIndex == nearestNeighborIndex.
+                    Debug.Assert((distanceToNeighbor > 0) || (distanceToNeighbor == SolutionPool.UnknownDistance));
+                    this.DistanceMatrix[solutionIndex, newSolutionIndex] = distanceToNeighbor; // may be unknown
+                    this.DistanceMatrix[newSolutionIndex, solutionIndex] = distanceToNeighbor;
+
+                    int nearestNeighborOfIndividual = this.NearestNeighborIndex[solutionIndex];
+                    if (nearestNeighborOfIndividual == SolutionPool.UnknownNeighbor)
+                    {
+                        if (distanceToNeighbor != SolutionPool.UnknownDistance)
+                        {
+                            // neighbor doesn't have a known nearest neighbor and the distance between it and the new solution is known, so set its
+                            // neighbor to the new solution
+                            this.NearestNeighborIndex[solutionIndex] = newSolutionIndex;
+                        }
+                        // fall through: no action because distance isn't known
+                    }
+                    else
+                    {
+                        // update if neighbor's existing neighbor is more distant than the new solution
+                        int nearestNeighborDistanceOfIndividual = this.DistanceMatrix[solutionIndex, nearestNeighborOfIndividual];
+                        if (distanceToNeighbor < nearestNeighborDistanceOfIndividual)
+                        {
+                            this.NearestNeighborIndex[solutionIndex] = newSolutionIndex;
+                        }
+                    }
+
+                    // update minimum distance if this neighbor had the replaced individual as its nearest neighbor
+                    if (nearestNeighborOfIndividual == newSolutionIndex)
+                    {
+                        int newNearestNeighborIndex = this.GetNearestNeighborIndex(solutionIndex);
+                        this.NearestNeighborIndex[solutionIndex] = newNearestNeighborIndex;
+
+                        if (newNearestNeighborIndex != SolutionPool.UnknownNeighbor)
+                        {
+                            int newNearestNeighborDistance = this.DistanceMatrix[solutionIndex, newNearestNeighborIndex];
+                            if (minimumNeighborDistance < newNearestNeighborDistance)
+                            {
+                                Debug.Assert(newNearestNeighborIndex != SolutionPool.UnknownNeighbor);
+
+                                minimumNeighborDistance = newNearestNeighborDistance;
+                                minimumNeighborIndex = newNearestNeighborIndex;
+                            }
+                        }
+                    }
+
+                    if (distanceToNeighbor < minimumNeighborDistance)
+                    {
+                        Debug.Assert(solutionIndex != SolutionPool.UnknownNeighbor);
+
+                        minimumNeighborDistance = distanceToNeighbor;
+                        minimumNeighborIndex = solutionIndex;
+                    }
+                }
+            }
+
+            // check reciprocal pairing
+            Debug.Assert(((neighborDistances.Length == 1) && (this.NearestNeighborIndex[0] == SolutionPool.UnknownNeighbor)) ||
+                         ((neighborDistances.Length == 2) && (((this.NearestNeighborIndex[0] == 0) && (this.NearestNeighborIndex[1] == 1)) ||
+                                                              ((this.NearestNeighborIndex[0] == 1) && (this.NearestNeighborIndex[1] == 0)) ||
+                                                              (this.NearestNeighborIndex[0] == this.NearestNeighborIndex[1]))) ||
+                         (neighborDistances.Length > 2));
+
+            // if needed, update least diverse solution
+            // This happens when
+            //   1) A solution being upserted is closer to its nearest neighbor than any of the solutions currently in the pool. This is
+            //      common when pools are filling always happens when the second solution is added and a neighbor distance becomes possible.
+            //   2) The solution being replaced is the least diverse solution in the pool. In this case the existing minimum distance
+            //      information is no longer relevant and must be replaced.
+            if ((minimumNeighborDistance < this.MinimumNeighborDistance) || (newSolutionIndex == this.MinimumNeighborIndex))
+            {
+                this.MinimumNeighborDistance = minimumNeighborDistance;
+                // could also be set to newSolutionIndex since both the new solution and its neighbor are equidistant
+                // For now, default to pointing to the solution which has been in the pool for longer. Objective function information could
+                // potentially be used to make a decision here.
+                this.MinimumNeighborIndex = minimumNeighborIndex;
+            }
         }
     }
 }

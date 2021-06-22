@@ -140,24 +140,24 @@ namespace Osu.Cof.Ferm.Test
             Population binaryPopulation = new(2, 0.5F, 5);
             binaryPopulation.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
             binaryPopulation.IndividualTreeSelections[1] = new int[] { 1, 1, 1, 1, 1 };
-            binaryPopulation.UpdateNearestNeighborDistances(0);
-            binaryPopulation.UpdateNearestNeighborDistances(1);
+            binaryPopulation.SetDistancesForNewIndividual(0);
+            binaryPopulation.SetDistancesForNewIndividual(1);
             binaryPopulation.InsertFitness(0, 0.0F);
             binaryPopulation.InsertFitness(1, 1.0F);
 
             Population clones = new(2, 0.5F, 5);
             clones.IndividualTreeSelections[0] = new int[] { 0, 0, 0, 0, 0 };
             clones.IndividualTreeSelections[1] = new int[] { 0, 0, 0, 0, 0 };
-            clones.UpdateNearestNeighborDistances(0);
-            clones.UpdateNearestNeighborDistances(1);
+            clones.SetDistancesForNewIndividual(0);
+            clones.SetDistancesForNewIndividual(1);
             clones.InsertFitness(0, 0.0F);
             clones.InsertFitness(1, 0.0F);
 
             Population heterozygousPopulation = new(2, 0.5F, 5);
             heterozygousPopulation.IndividualTreeSelections[0] = new int[] { 1, 0, 0, 1, 0 };
             heterozygousPopulation.IndividualTreeSelections[1] = new int[] { 1, 0, 1, 0, 1 };
-            heterozygousPopulation.UpdateNearestNeighborDistances(0);
-            heterozygousPopulation.UpdateNearestNeighborDistances(1);
+            heterozygousPopulation.SetDistancesForNewIndividual(0);
+            heterozygousPopulation.SetDistancesForNewIndividual(1);
             heterozygousPopulation.InsertFitness(0, 0.4F);
             heterozygousPopulation.InsertFitness(1, 0.6F);
 

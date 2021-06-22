@@ -157,7 +157,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 this.FinancialValue.AddMove(acceptedFinancialValue, individualFinancialValue);
             }
-            Debug.Assert(currentGeneration.SolutionsAccepted == currentGeneration.SolutionsInPool);
+            Debug.Assert((currentGeneration.SolutionsAccepted == this.HeuristicParameters.PopulationSize) && (currentGeneration.SolutionsAccepted == currentGeneration.SolutionsInPool));
             this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
 
             // get sort order for K-point crossover

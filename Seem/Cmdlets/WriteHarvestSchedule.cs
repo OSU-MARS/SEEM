@@ -23,21 +23,17 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
             if (this.ShouldWriteHeader())
             {
-                HeuristicParameters heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
-                writer.WriteLine("stand,heuristic," + heuristicParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1bf,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2bf,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3bf,highFinalDbh,highFinalHeight,highFinalCR,highFinalEF,highFinalBF");
+                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1bf,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2bf,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3bf,highFinalDbh,highFinalHeight,highFinalCR,highFinalEF,highFinalBF");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int positionIndex = 0; positionIndex < this.Results!.CombinationsEvaluated.Count; ++positionIndex)
             {
                 HeuristicResultPosition position = this.Results!.CombinationsEvaluated[positionIndex];
-                HeuristicSolutionPool solution = this.Results[position].Pool;
-                if ((solution.High == null) || (solution.Low == null))
-                {
-                    throw new NotSupportedException("Result distribution " + positionIndex + " is missing a high solution or low solution to its generating heuristic.");
-                }
+                HeuristicSolutionPool solutions = this.Results[position].Pool;
+                string heuristicAndPosition = WriteCmdlet.GetHeuristicAndPositionCsvValues(solutions, this.Results, position);
 
-                OrganonStandTrajectory highTrajectory = solution.High.GetBestTrajectoryWithDefaulting(position);
+                OrganonStandTrajectory highTrajectory = solutions.High!.GetBestTrajectoryWithDefaulting(position);
                 int firstThinPeriod = highTrajectory.GetFirstThinPeriod();
                 int periodBeforeFirstThin = firstThinPeriod - 1;
                 if (periodBeforeFirstThin < 0)
@@ -57,14 +53,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                     periodBeforeThirdThin = highTrajectory.PlanningPeriods - 1;
                 }
 
-                int endPeriodIndex = this.Results.RotationLengths[position.RotationIndex];
-                float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
-                HeuristicParameters highParameters = solution.High.GetParameters();
-                string linePrefix = highTrajectory.Name + "," +
-                    solution.High.GetName() + "," +
-                    highParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
-
                 Stand? highStandBeforeFirstThin = highTrajectory.StandByPeriod[periodBeforeFirstThin];
                 Stand? highStandBeforeSecondThin = highTrajectory.StandByPeriod[periodBeforeSecondThin];
                 Stand? highStandBeforeThirdThin = highTrajectory.StandByPeriod[periodBeforeThirdThin];
@@ -79,7 +67,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Units differ between simulation periods.");
                 }
 
-                OrganonStandTrajectory lowTrajectory = solution.Low.GetBestTrajectoryWithDefaulting(position);
+                OrganonStandTrajectory lowTrajectory = solutions.Low!.GetBestTrajectoryWithDefaulting(position);
                 int previousSpeciesCount = 0;
                 foreach (KeyValuePair<FiaCode, int[]> highTreeSelectionNForSpecies in highTrajectory.IndividualTreeSelectionBySpecies)
                 {
@@ -172,7 +160,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                         // for now, make best guess of using tree tag or index as unique identifier 
                         int tag = highTreesBeforeFirstThin.Tag[uncompactedTreeIndex] < 0 ? previousSpeciesCount + uncompactedTreeIndex : highTreesBeforeFirstThin.Tag[uncompactedTreeIndex];
-                        writer.WriteLine(linePrefix + "," +
+                        writer.WriteLine(heuristicAndPosition + "," +
                                          highTreesBeforeFirstThin.Plot[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                          tag.ToString(CultureInfo.InvariantCulture) + "," +
                                          lowTreeSelection[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +

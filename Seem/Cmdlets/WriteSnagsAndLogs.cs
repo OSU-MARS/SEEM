@@ -23,30 +23,17 @@ namespace Osu.Cof.Ferm.Cmdlets
             bool resultsSpecified = this.Results != null;
             if (this.ShouldWriteHeader())
             {
-                StringBuilder line = new("stand,heuristic");
-
-                HeuristicParameters? heuristicParametersForHeader = null;
+                HeuristicParameters? heuristicParameters = null;
                 if (resultsSpecified)
                 {
-                    heuristicParametersForHeader = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
+                    heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
                 }
                 else if (this.Trajectories![0].Heuristic != null)
                 {
-                    heuristicParametersForHeader = this.Trajectories[0].Heuristic!.GetParameters();
+                    heuristicParameters = this.Trajectories[0].Heuristic!.GetParameters();
                 }
 
-                if (heuristicParametersForHeader != null)
-                {
-                    string heuristicParameters = heuristicParametersForHeader.GetCsvHeader();
-                    if (String.IsNullOrEmpty(heuristicParameters) == false)
-                    {
-                        // TODO: if needed, check if heuristics have different parameters
-                        line.Append("," + heuristicParameters);
-                    }
-                }
-
-                line.Append("," + WriteCmdlet.RateAndAgeCsvHeader + ",standAge,species,diameter class,snags,logs");
-                writer.WriteLine(line);
+                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(heuristicParameters) + ",standAge,species,diameter class,snags,logs");
             }
 
             // rows for periods

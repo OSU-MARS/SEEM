@@ -127,8 +127,10 @@ namespace Osu.Cof.Ferm.Test
             //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
             HeuristicResultPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
             HeuristicPerformanceCounters heroCounters = hero.Run(defaultPosition, results);
+            results.AssimilateHeuristicRunIntoPosition(hero, heroCounters, defaultPosition);
 
             this.Verify(hero, heroCounters);
+            PublicApi.Verify(results, defaultPosition, landExpectationValue.MaximizeForPlanningPeriod);
 
             int[] treeSelection = hero.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesSelected = treeSelection.Sum() / thinningPeriod;
@@ -163,7 +165,6 @@ namespace Osu.Cof.Ferm.Test
             HeuristicResults<HeuristicParameters> levResults = PublicApi.CreateResultsSet(new(), runForLandExpectationValue.MaximizeForPlanningPeriod);
             HeuristicResultPosition levPosition = levResults.CombinationsEvaluated[0];
             HeuristicObjectiveDistribution levDistribution = levResults[levPosition].Distribution;
-            int levSolutionsAccepted = 0;
             HeuristicPerformanceCounters totalCounters = new();
 
             GeneticParameters geneticParameters = new(treeCount)
@@ -174,11 +175,7 @@ namespace Osu.Cof.Ferm.Test
             GeneticAlgorithm genetic = new(stand, geneticParameters, runForLandExpectationValue);
             HeuristicPerformanceCounters geneticCounters = genetic.Run(levPosition, levResults);
             totalCounters += geneticCounters;
-            levDistribution.AddSolution(genetic, levPosition, geneticCounters);
-            if (levResults[levPosition].Pool.TryAddOrReplace(genetic, levPosition))
-            {
-                ++levSolutionsAccepted;
-            }
+            levResults.AssimilateHeuristicRunIntoPosition(genetic, geneticCounters, levPosition);
 
             GreatDeluge deluge = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
@@ -188,22 +185,14 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters delugeCounters = deluge.Run(levPosition, levResults);
             totalCounters += delugeCounters;
-            levDistribution.AddSolution(deluge, levPosition, delugeCounters);
-            if (levResults[levPosition].Pool.TryAddOrReplace(deluge, levPosition))
-            {
-                ++levSolutionsAccepted;
-            }
+            levResults.AssimilateHeuristicRunIntoPosition(deluge, delugeCounters, levPosition);
 
             RecordTravel recordTravel = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
                 StopAfter = 10
             };
             HeuristicPerformanceCounters recordCounters = recordTravel.Run(levPosition, levResults);
-            levDistribution.AddSolution(recordTravel, levPosition, recordCounters);
-            if (levResults[levPosition].Pool.TryAddOrReplace(recordTravel, levPosition))
-            {
-                ++levSolutionsAccepted;
-            }
+            levResults.AssimilateHeuristicRunIntoPosition(recordTravel, recordCounters, levPosition);
 
             SimulatedAnnealing annealer = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
@@ -211,11 +200,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters annealerCounters = annealer.Run(levPosition, levResults);
             totalCounters += annealerCounters;
-            levDistribution.AddSolution(annealer, levPosition, annealerCounters);
-            if (levResults[levPosition].Pool.TryAddOrReplace(annealer, levPosition))
-            {
-                ++levSolutionsAccepted;
-            }
+            levResults.AssimilateHeuristicRunIntoPosition(annealer, annealerCounters, levPosition);
 
             TabuParameters tabuParameters = new();
             TabuSearch tabu = new(stand, tabuParameters, runForLandExpectationValue)
@@ -226,11 +211,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters tabuCounters = tabu.Run(levPosition, levResults);
             totalCounters += tabuCounters;
-            levDistribution.AddSolution(tabu, levPosition, tabuCounters);
-            if (levResults[levPosition].Pool.TryAddOrReplace(tabu, levPosition))
-            {
-                ++levSolutionsAccepted;
-            }
+            levResults.AssimilateHeuristicRunIntoPosition(tabu, tabuCounters, levPosition);
 
             ThresholdAccepting thresholdAcceptor = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue);
             thresholdAcceptor.IterationsPerThreshold.Clear();
@@ -239,11 +220,7 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.Thresholds.Add(1.0F);
             HeuristicPerformanceCounters thresholdCounters = thresholdAcceptor.Run(levPosition, levResults);
             totalCounters += thresholdCounters;
-            levDistribution.AddSolution(thresholdAcceptor, levPosition, thresholdCounters);
-            if (levResults[levPosition].Pool.TryAddOrReplace(thresholdAcceptor, levPosition))
-            {
-                ++levSolutionsAccepted;
-            }
+            levResults.AssimilateHeuristicRunIntoPosition(thresholdAcceptor, thresholdCounters, levPosition);
 
             PrescriptionParameters prescriptionParameters = new()
             {
@@ -255,17 +232,10 @@ namespace Osu.Cof.Ferm.Test
             PrescriptionEnumeration enumerator = new(stand, prescriptionParameters, runForLandExpectationValue);
             HeuristicPerformanceCounters enumerationCounters = enumerator.Run(levPosition, levResults);
             totalCounters += enumerationCounters;
-            levDistribution.AddSolution(enumerator, levPosition, enumerationCounters);
-            if (levResults[levPosition].Pool.TryAddOrReplace(enumerator, levPosition))
-            {
-                ++levSolutionsAccepted;
-            }
+            levResults.AssimilateHeuristicRunIntoPosition(enumerator, enumerationCounters, levPosition);
 
-            // check retrieval from solution pool
-            Assert.IsTrue(levResults.TryFindSolutionsMatchingThinnings(levPosition, out HeuristicSolutionPool? levEliteSolutions));
-            Assert.IsTrue(levEliteSolutions!.SolutionsInPool == Math.Min(levSolutionsAccepted, TestConstant.SolutionPoolSize));
-            OrganonStandTrajectory eliteSolution = levEliteSolutions.GetEliteSolution(levPosition);
-            Assert.IsTrue(eliteSolution.EarliestPeriodChangedSinceLastSimulation == runForLandExpectationValue.MaximizeForPlanningPeriod + 1);
+            // check solution pool
+            HeuristicSolutionPool levEliteSolutions = PublicApi.Verify(levResults, levPosition, runForLandExpectationValue.MaximizeForPlanningPeriod);
 
             // heuristic optimizing for volume
             RunParameters runForVolume = new(runForLandExpectationValue.RotationLengths, discountRates, configuration)
@@ -1111,6 +1081,41 @@ namespace Osu.Cof.Ferm.Test
 
                 // TODO: check qmd against QMD from basal area
             }
+        }
+
+        private static HeuristicSolutionPool Verify(HeuristicResults results, HeuristicResultPosition position, int endOfRotationPeriod)
+        {
+            Assert.IsTrue(results.TryFindSolutionsMatchingThinnings(position, out HeuristicSolutionPool? eliteSolutions));
+            Assert.IsTrue(eliteSolutions!.High != null);
+            Assert.IsTrue(eliteSolutions.Low != null);
+            Assert.IsTrue(eliteSolutions.SolutionsInPool == Math.Min(eliteSolutions.SolutionsAccepted, TestConstant.SolutionPoolSize));
+
+            for (int solutionIndex = 0; solutionIndex < eliteSolutions.SolutionsInPool; ++solutionIndex)
+            {
+                // check distance matrix: should be symmetric with a zero diagonal
+                Assert.IsTrue(eliteSolutions.DistanceMatrix[solutionIndex, solutionIndex] == 0);
+                for (int neighborIndex = solutionIndex + 1; neighborIndex < eliteSolutions.SolutionsInPool; ++neighborIndex)
+                {
+                    int distance1 = eliteSolutions.DistanceMatrix[solutionIndex, neighborIndex];
+                    int distance2 = eliteSolutions.DistanceMatrix[neighborIndex, solutionIndex];
+                    Assert.IsTrue(distance1 == distance2);
+                }
+
+                // check neighbors
+                int nearestNeighborIndex = eliteSolutions.NearestNeighborIndex[solutionIndex];
+                if (nearestNeighborIndex != SolutionPool.UnknownNeighbor)
+                {
+                    int nearestNeighborDistance = eliteSolutions.DistanceMatrix[solutionIndex, nearestNeighborIndex];
+
+                    Assert.IsTrue(nearestNeighborIndex != solutionIndex);
+                    Assert.IsTrue((nearestNeighborDistance > 0) || (nearestNeighborDistance == SolutionPool.UnknownDistance));
+                }
+            }
+
+            OrganonStandTrajectory eliteSolution = eliteSolutions.GetEliteSolution(position);
+            Assert.IsTrue(eliteSolution.EarliestPeriodChangedSinceLastSimulation == endOfRotationPeriod + 1);
+
+            return eliteSolutions;
         }
 
         private static void Verify(SnagLogTable snagsAndLogs, OrganonStandTrajectory trajectory)

@@ -135,7 +135,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 // calculate distances to the tree selections which have already been added and set nearest neighbor of the individual
                 // just generated
-                this.UpdateNearestNeighborDistances(individualIndex);
+                this.SetDistancesForNewIndividual(individualIndex);
             }
 
             return treeSelectionsRandomized;
@@ -169,8 +169,11 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             Array.Copy(other.matingDistributionFunction, 0, this.matingDistributionFunction, 0, this.matingDistributionFunction.Length);
-            this.SolutionsAccepted = other.SolutionsAccepted;
             this.reservedPopulationProportion = other.reservedPopulationProportion;
+
+            this.SolutionsAccepted = other.SolutionsAccepted;
+            this.SolutionsInPool = other.SolutionsInPool;
+            this.SolutionsRejected = other.SolutionsRejected;
             this.TreeCount = other.TreeCount;
         }
 
@@ -459,8 +462,58 @@ namespace Osu.Cof.Ferm.Heuristics
             this.IndividualFitness[replacementIndex] = newFitness;
             trajectory.CopyTreeSelectionTo(this.IndividualTreeSelections[replacementIndex]);
 
-            this.UpdateNearestNeighborDistances(replacementIndex, neigborDistances, nearestLowerNeighborIndex);
+            this.UpdateNeighborDistances(replacementIndex, neigborDistances, nearestLowerNeighborIndex);
             ++this.SolutionsAccepted;
+        }
+
+        // factored out of ConstructTreeSelections() as a low level test hook
+        internal void SetDistancesForNewIndividual(int individualIndex)
+        {
+            // calculate distances to individuals which have already been added and set nearest neighbor
+            int minimumNeighborDistance = Int32.MaxValue;
+            int minimumNeighborIndex = -1;
+            for (int neighborIndex = 0; neighborIndex < individualIndex; ++neighborIndex)
+            {
+                // distances
+                int neighborDistance = SolutionPool.GetHammingDistance(this.IndividualTreeSelections[individualIndex], this.IndividualTreeSelections[neighborIndex]);
+                this.DistanceMatrix[individualIndex, neighborIndex] = neighborDistance;
+                this.DistanceMatrix[neighborIndex, individualIndex] = neighborDistance;
+                Debug.Assert(neighborDistance >= 0); // allow 0 for unit testing
+
+                // backcheck to see if existing nearest neighbor information needs to be updated
+                int nearestNeighborOfNeighbor = this.NearestNeighborIndex[neighborIndex];
+                if (nearestNeighborOfNeighbor == SolutionPool.UnknownNeighbor)
+                {
+                    this.NearestNeighborIndex[neighborIndex] = individualIndex;
+                }
+                else
+                {
+                    int minimumNeighborDistanceOfNeighbor = this.DistanceMatrix[neighborIndex, nearestNeighborOfNeighbor];
+                    if (minimumNeighborDistanceOfNeighbor < neighborDistance)
+                    {
+                        this.NearestNeighborIndex[neighborIndex] = individualIndex;
+                    }
+                }
+
+                // update global minimum
+                if (neighborDistance < minimumNeighborDistance)
+                {
+                    minimumNeighborDistance = neighborDistance;
+                    minimumNeighborIndex = neighborIndex;
+                }
+            }
+
+            this.NearestNeighborIndex[individualIndex] = minimumNeighborIndex;
+
+            // if needed, update the minimum distance among all individuals in the population
+            if (minimumNeighborDistance < this.MinimumNeighborDistance)
+            {
+                this.MinimumNeighborDistance = minimumNeighborDistance;
+                this.MinimumNeighborIndex = minimumNeighborIndex;
+            }
+
+            // needed for testing, this.SolutionsInPool = this.PoolCapacity; in ConstructTreeSelections() would be equivalent
+            ++this.SolutionsInPool;
         }
 
         public bool TryReplace(float newFitness, StandTrajectory trajectory, PopulationReplacementStrategy replacementStrategy)
@@ -482,7 +535,7 @@ namespace Osu.Cof.Ferm.Heuristics
             int[] distancesToIndividuals = new int[this.individualIndexByFitness.Count];
             Array.Fill(distancesToIndividuals, SolutionPool.UnknownDistance);
             int nearestLowerNeighborDistance = Int32.MaxValue;
-            int nearestLowerNeighborIndex = -1;
+            int nearestLowerNeighborIndex = SolutionPool.UnknownNeighbor;
             KeyValuePair<float, List<int>> nearestNeighbor = default;
             foreach (KeyValuePair<float, List<int>> fitnessSortedIndividual in this.individualIndexByFitness)
             {
@@ -493,9 +546,9 @@ namespace Osu.Cof.Ferm.Heuristics
                     // and therefore don't need to be evaluated
                     break;
                 }
-                for (int solutionIndex = 0; solutionIndex < fitnessSortedIndividual.Value.Count; ++solutionIndex)
+                for (int sortIndex = 0; sortIndex < fitnessSortedIndividual.Value.Count; ++sortIndex)
                 {
-                    int individualIndex = fitnessSortedIndividual.Value[solutionIndex];
+                    int individualIndex = fitnessSortedIndividual.Value[sortIndex];
 
                     // for now, use Hamming distance as it's interchangeable with Euclidean distance for binary decision variables
                     // If needed, Euclidean distance or stand entry distance can be used when multiple thinnings are allowed.
@@ -506,7 +559,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         return false;
                     }
 
-                    distancesToIndividuals[solutionIndex] = Math.Min(distanceToSolution, distancesToIndividuals[solutionIndex]);
+                    distancesToIndividuals[individualIndex] = Math.Min(distanceToSolution, distancesToIndividuals[individualIndex]);
                     if (distanceToSolution < nearestLowerNeighborDistance)
                     {
                         nearestNeighbor = fitnessSortedIndividual;
@@ -543,37 +596,6 @@ namespace Osu.Cof.Ferm.Heuristics
             List<int> replacementIndices = this.individualIndexByFitness[minimumFitness];
             this.Replace(minimumFitness, replacementIndices, newFitness, trajectory, neighborDistances, nearestLowerNeighborIndex);
             return true;
-        }
-
-        // factored out of ConstructTreeSelections() as a low level test hook
-        internal void UpdateNearestNeighborDistances(int individualIndex)
-        {
-            int nearestNeighborDistance = Int32.MaxValue;
-            int nearestNeighborIndex = -1;
-            for (int neighborIndex = individualIndex + 1; neighborIndex < this.PoolCapacity; ++neighborIndex)
-            {
-                int neighborDistance = SolutionPool.GetHammingDistance(this.IndividualTreeSelections[individualIndex], this.IndividualTreeSelections[neighborIndex]);
-                this.DistanceMatrix[individualIndex, neighborIndex] = neighborDistance;
-                this.DistanceMatrix[neighborIndex, individualIndex] = neighborDistance;
-
-                if (neighborDistance < nearestNeighborDistance)
-                {
-                    nearestNeighborDistance = neighborDistance;
-                    nearestNeighborIndex = neighborIndex;
-                }
-            }
-
-            this.NearestNeighborIndex[individualIndex] = nearestNeighborIndex;
-
-            // check for update to minimum distance among all individuals in the population
-            if (nearestNeighborDistance < this.MinimumNeighborDistance)
-            {
-                this.MinimumNeighborDistance = nearestNeighborDistance;
-                this.MinimumNeighborIndex = nearestNeighborIndex;
-            }
-
-            // needed for testing, this.SolutionsInPool = this.PoolCapacity; in ConstructTreeSelections() would be equivalent
-            ++this.SolutionsInPool;
         }
     }
 }

@@ -41,8 +41,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Cannot generate header because first result is missing a high solution or a low solution.");
                 }
-                HeuristicParameters highParameters = solution.High.GetParameters();
-                StringBuilder line = new("stand,heuristic," + highParameters.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",iteration,count");
+                StringBuilder line = new(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",iteration,count");
 
                 string lowMoveLogHeader = "lowMoveLog";
                 IHeuristicMoveLog? lowMoveLog = solution.Low!.GetMoveLog();
@@ -121,21 +120,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 HeuristicResultPosition position = prioritizedResults[positionIndex];
                 HeuristicResult result = this.Results[position];
-                Heuristic? highHeuristic = result.Pool.High;
-                Heuristic? lowHeuristic = result.Pool.Low;
-                if ((highHeuristic == null) || (lowHeuristic == null))
-                {
-                    throw new NotSupportedException("Result at position " + positionIndex + " is missing a high or low solution.");
-                }
-
-                int endPeriodIndex = this.Results.RotationLengths[position.RotationIndex];
-                float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
-                HeuristicParameters highParameters = highHeuristic.GetParameters();
-                OrganonStandTrajectory highTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
-                string runPrefix = highTrajectory.Name + "," +
-                    highHeuristic.GetName() + "," +
-                    highParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
+                string heuristicAndPosition = WriteCmdlet.GetHeuristicAndPositionCsvValues(result.Pool, this.Results, position);
+                Heuristic highHeuristic = result.Pool.High!;
+                Heuristic lowHeuristic = result.Pool.Low!;
 
                 // solution distribution is informative and should be logged in this case
                 // for now, assume high and low solutions use the same parameters
@@ -223,7 +210,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     Debug.Assert((acceptedFinancialValueByMoveLow.Count <= moveIndex) || (moveStatistics.Maximum >= acceptedFinancialValueByMoveLow[moveIndex]));
                     Debug.Assert((acceptedFinancialValueByMoveHigh.Count <= moveIndex) || (moveStatistics.Minimum <= acceptedFinancialValueByMoveHigh[moveIndex]));
-                    writer.WriteLine(runPrefix + "," +
+                    writer.WriteLine(heuristicAndPosition + "," +
                                      moveIndex + "," +
                                      runsWithMoveAtIndex + "," +
                                      lowMove + "," +

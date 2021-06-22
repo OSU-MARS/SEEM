@@ -20,8 +20,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                HeuristicParameters heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
-                writer.WriteLine("stand,heuristic," + heuristicParameters!.GetCsvHeader() + "," + WriteCmdlet.RateAndAgeCsvHeader + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
+                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
@@ -29,24 +28,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 HeuristicResultPosition position = this.Results.CombinationsEvaluated[positionIndex];
                 HeuristicResult result = this.Results[position];
-                if ((result.Pool.High == null) || (result.Pool.Low == null))
-                {
-                    throw new NotSupportedException("Result at position " + positionIndex + " is missing a high solution or a low solution.");
-                }
-                GeneticAlgorithm highHeuristic = (GeneticAlgorithm)result.Pool.High;
-                HeuristicParameters highParameters = highHeuristic.GetParameters();
-                StandTrajectory highTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
-                GeneticAlgorithm lowHeuristic = (GeneticAlgorithm)result.Pool.Low;
-
-                int endPeriodIndex = this.Results.RotationLengths[position.RotationIndex];
-                float discountRate = this.Results.DiscountRates[position.DiscountRateIndex];
-                string linePrefix = highTrajectory.Name + "," +
-                    highHeuristic.GetName() + "," +
-                    highParameters.GetCsvValues() + "," +
-                    WriteCmdlet.GetRateAndAgeCsvValues(highTrajectory, endPeriodIndex, discountRate);
-
-                PopulationStatistics highStatistics = highHeuristic.PopulationStatistics;
-                PopulationStatistics lowStatistics = lowHeuristic.PopulationStatistics;
+                string heuristicAndPosition = WriteCmdlet.GetHeuristicAndPositionCsvValues(result.Pool, this.Results, position);
+                PopulationStatistics highStatistics = ((GeneticAlgorithm)result.Pool.High!).PopulationStatistics;
+                PopulationStatistics lowStatistics = ((GeneticAlgorithm)result.Pool.Low!).PopulationStatistics;
                 int maxGenerations = Math.Max(highStatistics.Generations, lowStatistics.Generations);
                 for (int generationIndex = 0; generationIndex < maxGenerations; ++generationIndex)
                 {
@@ -90,7 +74,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         lowPolymorphism = lowStatistics.PolymorphismByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    writer.WriteLine(linePrefix + "," +
+                    writer.WriteLine(heuristicAndPosition + "," +
                                      generationIndex + "," +
                                      highMinimumFitness + "," +
                                      highMeanFitness + "," +
