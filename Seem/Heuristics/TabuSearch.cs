@@ -223,7 +223,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.MaximumTenure));
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
             if (thinningPeriods.Count < 2)
             {
                 throw new NotSupportedException("A decision between at least two thinning periods is expected.");

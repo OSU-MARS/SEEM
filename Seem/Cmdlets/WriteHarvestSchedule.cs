@@ -69,7 +69,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 OrganonStandTrajectory lowTrajectory = solutions.Low!.GetBestTrajectoryWithDefaulting(position);
                 int previousSpeciesCount = 0;
-                foreach (KeyValuePair<FiaCode, int[]> highTreeSelectionNForSpecies in highTrajectory.IndividualTreeSelectionBySpecies)
+                foreach (KeyValuePair<FiaCode, TreeSelection> highTreeSelectionNForSpecies in highTrajectory.IndividualTreeSelectionBySpecies)
                 {
                     Trees highTreesBeforeFirstThin = highStandBeforeFirstThin.TreesBySpecies[highTreeSelectionNForSpecies.Key];
                     Trees highTreesBeforeSecondThin = highStandBeforeSecondThin.TreesBySpecies[highTreeSelectionNForSpecies.Key];
@@ -79,9 +79,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     // uncompactedTreeIndex: tree index in periods before thinned trees are removed
                     // compactedTreeIndex: index of retained trees in periods after thinning
-                    int[] lowTreeSelection = lowTrajectory.IndividualTreeSelectionBySpecies[highTreeSelectionNForSpecies.Key];
-                    int[] highTreeSelection = highTreeSelectionNForSpecies.Value;
-                    Debug.Assert(highTreesBeforeFirstThin.Capacity == highTreeSelection.Length);
+                    TreeSelection lowTreeSelection = lowTrajectory.IndividualTreeSelectionBySpecies[highTreeSelectionNForSpecies.Key];
+                    TreeSelection highTreeSelection = highTreeSelectionNForSpecies.Value;
+                    Debug.Assert(highTreesBeforeFirstThin.Capacity == highTreeSelection.Capacity);
                     int secondThinCompactedTreeIndex = 0;
                     int thirdThinCompactedTreeIndex = 0;
                     int finalCompactedTreeIndex = 0;
@@ -187,7 +187,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                          highFinalBoardFeet);
                     }
 
-                    previousSpeciesCount += highTreeSelection.Length;
+                    previousSpeciesCount += highTreeSelection.Count;
                 }
 
                 if (writer.BaseStream.Length > maxFileSizeInBytes)

@@ -45,7 +45,7 @@ namespace Osu.Cof.Ferm.Heuristics
             get { return this.NearestNeighborIndex.Length; }
         }
 
-        protected static int GetHammingDistance(SortedDictionary<FiaCode, int[]> selectionBySpecies1, SortedDictionary<FiaCode, int[]> selectionBySpecies2)
+        protected static int GetHammingDistance(SortedDictionary<FiaCode, TreeSelection> selectionBySpecies1, SortedDictionary<FiaCode, TreeSelection> selectionBySpecies2)
         {
             if (selectionBySpecies1.Count != selectionBySpecies2.Count)
             {
@@ -53,15 +53,15 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             int hammingDistance = 0;
-            foreach (KeyValuePair<FiaCode, int[]> selection1forSpecies in selectionBySpecies1)
+            foreach (KeyValuePair<FiaCode, TreeSelection> selection1forSpecies in selectionBySpecies1)
             {
-                int[] selection1 = selection1forSpecies.Value;
-                int[] selection2 = selectionBySpecies2[selection1forSpecies.Key];
-                if (selection1.Length != selection2.Length)
+                TreeSelection selection1 = selection1forSpecies.Value;
+                TreeSelection selection2 = selectionBySpecies2[selection1forSpecies.Key];
+                if (selection1.Count != selection2.Count)
                 {
-                    throw new ArgumentException("Tree selections for " + selection1forSpecies.Key + " have different lengths.");
+                    throw new ArgumentException("Tree selections for " + selection1forSpecies.Key + " have different tree counts.");
                 }
-                for (int treeIndex = 0; treeIndex < selection1.Length; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < selection1.Count; ++treeIndex)
                 {
                     if (selection1[treeIndex] != selection2[treeIndex])
                     {

@@ -120,7 +120,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.HeuristicParameters.ReservedProportion));
             }
 
-            this.thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
+            this.thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
@@ -138,10 +138,10 @@ namespace Osu.Cof.Ferm.Heuristics
             OrganonStandTrajectory individualTrajectory = new(this.CurrentTrajectory);
             for (int individualIndex = 0; individualIndex < this.HeuristicParameters.PopulationSize; ++individualIndex)
             {
-                int[] individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
-                for (int treeIndex = 0; treeIndex < individualTreeSelection.Length; ++treeIndex)
+                SortedDictionary<FiaCode, TreeSelection> individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
+                foreach (KeyValuePair<FiaCode, TreeSelection> treeSelectionForSpecies in individualTreeSelection)
                 {
-                    individualTrajectory.SetTreeSelection(treeIndex, individualTreeSelection[treeIndex]);
+                    treeSelectionForSpecies.Value.CopyTo(individualTrajectory.IndividualTreeSelectionBySpecies[treeSelectionForSpecies.Key]);
                 }
                 perfCounters.GrowthModelTimesteps += individualTrajectory.Simulate();
 
@@ -159,14 +159,6 @@ namespace Osu.Cof.Ferm.Heuristics
             }
             Debug.Assert((currentGeneration.SolutionsAccepted == this.HeuristicParameters.PopulationSize) && (currentGeneration.SolutionsAccepted == currentGeneration.SolutionsInPool));
             this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
-
-            // get sort order for K-point crossover
-            //Stand standBeforeThin = this.BestTrajectory.StandByPeriod[this.BestTrajectory.HarvestPeriods];
-            //if ((standBeforeThin.TreesBySpecies.Count != 1) || (standBeforeThin.TreesBySpecies.ContainsKey(FiaCode.PseudotsugaMenziesii) == false))
-            //{
-            //    throw new NotImplementedException();
-            //}
-            //int[] dbhSortOrder = standBeforeThin.TreesBySpecies[FiaCode.PseudotsugaMenziesii].GetDbhSortOrder();
 
             // for each generation of size n, perform n fertile matings
             float treeScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
@@ -186,7 +178,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     // crossover parents' genetic material to create offsprings' genetic material
                     currentGeneration.FindParents(out int firstParentIndex, out int secondParentIndex);
-                    //currentGeneration.CrossoverKPoint(1, firstParentIndex, secondParentIndex, dbhSortOrder, firstChildTrajectory, secondChildTrajectory);
+                    //currentGeneration.CrossoverKPoint(1, firstParentIndex, secondParentIndex, firstChildTrajectory, secondChildTrajectory);
                     currentGeneration.CrossoverUniform(firstParentIndex, secondParentIndex, crossoverProbability, firstChildTrajectory, secondChildTrajectory);
 
                     // maybe perform mutations

@@ -41,9 +41,13 @@ namespace Osu.Cof.Ferm.Organon
             this.Treatments = new OrganonTreatments();
 
             this.DensityByPeriod[0] = new OrganonStandDensity(organonConfiguration.Variant, stand);
+            Debug.Assert(Constant.NoHarvestPeriod == 0, "Tree selection initialization assumes .");
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                this.IndividualTreeSelectionBySpecies.Add(treesOfSpecies.Species, new int[treesOfSpecies.Capacity]);
+                this.IndividualTreeSelectionBySpecies.Add(treesOfSpecies.Species, new TreeSelection(treesOfSpecies.Capacity)
+                {
+                    Count = treesOfSpecies.Count
+                });
             }
             this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
             this.StandByPeriod[0]!.Name += 0;
@@ -124,14 +128,10 @@ namespace Osu.Cof.Ferm.Organon
 
             this.Configuration.CopyFrom(other.Configuration);
 
-            foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
+            foreach (KeyValuePair<FiaCode, TreeSelection> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
             {
-                int[] thisSelectionForSpecies = this.IndividualTreeSelectionBySpecies[otherSelectionForSpecies.Key];
-                if (otherSelectionForSpecies.Value.Length != thisSelectionForSpecies.Length)
-                {
-                    throw new NotSupportedException("Individual tree selections are of different lengths.");
-                }
-                Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
+                TreeSelection thisSelectionForSpecies = this.IndividualTreeSelectionBySpecies[otherSelectionForSpecies.Key];
+                thisSelectionForSpecies.CopyFrom(otherSelectionForSpecies.Value);
             }
             this.EarliestPeriodChangedSinceLastSimulation = Math.Min(other.EarliestPeriodChangedSinceLastSimulation, this.PlanningPeriods + 1);
 
@@ -292,13 +292,11 @@ namespace Osu.Cof.Ferm.Organon
                         OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
                         simulationStand = new OrganonStand(previousStand);
                     }
-                    foreach (KeyValuePair<FiaCode, int[]> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
+                    foreach (KeyValuePair<FiaCode, TreeSelection> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
                     {
                         Trees treesOfSpecies = simulationStand.TreesBySpecies[individualTreeSelection.Key];
                         bool atLeastOneTreeRemoved = false;
-                        // loop assumes trailing capacity is set to zero and of insignificant length
-                        // if needed, loop can be changed to use either the simulation stand's tree count or a reference tree count rather than capacity
-                        for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < individualTreeSelection.Value.Length; ++uncompactedTreeIndex)
+                        for (int compactedTreeIndex = 0, uncompactedTreeIndex = 0; uncompactedTreeIndex < individualTreeSelection.Value.Count; ++uncompactedTreeIndex)
                         {
                             int treeSelection = individualTreeSelection.Value[uncompactedTreeIndex];
                             if (treeSelection == periodIndex)

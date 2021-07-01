@@ -17,18 +17,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MaximumIterations = Constant.HeuristicDefault.HeroMaximumIterations;
         }
 
-        private static int[] CreateSequentialArray(int length)
-        {
-            Debug.Assert(length > 0);
-
-            int[] array = new int[length];
-            for (int index = 0; index < length; ++index)
-            {
-                array[index] = index;
-            }
-            return array;
-        }
-
         public override string GetName()
         {
             if (this.IsStochastic)
@@ -38,26 +26,6 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Hero";
         }
 
-        private int[] GetPeriodIndices(int allSpeciesTreeCount, IList<int> thinningPeriods)
-        {
-            // this function is inefficient as it reverses RandomizeTreeSelection()'s internal logic
-            // Not currently enough of a performance advantage for refactoring to be worthwhile.
-            int[] periodIndices = new int[allSpeciesTreeCount];
-            for (int allSpeciesUncompactedTreeIndex = 0; allSpeciesUncompactedTreeIndex < periodIndices.Length; ++allSpeciesUncompactedTreeIndex)
-            {
-                int currentTreeHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(allSpeciesUncompactedTreeIndex);
-                for (int periodIndex = 0; periodIndex < thinningPeriods.Count; ++periodIndex)
-                {
-                    if (thinningPeriods[periodIndex] == currentTreeHarvestPeriod)
-                    {
-                        periodIndices[allSpeciesUncompactedTreeIndex] = periodIndex;
-                        break;
-                    }
-                }
-            }
-            return periodIndices;
-        }
-
         public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
             if (this.MaximumIterations < 1)
@@ -65,7 +33,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.MaximumIterations));
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
+            IList<int> harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
@@ -77,8 +45,8 @@ namespace Osu.Cof.Ferm.Heuristics
             float previousBestObjectiveFunction = acceptedFinancialValue;
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             bool decrementPeriodIndex = false;
-            int[] uncompactedPeriodIndices = this.GetPeriodIndices(initialTreeRecordCount, thinningPeriods);
-            int[] uncompactedTreeIndices = Hero.CreateSequentialArray(initialTreeRecordCount);
+            int[] uncompactedPeriodIndices = this.CurrentTrajectory.GetHarvestPeriodIndices(harvestPeriods);
+            int[] uncompactedTreeIndices = ArrayExtensions.CreateSequentialIndices(initialTreeRecordCount);
             for (int iteration = 0; iteration < this.MaximumIterations; ++iteration)
             {
                 // randomize on every iteration since a single randomization against the order of the data has little effect
@@ -99,17 +67,17 @@ namespace Osu.Cof.Ferm.Heuristics
                     int currentPeriodIndex = uncompactedPeriodIndices[treeIndex];
                     int candidatePeriodIndex = decrementPeriodIndex ? currentPeriodIndex - 1 : currentPeriodIndex + 1;
 
-                    for (int periodEvaluationForTree = 0; periodEvaluationForTree < thinningPeriods.Count - 1; ++periodEvaluationForTree)
+                    for (int periodEvaluationForTree = 0; periodEvaluationForTree < harvestPeriods.Count - 1; ++periodEvaluationForTree)
                     {
-                        if (candidatePeriodIndex >= thinningPeriods.Count)
+                        if (candidatePeriodIndex >= harvestPeriods.Count)
                         {
                             candidatePeriodIndex = 0;
                         }
                         else if (candidatePeriodIndex < 0)
                         {
-                            candidatePeriodIndex = thinningPeriods.Count - 1;
+                            candidatePeriodIndex = harvestPeriods.Count - 1;
                         }
-                        int candidateHarvestPeriod = thinningPeriods[candidatePeriodIndex];
+                        int candidateHarvestPeriod = harvestPeriods[candidatePeriodIndex];
                         int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex); // capture for revert
                         Debug.Assert(currentHarvestPeriod != candidateHarvestPeriod);
                         candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);

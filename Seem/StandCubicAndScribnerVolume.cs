@@ -22,7 +22,7 @@ namespace Osu.Cof.Ferm
             return this.Cubic2Saw[periodIndex] + this.Cubic3Saw[periodIndex] + this.Cubic4Saw[periodIndex];
         }
 
-        public void SetCubicVolumeHarvested(Stand previousStand, SortedDictionary<FiaCode, int[]> individualTreeSelectionBySpecies, int periodIndex, TimberValue timberValue)
+        public void SetCubicVolumeHarvested(Stand previousStand, SortedDictionary<FiaCode, TreeSelection> individualTreeSelectionBySpecies, int periodIndex, TimberValue timberValue)
         {
             double harvested2SawCubicMetersPerAcre = 0.0;
             double harvested3SawCubicMetersPerAcre = 0.0;
@@ -31,7 +31,7 @@ namespace Osu.Cof.Ferm
             {
                 Debug.Assert(previousTreesOfSpecies.Units == Units.English, "TODO: per hectare.");
 
-                int[] individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
+                TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
                 timberValue.ScaledVolumeThinning.GetHarvestedCubicVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex, out double cubic2saw, out double cubic3saw, out double cubic4saw);
                 harvested2SawCubicMetersPerAcre += cubic2saw;
                 harvested3SawCubicMetersPerAcre += cubic3saw;

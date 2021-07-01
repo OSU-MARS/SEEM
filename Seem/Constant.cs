@@ -144,7 +144,8 @@ namespace Osu.Cof.Ferm
         public static class HeuristicDefault
         {
             public const int DiscountRateIndex = 0;
-            public const int HeroMaximumIterations = 25;
+            public const int FirstCircularIterationMultiplier = 20;
+            public const int HeroMaximumIterations = 20;
             public const float InitialThinningProbability = 0.5F;
             public const int RotationIndex = 0;
         }

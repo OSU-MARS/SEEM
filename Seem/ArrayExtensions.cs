@@ -13,6 +13,16 @@ namespace Osu.Cof.Ferm
             Array.Copy(source, 0, destination, 0, source.Length);
         }
 
+        public static int[] CreateSequentialIndices(int length)
+        {
+            int[] array = new int[length];
+            for (int index = 0; index < length; ++index)
+            {
+                array[index] = index;
+            }
+            return array;
+        }
+
         public static unsafe void Fill(this float[,,] array, float value)
         {
             fixed (float* pinnedArray = array)

@@ -81,7 +81,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.ReheatBy));
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
             if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
             {
                 throw new NotSupportedException("Currently, only one or two thins are supported.");

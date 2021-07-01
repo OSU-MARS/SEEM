@@ -26,6 +26,16 @@ namespace Osu.Cof.Ferm
             return array;
         }
 
+        public static TValue GetOrAdd<TKey, TValue>(this SortedDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> createValue) where TKey : notnull
+        {
+            if (dictionary.TryGetValue(key, out TValue? value) == false)
+            {
+                value = createValue.Invoke();
+                dictionary.Add(key, value);
+            }
+            return value;
+        }
+
         public static bool KeysIdentical<TKey, TValue1, TValue2>(SortedDictionary<TKey, TValue1> dictionary1, SortedDictionary<TKey, TValue2> dictionary2) where TKey : notnull
         {
             if (Object.ReferenceEquals(dictionary1, dictionary2))

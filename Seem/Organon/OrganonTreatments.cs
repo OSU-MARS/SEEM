@@ -142,6 +142,13 @@ namespace Osu.Cof.Ferm.Organon
             return fertX1;
         }
 
+        public IList<int> GetHarvestPeriods()
+        {
+            IList<int> thinningPeriods = this.GetThinningPeriods();
+            thinningPeriods.Add(Constant.NoHarvestPeriod);
+            return thinningPeriods;
+        }
+
         public float GetPrem(OrganonVariant variant, float k, out int yearsSinceMostRecentThin)
         {
             // Hann DW, Marshall DD, Hanus ML. 2003. Equations for predicting height-to-crown-base, 5-year diameter-growth rate, 5 year height
@@ -197,9 +204,10 @@ namespace Osu.Cof.Ferm.Organon
             return prem;
         }
 
-        public IList<int> GetValidThinningPeriods()
+        // could also implement this on HeuristicResultPosition
+        public IList<int> GetThinningPeriods()
         {
-            List<int> thinningPeriods = new(this.Harvests.Count + 1) { Constant.NoHarvestPeriod };
+            List<int> thinningPeriods = new(this.Harvests.Count + 1);
             foreach (IHarvest harvest in this.Harvests)
             {
                 Debug.Assert((harvest is ThinByIndividualTreeSelection) || (harvest is ThinByPrescription));

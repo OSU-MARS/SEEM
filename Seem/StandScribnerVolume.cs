@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm
             return this.Scribner2Saw[periodIndex] + this.Scribner3Saw[periodIndex] + this.Scribner4Saw[periodIndex];
         }
 
-        public void SetScribnerHarvest(Stand previousStand, SortedDictionary<FiaCode, int[]> individualTreeSelectionBySpecies, int periodIndex, TimberValue timberValue)
+        public void SetScribnerHarvest(Stand previousStand, SortedDictionary<FiaCode, TreeSelection> individualTreeSelectionBySpecies, int periodIndex, TimberValue timberValue)
         {
             double harvested2SawBoardFeetPerAcre = 0.0F;
             double harvested3SawBoardFeetPerAcre = 0.0F;
@@ -52,7 +52,7 @@ namespace Osu.Cof.Ferm
             {
                 Debug.Assert(previousTreesOfSpecies.Units == Units.English, "TODO: per hectare.");
 
-                int[] individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
+                TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
                 timberValue.ScaledVolumeThinning.GetHarvestedScribnerVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex, out double scribner2saw, out double scribner3saw, out double scribner4saw);
                 harvested2SawBoardFeetPerAcre += scribner2saw;
                 harvested3SawBoardFeetPerAcre += scribner3saw;

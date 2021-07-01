@@ -224,12 +224,8 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             // check if there is a thinning to randomize
-            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetValidThinningPeriods();
-            if (thinningPeriods[0] != Constant.NoHarvestPeriod)
-            {
-                throw new NotSupportedException("First thinning selection is a harvest. Expected it to be the no harvest option.");
-            }
-            if (thinningPeriods.Count == 1)
+            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetThinningPeriods();
+            if (thinningPeriods.Count == 0)
             {
                 // ensure no trees are selected for thinning since no thinning is specified
                 // If needed, checking can be done for conflict between removing trees from thinning and construction greediness. At least for now, the 
@@ -237,7 +233,6 @@ namespace Osu.Cof.Ferm.Heuristics
                 this.CurrentTrajectory.DeselectAllTrees();
                 return 0;
             }
-            thinningPeriods.RemoveAt(0);
 
             if (this.HeuristicParameters.ConstructionGreediness == Constant.Grasp.FullyGreedyConstructionForMaximization)
             {

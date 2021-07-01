@@ -18,7 +18,7 @@ namespace Osu.Cof.Ferm
             };
         }
 
-        public void GetHarvestedCubicVolume(Trees trees, int[] individualTreeSelection, int harvestPeriod, out double cubic2saw, out double cubic3saw, out double cubic4saw)
+        public void GetHarvestedCubicVolume(Trees trees, TreeSelection individualTreeSelection, int harvestPeriod, out double cubic2saw, out double cubic3saw, out double cubic4saw)
         {
             TreeVolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
             cubic2saw = 0.0;
@@ -83,7 +83,7 @@ namespace Osu.Cof.Ferm
             }
         }
 
-        public void GetHarvestedScribnerVolume(Trees trees, int[] individualTreeSelection, int harvestPeriod, out double scribner2saw, out double scribner3saw, out double scribner4saw)
+        public void GetHarvestedScribnerVolume(Trees trees, TreeSelection individualTreeSelection, int harvestPeriod, out double scribner2saw, out double scribner3saw, out double scribner4saw)
         {
             TreeVolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
             scribner2saw = 0.0;

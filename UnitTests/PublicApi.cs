@@ -1,5 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Osu.Cof.Ferm.Cmdlets;
 using Osu.Cof.Ferm.Data;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
@@ -92,7 +91,7 @@ namespace Osu.Cof.Ferm.Test
         }
 
         [TestMethod]
-        public void NelderHero()
+        public void NelderCircularHeuristics()
         {
             int thinningPeriod = 4;
             int treeCount = 100;
@@ -118,6 +117,15 @@ namespace Osu.Cof.Ferm.Test
             landExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
 
             HeuristicResults<HeuristicParameters> results = PublicApi.CreateResultsSet(new(), landExpectationValue.MaximizeForPlanningPeriod);
+            FirstImprovingCircularSearch firstCircular = new(stand, results.ParameterCombinations[0], landExpectationValue)
+            {
+                //IsStochastic = true,
+                MaximumIterations = 10 * treeCount
+            };
+            HeuristicResultPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
+            HeuristicPerformanceCounters firstImprovingCounters = firstCircular.Run(defaultPosition, results);
+            results.AssimilateHeuristicRunIntoPosition(firstCircular, firstImprovingCounters, defaultPosition);
+
             Hero hero = new(stand, results.ParameterCombinations[0], landExpectationValue)
             {
                 //IsStochastic = true,
@@ -125,20 +133,42 @@ namespace Osu.Cof.Ferm.Test
             };
             // debugging note: it can be helpful to set fully greedy heuristic parameters so the initial prescription remains as no trees selected
             //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
-            HeuristicResultPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
             HeuristicPerformanceCounters heroCounters = hero.Run(defaultPosition, results);
             results.AssimilateHeuristicRunIntoPosition(hero, heroCounters, defaultPosition);
 
+            this.Verify(firstCircular, firstImprovingCounters);
             this.Verify(hero, heroCounters);
             PublicApi.Verify(results, defaultPosition, landExpectationValue.MaximizeForPlanningPeriod);
 
-            int[] treeSelection = hero.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
-            int treesSelected = treeSelection.Sum() / thinningPeriod;
+            TreeSelection firstCircularTreeSelection = firstCircular.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            TreeSelection heroTreeSelection = hero.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            int treesThinnedByFirstCircular = 0;
+            int treesThinnedByHero = 0;
+            for (int treeIndex = 0; treeIndex < heroTreeSelection.Count; ++treeIndex)
+            {
+                if (firstCircularTreeSelection[treeIndex] != Constant.NoHarvestPeriod)
+                {
+                    ++treesThinnedByFirstCircular;
+                }
+                if (heroTreeSelection[treeIndex] != Constant.NoHarvestPeriod)
+                {
+                    ++treesThinnedByHero;
+                }
+            }
 
-            float highestFinancialValue = hero.FinancialValue.GetHighestValue();
-            this.TestContext!.WriteLine("best objective: {0} observed, near {1} expected", highestFinancialValue, minObjectiveFunctionWithScaledVolume);
-            Assert.IsTrue(highestFinancialValue > minObjectiveFunctionWithScaledVolume);
-            Assert.IsTrue(highestFinancialValue < 1.02F * minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(treesThinnedByFirstCircular == 0); // highest financial value solution happens to be the unthinned one
+            Assert.IsTrue(treesThinnedByHero == 0);
+
+            float highestFirstCircularFinancialValue = firstCircular.FinancialValue.GetHighestValue();
+            float highestHeroFinancialValue = hero.FinancialValue.GetHighestValue();
+            this.TestContext!.WriteLine("highest first circular financial value: {0} observed, near {1} expected", highestFirstCircularFinancialValue, minObjectiveFunctionWithScaledVolume);
+            this.TestContext!.WriteLine("highest hero financial value: {0} observed, near {1} expected", highestHeroFinancialValue, minObjectiveFunctionWithScaledVolume);
+
+            Assert.IsTrue(highestFirstCircularFinancialValue > minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(highestFirstCircularFinancialValue < 1.02F * minObjectiveFunctionWithScaledVolume);
+
+            Assert.IsTrue(highestHeroFinancialValue > minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(highestHeroFinancialValue < 1.02F * minObjectiveFunctionWithScaledVolume);
         }
 
         [TestMethod]
@@ -794,17 +824,14 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(endCandidateFinancialValue <= highestFinancialValue);
 
             // check harvest schedule
-            int firstThinningPeriod = bestTrajectory.GetFirstThinPeriod(); // returns -1 if heuristic selects no trees
-            if (firstThinningPeriod == Constant.NoThinPeriod)
+            int firstThinningPeriod = bestTrajectory.Treatments.GetThinningPeriods()[0];
+            foreach (KeyValuePair<FiaCode, TreeSelection> selectionForSpecies in bestTrajectory.IndividualTreeSelectionBySpecies)
             {
-                firstThinningPeriod = bestTrajectory.Treatments.GetValidThinningPeriods()[1];
-            }
-            foreach (KeyValuePair<FiaCode, int[]> selectionForSpecies in bestTrajectory.IndividualTreeSelectionBySpecies)
-            {
-                int[] bestTreeSelection = selectionForSpecies.Value;
-                int[] currentTreeSelection = heuristic.CurrentTrajectory.IndividualTreeSelectionBySpecies[selectionForSpecies.Key];
-                Assert.IsTrue(bestTreeSelection.Length == currentTreeSelection.Length);
-                for (int treeIndex = 0; treeIndex < bestTreeSelection.Length; ++treeIndex)
+                TreeSelection bestTreeSelection = selectionForSpecies.Value;
+                TreeSelection currentTreeSelection = heuristic.CurrentTrajectory.IndividualTreeSelectionBySpecies[selectionForSpecies.Key];
+                Assert.IsTrue(bestTreeSelection.Capacity == currentTreeSelection.Capacity);
+                Assert.IsTrue(bestTreeSelection.Count == currentTreeSelection.Count);
+                for (int treeIndex = 0; treeIndex < bestTreeSelection.Count; ++treeIndex)
                 {
                     Assert.IsTrue((bestTreeSelection[treeIndex] == Constant.NoHarvestPeriod) || (bestTreeSelection[treeIndex] == firstThinningPeriod));
                     Assert.IsTrue((currentTreeSelection[treeIndex] == Constant.NoHarvestPeriod) || (currentTreeSelection[treeIndex] == firstThinningPeriod));
@@ -812,7 +839,7 @@ namespace Osu.Cof.Ferm.Test
             }
 
             // check volumes
-            Assert.IsTrue((firstThinningPeriod == Constant.NoThinPeriod) || (firstThinningPeriod > 0));
+            Assert.IsTrue(firstThinningPeriod != Constant.NoHarvestPeriod);
             bestTrajectory.GetGradedVolumes(out StandCubicAndScribnerVolume bestStandingVolume, out StandCubicAndScribnerVolume bestHarvestedVolume);
             heuristic.CurrentTrajectory.GetGradedVolumes(out StandCubicAndScribnerVolume currentStandingVolume, out StandCubicAndScribnerVolume currentHarvestedVolume);
             float previousBestCubicStandingVolume = Single.NaN;
@@ -1026,20 +1053,20 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(trajectory.GetFirstThinPeriod() == firstThinPeriod);
             Assert.IsTrue(trajectory.GetSecondThinPeriod() == secondThinPeriod);
 
-            IList<int> thinningPeriods = trajectory.Treatments.GetValidThinningPeriods();
-            Assert.IsTrue(thinningPeriods[0] == Constant.NoHarvestPeriod);
+            IList<int> thinningPeriods = trajectory.Treatments.GetHarvestPeriods();
+            Assert.IsTrue(thinningPeriods[^1] == Constant.NoHarvestPeriod);
             if (firstThinPeriod != Constant.NoThinPeriod)
             {
-                Assert.IsTrue(thinningPeriods[1] == firstThinPeriod);
+                Assert.IsTrue(thinningPeriods[0] == firstThinPeriod);
                 if (thirdThinPeriod != Constant.NoThinPeriod)
                 {
-                    Assert.IsTrue(thinningPeriods[2] == secondThinPeriod);
-                    Assert.IsTrue(thinningPeriods[3] == thirdThinPeriod);
+                    Assert.IsTrue(thinningPeriods[1] == secondThinPeriod);
+                    Assert.IsTrue(thinningPeriods[2] == thirdThinPeriod);
                     Assert.IsTrue(thinningPeriods.Count == 4);
                 }
                 else if (secondThinPeriod != Constant.NoThinPeriod)
                 {
-                    Assert.IsTrue(thinningPeriods[2] == secondThinPeriod);
+                    Assert.IsTrue(thinningPeriods[1] == secondThinPeriod);
                     Assert.IsTrue(thinningPeriods.Count == 3);
                 }
                 else
@@ -1157,13 +1184,13 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static void Verify(SortedDictionary<FiaCode, int[]> individualTreeSelectionBySpecies, int firstThinPeriod, int? secondThinPeriod, int? thirdThinPeriod, int minimumTreesSelected, int maximumTreesSelected)
+        private static void Verify(SortedDictionary<FiaCode, TreeSelection> individualTreeSelectionBySpecies, int firstThinPeriod, int? secondThinPeriod, int? thirdThinPeriod, int minimumTreesSelected, int maximumTreesSelected)
         {
             int outOfRangeTrees = 0;
             int treesSelected = 0;
-            foreach (int[] individualTreeSelection in individualTreeSelectionBySpecies.Values)
+            foreach (TreeSelection individualTreeSelection in individualTreeSelectionBySpecies.Values)
             {
-                for (int treeIndex = 0; treeIndex < individualTreeSelection.Length; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < individualTreeSelection.Count; ++treeIndex)
                 {
                     int treeSelection = individualTreeSelection[treeIndex];
                     bool isOutOfRange = (treeSelection != 0) && (treeSelection != firstThinPeriod);

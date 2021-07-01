@@ -78,12 +78,38 @@ namespace Osu.Cof.Ferm.Heuristics
             return bytesAsFloat;
         }
 
+        // randomize order of elements in array
         public void Shuffle(int[] array)
         {
-            // Fisher-Yates shuffle to randomize order of vector in place
+            // Fisher-Yates shuffle
             for (int destinationIndex = array.Length; destinationIndex > 1; /* decrement in body */)
             {
                 int sourceIndex = this.pseudorandom.Next(destinationIndex--);
+                int buffer = array[destinationIndex];
+                array[destinationIndex] = array[sourceIndex];
+                array[sourceIndex] = buffer;
+            }
+        }
+
+        // randomize order of elements in two parts of an array independently
+        // The first part is array[0..breakpoint - 1], the second is array[breakpoint..^1]
+        public void Shuffle(int[] array, int breakpoint)
+        {
+            // Fisher-Yates on first part
+            for (int destinationIndex = breakpoint; destinationIndex > 1; /* decrement in body */)
+            {
+                int sourceIndex = this.pseudorandom.Next(destinationIndex--);
+                int buffer = array[destinationIndex];
+                array[destinationIndex] = array[sourceIndex];
+                array[sourceIndex] = buffer;
+            }
+
+            // Fisher-Yates on second part
+            for (int destinationIndexWithinPart = array.Length - breakpoint; destinationIndexWithinPart > 1; /* decrement in body */)
+            {
+                int sourceIndex = this.pseudorandom.Next(destinationIndexWithinPart--) + breakpoint;
+                int destinationIndex = destinationIndexWithinPart + breakpoint; // calculate after decrement
+
                 int buffer = array[destinationIndex];
                 array[destinationIndex] = array[sourceIndex];
                 array[sourceIndex] = buffer;

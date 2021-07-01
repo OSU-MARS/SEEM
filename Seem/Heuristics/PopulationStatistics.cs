@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(population));
             }
 
-            // find count polymorphic alles (trees) and accumulate variance terms
+            // count polymorphic alles (trees) and accumulate variance terms
             // Numerically preferred recursive variance from Hoemmen, M. 2007. Computing the standard deviation efficiently. http://suave_skola.varak.net/proj2/stddev.pdf
             //  - with conversion from ones based to zeros based indexing
             int[,] alleleCounts = new int[population.TreeCount, thinningPeriods.Max() + 1];
@@ -66,11 +66,16 @@ namespace Osu.Cof.Ferm.Heuristics
                     minimumFitness = individualFitness;
                 }
 
-                int[] individualSchedule = population.IndividualTreeSelections[individualIndex];
-                for (int treeIndex = 0; treeIndex < population.TreeCount; ++treeIndex)
+                SortedDictionary<FiaCode, TreeSelection> individualTreeSelection = population.IndividualTreeSelections[individualIndex];
+                int allTreeIndex = 0;
+                foreach (KeyValuePair<FiaCode, TreeSelection> treeSelectionForSpecies in individualTreeSelection)
                 {
-                    int treeSchedule = individualSchedule[treeIndex];
-                    ++alleleCounts[treeIndex, treeSchedule];
+                    for (int treeIndex = 0; treeIndex < population.TreeCount; ++treeIndex)
+                    {
+                        int harvestPeriod = treeSelectionForSpecies.Value[treeIndex];
+                        ++alleleCounts[allTreeIndex, harvestPeriod];
+                        ++allTreeIndex;
+                    }
                 }
             }
 

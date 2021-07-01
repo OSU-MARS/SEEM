@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Osu.Cof.Ferm
 {
@@ -9,7 +10,7 @@ namespace Osu.Cof.Ferm
         public float[] BasalAreaRemoved { get; private init; }
 
         // harvest periods by tree, 0 indicates no harvest
-        public SortedDictionary<FiaCode, int[]> IndividualTreeSelectionBySpecies { get; private init; }
+        public SortedDictionary<FiaCode, TreeSelection> IndividualTreeSelectionBySpecies { get; private init; }
 
         public int EarliestPeriodChangedSinceLastSimulation { get; protected set; }
         public string? Name { get; set; }
@@ -35,7 +36,7 @@ namespace Osu.Cof.Ferm
             int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
             this.BasalAreaRemoved = new float[maximumPlanningPeriodIndex];
             this.EarliestPeriodChangedSinceLastSimulation = 0;
-            this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
+            this.IndividualTreeSelectionBySpecies = new();
             this.Name = null;
             this.PeriodLengthInYears = -1;
             this.PeriodZeroAgeInYears = -1;
@@ -49,7 +50,7 @@ namespace Osu.Cof.Ferm
         {
             this.BasalAreaRemoved = new float[other.BasalAreaRemoved.Length];
             this.EarliestPeriodChangedSinceLastSimulation = other.EarliestPeriodChangedSinceLastSimulation;
-            this.IndividualTreeSelectionBySpecies = new SortedDictionary<FiaCode, int[]>();
+            this.IndividualTreeSelectionBySpecies = new();
             this.Name = other.Name;
             this.PeriodLengthInYears = other.PeriodLengthInYears;
             this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
@@ -60,14 +61,10 @@ namespace Osu.Cof.Ferm
 
             Array.Copy(other.BasalAreaRemoved, 0, this.BasalAreaRemoved, 0, other.BasalAreaRemoved.Length);
 
-            foreach (KeyValuePair<FiaCode, int[]> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
+            foreach (KeyValuePair<FiaCode, TreeSelection> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
             {
-                int[] thisSelectionForSpecies = this.IndividualTreeSelectionBySpecies.GetOrAdd(otherSelectionForSpecies.Key, otherSelectionForSpecies.Value.Length);
-                if (otherSelectionForSpecies.Value.Length != thisSelectionForSpecies.Length)
-                {
-                    throw new NotSupportedException("Lengths of individual tree selections do not match.");
-                }
-                Array.Copy(otherSelectionForSpecies.Value, 0, thisSelectionForSpecies, 0, thisSelectionForSpecies.Length);
+                TreeSelection thisSelectionForSpecies = this.IndividualTreeSelectionBySpecies.GetOrAdd(otherSelectionForSpecies.Key, () => new TreeSelection(otherSelectionForSpecies.Value.Capacity));
+                thisSelectionForSpecies.CopyFrom(otherSelectionForSpecies.Value);
             }
         }
 
@@ -76,15 +73,13 @@ namespace Osu.Cof.Ferm
             get { return this.BasalAreaRemoved.Length; }
         }
 
-        public void CopyTreeSelectionTo(int[] allTreeSelection)
+        public void CopyTreeSelectionTo(SortedDictionary<FiaCode, TreeSelection> otherTreeSelection)
         {
-            int destinationIndex = 0;
-            foreach (int[] individualTreeSelection in this.IndividualTreeSelectionBySpecies.Values)
+            Debug.Assert(SortedDictionaryExtensions.KeysIdentical(this.IndividualTreeSelectionBySpecies, otherTreeSelection));
+            foreach (KeyValuePair<FiaCode, TreeSelection> thisSelectionForSpecies in this.IndividualTreeSelectionBySpecies)
             {
-                // BUGBUG: assumes either a single species or that all species but the last have tree counts matching the species capacity
-                // TODO: make this copy species count aware to avoid packing gaps when capacity > count
-                Array.Copy(individualTreeSelection, 0, allTreeSelection, destinationIndex, individualTreeSelection.Length);
-                destinationIndex += individualTreeSelection.Length;
+                TreeSelection otherSelectionForSpecies = otherTreeSelection[thisSelectionForSpecies.Key];
+                thisSelectionForSpecies.Value.CopyTo(otherSelectionForSpecies);
             }
         }
 
@@ -93,9 +88,9 @@ namespace Osu.Cof.Ferm
             // see remarks in loop
             Debug.Assert(Constant.NoHarvestPeriod == 0);
 
-            foreach (int[] selectionForSpecies in this.IndividualTreeSelectionBySpecies.Values)
+            foreach (TreeSelection selectionForSpecies in this.IndividualTreeSelectionBySpecies.Values)
             {
-                for (int treeIndex = 0; treeIndex < selectionForSpecies.Length; ++treeIndex)
+                for (int treeIndex = 0; treeIndex < selectionForSpecies.Count; ++treeIndex)
                 {
                     int currentHarvestPeriod = selectionForSpecies[treeIndex];
                     if (currentHarvestPeriod != Constant.NoHarvestPeriod)
@@ -202,6 +197,36 @@ namespace Osu.Cof.Ferm
             return -1;
         }
 
+        // this function's existence isn't entirely desirable as it reverses ConstructTreeSelection()'s internal logic
+        // Not currently enough of an advantage for refactoring selection construction to return period indices to be worthwhile.
+        public int[] GetHarvestPeriodIndices(IList<int> thinningPeriods)
+        {
+            int treeRecordCount = this.IndividualTreeSelectionBySpecies.Values.Sum(treeSelection => treeSelection.Count);
+
+            int[] periodIndices = new int[treeRecordCount];
+            int allSpeciesUncompactedTreeIndex = 0;
+            foreach (TreeSelection individualTreeSelection in this.IndividualTreeSelectionBySpecies.Values)
+            {
+                for (int treeIndex = 0; treeIndex < individualTreeSelection.Count; ++treeIndex)
+                {
+                    int currentTreeHarvestPeriod = individualTreeSelection[treeIndex];
+                    for (int periodIndex = 0; periodIndex < thinningPeriods.Count; ++periodIndex)
+                    {
+                        if (thinningPeriods[periodIndex] == currentTreeHarvestPeriod)
+                        {
+                            periodIndices[allSpeciesUncompactedTreeIndex] = periodIndex;
+                            break;
+                        }
+                    }
+                    // if needed, check for case where tree's harvest period is not found in thinningPeriods
+
+                    ++allSpeciesUncompactedTreeIndex;
+                }
+            }
+
+            return periodIndices;
+        }
+
         public int GetThirdThinAge()
         {
             return this.GetThinAge(3);
@@ -215,13 +240,14 @@ namespace Osu.Cof.Ferm
         public int GetTreeSelection(int allSpeciesUncompactedTreeIndex)
         {
             int treeIndex = allSpeciesUncompactedTreeIndex;
-            foreach (KeyValuePair<FiaCode, int[]> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
+            foreach (KeyValuePair<FiaCode, TreeSelection> selectionForSpecies in this.IndividualTreeSelectionBySpecies)
             {
-                if (treeIndex < individualTreeSelection.Value.Length)
+                TreeSelection individualTreeSelection = selectionForSpecies.Value;
+                if (treeIndex < individualTreeSelection.Count)
                 {
-                    return individualTreeSelection.Value[treeIndex];
+                    return individualTreeSelection[treeIndex];
                 }
-                treeIndex -= individualTreeSelection.Value.Length;
+                treeIndex -= individualTreeSelection.Count;
             }
 
             throw new ArgumentOutOfRangeException(nameof(allSpeciesUncompactedTreeIndex));
@@ -235,19 +261,20 @@ namespace Osu.Cof.Ferm
             }
 
             int treeIndex = allSpeciesUncompactedTreeIndex;
-            foreach (KeyValuePair<FiaCode, int[]> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
+            foreach (KeyValuePair<FiaCode, TreeSelection> selectionForSpecies in this.IndividualTreeSelectionBySpecies)
             {
-                if (treeIndex < individualTreeSelection.Value.Length)
+                TreeSelection individualTreeSelection = selectionForSpecies.Value;
+                if (treeIndex < individualTreeSelection.Count)
                 {
-                    int currentHarvestPeriod = individualTreeSelection.Value[treeIndex];
+                    int currentHarvestPeriod = individualTreeSelection[treeIndex];
                     if (currentHarvestPeriod != newHarvestPeriod)
                     {
-                        individualTreeSelection.Value[treeIndex] = newHarvestPeriod;
+                        individualTreeSelection[treeIndex] = newHarvestPeriod;
                         this.UpdateEariestPeriodChanged(currentHarvestPeriod, newHarvestPeriod);
                     }
                     return;
                 }
-                treeIndex -= individualTreeSelection.Value.Length;
+                treeIndex -= individualTreeSelection.Count;
             }
 
             throw new ArgumentOutOfRangeException(nameof(allSpeciesUncompactedTreeIndex));

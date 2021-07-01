@@ -13,26 +13,24 @@ namespace Osu.Cof.Ferm.Heuristics
         private float reservedPopulationProportion;
 
         public float[] IndividualFitness { get; private init; }
-        // TODO: change to storage by species rather than flat array
-        public int[][] IndividualTreeSelections { get; private init; }
+        public SortedDictionary<FiaCode, TreeSelection>[] IndividualTreeSelections { get; private init; }
         public int TreeCount { get; private set; }
 
-        public Population(int capacity, float reservedPopulationProportion, int treeCount)
-            : base(capacity)
+        public Population(int numberOfIndividuals, float reservedPopulationProportion, int allTreeCount)
+            : base(numberOfIndividuals)
         {
             this.individualIndexByFitness = new SortedDictionary<float, List<int>>();
-            this.matingDistributionFunction = new float[capacity];
+            this.matingDistributionFunction = new float[numberOfIndividuals];
             this.reservedPopulationProportion = reservedPopulationProportion;
 
-            this.IndividualFitness = new float[capacity];
-            this.IndividualTreeSelections = new int[capacity][];
+            this.IndividualFitness = new float[numberOfIndividuals];
+            this.IndividualTreeSelections = new SortedDictionary<FiaCode, TreeSelection>[numberOfIndividuals];
             this.SolutionsAccepted = 0;
-            this.TreeCount = treeCount;
+            this.TreeCount = allTreeCount;
 
-            int treeCapacity = Trees.GetCapacity(treeCount);
-            for (int individualIndex = 0; individualIndex < capacity; ++individualIndex)
+            for (int individualIndex = 0; individualIndex < numberOfIndividuals; ++individualIndex)
             {
-                this.IndividualTreeSelections[individualIndex] = new int[treeCapacity];
+                this.IndividualTreeSelections[individualIndex] = new();
             }
         }
 
@@ -59,12 +57,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(standTrajectory));
             }
 
-            IList<int> thinningPeriods = standTrajectory.Treatments.GetValidThinningPeriods();
-            if (thinningPeriods[0] != Constant.NoHarvestPeriod)
-            {
-                throw new NotSupportedException("First thinning selection is a harvest. Expected it to be the no harvest option.");
-            }
-            thinningPeriods.RemoveAt(0);
+            IList<int> thinningPeriods = standTrajectory.Treatments.GetThinningPeriods();
 
             // set up selection probabilities
             // With multiple diameter classes:
@@ -95,25 +88,34 @@ namespace Osu.Cof.Ferm.Heuristics
             for (int individualIndex = 0; individualIndex < this.PoolCapacity; ++individualIndex)
             {
                 // randomly select this individual's trees based on current diameter class selection probabilities
-                int[] schedule = this.IndividualTreeSelections[individualIndex];
-                Debug.Assert(selectionProbabilityIndexByTree.Count == schedule.Length);
-                for (int treeIndex = 0; treeIndex < schedule.Length; ++treeIndex)
+                SortedDictionary<FiaCode, TreeSelection> individualTreeSelection = this.IndividualTreeSelections[individualIndex];
+                foreach (KeyValuePair<FiaCode, TreeSelection> trajectoryTreeSelectionForSpecies in standTrajectory.IndividualTreeSelectionBySpecies)
                 {
-                    int selectionIndex = selectionProbabilityIndexByTree[treeIndex];
-                    if (selectionIndex >= 0) // diameter class of unused capacity is set to -1
+                    TreeSelection individualTreeSelectionForSpecies = new(trajectoryTreeSelectionForSpecies.Value.Capacity)
                     {
-                        int thinningPeriod = Constant.NoHarvestPeriod;
-                        float probability = this.Pseudorandom.GetPseudorandomByteAsProbability();
-                        float selectionProbability = selectionProbabilityByIndex[selectionIndex];
-                        if (probability < selectionProbability)
+                        Count = trajectoryTreeSelectionForSpecies.Value.Count
+                    };
+                    individualTreeSelection.Add(trajectoryTreeSelectionForSpecies.Key, individualTreeSelectionForSpecies);
+
+                    Debug.Assert(selectionProbabilityIndexByTree.Count == individualTreeSelectionForSpecies.Count);
+                    for (int treeIndex = 0; treeIndex < individualTreeSelectionForSpecies.Count; ++treeIndex)
+                    {
+                        int selectionIndex = selectionProbabilityIndexByTree[treeIndex];
+                        if (selectionIndex >= 0) // diameter class of unused capacity is set to -1
                         {
-                            // probability falls into the harvest fraction, choose equally among available harvest periods
-                            float indexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / selectionProbability;
-                            int periodIndex = (int)(indexScalingFactor * probability);
-                            thinningPeriod = thinningPeriods[periodIndex];
-                            ++treeSelectionsRandomized;
+                            int thinningPeriod = Constant.NoHarvestPeriod;
+                            float probability = this.Pseudorandom.GetPseudorandomByteAsProbability();
+                            float selectionProbability = selectionProbabilityByIndex[selectionIndex];
+                            if (probability < selectionProbability)
+                            {
+                                // probability falls into the harvest fraction, choose equally among available harvest periods
+                                float indexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / selectionProbability;
+                                int periodIndex = (int)(indexScalingFactor * probability);
+                                thinningPeriod = thinningPeriods[periodIndex];
+                                ++treeSelectionsRandomized;
+                            }
+                            individualTreeSelectionForSpecies[treeIndex] = thinningPeriod;
                         }
-                        schedule[treeIndex] = thinningPeriod;
                     }
                 }
 
@@ -165,7 +167,16 @@ namespace Osu.Cof.Ferm.Heuristics
             Array.Copy(other.IndividualFitness, 0, this.IndividualFitness, 0, this.IndividualFitness.Length);
             for (int individualIndex = 0; individualIndex < other.PoolCapacity; ++individualIndex)
             {
-                other.IndividualTreeSelections[individualIndex].CopyToExact(this.IndividualTreeSelections[individualIndex]);
+                SortedDictionary<FiaCode, TreeSelection> otherSelection = other.IndividualTreeSelections[individualIndex];
+                SortedDictionary<FiaCode, TreeSelection> thisSelection = this.IndividualTreeSelections[individualIndex];
+
+                foreach (KeyValuePair<FiaCode, TreeSelection> otherSelectionForSpecies in otherSelection)
+                {
+                    TreeSelection thisSelectionForSpecies = thisSelection.GetOrAdd(otherSelectionForSpecies.Key, () => new TreeSelection(otherSelectionForSpecies.Value.Capacity));
+                    thisSelectionForSpecies.CopyFrom(otherSelectionForSpecies.Value);
+                }
+
+                Debug.Assert(SortedDictionaryExtensions.KeysIdentical(otherSelection, thisSelection));
             }
 
             Array.Copy(other.matingDistributionFunction, 0, this.matingDistributionFunction, 0, this.matingDistributionFunction.Length);
@@ -177,74 +188,102 @@ namespace Osu.Cof.Ferm.Heuristics
             this.TreeCount = other.TreeCount;
         }
 
-        public void CrossoverKPoint(int points, int firstParentIndex, int secondParentIndex, int[] sortOrder, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
+        public void CrossoverKPoint(int points, int firstParentIndex, int secondParentIndex, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
+        {
+            // get parents' schedules
+            SortedDictionary<FiaCode, TreeSelection> firstParentTreeSelection = this.IndividualTreeSelections[firstParentIndex];
+            SortedDictionary<FiaCode, TreeSelection> secondParentTreeSelection = this.IndividualTreeSelections[secondParentIndex];
+            Debug.Assert(firstParentTreeSelection.Count == secondParentTreeSelection.Count);
+
+            // find length and position of crossover
+            int treeRecordCount = firstChildTrajectory.IndividualTreeSelectionBySpecies.Values.Sum(treeSelection => treeSelection.Count);
+            float treeScalingFactor = (treeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            int[] crossoverPoints = new int[points];
+            for (int pointIndex = 0; pointIndex < points; ++pointIndex)
             {
-                // get parents' schedules
-                int[] firstParentHarvestSchedule = this.IndividualTreeSelections[firstParentIndex];
-                int[] secondParentHarvestSchedule = this.IndividualTreeSelections[secondParentIndex];
-                int treeRecordCount = sortOrder.Length; // sortOrder is of tree record count, parent schedules are of capacity length
-                Debug.Assert(firstParentHarvestSchedule.Length == secondParentHarvestSchedule.Length);
+                crossoverPoints[pointIndex] = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
+            }
+            Array.Sort(crossoverPoints);
 
-                // find length and position of crossover
-                float treeScalingFactor = (treeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
-                int[] crossoverPoints = new int[points];
-                for (int pointIndex = 0; pointIndex < points; ++pointIndex)
+            int allTreeIndex = 0;
+            bool isCrossed = false; // initial value is unimportant as designation of first vs second child is arbitrary
+            int crossoverIndex = 0;
+            int crossoverPosition = crossoverPoints[crossoverIndex];
+            foreach (KeyValuePair<FiaCode, TreeSelection> firstParentSelectionForSpecies in firstParentTreeSelection)
+            {
+                int treesOfSpecies = firstParentSelectionForSpecies.Value.Count;
+                FiaCode treeSpecies = firstParentSelectionForSpecies.Key;
+                TreeSelection secondParentSelectionForSpecies = secondParentTreeSelection[treeSpecies];
+                TreeSelection firstChildSelectionForSpecies = firstChildTrajectory.IndividualTreeSelectionBySpecies[treeSpecies];
+                TreeSelection secondChildSelectionForSpecies = secondChildTrajectory.IndividualTreeSelectionBySpecies[treeSpecies];
+
+                if ((secondParentSelectionForSpecies.Count != treesOfSpecies) ||
+                    (firstChildSelectionForSpecies.Count != treesOfSpecies) ||
+                    (secondChildSelectionForSpecies.Count != treesOfSpecies))
                 {
-                    crossoverPoints[pointIndex] = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
+                    throw new NotSupportedException("Mismatched counts among parents and children for " + treeSpecies + ".");
                 }
-                Array.Sort(crossoverPoints);
 
-                bool isCrossed = false; // initial value is unimportant as designation of first vs second child is arbitrary
-                int crossoverIndex = 0;
-                int crossoverPosition = crossoverPoints[crossoverIndex];
-                for (int sortIndex = 0; sortIndex < treeRecordCount; ++sortIndex)
+                for (int treeIndex = 0; treeIndex < treesOfSpecies; ++treeIndex)
                 {
-                    if (crossoverPosition == sortIndex)
+                    if (crossoverPosition == allTreeIndex)
                     {
                         isCrossed = !isCrossed;
                         crossoverPosition = crossoverPoints[crossoverIndex];
                         ++crossoverIndex;
                     }
 
-                    int treeIndex = sortOrder[sortIndex];
+                    int firstSelection = firstParentSelectionForSpecies.Value[treeIndex];
+                    int secondSelection = secondParentSelectionForSpecies[treeIndex];
                     if (isCrossed)
                     {
-                        firstChildTrajectory.SetTreeSelection(treeIndex, secondParentHarvestSchedule[treeIndex]);
-                        secondChildTrajectory.SetTreeSelection(treeIndex, firstParentHarvestSchedule[treeIndex]);
+                        int buffer = firstSelection;
+                        firstSelection = secondSelection;
+                        secondSelection = buffer;
                     }
-                    else
-                    {
-                        firstChildTrajectory.SetTreeSelection(treeIndex, firstParentHarvestSchedule[treeIndex]);
-                        secondChildTrajectory.SetTreeSelection(treeIndex, secondParentHarvestSchedule[treeIndex]);
-                    }
+
+                    firstChildSelectionForSpecies[treeIndex] = firstSelection;
+                    secondChildSelectionForSpecies[treeIndex] = secondSelection;
+
+                    ++allTreeIndex;
                 }
             }
+        }
 
         public void CrossoverUniform(int firstParentIndex, int secondParentIndex, float changeProbability, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
         {
             // get parents' schedules
-            int[] firstParentHarvestSchedule = this.IndividualTreeSelections[firstParentIndex];
-            int[] secondParentHarvestSchedule = this.IndividualTreeSelections[secondParentIndex];
-            Debug.Assert(firstParentHarvestSchedule.Length == secondParentHarvestSchedule.Length);
+            SortedDictionary<FiaCode, TreeSelection> firstParentTreeSelection = this.IndividualTreeSelections[firstParentIndex];
+            SortedDictionary<FiaCode, TreeSelection> secondParentTreeSelection = this.IndividualTreeSelections[secondParentIndex];
+            Debug.Assert(SortedDictionaryExtensions.KeysIdentical(firstParentTreeSelection, secondParentTreeSelection));
 
-            for (int treeIndex = 0; treeIndex < firstParentHarvestSchedule.Length; ++treeIndex)
+            foreach (KeyValuePair<FiaCode, TreeSelection> firstParentSelectionForSpecies in firstParentTreeSelection)
             {
-                int firstHarvestPeriod = firstParentHarvestSchedule[treeIndex];
-                int secondHarvestPeriod = secondParentHarvestSchedule[treeIndex];
-                if (firstHarvestPeriod != secondHarvestPeriod)
+                TreeSelection secondParentSelectionForSpecies = secondParentTreeSelection[firstParentSelectionForSpecies.Key];
+                if (firstParentSelectionForSpecies.Value.Count != secondParentSelectionForSpecies.Count)
                 {
-                    int harvestPeriodBuffer = firstHarvestPeriod;
-                    if (this.Pseudorandom.GetPseudorandomByteAsProbability() < changeProbability)
-                    {
-                        firstHarvestPeriod = secondHarvestPeriod;
-                    }
-                    if (this.Pseudorandom.GetPseudorandomByteAsProbability() < changeProbability)
-                    {
-                        secondHarvestPeriod = harvestPeriodBuffer;
-                    }
+                    throw new NotSupportedException("Parents have different numbers of trees for species " + firstParentSelectionForSpecies.Key + ".");
                 }
-                firstChildTrajectory.SetTreeSelection(treeIndex, firstHarvestPeriod);
-                secondChildTrajectory.SetTreeSelection(treeIndex, secondHarvestPeriod);
+
+                for (int treeIndex = 0; treeIndex < firstParentSelectionForSpecies.Value.Count; ++treeIndex)
+                {
+                    int firstHarvestPeriod = firstParentSelectionForSpecies.Value[treeIndex];
+                    int secondHarvestPeriod = secondParentSelectionForSpecies[treeIndex];
+                    if (firstHarvestPeriod != secondHarvestPeriod)
+                    {
+                        int harvestPeriodBuffer = firstHarvestPeriod;
+                        if (this.Pseudorandom.GetPseudorandomByteAsProbability() < changeProbability)
+                        {
+                            firstHarvestPeriod = secondHarvestPeriod;
+                        }
+                        if (this.Pseudorandom.GetPseudorandomByteAsProbability() < changeProbability)
+                        {
+                            secondHarvestPeriod = harvestPeriodBuffer;
+                        }
+                    }
+                    firstChildTrajectory.SetTreeSelection(treeIndex, firstHarvestPeriod);
+                    secondChildTrajectory.SetTreeSelection(treeIndex, secondHarvestPeriod);
+                }
             }
         }
 
@@ -316,10 +355,6 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                     diameterClassByTree.Add(diameterClass);
                 }
-                for (int treeIndex = treesOfSpecies.Count; treeIndex < treesOfSpecies.Capacity; ++treeIndex)
-                {
-                    diameterClassByTree.Add(-1);
-                }
             }
 
             return diameterClassByTree;
@@ -362,10 +397,6 @@ namespace Osu.Cof.Ferm.Heuristics
                 int quantile = (int)MathF.Floor(quantileScalingFactor * treeSortOrder[treeIndex]);
                 Debug.Assert(quantile < quantiles);
                 quantileByTree.Add(quantile);
-            }
-            for (int treeIndex = treesOfSpecies.Count; treeIndex < treesOfSpecies.Capacity; ++treeIndex)
-            {
-                quantileByTree.Add(-1);
             }
             return quantileByTree;
         }
@@ -529,9 +560,6 @@ namespace Osu.Cof.Ferm.Heuristics
         private bool TryReplaceByDiversityOrFitness(float newFitness, StandTrajectory trajectory)
         {
             // find nearest neighbor with a lower objective function value
-            int[] candidateSelection = new int[Trees.GetCapacity(this.TreeCount)];
-            trajectory.CopyTreeSelectionTo(candidateSelection);
-
             int[] distancesToIndividuals = new int[this.individualIndexByFitness.Count];
             Array.Fill(distancesToIndividuals, SolutionPool.UnknownDistance);
             int nearestLowerNeighborDistance = Int32.MaxValue;
@@ -552,7 +580,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     // for now, use Hamming distance as it's interchangeable with Euclidean distance for binary decision variables
                     // If needed, Euclidean distance or stand entry distance can be used when multiple thinnings are allowed.
-                    int distanceToSolution = SolutionPool.GetHammingDistance(candidateSelection, this.IndividualTreeSelections[individualIndex]);
+                    int distanceToSolution = SolutionPool.GetHammingDistance(trajectory.IndividualTreeSelectionBySpecies, this.IndividualTreeSelections[individualIndex]);
                     if (distanceToSolution == 0)
                     {
                         // this tree selection is already present in the population

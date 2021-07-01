@@ -26,7 +26,7 @@ namespace Osu.Cof.Ferm.Organon
         {
             float basalAreaRemoved = 0.0F;
             OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1] ?? throw new NotSupportedException("No stand information prior to thinning.");
-            foreach (KeyValuePair<FiaCode, int[]> treeSelectionForSpecies in trajectory.IndividualTreeSelectionBySpecies)
+            foreach (KeyValuePair<FiaCode, TreeSelection> treeSelectionForSpecies in trajectory.IndividualTreeSelectionBySpecies)
             {
                 Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[treeSelectionForSpecies.Key];
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
