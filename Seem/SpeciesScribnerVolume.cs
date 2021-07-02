@@ -4,28 +4,35 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm
 {
-    public class StandScribnerVolume
+    public class SpeciesScribnerVolume
     {
         // net log volumes by grade after defect and breakage reduction in Scribner MBF/ha.
         public float[] Scribner2Saw { get; private init; }
         public float[] Scribner3Saw { get; private init; }
         public float[] Scribner4Saw { get; private init; }
+        public FiaCode Species { get; private set; }
 
-        public StandScribnerVolume(int planningPeriods)
+        public SpeciesScribnerVolume(FiaCode species, int planningPeriods)
         {
             this.Scribner2Saw = new float[planningPeriods];
             this.Scribner3Saw = new float[planningPeriods];
             this.Scribner4Saw = new float[planningPeriods];
+            this.Species = species;
         }
 
-        public StandScribnerVolume(StandScribnerVolume other)
-            : this(other.Scribner2Saw.Length)
+        public SpeciesScribnerVolume(SpeciesScribnerVolume other)
+            : this(other.Species, other.Scribner2Saw.Length)
         {
             this.CopyFrom(other);
         }
 
-        public void CopyFrom(StandScribnerVolume other)
+        public void CopyFrom(SpeciesScribnerVolume other)
         {
+            if (this.Species != other.Species)
+            {
+                throw new ArgumentOutOfRangeException(nameof(other), "Attempt to copy volumes of " + other.Species + " to " + this.Species + ".");
+            }
+
             int minPeriods = Math.Min(this.Scribner2Saw.Length, other.Scribner2Saw.Length);
             Array.Copy(other.Scribner2Saw, 0, this.Scribner2Saw, 0, minPeriods);
             Array.Copy(other.Scribner3Saw, 0, this.Scribner3Saw, 0, minPeriods);
@@ -43,7 +50,7 @@ namespace Osu.Cof.Ferm
             return this.Scribner2Saw[periodIndex] + this.Scribner3Saw[periodIndex] + this.Scribner4Saw[periodIndex];
         }
 
-        public void SetScribnerHarvest(Stand previousStand, SortedDictionary<FiaCode, TreeSelection> individualTreeSelectionBySpecies, int periodIndex, TimberValue timberValue)
+        public void SetScribnerHarvest(Stand previousStand, SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, int periodIndex, TreeVolume treeVolume)
         {
             double harvested2SawBoardFeetPerAcre = 0.0F;
             double harvested3SawBoardFeetPerAcre = 0.0F;
@@ -53,7 +60,7 @@ namespace Osu.Cof.Ferm
                 Debug.Assert(previousTreesOfSpecies.Units == Units.English, "TODO: per hectare.");
 
                 TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-                timberValue.ScaledVolumeThinning.GetHarvestedScribnerVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex, out double scribner2saw, out double scribner3saw, out double scribner4saw);
+                treeVolume.Thinning.GetHarvestedScribnerVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex, out double scribner2saw, out double scribner3saw, out double scribner4saw);
                 harvested2SawBoardFeetPerAcre += scribner2saw;
                 harvested3SawBoardFeetPerAcre += scribner3saw;
                 harvested4SawBoardFeetPerAcre += scribner4saw;
@@ -67,26 +74,18 @@ namespace Osu.Cof.Ferm
             this.Scribner4Saw[periodIndex] = net4SawMbfPerHectare;
         }
 
-        public void SetStandingScribnerVolume(Stand stand, int periodIndex, TimberValue timberValue)
+        public void SetStandingScribnerVolume(Stand stand, int periodIndex, TreeVolume treeVolume)
         {
-            double standing2SawBoardFeetPerAcre = 0.0;
-            double standing3SawBoardFeetPerAcre = 0.0;
-            double standing4SawBoardFeetPerAcre = 0.0;
-            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
-            {
-                Debug.Assert(treesOfSpecies.Units == Units.English, "TODO: per hectare.");
+            Trees treesOfSpecies = stand.TreesBySpecies[this.Species];
+            Debug.Assert(treesOfSpecies.Units == Units.English, "TODO: per hectare.");
 
-                timberValue.ScaledVolumeRegenerationHarvest.GetStandingScribnerVolume(treesOfSpecies, out double scribner2saw, out double scribner3saw, out double scribner4saw);
-                standing2SawBoardFeetPerAcre += scribner2saw;
-                standing3SawBoardFeetPerAcre += scribner3saw;
-                standing4SawBoardFeetPerAcre += scribner4saw;
-            }
+            treeVolume.RegenerationHarvest.GetStandingScribnerVolume(treesOfSpecies, out float standing2SawBoardFeetPerAcre, out float standing3SawBoardFeetPerAcre, out float standing4SawBoardFeetPerAcre);
 
-            float net2SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * (float)standing2SawBoardFeetPerAcre;
+            float net2SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing2SawBoardFeetPerAcre;
             this.Scribner2Saw[periodIndex] = net2SawMbfPerHectare;
-            float net3SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * (float)standing3SawBoardFeetPerAcre;
+            float net3SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing3SawBoardFeetPerAcre;
             this.Scribner3Saw[periodIndex] = net3SawMbfPerHectare;
-            float net4SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * (float)standing4SawBoardFeetPerAcre;
+            float net4SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing4SawBoardFeetPerAcre;
             this.Scribner4Saw[periodIndex] = net4SawMbfPerHectare;
             Debug.Assert((net2SawMbfPerHectare >= 0.0F) && (net3SawMbfPerHectare >= 0.0F) && (net4SawMbfPerHectare >= 0.0F));
         }

@@ -138,14 +138,14 @@ namespace Osu.Cof.Ferm.Heuristics
             OrganonStandTrajectory individualTrajectory = new(this.CurrentTrajectory);
             for (int individualIndex = 0; individualIndex < this.HeuristicParameters.PopulationSize; ++individualIndex)
             {
-                SortedDictionary<FiaCode, TreeSelection> individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
+                SortedList<FiaCode, TreeSelection> individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
                 foreach (KeyValuePair<FiaCode, TreeSelection> treeSelectionForSpecies in individualTreeSelection)
                 {
                     treeSelectionForSpecies.Value.CopyTo(individualTrajectory.IndividualTreeSelectionBySpecies[treeSelectionForSpecies.Key]);
                 }
                 perfCounters.GrowthModelTimesteps += individualTrajectory.Simulate();
 
-                float individualFinancialValue = this.GetFinancialValue(individualTrajectory, position.DiscountRateIndex);
+                float individualFinancialValue = this.GetFinancialValue(individualTrajectory, position.FinancialIndex);
                 currentGeneration.InsertFitness(individualIndex, individualFinancialValue);
                 ++perfCounters.MovesAccepted;
 
@@ -192,10 +192,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     // If crossover and mutation induced no changes simulation will be a no op. While this is handled by timestep caching additional checks
                     // could be made here.
                     perfCounters.GrowthModelTimesteps += firstChildTrajectory.Simulate();
-                    float firstChildFinancialValue = this.GetFinancialValue(firstChildTrajectory, position.DiscountRateIndex);
+                    float firstChildFinancialValue = this.GetFinancialValue(firstChildTrajectory, position.FinancialIndex);
 
                     perfCounters.GrowthModelTimesteps += secondChildTrajectory.Simulate();
-                    float secondChildFinancialValue = this.GetFinancialValue(secondChildTrajectory, position.DiscountRateIndex);
+                    float secondChildFinancialValue = this.GetFinancialValue(secondChildTrajectory, position.FinancialIndex);
 
                     // include offspring in next generation if they're more fit than members of the current population
                     if (nextGeneration.TryReplace(firstChildFinancialValue, firstChildTrajectory, this.HeuristicParameters.ReplacementStrategy))
@@ -292,7 +292,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            OrganonStandTrajectory bestTrajectory = this.GetBestTrajectory(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex);
+            OrganonStandTrajectory bestTrajectory = this.GetBestTrajectory(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex);
             this.CurrentTrajectory.CopyTreeGrowthFrom(bestTrajectory);
 
             stopwatch.Stop();

@@ -13,6 +13,12 @@ namespace Osu.Cof.Ferm
             this.treeSelection = new int[capacity];
         }
 
+        public TreeSelection(TreeSelection other)
+            : this(other.Capacity)
+        {
+            this.CopyFrom(other);
+        }
+
         // test hook
         public TreeSelection(int[] treeSelection)
         {

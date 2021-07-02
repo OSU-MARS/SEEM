@@ -11,14 +11,14 @@ namespace Osu.Cof.Ferm.Organon
 
         public float[] LogQmdInCentimetersByPeriod { get; private init; } // average across all species
         public float[] LogsPerHectareByPeriod { get; private init; } // total across all species
-        public Dictionary<FiaCode, float[,]> LogsPerHectareBySpeciesAndDiameterClass { get; private init; } // diameter class in cm
+        public SortedList<FiaCode, float[,]> LogsPerHectareBySpeciesAndDiameterClass { get; private init; } // diameter class in cm
 
         public float MaximumDiameterInCentimeters { get; private init; }
         public int Periods { get; private init; }
 
         public float[] SnagQmdInCentimetersByPeriod { get; private init; } // average across all species
         public float[] SnagsPerHectareByPeriod { get; private init; } // total across all species
-        public Dictionary<FiaCode, float[,]> SnagsPerHectareBySpeciesAndDiameterClass { get; private init; } // diameter class in cm
+        public SortedList<FiaCode, float[,]> SnagsPerHectareBySpeciesAndDiameterClass { get; private init; } // diameter class in cm
 
         public SnagLogTable(OrganonStandTrajectory standTrajectory, float maximumDiameterInCm, float diameterClassSizeInCm)
         {

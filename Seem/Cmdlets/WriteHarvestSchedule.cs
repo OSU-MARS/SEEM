@@ -87,7 +87,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int finalCompactedTreeIndex = 0;
                     for (int uncompactedTreeIndex = 0; uncompactedTreeIndex < highTreesBeforeFirstThin.Count; ++uncompactedTreeIndex)
                     {
-                        // TODO: replace FiaVolume calls with single-tree version of highTrajectory.TimberValue.ScaledVolumeThinning.GetHarvestedScribnerVolume();
+                        // TODO: replace FiaVolume calls with single-tree version of highTrajectory.Financial.ScaledVolumeThinning.GetHarvestedScribnerVolume();
                         float highThinBoardFeet = FiaVolume.GetScribnerBoardFeet(highTreesBeforeFirstThin, uncompactedTreeIndex);
 
                         string? highFirstThinDbh = null;

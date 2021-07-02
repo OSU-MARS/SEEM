@@ -83,7 +83,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);
                         perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
 
-                        float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                        float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
                         if (candidateFinancialValue > acceptedFinancialValue)
                         {
                             // accept change of no cut-cut decision if it improves upon the best solution

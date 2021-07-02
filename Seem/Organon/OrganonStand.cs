@@ -32,7 +32,7 @@ namespace Osu.Cof.Ferm.Organon
 
         public OrganonWarnings Warnings { get; private init; }
 
-        public SortedDictionary<FiaCode, bool[]> TreeHeightWarningBySpecies { get; private init; }
+        public SortedList<FiaCode, bool[]> TreeHeightWarningBySpecies { get; private init; }
 
         public OrganonStand(int ageInYears, float primarySiteIndex)
         {
@@ -44,7 +44,7 @@ namespace Osu.Cof.Ferm.Organon
             this.SiteIndex = primarySiteIndex;
             this.RedAlderSiteIndex = -1.0F;
             this.RedAlderGrowthEffectiveAge = -1.0F;
-            this.TreeHeightWarningBySpecies = new SortedDictionary<FiaCode, bool[]>();
+            this.TreeHeightWarningBySpecies = new SortedList<FiaCode, bool[]>();
             this.Warnings = new OrganonWarnings();
         }
 

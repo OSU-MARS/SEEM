@@ -28,7 +28,7 @@ namespace Osu.Cof.Ferm.Heuristics
             moveState.CandidateTrajectory.SetTreeSelection(moveState.TreeIndex, candidateHarvestPeriod);
             moveState.PerfCounters.GrowthModelTimesteps += moveState.CandidateTrajectory.Simulate();
 
-            float candidateFinancialValue = this.GetFinancialValue(moveState.CandidateTrajectory, position.DiscountRateIndex);
+            float candidateFinancialValue = this.GetFinancialValue(moveState.CandidateTrajectory, position.FinancialIndex);
             bool acceptMove = candidateFinancialValue > moveState.AcceptedFinancialValue;
             if (acceptMove)
             {

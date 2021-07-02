@@ -9,25 +9,25 @@ namespace Osu.Cof.Ferm.Heuristics
     public class HeuristicResults
     {
         private readonly int parameterCombinationCount;
-        // indices are: parameter combination, first thin, second thin, third thin, planning periods, discount rate
+        // indices are: parameter combination, first thin, second thin, third thin, planning periods, financial scenario
         // Nullability in multidimensional arrays does not appear supported as of Visual Studio 16.10.1. See remarks in constructor.
         private readonly HeuristicResult[][][][][][] results;
 
         public IList<HeuristicResultPosition> CombinationsEvaluated { get; private init; }
 
-        public IList<float> DiscountRates { get; private init; }
+        public FinancialScenarios FinancialScenarios { get; private init; }
         public IList<int> FirstThinPeriods { get; private init; }
         public IList<int> RotationLengths { get; private init; }
         public IList<int> SecondThinPeriods { get; private init; }
         public IList<int> ThirdThinPeriods { get; private init; }
 
-        protected HeuristicResults(int parameterCombinationCount, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, IList<float> discountRates, int individualPoolSize)
+        protected HeuristicResults(int parameterCombinationCount, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios, int individualPoolSize)
         {
             this.parameterCombinationCount = parameterCombinationCount;
             this.results = new HeuristicResult[parameterCombinationCount][][][][][];
 
             this.CombinationsEvaluated = new List<HeuristicResultPosition>();
-            this.DiscountRates = discountRates;
+            this.FinancialScenarios = financialScenarios;
             this.FirstThinPeriods = firstThinPeriods;
             this.RotationLengths = rotationLengths;
             this.SecondThinPeriods = secondThinPeriods;
@@ -74,12 +74,12 @@ namespace Osu.Cof.Ferm.Heuristics
                                         int endOfRotationPeriodPeriod = this.RotationLengths[rotationIndex];
                                         if (endOfRotationPeriodPeriod > lastOfFirstSecondOrThirdThinPeriod)
                                         {
-                                            HeuristicResult[] rotationLengthResults = new HeuristicResult[this.DiscountRates.Count];
+                                            HeuristicResult[] rotationLengthResults = new HeuristicResult[this.FinancialScenarios.Count];
                                             thirdThinResults[rotationIndex] = rotationLengthResults;
 
-                                            for (int discountRateIndex = 0; discountRateIndex < this.DiscountRates.Count; ++discountRateIndex)
+                                            for (int financialIndex = 0; financialIndex < this.FinancialScenarios.Count; ++financialIndex)
                                             {
-                                                rotationLengthResults[discountRateIndex] = new HeuristicResult(individualPoolSize);
+                                                rotationLengthResults[financialIndex] = new HeuristicResult(individualPoolSize);
                                             }
                                         }
                                     }
@@ -93,10 +93,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public HeuristicResult this[HeuristicResultPosition position]
         {
-            get { return this[position.ParameterIndex, position.FirstThinPeriodIndex, position.SecondThinPeriodIndex, position.ThirdThinPeriodIndex, position.RotationIndex, position.DiscountRateIndex]; }
+            get { return this[position.ParameterIndex, position.FirstThinPeriodIndex, position.SecondThinPeriodIndex, position.ThirdThinPeriodIndex, position.RotationIndex, position.FinancialIndex]; }
         }
 
-        private HeuristicResult this[int parameterIndex, int firstThinPeriodIndex, int secondThinPeriodIndex, int thirdThinPeriodIndex, int rotationIndex, int discountRateIndex]
+        private HeuristicResult this[int parameterIndex, int firstThinPeriodIndex, int secondThinPeriodIndex, int thirdThinPeriodIndex, int rotationIndex, int financialIndex]
         {
             get 
             {
@@ -110,7 +110,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 Debug.Assert(thirdThinResults != null, "Invalid third thin index " + thirdThinPeriodIndex + ".");
                 HeuristicResult[] rotationLengthResults = thirdThinResults[rotationIndex];
                 Debug.Assert(rotationLengthResults != null, "Invalid rotation index " + rotationIndex + ".");
-                return rotationLengthResults[discountRateIndex]; 
+                return rotationLengthResults[financialIndex]; 
             }
             set
             {
@@ -124,7 +124,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 Debug.Assert(thirdThinResults != null, "Invalid third thin index " + thirdThinPeriodIndex + ".");
                 HeuristicResult[] rotationLengthResults = thirdThinResults[rotationIndex];
                 Debug.Assert(rotationLengthResults != null, "Invalid rotation index " + rotationIndex + ".");
-                rotationLengthResults[discountRateIndex] = value; 
+                rotationLengthResults[financialIndex] = value; 
             }
         }
 
@@ -163,9 +163,9 @@ namespace Osu.Cof.Ferm.Heuristics
                                         HeuristicResult[] rotationLengthResults = thirdThinResults[rotationIndex];
                                         if (rotationLengthResults != null)
                                         {
-                                            for (int discountRateIndex = 0; discountRateIndex < rotationLengthResults.Length; ++discountRateIndex)
+                                            for (int financialIndex = 0; financialIndex < rotationLengthResults.Length; ++financialIndex)
                                             {
-                                                HeuristicResult result = rotationLengthResults[discountRateIndex];
+                                                HeuristicResult result = rotationLengthResults[financialIndex];
                                                 solutionsAccepted += result.Pool.SolutionsAccepted;
                                                 solutionsCached += result.Pool.SolutionsInPool;
                                                 solutionsRejected += result.Pool.SolutionsRejected;
@@ -180,12 +180,12 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        // searches among discount rates for solutions assigned to the same set of heuristic parameters, thinnings, and rotation length
+        // searches among financial scenarios for solutions assigned to the same set of heuristic parameters, thinnings, and rotation length
         private bool TryFindSolutionsMatchingStandEntries(HeuristicResultPosition position, int rotationIndex, [NotNullWhen(true)] out HeuristicSolutionPool? pool)
         {
             pool = null;
 
-            // see if a discount rate array exists for this combination of thins and rotation length
+            // see if a financial scenario array exists for this combination of thins and rotation length
             HeuristicResult[][][][][] parameterResults = this.results[position.ParameterIndex];
             Debug.Assert(parameterResults != null);
             HeuristicResult[][][][] firstThinResults = parameterResults[position.FirstThinPeriodIndex];
@@ -206,27 +206,27 @@ namespace Osu.Cof.Ferm.Heuristics
                 return false;
             }
 
-            // search among discount rates
-            int maxDiscountRateOffset = Math.Max(position.DiscountRateIndex, rotationLengthResults.Length - position.DiscountRateIndex);
-            for (int discountRateOffset = 0; discountRateOffset <= maxDiscountRateOffset; ++discountRateOffset)
+            // search among financial scenarios
+            int maxFinancialOffset = Math.Max(position.FinancialIndex, rotationLengthResults.Length - position.FinancialIndex);
+            for (int financialOffset = 0; financialOffset <= maxFinancialOffset; ++financialOffset)
             {
-                // for now, arbitrarily define the next following discount rate as closer than the previous discount rate
-                // If needed, this can be made intelligent enough to look at the actual discount rates.
-                int discountRateIndex = position.DiscountRateIndex + discountRateOffset;
-                if (discountRateIndex < rotationLengthResults.Length)
+                // for now, arbitrarily define the next following scenario as closer than the previous scenario
+                // If needed, this can be made intelligent enough to look at the actual differences among scenarios.
+                int financialIndex = position.FinancialIndex + financialOffset;
+                if (financialIndex < rotationLengthResults.Length)
                 {
-                    pool = rotationLengthResults[discountRateIndex].Pool;
+                    pool = rotationLengthResults[financialIndex].Pool;
                     if (pool.SolutionsInPool > 0)
                     {
                         return true;
                     }
 
-                    if (discountRateOffset > 0)
+                    if (financialOffset > 0)
                     {
-                        discountRateIndex = position.DiscountRateIndex - discountRateOffset;
-                        if (discountRateIndex >= 0)
+                        financialIndex = position.FinancialIndex - financialOffset;
+                        if (financialIndex >= 0)
                         {
-                            pool = rotationLengthResults[discountRateIndex].Pool;
+                            pool = rotationLengthResults[financialIndex].Pool;
                             if (pool.SolutionsInPool > 0)
                             {
                                 return true;
@@ -240,7 +240,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return false;
         }
 
-        // searches among discount rates and rotation lengths for solutions assigned to the same set of heuristic parameters and thinnings
+        // searches among financial scenarios and rotation lengths for solutions assigned to the same set of heuristic parameters and thinnings
         // Looking across parameters would confound heuristic parameter tuning runs by allowing later parameter sets to access solutions obtained
         // by earlier runs. It's assumed parameter set evaluations should always be independent of each other.
         public bool TryFindSolutionsMatchingThinnings(HeuristicResultPosition position, [NotNullWhen(true)] out HeuristicSolutionPool? solutions)
@@ -269,8 +269,8 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         public IList<TParameters> ParameterCombinations { get; private init; }
 
-        public HeuristicResults(IList<TParameters> parameterCombinations, IList<float> discountRates, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, int individualSolutionPoolSize)
-            : base(parameterCombinations.Count, firstThinPeriods, secondThinPeriods, thirdThinPeriods, rotationLengths, discountRates, individualSolutionPoolSize)
+        public HeuristicResults(IList<TParameters> parameterCombinations, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios, int individualSolutionPoolSize)
+            : base(parameterCombinations.Count, firstThinPeriods, secondThinPeriods, thirdThinPeriods, rotationLengths, financialScenarios, individualSolutionPoolSize)
         {
             this.ParameterCombinations = parameterCombinations;
         }

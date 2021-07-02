@@ -11,11 +11,11 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateNotNull]
-        public TimberValue TimberValue { get; set; }
+        public TreeVolume TreeVolume { get; set; }
 
         public WriteVolumeTable()
         {
-            this.TimberValue = TimberValue.Default;
+            this.TreeVolume = TreeVolume.Default;
         }
 
         protected override void ProcessRecord()
@@ -28,8 +28,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                 writer.WriteLine("logLength,species,height,DBH,cubic2S,cubic3S,cubic4S,scribner2S,scribner3S,scribner4S");
             }
 
-            this.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeRegenerationHarvest);
-            this.WriteScaledVolume(writer, this.TimberValue.ScaledVolumeThinning);
+            this.WriteScaledVolume(writer, this.TreeVolume.RegenerationHarvest);
+            this.WriteScaledVolume(writer, this.TreeVolume.Thinning);
         }
 
         private void WriteScaledVolume(StreamWriter writer, ScaledVolume scaledVolume)

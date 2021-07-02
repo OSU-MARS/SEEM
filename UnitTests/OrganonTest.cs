@@ -100,7 +100,7 @@ namespace Osu.Cof.Ferm.Test
             TestStand initialTreeData = new(stand);
             TreeLifeAndDeath treeGrowth = new();
 
-            Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
+            SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
             if (configuration.IsEvenAge)
             {
                 // stand error if less than one year to grow to breast height
@@ -130,13 +130,13 @@ namespace Osu.Cof.Ferm.Test
             OrganonTest.Verify(calibrationBySpecies);
         }
 
-        protected static void Verify(Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies)
+        protected static void Verify(SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies)
         {
-            foreach (KeyValuePair<FiaCode, SpeciesCalibration> speciesCalibration in calibrationBySpecies)
+            foreach (SpeciesCalibration speciesCalibration in calibrationBySpecies.Values)
             {
-                Assert.IsTrue(speciesCalibration.Value.CrownRatio == 1.0F);
-                Assert.IsTrue(speciesCalibration.Value.Diameter == 1.0F);
-                Assert.IsTrue(speciesCalibration.Value.Height == 1.0F);
+                Assert.IsTrue(speciesCalibration.CrownRatio == 1.0F);
+                Assert.IsTrue(speciesCalibration.Diameter == 1.0F);
+                Assert.IsTrue(speciesCalibration.Height == 1.0F);
             }
         }
 

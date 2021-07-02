@@ -40,7 +40,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 this.ConstructTreeSelection(this.HeuristicParameters.ConstructionGreediness);
                 perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-                float candidateFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, position.DiscountRateIndex);
+                float candidateFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, position.FinancialIndex);
                 if (candidateFinancialValue > acceptedFinancialValue)
                 {
                     // for now, accept change of tree selection if it increases financial value

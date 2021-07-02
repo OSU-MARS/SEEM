@@ -135,7 +135,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++iterationsSinceFinancialValueIncreaseOrMoveTypeChanged;
                 ++iterationsSinceObjectiveImprovedOrWaterLevelLowered;
 
-                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
                 if ((candidateFinancialValue > waterLevel) || (candidateFinancialValue > hillClimbingThreshold))
                 {
                     // accept move

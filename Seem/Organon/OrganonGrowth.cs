@@ -201,12 +201,12 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="configuration">Organon growth simulation options and site settings.</param>
         /// <param name="stand"></param>
         /// <param name="previousCalibrationBySpecies">Array of calibration coefficients. Values must be between 0.5 and 2.0.</param>
-        public static void Grow(int periodIndex, OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, Dictionary<FiaCode, SpeciesCalibration> previousCalibrationBySpecies)
+        public static void Grow(int periodIndex, OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, SortedList<FiaCode, SpeciesCalibration> previousCalibrationBySpecies)
         {
             // BUGBUG: simulationStep largely duplicates stand age
             OrganonGrowth.ValidateArguments(periodIndex, configuration, treatments, stand, previousCalibrationBySpecies, out int BIG6, out int BNXT);
 
-            Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = new(previousCalibrationBySpecies.Count);
+            SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies = new(previousCalibrationBySpecies.Count);
             foreach (KeyValuePair<FiaCode, SpeciesCalibration> species in previousCalibrationBySpecies)
             {
                 SpeciesCalibration speciesCalibration = new();
@@ -279,7 +279,7 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="densityAfterGrowth"></param>
         /// <param name="oldTreeRecordCount"></param>
         public static void Grow(OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, OrganonStandDensity densityInPreviousPeriod,
-                                Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies, ref float[] crownCompetitionByHeight, out OrganonStandDensity densityAfterGrowth, 
+                                SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies, ref float[] crownCompetitionByHeight, out OrganonStandDensity densityAfterGrowth, 
                                 out int oldTreeRecordCount)
         {
             // initalize step
@@ -397,7 +397,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public static float[] GrowCrown(OrganonVariant variant, OrganonStand stand, OrganonStandDensity densityAfterGrowth, Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies)
+        public static float[] GrowCrown(OrganonVariant variant, OrganonStand stand, OrganonStandDensity densityAfterGrowth, SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies)
         {
             float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(variant, stand);
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
@@ -628,7 +628,7 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="treesOfSpecies"></param>
         /// <param name="ingrowthCount">Number of new trees added to end of treesOfSpecies.</param>
         /// <param name="calibrationBySpecies"></param>
-        public static void SetIngrowthHeightAndCrownRatio(OrganonVariant variant, OrganonStand stand, Trees treesOfSpecies, int ingrowthCount, Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies)
+        public static void SetIngrowthHeightAndCrownRatio(OrganonVariant variant, OrganonStand stand, Trees treesOfSpecies, int ingrowthCount, SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies)
         {
             if ((ingrowthCount < 0) || (ingrowthCount > treesOfSpecies.Count))
             {
@@ -695,7 +695,7 @@ namespace Osu.Cof.Ferm.Organon
         /// <param name="bigSixSpeciesTreeCount"></param>
         /// <param name="bigSixTreesWithNegativeExpansionFactor"></param>
         private static void ValidateArguments(int periodIndex, OrganonConfiguration configuration, OrganonTreatments treatments, 
-                                              OrganonStand stand, Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies, 
+                                              OrganonStand stand, SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies, 
                                               out int bigSixSpeciesTreeCount, out int bigSixTreesWithNegativeExpansionFactor)
         {
             if (stand.GetTreeRecordCount() < 1)

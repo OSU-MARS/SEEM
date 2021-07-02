@@ -45,7 +45,7 @@ namespace Osu.Cof.Ferm.Heuristics
             get { return this.NearestNeighborIndex.Length; }
         }
 
-        protected static int GetHammingDistance(SortedDictionary<FiaCode, TreeSelection> selectionBySpecies1, SortedDictionary<FiaCode, TreeSelection> selectionBySpecies2)
+        protected static int GetHammingDistance(SortedList<FiaCode, TreeSelection> selectionBySpecies1, SortedList<FiaCode, TreeSelection> selectionBySpecies2)
         {
             if (selectionBySpecies1.Count != selectionBySpecies2.Count)
             {

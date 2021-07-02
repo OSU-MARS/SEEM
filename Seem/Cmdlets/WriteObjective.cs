@@ -66,16 +66,16 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             // sort each discount rate's runs by decreasing objective function value  
-            List<List<(float, HeuristicResultPosition)>> solutionsByDiscountRateIndexAndObjective = new();
+            List<List<(float, HeuristicResultPosition)>> solutionsByFinancialIndexAndValue = new();
             for (int positionIndex = 0; positionIndex < this.Results.CombinationsEvaluated.Count; ++positionIndex)
             {
                 HeuristicResultPosition position = this.Results.CombinationsEvaluated[positionIndex];
                 HeuristicResult result = this.Results[position];
                 HeuristicObjectiveDistribution distribution = result.Distribution;
-                int maxDiscountRateIndex = position.DiscountRateIndex;
-                while (maxDiscountRateIndex >= solutionsByDiscountRateIndexAndObjective.Count)
+                int maxFinancialIndex = position.FinancialIndex;
+                while (maxFinancialIndex >= solutionsByFinancialIndexAndValue.Count)
                 {
-                    solutionsByDiscountRateIndexAndObjective.Add(new());
+                    solutionsByFinancialIndexAndValue.Add(new());
                 }
 
                 Heuristic? highHeuristic = result.Pool.High;
@@ -84,12 +84,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Result at position " + positionIndex + " is missing a high solution.");
                 }
 
-                List<(float, HeuristicResultPosition)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[maxDiscountRateIndex];
-                runsForDiscountRate.Add((highHeuristic.FinancialValue.GetHighestValueWithDefaulting(position.RotationIndex, maxDiscountRateIndex), position));
+                List<(float, HeuristicResultPosition)> runsForDiscountRate = solutionsByFinancialIndexAndValue[maxFinancialIndex];
+                runsForDiscountRate.Add((highHeuristic.FinancialValue.GetHighestValueWithDefaulting(position.RotationIndex, maxFinancialIndex), position));
             }
-            for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
+            for (int financialIndex = 0; financialIndex < solutionsByFinancialIndexAndValue.Count; ++financialIndex)
             {
-                List<(float Objective, HeuristicResultPosition)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
+                List<(float Objective, HeuristicResultPosition)> runsForDiscountRate = solutionsByFinancialIndexAndValue[financialIndex];
                 runsForDiscountRate.Sort((run1, run2) => run2.Objective.CompareTo(run1.Objective)); // sort descending
             }
 
@@ -97,18 +97,18 @@ namespace Osu.Cof.Ferm.Cmdlets
             // Runs are listed in groups with each discount rate having the ability to be represented within each group. This controls for reduction in
             // land expectation values with increasing discount rate, enabling preferentiall logging of the move histories for the most desirable runs.
             List<HeuristicResultPosition> prioritizedResults = new();
-            int[] resultIndicesByDiscountRate = new int[solutionsByDiscountRateIndexAndObjective.Count];
+            int[] resultIndicesByFinancialScenario = new int[solutionsByFinancialIndexAndValue.Count];
             for (bool atLeastOneRunAddedByInnerLoop = true; atLeastOneRunAddedByInnerLoop; )
             {
                 atLeastOneRunAddedByInnerLoop = false;
-                for (int discountRateIndex = 0; discountRateIndex < solutionsByDiscountRateIndexAndObjective.Count; ++discountRateIndex)
+                for (int financialIndex = 0; financialIndex < solutionsByFinancialIndexAndValue.Count; ++financialIndex)
                 {
-                    List<(float Objective, HeuristicResultPosition Position)> runsForDiscountRate = solutionsByDiscountRateIndexAndObjective[discountRateIndex];
-                    int resultIndexForDiscountRate = resultIndicesByDiscountRate[discountRateIndex];
-                    if (resultIndexForDiscountRate < runsForDiscountRate.Count)
+                    List<(float Objective, HeuristicResultPosition Position)> runsForScenario = solutionsByFinancialIndexAndValue[financialIndex];
+                    int resultIndexForScenario = resultIndicesByFinancialScenario[financialIndex];
+                    if (resultIndexForScenario < runsForScenario.Count)
                     {
-                        prioritizedResults.Add(runsForDiscountRate[resultIndexForDiscountRate].Position);
-                        resultIndicesByDiscountRate[discountRateIndex] = ++resultIndexForDiscountRate;
+                        prioritizedResults.Add(runsForScenario[resultIndexForScenario].Position);
+                        resultIndicesByFinancialScenario[financialIndex] = ++resultIndexForScenario;
                         atLeastOneRunAddedByInnerLoop = true;
                     }
                 }

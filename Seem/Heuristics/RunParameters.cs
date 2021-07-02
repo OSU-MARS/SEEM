@@ -5,25 +5,25 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class RunParameters
     {
-        public IList<float> DiscountRates { get; init; }
+        public FinancialScenarios Financial { get; set; }
         public int LastThinPeriod { get; set; }
         public int MaximizeForPlanningPeriod { get; init; }
         public OrganonConfiguration OrganonConfiguration { get; private init; }
         public IList<int> RotationLengths { get; init; }
         public TimberObjective TimberObjective { get; init; }
-        public TimberValue TimberValue { get; set; }
         public OrganonTreatments Treatments { get; init; }
+        public TreeVolume TreeVolume { get; init; }
 
-        public RunParameters(IList<int> rotationLengths, IList<float> discountRates, OrganonConfiguration organonConfiguration)
+        public RunParameters(IList<int> rotationLengths, OrganonConfiguration organonConfiguration)
         {
-            this.DiscountRates = discountRates;
+            this.Financial = FinancialScenarios.Default;
             this.LastThinPeriod = Constant.NoThinPeriod;
             this.MaximizeForPlanningPeriod = Constant.HeuristicDefault.RotationIndex;
             this.OrganonConfiguration = organonConfiguration;
             this.RotationLengths = rotationLengths;
             this.TimberObjective = TimberObjective.LandExpectationValue;
-            this.TimberValue = TimberValue.Default;
             this.Treatments = new();
+            this.TreeVolume = TreeVolume.Default;
         }
     }
 }

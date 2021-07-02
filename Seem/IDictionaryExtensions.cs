@@ -4,9 +4,9 @@ using System.Linq;
 
 namespace Osu.Cof.Ferm
 {
-    internal static class SortedDictionaryExtensions
+    internal static class IDictionaryExtensions
     {
-        public static TValue GetOrAdd<TKey, TValue>(this SortedDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull where TValue : new()
+        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull where TValue : new()
         {
             if (dictionary.TryGetValue(key, out TValue? value) == false)
             {
@@ -16,7 +16,7 @@ namespace Osu.Cof.Ferm
             return value;
         }
 
-        public static TArray[] GetOrAdd<TKey, TArray>(this SortedDictionary<TKey, TArray[]> dictionary, TKey key, int capacity) where TKey : notnull
+        public static TArray[] GetOrAdd<TKey, TArray>(this IDictionary<TKey, TArray[]> dictionary, TKey key, int capacity) where TKey : notnull
         {
             if (dictionary.TryGetValue(key, out TArray[]? array) == false)
             {
@@ -26,7 +26,7 @@ namespace Osu.Cof.Ferm
             return array;
         }
 
-        public static TValue GetOrAdd<TKey, TValue>(this SortedDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> createValue) where TKey : notnull
+        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> createValue) where TKey : notnull
         {
             if (dictionary.TryGetValue(key, out TValue? value) == false)
             {
@@ -36,7 +36,7 @@ namespace Osu.Cof.Ferm
             return value;
         }
 
-        public static bool KeysIdentical<TKey, TValue1, TValue2>(SortedDictionary<TKey, TValue1> dictionary1, SortedDictionary<TKey, TValue2> dictionary2) where TKey : notnull
+        public static bool KeysIdentical<TKey, TValue1, TValue2>(IDictionary<TKey, TValue1> dictionary1, IDictionary<TKey, TValue2> dictionary2) where TKey : notnull
         {
             if (Object.ReferenceEquals(dictionary1, dictionary2))
             {
@@ -49,13 +49,13 @@ namespace Osu.Cof.Ferm
             return !dictionary1.Keys.Except(dictionary2.Keys).Any();
         }
 
-        public static bool ValueLengthsIdentical<TKey, TArray1, TArray2>(SortedDictionary<TKey, TArray1[]> dictionary1, SortedDictionary<TKey, TArray2[]> dictionary2) where TKey : notnull
+        public static bool ValueLengthsIdentical<TKey, TArray1, TArray2>(IDictionary<TKey, TArray1[]> dictionary1, IDictionary<TKey, TArray2[]> dictionary2) where TKey : notnull
         {
             if (Object.ReferenceEquals(dictionary1, dictionary2))
             {
                 return true;
             }
-            if (SortedDictionaryExtensions.KeysIdentical(dictionary1, dictionary2) == false)
+            if (IDictionaryExtensions.KeysIdentical(dictionary1, dictionary2) == false)
             {
                 return false;
             }

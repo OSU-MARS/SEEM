@@ -10,13 +10,13 @@ namespace Osu.Cof.Ferm
         public string? Name { get; set; }
         public float? PlantingDensityInTreesPerHectare { get; set; }
 
-        public SortedDictionary<FiaCode, Trees> TreesBySpecies { get; private init; }
+        public SortedList<FiaCode, Trees> TreesBySpecies { get; private init; }
 
         public Stand()
         {
             this.Name = null;
             this.PlantingDensityInTreesPerHectare = null;
-            this.TreesBySpecies = new SortedDictionary<FiaCode, Trees>();
+            this.TreesBySpecies = new SortedList<FiaCode, Trees>();
         }
 
         public float GetLiveBiomass()

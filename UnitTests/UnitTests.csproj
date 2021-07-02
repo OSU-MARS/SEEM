@@ -21,8 +21,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="financial scenarios.xlsx" />
     <None Remove="HPNF.xlsx" />
     <None Remove="RS39 lower half.xlsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="financial scenarios.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

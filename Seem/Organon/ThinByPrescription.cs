@@ -95,9 +95,9 @@ namespace Osu.Cof.Ferm.Organon
             OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (this.Period - 1) + ".");
 
             // sort trees by diameter
-            SortedDictionary<FiaCode, int[]> dbhSortOrderBySpecies = new();
-            SortedDictionary<FiaCode, int> thinFromAboveIndexBySpecies = new();
-            SortedDictionary<FiaCode, int> thinFromBelowIndexBySpecies = new();
+            SortedList<FiaCode, int[]> dbhSortOrderBySpecies = new();
+            SortedList<FiaCode, int> thinFromAboveIndexBySpecies = new();
+            SortedList<FiaCode, int> thinFromBelowIndexBySpecies = new();
             float maximumDiameter = Single.MinValue;
             float minimumDiameter = Single.MaxValue;
             FiaCode maximumSpecies = default;

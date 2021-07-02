@@ -30,12 +30,12 @@ namespace Osu.Cof.Ferm.Cmdlets
         public float ThinFromBelowPercentage { get; set; }
 
         [Parameter]
-        [ValidateNotNull]
-        public TimberValue TimberValue { get; set; }
-
-        [Parameter]
         [ValidateRange(1, 100)]
         public int ThinPeriod { get; set; }
+
+        [Parameter]
+        [ValidateNotNull]
+        public TreeVolume TreeVolume { get; set; }
 
         public GetStandTrajectory()
         {
@@ -45,7 +45,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.ThinFromAbovePercentage = 0.0F; // %
             this.ThinFromBelowPercentage = 0.0F; // %
             this.ThinPeriod = Constant.NoThinPeriod; // no stand entry
-            this.TimberValue = TimberValue.Default;
+            this.TreeVolume = TreeVolume.Default;
         }
 
         protected override void ProcessRecord()
@@ -56,7 +56,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
-            OrganonStandTrajectory trajectory = new(this.Stand!, configuration, this.TimberValue, this.PlanningPeriods);
+            OrganonStandTrajectory trajectory = new(this.Stand!, configuration, this.TreeVolume, this.PlanningPeriods);
             if (this.Name != null)
             {
                 trajectory.Name = this.Name;

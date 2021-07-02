@@ -81,12 +81,12 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 // calculate distances to solutions already in pool
                 int[] distancesToSolutionsInPool = new int[this.SolutionsInPool + 1];
-                SortedDictionary<FiaCode, TreeSelection> heuristicTreeSelection = heuristic.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
+                SortedList<FiaCode, TreeSelection> heuristicTreeSelection = heuristic.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
                 int nearestNeighborDistance = Int32.MaxValue;
                 int nearestNeighborIndex = -1;
                 for (int solutionIndex = 0; solutionIndex < this.SolutionsInPool; ++solutionIndex)
                 {
-                    SortedDictionary<FiaCode, TreeSelection> eliteTreeSelection = this.EliteSolutions[solutionIndex]!.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
+                    SortedList<FiaCode, TreeSelection> eliteTreeSelection = this.EliteSolutions[solutionIndex]!.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
                     int distanceToSolution = SolutionPool.GetHammingDistance(heuristicTreeSelection, eliteTreeSelection);
                     if (distanceToSolution == 0)
                     {
@@ -153,7 +153,7 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             int[] distancesToSolutionsInPool = new int[this.SolutionsInPool];
             float heuristicFinancialValue = heuristic.FinancialValue.GetHighestValueWithDefaulting(position);
-            SortedDictionary<FiaCode, TreeSelection> heuristicTreeSelection = heuristic.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
+            SortedList<FiaCode, TreeSelection> heuristicTreeSelection = heuristic.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
             int nearestLowerNeighborDistance = SolutionPool.UnknownDistance;
             int nearestLowerNeighborIndex = SolutionPool.UnknownNeighbor;
             for (int solutionIndex = 0; solutionIndex < this.SolutionsInPool; ++solutionIndex)
@@ -169,7 +169,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 // for now, use Hamming distance as it's interchangeable with Euclidean distance for binary decision variables
                 // If needed, Euclidean distance can be used when multiple thinnings are allowed.
-                SortedDictionary<FiaCode, TreeSelection> eliteTreeSelection = eliteSolution.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
+                SortedList<FiaCode, TreeSelection> eliteTreeSelection = eliteSolution.GetBestTrajectoryWithDefaulting(position).IndividualTreeSelectionBySpecies;
                 int distanceToSolution = SolutionPool.GetHammingDistance(heuristicTreeSelection, eliteTreeSelection);
                 if (distanceToSolution == 0)
                 {

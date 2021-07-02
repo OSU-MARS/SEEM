@@ -49,7 +49,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 parameterHeader = heuristicParameters.GetCsvHeader() + ",";
             }
-            return "stand,heuristic," + parameterHeader + "thin1,thin2,thin3,rotation,discountRate";
+            return "stand,heuristic," + parameterHeader + "thin1,thin2,thin3,rotation,financialScenario";
         }
 
         protected static string GetHeuristicAndPositionCsvHeader(HeuristicResults? results)
@@ -80,7 +80,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             string? secondThinAge = secondThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetStartOfPeriodAge(secondThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
             string? thirdThinAge = thirdThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetStartOfPeriodAge(thirdThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
             string rotationLength = highTrajectory.GetEndOfPeriodAge(endOfRotationPeriod).ToString(CultureInfo.InvariantCulture);
-            string discountRateAsString = results.DiscountRates[position.DiscountRateIndex].ToString(CultureInfo.InvariantCulture);
+            string financialScenario = results.FinancialScenarios.Name[position.FinancialIndex];
             
             return highTrajectory.Name + "," + 
                    solutions.High.GetName() + "," + 
@@ -89,7 +89,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                    secondThinAge + "," + 
                    thirdThinAge + "," + 
                    rotationLength + "," + 
-                   discountRateAsString;
+                   financialScenario;
         }
 
         protected long GetMaxFileSizeInBytes()

@@ -136,7 +136,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++iterationsSinceBestObjectiveImproved;
                 ++iterationsSinceFinancialValueIncreaseOrReheat;
 
-                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
                 float highestFinancialValue = this.FinancialValue.GetHighestValue();
                 float minimumAcceptableFinancialValue = highestFinancialValue - deviation;
                 if ((candidateFinancialValue > minimumAcceptableFinancialValue) || (candidateFinancialValue > previousObjectiveFunction))

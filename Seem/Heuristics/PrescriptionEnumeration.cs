@@ -22,7 +22,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 // by default, store prescription intensities for only the highest LEV combination of thinning intensities found
                 // This substantially reduces memory footprint in runs where many prescriptions are enumerated and helps to reduce the
                 // size of objective log files. If needed, this can be changed to storing a larger number of prescriptions.
-                this.highestFinancialValueMoveLog = new PrescriptionFirstInFirstOutMoveLog(runParameters.RotationLengths.Count, runParameters.DiscountRates.Count, Constant.DefaultSolutionPoolSize);
+                this.highestFinancialValueMoveLog = new PrescriptionFirstInFirstOutMoveLog(runParameters.RotationLengths.Count, runParameters.Financial.Count, Constant.DefaultSolutionPoolSize);
             }
         }
 
@@ -123,7 +123,7 @@ namespace Osu.Cof.Ferm.Heuristics
             // this.CurrentTrajectory.DeselectAllTrees();
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-            float[,] financialValueByDiscountRate = this.GetFinancialValueByRotationAndRate(this.CurrentTrajectory);
+            float[,] financialValueByDiscountRate = this.GetFinancialValueByRotationAndScenario(this.CurrentTrajectory);
             for (int rotationIndex = 0; rotationIndex < this.RunParameters.RotationLengths.Count; ++rotationIndex)
             {
                 int endOfRotationPeriod = rotationLengths[rotationIndex];
@@ -132,19 +132,19 @@ namespace Osu.Cof.Ferm.Heuristics
                     continue; // not a valid rotation length because it doesn't include the last thinning scheduled
                 }
 
-                for (int discountRateIndex = 0; discountRateIndex < this.RunParameters.DiscountRates.Count; ++discountRateIndex)
+                for (int financialIndex = 0; financialIndex < this.RunParameters.Financial.Count; ++financialIndex)
                 {
-                    float candidateFinancialValue = financialValueByDiscountRate[rotationIndex, discountRateIndex];
-                    float acceptedFinancialValue = this.FinancialValue.GetHighestValue(rotationIndex, discountRateIndex);
+                    float candidateFinancialValue = financialValueByDiscountRate[rotationIndex, financialIndex];
+                    float acceptedFinancialValue = this.FinancialValue.GetHighestValue(rotationIndex, financialIndex);
                     if (candidateFinancialValue > acceptedFinancialValue)
                     {
                         // accept change of prescription if it improves upon the best solution
                         acceptedFinancialValue = candidateFinancialValue;
-                        this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory, rotationIndex, discountRateIndex);
+                        this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory, rotationIndex, financialIndex);
 
                         if (this.highestFinancialValueMoveLog != null)
                         {
-                            this.highestFinancialValueMoveLog.SetPrescription(rotationIndex, discountRateIndex, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                            this.highestFinancialValueMoveLog.SetPrescription(rotationIndex, financialIndex, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
                         }
 
                         ++perfCounters.MovesAccepted;
@@ -154,7 +154,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         ++perfCounters.MovesRejected;
                     }
 
-                    this.FinancialValue.AddMove(rotationIndex, discountRateIndex, acceptedFinancialValue, candidateFinancialValue);
+                    this.FinancialValue.AddMove(rotationIndex, financialIndex, acceptedFinancialValue, candidateFinancialValue);
                 }
             }
 

@@ -7,23 +7,23 @@ namespace Osu.Cof.Ferm
     public class ScaledVolume
     {
         public float PreferredLogLengthInMeters { get; private init; }
-        public Dictionary<FiaCode, TreeVolumeTable> VolumeBySpecies { get; private init; }
+        public SortedList<FiaCode, TreeVolumeTable> VolumeBySpecies { get; private init; }
 
         public ScaledVolume(float maximumDiameterInCentimeters, float maximumHeightInMeters, float preferredLogLengthInMeters, bool scribnerFromLumberRecovery)
         {
             this.PreferredLogLengthInMeters = preferredLogLengthInMeters;
-            this.VolumeBySpecies = new Dictionary<FiaCode, TreeVolumeTable>
+            this.VolumeBySpecies = new SortedList<FiaCode, TreeVolumeTable>
             {
                 { FiaCode.PseudotsugaMenziesii, new TreeVolumeTable(maximumDiameterInCentimeters, maximumHeightInMeters, preferredLogLengthInMeters, PoudelRegressions.GetDouglasFirDiameterInsideBark, scribnerFromLumberRecovery) }
             };
         }
 
-        public void GetHarvestedCubicVolume(Trees trees, TreeSelection individualTreeSelection, int harvestPeriod, out double cubic2saw, out double cubic3saw, out double cubic4saw)
+        public void GetHarvestedCubicVolume(Trees trees, TreeSelection individualTreeSelection, int harvestPeriod, out float cubic2saw, out float cubic3saw, out float cubic4saw)
         {
             TreeVolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
-            cubic2saw = 0.0;
-            cubic3saw = 0.0;
-            cubic4saw = 0.0;
+            cubic2saw = 0.0F;
+            cubic3saw = 0.0F;
+            cubic4saw = 0.0F;
             for (int compactedTreeIndex = 0; compactedTreeIndex < trees.Count; ++compactedTreeIndex)
             {
                 int uncompactedTreeIndex = trees.UncompactedIndex[compactedTreeIndex];
@@ -147,12 +147,12 @@ namespace Osu.Cof.Ferm
             }
         }
 
-        public void GetStandingCubicVolume(Trees trees, out double cubic2saw, out double cubic3saw, out double cubic4saw)
+        public void GetStandingCubicVolume(Trees trees, out float cubic2saw, out float cubic3saw, out float cubic4saw)
         {
             TreeVolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
-            cubic2saw = 0.0;
-            cubic3saw = 0.0;
-            cubic4saw = 0.0;
+            cubic2saw = 0.0F;
+            cubic3saw = 0.0F;
+            cubic4saw = 0.0F;
             for (int compactedTreeIndex = 0; compactedTreeIndex < trees.Count; ++compactedTreeIndex)
             {
                 float dbhInCm = trees.Dbh[compactedTreeIndex];
@@ -204,12 +204,12 @@ namespace Osu.Cof.Ferm
             }
         }
 
-        public void GetStandingScribnerVolume(Trees trees, out double scribner2saw, out double scribner3saw, out double scribner4saw)
+        public void GetStandingScribnerVolume(Trees trees, out float scribner2saw, out float scribner3saw, out float scribner4saw)
         {
             TreeVolumeTable volumeTable = this.VolumeBySpecies[trees.Species];
-            scribner2saw = 0.0;
-            scribner3saw = 0.0;
-            scribner4saw = 0.0;
+            scribner2saw = 0.0F;
+            scribner3saw = 0.0F;
+            scribner4saw = 0.0F;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 float dbhInCm = trees.Dbh[treeIndex];

@@ -49,6 +49,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Model = TreeModel.OrganonNwo;
             this.SiteIndex = 130.0F;
             this.Trees = null;
+            this.Xlsx = null;
             this.XlsxSheet = "1";
         }
 

@@ -57,14 +57,16 @@ namespace Osu.Cof.Ferm.Cmdlets
                 foreach (HeuristicResultPosition position in this.Results.CombinationsEvaluated)
                 {
                     Heuristic highHeuristic = this.Results[position].Pool.High!;
-                    float harvestVolumeScibner = highHeuristic.GetBestTrajectoryWithDefaulting(position).ThinningVolume.GetScribnerTotal(periodIndex);
+                    StandTrajectory bestTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
+                    float harvestVolumeScibner = bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex);
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
                 foreach (HeuristicResultPosition position in this.Results.CombinationsEvaluated)
                 {
                     Heuristic highHeuristic = this.Results[position].Pool.High!;
-                    float standingVolumeScribner = highHeuristic.GetBestTrajectoryWithDefaulting(position).StandingVolume.GetScribnerTotal(periodIndex);
+                    StandTrajectory bestTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
+                    float standingVolumeScribner = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex);
                     line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
                 }
 

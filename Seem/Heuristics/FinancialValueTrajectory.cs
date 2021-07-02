@@ -7,98 +7,98 @@ namespace Osu.Cof.Ferm.Heuristics
     {
         private readonly List<float>[,] acceptedValueByRotationAndDiscount;
         private readonly List<float>[,] candidateValueByRotationAndDiscount;
-        private readonly float[,] highestFinancialValueByRotationAndDiscount;
+        private readonly float[,] highestFinancialValueByRotationAndScenario;
 
         public FinancialValueTrajectory(int rotationCapacity, int discountRateCapacity)
         {
             this.acceptedValueByRotationAndDiscount = new List<float>[rotationCapacity, discountRateCapacity];
             this.candidateValueByRotationAndDiscount = new List<float>[rotationCapacity, discountRateCapacity];
-            this.highestFinancialValueByRotationAndDiscount = new float[rotationCapacity, discountRateCapacity];
+            this.highestFinancialValueByRotationAndScenario = new float[rotationCapacity, discountRateCapacity];
 
             for (int rotationIndex = 0; rotationIndex < rotationCapacity; ++rotationIndex)
             {
-                for (int discountRateIndex = 0; discountRateIndex < discountRateCapacity; ++discountRateIndex)
+                for (int financialIndex = 0; financialIndex < discountRateCapacity; ++financialIndex)
                 {
-                    this.acceptedValueByRotationAndDiscount[rotationIndex, discountRateIndex] = new();
-                    this.candidateValueByRotationAndDiscount[rotationIndex, discountRateIndex] = new();
-                    this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex] = Single.MinValue;
+                    this.acceptedValueByRotationAndDiscount[rotationIndex, financialIndex] = new();
+                    this.candidateValueByRotationAndDiscount[rotationIndex, financialIndex] = new();
+                    this.highestFinancialValueByRotationAndScenario[rotationIndex, financialIndex] = Single.MinValue;
                 }
             }
         }
 
         public void AddMove(float acceptedValue, float candidateValue)
         {
-            this.AddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex, acceptedValue, candidateValue);
+            this.AddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex, acceptedValue, candidateValue);
         }
 
-        public void AddMove(int rotationIndex, int discountRateIndex, float acceptedValue, float candidateValue)
+        public void AddMove(int rotationIndex, int financialIndex, float acceptedValue, float candidateValue)
         {
             // typically, acceptedValue >= candidateValue but this does not hold for tabu search
-            this.acceptedValueByRotationAndDiscount[rotationIndex, discountRateIndex].Add(acceptedValue);
-            this.candidateValueByRotationAndDiscount[rotationIndex, discountRateIndex].Add(candidateValue);
+            this.acceptedValueByRotationAndDiscount[rotationIndex, financialIndex].Add(acceptedValue);
+            this.candidateValueByRotationAndDiscount[rotationIndex, financialIndex].Add(candidateValue);
 
-            if (acceptedValue > this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex])
+            if (acceptedValue > this.highestFinancialValueByRotationAndScenario[rotationIndex, financialIndex])
             {
-                this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex] = acceptedValue;
+                this.highestFinancialValueByRotationAndScenario[rotationIndex, financialIndex] = acceptedValue;
             }
         }
 
         public IList<float> GetAcceptedValuesWithDefaulting(HeuristicResultPosition position)
         {
-            return this.GetAcceptedValuesWithDefaulting(position.RotationIndex, position.DiscountRateIndex);
+            return this.GetAcceptedValuesWithDefaulting(position.RotationIndex, position.FinancialIndex);
         }
 
-        public IList<float> GetAcceptedValuesWithDefaulting(int rotationIndex, int discountRateIndex)
+        public IList<float> GetAcceptedValuesWithDefaulting(int rotationIndex, int financialIndex)
         {
             if (this.acceptedValueByRotationAndDiscount.Length == 1)
             {
-                return this.acceptedValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex];
+                return this.acceptedValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex];
             }
-            return this.acceptedValueByRotationAndDiscount[rotationIndex, discountRateIndex];
+            return this.acceptedValueByRotationAndDiscount[rotationIndex, financialIndex];
         }
 
         public IList<float> GetCandidateValuesWithDefaulting(HeuristicResultPosition position)
         {
-            return this.GetCandidateValuesWithDefaulting(position.RotationIndex, position.DiscountRateIndex);
+            return this.GetCandidateValuesWithDefaulting(position.RotationIndex, position.FinancialIndex);
         }
 
         public IList<float> GetCandidateValuesWithDefaulting(int rotationIndex, int discountRateIndex)
         {
             if (this.candidateValueByRotationAndDiscount.Length == 1)
             {
-                return this.candidateValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex];
+                return this.candidateValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex];
             }
             return this.candidateValueByRotationAndDiscount[rotationIndex, discountRateIndex];
         }
 
         public float GetHighestValue()
         {
-            return this.highestFinancialValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex];
+            return this.highestFinancialValueByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex];
         }
 
-        public float GetHighestValue(int rotationIndex, int discountRateIndex)
+        public float GetHighestValue(int rotationIndex, int financialIndex)
         {
-            return this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex];
+            return this.highestFinancialValueByRotationAndScenario[rotationIndex, financialIndex];
         }
 
         public float GetHighestValueWithDefaulting(HeuristicResultPosition position)
         {
-            return this.GetHighestValueWithDefaulting(position.RotationIndex, position.DiscountRateIndex);
+            return this.GetHighestValueWithDefaulting(position.RotationIndex, position.FinancialIndex);
         }
 
-        public float GetHighestValueWithDefaulting(int rotationIndex, int discountRateIndex)
+        public float GetHighestValueWithDefaulting(int rotationIndex, int financialIndex)
         {
-            if (this.highestFinancialValueByRotationAndDiscount.Length == 1)
+            if (this.highestFinancialValueByRotationAndScenario.Length == 1)
             {
-                return this.highestFinancialValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex];
+                return this.highestFinancialValueByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex];
             }
-            return this.highestFinancialValueByRotationAndDiscount[rotationIndex, discountRateIndex];
+            return this.highestFinancialValueByRotationAndScenario[rotationIndex, financialIndex];
         }
 
         public void SetMoveCapacity(int capacity)
         {
-            this.acceptedValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex].Capacity = capacity;
-            this.candidateValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.DiscountRateIndex].Capacity = capacity;
+            this.acceptedValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex].Capacity = capacity;
+            this.candidateValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex].Capacity = capacity;
         }
     }
 }

@@ -74,21 +74,21 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public string GetCsvValues(HeuristicResultPosition position, int move)
         {
-            int planningPeriodIndex = position.RotationIndex;
-            int discountRateIndex = position.DiscountRateIndex;
+            int rotationIndex = position.RotationIndex;
+            int financialIndex = position.FinancialIndex;
             for (int moveIndex = 0; moveIndex < this.fifoLength; ++moveIndex)
             {
-                if (move == this.moveIndexByRotationAndRate[planningPeriodIndex, discountRateIndex, moveIndex])
+                if (move == this.moveIndexByRotationAndRate[rotationIndex, financialIndex, moveIndex])
                 {
-                    float fromAbovePercentage1 = this.fromAbovePercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, moveIndex];
-                    float proportionalPercentage1 = this.proportionalPercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, moveIndex];
-                    float fromBelowPercentage1 = this.fromBelowPercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, moveIndex];
-                    float fromAbovePercentage2 = this.fromAbovePercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, moveIndex];
-                    float proportionalPercentage2 = this.proportionalPercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, moveIndex];
-                    float fromBelowPercentage2 = this.fromBelowPercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, moveIndex];
-                    float fromAbovePercentage3 = this.fromAbovePercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, moveIndex];
-                    float proportionalPercentage3 = this.proportionalPercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, moveIndex];
-                    float fromBelowPercentage3 = this.fromBelowPercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, moveIndex];
+                    float fromAbovePercentage1 = this.fromAbovePercentageByRotationAndRate1[rotationIndex, financialIndex, moveIndex];
+                    float proportionalPercentage1 = this.proportionalPercentageByRotationAndRate1[rotationIndex, financialIndex, moveIndex];
+                    float fromBelowPercentage1 = this.fromBelowPercentageByRotationAndRate1[rotationIndex, financialIndex, moveIndex];
+                    float fromAbovePercentage2 = this.fromAbovePercentageByRotationAndRate2[rotationIndex, financialIndex, moveIndex];
+                    float proportionalPercentage2 = this.proportionalPercentageByRotationAndRate2[rotationIndex, financialIndex, moveIndex];
+                    float fromBelowPercentage2 = this.fromBelowPercentageByRotationAndRate2[rotationIndex, financialIndex, moveIndex];
+                    float fromAbovePercentage3 = this.fromAbovePercentageByRotationAndRate3[rotationIndex, financialIndex, moveIndex];
+                    float proportionalPercentage3 = this.proportionalPercentageByRotationAndRate3[rotationIndex, financialIndex, moveIndex];
+                    float fromBelowPercentage3 = this.fromBelowPercentageByRotationAndRate3[rotationIndex, financialIndex, moveIndex];
 
                     return fromAbovePercentage1.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
                            proportionalPercentage1.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
@@ -105,49 +105,49 @@ namespace Osu.Cof.Ferm.Heuristics
             return ",,,,,,,,";
         }
 
-        public void SetPrescription(int planningPeriodIndex, int discountRateIndex, int move, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        public void SetPrescription(int rotationIndex, int financialIndex, int move, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
         {
             // update specified discount rate
-            int setIndex = this.setIndexByRotationAndRate[planningPeriodIndex, discountRateIndex];
-            this.moveIndexByRotationAndRate[planningPeriodIndex, discountRateIndex, setIndex] = move;
+            int setIndex = this.setIndexByRotationAndRate[rotationIndex, financialIndex];
+            this.moveIndexByRotationAndRate[rotationIndex, financialIndex, setIndex] = move;
 
             if (firstThinPrescription != null)
             {
-                this.fromAbovePercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, setIndex] = firstThinPrescription.FromAbovePercentage;
-                this.proportionalPercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, setIndex] = firstThinPrescription.ProportionalPercentage;
-                this.fromBelowPercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, setIndex] = firstThinPrescription.FromBelowPercentage;
+                this.fromAbovePercentageByRotationAndRate1[rotationIndex, financialIndex, setIndex] = firstThinPrescription.FromAbovePercentage;
+                this.proportionalPercentageByRotationAndRate1[rotationIndex, financialIndex, setIndex] = firstThinPrescription.ProportionalPercentage;
+                this.fromBelowPercentageByRotationAndRate1[rotationIndex, financialIndex, setIndex] = firstThinPrescription.FromBelowPercentage;
             }
             else
             {
-                this.fromAbovePercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
-                this.proportionalPercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
-                this.fromBelowPercentageByRotationAndRate1[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
+                this.fromAbovePercentageByRotationAndRate1[rotationIndex, financialIndex, setIndex] = 0.0F;
+                this.proportionalPercentageByRotationAndRate1[rotationIndex, financialIndex, setIndex] = 0.0F;
+                this.fromBelowPercentageByRotationAndRate1[rotationIndex, financialIndex, setIndex] = 0.0F;
             }
 
             if (secondThinPrescription != null)
             {
-                this.fromAbovePercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, setIndex] = secondThinPrescription.FromAbovePercentage;
-                this.proportionalPercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, setIndex] = secondThinPrescription.ProportionalPercentage;
-                this.fromBelowPercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, setIndex] = secondThinPrescription.FromBelowPercentage;
+                this.fromAbovePercentageByRotationAndRate2[rotationIndex, financialIndex, setIndex] = secondThinPrescription.FromAbovePercentage;
+                this.proportionalPercentageByRotationAndRate2[rotationIndex, financialIndex, setIndex] = secondThinPrescription.ProportionalPercentage;
+                this.fromBelowPercentageByRotationAndRate2[rotationIndex, financialIndex, setIndex] = secondThinPrescription.FromBelowPercentage;
             }
             else
             {
-                this.fromAbovePercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
-                this.proportionalPercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
-                this.fromBelowPercentageByRotationAndRate2[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
+                this.fromAbovePercentageByRotationAndRate2[rotationIndex, financialIndex, setIndex] = 0.0F;
+                this.proportionalPercentageByRotationAndRate2[rotationIndex, financialIndex, setIndex] = 0.0F;
+                this.fromBelowPercentageByRotationAndRate2[rotationIndex, financialIndex, setIndex] = 0.0F;
             }
 
             if (thirdThinPrescription != null)
             {
-                this.fromAbovePercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, setIndex] = thirdThinPrescription.FromAbovePercentage;
-                this.proportionalPercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, setIndex] = thirdThinPrescription.ProportionalPercentage;
-                this.fromBelowPercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, setIndex] = thirdThinPrescription.FromBelowPercentage;
+                this.fromAbovePercentageByRotationAndRate3[rotationIndex, financialIndex, setIndex] = thirdThinPrescription.FromAbovePercentage;
+                this.proportionalPercentageByRotationAndRate3[rotationIndex, financialIndex, setIndex] = thirdThinPrescription.ProportionalPercentage;
+                this.fromBelowPercentageByRotationAndRate3[rotationIndex, financialIndex, setIndex] = thirdThinPrescription.FromBelowPercentage;
             }
             else
             {
-                this.fromAbovePercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
-                this.proportionalPercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
-                this.fromBelowPercentageByRotationAndRate3[planningPeriodIndex, discountRateIndex, setIndex] = 0.0F;
+                this.fromAbovePercentageByRotationAndRate3[rotationIndex, financialIndex, setIndex] = 0.0F;
+                this.proportionalPercentageByRotationAndRate3[rotationIndex, financialIndex, setIndex] = 0.0F;
+                this.fromBelowPercentageByRotationAndRate3[rotationIndex, financialIndex, setIndex] = 0.0F;
             }
 
             // increment set index
@@ -156,7 +156,7 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 setIndex = 0;
             }
-            this.setIndexByRotationAndRate[planningPeriodIndex, discountRateIndex] = setIndex;
+            this.setIndexByRotationAndRate[rotationIndex, financialIndex] = setIndex;
         }
     }
 }

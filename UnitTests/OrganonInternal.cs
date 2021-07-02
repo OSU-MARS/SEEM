@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Test
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
 
-                Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
+                SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     OrganonStandDensity densityStartOfStep = new(variant, stand);
@@ -58,9 +58,9 @@ namespace Osu.Cof.Ferm.Test
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
-                Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
+                SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
 
-                Dictionary<FiaCode, float[]> previousTreeDiametersBySpecies = new();
+                SortedList<FiaCode, float[]> previousTreeDiametersBySpecies = new();
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
                     previousTreeDiametersBySpecies.Add(treesOfSpecies.Species, new float[treesOfSpecies.Capacity]);
@@ -109,7 +109,7 @@ namespace Osu.Cof.Ferm.Test
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
 
-                Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
+                SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
                 OrganonStandDensity densityStartOfStep = new(variant, stand);
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
@@ -165,7 +165,7 @@ namespace Osu.Cof.Ferm.Test
             foreach (OrganonVariant variant in TestConstant.Variants)
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
-                Dictionary<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
+                SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
 
                 float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);

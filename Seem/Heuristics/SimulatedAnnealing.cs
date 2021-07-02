@@ -150,7 +150,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++iterationsSinceMoveTypeOrObjectiveChange;
                     ++iterationsSinceReheatOrFinancialValueIncreased;
 
-                    float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                    float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
 
                     bool acceptMove = candidateFinancialValue > acceptedFinancialValue;
                     // require at least one improving move be accepted to set moving average before accepting disimproving moves

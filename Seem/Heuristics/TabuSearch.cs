@@ -256,7 +256,7 @@ namespace Osu.Cof.Ferm.Heuristics
             //int treeIndexStep = this.Jump;
 
             float acceptedFinancialValue = Single.MinValue;
-            SortedDictionary<float, OneOptMove> highestNonTabuMovesByFinancialValue = new();
+            SortedList<float, OneOptMove> highestNonTabuMovesByFinancialValue = new();
             float highestFinancialValueSinceLastEscape = highestFinancialValue;
             int iterationsSinceFinancialValueIncreasedOrEscape = 0;
             //int subset = 0;
@@ -316,7 +316,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         // find objective function for this tree in this period
                         candidateTrajectory.SetTreeSelection(treeIndex, thinningPeriod);
                         perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
-                        float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.DiscountRateIndex);
+                        float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
 
                         if (candidateFinancialValue > highestUnrestrictedFinancialValue)
                         {
