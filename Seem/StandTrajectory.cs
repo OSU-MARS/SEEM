@@ -18,8 +18,8 @@ namespace Osu.Cof.Ferm
         public int PeriodZeroAgeInYears { get; set; }
         public float PlantingDensityInTreesPerHectare { get; private init; } // trees per hectare
 
-        public SortedList<FiaCode, SpeciesScribnerVolume> StandingVolumeBySpecies { get; private init; }
-        public SortedList<FiaCode, SpeciesScribnerVolume> ThinningVolumeBySpecies { get; private init; }
+        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> StandingVolumeBySpecies { get; private init; }
+        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> ThinningVolumeBySpecies { get; private init; }
         public TreeVolume TreeVolume { get; set; }
 
         public StandTrajectory(TreeVolume treeVolume, int lastPlanningPeriod, float plantingDensityInTreesPerHectare)
@@ -65,8 +65,8 @@ namespace Osu.Cof.Ferm
             {
                 FiaCode treeSpecies = otherSelectionForSpecies.Key;
                 TreeSelection thisSelectionForSpecies = new(otherSelectionForSpecies.Value);
-                SpeciesScribnerVolume thisStandingVolume = new(other.StandingVolumeBySpecies[treeSpecies]);
-                SpeciesScribnerVolume thisThinningVolume = new(other.ThinningVolumeBySpecies[treeSpecies]);
+                TreeSpeciesMerchantableVolume thisStandingVolume = new(other.StandingVolumeBySpecies[treeSpecies]);
+                TreeSpeciesMerchantableVolume thisThinningVolume = new(other.ThinningVolumeBySpecies[treeSpecies]);
 
                 this.IndividualTreeSelectionBySpecies.Add(treeSpecies, thisSelectionForSpecies);
                 this.StandingVolumeBySpecies.Add(treeSpecies, thisStandingVolume);
@@ -129,7 +129,7 @@ namespace Osu.Cof.Ferm
         public int GetFirstThinPeriod()
         {
             int earliestThinningPeriod = this.PlanningPeriods;
-            foreach (SpeciesScribnerVolume thinningVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinningVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
             {
                 for (int periodIndex = 1; periodIndex < earliestThinningPeriod; ++periodIndex)
                 {
@@ -209,7 +209,7 @@ namespace Osu.Cof.Ferm
         private int GetThinPeriod(int thinning)
         {
             int earliestPeriodForThin = this.PlanningPeriods;
-            foreach (SpeciesScribnerVolume thinningVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinningVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
             {
                 int thinsFound = 0;
                 for (int periodIndex = 1; periodIndex < earliestPeriodForThin; ++periodIndex)
@@ -244,12 +244,32 @@ namespace Osu.Cof.Ferm
             return this.GetThinPeriod(3);
         }
 
+        public float GetTotalCubicVolumeThinned(int periodIndex)
+        {
+            float totalVolume = 0.0F;
+            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+            {
+                totalVolume += thinVolumeForSpecies.GetCubicTotal(periodIndex);
+            }
+            return totalVolume;
+        }
+
         public float GetTotalScribnerVolumeThinned(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (SpeciesScribnerVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
             {
                 totalVolume += thinVolumeForSpecies.GetScribnerTotal(periodIndex);
+            }
+            return totalVolume;
+        }
+
+        public float GetTotalStandingCubicVolume(int periodIndex)
+        {
+            float totalVolume = 0.0F;
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
+            {
+                totalVolume += standingVolumeForSpecies.GetCubicTotal(periodIndex);
             }
             return totalVolume;
         }
@@ -257,7 +277,7 @@ namespace Osu.Cof.Ferm
         public float GetTotalStandingScribnerVolume(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (SpeciesScribnerVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
             {
                 totalVolume += standingVolumeForSpecies.GetScribnerTotal(periodIndex);
             }

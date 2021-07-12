@@ -166,7 +166,7 @@ namespace Osu.Cof.Ferm.Organon
         public static float[] GetCrownCompetitionByHeight(OrganonVariant variant, OrganonStand stand)
         {
             // find tallest tree
-            float[] crownClosureByRelativeHeight = new float[Constant.HeightStrata + 1];
+            float[] crownClosureByRelativeHeight = new float[Constant.OrganonHeightStrata + 1];
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)

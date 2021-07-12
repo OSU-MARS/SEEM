@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Osu.Cof.Ferm
 {
-    public class TreeVolumeTable
+    public class TreeSpeciesVolumeTable
     {
         // Scribner lumber recovery from BC Firmwood cubic scale
         // Indexed by small end diameter in centimeters.
@@ -168,9 +168,9 @@ namespace Osu.Cof.Ferm
             /*50*/ {  0,   12,  23,  35,  47,  58,  70,  82,  94, 105, 117, 129, 140, 152, 164, 175, 187, 199, 211, 222, 234, 246, 257, 269, 281, 292, 304, 316, 328, 339, 351, 363, 374, 386, 398, 409, 421, 433, 445, 456, 468 }
             };
 
-        public float[,] Cubic2Saw { get; private init; } // m³ per tree
-        public float[,] Cubic3Saw { get; private init; } // m³ per tree
-        public float[,] Cubic4Saw { get; private init; } // m³ per tree
+        public float[,] Cubic2Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, m³/tree
+        public float[,] Cubic3Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, m³/tree
+        public float[,] Cubic4Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, m³/tree
 
         public float DiameterClassSizeInCentimeters { get; private init; }
         public float HeightClassSizeInMeters { get; private init; }
@@ -178,11 +178,11 @@ namespace Osu.Cof.Ferm
         public float MaximumDiameterInCentimeters { get; private init; }
         public float MaximumHeightInMeters { get; private init; }
 
-        public float[,] Scribner2Saw { get; private init; } // Scriber board foot log volume per tree
-        public float[,] Scribner3Saw { get; private init; } // Scriber board foot log volume per tree
-        public float[,] Scribner4Saw { get; private init; } // Scriber board foot log volume per tree
+        public float[,] Scribner2Saw { get; private init; } // Scriber board foot volume by DBH and height class, MBF/tree
+        public float[,] Scribner3Saw { get; private init; } // Scriber board foot volume by DBH and height class, MBF/tree
+        public float[,] Scribner4Saw { get; private init; } // Scriber board foot volume by DBH and height class, MBF/tree
 
-        public TreeVolumeTable(float maximumDiameterInCentimeters, float maximumHeightInMeters, float preferredLogLengthInMeters, Func<float, float, float, float> getDiameterInsideBark, bool scribnerFromLumberRecovery)
+        public TreeSpeciesVolumeTable(float maximumDiameterInCentimeters, float maximumHeightInMeters, float preferredLogLengthInMeters, Func<float, float, float, float> getDiameterInsideBark, Func<float, float> getNeiloidHeight, bool scribnerFromLumberRecovery)
         {
             if (preferredLogLengthInMeters > Constant.MetersPerFoot * 40.0F)
             {
@@ -205,8 +205,8 @@ namespace Osu.Cof.Ferm
 
             // fill cubic and Scribner volume tables
             // start at index 1 since trees in zero diameter class have zero merchantable volume
-            float scribnerTrim = preferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLength ? Constant.Bucking.ScribnerTrimLongLog : Constant.Bucking.ScribnerTrimShortLog;
-            float preferredLogLengthWithTrim = preferredLogLengthInMeters + scribnerTrim;
+            float defaultScribnerTrim = preferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLength ? Constant.Bucking.ScribnerTrimLongLog : Constant.Bucking.ScribnerTrimShortLog;
+            float preferredLogLengthWithTrim = preferredLogLengthInMeters + defaultScribnerTrim;
             for (int dbhIndex = 1; dbhIndex < diameterClasses; ++dbhIndex)
             {
                 float dbh = this.GetDiameter(dbhIndex);
@@ -230,10 +230,10 @@ namespace Osu.Cof.Ferm
                     }
 
                     // with current simplified bucking, diameter inside bark only needs to be evaluated at log ends
-                    // TODO: generalize neiloid height to other species
                     // TODO: what do scalers actually do, particularly on larger logs?
-                    float psmeNeiloidHeight = Constant.DbhHeight + 0.01F * 5.0F * (dbh - 20.0F); // approximation from R plots
-                    for (float logBottomHeight = Constant.Bucking.StumpHeight; logBottomHeight < height - Constant.Bucking.MinimumLogLength4Saw; logBottomHeight += preferredLogLengthWithTrim + Constant.Bucking.KerfProcessingHead)
+                    float neiloidHeight = getNeiloidHeight(dbh);
+                    float previousLogLengthWithTrim;
+                    for (float logBottomHeight = Constant.Bucking.StumpHeight; logBottomHeight < height - Constant.Bucking.MinimumLogLength4Saw; logBottomHeight += previousLogLengthWithTrim + Constant.Bucking.KerfProcessingHead)
                     {
                         float logMinimumTopHeight = logBottomHeight + Constant.Bucking.MinimumLogLength4Saw;
                         if (logMinimumTopHeight > height)
@@ -273,13 +273,13 @@ namespace Osu.Cof.Ferm
                         Debug.Assert(logLength >= Constant.Bucking.MinimumLogLength4Saw - 0.0001F);
                         // BC Firmwood cubic and Scribner.C long log volume
                         // Fonseca, M. 2005. The Measurement of Roundwood: Methodologies and Conversion Ratios. United Nations Economic 
-                        //   Commission for Europe Trade and Timber Branch. Cromwell Press, Trowbridge.
+                        //   Commission for Europe Trade and Timber Branch. Cromwell Press, Trowbridge. https://www.cabi.org/bookshop/book/9780851990798/
                         // section 2.2.2: BC Firmwood (0.5 * 0.0001 * pi = 0.00015708)
                         // section 2.3.2: Scribner long log
                         // Logs are assumed perfectly round, equivalent to assuming Poudel 2018 taper provides log rules' mean diameter.
                         // get BC firmwood volume
                         float bcFirmwoodBottomDiameter;
-                        if (logBottomHeight > psmeNeiloidHeight)
+                        if (logBottomHeight > neiloidHeight)
                         {
                             // bottom of log is above base neiloid
                             bcFirmwoodBottomDiameter = getDiameterInsideBark(dbh, height, logBottomHeight);
@@ -287,7 +287,7 @@ namespace Osu.Cof.Ferm
                         else
                         {
                             // caliper above neiloid and project per Fonseca section 2.2.2.1.6
-                            float bcFirmwoodLogBottomHeight = Math.Min(psmeNeiloidHeight, logTopHeight - 0.5F); // avoid math errors on very low height-diameter ratio trees
+                            float bcFirmwoodLogBottomHeight = Math.Min(neiloidHeight, logTopHeight - 0.5F); // avoid math errors on very low height-diameter ratio trees
                             float bcFirmwoodCaliperDibAboveNeiloid = getDiameterInsideBark(dbh, height, bcFirmwoodLogBottomHeight);
                             float bcFirmwoodProjectionTaper = (bcFirmwoodCaliperDibAboveNeiloid - logTopDib) / (logTopHeight - bcFirmwoodLogBottomHeight); // taper in diameter
                             bcFirmwoodBottomDiameter = bcFirmwoodCaliperDibAboveNeiloid + bcFirmwoodProjectionTaper * (bcFirmwoodLogBottomHeight - logBottomHeight);
@@ -321,8 +321,8 @@ namespace Osu.Cof.Ferm
                                     {
                                         int scribnerLowerTopDiameter = (int)Math.Round(bcFirmwoodTaperDiameter);
                                         int scribnerUpperTopDiameter = (int)Math.Round(logTopDib);
-                                        logScribnerVolume = TreeVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerLowerTopDiameter] * logLowerCubicVolume +
-                                                            TreeVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerUpperTopDiameter] * logUpperCubicVolume;
+                                        logScribnerVolume = TreeSpeciesVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerLowerTopDiameter] * logLowerCubicVolume +
+                                                            TreeSpeciesVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerUpperTopDiameter] * logUpperCubicVolume;
                                     }
                                 }
                             }
@@ -335,7 +335,7 @@ namespace Osu.Cof.Ferm
                             if (scribnerFromLumberRecovery)
                             {
                                 int scribnerTopDiameter = (int)Math.Round(logTopDib);
-                                logScribnerVolume = TreeVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerTopDiameter] * logCubicVolume;
+                                logScribnerVolume = TreeSpeciesVolumeTable.BoardFootRecoveryPerCubicMeter[scribnerTopDiameter] * logCubicVolume;
                             }
                         }
 
@@ -344,7 +344,7 @@ namespace Osu.Cof.Ferm
                         {
                             int scribnerDiameterInInches = (int)MathF.Floor(Constant.InchesPerCentimeter * logTopDib);
                             int scribnerLengthInFeet = (int)MathF.Floor(Constant.FeetPerMeter * logLength);
-                            logScribnerVolume = 10.0F * TreeVolumeTable.ScribnerCLongLog[scribnerDiameterInInches, scribnerLengthInFeet];
+                            logScribnerVolume = 10.0F * TreeSpeciesVolumeTable.ScribnerCLongLog[scribnerDiameterInInches, scribnerLengthInFeet];
                         }
 
                         Debug.Assert(logCubicVolume > 0.0F);
@@ -374,6 +374,9 @@ namespace Osu.Cof.Ferm
                             this.Scribner4Saw[dbhIndex, heightIndex] += logScribnerVolume;
                         }
                         // else log not merchantable
+
+                        float scribnerTrim = preferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLength ? Constant.Bucking.ScribnerTrimLongLog : Constant.Bucking.ScribnerTrimShortLog;
+                        previousLogLengthWithTrim = logLength + scribnerTrim;
                     }
                 }
             }

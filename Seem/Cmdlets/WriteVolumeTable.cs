@@ -36,10 +36,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             string logLengthAsString = scaledVolume.PreferredLogLengthInMeters.ToString(CultureInfo.InvariantCulture);
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            foreach (KeyValuePair<FiaCode, TreeVolumeTable> species in scaledVolume.VolumeBySpecies)
+            foreach (KeyValuePair<FiaCode, TreeSpeciesVolumeTable> species in scaledVolume.VolumeBySpecies)
             {
                 string speciesPrefix = String.Concat(logLengthAsString, ",", FiaCodeExtensions.ToFourLetterCode(species.Key));
-                TreeVolumeTable volumeTable = species.Value;
+                TreeSpeciesVolumeTable volumeTable = species.Value;
                 for (int heightIndex = 0; heightIndex < volumeTable.HeightClasses; ++heightIndex)
                 {
                     string height = volumeTable.GetHeight(heightIndex).ToString(CultureInfo.InvariantCulture);

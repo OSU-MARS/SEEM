@@ -50,8 +50,8 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     Count = treesOfSpecies.Count
                 });
-                this.StandingVolumeBySpecies.Add(species, new SpeciesScribnerVolume(species, maximumPlanningPeriodIndex));
-                this.ThinningVolumeBySpecies.Add(species, new SpeciesScribnerVolume(species, maximumPlanningPeriodIndex));
+                this.StandingVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
+                this.ThinningVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
             }
             this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
             this.StandByPeriod[0]!.Name += 0;
@@ -184,12 +184,12 @@ namespace Osu.Cof.Ferm.Organon
 
             Debug.Assert(IDictionaryExtensions.KeysIdentical(this.StandingVolumeBySpecies, other.StandingVolumeBySpecies) &&
                          IDictionaryExtensions.KeysIdentical(this.ThinningVolumeBySpecies, other.ThinningVolumeBySpecies));
-            foreach (KeyValuePair<FiaCode, SpeciesScribnerVolume> otherStandingVolumeForSpecies in other.StandingVolumeBySpecies)
+            foreach (KeyValuePair<FiaCode, TreeSpeciesMerchantableVolume> otherStandingVolumeForSpecies in other.StandingVolumeBySpecies)
             {
                 FiaCode treeSpecies = otherStandingVolumeForSpecies.Key;
-                SpeciesScribnerVolume thisStandingVolumeForSpecies = this.StandingVolumeBySpecies[treeSpecies];
-                SpeciesScribnerVolume otherThinningVolumeForSpecies = other.ThinningVolumeBySpecies[treeSpecies];
-                SpeciesScribnerVolume thisThinningVolumeForSpecies = this.ThinningVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume thisStandingVolumeForSpecies = this.StandingVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume otherThinningVolumeForSpecies = other.ThinningVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume thisThinningVolumeForSpecies = this.ThinningVolumeBySpecies[treeSpecies];
 
                 thisStandingVolumeForSpecies.CopyFrom(otherStandingVolumeForSpecies.Value);
                 thisThinningVolumeForSpecies.CopyFrom(otherThinningVolumeForSpecies);
@@ -202,29 +202,10 @@ namespace Osu.Cof.Ferm.Organon
             return initialStand.GetTreeRecordCount();
         }
 
-        public void GetMerchantableVolumes(out StandCubicAndScribnerVolume gradedVolumeStanding, out StandCubicAndScribnerVolume gradedVolumeHarvested)
+        public void GetMerchantableVolumes(out StandMerchantableVolume gradedVolumeStanding, out StandMerchantableVolume gradedVolumeHarvested)
         {
-            gradedVolumeHarvested = new StandCubicAndScribnerVolume(this.ThinningVolumeBySpecies);
-            gradedVolumeStanding = new StandCubicAndScribnerVolume(this.StandingVolumeBySpecies);
-            for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
-            {
-                // harvest volumes, if applicable
-                foreach (IHarvest harvest in this.Treatments.Harvests)
-                {
-                    if (harvest.Period == periodIndex)
-                    {
-                        // tree's expansion factor is set to zero when it's marked for harvest
-                        // Use tree's volume at end of the the previous period.
-                        // TODO: track per species volumes
-                        OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
-                        gradedVolumeHarvested.SetCubicVolumeHarvested(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TreeVolume);
-                    }
-                }
-
-                // standing volume
-                OrganonStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
-                gradedVolumeStanding.SetStandingCubicVolume(stand, periodIndex, this.TreeVolume);
-            }
+            gradedVolumeHarvested = new StandMerchantableVolume(this.ThinningVolumeBySpecies);
+            gradedVolumeStanding = new StandMerchantableVolume(this.StandingVolumeBySpecies);
         }
 
         public Units GetUnits()
@@ -253,9 +234,9 @@ namespace Osu.Cof.Ferm.Organon
                     // Use tree's volume at end of the the previous period.
                     // TODO: track per species volumes
                     OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
-                    foreach (SpeciesScribnerVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+                    foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
                     {
-                        thinVolumeForSpecies.SetScribnerHarvest(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TreeVolume);
+                        thinVolumeForSpecies.SetHarvestVolume(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TreeVolume);
                     }
                     // could make more specific by checking if harvest removes at least one tree
                     Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.GetTotalScribnerVolumeThinned(periodIndex) > 0.0F) ||
@@ -265,9 +246,9 @@ namespace Osu.Cof.Ferm.Organon
 
             // standing volume
             OrganonStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
-            foreach (SpeciesScribnerVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
             {
-                standingVolumeForSpecies.SetStandingScribnerVolume(stand, periodIndex, this.TreeVolume);
+                standingVolumeForSpecies.SetStandingVolume(stand, periodIndex, this.TreeVolume);
             }
         }
 

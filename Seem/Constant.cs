@@ -15,7 +15,6 @@ namespace Osu.Cof.Ferm
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
         public const float DbhHeight = 1.37F; // cm
-        public const float DefaultAnnualDiscountRate = 0.04F;
         public const string DefaultPercentageFormat = "0.0#";
         public const int DefaultPlanningPeriods = 9;
         public const string DefaultProbabilityFormat = "0.00##";
@@ -25,14 +24,14 @@ namespace Osu.Cof.Ferm
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
         public const float HectaresPerAcre = 0.404685F;
-        // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128, 8 for VEX 256
-        public const int HeightStrata = 40;
         public const float InchesPerCentimeter = 0.393701F;
         public const int MaximizeForAllPlanningPeriods = -2;
         public const float MetersPerFoot = 0.3048F;
         public const float NaturalLogOf10 = 2.3025850930F;
         public const int NoHarvestPeriod = 0;
         public const int NoThinPeriod = -1;
+        // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128, 8 for VEX 256
+        public const int OrganonHeightStrata = 40;
         public const float Pi = 3.14159265F;
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
@@ -114,6 +113,12 @@ namespace Osu.Cof.Ferm
             public const float ScribnerShortLogLength = Constant.MetersPerFoot * 20.0F; // m
             public const float ScribnerTrimLongLog = Constant.MetersPerFoot * 1.0F - 0.0001F; // m with 100 μm margin for numerical precision
             public const float ScribnerTrimShortLog = Constant.MetersPerFoot * 0.5F - 0.0001F; // m with 100 μm margin for numerical precision
+        }
+
+        public static class Financial
+        {
+            public const float DefaultAnnualDiscountRate = 0.04F;
+            public const float OregonForestProductsHarvestTax = 4.1322F; // US$/MBF, https://www.oregon.gov/dor/programs/property/Pages/timber-forest-harvest.aspx
         }
 
         public static class GeneticDefault

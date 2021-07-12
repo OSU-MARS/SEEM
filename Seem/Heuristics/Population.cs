@@ -587,6 +587,10 @@ namespace Osu.Cof.Ferm.Heuristics
                         return false;
                     }
 
+                    if ((individualIndex < 0) || (individualIndex >= distancesToIndividuals.Length))
+                    {
+                        Debugger.Break(); // trap for pending fix with rare repro
+                    }
                     distancesToIndividuals[individualIndex] = Math.Min(distanceToSolution, distancesToIndividuals[individualIndex]);
                     if (distanceToSolution < nearestLowerNeighborDistance)
                     {

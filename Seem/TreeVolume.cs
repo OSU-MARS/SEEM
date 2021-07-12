@@ -9,13 +9,23 @@
 
         static TreeVolume()
         {
-            TreeVolume.Default = new TreeVolume(Constant.Bucking.DefaultMaximumDiameterInCentimeters, Constant.Bucking.DefaultMaximumHeightInMeters, false);
+            TreeVolume.Default = new TreeVolume();
+        }
+
+        public TreeVolume()
+            : this(Constant.Bucking.DefaultMaximumDiameterInCentimeters, Constant.Bucking.DefaultMaximumHeightInMeters, scribnerFromLumberRecovery: false)
+        {
         }
 
         public TreeVolume(float maximumDiameterInCentimeters, float maximumHeightInMeters, bool scribnerFromLumberRecovery)
+            : this(Constant.Bucking.LogLengthThinning, Constant.Bucking.LogLengthRegenerationHarvest, maximumDiameterInCentimeters, maximumHeightInMeters, scribnerFromLumberRecovery)
         {
-            this.RegenerationHarvest = new ScaledVolume(maximumDiameterInCentimeters, maximumHeightInMeters, Constant.Bucking.LogLengthRegenerationHarvest, scribnerFromLumberRecovery);
-            this.Thinning = new ScaledVolume(maximumDiameterInCentimeters, maximumHeightInMeters, Constant.Bucking.LogLengthThinning, scribnerFromLumberRecovery);
+        }
+
+        public TreeVolume(float thinningLogLengthInM, float regenerationHarvestLogLengthInM, float maximumDiameterInCentimeters, float maximumHeightInMeters, bool scribnerFromLumberRecovery)
+        {
+            this.RegenerationHarvest = new ScaledVolume(maximumDiameterInCentimeters, maximumHeightInMeters, regenerationHarvestLogLengthInM, scribnerFromLumberRecovery);
+            this.Thinning = new ScaledVolume(maximumDiameterInCentimeters, maximumHeightInMeters, thinningLogLengthInM, scribnerFromLumberRecovery);
         }
     }
 }
