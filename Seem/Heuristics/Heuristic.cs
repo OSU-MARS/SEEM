@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -275,21 +276,65 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             // attempt to find an existing solution with the same set of thinning timings
             // If found, the existing solution's discount rate and number of planning periods may differ.
-            if (results.TryFindSolutionsMatchingThinnings(position, out HeuristicSolutionPool? existingSolutions))
+            if (results.TryGetSelfOrFindNearestNeighbor(position, out HeuristicSolutionPool? existingSolutions, out HeuristicResultPosition? positionOfExistingSolutions))
             {
                 Debug.Assert(existingSolutions.SolutionsInPool > 0);
                 OrganonStandTrajectory eliteSolution = existingSolutions.GetEliteSolution(position);
                 this.CurrentTrajectory.CopyTreeGrowthFrom(eliteSolution);
 
+                // assuming an existing elite solution at this position has reached first order convergence, must randomize at least two trees
+                // to potentially shift to some other domain of attraction
+                // The actual number of trees randomized is nondeterministic, the construction process may not necessarily randomize trees to
+                // a different harvest timing, and the size of the domain of attraction is unknown. Therefore, set the minimum randomization to
+                // be several trees more than the minimum of two.
                 int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
-                float maximumConstructionGreediness = (initialTreeRecordCount - 2.0F) / initialTreeRecordCount;
+                float maximumConstructionGreediness = (initialTreeRecordCount - Constant.Grasp.MinimumTreesRandomized) / (float)initialTreeRecordCount;
                 if (maximumConstructionGreediness <= this.HeuristicParameters.MinimumConstructionGreediness)
                 {
                     // fall back to permitting fully greedy construction if only a few trees are present or when the minimum greediness is
                     // especially high
                     maximumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
                 }
-                this.ConstructionGreediness = results.GraspReactivity.GetConstructionGreediness(this.HeuristicParameters.MinimumConstructionGreediness, maximumConstructionGreediness);
+                if (position == positionOfExistingSolutions)
+                {
+                    // if one elite solution is available, begin this search with semi-greeding construction
+                    this.ConstructionGreediness = results.GraspReactivity.GetConstructionGreediness(this.HeuristicParameters.MinimumConstructionGreediness, maximumConstructionGreediness);
+                    // TODO: if two or more elite solutions are available, within position path relinking is possible
+                    // this.ConstructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
+                }
+                else
+                {
+                    // default to minimal randomization since no solution has yet been accepted at this position
+                    // Fully greedy construction is suitable the first time an existing elite solution is evaluated at a new position.
+                    // However, within the current codebase it's not known how many other threads may have already initiated searches at this
+                    // position, may initiate searches before this search completes, and which existing elite solutions from may currenty be
+                    // under evaluation. For now, minimal randomization is therefore applied to reduce the probability of performing duplicate
+                    // searches.
+                    this.ConstructionGreediness = maximumConstructionGreediness;
+                    // this.ConstructionGreediness = this.HeuristicParameters.MinimumConstructionGreediness;
+                    // this.ConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
+                    // this.ConstructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
+
+                    // sync prescription to new thinning timings
+                    if (position.ThirdThinPeriodIndex != positionOfExistingSolutions.ThirdThinPeriodIndex)
+                    {
+                        int currentThinPeriod = results.ThirdThinPeriods[position.ThirdThinPeriodIndex];
+                        int existingSolutionThinPeriod = results.ThirdThinPeriods[positionOfExistingSolutions.ThirdThinPeriodIndex];
+                        this.CurrentTrajectory.ChangeThinningPeriod(existingSolutionThinPeriod, currentThinPeriod);
+                    }
+                    if (position.SecondThinPeriodIndex != positionOfExistingSolutions.SecondThinPeriodIndex)
+                    {
+                        int currentThinPeriod = results.SecondThinPeriods[position.SecondThinPeriodIndex];
+                        int existingSolutionThinPeriod = results.SecondThinPeriods[positionOfExistingSolutions.SecondThinPeriodIndex];
+                        this.CurrentTrajectory.ChangeThinningPeriod(existingSolutionThinPeriod, currentThinPeriod);
+                    }
+                    if (position.FirstThinPeriodIndex != positionOfExistingSolutions.FirstThinPeriodIndex)
+                    {
+                        int currentThinPeriod = results.FirstThinPeriods[position.FirstThinPeriodIndex];
+                        int existingSolutionThinPeriod = results.FirstThinPeriods[positionOfExistingSolutions.FirstThinPeriodIndex];
+                        this.CurrentTrajectory.ChangeThinningPeriod(existingSolutionThinPeriod, currentThinPeriod);
+                    }
+                }
             }
             else
             {
@@ -300,14 +345,14 @@ namespace Osu.Cof.Ferm.Heuristics
             return this.ConstructTreeSelection(this.ConstructionGreediness);
         }
 
-        protected virtual float EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected virtual float EvaluateInitialSelection(HeuristicResultPosition position, int moveCapacity, HeuristicPerformanceCounters perfCounters)
         {
             this.FinancialValue.SetMoveCapacity(moveCapacity);
 
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
             this.BestTrajectoryByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex]!.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
-            float financialValue = this.GetFinancialValue(this.CurrentTrajectory, Constant.HeuristicDefault.FinancialIndex);
+            float financialValue = this.GetFinancialValue(this.CurrentTrajectory, position.FinancialIndex);
             this.FinancialValue.AddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex, financialValue, financialValue);
             return financialValue;
         }

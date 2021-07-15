@@ -1,4 +1,6 @@
-﻿using Osu.Cof.Ferm.Heuristics;
+﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -89,6 +91,21 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             this.Treatments.CopyFrom(other.Treatments);
+        }
+
+        public override void ChangeThinningPeriod(int currentPeriod, int newPeriod)
+        {
+            // move harvest prescriptions
+            foreach (IHarvest harvest in this.Treatments.Harvests)
+            {
+                if (harvest.Period == currentPeriod)
+                {
+                    harvest.Period = newPeriod;
+                }
+            }
+
+            // move tree selection
+            base.ChangeThinningPeriod(currentPeriod, newPeriod);
         }
 
         // this function doesn't currently copy

@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Tree;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -144,6 +145,7 @@ namespace Osu.Cof.Ferm
             public const float DefaultMinimumConstructionGreedinessForMaximization = 0.9F;
             public const float FullyGreedyConstructionForMaximization = 1.0F;
             public const float FullyRandomConstructionForMaximization = 0.0F;
+            public const int MinimumTreesRandomized = 5; // see Heuristic.ConstructTreeSelection()
             public const float NoConstruction = -1.0F;
         }
 

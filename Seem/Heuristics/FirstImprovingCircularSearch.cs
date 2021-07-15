@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -70,7 +71,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             int treesRandomizedInConstructingInitialTreeSelection = this.ConstructTreeSelection(position, results);
             MoveState moveState = new(this.CurrentTrajectory, treesRandomizedInConstructingInitialTreeSelection);
-            moveState.AcceptedFinancialValue = this.EvaluateInitialSelection(this.MaximumIterations, moveState.PerfCounters);
+            moveState.AcceptedFinancialValue = this.EvaluateInitialSelection(position, this.MaximumIterations, moveState.PerfCounters);
 
             int lastImprovingSourceTreeIndex = 0;
             int sourceTreeIndex = moveState.UncompactedPeriodIndices.Length;

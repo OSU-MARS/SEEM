@@ -2,7 +2,7 @@
 {
     public interface IHarvest
     {
-        int Period { get; }
+        int Period { get; set; }
 
         IHarvest Clone();
         float EvaluateTreeSelection(OrganonStandTrajectory trajectory);

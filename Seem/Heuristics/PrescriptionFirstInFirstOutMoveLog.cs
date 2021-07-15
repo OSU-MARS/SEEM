@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Organon;
 using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics

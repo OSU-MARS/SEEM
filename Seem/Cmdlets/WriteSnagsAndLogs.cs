@@ -1,6 +1,7 @@
-﻿using Osu.Cof.Ferm.Heuristics;
+﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
-using System;
+using Osu.Cof.Ferm.Tree;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;

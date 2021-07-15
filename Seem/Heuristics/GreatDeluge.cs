@@ -72,7 +72,7 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
             if (this.RainRate.HasValue == false)
             {
                 this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * acceptedFinancialValue / this.Iterations;

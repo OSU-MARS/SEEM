@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Organon;
-using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
@@ -13,9 +12,9 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MoveLog = new SingleTreeMoveLog();
         }
 
-        protected override float EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected override float EvaluateInitialSelection(HeuristicResultPosition position, int moveCapacity, HeuristicPerformanceCounters perfCounters)
         {
-            float financialValue = base.EvaluateInitialSelection(moveCapacity, perfCounters);
+            float financialValue = base.EvaluateInitialSelection(position, moveCapacity, perfCounters);
             
             this.MoveLog.TreeIDByMove.Capacity = moveCapacity;
             this.MoveLog.TreeIDByMove.Add(-1);

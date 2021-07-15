@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -92,7 +93,7 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
 
             int iterationsSinceMoveTypeOrObjectiveChange = 0;
             int iterationsSinceReheatOrFinancialValueIncreased = 0;

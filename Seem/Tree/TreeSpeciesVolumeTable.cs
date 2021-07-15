@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm
+namespace Osu.Cof.Ferm.Tree
 {
     public class TreeSpeciesVolumeTable
     {

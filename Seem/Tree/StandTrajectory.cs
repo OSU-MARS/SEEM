@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Ferm
+namespace Osu.Cof.Ferm.Tree
 {
     public class StandTrajectory
     {
@@ -77,6 +78,29 @@ namespace Osu.Cof.Ferm
         public int PlanningPeriods
         {
             get { return this.BasalAreaRemoved.Length; }
+        }
+
+        public virtual void ChangeThinningPeriod(int currentPeriod, int newPeriod)
+        {
+            Debug.Assert(currentPeriod != newPeriod);
+
+            bool atLeastOneTreeMoved = false;
+            foreach (TreeSelection treeSelectionForSpecies in this.IndividualTreeSelectionBySpecies.Values)
+            {
+                for (int uncompactedTreeIndex = 0; uncompactedTreeIndex < treeSelectionForSpecies.Count; ++uncompactedTreeIndex)
+                {
+                    if (treeSelectionForSpecies[uncompactedTreeIndex] == currentPeriod)
+                    {
+                        treeSelectionForSpecies[uncompactedTreeIndex] = newPeriod;
+                        atLeastOneTreeMoved = true;
+                    }
+                }
+            }
+
+            if (atLeastOneTreeMoved)
+            {
+                this.EarliestPeriodChangedSinceLastSimulation = Math.Min(currentPeriod, newPeriod);
+            }
         }
 
         public void CopyTreeSelectionTo(SortedList<FiaCode, TreeSelection> otherTreeSelection)

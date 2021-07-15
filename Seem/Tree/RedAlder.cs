@@ -1,7 +1,7 @@
-﻿using System;
-using System.Diagnostics;
+﻿using Osu.Cof.Ferm.Extensions;
+using System;
 
-namespace Osu.Cof.Ferm.Species
+namespace Osu.Cof.Ferm.Tree
 {
     internal class RedAlder
     {

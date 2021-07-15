@@ -1,4 +1,4 @@
-﻿namespace Osu.Cof.Ferm
+﻿namespace Osu.Cof.Ferm.Tree
 {
     public enum TreeModel
     {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Ferm
+namespace Osu.Cof.Ferm.Tree
 {
     public class Stand
     {

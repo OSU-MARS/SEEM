@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Tree;
+using System;
 
-namespace Osu.Cof.Ferm
+namespace Osu.Cof.Ferm.Extensions
 {
     internal static class FiaCodeExtensions
     {

@@ -1,4 +1,4 @@
-﻿namespace Osu.Cof.Ferm
+﻿namespace Osu.Cof.Ferm.Tree
 {
     /// <summary>
     /// FIA species and genera codes known to Organon.

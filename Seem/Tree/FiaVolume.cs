@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Extensions;
+using System;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace Osu.Cof.Ferm
+namespace Osu.Cof.Ferm.Tree
 {
     public class FiaVolume
     {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Tree;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -7,7 +8,6 @@ namespace Osu.Cof.Ferm.Organon
 {
     public class OrganonConfiguration
     {
-        public Bucking Bucking { get; private set; }
         public OrganonVariant Variant { get; private set; }
 
         // enable per species crown ratio growth multiplier used only for NWO
@@ -46,7 +46,6 @@ namespace Osu.Cof.Ferm.Organon
 
         public OrganonConfiguration(OrganonVariant variant)
         {
-            this.Bucking = new Bucking();
             this.Variant = variant;
             if (this.Variant.TreeModel == TreeModel.OrganonRap)
             {
@@ -59,7 +58,6 @@ namespace Osu.Cof.Ferm.Organon
         {
             Debug.Assert(Object.ReferenceEquals(this, other) == false);
 
-            this.Bucking = other.Bucking;
             this.Variant = other.Variant;
 
             this.CalibrateCrownRatio = other.CalibrateCrownRatio;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Tree;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace Osu.Cof.Ferm.Organon
         private float fromBelowPercentage;
         private float proportionalPercentage;
 
-        public int Period { get; private init; }
+        public int Period { get; set; }
 
         public ThinByPrescription(int harvestAtBeginningOfPeriod)
         {

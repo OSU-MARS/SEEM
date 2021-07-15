@@ -2,6 +2,7 @@
 using Osu.Cof.Ferm.Data;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1136,10 +1137,11 @@ namespace Osu.Cof.Ferm.Test
 
         private static HeuristicSolutionPool Verify(HeuristicResults results, HeuristicResultPosition position, int endOfRotationPeriod)
         {
-            Assert.IsTrue(results.TryFindSolutionsMatchingThinnings(position, out HeuristicSolutionPool? eliteSolutions));
+            Assert.IsTrue(results.TryGetSelfOrFindNearestNeighbor(position, out HeuristicSolutionPool? eliteSolutions, out HeuristicResultPosition? eliteSolutionsPosition));
             Assert.IsTrue(eliteSolutions!.High != null);
             Assert.IsTrue(eliteSolutions.Low != null);
             Assert.IsTrue(eliteSolutions.SolutionsInPool == Math.Min(eliteSolutions.SolutionsAccepted, TestConstant.SolutionPoolSize));
+            Assert.IsTrue(position == eliteSolutionsPosition!);
 
             for (int solutionIndex = 0; solutionIndex < eliteSolutions.SolutionsInPool; ++solutionIndex)
             {

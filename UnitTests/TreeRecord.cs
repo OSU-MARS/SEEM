@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Tree;
+using System;
 
 namespace Osu.Cof.Ferm.Test
 {

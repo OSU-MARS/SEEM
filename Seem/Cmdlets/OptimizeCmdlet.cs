@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -212,7 +213,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 if (this.Financial.Count > 1)
                 {
-                    mostRecentEvaluationDescription += ", rate " + currentPosition.FinancialIndex + "/" + this.Financial.Count;
+                    mostRecentEvaluationDescription += ", scenario " + currentPosition.FinancialIndex + "/" + this.Financial.Count;
                 }
             }
             mostRecentEvaluationDescription += " (" + this.Threads + " threads)";
@@ -311,7 +312,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                         continue;
                                     }
 
-                                    // heuristic optimizes for one discount rate at a time
+                                    // heuristic optimizes for one financial scenario at a time
                                     for (int financialIndex = 0; financialIndex < this.Financial.Count; ++financialIndex)
                                     {
                                         // distributions are unique per combination of run tuple (discount rate, thins 1, 2, 3, and rotation)
@@ -336,104 +337,110 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             OrganonConfiguration organonConfiguration = new(OrganonVariant.Create(this.TreeModel));
-            ParallelOptions parallelOptions = new()
-            {
-                MaxDegreeOfParallelism = this.Threads
-            };
             int runsCompleted = 0;
+            int runsStarted = -1; // step through combinationsToEvaluate sequentially
             int runtimeCostCompleted = 0;
             int totalRuns = this.BestOf * combinationsToEvaluate.Count;
             totalRuntimeCost *= this.BestOf;
             Task runs = Task.Run(() =>
             {
-                Parallel.For(0, totalRuns, parallelOptions, (int iteration, ParallelLoopState loopState) =>
+                Task[] workers = new Task[this.Threads];
+                for (int workerThread = 0; workerThread < workers.Length; ++workerThread)
                 {
-                    if (loopState.ShouldExitCurrentIteration)
+                    workers[workerThread] = Task.Run(() =>
                     {
-                        return;
-                    }
-
-                    int resultPositionIndex = iteration / this.BestOf;
-                    HeuristicResultPosition position = combinationsToEvaluate[resultPositionIndex];
-                    try
-                    {
-                        TParameters heuristicParameters = parameterCombinationsForHeuristic[position.ParameterIndex];
-                        RunParameters runParameters = this.CreateRunParameters(position, organonConfiguration);
-                        Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(heuristicParameters, runParameters);
-                        HeuristicPerformanceCounters perfCounters = currentHeuristic.Run(position, results);
-
-                        // accumulate run into results and tracking counters
-                        int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
-                        lock (results)
+                        for (int runNumber = Interlocked.Increment(ref runsStarted); runNumber < totalRuns; runNumber = Interlocked.Increment(ref runsStarted))
                         {
-                            if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates)
+                            if (this.Stopping)
                             {
-                                // scatter heuristic's results to rotation lengths and discount rates
-                                HeuristicPerformanceCounters perfCountersToAssmilate = perfCounters;
-                                bool perfCountersLogged = false;
-                                for (int rotationIndex = 0; rotationIndex < this.PlanningPeriods.Count; ++rotationIndex)
+                                return;
+                            }
+
+                            int combinationIndex = runNumber / this.BestOf;
+                            HeuristicResultPosition position = combinationsToEvaluate[combinationIndex];
+                            try
+                            {
+                                TParameters heuristicParameters = parameterCombinationsForHeuristic[position.ParameterIndex];
+                                RunParameters runParameters = this.CreateRunParameters(position, organonConfiguration);
+                                Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(heuristicParameters, runParameters);
+                                HeuristicPerformanceCounters perfCounters = currentHeuristic.Run(position, results);
+
+                                // accumulate run into results and tracking counters
+                                int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
+                                int runWithinCombination = runNumber - this.BestOf * combinationIndex;
+                                lock (results)
                                 {
-                                    int endOfRotationPeriod = this.PlanningPeriods[rotationIndex];
-                                    if (endOfRotationPeriod <= runParameters.LastThinPeriod)
+                                    if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates)
                                     {
-                                        continue; // not a valid position because end of rotation would occur before or in the same period as the last thin
-                                    }
-
-                                    for (int financialIndex = 0; financialIndex < this.Financial.Count; ++financialIndex)
-                                    {
-                                        HeuristicResultPosition assimilationPosition = new(position) // must be new each time to populate results.CombinationsEvaluated
+                                        // scatter heuristic's results to rotation lengths and discount rates
+                                        HeuristicPerformanceCounters perfCountersToAssmilate = perfCounters;
+                                        bool perfCountersLogged = false;
+                                        for (int rotationIndex = 0; rotationIndex < this.PlanningPeriods.Count; ++rotationIndex)
                                         {
-                                            FinancialIndex = financialIndex,
-                                            RotationIndex = rotationIndex
-                                        };
+                                            int endOfRotationPeriod = this.PlanningPeriods[rotationIndex];
+                                            if (endOfRotationPeriod <= runParameters.LastThinPeriod)
+                                            {
+                                                continue; // not a valid position because end of rotation would occur before or in the same period as the last thin
+                                            }
 
-                                        results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCountersToAssmilate, assimilationPosition);
-                                        results.CombinationsEvaluated.Add(assimilationPosition);
+                                            for (int financialIndex = 0; financialIndex < this.Financial.Count; ++financialIndex)
+                                            {
+                                                HeuristicResultPosition assimilationPosition = new(position) // must be new each time to populate results.CombinationsEvaluated
+                                                {
+                                                    FinancialIndex = financialIndex,
+                                                    RotationIndex = rotationIndex
+                                                };
 
-                                        if (perfCountersLogged == false)
-                                        {
-                                            perfCountersLogged = true;
-                                            perfCountersToAssmilate = HeuristicPerformanceCounters.Zero;
+                                                results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCountersToAssmilate, assimilationPosition);
+
+                                                if (perfCountersLogged == false)
+                                                {
+                                                    perfCountersLogged = true;
+                                                    perfCountersToAssmilate = HeuristicPerformanceCounters.Zero;
+                                                }
+                                            }
                                         }
                                     }
+                                    else
+                                    {
+                                        // heuristic is specific to a single discount rate
+                                        results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCounters, position);
+                                    }
+
+                                    if (runWithinCombination == this.BestOf - 1)
+                                    {
+                                        // last run in combination adds the position to CombinationsEvaluated
+                                        results.CombinationsEvaluated.Add(position);
+                                    }
+
+                                    totalPerfCounters += perfCounters;
+                                    ++runsCompleted;
+                                    runtimeCostCompleted += estimatedRuntimeCost;
                                 }
                             }
-                            else
+                            catch (Exception exception)
                             {
-                                // heuristic is specific to a single discount rate
-                                results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCounters, position);
-                                results.CombinationsEvaluated.Add(position);
+                                string rotationLength = "vectorized";
+                                string financialScenario = "vectorized";
+                                if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates == false)
+                                {
+                                    financialScenario = results.FinancialScenarios.DiscountRate[position.FinancialIndex].ToString();
+                                    rotationLength = results.RotationLengths[position.RotationIndex].ToString();
+                                }
+                                throw new AggregateException("Exception encountered during optimization. Parameters " + position.ParameterIndex +
+                                                             ", first thin period " + results.FirstThinPeriods[position.FirstThinPeriodIndex] +
+                                                             ", second thin period " + results.SecondThinPeriods[position.SecondThinPeriodIndex] +
+                                                             ", third thin period " + results.ThirdThinPeriods[position.ThirdThinPeriodIndex] +
+                                                             ", rotation length " + rotationLength +
+                                                             ", financial scenario " + financialScenario +
+                                                             ".",
+                                                             exception);
                             }
-
-                            totalPerfCounters += perfCounters;
-                            ++runsCompleted;
-                            runtimeCostCompleted += estimatedRuntimeCost;
                         }
-                    }
-                    catch (Exception exception)
-                    {
-                        string rotationLength = "vectorized";
-                        string discountRate = "vectorized";
-                        if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates == false)
-                        {
-                            discountRate = results.FinancialScenarios.DiscountRate[position.FinancialIndex].ToString();
-                            rotationLength = results.RotationLengths[position.RotationIndex].ToString();
-                        }
-                        throw new AggregateException("Exception encountered during optimization. Parameters " + position.ParameterIndex +
-                                                     ", first thin period " + results.FirstThinPeriods[position.FirstThinPeriodIndex] +
-                                                     ", second thin period " + results.SecondThinPeriods[position.SecondThinPeriodIndex] +
-                                                     ", third thin period " + results.ThirdThinPeriods[position.ThirdThinPeriodIndex] +
-                                                     ", rotation length " + rotationLength +
-                                                     ", discount rate " + discountRate +
-                                                     ".", 
-                                                     exception);
-                    }
+                    });
+                }
 
-                    if (this.Stopping)
-                    {
-                        loopState.Stop();
-                    }
-                });
+                Task.WaitAll(workers);
             });
 
             string cmdletName = this.GetName();
@@ -530,10 +537,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", highHeuristic.FinancialValue.GetHighestValue(), result.Distribution.HighestFinancialValueBySolution.Average(), highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex).Last());
 
             double totalSeconds = totalPerfCounters.Duration.TotalSeconds;
-            double iterationsPerSecond = totalMoves / totalSeconds;
-            double iterationsPerSecondMultiplier = iterationsPerSecond > 1E3 ? 1E-3 : 1.0;
-            string iterationsPerSecondScale = iterationsPerSecond > 1E3 ? "k" : String.Empty;
-            this.WriteVerbose("{0} iterations in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4}iterations/core-s).", totalMoves, totalSeconds, elapsedTime.TotalSeconds, iterationsPerSecondMultiplier * iterationsPerSecond, iterationsPerSecondScale);
+            double movesPerSecond = totalMoves / totalSeconds;
+            double movesPerSecondMultiplier = movesPerSecond > 1E3 ? 1E-3 : 1.0;
+            string movesPerSecondScale = movesPerSecond > 1E3 ? "k" : String.Empty;
+            this.WriteVerbose("{0} moves in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4} moves/core-s).", totalMoves, totalSeconds, elapsedTime.TotalSeconds, movesPerSecondMultiplier * movesPerSecond, movesPerSecondScale);
         }
 
         private bool TryCreateFirstThin(int firstThinPeriodIndex, [NotNullWhen(true)] out IHarvest? firstThin)

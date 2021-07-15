@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Extensions;
+using System;
 
 namespace Osu.Cof.Ferm.Organon
 {

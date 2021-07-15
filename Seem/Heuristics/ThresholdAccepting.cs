@@ -54,7 +54,7 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            this.EvaluateInitialSelection(this.IterationsPerThreshold.Sum(), perfCounters);
+            this.EvaluateInitialSelection(position, this.IterationsPerThreshold.Sum(), perfCounters);
 
             float acceptedFinancialValue = this.FinancialValue.GetHighestValue();
             float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;

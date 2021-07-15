@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Organon;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -41,7 +42,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
-            float acceptedFinancialValue = this.EvaluateInitialSelection(this.MaximumIterations * initialTreeRecordCount, perfCounters);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(position, this.MaximumIterations * initialTreeRecordCount, perfCounters);
             float previousBestObjectiveFunction = acceptedFinancialValue;
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             bool decrementPeriodIndex = false;

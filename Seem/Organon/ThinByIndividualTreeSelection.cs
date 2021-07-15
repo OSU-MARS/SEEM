@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Tree;
+using System;
 using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Organon
 {
     public class ThinByIndividualTreeSelection : IHarvest
     {
-        public int Period { get; private init; }
+        public int Period { get; set; }
 
         public ThinByIndividualTreeSelection(int harvestPeriod)
         {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 

@@ -33,7 +33,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.FinancialValue.SetMoveCapacity(this.Iterations);
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float acceptedFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
 
             for (int iteration = 1; iteration < this.Iterations; ++iteration)
             {

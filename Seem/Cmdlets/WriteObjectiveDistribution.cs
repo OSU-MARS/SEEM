@@ -38,12 +38,12 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 HeuristicObjectiveDistribution distribution = result.Distribution;
                 List<float> highestFinancialValues = distribution.HighestFinancialValueBySolution;
-                for (int financialIndex = 0; financialIndex < highestFinancialValues.Count; ++financialIndex)
+                for (int solutionIndex = 0; solutionIndex < highestFinancialValues.Count; ++solutionIndex)
                 {
-                    HeuristicPerformanceCounters perfCounters = distribution.PerfCountersBySolution[financialIndex];
+                    HeuristicPerformanceCounters perfCounters = distribution.PerfCountersBySolution[solutionIndex];
                     writer.WriteLine(heuristicAndPosition + "," +
-                                     financialIndex.ToString(CultureInfo.InvariantCulture) + "," +
-                                     highestFinancialValues[financialIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                     solutionIndex.ToString(CultureInfo.InvariantCulture) + "," +
+                                     highestFinancialValues[solutionIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.MovesAccepted.ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.MovesRejected.ToString(CultureInfo.InvariantCulture) + "," +
                                      perfCounters.Duration.TotalSeconds.ToString("0.000", CultureInfo.InvariantCulture) + "," +

@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Tree;
 using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Heuristics

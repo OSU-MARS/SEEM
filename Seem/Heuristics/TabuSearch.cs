@@ -234,7 +234,7 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicPerformanceCounters perfCounters = new();
 
             perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float highestFinancialValue = this.EvaluateInitialSelection(this.Iterations, perfCounters);
+            float highestFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
 
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             int[,] remainingTabuTenures = new int[initialTreeRecordCount, thinningPeriods.Max() + 1];

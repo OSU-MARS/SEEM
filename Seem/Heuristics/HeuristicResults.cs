@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -9,7 +10,7 @@ namespace Osu.Cof.Ferm.Heuristics
     public class HeuristicResults
     {
         private readonly int parameterCombinationCount;
-        // indices are: parameter combination, first thin, second thin, third thin, planning periods, financial scenario
+        // indices are: parameter combination, first thin, second thin, third thin, rotation length, financial scenario
         // Nullability in multidimensional arrays does not appear supported as of Visual Studio 16.10.1. See remarks in constructor.
         private readonly HeuristicResult[][][][][][] results;
 
@@ -141,9 +142,9 @@ namespace Osu.Cof.Ferm.Heuristics
             // pressure
             // One interpretation of this is the pool size sets the minimum amount of information needed to make decisions about the
             // value of solution diversity and objective function improvements.
-            bool poolFilled = result.Pool.IsFull;
+            bool poolAlreadyFull = result.Pool.IsFull;
             bool acceptedAsEliteSolution = result.Pool.TryAddOrReplace(heuristic, position);
-            this.GraspReactivity.Add(heuristic.ConstructionGreediness, acceptedAsEliteSolution && poolFilled);
+            this.GraspReactivity.Add(heuristic.ConstructionGreediness, acceptedAsEliteSolution && poolAlreadyFull);
         }
 
         public void GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected)
@@ -190,87 +191,128 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        // searches among financial scenarios for solutions assigned to the same set of heuristic parameters, thinnings, and rotation length
-        private bool TryFindSolutionsMatchingStandEntries(HeuristicResultPosition position, int rotationIndex, [NotNullWhen(true)] out HeuristicSolutionPool? pool)
-        {
-            pool = null;
-
-            // see if a financial scenario array exists for this combination of thins and rotation length
-            HeuristicResult[][][][][] parameterResults = this.results[position.ParameterIndex];
-            Debug.Assert(parameterResults != null);
-            HeuristicResult[][][][] firstThinResults = parameterResults[position.FirstThinPeriodIndex];
-            Debug.Assert(firstThinResults != null);
-            HeuristicResult[][][] secondThinResults = firstThinResults[position.SecondThinPeriodIndex];
-            if (secondThinResults == null)
-            {
-                return false;
-            }
-            HeuristicResult[][] thirdThinResults = secondThinResults[position.ThirdThinPeriodIndex];
-            if (thirdThinResults == null)
-            {
-                return false;
-            }
-            HeuristicResult[] rotationLengthResults = thirdThinResults[rotationIndex];
-            if (rotationLengthResults == null)
-            {
-                return false;
-            }
-
-            // search among financial scenarios
-            int maxFinancialOffset = Math.Max(position.FinancialIndex, rotationLengthResults.Length - position.FinancialIndex);
-            for (int financialOffset = 0; financialOffset <= maxFinancialOffset; ++financialOffset)
-            {
-                // for now, arbitrarily define the next following scenario as closer than the previous scenario
-                // If needed, this can be made intelligent enough to look at the actual differences among scenarios.
-                int financialIndex = position.FinancialIndex + financialOffset;
-                if (financialIndex < rotationLengthResults.Length)
-                {
-                    pool = rotationLengthResults[financialIndex].Pool;
-                    if (pool.SolutionsInPool > 0)
-                    {
-                        return true;
-                    }
-
-                    if (financialOffset > 0)
-                    {
-                        financialIndex = position.FinancialIndex - financialOffset;
-                        if (financialIndex >= 0)
-                        {
-                            pool = rotationLengthResults[financialIndex].Pool;
-                            if (pool.SolutionsInPool > 0)
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            pool = null;
-            return false;
-        }
-
         // searches among financial scenarios and rotation lengths for solutions assigned to the same set of heuristic parameters and thinnings
         // Looking across parameters would confound heuristic parameter tuning runs by allowing later parameter sets to access solutions obtained
         // by earlier runs. It's assumed parameter set evaluations should always be independent of each other.
-        public bool TryFindSolutionsMatchingThinnings(HeuristicResultPosition position, [NotNullWhen(true)] out HeuristicSolutionPool? solutions)
+        public bool TryGetSelfOrFindNearestNeighbor(HeuristicResultPosition position, [NotNullWhen(true)] out HeuristicSolutionPool? neighborOrSelf, [NotNullWhen(true)] out HeuristicResultPosition? neighborOrSelfPosition)
         {
-            int maxRotationOffset = Math.Max(position.RotationIndex, this.RotationLengths.Count - position.RotationIndex);
-            for (int rotationOffset = 0; rotationOffset <= maxRotationOffset; ++rotationOffset)
+            neighborOrSelf = null;
+            neighborOrSelfPosition = null;
+
+            HeuristicResult[][][][][] parameterResults = this.results[position.ParameterIndex];
+            Debug.Assert(parameterResults != null);
+
+            // for now, only search within the same number of thinnings
+            if (this.FirstThinPeriods[position.FirstThinPeriodIndex] == Constant.NoThinPeriod)
             {
-                int rotationIndex = position.RotationIndex + rotationOffset;
-                if ((rotationIndex < this.RotationLengths.Count) && this.TryFindSolutionsMatchingStandEntries(position, rotationIndex, out solutions))
-                {
-                    return true;
-                }
-                rotationIndex = position.RotationIndex - rotationOffset;
-                if ((rotationIndex >= 0) && this.TryFindSolutionsMatchingStandEntries(position, rotationIndex, out solutions))
+                // no thins
+                Debug.Assert(this.SecondThinPeriods[position.SecondThinPeriodIndex] == Constant.NoThinPeriod);
+                Debug.Assert(this.ThirdThinPeriods[position.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
+                HeuristicResult[][][][] firstThinResults = parameterResults[position.FirstThinPeriodIndex];
+                Debug.Assert(firstThinResults != null);
+                HeuristicResult[][][] secondThinResults = firstThinResults[position.SecondThinPeriodIndex];
+                Debug.Assert(secondThinResults != null);
+                HeuristicResult[][] thirdThinResults = secondThinResults[position.ThirdThinPeriodIndex];
+
+                if (HeuristicResults.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinResults, position, out neighborOrSelf, out neighborOrSelfPosition))
                 {
                     return true;
                 }
             }
+            else if (this.SecondThinPeriods[position.SecondThinPeriodIndex] == Constant.NoThinPeriod)
+            {
+                // one thin
+                BreadthFirstEnumerator<HeuristicResult[][][][]> thinEnumerator = new(parameterResults, position.FirstThinPeriodIndex);
+                while (thinEnumerator.MoveNext())
+                {
+                    // for now, exclude positions with different numbers of thins from neighborhood
+                    if (this.FirstThinPeriods[thinEnumerator.Index] == Constant.NoThinPeriod)
+                    {
+                        continue;
+                    }
+                    Debug.Assert(this.ThirdThinPeriods[position.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
 
-            solutions = null;
+                    // position also has one thin, so search among rotation lengths and financial scenarios
+                    HeuristicResult[][][] secondThinResults = thinEnumerator.Current[position.SecondThinPeriodIndex];
+                    Debug.Assert(secondThinResults != null);
+                    HeuristicResult[][] thirdThinResults = secondThinResults[position.ThirdThinPeriodIndex];
+                    if (HeuristicResults.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinResults, position, out neighborOrSelf, out neighborOrSelfPosition))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (this.ThirdThinPeriods[position.ThirdThinPeriodIndex] == Constant.NoThinPeriod)
+            {
+                // two thins
+                BreadthFirstEnumerator2D<HeuristicResult[][][]> thinEnumerator = new(parameterResults, position.FirstThinPeriodIndex, position.SecondThinPeriodIndex);
+                while (thinEnumerator.MoveNext())
+                {
+                    // for now, exclude positions with different numbers of thins from neighborhood
+                    if ((this.FirstThinPeriods[thinEnumerator.IndexX] == Constant.NoThinPeriod) ||
+                        (this.SecondThinPeriods[thinEnumerator.IndexY] == Constant.NoThinPeriod))
+                    {
+                        continue;
+                    }
+                    Debug.Assert(this.ThirdThinPeriods[position.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
+
+                    // position also has two thins, so search among rotation lengths and financial scenarios
+                    HeuristicResult[][] thirdThinResults = thinEnumerator.Current[position.ThirdThinPeriodIndex];
+                    if (HeuristicResults.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinResults, position, out neighborOrSelf, out neighborOrSelfPosition))
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                // three thins
+                BreadthFirstEnumerator3D<HeuristicResult[][]> thinEnumerator = new(parameterResults, position.FirstThinPeriodIndex, position.SecondThinPeriodIndex, position.ThirdThinPeriodIndex);
+                while (thinEnumerator.MoveNext())
+                {
+                    // for now, exclude positions with different numbers of thins from neighborhood
+                    if ((this.FirstThinPeriods[thinEnumerator.IndexX] == Constant.NoThinPeriod) ||
+                        (this.SecondThinPeriods[thinEnumerator.IndexY] == Constant.NoThinPeriod) ||
+                        (this.ThirdThinPeriods[thinEnumerator.IndexZ] == Constant.NoThinPeriod))
+                    {
+                        continue;
+                    }
+
+                    // position also has three thins, so search among rotation lengths and financial scenarios
+                    if (HeuristicResults.TryGetSelfOrFindNeighborWithMatchingThinnings(thinEnumerator.Current, position, out neighborOrSelf, out neighborOrSelfPosition))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryGetSelfOrFindNeighborWithMatchingThinnings(HeuristicResult[][] thirdThinResults, HeuristicResultPosition position, [NotNullWhen(true)] out HeuristicSolutionPool? neighborOrSelf, [NotNullWhen(true)] out HeuristicResultPosition? neighborOrSelfPosition)
+        {
+            neighborOrSelf = null;
+            neighborOrSelfPosition = null;
+
+            Debug.Assert((thirdThinResults != null) && (thirdThinResults.Length > 0));
+
+            // for now, assume solutions at different rotation lengths are closer to each other than solutions at different financial indices
+            // This is likely true for discount rate sweeps. It's likely false for financial uncertainty sweeps.
+            BreadthFirstEnumerator2D<HeuristicResult> rotationAndFinancialEnumerator = new(thirdThinResults, position.RotationIndex, position.FinancialIndex, BreadthFirstEnumerator2D.XFirst);
+            while (rotationAndFinancialEnumerator.MoveNext())
+            {
+                neighborOrSelf = rotationAndFinancialEnumerator.Current.Pool;
+                if (neighborOrSelf.SolutionsInPool > 0)
+                {
+                    neighborOrSelfPosition = new(position)
+                    {
+                        RotationIndex = rotationAndFinancialEnumerator.IndexX,
+                        FinancialIndex = rotationAndFinancialEnumerator.IndexY
+                    };
+                    return true;
+                }
+            }
+
             return false;
         }
     }
