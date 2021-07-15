@@ -40,7 +40,7 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             // for now don't log iterations
             return base.GetCsvValues() + "," +
-                   this.ConstructionGreediness.ToString(CultureInfo.InvariantCulture) + "," +
+                   this.MinimumConstructionGreediness.ToString(CultureInfo.InvariantCulture) + "," +
                    this.EscapeAfter.ToString(CultureInfo.InvariantCulture) + "," +
                    this.EscapeDistance.ToString(CultureInfo.InvariantCulture) + "," +
                    this.Tenure.ToString() + "," +

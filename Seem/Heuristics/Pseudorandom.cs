@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -49,6 +50,12 @@ namespace Osu.Cof.Ferm.Heuristics
             return byteAsFloat;
         }
 
+        public float GetPseudorandomByteAsFloat(float minValue, float maxValue)
+        {
+            Debug.Assert(maxValue > minValue);
+            return minValue + (maxValue - minValue) * this.GetPseudorandomByteAsProbability();
+        }
+
         public float GetPseudorandomByteAsProbability()
         {
             return this.GetPseudorandomByteAsFloat() / byte.MaxValue;
@@ -76,6 +83,11 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             return bytesAsFloat;
+        }
+
+        public float GetTwoPseudorandomBytesAsProbability()
+        {
+            return this.GetTwoPseudorandomBytesAsFloat() / UInt16.MaxValue;
         }
 
         // randomize order of elements in array

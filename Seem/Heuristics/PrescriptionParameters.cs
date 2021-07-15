@@ -4,10 +4,6 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class PrescriptionParameters : HeuristicParameters
     {
-        public float FromAbovePercentageUpperLimit { get; set; }
-        public float FromBelowPercentageUpperLimit { get; set; }
-        public float ProportionalPercentageUpperLimit { get; set; }
-
         // for now, intensity step is relative to the density of the stand before thinning
         // For example if the step size is 5% and the first thin removes 50%, then the second thin will be evaluated in 10% steps. This is
         // potentially a computationally sensitive parameter as prescription enumeration cost can increase at high powers. The step size individually
@@ -16,6 +12,10 @@ namespace Osu.Cof.Ferm.Heuristics
         // case, halving the step size increases compute time by a factor of 512. If the full step size takes one hour to run the half step will take
         // 21 days.
         public float DefaultIntensityStepSize { get; set; }
+
+        public float FromAbovePercentageUpperLimit { get; set; }
+        public float FromBelowPercentageUpperLimit { get; set; }
+        public float ProportionalPercentageUpperLimit { get; set; }
 
         public bool LogAllMoves { get; set; }
 
@@ -26,15 +26,16 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public PrescriptionParameters()
         {
-            this.ConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
+            this.MinimumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
             this.InitialThinningProbability = 0.0F;
             this.LogAllMoves = false;
+
+            this.DefaultIntensityStepSize = Constant.PrescriptionEnumerationDefault.DefaultIntensityStepSize;
 
             this.FromAbovePercentageUpperLimit = 100.0F;
             this.ProportionalPercentageUpperLimit = 100.0F;
             this.FromBelowPercentageUpperLimit = 100.0F;
 
-            this.DefaultIntensityStepSize = Constant.PrescriptionEnumerationDefault.DefaultIntensityStepSize;
             this.MaximumIntensity = Constant.PrescriptionEnumerationDefault.MaximumIntensity;
             this.MaximumIntensityStepSize = Constant.PrescriptionEnumerationDefault.MaximumIntensityStepSize;
             this.MinimumIntensity = Constant.PrescriptionEnumerationDefault.MinimumIntensity;

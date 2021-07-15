@@ -40,6 +40,11 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
+        public bool IsFull
+        {
+            get { return this.SolutionsInPool == this.PoolCapacity; }
+        }
+
         public int PoolCapacity
         {
             get { return this.NearestNeighborIndex.Length; }

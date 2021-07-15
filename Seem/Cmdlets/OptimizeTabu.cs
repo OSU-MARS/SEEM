@@ -74,7 +74,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                         EscapeDistance = (int)(escapeBy * treeRecords),
                                         Iterations = (int)(iterationRatio * treeRecords / MathF.Log(treeRecords) + 0.5F),
                                         MaximumTenure = (int)(tenureRatio * treeRecords),
-                                        ConstructionGreediness = constructionGreediness,
+                                        MinimumConstructionGreediness = constructionGreediness,
                                         InitialThinningProbability = thinningProbability,
                                         Tenure = this.Tenure
                                     });

@@ -66,7 +66,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             if ((solutions.High == null) || (solutions.Low == null))
             {
-                throw new NotSupportedException("Result distribution is missing a high solution or low solution to its generating heuristic.");
+                throw new NotSupportedException("Solution pool is missing a high or low solution.");
             }
 
             int firstThinPeriod = results.FirstThinPeriods[position.FirstThinPeriodIndex];

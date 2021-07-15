@@ -42,7 +42,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public int ConstructTreeSelections(OrganonStandTrajectory standTrajectory, PopulationParameters parameters)
         {
-            if (parameters.ConstructionGreediness != Constant.Grasp.FullyRandomConstructionForMaximization)
+            if (parameters.MinimumConstructionGreediness != Constant.Grasp.FullyRandomConstructionForMaximization)
             {
                 throw new NotSupportedException(nameof(parameters) + " partially greedy population initialization is not currently supported.");
             }
@@ -587,10 +587,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         return false;
                     }
 
-                    if ((individualIndex < 0) || (individualIndex >= distancesToIndividuals.Length))
-                    {
-                        Debugger.Break(); // trap for pending fix with rare repro
-                    }
+                    Debug.Assert((individualIndex >= 0) && (individualIndex < distancesToIndividuals.Length));
                     distancesToIndividuals[individualIndex] = Math.Min(distanceToSolution, distancesToIndividuals[individualIndex]);
                     if (distanceToSolution < nearestLowerNeighborDistance)
                     {

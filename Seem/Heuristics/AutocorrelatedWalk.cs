@@ -37,7 +37,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             for (int iteration = 1; iteration < this.Iterations; ++iteration)
             {
-                this.ConstructTreeSelection(this.HeuristicParameters.ConstructionGreediness);
+                this.ConstructTreeSelection(this.HeuristicParameters.MinimumConstructionGreediness);
                 perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
                 float candidateFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, position.FinancialIndex);

@@ -10,7 +10,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public PopulationParameters()
         {
-            this.ConstructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
+            this.MinimumConstructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
             this.InitializationClasses = Constant.GeneticDefault.InitializationClasses;
             this.InitializationMethod = Constant.GeneticDefault.InitializationMethod;
             this.PopulationSize = Constant.GeneticDefault.PopulationSize;

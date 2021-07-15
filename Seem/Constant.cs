@@ -141,9 +141,10 @@ namespace Osu.Cof.Ferm
 
         public static class Grasp
         {
-            public const float DefaultConstructionForMaximization = 0.9F;
+            public const float DefaultMinimumConstructionGreedinessForMaximization = 0.9F;
             public const float FullyGreedyConstructionForMaximization = 1.0F;
             public const float FullyRandomConstructionForMaximization = 0.0F;
+            public const float NoConstruction = -1.0F;
         }
 
         public static class HeuristicDefault

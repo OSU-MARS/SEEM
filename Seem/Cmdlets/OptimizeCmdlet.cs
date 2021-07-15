@@ -74,7 +74,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Financial = FinancialScenarios.Default;
             this.FirstThinPeriod = new List<int>() { Constant.DefaultThinningPeriod };
             this.PlanningPeriods = new List<int>() { Constant.DefaultPlanningPeriods };
-            this.ConstructionGreediness = new List<float>() { Constant.Grasp.FullyRandomConstructionForMaximization };
+            this.ConstructionGreediness = new List<float>() { Constant.Grasp.DefaultMinimumConstructionGreedinessForMaximization };
             this.InitialThinningProbability = new List<float>() { Constant.HeuristicDefault.InitialThinningProbability };
             this.SecondThinPeriod = new List<int>() { Constant.NoThinPeriod };
             this.SolutionPoolSize = Constant.DefaultSolutionPoolSize;
@@ -136,7 +136,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     parameterCombinations.Add(new HeuristicParameters()
                     {
-                        ConstructionGreediness = constructionGreediness,
+                        MinimumConstructionGreediness = constructionGreediness,
                         InitialThinningProbability = thinningProbability
                     });
                 }

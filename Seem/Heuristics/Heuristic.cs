@@ -9,6 +9,7 @@ namespace Osu.Cof.Ferm.Heuristics
     public abstract class Heuristic : PseudorandomizingTask
     {
         public OrganonStandTrajectory?[,] BestTrajectoryByRotationAndScenario { get; private init; }
+        public float ConstructionGreediness { get; protected set; }
         public OrganonStandTrajectory CurrentTrajectory { get; private init; } // could be protected but left public for test access
         public FinancialValueTrajectory FinancialValue { get; protected set; }
         public RunParameters RunParameters { get; private init; }
@@ -65,6 +66,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.CurrentTrajectory = new OrganonStandTrajectory(trajectoryToCloneToCurrent);
             this.CurrentTrajectory.Name += "Current";
 
+            this.ConstructionGreediness = Constant.Grasp.NoConstruction;
             this.FinancialValue = new(rotationLengthCapacity, financialScenarioCapacity);
             this.RunParameters = runParameters;
         }
@@ -200,7 +202,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public Heuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters, bool evaluatesAcrossRotationsAndDiscountRates)
             : base(stand, runParameters, evaluatesAcrossRotationsAndDiscountRates)
         {
-            if ((heuristicParameters.ConstructionGreediness < Constant.Grasp.FullyRandomConstructionForMaximization) || (heuristicParameters.ConstructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
+            if ((heuristicParameters.MinimumConstructionGreediness < Constant.Grasp.FullyRandomConstructionForMaximization) || (heuristicParameters.MinimumConstructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
             {
                 throw new ArgumentOutOfRangeException(nameof(heuristicParameters), "Construction greediness is not between 0 and 1, inclusive.");
             }
@@ -231,7 +233,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 return 0;
             }
 
-            if (this.HeuristicParameters.ConstructionGreediness == Constant.Grasp.FullyGreedyConstructionForMaximization)
+            if (this.HeuristicParameters.MinimumConstructionGreediness == Constant.Grasp.FullyGreedyConstructionForMaximization)
             {
                 // nothing to do
                 // Could return sooner but it seems best not to bypass argument checking.
@@ -242,7 +244,7 @@ namespace Osu.Cof.Ferm.Heuristics
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             float thinIndexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / this.HeuristicParameters.InitialThinningProbability;
             int treeSelectionsRandomized = 0;
-            for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
+            for (int uncompactedTreeIndex = 0; uncompactedTreeIndex < initialTreeRecordCount; ++uncompactedTreeIndex)
             {
                 if (constructionGreediness != Constant.Grasp.FullyRandomConstructionForMaximization)
                 {
@@ -262,8 +264,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     int periodIndex = (int)(thinIndexScalingFactor * harvestProbability);
                     thinningPeriod = thinningPeriods[periodIndex];
                 }
-                this.CurrentTrajectory.SetTreeSelection(treeIndex, thinningPeriod);
-                ++treeSelectionsRandomized;
+                this.CurrentTrajectory.SetTreeSelection(uncompactedTreeIndex, thinningPeriod);
+                ++treeSelectionsRandomized; // debatable: should randomizations which don't change a tree's harvest period not be counted?
             }
 
             return treeSelectionsRandomized;
@@ -271,8 +273,6 @@ namespace Osu.Cof.Ferm.Heuristics
 
         protected int ConstructTreeSelection(HeuristicResultPosition position, HeuristicResults results)
         {
-            // default to fully random construction if there is no existing solution
-            float constructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
             // attempt to find an existing solution with the same set of thinning timings
             // If found, the existing solution's discount rate and number of planning periods may differ.
             if (results.TryFindSolutionsMatchingThinnings(position, out HeuristicSolutionPool? existingSolutions))
@@ -280,10 +280,24 @@ namespace Osu.Cof.Ferm.Heuristics
                 Debug.Assert(existingSolutions.SolutionsInPool > 0);
                 OrganonStandTrajectory eliteSolution = existingSolutions.GetEliteSolution(position);
                 this.CurrentTrajectory.CopyTreeGrowthFrom(eliteSolution);
-                constructionGreediness = this.HeuristicParameters.ConstructionGreediness;
+
+                int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
+                float maximumConstructionGreediness = (initialTreeRecordCount - 2.0F) / initialTreeRecordCount;
+                if (maximumConstructionGreediness <= this.HeuristicParameters.MinimumConstructionGreediness)
+                {
+                    // fall back to permitting fully greedy construction if only a few trees are present or when the minimum greediness is
+                    // especially high
+                    maximumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
+                }
+                this.ConstructionGreediness = results.GraspReactivity.GetConstructionGreediness(this.HeuristicParameters.MinimumConstructionGreediness, maximumConstructionGreediness);
+            }
+            else
+            {
+                // default to fully random construction if no solution has yet been found for this combination of thinnings
+                this.ConstructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
             }
 
-            return this.ConstructTreeSelection(constructionGreediness);
+            return this.ConstructTreeSelection(this.ConstructionGreediness);
         }
 
         protected virtual float EvaluateInitialSelection(int moveCapacity, HeuristicPerformanceCounters perfCounters)

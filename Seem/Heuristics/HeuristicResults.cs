@@ -14,6 +14,7 @@ namespace Osu.Cof.Ferm.Heuristics
         private readonly HeuristicResult[][][][][][] results;
 
         public IList<HeuristicResultPosition> CombinationsEvaluated { get; private init; }
+        public GraspReactivity GraspReactivity { get; private init; }
 
         public FinancialScenarios FinancialScenarios { get; private init; }
         public IList<int> FirstThinPeriods { get; private init; }
@@ -27,6 +28,8 @@ namespace Osu.Cof.Ferm.Heuristics
             this.results = new HeuristicResult[parameterCombinationCount][][][][][];
 
             this.CombinationsEvaluated = new List<HeuristicResultPosition>();
+            this.GraspReactivity = new();
+
             this.FinancialScenarios = financialScenarios;
             this.FirstThinPeriods = firstThinPeriods;
             this.RotationLengths = rotationLengths;
@@ -133,7 +136,14 @@ namespace Osu.Cof.Ferm.Heuristics
             HeuristicResult result = this[position];
             Debug.Assert(result != null);
             result.Distribution.AddSolution(heuristic, position, perfCounters);
-            result.Pool.TryAddOrReplace(heuristic, position);
+
+            // additions to pools which haven't filled yet aren't informative to GRASP's reactive choice of α as there's no selection
+            // pressure
+            // One interpretation of this is the pool size sets the minimum amount of information needed to make decisions about the
+            // value of solution diversity and objective function improvements.
+            bool poolFilled = result.Pool.IsFull;
+            bool acceptedAsEliteSolution = result.Pool.TryAddOrReplace(heuristic, position);
+            this.GraspReactivity.Add(heuristic.ConstructionGreediness, acceptedAsEliteSolution && poolFilled);
         }
 
         public void GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected)

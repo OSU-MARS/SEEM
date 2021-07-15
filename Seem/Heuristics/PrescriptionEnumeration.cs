@@ -183,9 +183,9 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
         {
-            if (this.HeuristicParameters.ConstructionGreediness != Constant.Grasp.FullyGreedyConstructionForMaximization)
+            if (this.HeuristicParameters.MinimumConstructionGreediness != Constant.Grasp.FullyGreedyConstructionForMaximization)
             {
-                throw new InvalidOperationException(nameof(this.HeuristicParameters.ConstructionGreediness));
+                throw new InvalidOperationException(nameof(this.HeuristicParameters.MinimumConstructionGreediness));
             }
             if (this.HeuristicParameters.InitialThinningProbability != 0.0F)
             {

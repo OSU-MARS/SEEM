@@ -209,6 +209,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                     else
                     {
+                        Debug.Assert(acceptedFinancialValue >= firstChildFinancialValue);
                         ++perfCounters.MovesRejected;
                     }
                     this.FinancialValue.AddMove(acceptedFinancialValue, firstChildFinancialValue);
@@ -224,6 +225,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                     else
                     {
+                        Debug.Assert(acceptedFinancialValue >= secondChildFinancialValue);
                         ++perfCounters.MovesRejected;
                     }
                     this.FinancialValue.AddMove(acceptedFinancialValue, secondChildFinancialValue);

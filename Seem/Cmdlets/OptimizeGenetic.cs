@@ -140,7 +140,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                         {
                                                             parameterCombinations.Add(new GeneticParameters()
                                                             {
-                                                                ConstructionGreediness = constructionGreediness,
+                                                                MinimumConstructionGreediness = constructionGreediness,
                                                                 CrossoverProbabilityEnd = crossoverProbabilityEnd,
                                                                 ExchangeProbabilityEnd = exchangeProbabilityEnd,
                                                                 ExchangeProbabilityStart = Constant.GeneticDefault.ExchangeProbabilityStart,
