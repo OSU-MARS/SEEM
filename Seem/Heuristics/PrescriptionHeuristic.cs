@@ -8,7 +8,7 @@ namespace Osu.Cof.Ferm.Heuristics
     public abstract class PrescriptionHeuristic : Heuristic<PrescriptionParameters>
     {
         protected readonly PrescriptionAllMoveLog? allMoveLog;
-        protected readonly PrescriptionFirstInFirstOutMoveLog? highestFinancialValueMoveLog;
+        protected readonly PrescriptionFirstInFirstOutMoveLog? lastNImprovingMovesLog;
 
         protected PrescriptionHeuristic(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters, bool evaluatesAcrossRotationsAndDiscountRates)
             : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndDiscountRates)
@@ -22,7 +22,14 @@ namespace Osu.Cof.Ferm.Heuristics
                 // by default, store prescription intensities for only the highest LEV combination of thinning intensities found
                 // This substantially reduces memory footprint in runs where many prescriptions are enumerated and helps to reduce the
                 // size of objective log files. If needed, this can be changed to storing a larger number of prescriptions.
-                this.highestFinancialValueMoveLog = new PrescriptionFirstInFirstOutMoveLog(runParameters.RotationLengths.Count, runParameters.Financial.Count, Constant.DefaultSolutionPoolSize);
+                int rotationLengthCapacity = 1;
+                int financialScenarioCapacity = 1;
+                if (evaluatesAcrossRotationsAndDiscountRates)
+                {
+                    rotationLengthCapacity = runParameters.RotationLengths.Count;
+                    financialScenarioCapacity = runParameters.Financial.Count;
+                }
+                this.lastNImprovingMovesLog = new PrescriptionFirstInFirstOutMoveLog(rotationLengthCapacity, financialScenarioCapacity, Constant.DefaultSolutionPoolSize);
             }
         }
 
@@ -32,11 +39,13 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             if (this.HeuristicParameters.LogAllMoves)
             {
+                Debug.Assert(this.lastNImprovingMovesLog == null);
                 return this.allMoveLog;
             }
             else
             {
-                return this.highestFinancialValueMoveLog;
+                Debug.Assert(this.allMoveLog == null);
+                return this.lastNImprovingMovesLog;
             }
         }
 
@@ -141,10 +150,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;
-            if (this.highestFinancialValueMoveLog != null)
+            if (this.lastNImprovingMovesLog != null)
             {
                 // since this.singleMoveLog.Add() is called only on improving moves it has no way of setting its count
-                this.highestFinancialValueMoveLog.LengthInMoves = perfCounters.MovesAccepted + perfCounters.MovesRejected;
+                this.lastNImprovingMovesLog.LengthInMoves = perfCounters.MovesAccepted + perfCounters.MovesRejected;
             }
             return perfCounters;
         }

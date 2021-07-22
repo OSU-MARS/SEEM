@@ -12,7 +12,10 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommunications.Write, "Objective")]
     public class WriteObjective : WriteHeuristicResultsCmdlet
     {
-        [Parameter(HelpMessage = "Number of iterations between CSV file lines. Default is 1, which logs every objective function value.")]
+        [Parameter]
+        public SwitchParameter ImprovingOnly;
+
+        [Parameter(HelpMessage = "Number of iterations between CSV file lines. Default is 1, which logs objective function values for every move.")]
         [ValidateRange(1, Int32.MaxValue)]
         public int Step;
 
@@ -135,8 +138,39 @@ namespace Osu.Cof.Ferm.Cmdlets
                 int maximumMoves = result.Distribution.GetMaximumMoves();
                 Debug.Assert((maximumMoves >= acceptedFinancialValueByMoveLow.Count) && (maximumMoves >= candidateFinancialValueByMoveLow.Count));
                 Debug.Assert((maximumMoves >= acceptedFinancialValueByMoveHigh.Count) && (maximumMoves >= candidateFinancialValueByMoveHigh.Count));
+                float previousHighObjectiveFunction = Single.MinValue;
+                float previousLowObjectiveFunction = Single.MinValue;
                 for (int moveIndex = 0; moveIndex < maximumMoves; moveIndex += this.Step)
                 {
+                    float? lowObjectiveFunctionAsFloat = null;
+                    bool lowObjectiveImproved = false;
+                    if (acceptedFinancialValueByMoveLow.Count > moveIndex)
+                    {
+                        lowObjectiveFunctionAsFloat = acceptedFinancialValueByMoveLow[moveIndex];
+                        if (lowObjectiveFunctionAsFloat > previousLowObjectiveFunction)
+                        {
+                            previousLowObjectiveFunction = lowObjectiveFunctionAsFloat.Value;
+                            lowObjectiveImproved = true;
+                        }
+                    }
+
+                    float? highObjectiveFunctionAsFloat = null;
+                    bool highObjectiveImproved = false;
+                    if (acceptedFinancialValueByMoveHigh.Count > moveIndex)
+                    {
+                        highObjectiveFunctionAsFloat = acceptedFinancialValueByMoveHigh[moveIndex];
+                        if (highObjectiveFunctionAsFloat > previousHighObjectiveFunction)
+                        {
+                            previousHighObjectiveFunction = highObjectiveFunctionAsFloat.Value;
+                            highObjectiveImproved = true;
+                        }
+                    }
+
+                    if (this.ImprovingOnly && ((lowObjectiveImproved == false) || (highObjectiveImproved == false)))
+                    {
+                        continue;
+                    }
+
                     string? lowMove = null;
                     if ((lowMoveLog != null) && (lowMoveLog.LengthInMoves > moveIndex))
                     {
@@ -147,10 +181,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                     {
                         lowObjectiveFunction = acceptedFinancialValueByMoveLow[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
-                    string? lowObjectiveFunctionForMove = null;
+                    string? lowObjectiveFunctionCandidate = null;
                     if (candidateFinancialValueByMoveLow.Count > moveIndex)
                     {
-                        lowObjectiveFunctionForMove = candidateFinancialValueByMoveLow[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        lowObjectiveFunctionCandidate = candidateFinancialValueByMoveLow[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
                     DistributionStatistics moveStatistics = result.Distribution.GetFinancialStatisticsForMove(moveIndex);
@@ -197,14 +231,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                         highMove = highMoveLog.GetCsvValues(position, moveIndex);
                     }
                     string highObjectiveFunction = String.Empty;
-                    if (acceptedFinancialValueByMoveHigh.Count > moveIndex)
+                    if (highObjectiveFunctionAsFloat.HasValue)
                     {
-                        highObjectiveFunction = acceptedFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        highObjectiveFunction = highObjectiveFunctionAsFloat.Value.ToString(CultureInfo.InvariantCulture);
                     }
-                    string? highObjectiveFunctionForMove = null;
+                    string? highObjectiveFunctionCandidate = null;
                     if (candidateFinancialValueByMoveHigh.Count > moveIndex)
                     {
-                        highObjectiveFunctionForMove = candidateFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        highObjectiveFunctionCandidate = candidateFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
                     Debug.Assert((acceptedFinancialValueByMoveLow.Count <= moveIndex) || (moveStatistics.Maximum >= acceptedFinancialValueByMoveLow[moveIndex]));
@@ -214,7 +248,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      runsWithMoveAtIndex + "," +
                                      lowMove + "," +
                                      lowObjectiveFunction + "," +
-                                     lowObjectiveFunctionForMove + "," +
+                                     lowObjectiveFunctionCandidate + "," +
                                      minObjectiveFunction + "," +
                                      twoPointFivePercentileObjectiveFunction + "," +
                                      fifthPercentileObjectiveFunction + "," +
@@ -227,7 +261,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      maxObjectiveFunction + "," +
                                      highMove + "," +
                                      highObjectiveFunction + "," +
-                                     highObjectiveFunctionForMove);
+                                     highObjectiveFunctionCandidate);
                 }
 
                 if (writer.BaseStream.Length > maxFileSizeInBytes)

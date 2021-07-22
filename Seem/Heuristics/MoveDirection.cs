@@ -2,7 +2,7 @@
 {
     internal enum MoveDirection
     {
-        Increment,
-        Decrement
+        Increase,
+        Decrease
     }
 }

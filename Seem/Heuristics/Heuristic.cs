@@ -39,7 +39,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 if (evaluatesAcrossRotationsAndDiscountRates)
                 {
                     int endOfRotationPeriod = runParameters.RotationLengths[rotationIndex];
-                    if (endOfRotationPeriod <= runParameters.LastThinPeriod)
+                    if (endOfRotationPeriod <= runParameters.LastThinPeriod) // if needed, use < instead of <=, see also PrescriptionEnumeration.EvaluateThinningPrescriptions()
                     {
                         continue; // not a valid rotation length because it doesn't include the last thinning scheduled
                     }
@@ -83,10 +83,49 @@ namespace Osu.Cof.Ferm.Heuristics
             bestTrajectory.CopyTreeGrowthFrom(trajectory);
         }
 
+        public OrganonStandTrajectory FindNearestBestTrajectory(HeuristicResultPosition position)
+        {
+            // trivial case: there is only one trajectory since this heuristic does not evaluate across rotations and scenarios
+            if (this.BestTrajectoryByRotationAndScenario.Length == 1)
+            {
+                return this.GetBestTrajectory(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex);
+            }
+
+            // for now, search only within rotation lengths on the expectation all financial scenarios are always evaluated
+            // Other assumptions, for now:
+            //  - An arbitrarily large change in rotation length remains nearer than a financial scenario increment or decrement.
+            //  - At time of writing, the only possibility is short rotations aren't evaluated and it's needful to search only among
+            //    longer rotations. For now, rotations searched in the order listed rather than sorting to find the closest rotation
+            //    lengths.
+            // Can't use a BreadthFirstEnumerator here as the data structures don't match.
+            // TODO: define closeness based on similarlity of financial values
+            for (int rotationIndex = position.RotationIndex; rotationIndex < this.RunParameters.RotationLengths.Count; ++rotationIndex)
+            {
+                OrganonStandTrajectory? trajectory = this.BestTrajectoryByRotationAndScenario[rotationIndex, position.FinancialIndex];
+                if (trajectory != null)
+                {
+                    return trajectory;
+                }
+            }
+            for (int rotationIndex = position.RotationIndex - 1; rotationIndex >= 0; --rotationIndex)
+            {
+                OrganonStandTrajectory? trajectory = this.BestTrajectoryByRotationAndScenario[rotationIndex, position.FinancialIndex];
+                if (trajectory != null)
+                {
+                    return trajectory;
+                }
+            }
+
+            throw new InvalidOperationException("No trajectories found within search range of rotation index " + position.RotationIndex + " and financial index " + position.FinancialIndex + ".");
+        }
+
         protected OrganonStandTrajectory GetBestTrajectory(int rotationIndex, int financialIndex)
         {
             OrganonStandTrajectory? bestTrajectory = this.BestTrajectoryByRotationAndScenario[rotationIndex, financialIndex];
-            Debug.Assert(bestTrajectory != null);
+            if (bestTrajectory == null)
+            {
+                throw new InvalidOperationException("Trajectory for rotation index " + rotationIndex + " and financial scenario index " + financialIndex + " is null. This may indicate an indexing error or failure to accept a solution at this position. Is the rotation length at this index valid for the combination of thins this heuristic optimized for? The highest financial value at these indices is " + this.FinancialValue.GetHighestValue(rotationIndex, financialIndex) + ".");
+            }
             return bestTrajectory;
         }
 
@@ -278,8 +317,7 @@ namespace Osu.Cof.Ferm.Heuristics
             // If found, the existing solution's discount rate and number of planning periods may differ.
             if (results.TryGetSelfOrFindNearestNeighbor(position, out HeuristicSolutionPool? existingSolutions, out HeuristicResultPosition? positionOfExistingSolutions))
             {
-                Debug.Assert(existingSolutions.SolutionsInPool > 0);
-                OrganonStandTrajectory eliteSolution = existingSolutions.GetEliteSolution(position);
+                OrganonStandTrajectory eliteSolution = existingSolutions.SelectSolutionAndFindNearestStandTrajectory(position); // throws if pool is empty
                 this.CurrentTrajectory.CopyTreeGrowthFrom(eliteSolution);
 
                 // assuming an existing elite solution at this position has reached first order convergence, must randomize at least two trees

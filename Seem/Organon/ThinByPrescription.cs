@@ -114,7 +114,7 @@ namespace Osu.Cof.Ferm.Organon
             float totalPercentage = this.fromAbovePercentage + this.fromBelowPercentage + this.proportionalPercentage;
             if ((totalPercentage < 0.0F) || (totalPercentage > 100.0F))
             {
-                throw new NotSupportedException("Sum of from above, from below, and proportional removal percentages is negative or greater than 100%.");
+                throw new NotSupportedException("Sum of from above, from below, and proportional removal percentages is " + totalPercentage + ". This is beyond the valid range of 0-100%.");
             }
 
             OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (this.Period - 1) + ".");
@@ -156,7 +156,8 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             // thin from above
-            OrganonStandDensity densityAtEndOfPreviousPeriod = trajectory.DensityByPeriod[this.Period - 1];
+            OrganonStandDensity? densityAtEndOfPreviousPeriod = trajectory.DensityByPeriod[this.Period - 1];
+            Debug.Assert(densityAtEndOfPreviousPeriod != null);
             float targetBasalArea = 0.01F * this.FromAbovePercentage * densityAtEndOfPreviousPeriod.BasalAreaPerAcre;
             float basalAreaRemovedFromAbove = 0.0F;
             while (basalAreaRemovedFromAbove < targetBasalArea)
@@ -312,7 +313,7 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             float basalAreaRemoved = basalAreaRemovedFromAbove + basalAreaRemovedProportionally + basalAreaRemovedFromBelow;
-            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || ((int)(0.01F * totalPercentage * dbhSortOrderBySpecies.Values.Sum(sortOrder => sortOrder.Length)) == 0 && basalAreaRemoved == 0.0F));
+            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || ((int)(0.01F * totalPercentage * dbhSortOrderBySpecies.Values.Sum(sortOrder => sortOrder.Length) - Constant.RoundTowardsZeroTolerance) == 0 && basalAreaRemoved == 0.0F));
             return basalAreaRemoved;
         }
     }

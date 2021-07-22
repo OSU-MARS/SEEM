@@ -99,6 +99,7 @@ namespace Osu.Cof.Ferm.Tree
 
             if (atLeastOneTreeMoved)
             {
+                this.BasalAreaRemoved[currentPeriod] = 0.0F; // clear no longer applicable basal area (this.BasalAreaRemoved[newPeriod] is updated at next stand simulation)
                 this.EarliestPeriodChangedSinceLastSimulation = Math.Min(currentPeriod, newPeriod);
             }
         }

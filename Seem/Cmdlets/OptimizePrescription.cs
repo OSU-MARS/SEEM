@@ -57,7 +57,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0F, 1.0F)]
         public List<float> StepMultiplier { get; set; }
 
-        [Parameter(HelpMessage = "Ignored if -Enumerate is set. Recommended to set to false when -BestOf is more than 2-4 to avoid redundant checking.")]
+        [Parameter(HelpMessage = "Ignored if -Enumerate is set. Suggested to set to false when -BestOf is more than 2-4 to avoid redundant checking.")]
         public SwitchParameter RestartOnLocalMaximum { get; set; }
 
         [Parameter(HelpMessage = "Ignored if -Enumerate is set.")]
@@ -82,14 +82,14 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.MaximumStep = Constant.PrescriptionSearchDefault.MaximumIntensityStepSize;
             this.MinimumStep = new() { Constant.PrescriptionSearchDefault.MinimumIntensityStepSize };
             this.ProportionalPercentageUpperLimit = 100.0F;
-            // don't change this.SolutionPoolSize as stochastic coordinate descent is the default
+            // leave this.SolutionPoolSize set to 1 as deterministic evaluation is the default
             this.RestartOnLocalMaximum = true; // mitigates risk of entrapment
             this.StepMultiplier = new() { Constant.PrescriptionSearchDefault.StepSizeMultiplier };
-            this.Stochastic = false; // ~13% less efficient than defaulting true in simple testing
+            this.Stochastic = false; // stochastic search is ~13% less efficient in simple testing
             this.Units = Constant.PrescriptionSearchDefault.Units;
         }
 
-        protected override bool HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates
+        protected override bool HeuristicEvaluatesAcrossRotationsAndScenarios
         {
             get { return this.Enumerate; }
         }

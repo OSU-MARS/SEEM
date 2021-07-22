@@ -158,31 +158,34 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float basalAreaIntensity = 0.0F;
                     if (period > 0)
                     {
-                        basalAreaIntensity = basalAreaRemoved / highTrajectory.DensityByPeriod[period - 1].BasalAreaPerAcre;
+                        OrganonStandDensity? previousDensity = highTrajectory.DensityByPeriod[period - 1];
+                        Debug.Assert(previousDensity != null, "Already checked in previous iteration of loop.");
+                        basalAreaIntensity = basalAreaRemoved / previousDensity.BasalAreaPerAcre;
                     }
                     float harvestVolumeScribner = harvestedVolume.GetScribnerTotal(period); // MBF/ha
                     Debug.Assert((harvestVolumeScribner == 0.0F && basalAreaRemoved == 0.0F) || (harvestVolumeScribner > 0.0F && basalAreaRemoved > 0.0F));
 
+                    OrganonStandDensity? currentDensity = highTrajectory.DensityByPeriod[period];
+                    if (currentDensity == null)
+                    {
+                        throw new ParameterOutOfRangeException(null, "Stand density information is missing for period " + period + ". Did the heuristic perform at least one fully simulated move?");
+                    }
+
                     float treesPerAcreDecrease = 0.0F;
                     if (period > 0)
                     {
-                        OrganonStandDensity previousDensity = highTrajectory.DensityByPeriod[period - 1];
-                        OrganonStandDensity currentDensity = highTrajectory.DensityByPeriod[period];
-                        if ((currentDensity == null) || (previousDensity == null))
-                        {
-                            throw new ParameterOutOfRangeException(null, "Stand density information is missing. Did the heuristic perform at least one fully simulated move?");
-                        }
+                        OrganonStandDensity? previousDensity = highTrajectory.DensityByPeriod[period - 1];
+                        Debug.Assert(previousDensity != null, "Already checked in if clause above.");
                         treesPerAcreDecrease = 1.0F - currentDensity.TreesPerAcre / previousDensity.TreesPerAcre;
                     }
 
                     OrganonStand stand = highTrajectory.StandByPeriod[period] ?? throw new NotSupportedException("Stand information missing for period " + period + ".");
-                    OrganonStandDensity density = highTrajectory.DensityByPeriod[period];
                     float quadraticMeanDiameterInCm = stand.GetQuadraticMeanDiameterInCentimeters(); // 1/(10 in * 2.54 cm/in) = 0.03937008
                     float topHeightInM = stand.GetTopHeightInMeters();
-                    float reinekeStandDensityIndex = Constant.AcresPerHectare * density.TreesPerAcre * MathF.Pow(0.03937008F * quadraticMeanDiameterInCm, Constant.ReinekeExponent);
+                    float reinekeStandDensityIndex = Constant.AcresPerHectare * currentDensity.TreesPerAcre * MathF.Pow(0.03937008F * quadraticMeanDiameterInCm, Constant.ReinekeExponent);
 
-                    float treesPerHectare = Constant.AcresPerHectare * density.TreesPerAcre;
-                    float basalAreaPerHectare = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * density.BasalAreaPerAcre;
+                    float treesPerHectare = Constant.AcresPerHectare * currentDensity.TreesPerAcre;
+                    float basalAreaPerHectare = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * currentDensity.BasalAreaPerAcre;
                     float treesPerHectareDecrease = Constant.AcresPerHectare * treesPerAcreDecrease;
 
                     // NPV and LEV

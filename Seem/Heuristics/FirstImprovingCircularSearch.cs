@@ -21,7 +21,7 @@ namespace Osu.Cof.Ferm.Heuristics
         private bool EvaluateMove(MoveDirection moveDirection, MoveState moveState, HeuristicResultPosition position)
         {
             int currentThinningPeriodIndex = moveState.UncompactedPeriodIndices[moveState.TreeIndex];
-            int candidateThinningPeriodIndex = currentThinningPeriodIndex + (moveDirection == MoveDirection.Decrement ? -1 : 1);
+            int candidateThinningPeriodIndex = currentThinningPeriodIndex + (moveDirection == MoveDirection.Decrease ? -1 : 1);
 
             int candidateHarvestPeriod = moveState.ThinningPeriods[candidateThinningPeriodIndex];
             int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(moveState.TreeIndex); // capture for revert
@@ -102,14 +102,14 @@ namespace Osu.Cof.Ferm.Heuristics
                 int currentPeriodIndex = moveState.UncompactedPeriodIndices[moveState.TreeIndex];
                 bool canDecrementPeriodIndex = currentPeriodIndex > 0;
                 bool canIncrementPeriodIndex = currentPeriodIndex != moveState.ThinningPeriods.Count - 1;
-                MoveDirection firstMoveDirection = canDecrementPeriodIndex ? MoveDirection.Decrement : MoveDirection.Increment;
+                MoveDirection firstMoveDirection = canDecrementPeriodIndex ? MoveDirection.Decrease : MoveDirection.Increase;
                 if (this.EvaluateMove(firstMoveDirection, moveState, position))
                 {
                     lastImprovingSourceTreeIndex = sourceTreeIndex;
                 }
                 else if (canIncrementPeriodIndex)
                 {
-                    if (this.EvaluateMove(MoveDirection.Increment, moveState, position))
+                    if (this.EvaluateMove(MoveDirection.Increase, moveState, position))
                     {
                         lastImprovingSourceTreeIndex = sourceTreeIndex;
                     }

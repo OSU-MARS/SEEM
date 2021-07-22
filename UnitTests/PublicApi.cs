@@ -135,7 +135,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicResultPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
             HeuristicPerformanceCounters firstImprovingCounters = firstCircular.Run(defaultPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(firstCircular, firstImprovingCounters, defaultPosition);
+            results.AssimilateHeuristicRunIntoPosition(firstCircular, defaultPosition, firstImprovingCounters);
 
             // hero
             Hero hero = new(stand, results.ParameterCombinations[0], landExpectationValueIts)
@@ -146,7 +146,7 @@ namespace Osu.Cof.Ferm.Test
             // debugging note: it can be helpful to set fully greedy heuristic parameters so the initial prescription remains as no trees selected
             //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
             HeuristicPerformanceCounters heroCounters = hero.Run(defaultPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(hero, heroCounters, defaultPosition);
+            results.AssimilateHeuristicRunIntoPosition(hero, defaultPosition, heroCounters);
 
             // prescription coordinate descent
             RunParameters landExpectationValuePrescription = new(new List<int>() { landExpectationValueIts.MaximizeForPlanningPeriod }, configuration)
@@ -158,21 +158,23 @@ namespace Osu.Cof.Ferm.Test
             {
                 MinimumIntensity = 0.0F
             };
-            PrescriptionCoordinateAscent prescriptionDescent = new(stand, prescriptionParameters, landExpectationValuePrescription)
+            PrescriptionCoordinateAscent prescriptionAscent = new(stand, prescriptionParameters, landExpectationValuePrescription)
             {
-                //IsStochastic = true
+                Gradient = true,
+                IsStochastic = true,
+                RestartOnLocalMaximum = true
             };
-            HeuristicPerformanceCounters prescriptionDescentCounters = prescriptionDescent.Run(defaultPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(prescriptionDescent, prescriptionDescentCounters, defaultPosition);
+            HeuristicPerformanceCounters prescriptionAscentCounters = prescriptionAscent.Run(defaultPosition, results);
+            results.AssimilateHeuristicRunIntoPosition(prescriptionAscent, defaultPosition, prescriptionAscentCounters);
 
             this.Verify(firstCircular, firstImprovingCounters);
             this.Verify(hero, heroCounters);
-            this.Verify(prescriptionDescent, prescriptionDescentCounters);
+            this.Verify(prescriptionAscent, prescriptionAscentCounters);
             PublicApi.Verify(results, defaultPosition, landExpectationValueIts.MaximizeForPlanningPeriod);
 
             TreeSelection firstCircularTreeSelection = firstCircular.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             TreeSelection heroTreeSelection = hero.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
-            TreeSelection prescriptionTreeSelection = prescriptionDescent.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            TreeSelection prescriptionTreeSelection = prescriptionAscent.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesThinnedByFirstCircular = 0;
             int treesThinnedByHero = 0;
             int treesThinnedByPrescription = 0;
@@ -245,7 +247,7 @@ namespace Osu.Cof.Ferm.Test
             GeneticAlgorithm genetic = new(stand, geneticParameters, runForLandExpectationValue);
             HeuristicPerformanceCounters geneticCounters = genetic.Run(levPosition, levResults);
             totalCounters += geneticCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(genetic, geneticCounters, levPosition);
+            levResults.AssimilateHeuristicRunIntoPosition(genetic, levPosition, geneticCounters);
 
             GreatDeluge deluge = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
@@ -255,14 +257,14 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters delugeCounters = deluge.Run(levPosition, levResults);
             totalCounters += delugeCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(deluge, delugeCounters, levPosition);
+            levResults.AssimilateHeuristicRunIntoPosition(deluge, levPosition, delugeCounters);
 
             RecordTravel recordTravel = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
                 StopAfter = 10
             };
             HeuristicPerformanceCounters recordCounters = recordTravel.Run(levPosition, levResults);
-            levResults.AssimilateHeuristicRunIntoPosition(recordTravel, recordCounters, levPosition);
+            levResults.AssimilateHeuristicRunIntoPosition(recordTravel, levPosition, recordCounters);
 
             SimulatedAnnealing annealer = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
@@ -270,7 +272,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters annealerCounters = annealer.Run(levPosition, levResults);
             totalCounters += annealerCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(annealer, annealerCounters, levPosition);
+            levResults.AssimilateHeuristicRunIntoPosition(annealer, levPosition, annealerCounters);
 
             TabuParameters tabuParameters = new();
             TabuSearch tabu = new(stand, tabuParameters, runForLandExpectationValue)
@@ -281,7 +283,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters tabuCounters = tabu.Run(levPosition, levResults);
             totalCounters += tabuCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(tabu, tabuCounters, levPosition);
+            levResults.AssimilateHeuristicRunIntoPosition(tabu, levPosition, tabuCounters);
 
             ThresholdAccepting thresholdAcceptor = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue);
             thresholdAcceptor.IterationsPerThreshold.Clear();
@@ -290,7 +292,7 @@ namespace Osu.Cof.Ferm.Test
             thresholdAcceptor.Thresholds.Add(1.0F);
             HeuristicPerformanceCounters thresholdCounters = thresholdAcceptor.Run(levPosition, levResults);
             totalCounters += thresholdCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(thresholdAcceptor, thresholdCounters, levPosition);
+            levResults.AssimilateHeuristicRunIntoPosition(thresholdAcceptor, levPosition, thresholdCounters);
 
             PrescriptionParameters prescriptionParameters = new()
             {
@@ -302,7 +304,7 @@ namespace Osu.Cof.Ferm.Test
             PrescriptionEnumeration enumerator = new(stand, prescriptionParameters, runForLandExpectationValue);
             HeuristicPerformanceCounters enumerationCounters = enumerator.Run(levPosition, levResults);
             totalCounters += enumerationCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(enumerator, enumerationCounters, levPosition);
+            levResults.AssimilateHeuristicRunIntoPosition(enumerator, levPosition, enumerationCounters);
 
             // check solution pool
             HeuristicSolutionPool levEliteSolutions = PublicApi.Verify(levResults, levPosition, runForLandExpectationValue.MaximizeForPlanningPeriod);
@@ -818,7 +820,7 @@ namespace Osu.Cof.Ferm.Test
         {
             // check objective functions
             HeuristicResultPosition position = PublicApi.CreateDefaultSolutionPosition();
-            OrganonStandTrajectory bestTrajectory = heuristic.GetBestTrajectoryWithDefaulting(position);
+            OrganonStandTrajectory bestTrajectory = heuristic.FindNearestBestTrajectory(position);
             Assert.IsTrue(bestTrajectory.PlantingDensityInTreesPerHectare == heuristic.CurrentTrajectory.PlantingDensityInTreesPerHectare);
             Assert.IsTrue(bestTrajectory.PlantingDensityInTreesPerHectare >= TestConstant.NelderReplantingDensityInTreesPerHectare);
 
@@ -1075,8 +1077,11 @@ namespace Osu.Cof.Ferm.Test
                     ((expectedTrajectory.SecondThinPeriod != Constant.NoThinPeriod) && (periodIndex == expectedTrajectory.SecondThinPeriod)) ||
                     ((expectedTrajectory.ThirdThinPeriod != Constant.NoThinPeriod) && (periodIndex == expectedTrajectory.ThirdThinPeriod)))
                 {
+                    OrganonStandDensity? standDensityBeforeThin = thinnedTrajectory.DensityByPeriod[periodIndex - 1];
+                    AssertNullable.IsNotNull(standDensityBeforeThin);
+
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
-                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < thinnedTrajectory.DensityByPeriod[periodIndex - 1].BasalAreaPerAcre); // assume <50% thin by volume
+                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < standDensityBeforeThin.BasalAreaPerAcre); // assume <50% thin by volume
                     Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbf[periodIndex]);
                     Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) <= this.volumeTolerance * expectedTrajectory.MinimumHarvestMbf[periodIndex]);
                 }
@@ -1136,8 +1141,10 @@ namespace Osu.Cof.Ferm.Test
 
             for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
             {
-                Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre > 0.0F);
-                Assert.IsTrue(trajectory.DensityByPeriod[periodIndex].BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
+                OrganonStandDensity? standDensity = trajectory.DensityByPeriod[periodIndex];
+                AssertNullable.IsNotNull(standDensity);
+                Assert.IsTrue(standDensity.BasalAreaPerAcre > 0.0F);
+                Assert.IsTrue(standDensity.BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
 
                 Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) > expectedTrajectory.MinimumStandingCubic[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) < this.volumeTolerance * expectedTrajectory.MinimumStandingCubic[periodIndex]);
@@ -1196,7 +1203,7 @@ namespace Osu.Cof.Ferm.Test
                 }
             }
 
-            OrganonStandTrajectory eliteSolution = eliteSolutions.GetEliteSolution(position);
+            OrganonStandTrajectory eliteSolution = eliteSolutions.SelectSolutionAndFindNearestStandTrajectory(position);
             Assert.IsTrue(eliteSolution.EarliestPeriodChangedSinceLastSimulation == endOfRotationPeriod + 1);
 
             return eliteSolutions;
@@ -1221,13 +1228,18 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(0) == snagsAndLogs.Periods);
             Assert.IsTrue(snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(1) == snagsAndLogs.DiameterClasses);
 
-            float initialTreesPerHectare = Constant.AcresPerHectare * trajectory.DensityByPeriod[0].TreesPerAcre;
+            OrganonStandDensity? standDensity = trajectory.DensityByPeriod[0];
+            AssertNullable.IsNotNull(standDensity);
+            float initialTreesPerHectare = Constant.AcresPerHectare * standDensity.TreesPerAcre;
             float initialStemsPerHectare = initialTreesPerHectare + snagsAndLogs.LogsPerHectareByPeriod[0] + snagsAndLogs.SnagsPerHectareByPeriod[0];
             for (int period = 0; period < snagsAndLogs.Periods; ++period)
             {
+                standDensity = trajectory.DensityByPeriod[period];
+                AssertNullable.IsNotNull(standDensity);
+
                 float logsPerHectare = snagsAndLogs.LogsPerHectareByPeriod[period];
                 float snagPerHectare = snagsAndLogs.SnagsPerHectareByPeriod[period];
-                float treesPerHectare = Constant.AcresPerHectare * trajectory.DensityByPeriod[period].TreesPerAcre;
+                float treesPerHectare = Constant.AcresPerHectare * standDensity.TreesPerAcre;
                 float stemsPerHectare = treesPerHectare + snagPerHectare + logsPerHectare;
 
                 Assert.IsTrue(snagsAndLogs.LogQmdInCentimetersByPeriod[period] >= 0.0F);

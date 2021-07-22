@@ -14,17 +14,21 @@ namespace Osu.Cof.Ferm.Heuristics
         // to run the half step will take 21 days.
         public float DefaultIntensityStepSize { get; set; } // ascent and enumeration
 
+        // upper limits on methods within a single thin, lower limit of any individual method is always zero
         public float FromAbovePercentageUpperLimit { get; set; } // ascent and enumeration
         public float FromBelowPercentageUpperLimit { get; set; } // ascent and enumeration
         public float ProportionalPercentageUpperLimit { get; set; } // ascent and enumeration
 
         public bool LogAllMoves { get; set; } // ascent and enumeration
 
+        // maximum and minimum intensity of a single thin
         public float MaximumIntensity { get; set; } // ascent and enumeration
-        public float MaximumIntensityStepSize { get; set; } // enumeration
         public float MinimumIntensity { get; set; } // ascent and enumeration
+
+        public float MaximumIntensityStepSize { get; set; } // enumeration
         public float MinimumIntensityStepSize { get; set; } // ascent
-        public float StepSizeMultiplier { get; set; }
+
+        public float StepSizeMultiplier { get; set; } // ascent
 
         public PrescriptionUnits Units { get; set; } // ascent and enumeration
 

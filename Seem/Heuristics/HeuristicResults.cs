@@ -152,7 +152,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.PositionsEvaluated.Add(position);
         }
 
-        public void AssimilateHeuristicRunIntoPosition(Heuristic heuristic, HeuristicPerformanceCounters perfCounters, HeuristicResultPosition position)
+        public void AssimilateHeuristicRunIntoPosition(Heuristic heuristic, HeuristicResultPosition position, HeuristicPerformanceCounters perfCounters)
         {
             HeuristicResult result = this[position];
             Debug.Assert(result != null);

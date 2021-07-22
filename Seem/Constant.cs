@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm
         public const float CubicMetersPerCubicFoot = 0.0283168F;
         public const float DbhHeight = 1.37F; // cm
         public const string DefaultPercentageFormat = "0.0#";
-        public const int DefaultPlanningPeriods = 9;
         public const string DefaultProbabilityFormat = "0.00##";
+        public const int DefaultRotationLengths = 9;
         public const int DefaultSolutionPoolSize = 4;
         public const int DefaultThinningPeriod = 3;
         public const int DefaultTimeStepInYears = 5;

@@ -14,7 +14,7 @@ namespace Osu.Cof.Ferm.Organon
         private OrganonGrowth organonGrowth;
 
         public OrganonConfiguration Configuration { get; private init; }
-        public OrganonStandDensity[] DensityByPeriod { get; private init; }
+        public OrganonStandDensity?[] DensityByPeriod { get; private init; }
 
         public Heuristic? Heuristic { get; set; }
         public OrganonStand?[] StandByPeriod { get; private init; }
@@ -77,7 +77,7 @@ namespace Osu.Cof.Ferm.Organon
 
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
-                OrganonStandDensity otherDensity = other.DensityByPeriod[periodIndex];
+                OrganonStandDensity? otherDensity = other.DensityByPeriod[periodIndex];
                 if (otherDensity != null)
                 {
                     this.DensityByPeriod[periodIndex] = new OrganonStandDensity(otherDensity);
@@ -95,6 +95,8 @@ namespace Osu.Cof.Ferm.Organon
 
         public override void ChangeThinningPeriod(int currentPeriod, int newPeriod)
         {
+            Debug.Assert(currentPeriod != newPeriod);
+
             // check for corresponding harvest prescription
             // Harvests should already be shifted to the new period due to the call to CopyFrom().
             bool matchingHarvestFound = false;
@@ -108,8 +110,14 @@ namespace Osu.Cof.Ferm.Organon
             }
             if (matchingHarvestFound == false)
             {
-                throw new NotSupportedException("Harvest not found for period " + newPeriod + ".");
+                throw new NotSupportedException("Expected a harvest to have already been moved to period " + newPeriod + ".");
             }
+
+            // clear no longer applicable basal area and fertilization
+            // StandByPeriod and DensityByPeriod are updated at next simulation. Corresponding clear on base.BasalAreaRemovedByPeriod is
+            // done in base.ChangeThinningPeriod().
+            this.Treatments.BasalAreaRemovedByPeriod[currentPeriod] = 0.0F;
+            this.Treatments.PoundsOfNitrogenPerAcreByPeriod[currentPeriod] = 0.0F;
 
             // move tree selection
             base.ChangeThinningPeriod(currentPeriod, newPeriod);
@@ -119,6 +127,10 @@ namespace Osu.Cof.Ferm.Organon
         //   Financial, Heuristic, Name, PeriodLengthInYears, PeriodZeroAgeInYears, PlantingDensityInTreesPerHectare, Treatments
         public void CopyTreeGrowthFrom(OrganonStandTrajectory other)
         {
+            if (other == null)
+            {
+                throw new ArgumentNullException(nameof(other));
+            }
             Debug.Assert(Object.ReferenceEquals(this, other) == false);
 
             if ((Object.ReferenceEquals(this.TreeVolume, other.TreeVolume) == false) ||
@@ -162,16 +174,17 @@ namespace Osu.Cof.Ferm.Organon
             {
                 this.BasalAreaRemoved[periodIndex] = other.BasalAreaRemoved[periodIndex];
 
-                OrganonStandDensity otherDensity = other.DensityByPeriod[periodIndex];
+                OrganonStandDensity? otherDensity = other.DensityByPeriod[periodIndex];
                 if (otherDensity != null)
                 {
-                    if (this.DensityByPeriod[periodIndex] == null)
+                    OrganonStandDensity? thisDensity = this.DensityByPeriod[periodIndex];
+                    if (thisDensity == null)
                     {
                         this.DensityByPeriod[periodIndex] = new OrganonStandDensity(otherDensity);
                     }
                     else
                     {
-                        this.DensityByPeriod[periodIndex].CopyFrom(otherDensity);
+                        thisDensity.CopyFrom(otherDensity);
                     }
                 }
 
@@ -293,7 +306,8 @@ namespace Osu.Cof.Ferm.Organon
             int growthModelEvaulations = 0;
             for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
-                OrganonStandDensity standDensity = this.DensityByPeriod[periodIndex - 1];
+                OrganonStandDensity? standDensity = this.DensityByPeriod[periodIndex - 1];
+                Debug.Assert(standDensity != null);
 
                 // if treatments apply to this period, they may have already changed the tree selection or may change it in ApplyToPeriod()
                 // In individual tree selection cases, tree selection will have been modified by a heuristic (in GRASP solution construction, by 
@@ -377,6 +391,7 @@ namespace Osu.Cof.Ferm.Organon
                     // recalculate volume for this period
                     this.SetMerchantableVolumes(periodIndex);
 
+                    // this check can fire spuriously in thinning from below when multiple trees too small to have merchantable volume are removed
                     Debug.Assert((this.BasalAreaRemoved[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.ThinningVolumeBySpecies.Values.Sum(volumeForSpecies => volumeForSpecies.GetScribnerTotal(periodIndex)) > 0.0F) ||
                                   this.BasalAreaRemoved[periodIndex] == 0.0F);
                     ++growthModelEvaulations;

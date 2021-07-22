@@ -75,8 +75,16 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public string GetCsvValues(HeuristicResultPosition position, int move)
         {
-            int rotationIndex = position.RotationIndex;
-            int financialIndex = position.FinancialIndex;
+            // apply defaulting
+            // If this move log instance is specific to a single rotation and financial scenario then the provided position is ignored.
+            int rotationIndex = 0;
+            int financialIndex = 0;
+            if (this.setIndexByRotationAndRate.Length > 1)
+            {
+                rotationIndex = position.RotationIndex;
+                financialIndex = position.FinancialIndex;
+            }
+
             for (int moveIndex = 0; moveIndex < this.fifoLength; ++moveIndex)
             {
                 if (move == this.moveIndexByRotationAndRate[rotationIndex, financialIndex, moveIndex])

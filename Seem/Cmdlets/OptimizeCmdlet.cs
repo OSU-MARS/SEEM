@@ -40,7 +40,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter]
         [ValidateNotNullOrEmpty]
         [ValidateRange(0, 100)]
-        public List<int> PlanningPeriods { get; set; }
+        public List<int> RotationLengths { get; set; }
         [Parameter]
         [ValidateNotNullOrEmpty]
         [ValidateRange(Constant.NoThinPeriod, 100)]
@@ -75,9 +75,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             this.Financial = FinancialScenarios.Default;
             this.FirstThinPeriod = new() { Constant.DefaultThinningPeriod };
-            this.PlanningPeriods = new() { Constant.DefaultPlanningPeriods };
             this.ConstructionGreediness = new() { Constant.Grasp.DefaultMinimumConstructionGreedinessForMaximization };
             this.InitialThinningProbability = new() { Constant.HeuristicDefault.InitialThinningProbability };
+            this.RotationLengths = new() { Constant.DefaultRotationLengths };
             this.SecondThinPeriod = new() { Constant.NoThinPeriod };
             this.SolutionPoolSize = Constant.DefaultSolutionPoolSize;
             this.ThirdThinPeriod = new() { Constant.NoThinPeriod };
@@ -85,7 +85,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.TreeModel = TreeModel.OrganonNwo;
         }
 
-        protected virtual bool HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates
+        protected virtual bool HeuristicEvaluatesAcrossRotationsAndScenarios
         {
             get { return false; }
         }
@@ -94,10 +94,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         private RunParameters CreateRunParameters(HeuristicResultPosition position, OrganonConfiguration organonConfiguration)
         {
-            RunParameters runParameters = new(this.PlanningPeriods, organonConfiguration)
+            RunParameters runParameters = new(this.RotationLengths, organonConfiguration)
             {
                 Financial = this.Financial,
-                MaximizeForPlanningPeriod = this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates ? Constant.MaximizeForAllPlanningPeriods : this.PlanningPeriods[position.RotationIndex],
+                MaximizeForPlanningPeriod = this.HeuristicEvaluatesAcrossRotationsAndScenarios ? Constant.MaximizeForAllPlanningPeriods : this.RotationLengths[position.RotationIndex],
                 TimberObjective = this.TimberObjective
             };
 
@@ -216,11 +216,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 mostRecentEvaluationDescription += ", 3 " + currentPosition.ThirdThinPeriodIndex + "/" + this.ThirdThinPeriod.Count;
             }
-            if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates == false)
+            if (this.HeuristicEvaluatesAcrossRotationsAndScenarios == false)
             {
-                if (this.PlanningPeriods.Count > 1)
+                if (this.RotationLengths.Count > 1)
                 {
-                    mostRecentEvaluationDescription += ", rotation " + currentPosition.RotationIndex + "/" + this.PlanningPeriods.Count;
+                    mostRecentEvaluationDescription += ", rotation " + currentPosition.RotationIndex + "/" + this.RotationLengths.Count;
                 }
                 if (this.Financial.Count > 1)
                 {
@@ -249,9 +249,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ParameterOutOfRangeException(nameof(this.InitialThinningProbability));
             }
-            if (this.PlanningPeriods.Count < 1)
+            if (this.RotationLengths.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.PlanningPeriods));
+                throw new ParameterOutOfRangeException(nameof(this.RotationLengths));
             }
             if (this.SecondThinPeriod.Count < 1)
             {
@@ -261,7 +261,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 throw new ParameterOutOfRangeException(nameof(this.ThirdThinPeriod));
             }
-            if ((this.TimberObjective == TimberObjective.ScribnerVolume) && (this.Financial.Count > 1) && (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates == false))
+            if ((this.TimberObjective == TimberObjective.ScribnerVolume) && (this.Financial.Count > 1) && (this.HeuristicEvaluatesAcrossRotationsAndScenarios == false))
             {
                 // low priority to improve this but at least warn about limited support
                 this.WriteWarning("Timber optimization objective is " + this.TimberObjective + " but multiple discount rates are specified. Optimization will be unnecessarily repeated for each discount rate.");
@@ -275,7 +275,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             int treeCount = this.Stand!.GetTreeRecordCount();
             List<HeuristicResultPosition> combinationsToEvaluate = new();
             IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
-            HeuristicResults<TParameters> results = new(parameterCombinationsForHeuristic, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.PlanningPeriods, this.Financial, this.SolutionPoolSize);
+            HeuristicResults<TParameters> results = new(parameterCombinationsForHeuristic, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.RotationLengths, this.Financial, this.SolutionPoolSize);
             for (int parameterIndex = 0; parameterIndex < parameterCombinationsForHeuristic.Count; ++parameterIndex)
             {
                 for (int firstThinIndex = 0; firstThinIndex < this.FirstThinPeriod.Count; ++firstThinIndex)
@@ -325,7 +325,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 }
                             }
 
-                            if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates)
+                            if (this.HeuristicEvaluatesAcrossRotationsAndScenarios)
                             {
                                 HeuristicResultPosition position = new()
                                 {
@@ -342,9 +342,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                             else
                             {
                                 int lastOfFirstSecondOrThirdThinPeriod = Math.Max(lastOfFirstOrSecondThinPeriod, thirdThinPeriod);
-                                for (int rotationIndex = 0; rotationIndex < this.PlanningPeriods.Count; ++rotationIndex)
+                                for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
                                 {
-                                    int planningPeriods = this.PlanningPeriods[rotationIndex];
+                                    int planningPeriods = this.RotationLengths[rotationIndex];
                                     if (lastOfFirstSecondOrThirdThinPeriod >= planningPeriods)
                                     {
                                         // last thin would occur before or in the same period as the final harvest
@@ -409,14 +409,14 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 int runWithinCombination = runNumber - this.BestOf * combinationIndex;
                                 lock (results)
                                 {
-                                    if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates)
+                                    if (this.HeuristicEvaluatesAcrossRotationsAndScenarios)
                                     {
                                         // scatter heuristic's results to rotation lengths and discount rates
                                         HeuristicPerformanceCounters perfCountersToAssmilate = perfCounters;
                                         bool perfCountersLogged = false;
-                                        for (int rotationIndex = 0; rotationIndex < this.PlanningPeriods.Count; ++rotationIndex)
+                                        for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
                                         {
-                                            int endOfRotationPeriod = this.PlanningPeriods[rotationIndex];
+                                            int endOfRotationPeriod = this.RotationLengths[rotationIndex];
                                             if (endOfRotationPeriod <= runParameters.LastThinPeriod)
                                             {
                                                 continue; // not a valid position because end of rotation would occur before or in the same period as the last thin
@@ -424,13 +424,13 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                                             for (int financialIndex = 0; financialIndex < this.Financial.Count; ++financialIndex)
                                             {
-                                                HeuristicResultPosition evaluatedPosition = new(position) // must be new each time to populate results.CombinationsEvaluated
+                                                HeuristicResultPosition evaluatedPosition = new(position) // must be new each time to uniquely populate results.CombinationsEvaluated through AddEvaluatedPosition()
                                                 {
                                                     FinancialIndex = financialIndex,
                                                     RotationIndex = rotationIndex
                                                 };
 
-                                                results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCountersToAssmilate, evaluatedPosition);
+                                                results.AssimilateHeuristicRunIntoPosition(currentHeuristic, evaluatedPosition, perfCountersToAssmilate);
                                                 if (runWithinCombination == this.BestOf - 1)
                                                 {
                                                     // last run in combination adds the evaluated positions to CombinationsEvaluated
@@ -450,7 +450,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     else
                                     {
                                         // heuristic is specific to a single discount rate
-                                        results.AssimilateHeuristicRunIntoPosition(currentHeuristic, perfCounters, position);
+                                        results.AssimilateHeuristicRunIntoPosition(currentHeuristic, position, perfCounters);
                                         if (runWithinCombination == this.BestOf - 1)
                                         {
                                             // last run in combination adds the position to CombinationsEvaluated
@@ -467,7 +467,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                             {
                                 string rotationLength = "vectorized";
                                 string financialScenario = "vectorized";
-                                if (this.HeuristicEvaluatesAcrossPlanningPeriodsAndDiscountRates == false)
+                                if (this.HeuristicEvaluatesAcrossRotationsAndScenarios == false)
                                 {
                                     financialScenario = results.FinancialScenarios.DiscountRate[position.FinancialIndex].ToString();
                                     rotationLength = results.RotationLengths[position.RotationIndex].ToString();

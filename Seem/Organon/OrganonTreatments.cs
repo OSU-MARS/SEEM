@@ -44,7 +44,9 @@ namespace Osu.Cof.Ferm.Organon
             {
                 this.BasalAreaRemovedByPeriod.Add(0.0F);
             }
-            this.basalAreaByPeriod[periodJustBeginning - 1] = trajectory.DensityByPeriod[periodJustBeginning - 1].BasalAreaPerAcre;
+            OrganonStandDensity? standDensity = trajectory.DensityByPeriod[periodJustBeginning - 1];
+            Debug.Assert(standDensity != null);
+            this.basalAreaByPeriod[periodJustBeginning - 1] = standDensity.BasalAreaPerAcre;
             this.BasalAreaRemovedByPeriod[periodJustBeginning] = 0.0F;
 
             this.currentSimulationPeriod = periodJustBeginning;

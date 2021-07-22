@@ -26,22 +26,6 @@ namespace Osu.Cof.Ferm.Heuristics
             this.High = null;
         }
 
-        public OrganonStandTrajectory GetEliteSolution(HeuristicResultPosition position)
-        {
-            if (this.SolutionsInPool < 1)
-            {
-                throw new InvalidOperationException();
-            }
-            if (this.SolutionsInPool == 1)
-            {
-                return this.EliteSolutions[0]!.GetBestTrajectoryWithDefaulting(position);
-            }
-
-            float solutionIndexScalingFactor = (this.SolutionsInPool - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
-            int solutionIndex = (int)(solutionIndexScalingFactor * this.Pseudorandom.GetPseudorandomByteAsFloat());
-            return this.EliteSolutions[solutionIndex]!.GetBestTrajectoryWithDefaulting(position);
-        }
-
         private void Replace(int replacementIndex, Heuristic heuristic, HeuristicResultPosition position, int[] neighborDistances, int nearestNeighborIndex)
         {
             this.EliteSolutions[replacementIndex] = heuristic;
@@ -60,6 +44,36 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
+        public OrganonStandTrajectory SelectSolutionAndFindNearestStandTrajectory(HeuristicResultPosition position)
+        {
+            if (this.SolutionsInPool < 1)
+            {
+                throw new InvalidOperationException("Solution pool is empty.");
+            }
+
+            Heuristic? eliteSolution;
+            if (this.SolutionsInPool == 1)
+            {
+                eliteSolution = this.EliteSolutions[0];
+            }
+            else
+            {
+                // for now, choose an elite solution randomly
+                // In cases where heuristics evaluate a trajectory across rotation lengths and financial scenarios it's assumed all
+                // solutions in the pool have trajectories available for the same rotation lengths and, therefore, that there isn't
+                // reason to prefer one solution over another due to it having a closer match in rotation lengths.
+                float solutionIndexScalingFactor = (this.SolutionsInPool - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
+                int solutionIndex = (int)(solutionIndexScalingFactor * this.Pseudorandom.GetPseudorandomByteAsFloat());
+                eliteSolution = this.EliteSolutions[solutionIndex];
+            }
+            if (eliteSolution == null)
+            {
+                throw new InvalidOperationException("Elite solution in pool with " + this.SolutionsInPool + " solutions is unexpectedly null. Is this due to a reader-writer race condition?");
+            }
+
+            return eliteSolution.FindNearestBestTrajectory(position);
+        }
+
         public bool TryAddOrReplace(Heuristic heuristic, HeuristicResultPosition position)
         {
             if (this.SolutionsInPool == 0)
@@ -69,11 +83,10 @@ namespace Osu.Cof.Ferm.Heuristics
                 this.EliteSolutions[0] = heuristic;
                 this.lowestEliteIndex = 0;
                 this.lowestEliteFinancialValue = heuristic.FinancialValue.GetHighestValueWithDefaulting(position);
-                this.SolutionsAccepted = 1;
-                this.SolutionsInPool = 1;
-
                 this.Low = heuristic;
                 this.High = heuristic;
+                this.SolutionsAccepted = 1;
+                this.SolutionsInPool = 1; // set last to avoid reader race condition where SolutionsInPool allows access to an EliteSolutions[index] which is null because it hasn't been set yet
                 return true;
             }
 
@@ -118,7 +131,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
 
                 this.UpdateNeighborDistances(this.SolutionsInPool, distancesToSolutionsInPool, nearestNeighborIndex);
-                ++this.SolutionsInPool;
+                ++this.SolutionsInPool; // increment last to avoid reader race condition
                 solutionAccepted = true;
             }
             else

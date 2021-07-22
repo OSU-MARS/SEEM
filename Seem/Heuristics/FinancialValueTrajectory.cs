@@ -33,7 +33,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public void AddMove(int rotationIndex, int financialIndex, float acceptedValue, float candidateValue)
         {
-            // typically, acceptedValue >= candidateValue but this does not hold for tabu search
+            // typically, acceptedValue >= candidateValue but this does not hold during Monte Carlo reheating or after tabu search's
+            // initial ascent phase
             this.acceptedValueByRotationAndDiscount[rotationIndex, financialIndex].Add(acceptedValue);
             this.candidateValueByRotationAndDiscount[rotationIndex, financialIndex].Add(candidateValue);
 
