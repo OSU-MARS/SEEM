@@ -9,6 +9,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public FinancialScenarios Financial { get; set; }
         public int LastThinPeriod { get; set; }
         public int MaximizeForPlanningPeriod { get; init; }
+        public int MoveCapacity { get; init; }
+        public bool LogOnlyImprovingMoves { get; init; }
         public OrganonConfiguration OrganonConfiguration { get; private init; }
         public IList<int> RotationLengths { get; init; }
         public TimberObjective TimberObjective { get; init; }
@@ -20,6 +22,8 @@ namespace Osu.Cof.Ferm.Heuristics
             this.Financial = FinancialScenarios.Default;
             this.LastThinPeriod = Constant.NoThinPeriod;
             this.MaximizeForPlanningPeriod = Constant.HeuristicDefault.RotationIndex;
+            this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
+            this.LogOnlyImprovingMoves = Constant.HeuristicDefault.LogOnlyImprovingMoves;
             this.OrganonConfiguration = organonConfiguration;
             this.RotationLengths = rotationLengths;
             this.TimberObjective = TimberObjective.LandExpectationValue;

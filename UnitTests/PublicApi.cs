@@ -325,7 +325,7 @@ namespace Osu.Cof.Ferm.Test
             };
             HeuristicPerformanceCounters autocorrlatedCounters = autocorrelated.Run(volumePosition, volumeResults);
             totalCounters += autocorrlatedCounters;
-            volumeResults[volumePosition].Distribution.AddSolution(autocorrelated, volumePosition, autocorrlatedCounters);
+            volumeResults[volumePosition].Distribution.AddRunAndTryAddToFinancialDistribution(autocorrelated, volumePosition, autocorrlatedCounters);
             volumeResults[volumePosition].Pool.TryAddOrReplace(autocorrelated, volumePosition);
 
             // heuristics assigned to net present value optimization
@@ -346,7 +346,7 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(maxHeuristicLev == maxLevInDistribution);
             Assert.IsTrue(maxHeuristicLev == levEliteSolutions.High!.FinancialValue.GetHighestValue());
 
-            int maxMove = levDistribution.GetMaximumMoves();
+            int maxMove = levDistribution.GetMaximumMoveIndex();
             Assert.IsTrue(maxMove > 0);
             List<float> landExpectationVaues = new(8);
             for (int moveIndex = 0; moveIndex < maxMove; ++moveIndex)
@@ -1024,7 +1024,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(candidateMoveFinancialValues[moveIndex] <= acceptedFinancialValue);
             }
 
-            IHeuristicMoveLog? moveLog = heuristic.GetMoveLog();
+            HeuristicMoveLog? moveLog = heuristic.GetMoveLog();
             if (moveLog != null)
             {
                 string moveCsvHeader = moveLog.GetCsvHeader("prefix");

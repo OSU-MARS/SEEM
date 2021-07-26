@@ -36,6 +36,12 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateNotNullOrEmpty]
         [ValidateRange(0.0F, 1.0F)]
         public List<float> InitialThinningProbability { get; set; }
+        [Parameter]
+        public SwitchParameter LogImprovingOnly;
+
+        [Parameter]
+        [ValidateRange(1, Int32.MaxValue)]
+        public int MoveCapacity { get; set; }
 
         [Parameter]
         [ValidateNotNullOrEmpty]
@@ -76,7 +82,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.Financial = FinancialScenarios.Default;
             this.FirstThinPeriod = new() { Constant.DefaultThinningPeriod };
             this.ConstructionGreediness = new() { Constant.Grasp.DefaultMinimumConstructionGreedinessForMaximization };
+            this.LogImprovingOnly = false;
             this.InitialThinningProbability = new() { Constant.HeuristicDefault.InitialThinningProbability };
+            this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
             this.RotationLengths = new() { Constant.DefaultRotationLengths };
             this.SecondThinPeriod = new() { Constant.NoThinPeriod };
             this.SolutionPoolSize = Constant.DefaultSolutionPoolSize;
@@ -97,7 +105,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             RunParameters runParameters = new(this.RotationLengths, organonConfiguration)
             {
                 Financial = this.Financial,
+                LogOnlyImprovingMoves = this.LogImprovingOnly,
                 MaximizeForPlanningPeriod = this.HeuristicEvaluatesAcrossRotationsAndScenarios ? Constant.MaximizeForAllPlanningPeriods : this.RotationLengths[position.RotationIndex],
+                MoveCapacity = this.MoveCapacity,
                 TimberObjective = this.TimberObjective
             };
 
@@ -248,6 +258,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             if (this.InitialThinningProbability.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.InitialThinningProbability));
+            }
+            if (this.MoveCapacity < 1)
+            {
+                throw new ParameterOutOfRangeException(nameof(this.MoveCapacity));
             }
             if (this.RotationLengths.Count < 1)
             {

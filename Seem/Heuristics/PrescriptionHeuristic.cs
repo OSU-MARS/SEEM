@@ -1,6 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -8,16 +7,12 @@ namespace Osu.Cof.Ferm.Heuristics
     public abstract class PrescriptionHeuristic : Heuristic<PrescriptionParameters>
     {
         protected readonly PrescriptionAllMoveLog? allMoveLog;
-        protected readonly PrescriptionFirstInFirstOutMoveLog? lastNImprovingMovesLog;
+        protected readonly PrescriptionLastNMoveLog? lastNImprovingMovesLog;
 
         protected PrescriptionHeuristic(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters, bool evaluatesAcrossRotationsAndDiscountRates)
             : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndDiscountRates)
         {
-            if (this.HeuristicParameters.LogAllMoves)
-            {
-                this.allMoveLog = new PrescriptionAllMoveLog();
-            }
-            else
+            if (this.RunParameters.LogOnlyImprovingMoves)
             {
                 // by default, store prescription intensities for only the highest LEV combination of thinning intensities found
                 // This substantially reduces memory footprint in runs where many prescriptions are enumerated and helps to reduce the
@@ -29,23 +24,27 @@ namespace Osu.Cof.Ferm.Heuristics
                     rotationLengthCapacity = runParameters.RotationLengths.Count;
                     financialScenarioCapacity = runParameters.Financial.Count;
                 }
-                this.lastNImprovingMovesLog = new PrescriptionFirstInFirstOutMoveLog(rotationLengthCapacity, financialScenarioCapacity, Constant.DefaultSolutionPoolSize);
+                this.lastNImprovingMovesLog = new PrescriptionLastNMoveLog(rotationLengthCapacity, financialScenarioCapacity, runParameters.MoveCapacity, heuristicParameters.LogLastNImprovingMoves);
+            }
+            else
+            {
+                this.allMoveLog = new PrescriptionAllMoveLog(runParameters.MoveCapacity);
             }
         }
 
         protected abstract void EvaluateThinningPrescriptions(HeuristicResultPosition position, HeuristicResults results, HeuristicPerformanceCounters perfCounters);
 
-        public override IHeuristicMoveLog? GetMoveLog()
+        public override HeuristicMoveLog? GetMoveLog()
         {
-            if (this.HeuristicParameters.LogAllMoves)
-            {
-                Debug.Assert(this.lastNImprovingMovesLog == null);
-                return this.allMoveLog;
-            }
-            else
+            if (this.RunParameters.LogOnlyImprovingMoves)
             {
                 Debug.Assert(this.allMoveLog == null);
                 return this.lastNImprovingMovesLog;
+            }
+            else
+            {
+                Debug.Assert(this.lastNImprovingMovesLog == null);
+                return this.allMoveLog;
             }
         }
 
@@ -150,11 +149,6 @@ namespace Osu.Cof.Ferm.Heuristics
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;
-            if (this.lastNImprovingMovesLog != null)
-            {
-                // since this.singleMoveLog.Add() is called only on improving moves it has no way of setting its count
-                this.lastNImprovingMovesLog.LengthInMoves = perfCounters.MovesAccepted + perfCounters.MovesRejected;
-            }
             return perfCounters;
         }
     }

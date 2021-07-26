@@ -19,7 +19,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public float FromBelowPercentageUpperLimit { get; set; } // ascent and enumeration
         public float ProportionalPercentageUpperLimit { get; set; } // ascent and enumeration
 
-        public bool LogAllMoves { get; set; } // ascent and enumeration
+        public int LogLastNImprovingMoves { get; set; }
 
         // maximum and minimum intensity of a single thin
         public float MaximumIntensity { get; set; } // ascent and enumeration
@@ -35,19 +35,20 @@ namespace Osu.Cof.Ferm.Heuristics
         public PrescriptionParameters()
         {
             this.MinimumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
-            this.InitialThinningProbability = 0.0F;
-            this.LogAllMoves = false;
+            this.InitialThinningProbability = Constant.PrescriptionSearchDefault.InitialThinningProbability; // TODO: use this to set default starting position for ascents
+            this.LogLastNImprovingMoves = Constant.PrescriptionSearchDefault.LogLastNImprovingMoves;
 
             this.DefaultIntensityStepSize = Constant.PrescriptionSearchDefault.DefaultIntensityStepSize;
 
-            this.FromAbovePercentageUpperLimit = 100.0F;
-            this.ProportionalPercentageUpperLimit = 100.0F;
-            this.FromBelowPercentageUpperLimit = 100.0F;
+            this.FromAbovePercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
+            this.ProportionalPercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
+            this.FromBelowPercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
 
             this.MaximumIntensity = Constant.PrescriptionSearchDefault.MaximumIntensity;
             this.MaximumIntensityStepSize = Constant.PrescriptionSearchDefault.MaximumIntensityStepSize;
             this.MinimumIntensity = Constant.PrescriptionSearchDefault.MinimumIntensity;
             this.MinimumIntensityStepSize = Constant.PrescriptionSearchDefault.MinimumIntensityStepSize;
+
             this.StepSizeMultiplier = Constant.PrescriptionSearchDefault.StepSizeMultiplier;
 
             this.Units = Constant.PrescriptionSearchDefault.Units;

@@ -156,7 +156,7 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             HeuristicResult result = this[position];
             Debug.Assert(result != null);
-            result.Distribution.AddSolution(heuristic, position, perfCounters);
+            result.Distribution.AddRunAndTryAddToFinancialDistribution(heuristic, position, perfCounters);
 
             // additions to pools which haven't filled yet aren't informative to GRASP's reactive choice of α as there's no selection
             // pressure

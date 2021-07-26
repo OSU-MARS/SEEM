@@ -16,9 +16,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0F, 100.0F)]
         public List<float> DefaultStep { get; set; }
 
-        [Parameter]
+        [Parameter(HelpMessage = "Enumerate thinning prescriptions rather than using coordinate ascent. Suggested to also set -LogImprovingOnly when two or more thins are enumerated.")]
         public SwitchParameter Enumerate { get; set; }
-        [Parameter(HelpMessage = "Ignored if -Enumerate is set.")]
+        [Parameter(HelpMessage = "Include gradient moves in coordinate ascent. Ignored if -Enumerate is set.")]
         public SwitchParameter Gradient { get; set; }
 
         [Parameter]
@@ -29,10 +29,11 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0F, 100.0F)]
         public float FromBelowPercentageUpperLimit { get; set; }
 
-        [Parameter]
-        public SwitchParameter LogAllMoves { get; set; }
+        [Parameter(HelpMessage = "Appies only if -LogImprovingOnly is set.")]
+        [ValidateRange(1, 1000)]
+        public int LogLastNImprovingMoves { get; set; }
 
-        [Parameter(HelpMessage = "Maximum thinning intensity to evaluate. Paired with minimum intensities rather than used combinatorially.")]
+        [Parameter(HelpMessage = "Maximum thinning intensity to evaluate. Paired with the minimum intensities listed in -MinimumIntensity rather than used combinatorially.")]
         [ValidateNotNullOrEmpty]
         [ValidateRange(0.0F, 1000.0F)]
         public List<float> MaximumIntensity { get; set; }
@@ -40,7 +41,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         [ValidateRange(0.0F, 100.0F)]
         public float MaximumStep { get; set; }
 
-        [Parameter(HelpMessage = "Minimum thinning intensity to evaluate. Paired with maximum intensities rather than used combinatorially.")]
+        [Parameter(HelpMessage = "Minimum thinning intensity to evaluate. Paired with the maximum intensities listed in -MaximumIntensity rather than used combinatorially.")]
         [ValidateNotNullOrEmpty]
         [ValidateRange(0.0F, 1000.0F)]
         public List<float> MinimumIntensity { get; set; }
@@ -72,18 +73,18 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             this.ConstructionGreediness = new() { Constant.Grasp.FullyGreedyConstructionForMaximization };
             this.DefaultStep = new() { Constant.PrescriptionSearchDefault.DefaultIntensityStepSize };
-            this.FromAbovePercentageUpperLimit = 100.0F;
-            this.FromBelowPercentageUpperLimit = 100.0F;
+            this.FromAbovePercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
+            this.FromBelowPercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
             this.Gradient = false;
-            this.InitialThinningProbability[0] = 0.0F;
-            this.LogAllMoves = false;
+            this.InitialThinningProbability[0] = Constant.PrescriptionSearchDefault.InitialThinningProbability;
+            this.LogLastNImprovingMoves = Constant.PrescriptionSearchDefault.LogLastNImprovingMoves;
             this.MaximumIntensity = new() { Constant.PrescriptionSearchDefault.MaximumIntensity };
             this.MinimumIntensity = new() { Constant.PrescriptionSearchDefault.MinimumIntensity };
             this.MaximumStep = Constant.PrescriptionSearchDefault.MaximumIntensityStepSize;
             this.MinimumStep = new() { Constant.PrescriptionSearchDefault.MinimumIntensityStepSize };
-            this.ProportionalPercentageUpperLimit = 100.0F;
+            this.ProportionalPercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
             // leave this.SolutionPoolSize set to 1 as deterministic evaluation is the default
-            this.RestartOnLocalMaximum = true; // mitigates risk of entrapment
+            this.RestartOnLocalMaximum = false; // mitigates risk of entrapment
             this.StepMultiplier = new() { Constant.PrescriptionSearchDefault.StepSizeMultiplier };
             this.Stochastic = false; // stochastic search is ~13% less efficient in simple testing
             this.Units = Constant.PrescriptionSearchDefault.Units;
@@ -150,6 +151,10 @@ namespace Osu.Cof.Ferm.Cmdlets
             if ((this.InitialThinningProbability.Count != 1) || (this.InitialThinningProbability[0] != 0.0F))
             {
                 throw new ParameterOutOfRangeException(nameof(this.InitialThinningProbability));
+            }
+            if (this.LogLastNImprovingMoves < 1)
+            {
+                throw new ParameterOutOfRangeException(nameof(this.LogLastNImprovingMoves));
             }
             if (this.MaximumIntensity.Count < 1)
             {
@@ -220,7 +225,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 DefaultIntensityStepSize = defaultStepSize,
                                 FromAbovePercentageUpperLimit = this.FromAbovePercentageUpperLimit,
                                 FromBelowPercentageUpperLimit = this.FromBelowPercentageUpperLimit,
-                                LogAllMoves = this.LogAllMoves,
+                                LogLastNImprovingMoves = this.LogLastNImprovingMoves,
                                 MaximumIntensity = maximumIntensity,
                                 MaximumIntensityStepSize = this.MaximumStep,
                                 MinimumIntensity = minimumIntensity,

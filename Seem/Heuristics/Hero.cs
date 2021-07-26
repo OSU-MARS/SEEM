@@ -33,6 +33,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new InvalidOperationException(nameof(this.MaximumIterations));
             }
+            if (this.RunParameters.LogOnlyImprovingMoves)
+            {
+                throw new NotSupportedException("Logging of only improving moves isn't currently supported.");
+            }
 
             IList<int> harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
 
@@ -100,8 +104,8 @@ namespace Osu.Cof.Ferm.Heuristics
                             ++perfCounters.MovesRejected;
                         }
 
-                        this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
-                        this.MoveLog.TreeIDByMove.Add(treeIndex);
+                        this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                        this.MoveLog.TryAddMove(treeIndex);
 
                         if (decrementPeriodIndex)
                         {

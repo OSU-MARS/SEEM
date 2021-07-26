@@ -3,29 +3,36 @@ using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class SingleTreeMoveLog : IHeuristicMoveLog
+    public class SingleTreeMoveLog : HeuristicMoveLog
     {
         // if needed, also track tree's plot ID by move
-        public List<int> TreeIDByMove { get; protected set; }
+        public List<int> TreeIDByMove { get; protected init; }
 
-        public SingleTreeMoveLog()
+        public SingleTreeMoveLog(int moveCapacity)
+            : base(moveCapacity)
         {
             this.TreeIDByMove = new List<int>();
         }
 
-        public int LengthInMoves
-        {
-            get { return this.TreeIDByMove.Count; }
-        }
-
-        public string GetCsvHeader(string prefix)
+        public override string GetCsvHeader(string prefix)
         {
             return prefix + "TreeEvaluated";
         }
 
-        public string GetCsvValues(HeuristicResultPosition position, int move)
+        public override string GetCsvValues(HeuristicResultPosition position, int moveNumber)
         {
-            return this.TreeIDByMove[move].ToString(CultureInfo.InvariantCulture);
+            return this.TreeIDByMove[moveNumber].ToString(CultureInfo.InvariantCulture);
+        }
+
+        public bool TryAddMove(int uncompactedTreeIndex)
+        {
+            if (this.TreeIDByMove.Count < this.MoveCapacity)
+            {
+                this.TreeIDByMove.Add(uncompactedTreeIndex);
+                return true;
+            }
+
+            return false;
         }
     }
 }

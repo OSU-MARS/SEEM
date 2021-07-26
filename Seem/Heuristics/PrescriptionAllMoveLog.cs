@@ -1,11 +1,10 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
-    public class PrescriptionAllMoveLog : IHeuristicMoveLog
+    public class PrescriptionAllMoveLog : HeuristicMoveLog
     {
         public List<float> FromAbovePercentageByMove1 { get; private init; }
         public List<float> FromBelowPercentageByMove1 { get; private init; }
@@ -19,7 +18,8 @@ namespace Osu.Cof.Ferm.Heuristics
         public List<float> FromBelowPercentageByMove3 { get; private init; }
         public List<float> ProportionalPercentageByMove3 { get; private init; }
 
-        public PrescriptionAllMoveLog()
+        public PrescriptionAllMoveLog(int moveCapacity)
+            : base(moveCapacity)
         {
             this.FromAbovePercentageByMove1 = new List<float>();
             this.FromBelowPercentageByMove1 = new List<float>();
@@ -34,24 +34,33 @@ namespace Osu.Cof.Ferm.Heuristics
             this.ProportionalPercentageByMove3 = new List<float>();
         }
 
-        public int LengthInMoves
+        public override string GetCsvHeader(string prefix)
         {
-            get 
-            {
-                Debug.Assert(this.FromAbovePercentageByMove1.Count == this.FromBelowPercentageByMove1.Count);
-                Debug.Assert(this.FromBelowPercentageByMove1.Count == this.ProportionalPercentageByMove1.Count);
-                Debug.Assert(this.ProportionalPercentageByMove1.Count == this.FromAbovePercentageByMove2.Count);
-                Debug.Assert(this.FromAbovePercentageByMove2.Count == this.FromBelowPercentageByMove2.Count);
-                Debug.Assert(this.FromBelowPercentageByMove2.Count == this.ProportionalPercentageByMove2.Count);
-                Debug.Assert(this.ProportionalPercentageByMove2.Count == this.FromAbovePercentageByMove3.Count);
-                Debug.Assert(this.FromAbovePercentageByMove3.Count == this.FromBelowPercentageByMove3.Count);
-                Debug.Assert(this.FromBelowPercentageByMove3.Count == this.ProportionalPercentageByMove3.Count);
-                return this.ProportionalPercentageByMove1.Count; 
-            }
+            return prefix + "Thin1above," + prefix + "Thin1proportional," + prefix + "Thin1below," +
+                   prefix + "Thin2above," + prefix + "Thin2proportional," + prefix + "Thin2below," +
+                   prefix + "Thin3above," + prefix + "Thin3proportional," + prefix + "Thin3below";
         }
 
-        public void Add(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        public override string GetCsvValues(HeuristicResultPosition position, int moveNumber)
         {
+            return this.FromAbovePercentageByMove1[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ProportionalPercentageByMove1[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromBelowPercentageByMove1[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromAbovePercentageByMove2[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ProportionalPercentageByMove2[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromBelowPercentageByMove2[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromAbovePercentageByMove3[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ProportionalPercentageByMove3[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromBelowPercentageByMove3[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture);
+        }
+
+        public bool TryAddMove(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        {
+            if (this.FromAbovePercentageByMove1.Count > this.MoveCapacity)
+            {
+                return false;
+            }
+
             float fromAbovePercentageFirst = 0.0F;
             float proportionalPercentageFirst = 0.0F;
             float fromBelowPercentageFirst = 0.0F;
@@ -90,26 +99,8 @@ namespace Osu.Cof.Ferm.Heuristics
             this.FromAbovePercentageByMove3.Add(fromAbovePercentageThird);
             this.ProportionalPercentageByMove3.Add(proportionalPercentageThird);
             this.FromBelowPercentageByMove3.Add(fromBelowPercentageThird);
-        }
 
-        public string GetCsvHeader(string prefix)
-        {
-            return prefix + "Thin1above," + prefix + "Thin1proportional," + prefix + "Thin1below," +
-                   prefix + "Thin2above," + prefix + "Thin2proportional," + prefix + "Thin2below," +
-                   prefix + "Thin3above," + prefix + "Thin3proportional," + prefix + "Thin3below";
-        }
-
-        public string GetCsvValues(HeuristicResultPosition position, int move)
-        {
-            return this.FromAbovePercentageByMove1[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentageByMove1[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromBelowPercentageByMove1[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromAbovePercentageByMove2[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentageByMove2[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromBelowPercentageByMove2[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromAbovePercentageByMove3[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentageByMove3[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromBelowPercentageByMove3[move].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture);
+            return false;
         }
     }
 }

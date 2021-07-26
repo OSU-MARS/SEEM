@@ -25,6 +25,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new InvalidOperationException(nameof(this.Iterations));
             }
+            if (this.RunParameters.LogOnlyImprovingMoves)
+            {
+                throw new NotSupportedException("Logging of only improving moves isn't currently supported.");
+            }
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
@@ -53,7 +57,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
+                this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
             }
 
             stopwatch.Stop();

@@ -120,6 +120,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new InvalidOperationException(nameof(this.HeuristicParameters.ReservedProportion));
             }
+            if (this.RunParameters.LogOnlyImprovingMoves)
+            {
+                throw new NotSupportedException("Logging of only improving moves isn't currently supported.");
+            }
 
             this.thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
 
@@ -156,7 +160,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.CopyTreeGrowthToBestTrajectory(individualTrajectory);
                 }
 
-                this.FinancialValue.AddMove(acceptedFinancialValue, individualFinancialValue);
+                this.FinancialValue.TryAddMove(acceptedFinancialValue, individualFinancialValue);
             }
             Debug.Assert((currentGeneration.SolutionsAccepted == this.HeuristicParameters.PopulationSize) && (currentGeneration.SolutionsAccepted == currentGeneration.SolutionsInPool));
             this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
@@ -213,7 +217,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         Debug.Assert(acceptedFinancialValue >= firstChildFinancialValue);
                         ++perfCounters.MovesRejected;
                     }
-                    this.FinancialValue.AddMove(acceptedFinancialValue, firstChildFinancialValue);
+                    this.FinancialValue.TryAddMove(acceptedFinancialValue, firstChildFinancialValue);
 
                     if (nextGeneration.TryReplace(secondChildFinancialValue, secondChildTrajectory, this.HeuristicParameters.ReplacementStrategy))
                     {
@@ -229,7 +233,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         Debug.Assert(acceptedFinancialValue >= secondChildFinancialValue);
                         ++perfCounters.MovesRejected;
                     }
-                    this.FinancialValue.AddMove(acceptedFinancialValue, secondChildFinancialValue);
+                    this.FinancialValue.TryAddMove(acceptedFinancialValue, secondChildFinancialValue);
 
                     // identify the fittest individual among the two parents and the two offspring and place it in the next generation
                     //float firstParentFitness = currentGeneration.IndividualFitness[firstParentIndex];

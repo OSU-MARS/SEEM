@@ -45,6 +45,11 @@ namespace Osu.Cof.Ferm.Heuristics
             this.PerfCountersBySolution = new();
         }
 
+        public int SolutionsInFinancialDistribution
+        {
+            get { return this.acceptedFinancialValueBySolution.Count; }
+        }
+
         public int TotalSolutions 
         { 
             get 
@@ -54,17 +59,24 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public void AddSolution(Heuristic heuristic, HeuristicResultPosition position, HeuristicPerformanceCounters perfCounters)
+        public bool AddRunAndTryAddToFinancialDistribution(Heuristic heuristic, HeuristicResultPosition position, HeuristicPerformanceCounters perfCounters)
         {
-            this.acceptedFinancialValueBySolution.Add(heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position));
-
             this.HighestFinancialValueBySolution.Add(heuristic.FinancialValue.GetHighestValueWithDefaulting(position));
             this.PerfCountersBySolution.Add(perfCounters);
+
+            if (heuristic.RunParameters.LogOnlyImprovingMoves == false)
+            {
+                // for now, include only dense acceptance trajectories starting with move 0 in distributions
+                this.acceptedFinancialValueBySolution.Add(heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position));
+                return true;
+            }
+
+            return false;
         }
 
-        public int GetMaximumMoves()
+        public int GetMaximumMoveIndex()
         {
-            int maximumMoves = Int32.MinValue;
+            int maximumMoves = 0;
             foreach (List<float> acceptedObjectives in this.acceptedFinancialValueBySolution)
             {
                 if (acceptedObjectives.Count > maximumMoves)

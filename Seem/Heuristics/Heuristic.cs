@@ -68,7 +68,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.CurrentTrajectory.Name += "Current";
 
             this.ConstructionGreediness = Constant.Grasp.NoConstruction;
-            this.FinancialValue = new(rotationLengthCapacity, financialScenarioCapacity);
+            this.FinancialValue = new(rotationLengthCapacity, financialScenarioCapacity, runParameters.MoveCapacity);
             this.RunParameters = runParameters;
         }
 
@@ -226,7 +226,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public virtual IHeuristicMoveLog? GetMoveLog()
+        public virtual HeuristicMoveLog? GetMoveLog()
         {
             return null;
         }
@@ -391,7 +391,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.BestTrajectoryByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex]!.CopyTreeGrowthFrom(this.CurrentTrajectory);
 
             float financialValue = this.GetFinancialValue(this.CurrentTrajectory, position.FinancialIndex);
-            this.FinancialValue.AddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex, financialValue, financialValue);
+            this.FinancialValue.TryAddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex, financialValue, financialValue);
             return financialValue;
         }
 

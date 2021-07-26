@@ -51,6 +51,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new InvalidOperationException(nameof(this.LowerWaterAfter));
             }
+            if (this.RunParameters.LogOnlyImprovingMoves)
+            {
+                throw new NotSupportedException("Logging of only improving moves isn't currently supported.");
+            }
             if (this.StopAfter < 1)
             {
                 throw new InvalidOperationException(nameof(this.StopAfter));
@@ -172,8 +176,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
-                this.MoveLog.TreeIDByMove.Add(firstTreeIndex);
+                this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                this.MoveLog.TryAddMove(firstTreeIndex);
 
                 if (iterationsSinceFinancialValueIncrease > this.StopAfter)
                 {

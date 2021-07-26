@@ -155,6 +155,8 @@ namespace Osu.Cof.Ferm
             public const int FirstCircularIterationMultiplier = 20;
             public const int HeroMaximumIterations = 20;
             public const float InitialThinningProbability = 0.5F;
+            public const bool LogOnlyImprovingMoves = false;
+            public const int MoveCapacity = 1024 * 1024;
             public const int RotationIndex = 0;
         }
 
@@ -200,6 +202,9 @@ namespace Osu.Cof.Ferm
         public static class PrescriptionSearchDefault
         {
             public const float DefaultIntensityStepSize = 8.0F; // loose optimum for coordinate ascent solution quality given minimum step of 1%
+            public const int LogLastNImprovingMoves = 25;
+            public const float InitialThinningProbability = 0.0F;
+            public const float MethodPercentageUpperLimit = 100.0F;
             public const float MaximumIntensity = 80.0F;
             public const float MaximumIntensityStepSize = 100.0F; // default to no limiting by percentage
             public const float MinimumIntensity = 20.0F;

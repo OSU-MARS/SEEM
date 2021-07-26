@@ -1,5 +1,7 @@
 ﻿using Osu.Cof.Ferm.Extensions;
 using Osu.Cof.Ferm.Organon;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -7,7 +9,7 @@ namespace Osu.Cof.Ferm.Heuristics
     // arrays are allocated for all possible combinations of rotations and discount rates
     // This is likely to be an overallocation as thinnings will probably preclude some rotations, leading to unused elements within the arrays. For now,
     // it's assumed that the FIFO (first in, first out) length is short enough the memory required isn't a concern.
-    public class PrescriptionFirstInFirstOutMoveLog : IHeuristicMoveLog
+    public class PrescriptionLastNMoveLog : HeuristicMoveLog
     {
         // first thin
         private readonly float[,,] fromAbovePercentageByRotationAndRate1;
@@ -25,30 +27,42 @@ namespace Osu.Cof.Ferm.Heuristics
         private readonly float[,,] proportionalPercentageByRotationAndRate3;
 
         private readonly int fifoLength;
-        private readonly int[,,] moveIndexByRotationAndRate;
+        private readonly List<int>[,] moveNumberByRotationAndRate;
+        private readonly int[,,] retainedMoveNumberByRotationAndRate;
         private readonly int[,] setIndexByRotationAndRate;
 
-        public int LengthInMoves { get; set; }
-
-        public PrescriptionFirstInFirstOutMoveLog(int planningPeriods, int discountRates, int fifoLength)
+        public PrescriptionLastNMoveLog(int rotationLengths, int financialScenarios, int moveCapacity, int nMoves)
+            : base(moveCapacity)
         {
-            this.fromAbovePercentageByRotationAndRate1 = new float[planningPeriods, discountRates, fifoLength];
-            this.fromBelowPercentageByRotationAndRate1 = new float[planningPeriods, discountRates, fifoLength];
-            this.proportionalPercentageByRotationAndRate1 = new float[planningPeriods, discountRates, fifoLength];
+            if (rotationLengths < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(rotationLengths));
+            }
+            if (financialScenarios < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(financialScenarios));
+            }
+            if (nMoves < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(nMoves));
+            }
 
-            this.fromAbovePercentageByRotationAndRate2 = new float[planningPeriods, discountRates, fifoLength];
-            this.fromBelowPercentageByRotationAndRate2 = new float[planningPeriods, discountRates, fifoLength];
-            this.proportionalPercentageByRotationAndRate2 = new float[planningPeriods, discountRates, fifoLength];
+            this.fromAbovePercentageByRotationAndRate1 = new float[rotationLengths, financialScenarios, nMoves];
+            this.fromBelowPercentageByRotationAndRate1 = new float[rotationLengths, financialScenarios, nMoves];
+            this.proportionalPercentageByRotationAndRate1 = new float[rotationLengths, financialScenarios, nMoves];
 
-            this.fromAbovePercentageByRotationAndRate3 = new float[planningPeriods, discountRates, fifoLength];
-            this.fromBelowPercentageByRotationAndRate3 = new float[planningPeriods, discountRates, fifoLength];
-            this.proportionalPercentageByRotationAndRate3 = new float[planningPeriods, discountRates, fifoLength];
+            this.fromAbovePercentageByRotationAndRate2 = new float[rotationLengths, financialScenarios, nMoves];
+            this.fromBelowPercentageByRotationAndRate2 = new float[rotationLengths, financialScenarios, nMoves];
+            this.proportionalPercentageByRotationAndRate2 = new float[rotationLengths, financialScenarios, nMoves];
 
-            this.fifoLength = fifoLength;
-            this.moveIndexByRotationAndRate = new int[planningPeriods, discountRates, fifoLength];
-            this.setIndexByRotationAndRate = new int[planningPeriods, discountRates];
+            this.fromAbovePercentageByRotationAndRate3 = new float[rotationLengths, financialScenarios, nMoves];
+            this.fromBelowPercentageByRotationAndRate3 = new float[rotationLengths, financialScenarios, nMoves];
+            this.proportionalPercentageByRotationAndRate3 = new float[rotationLengths, financialScenarios, nMoves];
 
-            this.LengthInMoves = 0;
+            this.fifoLength = nMoves;
+            this.moveNumberByRotationAndRate = new List<int>[rotationLengths, financialScenarios];
+            this.retainedMoveNumberByRotationAndRate = new int[rotationLengths, financialScenarios, nMoves];
+            this.setIndexByRotationAndRate = new int[rotationLengths, financialScenarios];
 
             ArrayExtensions.Fill(this.fromAbovePercentageByRotationAndRate1, -1.0F);
             ArrayExtensions.Fill(this.fromBelowPercentageByRotationAndRate1, -1.0F);
@@ -62,18 +76,26 @@ namespace Osu.Cof.Ferm.Heuristics
             ArrayExtensions.Fill(this.fromBelowPercentageByRotationAndRate3, -1.0F);
             ArrayExtensions.Fill(this.proportionalPercentageByRotationAndRate3, -1.0F);
 
-            ArrayExtensions.Fill(this.moveIndexByRotationAndRate, -1);
+            for (int rotationIndex = 0; rotationIndex < rotationLengths; ++rotationIndex)
+            {
+                for (int financialIndex = 0; financialIndex < financialScenarios; ++financialIndex)
+                {
+                    this.moveNumberByRotationAndRate[rotationIndex, financialIndex] = new();
+                }
+            }
+
+            ArrayExtensions.Fill(this.retainedMoveNumberByRotationAndRate, -1);
             // this.setIndexByRotationAndRate can remain zeros
         }
 
-        public string GetCsvHeader(string prefix)
+        public override string GetCsvHeader(string prefix)
         {
             return prefix + "Thin1above," + prefix + "Thin1proportional," + prefix + "Thin1below," +
                    prefix + "Thin2above," + prefix + "Thin2proportional," + prefix + "Thin2below," +
                    prefix + "Thin3above," + prefix + "Thin3proportional," + prefix + "Thin3below";
         }
 
-        public string GetCsvValues(HeuristicResultPosition position, int move)
+        public override string GetCsvValues(HeuristicResultPosition position, int moveNumber)
         {
             // apply defaulting
             // If this move log instance is specific to a single rotation and financial scenario then the provided position is ignored.
@@ -85,19 +107,19 @@ namespace Osu.Cof.Ferm.Heuristics
                 financialIndex = position.FinancialIndex;
             }
 
-            for (int moveIndex = 0; moveIndex < this.fifoLength; ++moveIndex)
+            for (int fifoIndex = 0; fifoIndex < this.fifoLength; ++fifoIndex)
             {
-                if (move == this.moveIndexByRotationAndRate[rotationIndex, financialIndex, moveIndex])
+                if (moveNumber == this.retainedMoveNumberByRotationAndRate[rotationIndex, financialIndex, fifoIndex])
                 {
-                    float fromAbovePercentage1 = this.fromAbovePercentageByRotationAndRate1[rotationIndex, financialIndex, moveIndex];
-                    float proportionalPercentage1 = this.proportionalPercentageByRotationAndRate1[rotationIndex, financialIndex, moveIndex];
-                    float fromBelowPercentage1 = this.fromBelowPercentageByRotationAndRate1[rotationIndex, financialIndex, moveIndex];
-                    float fromAbovePercentage2 = this.fromAbovePercentageByRotationAndRate2[rotationIndex, financialIndex, moveIndex];
-                    float proportionalPercentage2 = this.proportionalPercentageByRotationAndRate2[rotationIndex, financialIndex, moveIndex];
-                    float fromBelowPercentage2 = this.fromBelowPercentageByRotationAndRate2[rotationIndex, financialIndex, moveIndex];
-                    float fromAbovePercentage3 = this.fromAbovePercentageByRotationAndRate3[rotationIndex, financialIndex, moveIndex];
-                    float proportionalPercentage3 = this.proportionalPercentageByRotationAndRate3[rotationIndex, financialIndex, moveIndex];
-                    float fromBelowPercentage3 = this.fromBelowPercentageByRotationAndRate3[rotationIndex, financialIndex, moveIndex];
+                    float fromAbovePercentage1 = this.fromAbovePercentageByRotationAndRate1[rotationIndex, financialIndex, fifoIndex];
+                    float proportionalPercentage1 = this.proportionalPercentageByRotationAndRate1[rotationIndex, financialIndex, fifoIndex];
+                    float fromBelowPercentage1 = this.fromBelowPercentageByRotationAndRate1[rotationIndex, financialIndex, fifoIndex];
+                    float fromAbovePercentage2 = this.fromAbovePercentageByRotationAndRate2[rotationIndex, financialIndex, fifoIndex];
+                    float proportionalPercentage2 = this.proportionalPercentageByRotationAndRate2[rotationIndex, financialIndex, fifoIndex];
+                    float fromBelowPercentage2 = this.fromBelowPercentageByRotationAndRate2[rotationIndex, financialIndex, fifoIndex];
+                    float fromAbovePercentage3 = this.fromAbovePercentageByRotationAndRate3[rotationIndex, financialIndex, fifoIndex];
+                    float proportionalPercentage3 = this.proportionalPercentageByRotationAndRate3[rotationIndex, financialIndex, fifoIndex];
+                    float fromBelowPercentage3 = this.fromBelowPercentageByRotationAndRate3[rotationIndex, financialIndex, fifoIndex];
 
                     return fromAbovePercentage1.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
                            proportionalPercentage1.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
@@ -114,16 +136,32 @@ namespace Osu.Cof.Ferm.Heuristics
             return ",,,,,,,,";
         }
 
-        public void SetPrescription(int move, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        public override int GetMoveNumberWithDefaulting(HeuristicResultPosition position, int moveIndex)
         {
-            this.SetPrescription(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex, move, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+            if (this.moveNumberByRotationAndRate.Length == 1)
+            {
+                return this.moveNumberByRotationAndRate[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex][moveIndex];
+            }
+            return this.moveNumberByRotationAndRate[position.RotationIndex, position.FinancialIndex][moveIndex];
         }
 
-        public void SetPrescription(int rotationIndex, int financialIndex, int move, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        public bool TryAddMove(int moveNumber, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
         {
-            // update specified discount rate
+            return this.TryAddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex, moveNumber, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+        }
+
+        public bool TryAddMove(int rotationIndex, int financialIndex, int moveNumber, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        {
+            List<int> moveNumbers = this.moveNumberByRotationAndRate[rotationIndex, financialIndex];
+            if (moveNumbers.Count > this.MoveCapacity)
+            {
+                return false;
+            }
+            moveNumbers.Add(moveNumber);
+
+            // capture thinning prescriptions (for now, treat no prescription as interchangeable with zero thinning intensity)
             int setIndex = this.setIndexByRotationAndRate[rotationIndex, financialIndex];
-            this.moveIndexByRotationAndRate[rotationIndex, financialIndex, setIndex] = move;
+            this.retainedMoveNumberByRotationAndRate[rotationIndex, financialIndex, setIndex] = moveNumber;
 
             if (firstThinPrescription != null)
             {
@@ -171,6 +209,8 @@ namespace Osu.Cof.Ferm.Heuristics
                 setIndex = 0;
             }
             this.setIndexByRotationAndRate[rotationIndex, financialIndex] = setIndex;
+
+            return true;
         }
     }
 }

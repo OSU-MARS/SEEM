@@ -7,13 +7,18 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class PrescriptionEnumeration : PrescriptionHeuristic
     {
+        private int prescriptionsEnumerated;
+
         public PrescriptionEnumeration(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters)
             : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndDiscountRates: true)
         {
+            // this.prescriptionsEnumerated is (re)set in EvaluateThinningPrescriptions()
         }
 
         protected override void EvaluateThinningPrescriptions(HeuristicResultPosition position, HeuristicResults results, HeuristicPerformanceCounters perfCounters)
         {
+            this.prescriptionsEnumerated = 0;
+
             IList<IHarvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
             if (harvests.Count == 0)
             {
@@ -92,24 +97,28 @@ namespace Osu.Cof.Ferm.Heuristics
 
                         if (this.lastNImprovingMovesLog != null)
                         {
-                            this.lastNImprovingMovesLog.SetPrescription(rotationIndex, financialIndex, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                            this.lastNImprovingMovesLog.TryAddMove(rotationIndex, financialIndex, this.prescriptionsEnumerated, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
                         }
 
+                        this.FinancialValue.TryAddMove(rotationIndex, financialIndex, acceptedFinancialValue, candidateFinancialValue);
                         ++perfCounters.MovesAccepted;
                     }
                     else
                     {
+                        if (this.RunParameters.LogOnlyImprovingMoves == false)
+                        {
+                            this.FinancialValue.TryAddMove(rotationIndex, financialIndex, acceptedFinancialValue, candidateFinancialValue);
+                        }
                         ++perfCounters.MovesRejected;
                     }
-
-                    this.FinancialValue.AddMove(rotationIndex, financialIndex, acceptedFinancialValue, candidateFinancialValue);
                 }
             }
 
             if (this.allMoveLog != null)
             {
-                this.allMoveLog.Add(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                this.allMoveLog.TryAddMove(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
             }
+            ++this.prescriptionsEnumerated;
         }
 
         private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float percentIntensityOfPreviousThins, Action<float> evaluatePrescriptions, HeuristicPerformanceCounters perfCounters)
@@ -184,8 +193,8 @@ namespace Osu.Cof.Ferm.Heuristics
                     {
                         Debug.Assert(fromBelowPercentage >= 0.0F);
                         float totalRelativeIntensityOfThisThin = fromAbovePercentage + proportionalPercentage + fromBelowPercentage;
-                        Debug.Assert(totalRelativeIntensityOfThisThin >= minimumPercentage);
-                        Debug.Assert(totalRelativeIntensityOfThisThin <= maximumPercentage);
+                        Debug.Assert(totalRelativeIntensityOfThisThin - minimumPercentage > -0.000002F);
+                        Debug.Assert(totalRelativeIntensityOfThisThin - maximumPercentage < 0.000002F);
 
                         thinPrescription.FromAbovePercentage = fromAbovePercentage;
                         thinPrescription.FromBelowPercentage = fromBelowPercentage;

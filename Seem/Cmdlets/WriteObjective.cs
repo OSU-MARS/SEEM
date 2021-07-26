@@ -12,16 +12,13 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommunications.Write, "Objective")]
     public class WriteObjective : WriteHeuristicResultsCmdlet
     {
-        [Parameter]
-        public SwitchParameter ImprovingOnly;
-
         [Parameter(HelpMessage = "Number of iterations between CSV file lines. Default is 1, which logs objective function values for every move.")]
         [ValidateRange(1, Int32.MaxValue)]
         public int Step;
 
         public WriteObjective()
         {
-            this.LimitGB = 3.0F; // approximate upper bound of what fread() can load in R
+            this.LimitGB = 1.5F; // approximate upper bound of what fread() can load in R is 3 GB
             this.Step = 1;
         }
 
@@ -43,10 +40,10 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Cannot generate header because first result is missing a high solution or a low solution.");
                 }
-                StringBuilder line = new(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",iteration,count");
+                StringBuilder line = new(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",move,count");
 
                 string lowMoveLogHeader = "lowMoveLog";
-                IHeuristicMoveLog? lowMoveLog = solution.Low!.GetMoveLog();
+                HeuristicMoveLog? lowMoveLog = solution.Low!.GetMoveLog();
                 if (lowMoveLog != null)
                 {
                     lowMoveLogHeader = lowMoveLog.GetCsvHeader("low");
@@ -56,7 +53,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 line.Append(",low,lowCandidate,min,percentile2.5,percentile5,lowerQuartile,median,mean,upperQuartile,percentile95,percentile97.5,max");
 
                 string highMoveLogHeader = "highMoveLog";
-                IHeuristicMoveLog? highMoveLog = solution.High!.GetMoveLog();
+                HeuristicMoveLog? highMoveLog = solution.High!.GetMoveLog();
                 if (highMoveLog != null)
                 {
                     highMoveLogHeader = highMoveLog.GetCsvHeader("high");
@@ -120,61 +117,40 @@ namespace Osu.Cof.Ferm.Cmdlets
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int positionIndex = 0; positionIndex < prioritizedResults.Count; ++positionIndex)
             {
+                // since high and low solutions are from the same position, they use the same heuristic parameters
                 HeuristicResultPosition position = prioritizedResults[positionIndex];
                 HeuristicResult result = this.Results[position];
                 string heuristicAndPosition = WriteCmdlet.GetHeuristicAndPositionCsvValues(result.Pool, this.Results, position);
-                Heuristic highHeuristic = result.Pool.High!;
-                Heuristic lowHeuristic = result.Pool.Low!;
+                Heuristic highHeuristic = result.Pool.High!; // checked for null in GetHeuristicAndPositionCsvValues()
+                Heuristic lowHeuristic = result.Pool.Low!; // also checked for null
 
-                // solution distribution is informative and should be logged in this case
-                // for now, assume high and low solutions use the same parameters
+                if (highHeuristic.RunParameters.LogOnlyImprovingMoves != lowHeuristic.RunParameters.LogOnlyImprovingMoves)
+                {
+                    throw new NotSupportedException("High and low heuristic move logs are mismatched. They must either both contain all moves or both contain only improving moves.");
+                }
+
                 IList<float> acceptedFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
                 IList<float> acceptedFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
                 IList<float> candidateFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
                 IList<float> candidateFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
-
-                IHeuristicMoveLog? highMoveLog = highHeuristic.GetMoveLog();
-                IHeuristicMoveLog? lowMoveLog = lowHeuristic.GetMoveLog();
-                int maximumMoves = result.Distribution.GetMaximumMoves();
-                Debug.Assert((maximumMoves >= acceptedFinancialValueByMoveLow.Count) && (maximumMoves >= candidateFinancialValueByMoveLow.Count));
-                Debug.Assert((maximumMoves >= acceptedFinancialValueByMoveHigh.Count) && (maximumMoves >= candidateFinancialValueByMoveHigh.Count));
-                float previousHighObjectiveFunction = Single.MinValue;
-                float previousLowObjectiveFunction = Single.MinValue;
-                for (int moveIndex = 0; moveIndex < maximumMoves; moveIndex += this.Step)
+                if ((acceptedFinancialValueByMoveLow.Count != candidateFinancialValueByMoveLow.Count) ||
+                    (acceptedFinancialValueByMoveHigh.Count != candidateFinancialValueByMoveHigh.Count))
                 {
-                    float? lowObjectiveFunctionAsFloat = null;
-                    bool lowObjectiveImproved = false;
-                    if (acceptedFinancialValueByMoveLow.Count > moveIndex)
-                    {
-                        lowObjectiveFunctionAsFloat = acceptedFinancialValueByMoveLow[moveIndex];
-                        if (lowObjectiveFunctionAsFloat > previousLowObjectiveFunction)
-                        {
-                            previousLowObjectiveFunction = lowObjectiveFunctionAsFloat.Value;
-                            lowObjectiveImproved = true;
-                        }
-                    }
+                    throw new NotSupportedException("Mismatch between accepted and candidate move lengths of high or low heuristic.");
+                }
+                int maximumMoveInFinancialDistribution = result.Distribution.GetMaximumMoveIndex();
+                int maximumMoveIndex = Math.Max(Math.Max(acceptedFinancialValueByMoveLow.Count, acceptedFinancialValueByMoveHigh.Count), maximumMoveInFinancialDistribution);
 
-                    float? highObjectiveFunctionAsFloat = null;
-                    bool highObjectiveImproved = false;
-                    if (acceptedFinancialValueByMoveHigh.Count > moveIndex)
-                    {
-                        highObjectiveFunctionAsFloat = acceptedFinancialValueByMoveHigh[moveIndex];
-                        if (highObjectiveFunctionAsFloat > previousHighObjectiveFunction)
-                        {
-                            previousHighObjectiveFunction = highObjectiveFunctionAsFloat.Value;
-                            highObjectiveImproved = true;
-                        }
-                    }
-
-                    if (this.ImprovingOnly && ((lowObjectiveImproved == false) || (highObjectiveImproved == false)))
-                    {
-                        continue;
-                    }
-
+                HeuristicMoveLog? highMoveLog = highHeuristic.GetMoveLog();
+                HeuristicMoveLog? lowMoveLog = lowHeuristic.GetMoveLog();
+                for (int moveIndex = 0; moveIndex < maximumMoveIndex; moveIndex += this.Step)
+                {
                     string? lowMove = null;
-                    if ((lowMoveLog != null) && (lowMoveLog.LengthInMoves > moveIndex))
+                    int lowMoveNumber = moveIndex;
+                    if (lowMoveLog != null)
                     {
-                        lowMove = lowMoveLog.GetCsvValues(position, moveIndex);
+                        lowMoveNumber = lowMoveLog.GetMoveNumberWithDefaulting(position, moveIndex);
+                        lowMove = lowMoveLog.GetCsvValues(position, lowMoveNumber);
                     }
                     string? lowObjectiveFunction = null;
                     if (acceptedFinancialValueByMoveLow.Count > moveIndex)
@@ -187,81 +163,106 @@ namespace Osu.Cof.Ferm.Cmdlets
                         lowObjectiveFunctionCandidate = candidateFinancialValueByMoveLow[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    DistributionStatistics moveStatistics = result.Distribution.GetFinancialStatisticsForMove(moveIndex);
-                    string runsWithMoveAtIndex = moveStatistics.Count.ToString(CultureInfo.InvariantCulture);
-                    string minObjectiveFunction = moveStatistics.Minimum.ToString(CultureInfo.InvariantCulture);
-                    string? lowerQuartileObjectiveFunction = null;
-                    if (moveStatistics.LowerQuartile != null)
+                    string? runsWithMoveAtIndex = null;
+                    string? minFinancialValue = null;
+                    string? twoPointFivePercentileFinancialValue = null;
+                    string? fifthPercentileFinancialValue = null;
+                    string? lowerQuartileFinancialValue = null;
+                    string? medianFinancialValue = null;
+                    string? meanFinancialValue = null;
+                    string? upperQuartileFinancialValue = null;
+                    string? ninetyFifthPercentileFinancialValue = null;
+                    string? ninetySevenPointFivePercentileFinancialValue = null;
+                    string? maxFinancialValue = null;
+                    if (maximumMoveInFinancialDistribution > moveIndex)
                     {
-                        lowerQuartileObjectiveFunction = moveStatistics.LowerQuartile.Value.ToString(CultureInfo.InvariantCulture);
-                    }
-                    string? twoPointFivePercentileObjectiveFunction = null;
-                    if (moveStatistics.TwoPointFivePercentile != null)
-                    {
-                        twoPointFivePercentileObjectiveFunction = moveStatistics.TwoPointFivePercentile.Value.ToString(CultureInfo.InvariantCulture);
-                    }
-                    string? fifthPercentileObjectiveFunction = null;
-                    if (moveStatistics.FifthPercentile != null)
-                    {
-                        fifthPercentileObjectiveFunction = moveStatistics.FifthPercentile.Value.ToString(CultureInfo.InvariantCulture);
-                    }
+                        DistributionStatistics financialStatistics = result.Distribution.GetFinancialStatisticsForMove(moveIndex);
+                        runsWithMoveAtIndex = financialStatistics.Count.ToString(CultureInfo.InvariantCulture);
+                        minFinancialValue = financialStatistics.Minimum.ToString(CultureInfo.InvariantCulture);
+                        if (financialStatistics.TwoPointFivePercentile.HasValue)
+                        {
+                            twoPointFivePercentileFinancialValue = financialStatistics.TwoPointFivePercentile.Value.ToString(CultureInfo.InvariantCulture);
+                        }
+                        if (financialStatistics.FifthPercentile.HasValue)
+                        {
+                            fifthPercentileFinancialValue = financialStatistics.FifthPercentile.Value.ToString(CultureInfo.InvariantCulture);
+                        }
+                        if (financialStatistics.LowerQuartile.HasValue)
+                        {
+                            lowerQuartileFinancialValue = financialStatistics.LowerQuartile.Value.ToString(CultureInfo.InvariantCulture);
+                        }
 
-                    string medianObjectiveFunction = moveStatistics.Median.ToString(CultureInfo.InvariantCulture);
-                    string meanObjectiveFunction = moveStatistics.Mean.ToString(CultureInfo.InvariantCulture);
-                    string? upperQuartileObjectiveFunction = null;
-                    if (moveStatistics.UpperQuartile != null)
-                    {
-                        upperQuartileObjectiveFunction = moveStatistics.UpperQuartile.Value.ToString(CultureInfo.InvariantCulture);
+                        medianFinancialValue = financialStatistics.Median.ToString(CultureInfo.InvariantCulture);
+                        meanFinancialValue = financialStatistics.Mean.ToString(CultureInfo.InvariantCulture);
+                        if (financialStatistics.UpperQuartile.HasValue)
+                        {
+                            upperQuartileFinancialValue = financialStatistics.UpperQuartile.Value.ToString(CultureInfo.InvariantCulture);
+                        }
+                        if (financialStatistics.NinetyFifthPercentile.HasValue)
+                        {
+                            ninetyFifthPercentileFinancialValue = financialStatistics.NinetyFifthPercentile.Value.ToString(CultureInfo.InvariantCulture);
+                        }
+                        if (financialStatistics.NinetySevenPointFivePercentile.HasValue)
+                        {
+                            ninetySevenPointFivePercentileFinancialValue = financialStatistics.NinetySevenPointFivePercentile.Value.ToString(CultureInfo.InvariantCulture);
+                        }
+                        maxFinancialValue = financialStatistics.Maximum.ToString(CultureInfo.InvariantCulture);
+
+                        Debug.Assert((acceptedFinancialValueByMoveLow.Count <= moveIndex) || (financialStatistics.Maximum >= acceptedFinancialValueByMoveLow[moveIndex]));
+                        Debug.Assert((acceptedFinancialValueByMoveHigh.Count <= moveIndex) || (financialStatistics.Minimum <= acceptedFinancialValueByMoveHigh[moveIndex]));
                     }
-                    string? ninetyFifthPercentileObjectiveFunction = null;
-                    if (moveStatistics.NinetyFifthPercentile != null)
-                    {
-                        ninetyFifthPercentileObjectiveFunction = moveStatistics.NinetyFifthPercentile.Value.ToString(CultureInfo.InvariantCulture);
-                    }
-                    string? ninetySevenPointFivePercentileObjectiveFunction = null;
-                    if (moveStatistics.NinetySevenPointFivePercentile != null)
-                    {
-                        ninetySevenPointFivePercentileObjectiveFunction = moveStatistics.NinetySevenPointFivePercentile.Value.ToString(CultureInfo.InvariantCulture);
-                    }
-                    string maxObjectiveFunction = moveStatistics.Maximum.ToString(CultureInfo.InvariantCulture);
 
                     string? highMove = null;
-                    if ((highMoveLog != null) && (highMoveLog.LengthInMoves > moveIndex))
+                    int highMoveNumber = moveIndex;
+                    if (highMoveLog != null)
                     {
-                        highMove = highMoveLog.GetCsvValues(position, moveIndex);
+                        highMoveNumber = highMoveLog.GetMoveNumberWithDefaulting(position, moveIndex);
+                        highMove = highMoveLog!.GetCsvValues(position, highMoveNumber);
                     }
-                    string highObjectiveFunction = String.Empty;
-                    if (highObjectiveFunctionAsFloat.HasValue)
+                    string? highFinancialValue = null;
+                    if (acceptedFinancialValueByMoveHigh.Count > moveIndex)
                     {
-                        highObjectiveFunction = highObjectiveFunctionAsFloat.Value.ToString(CultureInfo.InvariantCulture);
+                        highFinancialValue = acceptedFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
-                    string? highObjectiveFunctionCandidate = null;
+                    string? highFinancialCandidate = null;
                     if (candidateFinancialValueByMoveHigh.Count > moveIndex)
                     {
-                        highObjectiveFunctionCandidate = candidateFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
+                        highFinancialCandidate = candidateFinancialValueByMoveHigh[moveIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    Debug.Assert((acceptedFinancialValueByMoveLow.Count <= moveIndex) || (moveStatistics.Maximum >= acceptedFinancialValueByMoveLow[moveIndex]));
-                    Debug.Assert((acceptedFinancialValueByMoveHigh.Count <= moveIndex) || (moveStatistics.Minimum <= acceptedFinancialValueByMoveHigh[moveIndex]));
+                    if (lowMoveNumber != highMoveNumber)
+                    {
+                        throw new NotSupportedException("Low move number " + lowMoveNumber + " does not match high move number " + highMoveNumber + ".");
+                    }
+                    string moveNumber;
+                    if (highMoveNumber != moveIndex)
+                    {
+                        moveNumber = highMoveNumber.ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        moveNumber = moveIndex.ToString(CultureInfo.InvariantCulture);
+                    }
+
                     writer.WriteLine(heuristicAndPosition + "," +
-                                     moveIndex + "," +
+                                     moveNumber + "," +
                                      runsWithMoveAtIndex + "," +
                                      lowMove + "," +
                                      lowObjectiveFunction + "," +
                                      lowObjectiveFunctionCandidate + "," +
-                                     minObjectiveFunction + "," +
-                                     twoPointFivePercentileObjectiveFunction + "," +
-                                     fifthPercentileObjectiveFunction + "," +
-                                     lowerQuartileObjectiveFunction + "," +
-                                     medianObjectiveFunction + "," +
-                                     meanObjectiveFunction + "," +
-                                     upperQuartileObjectiveFunction + "," +
-                                     ninetyFifthPercentileObjectiveFunction + "," +
-                                     ninetySevenPointFivePercentileObjectiveFunction + "," +
-                                     maxObjectiveFunction + "," +
+                                     minFinancialValue + "," +
+                                     twoPointFivePercentileFinancialValue + "," +
+                                     fifthPercentileFinancialValue + "," +
+                                     lowerQuartileFinancialValue + "," +
+                                     medianFinancialValue + "," +
+                                     meanFinancialValue + "," +
+                                     upperQuartileFinancialValue + "," +
+                                     ninetyFifthPercentileFinancialValue + "," +
+                                     ninetySevenPointFivePercentileFinancialValue + "," +
+                                     maxFinancialValue + "," +
                                      highMove + "," +
-                                     highObjectiveFunction + "," +
-                                     highObjectiveFunctionCandidate);
+                                     highFinancialValue + "," +
+                                     highFinancialCandidate);
                 }
 
                 if (writer.BaseStream.Length > maxFileSizeInBytes)

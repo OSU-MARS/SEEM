@@ -23,7 +23,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",solution,objective,moveAccepted,movesRejected,runtime,timesteps,treesRandomized");
+                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",solution,objective,movesAccepted,movesRejected,runtime,timesteps,treesRandomized");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();

@@ -48,8 +48,8 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++moveState.PerfCounters.MovesRejected;
             }
 
-            this.FinancialValue.AddMove(moveState.AcceptedFinancialValue, candidateFinancialValue);
-            this.MoveLog.TreeIDByMove.Add(moveState.TreeIndex);
+            this.FinancialValue.TryAddMove(moveState.AcceptedFinancialValue, candidateFinancialValue);
+            this.MoveLog.TryAddMove(moveState.TreeIndex);
 
             return acceptMove;
         }

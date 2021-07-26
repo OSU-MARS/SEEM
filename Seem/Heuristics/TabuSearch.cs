@@ -222,6 +222,10 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 throw new InvalidOperationException(nameof(this.MaximumTenure));
             }
+            if (this.RunParameters.LogOnlyImprovingMoves)
+            {
+                throw new NotSupportedException("Logging of only improving moves isn't currently supported.");
+            }
 
             IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
             if (thinningPeriods.Count < 2)
@@ -379,7 +383,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     highestFinancialValueSinceLastEscape = highestUnrestrictedFinancialValue;
                     iterationsSinceFinancialValueIncreasedOrEscape = 0;
-                    this.MoveLog.TreeIDByMove.Add(bestTreeIndex);
+                    this.MoveLog.TryAddMove(bestTreeIndex);
                     ++perfCounters.MovesAccepted;
                 }
                 else if (highestNonTabuMovesByFinancialValue.Count > 0)
@@ -396,7 +400,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     KeyValuePair<float, OneOptMove> highestValueNonTabuMove = highestNonTabuMovesByFinancialValue.Last();
                     remainingTabuTenures[highestValueNonTabuMove.Value.TreeIndex, highestValueNonTabuMove.Value.ThinPeriod] = this.GetTenure(tenureScalingFactor);
-                    this.MoveLog.TreeIDByMove.Add(highestValueNonTabuMove.Value.TreeIndex);
+                    this.MoveLog.TryAddMove(highestValueNonTabuMove.Value.TreeIndex);
                     ++perfCounters.MovesRejected;
 
                     if (acceptedFinancialValue > highestFinancialValueSinceLastEscape)
@@ -406,7 +410,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                 }
 
-                this.FinancialValue.AddMove(acceptedFinancialValue, highestNonTabuFinancialValue);
+                this.FinancialValue.TryAddMove(acceptedFinancialValue, highestNonTabuFinancialValue);
 
                 //if (++jumpBase >= this.Jump)
                 //{

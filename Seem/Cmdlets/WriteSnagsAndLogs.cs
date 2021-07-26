@@ -2,7 +2,6 @@
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Tree;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -14,6 +13,9 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommunications.Write, "SnagsAndLogs")]
     public class WriteSnagsAndLogs : WriteStandTrajectory
     {
+        [Parameter(HelpMessage = "Omits diameter classes without any snags or logs. In most cases this substantially reduces output file size.")]
+        public SwitchParameter SkipZero { get; set; }
+
         protected override void ProcessRecord()
         {
             this.ValidateParameters();
@@ -51,23 +53,27 @@ namespace Osu.Cof.Ferm.Cmdlets
                     Debug.Assert(stand != null);
                     string standAge = stand.AgeInYears.ToString(CultureInfo.InvariantCulture);
 
-                    foreach (KeyValuePair<FiaCode, float[,]> speciesAndSnags in snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass)
+                    foreach (FiaCode species in snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass.Keys)
                     {
-                        FiaCode species = speciesAndSnags.Key;
-                        float[,] logs = snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[species];
-                        float[,] snags = speciesAndSnags.Value;
+                        float[,] logsByPeriodAndDiameterClass = snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[species];
+                        float[,] snagsByPeriodAndDiameterClass = snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[species];
                         string standAgeAndSpeciesCode = standAge + "," + species.ToFourLetterCode();
+                        string linePrefixForPeriodAndSpecies = linePrefix + "," + standAgeAndSpeciesCode;
+
                         for (int diameterClassIndex = 0; diameterClassIndex < snagsAndLogs.DiameterClasses; ++diameterClassIndex)
                         {
-                            string diameter = snagsAndLogs.GetDiameter(diameterClassIndex).ToString("0.0", CultureInfo.InvariantCulture);
-                            string snagsPerHectare = snags[periodIndex, diameterClassIndex].ToString("0.00", CultureInfo.InvariantCulture);
-                            string logsPerHectare = logs[periodIndex, diameterClassIndex].ToString("0.00", CultureInfo.InvariantCulture);
+                            float snagsPerHectare = snagsByPeriodAndDiameterClass[periodIndex, diameterClassIndex];
+                            float logsPerHectare = logsByPeriodAndDiameterClass[periodIndex, diameterClassIndex];
+                            if (this.SkipZero && (snagsPerHectare == 0.0F) && (logsPerHectare == 0.0F))
+                            {
+                                continue;
+                            }
+                            float diameterClass = snagsAndLogs.GetDiameter(diameterClassIndex);
 
-                            writer.WriteLine(linePrefix + "," +
-                                             standAgeAndSpeciesCode + "," +
-                                             diameter + "," +
-                                             snagsPerHectare + "," +
-                                             logsPerHectare);
+                            writer.WriteLine(linePrefixForPeriodAndSpecies + "," +
+                                             diameterClass.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                             snagsPerHectare.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                             logsPerHectare.ToString("0.00", CultureInfo.InvariantCulture));
                         }
                     }
                 }

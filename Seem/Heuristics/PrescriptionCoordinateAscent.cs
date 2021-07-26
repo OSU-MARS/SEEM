@@ -70,19 +70,24 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 if (this.lastNImprovingMovesLog != null)
                 {
-                    this.lastNImprovingMovesLog.SetPrescription(perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                    this.lastNImprovingMovesLog.TryAddMove(perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
                 }
+
+                this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
                 ++perfCounters.MovesAccepted;
             }
             else
             {
+                if (this.RunParameters.LogOnlyImprovingMoves == false)
+                {
+                    this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                }
                 ++perfCounters.MovesRejected;
             }
 
-            this.FinancialValue.AddMove(acceptedFinancialValue, candidateFinancialValue);
             if (this.allMoveLog != null)
             {
-                this.allMoveLog.Add(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                this.allMoveLog.TryAddMove(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
             }
 
             if (harvests.Count > 0)
