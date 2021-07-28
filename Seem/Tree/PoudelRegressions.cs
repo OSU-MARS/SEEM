@@ -6,6 +6,8 @@ namespace Osu.Cof.Ferm.Tree
 {
     public class PoudelRegressions
     {
+        public const float MinimumKozakHeightInM = 1.3F;
+
         /// <summary>
         /// Find cubic volume of tree per hectare.
         /// </summary>
@@ -52,17 +54,17 @@ namespace Osu.Cof.Ferm.Tree
             //                     height range: 2.4-64 m
             // allow extrapolation beyond fit range in lieu of a better predictor but block height-diameter ratios so high b3 becomes
             // negative and table generation fails
-            if (dbhInCm > 135.0F)
+            if ((dbhInCm < 0.0F) || (dbhInCm > 135.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString("0.0") + " cm exceeds limit of 135.0 cm.");
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString("0.0") + " cm is either negative or exceeds regression limit of 135.0 cm.");
             }
-            if (heightInM > 75.0F)
+            if ((heightInM < PoudelRegressions.MinimumKozakHeightInM) || (heightInM > 75.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString("0.0") + " m exceeds limit of 75.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString("0.0") + " m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 75.0 m.");
             }
             if ((evaluationHeightInM < 0.0F) || (evaluationHeightInM > heightInM))
             {
-                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString("0.00") + " m exceeds tree height of " + heightInM.ToString("0.00") + " m.");
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString("0.00") + " m is negative or exceeds tree height of " + heightInM.ToString("0.00") + " m.");
             }
 
             const float b1 = 1.04208F;
@@ -75,9 +77,9 @@ namespace Osu.Cof.Ferm.Tree
             const float b8 = 0.04124F;
             const float b9 = -0.34417F;
             float t = evaluationHeightInM / heightInM;
-            float k = 1.3F / heightInM;
+            float k = 1.3F / heightInM; // greater than 1 if tree is less than 1.3 m tall
             float oneMinusCubeRootT = 1 - MathV.Pow(t, 1.0F / 3.0F);
-            float tkRatio = oneMinusCubeRootT / (1 - MathV.Pow(k, 1.0F / 3.0F));
+            float tkRatio = oneMinusCubeRootT / (1 - MathV.Pow(k, 1.0F / 3.0F)); // dib calculation fails for k >= 1 since tkRatio is infinite at k = 1 and negative for k > 1
             float dibInCm = b1 * MathV.Pow(dbhInCm, b2) * MathV.Pow(heightInM, b3) * MathV.Pow(tkRatio, b4 * t * t * t * t + b5 / MathV.Exp(dbhInCm / heightInM) + b6 * MathV.Pow(tkRatio, 0.1F) + b7 / dbhInCm + b8 * MathV.Pow(heightInM, oneMinusCubeRootT) + b9 * tkRatio);
             // float dibMathFcheck = b1 * MathF.Pow(dbhInCm, b2) * MathF.Pow(heightInM, b3) * MathF.Pow(tkRatio, b4 * t * t * t * t + b5 / MathF.Exp(dbhInCm / heightInM) + b6 * MathF.Pow(tkRatio, 0.1F) + b7 / dbhInCm + b8 * MathF.Pow(heightInM, 1 - MathF.Pow(evaluationHeightInM / heightInM, 1.0F / 3.0F)) + b9 * tkRatio);
             return dibInCm;

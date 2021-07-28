@@ -13,7 +13,53 @@ namespace Osu.Cof.Ferm.Test
     [TestClass]
     public class Mathematics
     {
+        private static readonly float BarkThicknessTolerance;
+
         public TestContext? TestContext { get; set; }
+
+        static Mathematics()
+        {
+            Mathematics.BarkThicknessTolerance = 1.01F;
+        }
+
+        [TestMethod]
+        public void BarkThickness()
+        {
+            List<ExpectedTreeBarkThickness> trees = new()
+            {
+                new()
+                {
+                    Dbh = 20.0F,
+                    Height = 25.0F,
+                    HeightToCrownBase = 15.0F,
+                    EvaluationHeights = new float[] { Constant.MetersPerFoot, Constant.Bucking.StumpHeight + Constant.Bucking.ProcessingHeadFeedRollerHeight, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 15.0F, 20.0F, 25.0F },
+                    ExpectedDoubleBarkThickness = new float[] { 3.24F, 2.25F, 1.33F, 1.20F, 1.01F, 0.72F, 0.50F, 0.42F, 0.28F, 0.14F, 0.00F } // diameter inside bark at DBH from Poudel et al. 2018
+                    // ExpectedDoubleBarkThickness = new float[] { 3.24F, 2.76F, 2.32F, 2.09F, 1.76F, 1.25F, 0.87F, 0.73F, 0.50F, 0.25F, 0.00F } // diameter inside bark at DBH from Larson and Hann 1985 (via Maguire and Hann 1990)
+                },
+                new()
+                {
+                    Dbh = 80.0F,
+                    Height = 42.0F,
+                    HeightToCrownBase = 21.0F,
+                    EvaluationHeights = new float[] { Constant.MetersPerFoot, Constant.Bucking.StumpHeight + Constant.Bucking.ProcessingHeadFeedRollerHeight, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 20.0F, 30.0F, 40.0F },
+                    ExpectedDoubleBarkThickness = new float[] { 12.82F, 9.75F, 6.91F, 6.51F, 5.91F, 4.84F, 3.78F, 3.00F, 1.89F, 1.04F, 0.17F } // diameter inside bark at DBH from Poudel et al. 2018
+                    // ExpectedDoubleBarkThickness = new float[] { 12.82F, 11.52F, 10.31F, 9.71F, 8.81F, 7.22F, 5.63F, 4.48F, 2.82F, 1.56F, 0.26F } // diameter inside bark at DBH from Larson and Hann 1985 (via Maguire and Hann 1990)
+                }
+            };
+
+            foreach (ExpectedTreeBarkThickness tree in trees)
+            {
+                for (int evaluationHeightIndex = 0; evaluationHeightIndex < tree.EvaluationHeights.Length; ++evaluationHeightIndex)
+                {
+                    float evaluationHeightInM = tree.EvaluationHeights[evaluationHeightIndex];
+                    float expectedDoubleBarkThicknessInCm = tree.ExpectedDoubleBarkThickness[evaluationHeightIndex];
+
+                    float doubleBarkThicknessInCm = DouglasFir.GetDoubleBarkThickness(tree.Dbh, tree.Height, tree.HeightToCrownBase, evaluationHeightInM);
+                    Assert.IsTrue(doubleBarkThicknessInCm >= expectedDoubleBarkThicknessInCm);
+                    Assert.IsTrue(expectedDoubleBarkThicknessInCm <= Mathematics.BarkThicknessTolerance * expectedDoubleBarkThicknessInCm);
+                }
+            }
+        }
 
         [TestMethod]
         public void Exp()
@@ -501,17 +547,32 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
+        private class ExpectedTreeBarkThickness
+        {
+            public float Dbh { get; init; }
+            public float Height { get; init; }
+            public float HeightToCrownBase { get; init; }
+            public float[] EvaluationHeights { get; init; }
+            public float[] ExpectedDoubleBarkThickness { get; init; }
+
+            public ExpectedTreeBarkThickness()
+            {
+                this.EvaluationHeights = Array.Empty<float>();
+                this.ExpectedDoubleBarkThickness = Array.Empty<float>();
+            }
+        }
+
         private class ExpectedTreeVolume
         {
-            public float Dbh { get; set; }
-            public float ExpansionFactor { get; set; }
-            public float Height { get; set; }
-            public float MinimumMerchantableStemVolumeFraction { get; set; }
-            public float MinimumRegenVolumeCubic { get; set; }
-            public float MinimumRegenVolumeScribner { get; set; }
-            public float MinimumThinVolumeCubic { get; set; }
-            public float MinimumThinVolumeScribner { get; set; }
-            public FiaCode Species { get; set; }
+            public float Dbh { get; init; }
+            public float ExpansionFactor { get; init; }
+            public float Height { get; init; }
+            public float MinimumMerchantableStemVolumeFraction { get; init; }
+            public float MinimumRegenVolumeCubic { get; init; }
+            public float MinimumRegenVolumeScribner { get; init; }
+            public float MinimumThinVolumeCubic { get; init; }
+            public float MinimumThinVolumeScribner { get; init; }
+            public FiaCode Species { get; init; }
         }
     }
 }

@@ -963,7 +963,7 @@ namespace Osu.Cof.Ferm.Organon
             {
                 // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
                 DouglasFir.SiteConstants siteConstants = new(stand.SiteIndex); 
-                growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(siteConstants, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
+                growthEffectiveAge = DouglasFir.GetPsmeAbgrGrowthEffectiveAge(siteConstants, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             return growthEffectiveAge;
         }
@@ -1891,7 +1891,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     else
                     {
-                        growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite!, this.TimeStepInYears, height, out potentialHeightGrowth);
+                        growthEffectiveAge = DouglasFir.GetPsmeAbgrGrowthEffectiveAge(psmeSite!, this.TimeStepInYears, height, out potentialHeightGrowth);
                     }
                     Vector128<float> crownCompetitionFactor = OrganonVariant.GetCrownCompetitionFactorByHeight(height, crownCompetitionByHeight);
                     Vector128<float> sqrtCrownCompetitionFactor = Avx.Sqrt(crownCompetitionFactor);

@@ -13,19 +13,19 @@ namespace Osu.Cof.Ferm.Test
     [TestClass]
     public class PublicApi : OrganonTest
     {
-        private readonly float biomassTolerance;
-        private readonly float qmdTolerance;
-        private readonly float topHeightTolerance;
-        private readonly float volumeTolerance;
+        private static readonly float biomassTolerance;
+        private static readonly float QmdTolerance;
+        private static readonly float TopHeightTolerance;
+        private static readonly float VolumeTolerance;
 
         public TestContext? TestContext { get; set; }
 
-        public PublicApi()
+        static PublicApi()
         {
-            this.biomassTolerance = 1.01F;
-            this.qmdTolerance = 1.01F;
-            this.topHeightTolerance = 1.01F;
-            this.volumeTolerance = 1.01F;
+            PublicApi.biomassTolerance = 1.01F;
+            PublicApi.QmdTolerance = 1.01F;
+            PublicApi.TopHeightTolerance = 1.01F;
+            PublicApi.VolumeTolerance = 1.01F;
         }
 
         private static HeuristicResultPosition CreateDefaultSolutionPosition()
@@ -465,7 +465,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             }
 
-            this.Verify(unthinnedTrajectory, unthinnedExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(unthinnedTrajectory, unthinnedExpected, configuration.Variant.TimeStepInYears);
 
             // verify one thin trajectory
             ExpectedStandTrajectory oneThinExpected = new()
@@ -499,8 +499,8 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
             }
 
-            this.Verify(oneThinTrajectory, oneThinExpected, configuration.Variant.TimeStepInYears);
-            this.Verify(oneThinTrajectory, oneThinExpected);
+            PublicApi.Verify(oneThinTrajectory, oneThinExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(oneThinTrajectory, oneThinExpected);
 
             // verify two thin trajectory
             ExpectedStandTrajectory twoThinExpected = new()
@@ -542,14 +542,14 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedSecondThinTreeRecordCount);
             }
 
-            this.Verify(twoThinTrajectory, twoThinExpected, configuration.Variant.TimeStepInYears);
-            this.Verify(twoThinTrajectory, twoThinExpected);
+            PublicApi.Verify(twoThinTrajectory, twoThinExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(twoThinTrajectory, twoThinExpected);
 
             for (int periodIndex = 0; periodIndex < twoThinTrajectory.PlanningPeriods; ++periodIndex)
             {
                 float liveBiomass = twoThinTrajectory.StandByPeriod[periodIndex]!.GetLiveBiomass();
                 Assert.IsTrue(liveBiomass > minimumTwoThinLiveBiomass[periodIndex]);
-                Assert.IsTrue(liveBiomass < this.biomassTolerance * minimumTwoThinLiveBiomass[periodIndex]);
+                Assert.IsTrue(liveBiomass < PublicApi.biomassTolerance * minimumTwoThinLiveBiomass[periodIndex]);
             }
 
             // verify three thin trajectory
@@ -598,8 +598,8 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedThirdThinTreeRecordCount);
             }
 
-            this.Verify(threeThinTrajectory, threeThinExpected, configuration.Variant.TimeStepInYears);
-            this.Verify(threeThinTrajectory, threeThinExpected);
+            PublicApi.Verify(threeThinTrajectory, threeThinExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(threeThinTrajectory, threeThinExpected);
         }
 
         [TestMethod]
@@ -696,8 +696,8 @@ namespace Osu.Cof.Ferm.Test
                 MinimumHarvestMbf = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
             };
 
-            this.Verify(thinnedTrajectory, immediateThinExpected, configuration.Variant.TimeStepInYears);
-            this.Verify(thinnedTrajectory, immediateThinExpected);
+            PublicApi.Verify(thinnedTrajectory, immediateThinExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(thinnedTrajectory, immediateThinExpected);
             Assert.IsTrue(thinnedTrajectory.GetFirstThinAge() == 30);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
 
@@ -1069,7 +1069,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private void Verify(OrganonStandTrajectory thinnedTrajectory, ExpectedStandTrajectory expectedTrajectory)
+        private static void Verify(OrganonStandTrajectory thinnedTrajectory, ExpectedStandTrajectory expectedTrajectory)
         {
             for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
             {
@@ -1083,7 +1083,7 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
                     Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < standDensityBeforeThin.BasalAreaPerAcre); // assume <50% thin by volume
                     Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbf[periodIndex]);
-                    Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) <= this.volumeTolerance * expectedTrajectory.MinimumHarvestMbf[periodIndex]);
+                    Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbf[periodIndex]);
                 }
                 else
                 {
@@ -1093,7 +1093,7 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private void Verify(OrganonStandTrajectory trajectory, ExpectedStandTrajectory expectedTrajectory, int timeStepInYears)
+        private static void Verify(OrganonStandTrajectory trajectory, ExpectedStandTrajectory expectedTrajectory, int timeStepInYears)
         {
             Assert.IsTrue(trajectory.BasalAreaRemoved.Length == expectedTrajectory.Length);
             Assert.IsTrue(trajectory.BasalAreaRemoved[0] == 0.0F);
@@ -1147,14 +1147,14 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(standDensity.BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
 
                 Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) > expectedTrajectory.MinimumStandingCubic[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) < this.volumeTolerance * expectedTrajectory.MinimumStandingCubic[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingCubic[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestCubic[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) <= this.volumeTolerance * expectedTrajectory.MinimumHarvestCubic[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestCubic[periodIndex]);
 
                 Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) > expectedTrajectory.MinimumStandingMbf[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) < this.volumeTolerance * expectedTrajectory.MinimumStandingMbf[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingMbf[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbf[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) <= this.volumeTolerance * expectedTrajectory.MinimumHarvestMbf[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbf[periodIndex]);
 
                 OrganonStand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
                 float qmdInCm = stand.GetQuadraticMeanDiameterInCentimeters();
@@ -1163,9 +1163,9 @@ namespace Osu.Cof.Ferm.Test
 
                 Assert.IsTrue((stand.Name != null) && (trajectory.Name != null) && stand.Name.StartsWith(trajectory.Name));
                 Assert.IsTrue(qmdInCm > expectedTrajectory.MinimumQmd[periodIndex]);
-                Assert.IsTrue(qmdInCm < this.qmdTolerance * expectedTrajectory.MinimumQmd[periodIndex]);
+                Assert.IsTrue(qmdInCm < PublicApi.QmdTolerance * expectedTrajectory.MinimumQmd[periodIndex]);
                 Assert.IsTrue(topHeight > expectedTrajectory.MinimumTopHeight[periodIndex]);
-                Assert.IsTrue(topHeight < this.topHeightTolerance * expectedTrajectory.MinimumTopHeight[periodIndex]);
+                Assert.IsTrue(topHeight < PublicApi.TopHeightTolerance * expectedTrajectory.MinimumTopHeight[periodIndex]);
                 Assert.IsTrue(treeRecords > 0);
                 Assert.IsTrue(treeRecords < 666);
 

@@ -198,7 +198,7 @@ namespace Osu.Cof.Ferm.Test
                             }
                             else
                             {
-                                growthEffectiveAgeInYears = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite, variant.TimeStepInYears, heightInFeet, out potentialHeightGrowth);
+                                growthEffectiveAgeInYears = DouglasFir.GetPsmeAbgrGrowthEffectiveAge(psmeSite, variant.TimeStepInYears, heightInFeet, out potentialHeightGrowth);
                             }
                             verifyAgeAndHeight = true;
                         }

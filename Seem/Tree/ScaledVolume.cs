@@ -14,7 +14,7 @@ namespace Osu.Cof.Ferm.Tree
             this.PreferredLogLengthInMeters = preferredLogLengthInMeters;
             this.VolumeBySpecies = new SortedList<FiaCode, TreeSpeciesVolumeTable>
             {
-                { FiaCode.PseudotsugaMenziesii, new TreeSpeciesVolumeTable(maximumDiameterInCentimeters, maximumHeightInMeters, preferredLogLengthInMeters, PoudelRegressions.GetDouglasFirDiameterInsideBark, (float dbhInCm) => { return Constant.DbhHeight + 0.01F * 5.0F * (dbhInCm - 20.0F); /* approximation from R plots */ }, scribnerFromLumberRecovery) }
+                { FiaCode.PseudotsugaMenziesii, new TreeSpeciesVolumeTable(maximumDiameterInCentimeters, maximumHeightInMeters, preferredLogLengthInMeters, PoudelRegressions.GetDouglasFirDiameterInsideBark, (float dbhInCm) => { return Constant.DbhHeightInM + 0.01F * 5.0F * (dbhInCm - 20.0F); /* approximation from R plots */ }, scribnerFromLumberRecovery) }
             };
         }
 

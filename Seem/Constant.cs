@@ -15,7 +15,7 @@ namespace Osu.Cof.Ferm
         public const float CrownCompetionConstantEnglish = 0.001803026F;
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
-        public const float DbhHeight = 1.37F; // cm
+        public const float DbhHeightInM = 1.37F; // cm
         public const string DefaultPercentageFormat = "0.0#";
         public const string DefaultProbabilityFormat = "0.00##";
         public const int DefaultRotationLengths = 9;
@@ -110,6 +110,7 @@ namespace Osu.Cof.Ferm
             public const float MinimumLogScribner2Saw = 60; // board feet
             public const float MinimumLogScribner3Saw = 50; // board feet
             public const float MinimumLogScribner4Saw = 10; // board feet
+            public const float ProcessingHeadFeedRollerHeight = 0.70F; // m
             public const float StumpHeight = 0.15F; // m
             public const float ScribnerShortLogLength = Constant.MetersPerFoot * 20.0F; // m
             public const float ScribnerTrimLongLog = Constant.MetersPerFoot * 1.0F - 0.0001F; // m with 100 μm margin for numerical precision
