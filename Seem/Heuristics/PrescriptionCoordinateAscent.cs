@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Extensions;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,7 +30,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             // evaluate objective function at position since it has not been recently visited
-            IList<IHarvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
+            IList<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
             Debug.Assert((harvests.Count < 4) && (moveState.CandidateIntensities.Length == 3 * harvests.Count));
 
             ThinByPrescription? firstThinPrescription = null;
@@ -367,7 +368,7 @@ namespace Osu.Cof.Ferm.Heuristics
             // initialize search position from whatever values are already set on the current trajectory
             // This allows prescriptions to flow between positions in sweeps using GRASP, potentially reducing search effort.
             // TODO: move this code into an override of ConstructTreeSelection(float)
-            IList<IHarvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
+            IList<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
             MoveState moveState = new(harvests.Count, 3)
             {
                 FinancialIndex = position.FinancialIndex,

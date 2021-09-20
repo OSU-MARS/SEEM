@@ -47,8 +47,8 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
-            if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
+            IList<int> harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
+            if ((harvestPeriods.Count < 2) || (harvestPeriods.Count > 3))
             {
                 throw new NotSupportedException("Currently, only one or two thins are supported.");
             }
@@ -73,7 +73,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     // if needed, support two opt moves
                     int treeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                     int currentHarvestPeriod = this.CurrentTrajectory.GetTreeSelection(treeIndex);
-                    int candidateHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, thinningPeriods);
+                    int candidateHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, harvestPeriods);
                     Debug.Assert(candidateHarvestPeriod >= 0);
 
                     candidateTrajectory.SetTreeSelection(treeIndex, candidateHarvestPeriod);

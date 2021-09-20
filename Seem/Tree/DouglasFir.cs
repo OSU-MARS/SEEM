@@ -144,6 +144,11 @@ namespace Osu.Cof.Ferm.Tree
             return doubleBarkThicknessInCm;
         }
 
+        internal static float GetNeiloidHeight(float dbhInCm)
+        {
+            return Constant.DbhHeightInM + 0.01F * 5.0F * (dbhInCm - 20.0F); // approximation from R plots
+        }
+
         /// <summary>
         /// Estimate growth effective age for Douglas-fir and grand fir using Bruce's (1981) dominant height model.
         /// </summary>

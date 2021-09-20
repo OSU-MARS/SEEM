@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
@@ -38,7 +39,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.DiameterClassSize = Constant.Bucking.DiameterClassSizeInCentimeters;
             this.Financial = FinancialScenarios.Default;
-            this.MaximumDiameter = Constant.Bucking.DefaultMaximumDiameterInCentimeters;
+            this.MaximumDiameter = Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters;
             this.Results = null;
             this.Trajectories = null;
         }
@@ -131,7 +132,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     heuristicParameters = this.Trajectories[0].Heuristic!.GetParameters();
                 }
 
-                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(heuristicParameters) + ",standAge,TPH,QMD,Htop,BA,SDI,SPH,snagQMD,standingCMH,harvestCMH,standingMBFH,harvestMBFH,BAremoved,BAintensity,TPHdecrease,NPV,LEV,standing2Scmh,standing3Scmh,standing4Scmh,harvest2Scmh,harvest3Scmh,harvest4Scmh,standing2Smbfh,standing3Smbfh,standing4Smbfh,harvest2Smbfh,harvest3Smbfh,harvest4Smbfh,NPV2S,NPV3S,NPV4S,liveBiomass");
+                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(heuristicParameters) + ",standAge,TPH,QMD,Htop,BA,SDI,liveTreeBiomass,SPH,snagQMD,standingCMH,standingMBFH,thinCMH,thinMBFH,BAremoved,BAintensity,TPHdecrease,NPV,LEV,thin2Scmh,thin3Scmh,thin4Scmh,thin2Smbfh,thin3Smbfh,thin4Smbfh,thin2Snpv,thin3Snpv,thin4Snpv,standing2Scmh,standing3Scmh,standing4Scmh,standing2Smbfh,standing3Smbfh,standing4Smbfh,regen2Snpv,regen3Snpv,regen4Snpv");
             }
 
             // rows for periods
@@ -146,7 +147,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     throw new NotSupportedException("Expected Organon stand trajectory with English Units.");
                 }
-                highTrajectory.GetMerchantableVolumes(out StandMerchantableVolume standingVolume, out StandMerchantableVolume harvestedVolume);
+                highTrajectory.GetMerchantableVolumes(out StandMerchantableVolume standingVolume, out StandMerchantableVolume thinVolume);
 
                 SnagLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
 
@@ -154,7 +155,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 for (int period = 0; period <= endOfRotationPeriod; ++period)
                 {
                     // get density and volumes
-                    float basalAreaRemoved = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * highTrajectory.BasalAreaRemoved[period]; // m²/acre
+                    float basalAreaRemoved = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * highTrajectory.Treatments.BasalAreaThinnedByPeriod[period]; // m²/acre
                     float basalAreaIntensity = 0.0F;
                     if (period > 0)
                     {
@@ -162,7 +163,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         Debug.Assert(previousDensity != null, "Already checked in previous iteration of loop.");
                         basalAreaIntensity = basalAreaRemoved / previousDensity.BasalAreaPerAcre;
                     }
-                    float harvestVolumeScribner = harvestedVolume.GetScribnerTotal(period); // MBF/ha
+                    float harvestVolumeScribner = thinVolume.GetScribnerTotal(period); // MBF/ha
                     Debug.Assert((harvestVolumeScribner == 0.0F && basalAreaRemoved == 0.0F) || (harvestVolumeScribner > 0.0F && basalAreaRemoved > 0.0F));
 
                     OrganonStandDensity? currentDensity = highTrajectory.DensityByPeriod[period];
@@ -189,19 +190,19 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float treesPerHectareDecrease = Constant.AcresPerHectare * treesPerAcreDecrease;
 
                     // NPV and LEV
-                    float thinNetPresentValue = financialScenarios.GetNetPresentThinningValue(highTrajectory, financialIndex, period, out float thin2SawNpv, out float thin3SawNpv, out float thin4SawNpv);
-                    totalThinNetPresentValue += thinNetPresentValue;
-                    float standingNetPresentValue = financialScenarios.GetNetPresentRegenerationHarvestValue(highTrajectory, financialIndex, period, out float standing2SawNpv, out float standing3SawNpv, out float standing4SawNpv);
+                    HarvestFinancialValue thinFinancialValue = financialScenarios.GetNetPresentThinningValue(highTrajectory, financialIndex, period);
+                    totalThinNetPresentValue += thinFinancialValue.NetPresentValue;
+                    HarvestFinancialValue regenFinancialValue = financialScenarios.GetNetPresentRegenerationHarvestValue(highTrajectory, financialIndex, period);
                     float reforestationNetPresentValue = financialScenarios.GetNetPresentReforestationValue(financialIndex, highTrajectory.PlantingDensityInTreesPerHectare);
-                    float periodNetPresentValue = totalThinNetPresentValue + standingNetPresentValue + reforestationNetPresentValue;
+                    float periodNetPresentValue = totalThinNetPresentValue + regenFinancialValue.NetPresentValue + reforestationNetPresentValue;
 
                     float presentToFutureConversionFactor = financialScenarios.GetAppreciationFactor(financialIndex, highTrajectory.GetEndOfPeriodAge(endOfRotationPeriod));
                     float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);
 
                     // pond NPV by grade
-                    float netPresentValue2Saw = standing2SawNpv + thin2SawNpv;
-                    float netPresentValue3Saw = standing3SawNpv + thin3SawNpv;
-                    float netPresentValue4Saw = standing4SawNpv + thin4SawNpv;
+                    float netPresentValue2Saw = regenFinancialValue.NetPresentValue2Saw + thinFinancialValue.NetPresentValue2Saw;
+                    float netPresentValue3Saw = regenFinancialValue.NetPresentValue3Saw + thinFinancialValue.NetPresentValue3Saw;
+                    float netPresentValue4Saw = regenFinancialValue.NetPresentValue4Saw + thinFinancialValue.NetPresentValue4Saw;
 
                     // biomass
                     float liveBiomass = 0.001F * stand.GetLiveBiomass(); // Mg/ha
@@ -213,33 +214,36 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      topHeightInM.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      basalAreaPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     liveBiomass.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      snagsAndLogs.SnagsPerHectareByPeriod[period].ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      snagsAndLogs.SnagQmdInCentimetersByPeriod[period].ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.GetCubicTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // m³/ha
-                                     harvestedVolume.GetCubicTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // m³/ha
                                      standingVolume.GetScribnerTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // MBF/ha
+                                     thinVolume.GetCubicTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // m³/ha
                                      harvestVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      treesPerHectareDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      periodNetPresentValue.ToString("0", CultureInfo.InvariantCulture) + "," +
                                      landExpectationValue.ToString("0", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Scribner2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Scribner3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Scribner4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     thinFinancialValue.NetPresentValue2Saw.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     thinFinancialValue.NetPresentValue3Saw.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     thinFinancialValue.NetPresentValue4Saw.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     harvestedVolume.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     harvestedVolume.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     harvestedVolume.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Scribner2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Scribner3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Scribner4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     harvestedVolume.Scribner2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     harvestedVolume.Scribner3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     harvestedVolume.Scribner4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     standing2SawNpv.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     standing3SawNpv.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     standing4SawNpv.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     liveBiomass.ToString("0.00", CultureInfo.InvariantCulture));
+                                     regenFinancialValue.NetPresentValue2Saw.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     regenFinancialValue.NetPresentValue3Saw.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     regenFinancialValue.NetPresentValue4Saw.ToString("0.00", CultureInfo.InvariantCulture));
                 }
 
                 if (writer.BaseStream.Length > maxFileSizeInBytes)

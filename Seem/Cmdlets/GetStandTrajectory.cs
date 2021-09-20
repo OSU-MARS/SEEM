@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System.Management.Automation;
 
@@ -7,6 +8,10 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommon.Get, "StandTrajectory")]
     public class GetStandTrajectory : Cmdlet
     {
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        public FinancialScenarios FinancialScenarios { get; set; }
+
         [Parameter]
         [ValidateNotNullOrEmpty]
         public string? Name { get; set; }
@@ -41,6 +46,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public GetStandTrajectory()
         {
+            this.FinancialScenarios = FinancialScenarios.Default;
             this.Name = null;
             this.PlanningPeriods = 20; // 100 years of simulation with Organon's 5 year timestep
             this.ProportionalThinPercentage = 0.0F; // %

@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +20,7 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             this.prescriptionsEnumerated = 0;
 
-            IList<IHarvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
+            IList<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
             if (harvests.Count == 0)
             {
                 // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory

@@ -247,8 +247,8 @@ namespace Osu.Cof.Ferm.Heuristics
             //List<List<int>> treeIndicesBySubset = this.GetHeightSubsets(); // performs worse
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
-            OrganonStandTrajectory bestTrajectory = new(this.CurrentTrajectory);
             OrganonStandTrajectory highestNonTabuTrajectory = new(this.CurrentTrajectory);
+            OrganonStandTrajectory highTrajectoryInIteration = new(this.CurrentTrajectory);
             float tenureScalingFactor = (this.MaximumTenure - 2 - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
             //List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
             //for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
@@ -325,7 +325,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (candidateFinancialValue > highestUnrestrictedFinancialValue)
                         {
                             highestUnrestrictedFinancialValue = candidateFinancialValue;
-                            bestTrajectory.CopyTreeGrowthFrom(candidateTrajectory);
+                            highTrajectoryInIteration.CopyTreeGrowthFrom(candidateTrajectory);
                             bestTreeIndex = treeIndex;
                             bestHarvestPeriod = thinningPeriod;
                         }
@@ -376,7 +376,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     acceptedFinancialValue = highestUnrestrictedFinancialValue;
                     highestFinancialValue = highestUnrestrictedFinancialValue;
                     highestNonTabuFinancialValue = highestUnrestrictedFinancialValue;
-                    this.CurrentTrajectory.CopyTreeGrowthFrom(bestTrajectory);
+                    this.CurrentTrajectory.CopyTreeGrowthFrom(highTrajectoryInIteration);
 
                     remainingTabuTenures[bestTreeIndex, bestHarvestPeriod] = this.GetTenure(tenureScalingFactor);
                     this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);

@@ -1,13 +1,12 @@
-﻿using Osu.Cof.Ferm.Tree;
+﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Organon
+namespace Osu.Cof.Ferm.Silviculture
 {
-    public class ThinByIndividualTreeSelection : IHarvest
+    public class ThinByIndividualTreeSelection : Harvest
     {
-        public int Period { get; set; }
-
         public ThinByIndividualTreeSelection(int harvestPeriod)
         {
             if (harvestPeriod < 1)
@@ -18,24 +17,12 @@ namespace Osu.Cof.Ferm.Organon
             this.Period = harvestPeriod;
         }
 
-        public IHarvest Clone()
+        public override Harvest Clone()
         {
             return new ThinByIndividualTreeSelection(this.Period);
         }
 
-        public void CopyFrom(IHarvest other)
-        {
-            if (other is ThinByIndividualTreeSelection)
-            {
-                this.Period = other.Period;
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException(nameof(other));
-            }
-        }
-
-        public float EvaluateTreeSelection(OrganonStandTrajectory trajectory)
+        public override float EvaluateTreeSelection(OrganonStandTrajectory trajectory)
         {
             float basalAreaRemoved = 0.0F;
             OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1] ?? throw new NotSupportedException("No stand information prior to thinning.");
@@ -54,6 +41,23 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             return basalAreaRemoved;
+        }
+
+        public override bool TryCopyFrom(Harvest other)
+        {
+            if (other is ThinByIndividualTreeSelection)
+            {
+                this.Period = other.Period;
+                return true;
+            }
+
+            if (other is ThinByPrescription)
+            {
+                // needed for individual tree selection to pick up from prescription enumeration
+                throw new NotImplementedException();
+            }
+
+            return false;
         }
     }
 }

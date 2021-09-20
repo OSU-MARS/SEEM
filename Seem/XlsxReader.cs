@@ -12,17 +12,34 @@ namespace Osu.Cof.Ferm
     {
         private static int GetExcelColumnIndex(string cellReference)
         {
-            int index = cellReference[0] - 'A';
-            if ((cellReference[1] > '9') || (cellReference[1] < '0'))
+            // cell reference format: column letters (capitalized) followed by row number
+            // A-Z: first 26 columns, indices 0-25 = A = 0...Z = 25
+            // AA-ZZ: next 676 columns, indices 26-701 = (A-Z + 1) * 26 + A-Z (last index is 26 * 26 + Z)
+            // AAA-XFD: remaining columns, indices 702+ = (A-Z + 1) * 26 * 26 + (A-Z + 1) * 26 + A-Z
+            if ((cellReference.Length < 2) || (cellReference[0] < 'A') || (cellReference[0] > 'Z'))
             {
-                index = 26 * index + cellReference[1] - 'A';
-                if ((cellReference[2] > '9') && (cellReference[2] < '0'))
+                throw new ArgumentOutOfRangeException(nameof(cellReference), "Cell reference '" + cellReference + "' is too short or does not begin with a letter.");
+            }
+
+            int firstColumn = cellReference[0] - 'A';
+            if ((cellReference[1] >= 'A') && (cellReference[1] <= 'Z')) // availability of cellReference[1] guaranteed by check above
+            {
+                int secondColumn = cellReference[1] - 'A';
+                if ((cellReference[2] >= 'A') && (cellReference[2] <= 'Z')) // for now, assume well formed reference such that cellReference[2] is available
                 {
-                    // as of Excel 2017, the maximum column is XFD; no need to check more than the first three characters of the cell reference
-                    index = 26 * index + cellReference[2] - 'A';
+                    int thirdColumn = cellReference[2] - 'A';
+                    return 26 * 26 * (firstColumn + 1) + 26 * (secondColumn + 1) + thirdColumn;
+                    // as of Excel 2017, the maximum column is XFD; no need to check beyond the first three characters of the cell reference
+                }
+                else
+                {
+                    return (firstColumn + 1) * 26 + secondColumn;
                 }
             }
-            return index;
+            else
+            {
+                return firstColumn;
+            }
         }
 
         public static void ReadWorksheet(string xlsxFilePath, string worksheetName, Action<int, string[]> parseRow)
@@ -102,6 +119,7 @@ namespace Osu.Cof.Ferm
                 else if (String.Equals(worksheetReader.LocalName, Constant.OpenXml.Element.Row, StringComparison.Ordinal))
                 {
                     // read data in row
+                    bool rowHasCellsWithContent = false;
                     using (XmlReader rowReader = worksheetReader.ReadSubtree())
                     {
                         while (rowReader.EOF == false)
@@ -147,6 +165,8 @@ namespace Osu.Cof.Ferm
                                     // capture cell's value in row
                                     rowAsStrings[column] = value;
                                     rowReader.ReadEndElement();
+
+                                    rowHasCellsWithContent |= value.Length > 0;
                                 }
                                 else
                                 {
@@ -161,11 +181,18 @@ namespace Osu.Cof.Ferm
                     }
                     worksheetReader.ReadEndElement();
 
-                    // parse row
-                    parseRow(rowIndex, rowAsStrings);
+                    if (rowAsStrings.Length > 0)
+                    {
+                        // parse row if it has content, content being defined per above checks as at least one non-empty (put potentially
+                        // whitespace) cell
+                        if (rowHasCellsWithContent)
+                        {
+                            parseRow(rowIndex, rowAsStrings);
+                        }
+                        // reset for next row
+                        Array.Clear(rowAsStrings, 0, rowAsStrings.Length);
+                    }
 
-                    // reset for next row
-                    Array.Clear(rowAsStrings, 0, rowAsStrings.Length);
                     ++rowIndex;
                 }
                 else

@@ -36,7 +36,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         private void WriteScaledVolume(StreamWriter writer, ScaledVolume scaledVolume)
         {
-            float minimumFeedRollerHeight = Constant.Bucking.StumpHeight + Constant.Bucking.ProcessingHeadFeedRollerHeight;
+            float minimumFeedRollerHeight = Constant.Bucking.DefaultStumpHeight + Constant.Bucking.ProcessingHeadFeedRollerHeight;
             //Debug.Assert(Constant.Bucking.StumpHeight <= PoudelRegressions.MinimumKozakHeightInM);
             //Debug.Assert(minimumFeedRollerHeight <= PoudelRegressions.MinimumKozakHeightInM);
             Debug.Assert(minimumFeedRollerHeight <= Constant.DbhHeightInM);

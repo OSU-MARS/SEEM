@@ -52,6 +52,11 @@ namespace Osu.Cof.Ferm.Tree
         public float[] LiveExpansionFactor { get; private set; }
 
         /// <summary>
+        /// Merchantable volume in m³ per tree.
+        /// </summary>
+        public float[] MerchantableCubicVolumePerStem { get; private set; }
+
+        /// <summary>
         /// Trees' plot numbers, if specified.
         /// </summary>
         public int[] Plot { get; private set; }
@@ -88,6 +93,7 @@ namespace Osu.Cof.Ferm.Tree
             this.LiveExpansionFactor = new float[this.Capacity];
             this.Height = new float[this.Capacity];
             this.HeightGrowth = new float[this.Capacity];
+            this.MerchantableCubicVolumePerStem = new float[this.Capacity];
             this.Plot = new int[this.Capacity];
             this.Species = species;
             this.Tag = new int[this.Capacity];
@@ -107,6 +113,7 @@ namespace Osu.Cof.Ferm.Tree
             other.LiveExpansionFactor.CopyTo(this.LiveExpansionFactor, 0);
             other.Height.CopyTo(this.Height, 0);
             other.HeightGrowth.CopyTo(this.HeightGrowth, 0);
+            other.MerchantableCubicVolumePerStem.CopyTo(this.MerchantableCubicVolumePerStem, 0);
             other.Plot.CopyTo(this.Plot, 0);
             other.Tag.CopyTo(this.Tag, 0);
             other.UncompactedIndex.CopyTo(this.UncompactedIndex, 0);
@@ -128,6 +135,7 @@ namespace Osu.Cof.Ferm.Tree
             Array.Copy(other.Height, 0, this.Height, 0, other.Count);
             Array.Copy(other.HeightGrowth, 0, this.HeightGrowth, 0, other.Count);
             Array.Copy(other.LiveExpansionFactor, 0, this.LiveExpansionFactor, 0, other.Count);
+            Array.Copy(other.MerchantableCubicVolumePerStem, 0, this.MerchantableCubicVolumePerStem, 0, other.Count);
             Array.Copy(other.Plot, 0, this.Plot, 0, other.Count);
             Array.Copy(other.Tag, 0, this.Tag, 0, other.Count);
             Array.Copy(other.UncompactedIndex, 0, this.UncompactedIndex, 0, other.Count);
@@ -164,6 +172,7 @@ namespace Osu.Cof.Ferm.Tree
                 this.LiveExpansionFactor = this.LiveExpansionFactor.Extend(this.Capacity);
                 this.Height = this.Height.Extend(this.Capacity);
                 this.HeightGrowth = this.HeightGrowth.Extend(this.Capacity);
+                this.MerchantableCubicVolumePerStem = this.MerchantableCubicVolumePerStem.Extend(this.Capacity);
                 this.Plot = this.Plot.Extend(this.Capacity);
                 this.Tag = this.Tag.Extend(this.Capacity);
                 this.UncompactedIndex = this.UncompactedIndex.Extend(this.Capacity);
@@ -180,6 +189,7 @@ namespace Osu.Cof.Ferm.Tree
             this.Height[this.Count] = height;
             this.CrownRatio[this.Count] = crownRatio;
             this.LiveExpansionFactor[this.Count] = liveExpansionFactor;
+            this.MerchantableCubicVolumePerStem[this.Count] = Single.NaN;
             this.UncompactedIndex[this.Count] = this.Count; // if needed, support multiple species by including offset due to trees of other species
 
             ++this.Count;
@@ -246,6 +256,7 @@ namespace Osu.Cof.Ferm.Tree
                         this.Height[moreCompactedTreeIndex] = this.Height[lessCompactedTreeIndex];
                         this.HeightGrowth[moreCompactedTreeIndex] = this.HeightGrowth[lessCompactedTreeIndex];
                         this.LiveExpansionFactor[moreCompactedTreeIndex] = this.LiveExpansionFactor[lessCompactedTreeIndex];
+                        this.MerchantableCubicVolumePerStem[moreCompactedTreeIndex] = this.MerchantableCubicVolumePerStem[lessCompactedTreeIndex];
                         this.Tag[moreCompactedTreeIndex] = this.Tag[lessCompactedTreeIndex];
                         this.UncompactedIndex[moreCompactedTreeIndex] = this.UncompactedIndex[lessCompactedTreeIndex];
                     }
@@ -273,25 +284,25 @@ namespace Osu.Cof.Ferm.Tree
                 // this.Height[treeIndex] = 0.0F;
                 // this.HeightGrowth[treeIndex] = 0.0F;
                 this.LiveExpansionFactor[treeIndex] = 0.0F;
+                // this.MerchantableCubicVolumePerStem[treeIndex] = Single.NaN;
                 // this.Tag[treeIndex] = 0; // potential desirable not to zero as a aid to debugging
             }
         }
 
         public void SortByDbh()
         {
-            int[] dbhSortIndices = new int[this.Capacity];
-            for (int treeIndex = 0; treeIndex < this.Capacity; ++treeIndex)
-            {
-                dbhSortIndices[treeIndex] = treeIndex;
-            }
-            Array.Sort(this.Dbh, dbhSortIndices);
+            int[] dbhSortIndices = ArrayExtensions.CreateSequentialIndices(this.Capacity);
+            Array.Sort(this.Dbh, dbhSortIndices); // sorts this.Dbh in place
 
             float[] sortedCrownRatio = new float[this.Capacity];
-            float[] sortedDeadExpansionFactor = new float[this.Capacity];
             float[] sortedDbhGrowth = new float[this.Capacity];
+            float[] sortedDeadExpansionFactor = new float[this.Capacity];
             float[] sortedHeight = new float[this.Capacity];
             float[] sortedHeightGrowth = new float[this.Capacity];
             float[] sortedLiveExpansionFactor = new float[this.Capacity];
+            float[] sortedMerchantableVolume = new float[this.Capacity];
+            int[] sortedTag = new int[this.Capacity];
+            int[] sortedUncompactedIndex = new int[this.Capacity];
             int unusedCapacity = this.Capacity - this.Count;
             for (int destinationIndex = 0; destinationIndex < this.Count; ++destinationIndex)
             {
@@ -301,12 +312,25 @@ namespace Osu.Cof.Ferm.Tree
                 int sourceIndex = dbhSortIndices[destinationIndex + unusedCapacity];
 
                 sortedCrownRatio[destinationIndex] = this.CrownRatio[sourceIndex];
-                sortedDeadExpansionFactor[destinationIndex] = this.DeadExpansionFactor[sourceIndex];
                 sortedDbhGrowth[destinationIndex] = this.DbhGrowth[sourceIndex];
+                sortedDeadExpansionFactor[destinationIndex] = this.DeadExpansionFactor[sourceIndex];
                 sortedHeight[destinationIndex] = this.Height[sourceIndex];
                 sortedHeightGrowth[destinationIndex] = this.HeightGrowth[sourceIndex];
                 sortedLiveExpansionFactor[destinationIndex] = this.LiveExpansionFactor[sourceIndex];
+                sortedMerchantableVolume[destinationIndex] = this.MerchantableCubicVolumePerStem[sourceIndex];
+                sortedTag[destinationIndex] = this.Tag[sourceIndex];
+                sortedUncompactedIndex[destinationIndex] = this.UncompactedIndex[sourceIndex];
             }
+
+            this.CrownRatio = sortedCrownRatio;
+            this.DbhGrowth = sortedDbhGrowth;
+            this.DeadExpansionFactor = sortedDeadExpansionFactor;
+            this.Height = sortedHeight;
+            this.HeightGrowth = sortedHeightGrowth;
+            this.LiveExpansionFactor = sortedLiveExpansionFactor;
+            this.MerchantableCubicVolumePerStem = sortedMerchantableVolume;
+            this.Tag = sortedTag;
+            this.UncompactedIndex = sortedUncompactedIndex;
         }
     }
 }

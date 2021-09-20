@@ -150,13 +150,11 @@ namespace Osu.Cof.Ferm.Heuristics
             Debug.Assert(trajectory.PeriodLengthInYears > 0);
 
             // find objective function value
-            // Volume objective functions are in m³/ha or MBF/ac.
-            float financialValue;
             if ((this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue) ||
                 (this.RunParameters.TimberObjective == TimberObjective.NetPresentValue))
             {
                 // net present value of first rotation
-                financialValue = this.RunParameters.Financial.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriodIndex);
+                float financialValue = this.RunParameters.Financial.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriodIndex);
 
                 if (this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
                 {
@@ -168,24 +166,25 @@ namespace Osu.Cof.Ferm.Heuristics
 
                 // convert from US$/ha to USk$/ha
                 financialValue *= 0.001F;
+                return financialValue;
             }
-            else if (this.RunParameters.TimberObjective == TimberObjective.ScribnerVolume)
+            if (this.RunParameters.TimberObjective == TimberObjective.ScribnerVolume)
             {
                 // TODO: move this out of financial objective calculations, left here as legacy support for now 
                 // direct volume addition
-                financialValue = 0.0F;
-                for (int periodIndex = 1; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
+                float scribnerVolumeInMbf = 0.0F;
+                foreach (int periodIndex in trajectory.Treatments.GetThinningPeriods())
                 {
-                    financialValue += trajectory.GetTotalScribnerVolumeThinned(periodIndex);
+                    trajectory.RecalculateThinningVolumeIfNeeded(periodIndex);
+                    scribnerVolumeInMbf += trajectory.GetTotalScribnerVolumeThinned(periodIndex);
                 }
-                financialValue += trajectory.GetTotalStandingScribnerVolume(endOfRotationPeriodIndex);
-            }
-            else
-            {
-                throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");
+
+                trajectory.RecalculateStandingVolumeIfNeeded(endOfRotationPeriodIndex);
+                scribnerVolumeInMbf += trajectory.GetTotalStandingScribnerVolume(endOfRotationPeriodIndex);
+                return scribnerVolumeInMbf;
             }
 
-            return financialValue;
+            throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");
         }
 
         protected float[,] GetFinancialValueByRotationAndScenario(StandTrajectory trajectory)
@@ -200,30 +199,6 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
             return financialValueByScenario;
-        }
-
-        protected int GetOneOptCandidateRandom(int currentHarvestPeriod, IList<int> thinningPeriods)
-        {
-            Debug.Assert((thinningPeriods.Count == 2) || (thinningPeriods.Count == 3));
-            if (thinningPeriods.Count == 2)
-            {
-                return currentHarvestPeriod == thinningPeriods[0] ? thinningPeriods[1] : thinningPeriods[0];
-            }
-
-            bool incrementIndex = this.Pseudorandom.GetPseudorandomByteAsProbability() < 0.5F;
-            if (currentHarvestPeriod == thinningPeriods[0])
-            {
-                return incrementIndex ? thinningPeriods[2] : thinningPeriods[1];
-            }
-            else if (currentHarvestPeriod == thinningPeriods[1])
-            {
-                return incrementIndex ? thinningPeriods[0] : thinningPeriods[2];
-            }
-            else
-            {
-                Debug.Assert(currentHarvestPeriod == thinningPeriods[2]);
-                return incrementIndex ? thinningPeriods[0] : thinningPeriods[1];
-            }
         }
 
         public virtual HeuristicMoveLog? GetMoveLog()
@@ -254,16 +229,22 @@ namespace Osu.Cof.Ferm.Heuristics
             this.HeuristicParameters = heuristicParameters;
         }
 
-        // exposed as a distinct method for AutocorrelatedWalk
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="constructionGreediness"></param>
+        /// <returns>Number of trees randomized. If a randomization does not change a tree's selection it is still counted.</returns>
+        /// <remarks>Exposed as a distinct method for AutocorrelatedWalk.</remarks>
         protected int ConstructTreeSelection(float constructionGreediness)
         {
-            if ((constructionGreediness <Constant.Grasp.FullyRandomConstructionForMaximization) || (constructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
+            if ((constructionGreediness < Constant.Grasp.FullyRandomConstructionForMaximization) || 
+                (constructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
             {
                 throw new ArgumentOutOfRangeException(nameof(constructionGreediness));
             }
 
             // check if there is a thinning to randomize
-            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetThinningPeriods();
+            List<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetThinningPeriods();
             if (thinningPeriods.Count == 0)
             {
                 // ensure no trees are selected for thinning since no thinning is specified
@@ -280,32 +261,62 @@ namespace Osu.Cof.Ferm.Heuristics
                 return 0;
             }
 
-            // randomize tree selection at level indicated by constructionGreediness
-            int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
-            float thinIndexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / this.HeuristicParameters.InitialThinningProbability;
-            int treeSelectionsRandomized = 0;
-            for (int uncompactedTreeIndex = 0; uncompactedTreeIndex < initialTreeRecordCount; ++uncompactedTreeIndex)
+            // determine likelihood of final harvest
+            // If this.HeuristicParameters.InitialThinningProbability isn't set to 1 / (nThins + 1) this is bias randomized towards or
+            // against retention to final harvest. This is expected on initial construction but presumably undesirable when modifying
+            // elite solutions.
+            float finalHarvestProbability = this.HeuristicParameters.InitialThinningProbability;
+            if (constructionGreediness != Constant.Grasp.FullyRandomConstructionForMaximization)
             {
-                if (constructionGreediness != Constant.Grasp.FullyRandomConstructionForMaximization)
+                finalHarvestProbability = 1.0F / (thinningPeriods.Count + 1);
+            }
+
+            // randomize tree selection at level indicated by constructionGreediness
+            // If construction is primarily random, iterate through all trees and check each for randomization. This randomizes an inexact
+            // number of trees but will likely be reasonably close to the requested number since a modification of a sufficient portion
+            // of a presumably substantial number of trees has been requested.
+            // If construction is nearly greedy, find the number of trees requested and perform that many randomizations. This is not
+            // exact either but makes the number of randomizations performed a more consistent function of α.
+            thinningPeriods.Sort(); // ensure thins are listed in chronological order for diameter checking in TryRandomizeTreeSelection()
+            int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
+            float treeIndexScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            float treesToRandomize = initialTreeRecordCount * (1.0F - constructionGreediness);
+            int treeSelectionsRandomized = 0; // for now, count randomizations which don't change a tree's harvest period as randomizations
+            if (treesToRandomize < 10.0F)
+            {
+                int integerTreesToRandomize = (int)treesToRandomize;
+                for (; treeSelectionsRandomized <= integerTreesToRandomize; ++treeSelectionsRandomized)
                 {
-                    float modificationProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
-                    if (modificationProbability < constructionGreediness)
-                    {
-                        continue;
-                    }
+                    // for now, assume sufficient trees that the probability of repeatedly randomizing a tree is unimportant
+                    // If needed, this can be changed to sampling without replacement.
+                    int uncompactedTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
+                    this.RandomizeTreeSelection(uncompactedTreeIndex, thinningPeriods, finalHarvestProbability);
                 }
 
-                int thinningPeriod = Constant.NoHarvestPeriod;
-                float harvestProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
-                if (harvestProbability < this.HeuristicParameters.InitialThinningProbability)
+                float fractionalTreesToRandomize = treesToRandomize - integerTreesToRandomize;
+                if (this.Pseudorandom.GetPseudorandomByteAsProbability() < fractionalTreesToRandomize)
                 {
-                    // probability falls into the harvest fraction, for now choose equally among available harvest periods
-                    // TODO: support unequal harvest period probabilities
-                    int periodIndex = (int)(thinIndexScalingFactor * harvestProbability);
-                    thinningPeriod = thinningPeriods[periodIndex];
+                    int uncompactedTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
+                    this.RandomizeTreeSelection(uncompactedTreeIndex, thinningPeriods, finalHarvestProbability);
+                    ++treeSelectionsRandomized;
                 }
-                this.CurrentTrajectory.SetTreeSelection(uncompactedTreeIndex, thinningPeriod);
-                ++treeSelectionsRandomized; // debatable: should randomizations which don't change a tree's harvest period not be counted?
+            }
+            else
+            {
+                for (int uncompactedTreeIndex = 0; uncompactedTreeIndex < initialTreeRecordCount; ++uncompactedTreeIndex)
+                {
+                    if (constructionGreediness != Constant.Grasp.FullyRandomConstructionForMaximization)
+                    {
+                        float modificationProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
+                        if (modificationProbability < constructionGreediness)
+                        {
+                            continue;
+                        }
+                    }
+
+                    this.RandomizeTreeSelection(uncompactedTreeIndex, thinningPeriods, finalHarvestProbability);
+                    ++treeSelectionsRandomized;
+                }
             }
 
             return treeSelectionsRandomized;
@@ -398,6 +409,53 @@ namespace Osu.Cof.Ferm.Heuristics
         public override HeuristicParameters GetParameters()
         {
             return this.HeuristicParameters;
+        }
+
+        protected int GetOneOptCandidateRandom(int currentHarvestPeriod, IList<int> harvestPeriods)
+        {
+            if (harvestPeriods.Count == 2)
+            {
+                int candidateHarvestPeriod = currentHarvestPeriod == harvestPeriods[0] ? harvestPeriods[1] : harvestPeriods[0];
+                return candidateHarvestPeriod;
+            }
+
+            if (harvestPeriods.Count == 3)
+            {
+                // treat harvest periods as a circular buffer and generate first candidate
+                bool incrementIndex = this.Pseudorandom.GetPseudorandomByteAsProbability() < 0.5F;
+                int candidateHarvestPeriod;
+                if (currentHarvestPeriod == harvestPeriods[0])
+                {
+                    candidateHarvestPeriod = incrementIndex ? harvestPeriods[2] : harvestPeriods[1];
+                }
+                else if (currentHarvestPeriod == harvestPeriods[1])
+                {
+                    candidateHarvestPeriod = incrementIndex ? harvestPeriods[0] : harvestPeriods[2];
+                }
+                else
+                {
+                    candidateHarvestPeriod = incrementIndex ? harvestPeriods[0] : harvestPeriods[1]; // currentHarvestPeriod == harvestPeriods[2]
+                }
+                return candidateHarvestPeriod;
+            }
+
+            throw new NotSupportedException("More than two thins is not currently supported.");
+        }
+
+        // for now, if a tree is too large to be eligible for any thin checking it is still considered a randomization
+        protected void RandomizeTreeSelection(int uncompactedTreeIndex, IList<int> thinningPeriods, float finalHarvestProbability)
+        {
+            int harvestPeriod = Constant.NoHarvestPeriod;
+            float harvestProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
+            if (harvestProbability < finalHarvestProbability)
+            {
+                // TODO: support unequal harvest period probabilities
+                float thinIndexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / finalHarvestProbability;
+                int thinIndex = (int)(thinIndexScalingFactor * harvestProbability);
+                harvestPeriod = thinningPeriods[thinIndex];
+            }
+
+            this.CurrentTrajectory.SetTreeSelection(uncompactedTreeIndex, harvestPeriod);
         }
     }
 }

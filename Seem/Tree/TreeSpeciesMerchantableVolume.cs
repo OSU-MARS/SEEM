@@ -6,9 +6,17 @@ namespace Osu.Cof.Ferm.Tree
 {
     public class TreeSpeciesMerchantableVolume
     {
+        private readonly bool[] isCalculated;
+
+        // net log volumes by grade after defect and breakage reduction in m³/ha.
         public float[] Cubic2Saw { get; private init; }
         public float[] Cubic3Saw { get; private init; }
         public float[] Cubic4Saw { get; private init; }
+
+        // log density by grade after defect and breakage removal, logs/ha
+        public float[] Logs2Saw { get; private init; }
+        public float[] Logs3Saw { get; private init; }
+        public float[] Logs4Saw { get; private init; }
 
         // net log volumes by grade after defect and breakage reduction in Scribner MBF/ha.
         public float[] Scribner2Saw { get; private init; }
@@ -18,19 +26,67 @@ namespace Osu.Cof.Ferm.Tree
 
         public TreeSpeciesMerchantableVolume(FiaCode species, int planningPeriods)
         {
+            this.isCalculated = new bool[planningPeriods];
             this.Cubic2Saw = new float[planningPeriods];
             this.Cubic3Saw = new float[planningPeriods];
             this.Cubic4Saw = new float[planningPeriods];
+            this.Logs2Saw = new float[planningPeriods];
+            this.Logs3Saw = new float[planningPeriods];
+            this.Logs4Saw = new float[planningPeriods];
             this.Scribner2Saw = new float[planningPeriods];
             this.Scribner3Saw = new float[planningPeriods];
             this.Scribner4Saw = new float[planningPeriods];
             this.Species = species;
+
+            Array.Fill(this.isCalculated, false, 0, planningPeriods);
         }
 
         public TreeSpeciesMerchantableVolume(TreeSpeciesMerchantableVolume other)
             : this(other.Species, other.Cubic2Saw.Length)
         {
             this.CopyFrom(other);
+        }
+
+        public void CalculateStandingVolume(Stand stand, int periodIndex, TreeVolume treeVolume)
+        {
+            Trees treesOfSpecies = stand.TreesBySpecies[this.Species];
+            TreeSpeciesMerchantableVolumeForPeriod standingVolume = treeVolume.RegenerationHarvest.GetStandingVolume(treesOfSpecies);
+
+            float volumeMultiplier = TreeSpeciesMerchantableVolume.GetVolumeMultiplier(treesOfSpecies.Units);
+            standingVolume.Multiply(volumeMultiplier);
+            this.SetVolume(standingVolume, periodIndex);
+
+            Debug.Assert((standingVolume.Cubic2Saw >= 0.0F) && (standingVolume.Cubic3Saw >= 0.0F) && (standingVolume.Cubic4Saw >= 0.0F));
+            Debug.Assert((standingVolume.Scribner2Saw >= 0.0F) && (standingVolume.Scribner3Saw >= 0.0F) && (standingVolume.Scribner4Saw >= 0.0F));
+        }
+
+        public void CalculateThinningVolume(Stand previousStand, SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, int periodIndex, TreeVolume treeVolume)
+        {
+            Trees previousTreesOfSpecies = previousStand.TreesBySpecies[this.Species];
+            TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
+            TreeSpeciesMerchantableVolumeForPeriod thinningVolume = treeVolume.Thinning.GetHarvestedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex);
+
+            float volumeMultiplier = TreeSpeciesMerchantableVolume.GetVolumeMultiplier(previousTreesOfSpecies.Units);
+            thinningVolume.Multiply(volumeMultiplier);
+            this.SetVolume(thinningVolume, periodIndex);
+
+            Debug.Assert((thinningVolume.Cubic2Saw >= 0.0F) && (thinningVolume.Cubic3Saw >= 0.0F) && (thinningVolume.Cubic4Saw >= 0.0F));
+            Debug.Assert((thinningVolume.Scribner2Saw >= 0.0F) && (thinningVolume.Scribner3Saw >= 0.0F) && (thinningVolume.Scribner4Saw >= 0.0F));
+        }
+
+        public void ClearVolume(int periodIndex)
+        {
+            this.Cubic2Saw[periodIndex] = 0.0F;
+            this.Cubic3Saw[periodIndex] = 0.0F;
+            this.Cubic4Saw[periodIndex] = 0.0F;
+            this.Logs2Saw[periodIndex] = 0.0F;
+            this.Logs3Saw[periodIndex] = 0.0F;
+            this.Logs4Saw[periodIndex] = 0.0F;
+            this.Scribner2Saw[periodIndex] = 0.0F;
+            this.Scribner3Saw[periodIndex] = 0.0F;
+            this.Scribner4Saw[periodIndex] = 0.0F;
+
+            this.isCalculated[periodIndex] = true;
         }
 
         public void CopyFrom(TreeSpeciesMerchantableVolume other)
@@ -44,17 +100,23 @@ namespace Osu.Cof.Ferm.Tree
             Array.Copy(other.Cubic2Saw, 0, this.Cubic2Saw, 0, minPeriods);
             Array.Copy(other.Cubic3Saw, 0, this.Cubic3Saw, 0, minPeriods);
             Array.Copy(other.Cubic4Saw, 0, this.Cubic4Saw, 0, minPeriods);
+            Array.Copy(other.Logs2Saw, 0, this.Logs2Saw, 0, minPeriods);
+            Array.Copy(other.Logs3Saw, 0, this.Logs3Saw, 0, minPeriods);
+            Array.Copy(other.Logs4Saw, 0, this.Logs4Saw, 0, minPeriods);
             Array.Copy(other.Scribner2Saw, 0, this.Scribner2Saw, 0, minPeriods);
             Array.Copy(other.Scribner3Saw, 0, this.Scribner3Saw, 0, minPeriods);
             Array.Copy(other.Scribner4Saw, 0, this.Scribner4Saw, 0, minPeriods);
             if (this.Cubic2Saw.Length > minPeriods)
             {
-                Array.Clear(this.Cubic2Saw, minPeriods, this.Cubic2Saw.Length - minPeriods);
-                Array.Clear(this.Cubic3Saw, minPeriods, this.Cubic3Saw.Length - minPeriods);
-                Array.Clear(this.Cubic4Saw, minPeriods, this.Cubic4Saw.Length - minPeriods);
-                Array.Clear(this.Scribner2Saw, minPeriods, this.Scribner2Saw.Length - minPeriods);
-                Array.Clear(this.Scribner3Saw, minPeriods, this.Scribner3Saw.Length - minPeriods);
-                Array.Clear(this.Scribner4Saw, minPeriods, this.Scribner4Saw.Length - minPeriods);
+                Array.Fill(this.Cubic2Saw, Single.NaN, minPeriods, this.Cubic2Saw.Length - minPeriods);
+                Array.Fill(this.Cubic3Saw, Single.NaN, minPeriods, this.Cubic3Saw.Length - minPeriods);
+                Array.Fill(this.Cubic4Saw, Single.NaN, minPeriods, this.Cubic4Saw.Length - minPeriods);
+                Array.Fill(this.Logs2Saw, Single.NaN, minPeriods, this.Logs2Saw.Length - minPeriods);
+                Array.Fill(this.Logs3Saw, Single.NaN, minPeriods, this.Logs3Saw.Length - minPeriods);
+                Array.Fill(this.Logs4Saw, Single.NaN, minPeriods, this.Logs4Saw.Length - minPeriods);
+                Array.Fill(this.Scribner2Saw, Single.NaN, minPeriods, this.Scribner2Saw.Length - minPeriods);
+                Array.Fill(this.Scribner3Saw, Single.NaN, minPeriods, this.Scribner3Saw.Length - minPeriods);
+                Array.Fill(this.Scribner4Saw, Single.NaN, minPeriods, this.Scribner4Saw.Length - minPeriods);
             }
         }
 
@@ -68,54 +130,53 @@ namespace Osu.Cof.Ferm.Tree
             return this.Scribner2Saw[periodIndex] + this.Scribner3Saw[periodIndex] + this.Scribner4Saw[periodIndex];
         }
 
-        public void SetHarvestVolume(Stand previousStand, SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, int periodIndex, TreeVolume treeVolume)
+        private static float GetVolumeMultiplier(Units speciesUnits)
         {
-            Trees previousTreesOfSpecies = previousStand.TreesBySpecies[this.Species];
-            Debug.Assert(previousTreesOfSpecies.Units == Units.English, "TODO: per hectare.");
-
-            TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-            treeVolume.Thinning.GetHarvestedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex, out float harvested2SawCubicMetersPerAcre, out float harvested3SawCubicMetersPerAcre, out float harvested4SawCubicMetersPerAcre, out float harvested2SawBoardFeetPerAcre, out float harvested3SawBoardFeetPerAcre, out float harvested4SawBoardFeetPerAcre);
-
-            float net2SawCubicPerHectare = Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * harvested2SawCubicMetersPerAcre;
-            this.Cubic2Saw[periodIndex] = net2SawCubicPerHectare;
-            float net3SawCubicPerHectare = Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * harvested3SawCubicMetersPerAcre;
-            this.Cubic3Saw[periodIndex] = net3SawCubicPerHectare;
-            float net4SawCubicPerHectare = Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * harvested4SawCubicMetersPerAcre;
-            this.Cubic4Saw[periodIndex] = net4SawCubicPerHectare;
-
-            float net2SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * harvested2SawBoardFeetPerAcre;
-            this.Scribner2Saw[periodIndex] = net2SawMbfPerHectare;
-            float net3SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * harvested3SawBoardFeetPerAcre;
-            this.Scribner3Saw[periodIndex] = net3SawMbfPerHectare;
-            float net4SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * harvested4SawBoardFeetPerAcre;
-            this.Scribner4Saw[periodIndex] = net4SawMbfPerHectare;
-
-            Debug.Assert((net2SawCubicPerHectare >= 0.0F) && (net3SawCubicPerHectare >= 0.0F) && (net4SawCubicPerHectare >= 0.0F));
-            Debug.Assert((net2SawMbfPerHectare >= 0.0F) && (net3SawMbfPerHectare >= 0.0F) && (net4SawMbfPerHectare >= 0.0F));
+            float volumeMultiplier = Constant.Bucking.DefectAndBreakageReduction;
+            if (speciesUnits == Units.English)
+            {
+                volumeMultiplier *= Constant.AcresPerHectare;
+            }
+            return volumeMultiplier;
         }
 
-        public void SetStandingVolume(Stand stand, int periodIndex, TreeVolume treeVolume)
+        public bool IsCalculated(int periodIndex)
         {
-            Trees treesOfSpecies = stand.TreesBySpecies[this.Species];
-            Debug.Assert(treesOfSpecies.Units == Units.English, "TODO: per hectare.");
+            return this.isCalculated[periodIndex];
+        }
 
-            treeVolume.RegenerationHarvest.GetStandingVolume(treesOfSpecies, out float standing2SawCubicMetersPerAcre, out float standing3SawCubicMetersPerAcre, out float standing4SawCubicMetersPerAcre, out float standing2SawBoardFeetPerAcre, out float standing3SawBoardFeetPerAcre, out float standing4SawBoardFeetPerAcre);
-            float net2SawCubicPerHectare = Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing2SawCubicMetersPerAcre;
-            this.Cubic2Saw[periodIndex] = net2SawCubicPerHectare;
-            float net3SawCubicPerHectare = Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing3SawCubicMetersPerAcre;
-            this.Cubic3Saw[periodIndex] = net3SawCubicPerHectare;
-            float net4SawCubicPerHectare = Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing4SawCubicMetersPerAcre;
-            this.Cubic4Saw[periodIndex] = net4SawCubicPerHectare;
+        public void MarkUncalculated(int periodIndex)
+        {
+            this.isCalculated[periodIndex] = false;
 
-            float net2SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing2SawBoardFeetPerAcre;
-            this.Scribner2Saw[periodIndex] = net2SawMbfPerHectare;
-            float net3SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing3SawBoardFeetPerAcre;
-            this.Scribner3Saw[periodIndex] = net3SawMbfPerHectare;
-            float net4SawMbfPerHectare = 0.001F * Constant.AcresPerHectare * Constant.Bucking.DefectAndBreakageReduction * standing4SawBoardFeetPerAcre;
-            this.Scribner4Saw[periodIndex] = net4SawMbfPerHectare;
+            this.Cubic2Saw[periodIndex] = Single.NaN;
+            this.Cubic3Saw[periodIndex] = Single.NaN;
+            this.Cubic4Saw[periodIndex] = Single.NaN;
 
-            Debug.Assert((net2SawCubicPerHectare >= 0.0F) && (net3SawCubicPerHectare >= 0.0F) && (net4SawCubicPerHectare >= 0.0F));
-            Debug.Assert((net2SawMbfPerHectare >= 0.0F) && (net3SawMbfPerHectare >= 0.0F) && (net4SawMbfPerHectare >= 0.0F));
+            this.Logs2Saw[periodIndex] = Single.NaN;
+            this.Logs3Saw[periodIndex] = Single.NaN;
+            this.Logs4Saw[periodIndex] = Single.NaN;
+            
+            this.Scribner2Saw[periodIndex] = Single.NaN;
+            this.Scribner3Saw[periodIndex] = Single.NaN;
+            this.Scribner4Saw[periodIndex] = Single.NaN;
+        }
+
+        private void SetVolume(TreeSpeciesMerchantableVolumeForPeriod volume, int periodIndex)
+        {
+            this.Cubic2Saw[periodIndex] = volume.Cubic2Saw;
+            this.Cubic3Saw[periodIndex] = volume.Cubic3Saw;
+            this.Cubic4Saw[periodIndex] = volume.Cubic4Saw;
+
+            this.Logs2Saw[periodIndex] = volume.Logs2Saw;
+            this.Logs3Saw[periodIndex] = volume.Logs3Saw;
+            this.Logs4Saw[periodIndex] = volume.Logs4Saw;
+
+            this.Scribner2Saw[periodIndex] = volume.Scribner2Saw;
+            this.Scribner3Saw[periodIndex] = volume.Scribner3Saw;
+            this.Scribner4Saw[periodIndex] = volume.Scribner4Saw;
+
+            this.isCalculated[periodIndex] = true;
         }
     }
 }

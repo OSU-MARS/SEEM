@@ -53,11 +53,19 @@ namespace Osu.Cof.Ferm.Tree
             }
         }
 
+        /// <summary>
+        /// Low level clone of tree selections. Use <see cref="StandTrajectory"/> methods to maintain cache coherency when modifying
+        /// a <see cref="StandTrajectory"/>'s tree selections.
+        /// </summary>
         public void CopyFrom(TreeSelection other)
         {
             other.CopyTo(this);
         }
 
+        /// <summary>
+        /// Low level clone of tree selections. Use <see cref="StandTrajectory"/> methods to maintain cache coherency when modifying
+        /// a <see cref="StandTrajectory"/>'s tree selections.
+        /// </summary>
         public void CopyTo(TreeSelection other)
         {
             if (other.treeSelection.Length != this.treeSelection.Length)
@@ -67,11 +75,6 @@ namespace Osu.Cof.Ferm.Tree
 
             other.Count = this.Count;
             Array.Copy(this.treeSelection, 0, other.treeSelection, 0, other.treeSelection.Length);
-        }
-
-        public void CopyTo(int[] allTreeSelection, int destinationIndex)
-        {
-            Array.Copy(this.treeSelection, 0, allTreeSelection, destinationIndex, this.treeSelection.Length);
         }
     }
 }

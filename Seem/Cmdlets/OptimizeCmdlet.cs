@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
@@ -112,17 +113,17 @@ namespace Osu.Cof.Ferm.Cmdlets
             };
 
             int lastThinPeriod = Constant.NoThinPeriod;
-            if (this.TryCreateFirstThin(position.FirstThinPeriodIndex, out IHarvest? firstThin))
+            if (this.TryCreateFirstThin(position.FirstThinPeriodIndex, out Harvest? firstThin))
             {
                 lastThinPeriod = Math.Max(lastThinPeriod, this.FirstThinPeriod[position.FirstThinPeriodIndex]);
                 runParameters.Treatments.Harvests.Add(firstThin);
 
-                if (this.TryCreateSecondThin(position.SecondThinPeriodIndex, out IHarvest? secondThin))
+                if (this.TryCreateSecondThin(position.SecondThinPeriodIndex, out Harvest? secondThin))
                 {
                     lastThinPeriod = Math.Max(lastThinPeriod, this.SecondThinPeriod[position.SecondThinPeriodIndex]);
                     runParameters.Treatments.Harvests.Add(secondThin);
 
-                    if (this.TryCreateThirdThin(position.ThirdThinPeriodIndex, out IHarvest? thirdThin))
+                    if (this.TryCreateThirdThin(position.ThirdThinPeriodIndex, out Harvest? thirdThin))
                     {
                         lastThinPeriod = Math.Max(lastThinPeriod, this.ThirdThinPeriod[position.ThirdThinPeriodIndex]);
                         runParameters.Treatments.Harvests.Add(thirdThin);
@@ -134,7 +135,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             return runParameters;
         }
 
-        protected virtual IHarvest CreateThin(int thinPeriodIndex)
+        protected virtual Harvest CreateThin(int thinPeriodIndex)
         {
             return new ThinByIndividualTreeSelection(thinPeriodIndex);
         }
@@ -602,22 +603,22 @@ namespace Osu.Cof.Ferm.Cmdlets
             this.WriteVerbose("{0} moves in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4} moves/core-s).", totalMoves, totalSeconds, elapsedTime.TotalSeconds, movesPerSecondMultiplier * movesPerSecond, movesPerSecondScale);
         }
 
-        private bool TryCreateFirstThin(int firstThinPeriodIndex, [NotNullWhen(true)] out IHarvest? firstThin)
+        private bool TryCreateFirstThin(int firstThinPeriodIndex, [NotNullWhen(true)] out Harvest? firstThin)
         {
             return this.TryCreateThin(this.FirstThinPeriod[firstThinPeriodIndex], out firstThin);
         }
 
-        private bool TryCreateSecondThin(int secondThinPeriodIndex, [NotNullWhen(true)] out IHarvest? secondThin)
+        private bool TryCreateSecondThin(int secondThinPeriodIndex, [NotNullWhen(true)] out Harvest? secondThin)
         {
             return this.TryCreateThin(this.SecondThinPeriod[secondThinPeriodIndex], out secondThin);
         }
 
-        private bool TryCreateThirdThin(int thirdThinPeriodIndex, [NotNullWhen(true)] out IHarvest? thirdThin)
+        private bool TryCreateThirdThin(int thirdThinPeriodIndex, [NotNullWhen(true)] out Harvest? thirdThin)
         {
             return this.TryCreateThin(this.ThirdThinPeriod[thirdThinPeriodIndex], out thirdThin);
         }
 
-        private bool TryCreateThin(int thinPeriodIndex, [NotNullWhen(true)] out IHarvest? thin)
+        private bool TryCreateThin(int thinPeriodIndex, [NotNullWhen(true)] out Harvest? thin)
         {
             if (thinPeriodIndex == Constant.NoThinPeriod)
             {

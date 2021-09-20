@@ -8,14 +8,14 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class GeneticAlgorithm : Heuristic<GeneticParameters>
     {
-        private IList<int>? thinningPeriods;
+        private IList<int>? harvestPeriods;
 
         public PopulationStatistics PopulationStatistics { get; private init; }
 
         public GeneticAlgorithm(OrganonStand stand, GeneticParameters heuristicPparameters, RunParameters runParameters)
             : base(stand, heuristicPparameters, runParameters, false)
         {
-            this.thinningPeriods = null;
+            this.harvestPeriods = null;
 
             this.PopulationStatistics = new PopulationStatistics();
         }
@@ -25,28 +25,32 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Genetic";
         }
 
-        private void MutateChild(OrganonStandTrajectory childTrajectory, float flipProbability, float exchangeProbability, float treeScalingFactor)
+        private void MutateChild(OrganonStandTrajectory childTrajectory, float flipProbability, float exchangeProbability, float treeIndexScalingFactor)
         {
-            Debug.Assert((this.thinningPeriods != null) && (this.thinningPeriods.Count == 2));
+            Debug.Assert((this.harvestPeriods != null) && (this.harvestPeriods.Count == 2));
 
-            // perform guaranteed flip mutations until remaining flip probability is less than 1.0
+            // perform guaranteed 1-opt mutations until remaining flip probability is less than 1.0, then mutate according to probability
+            // For now, assume enough trees are eligible for thinning slow to infinite loop times are avoided. Probabilistic
+            // mutation attempts on trees whose selections cannot be changed will be retried but, as the chance of repeatedly
+            // passing the probability check declines, the mean mutation rate ends up being reduced by the fraction of ineligible
+            // trees.
             float flipProbabilityRemaining = flipProbability;
-            for (; flipProbabilityRemaining >= 1.0F; --flipProbabilityRemaining)
+            while (flipProbabilityRemaining > 0.0F)
             {
-                int uncompactedTreeIndex = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
-                int currentHarvestPeriod = childTrajectory.GetTreeSelection(uncompactedTreeIndex);
-                int newHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, this.thinningPeriods);
-                childTrajectory.SetTreeSelection(uncompactedTreeIndex, newHarvestPeriod);
-            }
+                if (flipProbabilityRemaining < 1.0F)
+                {
+                    float mutationProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
+                    if (mutationProbability > flipProbabilityRemaining)
+                    {
+                        break;
+                    }
+                }
 
-            // remaining flip mutation probability
-            float mutationProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
-            if (mutationProbability < flipProbabilityRemaining)
-            {
-                int uncompactedTreeIndex = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
+                int uncompactedTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                 int currentHarvestPeriod = childTrajectory.GetTreeSelection(uncompactedTreeIndex);
-                int newHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, this.thinningPeriods);
+                int newHarvestPeriod = this.GetOneOptCandidateRandom(currentHarvestPeriod, this.harvestPeriods);
                 childTrajectory.SetTreeSelection(uncompactedTreeIndex, newHarvestPeriod);
+                --flipProbabilityRemaining;
             }
 
             // exchange mutations
@@ -68,8 +72,8 @@ namespace Osu.Cof.Ferm.Heuristics
             // flip and exchange mutations independent
             if (this.Pseudorandom.GetPseudorandomByteAsProbability() < exchangeProbability)
             {
-                int firstTreeIndex = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
-                int secondTreeIndex = (int)(treeScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
+                int firstTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
+                int secondTreeIndex = (int)(treeIndexScalingFactor * this.Pseudorandom.GetTwoPseudorandomBytesAsFloat());
                 int firstHarvestPeriod = childTrajectory.GetTreeSelection(firstTreeIndex);
                 childTrajectory.SetTreeSelection(firstTreeIndex, childTrajectory.GetTreeSelection(secondTreeIndex));
                 childTrajectory.SetTreeSelection(secondTreeIndex, firstHarvestPeriod);
@@ -125,7 +129,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new NotSupportedException("Logging of only improving moves isn't currently supported.");
             }
 
-            this.thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
+            this.harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
@@ -140,35 +144,31 @@ namespace Osu.Cof.Ferm.Heuristics
             perfCounters.TreesRandomizedInConstruction += currentGeneration.ConstructTreeSelections(this.CurrentTrajectory, this.HeuristicParameters);
 
             float acceptedFinancialValue = Single.MinValue;
-            OrganonStandTrajectory individualTrajectory = new(this.CurrentTrajectory);
             for (int individualIndex = 0; individualIndex < this.HeuristicParameters.PopulationSize; ++individualIndex)
             {
                 SortedList<FiaCode, TreeSelection> individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
-                foreach (KeyValuePair<FiaCode, TreeSelection> treeSelectionForSpecies in individualTreeSelection)
-                {
-                    treeSelectionForSpecies.Value.CopyTo(individualTrajectory.IndividualTreeSelectionBySpecies[treeSelectionForSpecies.Key]);
-                }
-                perfCounters.GrowthModelTimesteps += individualTrajectory.Simulate();
+                this.CurrentTrajectory.CopyTreeSelectionFrom(individualTreeSelection);
+                perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-                float individualFinancialValue = this.GetFinancialValue(individualTrajectory, position.FinancialIndex);
+                float individualFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, position.FinancialIndex);
                 currentGeneration.InsertFitness(individualIndex, individualFinancialValue);
                 ++perfCounters.MovesAccepted;
 
                 if (individualFinancialValue > acceptedFinancialValue)
                 {
                     acceptedFinancialValue = individualFinancialValue;
-                    this.CopyTreeGrowthToBestTrajectory(individualTrajectory);
+                    this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
                 }
 
                 this.FinancialValue.TryAddMove(acceptedFinancialValue, individualFinancialValue);
             }
             Debug.Assert((currentGeneration.SolutionsAccepted == this.HeuristicParameters.PopulationSize) && (currentGeneration.SolutionsAccepted == currentGeneration.SolutionsInPool));
-            this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
+            this.PopulationStatistics.AddGeneration(currentGeneration, this.harvestPeriods);
 
             // for each generation of size n, perform n fertile matings
             float treeScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
             Population nextGeneration = new(currentGeneration);
-            OrganonStandTrajectory firstChildTrajectory = individualTrajectory;
+            OrganonStandTrajectory firstChildTrajectory = this.CurrentTrajectory;
             OrganonStandTrajectory secondChildTrajectory = new(this.CurrentTrajectory);
             for (int generationIndex = 1; generationIndex < this.HeuristicParameters.MaximumGenerations; ++generationIndex)
             {
@@ -292,7 +292,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 nextGeneration.SolutionsAccepted = 0;
                 nextGeneration.SolutionsRejected = 0;
                 
-                float coefficientOfVariation = this.PopulationStatistics.AddGeneration(currentGeneration, this.thinningPeriods);
+                float coefficientOfVariation = this.PopulationStatistics.AddGeneration(currentGeneration, this.harvestPeriods);
                 if (coefficientOfVariation < this.HeuristicParameters.MinimumCoefficientOfVariation)
                 {
                     break;

@@ -1,18 +1,17 @@
-﻿using Osu.Cof.Ferm.Tree;
+﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Organon
+namespace Osu.Cof.Ferm.Silviculture
 {
-    public class ThinByPrescription : IHarvest
+    public class ThinByPrescription : Harvest
     {
         private float fromAbovePercentage;
         private float fromBelowPercentage;
         private float proportionalPercentage;
-
-        public int Period { get; set; }
 
         public ThinByPrescription(int harvestAtBeginningOfPeriod)
         {
@@ -78,7 +77,7 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
-        public IHarvest Clone()
+        public override Harvest Clone()
         {
             return new ThinByPrescription(this.Period)
             {
@@ -88,28 +87,7 @@ namespace Osu.Cof.Ferm.Organon
             };
         }
 
-        public void CopyFrom(IHarvest other)
-        {
-            if (other is ThinByIndividualTreeSelection thinByIndividualTreeSelection)
-            {
-                // this is, for now, just a stub to enable test cases so only flow period
-                // If needed, APIs can be created to calculate approximate above, proportional, and below percentages from the tree selection.
-                this.Period = thinByIndividualTreeSelection.Period;
-            }
-            else if (other is ThinByPrescription thinByPrescription)
-            {
-                this.FromAbovePercentage = thinByPrescription.FromAbovePercentage;
-                this.FromBelowPercentage = thinByPrescription.FromBelowPercentage;
-                this.Period = thinByPrescription.Period;
-                this.ProportionalPercentage = thinByPrescription.ProportionalPercentage;
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException(nameof(other));
-            }
-        }
-
-        public float EvaluateTreeSelection(OrganonStandTrajectory trajectory)
+        public override float EvaluateTreeSelection(OrganonStandTrajectory trajectory)
         {
             float totalPercentage = this.fromAbovePercentage + this.fromBelowPercentage + this.proportionalPercentage;
             if ((totalPercentage < 0.0F) || (totalPercentage > 100.0F))
@@ -315,6 +293,28 @@ namespace Osu.Cof.Ferm.Organon
             float basalAreaRemoved = basalAreaRemovedFromAbove + basalAreaRemovedProportionally + basalAreaRemovedFromBelow;
             Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || ((int)(0.01F * totalPercentage * dbhSortOrderBySpecies.Values.Sum(sortOrder => sortOrder.Length) - Constant.RoundTowardsZeroTolerance) == 0 && basalAreaRemoved == 0.0F));
             return basalAreaRemoved;
+        }
+
+        public override bool TryCopyFrom(Harvest other)
+        {
+            if (other is ThinByIndividualTreeSelection thinByIndividualTreeSelection)
+            {
+                // this is, for now, just a stub to enable test cases so only flow period
+                // If needed, APIs can be created to calculate approximate above, proportional, and below percentages from the tree selection.
+                this.Period = thinByIndividualTreeSelection.Period;
+                return true;
+            }
+
+            if (other is ThinByPrescription thinByPrescription)
+            {
+                this.FromAbovePercentage = thinByPrescription.FromAbovePercentage;
+                this.FromBelowPercentage = thinByPrescription.FromBelowPercentage;
+                this.Period = thinByPrescription.Period;
+                this.ProportionalPercentage = thinByPrescription.ProportionalPercentage;
+                return true;
+            }
+
+            return false;
         }
     }
 }

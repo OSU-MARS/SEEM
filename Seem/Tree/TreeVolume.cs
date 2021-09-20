@@ -1,4 +1,6 @@
-﻿namespace Osu.Cof.Ferm.Tree
+﻿using System;
+
+namespace Osu.Cof.Ferm.Tree
 {
     public class TreeVolume
     {
@@ -9,23 +11,23 @@
 
         static TreeVolume()
         {
-            TreeVolume.Default = new TreeVolume();
+            TreeSpeciesVolumeTableRange finalHarvestRange = new();
+            TreeSpeciesVolumeTableRange thinningRange = new()
+            {
+                MaximumDiameterInCentimeters = Constant.Bucking.MaximumThinningDiameterInCentimeters,
+                MaximumHeightInMeters = Constant.Bucking.DefaultThinningMaximumHeightInMeters,
+                PreferredLogLengthInMeters = Constant.Bucking.DefaultThinningLogLength,
+            };
+            TreeVolume.Default = new TreeVolume(finalHarvestRange, thinningRange);
         }
 
-        public TreeVolume()
-            : this(Constant.Bucking.DefaultMaximumDiameterInCentimeters, Constant.Bucking.DefaultMaximumHeightInMeters, scribnerFromLumberRecovery: false)
+        public TreeVolume(TreeSpeciesVolumeTableRange finalHarvestTableRange, TreeSpeciesVolumeTableRange thinningTableRange)
         {
-        }
+            TreeSpeciesVolumeTableParameters psmeFinalHarvestParameters = new(finalHarvestTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight);
+            this.RegenerationHarvest = new ScaledVolume(psmeFinalHarvestParameters);
 
-        public TreeVolume(float maximumDiameterInCentimeters, float maximumHeightInMeters, bool scribnerFromLumberRecovery)
-            : this(Constant.Bucking.LogLengthThinning, Constant.Bucking.LogLengthRegenerationHarvest, maximumDiameterInCentimeters, maximumHeightInMeters, scribnerFromLumberRecovery)
-        {
-        }
-
-        public TreeVolume(float thinningLogLengthInM, float regenerationHarvestLogLengthInM, float maximumDiameterInCentimeters, float maximumHeightInMeters, bool scribnerFromLumberRecovery)
-        {
-            this.RegenerationHarvest = new ScaledVolume(maximumDiameterInCentimeters, maximumHeightInMeters, regenerationHarvestLogLengthInM, scribnerFromLumberRecovery);
-            this.Thinning = new ScaledVolume(maximumDiameterInCentimeters, maximumHeightInMeters, thinningLogLengthInM, scribnerFromLumberRecovery);
+            TreeSpeciesVolumeTableParameters psmeThinningParameters = new(thinningTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight);
+            this.Thinning = new ScaledVolume(psmeThinningParameters);
         }
     }
 }

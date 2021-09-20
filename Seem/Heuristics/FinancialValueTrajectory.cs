@@ -5,24 +5,24 @@ namespace Osu.Cof.Ferm.Heuristics
 {
     public class FinancialValueTrajectory
     {
-        private readonly List<float>[,] acceptedValueByRotationAndDiscount;
-        private readonly List<float>[,] candidateValueByRotationAndDiscount;
+        private readonly List<float>[,] acceptedValueByRotationAndScenario;
+        private readonly List<float>[,] candidateValueByRotationAndScenario;
         private readonly float[,] highestFinancialValueByRotationAndScenario;
 
         public int MoveCapacity { get; private init; }
 
         public FinancialValueTrajectory(int rotationCapacity, int discountRateCapacity, int moveCapacity)
         {
-            this.acceptedValueByRotationAndDiscount = new List<float>[rotationCapacity, discountRateCapacity];
-            this.candidateValueByRotationAndDiscount = new List<float>[rotationCapacity, discountRateCapacity];
+            this.acceptedValueByRotationAndScenario = new List<float>[rotationCapacity, discountRateCapacity];
+            this.candidateValueByRotationAndScenario = new List<float>[rotationCapacity, discountRateCapacity];
             this.highestFinancialValueByRotationAndScenario = new float[rotationCapacity, discountRateCapacity];
 
             for (int rotationIndex = 0; rotationIndex < rotationCapacity; ++rotationIndex)
             {
                 for (int financialIndex = 0; financialIndex < discountRateCapacity; ++financialIndex)
                 {
-                    this.acceptedValueByRotationAndDiscount[rotationIndex, financialIndex] = new();
-                    this.candidateValueByRotationAndDiscount[rotationIndex, financialIndex] = new();
+                    this.acceptedValueByRotationAndScenario[rotationIndex, financialIndex] = new();
+                    this.candidateValueByRotationAndScenario[rotationIndex, financialIndex] = new();
                     this.highestFinancialValueByRotationAndScenario[rotationIndex, financialIndex] = Single.MinValue;
                 }
             }
@@ -37,11 +37,11 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public IList<float> GetAcceptedValuesWithDefaulting(int rotationIndex, int financialIndex)
         {
-            if (this.acceptedValueByRotationAndDiscount.Length == 1)
+            if (this.acceptedValueByRotationAndScenario.Length == 1)
             {
-                return this.acceptedValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex];
+                return this.acceptedValueByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex];
             }
-            return this.acceptedValueByRotationAndDiscount[rotationIndex, financialIndex];
+            return this.acceptedValueByRotationAndScenario[rotationIndex, financialIndex];
         }
 
         public IList<float> GetCandidateValuesWithDefaulting(HeuristicResultPosition position)
@@ -51,11 +51,11 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public IList<float> GetCandidateValuesWithDefaulting(int rotationIndex, int discountRateIndex)
         {
-            if (this.candidateValueByRotationAndDiscount.Length == 1)
+            if (this.candidateValueByRotationAndScenario.Length == 1)
             {
-                return this.candidateValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex];
+                return this.candidateValueByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex];
             }
-            return this.candidateValueByRotationAndDiscount[rotationIndex, discountRateIndex];
+            return this.candidateValueByRotationAndScenario[rotationIndex, discountRateIndex];
         }
 
         public float GetHighestValue()
@@ -84,8 +84,8 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public void SetMoveCapacity(int capacity)
         {
-            this.acceptedValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex].Capacity = capacity;
-            this.candidateValueByRotationAndDiscount[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex].Capacity = capacity;
+            this.acceptedValueByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex].Capacity = capacity;
+            this.candidateValueByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex].Capacity = capacity;
         }
 
         public bool TryAddMove(float acceptedValue, float candidateValue)
@@ -102,8 +102,8 @@ namespace Osu.Cof.Ferm.Heuristics
             // typically, acceptedValue >= candidateValue but this does not hold during Monte Carlo reheating or after tabu search's
             // initial ascent phase
 
-            List<float> acceptedValues = this.acceptedValueByRotationAndDiscount[rotationIndex, financialIndex];
-            List<float> candidateValues = this.candidateValueByRotationAndDiscount[rotationIndex, financialIndex];
+            List<float> acceptedValues = this.acceptedValueByRotationAndScenario[rotationIndex, financialIndex];
+            List<float> candidateValues = this.candidateValueByRotationAndScenario[rotationIndex, financialIndex];
             if (acceptedValues.Count < this.MoveCapacity)
             {
                 // append new values up to maximum capacity

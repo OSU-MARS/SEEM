@@ -2,6 +2,7 @@
 using Osu.Cof.Ferm.Data;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
@@ -109,10 +110,10 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinningPeriod = 4;
             int treeCount = 100;
-            float minObjectiveFunctionWithScaledVolume = 5.516F; // USk$/ha
+            float minFinancialValue = 1.332F; // USk$/ha
             #if DEBUG
-            treeCount = 48;
-            minObjectiveFunctionWithScaledVolume = 3.060F; // USk$/ha, bilinear interpolation: 1 cm diameter classes, 1 m height classes, mean timber prices through June 2021
+                treeCount = 48;
+                minFinancialValue = 0.255F; // USk$/ha, bilinear interpolation: 1 cm diameter classes, 1 m height classes, mean timber prices through August 2021
             #endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
@@ -128,6 +129,7 @@ namespace Osu.Cof.Ferm.Test
 
             // first improving circular search
             HeuristicResults<HeuristicParameters> results = PublicApi.CreateResults(new(), landExpectationValueIts.MaximizeForPlanningPeriod);
+            // results.ParameterCombinations[0].MinimumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization; // sometimes useful for debugging: start with no trees selected
             FirstImprovingCircularSearch firstCircular = new(stand, results.ParameterCombinations[0], landExpectationValueIts)
             {
                 //IsStochastic = true,
@@ -201,17 +203,17 @@ namespace Osu.Cof.Ferm.Test
             float highestFirstCircularFinancialValue = firstCircular.FinancialValue.GetHighestValue();
             float highestHeroFinancialValue = hero.FinancialValue.GetHighestValue();
             float highestPrescriptionFinancialValue = hero.FinancialValue.GetHighestValue();
-            this.TestContext!.WriteLine("highest first circular financial value: {0} observed, near {1} expected", highestFirstCircularFinancialValue, minObjectiveFunctionWithScaledVolume);
-            this.TestContext!.WriteLine("highest hero financial value: {0} observed, near {1} expected", highestHeroFinancialValue, minObjectiveFunctionWithScaledVolume);
-            this.TestContext!.WriteLine("highest prescription descent value: {0} observed, near {1} expected", highestPrescriptionFinancialValue, minObjectiveFunctionWithScaledVolume);
+            this.TestContext!.WriteLine("highest first circular financial value: {0} observed, near {1} expected", highestFirstCircularFinancialValue, minFinancialValue);
+            this.TestContext!.WriteLine("highest hero financial value: {0} observed, near {1} expected", highestHeroFinancialValue, minFinancialValue);
+            this.TestContext!.WriteLine("highest prescription descent value: {0} observed, near {1} expected", highestPrescriptionFinancialValue, minFinancialValue);
 
-            Assert.IsTrue(highestFirstCircularFinancialValue > minObjectiveFunctionWithScaledVolume);
-            Assert.IsTrue(highestFirstCircularFinancialValue < 1.02F * minObjectiveFunctionWithScaledVolume);
-            Assert.IsTrue(highestPrescriptionFinancialValue < 1.02F * minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(highestFirstCircularFinancialValue > minFinancialValue);
+            Assert.IsTrue(highestFirstCircularFinancialValue < 1.02F * minFinancialValue);
+            Assert.IsTrue(highestPrescriptionFinancialValue < 1.02F * minFinancialValue);
 
-            Assert.IsTrue(highestHeroFinancialValue > minObjectiveFunctionWithScaledVolume);
-            Assert.IsTrue(highestHeroFinancialValue < 1.02F * minObjectiveFunctionWithScaledVolume);
-            Assert.IsTrue(highestPrescriptionFinancialValue < 1.02F * minObjectiveFunctionWithScaledVolume);
+            Assert.IsTrue(highestHeroFinancialValue > minFinancialValue);
+            Assert.IsTrue(highestHeroFinancialValue < 1.02F * minFinancialValue);
+            Assert.IsTrue(highestPrescriptionFinancialValue < 1.02F * minFinancialValue);
         }
 
         [TestMethod]
@@ -702,7 +704,7 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
 
             // verify snag and log calculations
-            SnagLogTable snagsAndLogs = new(thinnedTrajectory, Constant.Bucking.DefaultMaximumDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
+            SnagLogTable snagsAndLogs = new(thinnedTrajectory, Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
             PublicApi.Verify(snagsAndLogs, thinnedTrajectory);
         }
 
@@ -830,11 +832,11 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext!.WriteLine("{0} best objective: {1} with ratio {2}", heuristic.GetName(), highestFinancialValue, highestFinancialValueRatio);
             if (heuristic.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
             {
-                Assert.IsTrue(highestFinancialValue > -0.70F);
+                Assert.IsTrue(highestFinancialValue > -0.85F);
             }
             else
             {
-                Assert.IsTrue(highestFinancialValue > 0.0F);
+                Assert.IsTrue(highestFinancialValue > 0.0F); // actually volume
             }
 
             IList<float> candidateMoveFinancialValues = heuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
@@ -850,25 +852,33 @@ namespace Osu.Cof.Ferm.Test
 
             // only guaranteed for monotonic heuristics: hero, prescription enumeration, others depending on configuration
             IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
+            float lastAcceptedFinancialValue = acceptedMoveFinancialValues[^1];
             if ((heuristic is Hero) || (heuristic is PrescriptionEnumeration) || (heuristic is ThresholdAccepting))
             {
-                Assert.IsTrue(highestFinancialValue == acceptedMoveFinancialValues[^1]);
+                Assert.IsTrue(highestFinancialValue == lastAcceptedFinancialValue);
                 Assert.IsTrue(recalculatedCurrentObjectiveFunction >= beginFinancialValue);
             }
             else
             {
-                Assert.IsTrue(highestFinancialValue > 0.95F * acceptedMoveFinancialValues[^1]);
-                if (heuristic is AutocorrelatedWalk)
+                if (lastAcceptedFinancialValue >= 0.0F)
                 {
-                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.50F * beginFinancialValue);
-                }
-                else if (heuristic is SimulatedAnnealing)
-                {
-                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.72F * beginFinancialValue);
+                    Assert.IsTrue(highestFinancialValue > 0.95F * lastAcceptedFinancialValue);
+                    if (heuristic is AutocorrelatedWalk)
+                    {
+                        Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.50F * beginFinancialValue);
+                    }
+                    else if (heuristic is SimulatedAnnealing)
+                    {
+                        Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.72F * beginFinancialValue);
+                    }
+                    else
+                    {
+                        Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.85F * beginFinancialValue);
+                    }
                 }
                 else
                 {
-                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.85F * beginFinancialValue);
+                    Assert.IsTrue(highestFinancialValue >= lastAcceptedFinancialValue);
                 }
             }
 
@@ -894,6 +904,8 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(firstThinningPeriod != Constant.NoHarvestPeriod);
             bestTrajectory.GetMerchantableVolumes(out StandMerchantableVolume bestStandingVolume, out StandMerchantableVolume bestHarvestedVolume);
             heuristic.CurrentTrajectory.GetMerchantableVolumes(out StandMerchantableVolume currentStandingVolume, out StandMerchantableVolume currentHarvestedVolume);
+            HarvestFinancialValue bestThinNpv = new();
+            HarvestFinancialValue currentThinNpv = new();
             float previousBestCubicStandingVolume = Single.NaN;
             float previousCurrentCubicStandingVolume = Single.NaN;
             for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
@@ -912,12 +924,15 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(MathF.Abs(currentCubicStandingVolume - currentCubicStandingCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(currentCubicThinningVolume - currentCubicThinningCheckVolume) < 0.000001F);
 
-                float bestThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.FinancialIndex, periodIndex, out float bestThin2SawNpv, out float bestThin3SawNpv, out float bestThin4SawNpv);
-                float currentThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.FinancialIndex, periodIndex, out float currentThin2SawNpv, out float currentThin3SawNpv, out float currentThin4SawNpv);
+                if (periodIndex > 1)
+                {
+                    bestThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.FinancialIndex, periodIndex);
+                    currentThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.FinancialIndex, periodIndex);
+                }
                 if (periodIndex == firstThinningPeriod)
                 {
-                    Assert.IsTrue(bestTrajectory.BasalAreaRemoved[periodIndex] >= 0.0F); // best selection with debug stand is no harvest
-                    Assert.IsTrue(bestTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
+                    Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F); // best selection with debug stand is no harvest
+                    Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
 
                     Assert.IsTrue(bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= 0.0F);
                     Assert.IsTrue(bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex) < bestTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1) + 0.000001F); // allow for numerical error in case where all trees are harvested
@@ -930,26 +945,26 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] >= 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] >= 0.0F);
 
-                    Assert.IsTrue(bestThin2SawNpv >= 0.0F);
-                    Assert.IsTrue(bestThin3SawNpv >= 0.0F);
-                    Assert.IsTrue(bestThin4SawNpv >= 0.0F);
+                    Assert.IsTrue(bestThinNpv.NetPresentValue2Saw >= -75.0F);
+                    Assert.IsTrue(bestThinNpv.NetPresentValue3Saw >= -75.0F);
+                    Assert.IsTrue(bestThinNpv.NetPresentValue4Saw >= -75.0F);
 
-                    Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] >= 0.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] <= 200.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) < heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1) + 0.000001F); // numerical error
 
                     Assert.IsTrue(currentCubicThinningVolume >= 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume <= previousCurrentCubicStandingVolume);
 
-                    Assert.IsTrue(currentThin2SawNpv >= 0.0F);
-                    Assert.IsTrue(currentThin3SawNpv >= 0.0F);
-                    Assert.IsTrue(currentThin4SawNpv >= 0.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue2Saw >= -75.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue3Saw >= -75.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue4Saw >= -75.0F);
                 }
                 else
                 {
                     // for now, harvest should occur only in the one indicated period
-                    Assert.IsTrue(bestTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] == 0.0F);
                     Assert.IsTrue(bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Scribner2Saw[periodIndex] == 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Scribner3Saw[periodIndex] == 0.0F);
@@ -960,24 +975,24 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] == 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] == 0.0F);
 
-                    Assert.IsTrue(bestThin2SawNpv == 0.0F);
-                    Assert.IsTrue(bestThin3SawNpv == 0.0F);
-                    Assert.IsTrue(bestThin4SawNpv == 0.0F);
+                    Assert.IsTrue(bestThinNpv.NetPresentValue2Saw == 0.0F);
+                    Assert.IsTrue(bestThinNpv.NetPresentValue3Saw == 0.0F);
+                    Assert.IsTrue(bestThinNpv.NetPresentValue4Saw == 0.0F);
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
                     Assert.IsTrue(currentHarvestedVolume.Scribner2Saw[periodIndex] == 0.0F);
                     Assert.IsTrue(currentHarvestedVolume.Scribner3Saw[periodIndex] == 0.0F);
                     Assert.IsTrue(currentHarvestedVolume.Scribner4Saw[periodIndex] == 0.0F);
 
-                    Assert.IsTrue(heuristic.CurrentTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
+                    Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] == 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume == 0.0F);
                     Assert.IsTrue(currentHarvestedVolume.Cubic2Saw[periodIndex] == 0.0F);
                     Assert.IsTrue(currentHarvestedVolume.Cubic3Saw[periodIndex] == 0.0F);
                     Assert.IsTrue(currentHarvestedVolume.Cubic4Saw[periodIndex] == 0.0F);
 
-                    Assert.IsTrue(currentThin2SawNpv == 0.0F);
-                    Assert.IsTrue(currentThin3SawNpv == 0.0F);
-                    Assert.IsTrue(currentThin4SawNpv == 0.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue2Saw == 0.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue3Saw == 0.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue4Saw == 0.0F);
                 }
 
                 if (periodIndex == 0)
@@ -1080,14 +1095,14 @@ namespace Osu.Cof.Ferm.Test
                     OrganonStandDensity? standDensityBeforeThin = thinnedTrajectory.DensityByPeriod[periodIndex - 1];
                     AssertNullable.IsNotNull(standDensityBeforeThin);
 
-                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] > 0.0F);
-                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] < standDensityBeforeThin.BasalAreaPerAcre); // assume <50% thin by volume
+                    Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] > 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] < standDensityBeforeThin.BasalAreaPerAcre); // assume <50% thin by volume
                     Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbf[periodIndex]);
                     Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbf[periodIndex]);
                 }
                 else
                 {
-                    Assert.IsTrue(thinnedTrajectory.BasalAreaRemoved[periodIndex] == 0.0F);
+                    Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] == 0.0F);
                     Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
                 }
             }
@@ -1095,8 +1110,11 @@ namespace Osu.Cof.Ferm.Test
 
         private static void Verify(OrganonStandTrajectory trajectory, ExpectedStandTrajectory expectedTrajectory, int timeStepInYears)
         {
-            Assert.IsTrue(trajectory.BasalAreaRemoved.Length == expectedTrajectory.Length);
-            Assert.IsTrue(trajectory.BasalAreaRemoved[0] == 0.0F);
+            trajectory.RecalculateThinningVolumeIfNeeded(0);
+            trajectory.RecalculateStandingVolumeIfNeeded(0);
+
+            Assert.IsTrue(trajectory.Treatments.BasalAreaThinnedByPeriod.Count == expectedTrajectory.Length);
+            Assert.IsTrue(trajectory.Treatments.BasalAreaThinnedByPeriod[0] == 0.0F);
             Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(0) == 0.0F);
             foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in trajectory.ThinningVolumeBySpecies.Values)
             {
@@ -1145,6 +1163,9 @@ namespace Osu.Cof.Ferm.Test
                 AssertNullable.IsNotNull(standDensity);
                 Assert.IsTrue(standDensity.BasalAreaPerAcre > 0.0F);
                 Assert.IsTrue(standDensity.BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
+
+                trajectory.RecalculateThinningVolumeIfNeeded(periodIndex);
+                trajectory.RecalculateStandingVolumeIfNeeded(periodIndex);
 
                 Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) > expectedTrajectory.MinimumStandingCubic[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingCubic[periodIndex]);
@@ -1211,9 +1232,11 @@ namespace Osu.Cof.Ferm.Test
 
         private static void Verify(SnagLogTable snagsAndLogs, OrganonStandTrajectory trajectory)
         {
-            Assert.IsTrue(snagsAndLogs.DiameterClasses == 121);
+            Assert.IsTrue((snagsAndLogs.DiameterClasses == (int)Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters + 1) || 
+                          (snagsAndLogs.DiameterClasses == (int)Constant.Bucking.MaximumThinningDiameterInCentimeters + 1));
             Assert.IsTrue(snagsAndLogs.DiameterClassSizeInCentimeters == Constant.Bucking.DiameterClassSizeInCentimeters);
-            Assert.IsTrue(snagsAndLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultMaximumDiameterInCentimeters);
+            Assert.IsTrue((snagsAndLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters) ||
+                          (snagsAndLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultThinningMaximumHeightInMeters));
             Assert.IsTrue(snagsAndLogs.Periods == trajectory.PlanningPeriods);
 
             Assert.IsTrue(snagsAndLogs.LogQmdInCentimetersByPeriod.Length == snagsAndLogs.Periods);

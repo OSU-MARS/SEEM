@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
 
@@ -264,29 +265,143 @@ namespace Osu.Cof.Ferm.Test
             FinancialScenarios financialScenarios = new();
             financialScenarios.Read("financial scenarios.xlsx", "Sheet1");
 
+            // properties of FinancialScenario
             Assert.IsTrue(financialScenarios.Count == 1);
-            Assert.IsTrue((financialScenarios.DiscountRate.Count == 1) && (financialScenarios.DiscountRate[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.DouglasFir2SawPondValuePerMbf.Count == 1) && (financialScenarios.DouglasFir2SawPondValuePerMbf[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.DouglasFir3SawPondValuePerMbf.Count == 1) && (financialScenarios.DouglasFir3SawPondValuePerMbf[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.DouglasFir4SawPondValuePerMbf.Count == 1) && (financialScenarios.DouglasFir4SawPondValuePerMbf[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.HarvestTaxPerMbf.Count == 1) && (financialScenarios.HarvestTaxPerMbf[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.Name.Count == 1) && (String.IsNullOrWhiteSpace(financialScenarios.Name[0]) == false));
-            Assert.IsTrue((financialScenarios.PropertyTaxAndManagementPerHectareYear.Count == 1) && (financialScenarios.PropertyTaxAndManagementPerHectareYear[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.RegenerationHarvestCostPerCubicMeter.Count == 1) && (financialScenarios.RegenerationHarvestCostPerCubicMeter[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.RegenerationHarvestCostPerHectare.Count == 1) && (financialScenarios.RegenerationHarvestCostPerHectare[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.RegenerationHaulCostPerCubicMeter.Count == 1) && (financialScenarios.RegenerationHaulCostPerCubicMeter[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.ReleaseSprayCostPerHectare.Count == 1) && (financialScenarios.ReleaseSprayCostPerHectare[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.SeedlingCost.Count == 1) && (financialScenarios.SeedlingCost[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.SitePrepAndReplantingCostPerHectare.Count == 1) && (financialScenarios.SitePrepAndReplantingCostPerHectare[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.ThinningHarvestCostPerCubicMeter.Count == 1) && (financialScenarios.ThinningHarvestCostPerCubicMeter[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.ThinningHarvestCostPerHectare.Count == 1) && (financialScenarios.ThinningHarvestCostPerHectare[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.ThinningHaulCostPerCubicMeter.Count == 1) && (financialScenarios.ThinningHaulCostPerCubicMeter[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.ThinningPondValueMultiplier.Count == 1) && (financialScenarios.ThinningPondValueMultiplier[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.TimberAppreciationRate.Count == 1) && (financialScenarios.TimberAppreciationRate[0] >= 0.0F));
-            Assert.IsTrue((financialScenarios.WesternRedcedarCamprunPondValuePerMbf.Count == 1) && (financialScenarios.WesternRedcedarCamprunPondValuePerMbf[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.WhiteWood2SawPondValuePerMbf.Count == 1) && (financialScenarios.WhiteWood2SawPondValuePerMbf[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.WhiteWood3SawPondValuePerMbf.Count == 1) && (financialScenarios.WhiteWood3SawPondValuePerMbf[0] > 0.0F));
-            Assert.IsTrue((financialScenarios.WhiteWood4SawPondValuePerMbf.Count == 1) && (financialScenarios.WhiteWood4SawPondValuePerMbf[0] > 0.0F));
+            Assert.IsTrue((financialScenarios.DiscountRate.Count == 1) && 
+                          (financialScenarios.DiscountRate[0] == Constant.Financial.DefaultAnnualDiscountRate));
+            Assert.IsTrue((financialScenarios.DouglasFir2SawPondValuePerMbf.Count == 1) &&
+                          (financialScenarios.DouglasFir2SawPondValuePerMbf[0] < 750.0F) &&
+                          (financialScenarios.DouglasFir2SawPondValuePerMbf[0] > financialScenarios.DouglasFir3SawPondValuePerMbf[0]));
+            Assert.IsTrue((financialScenarios.DouglasFir3SawPondValuePerMbf.Count == 1) &&
+                          (financialScenarios.DouglasFir3SawPondValuePerMbf[0] <= financialScenarios.DouglasFir2SawPondValuePerMbf[0]) &&
+                          (financialScenarios.DouglasFir3SawPondValuePerMbf[0] > financialScenarios.DouglasFir4SawPondValuePerMbf[0]));
+            Assert.IsTrue((financialScenarios.DouglasFir4SawPondValuePerMbf.Count == 1) &&
+                          (financialScenarios.DouglasFir4SawPondValuePerMbf[0] <= financialScenarios.DouglasFir3SawPondValuePerMbf[0]) &&
+                          (financialScenarios.DouglasFir4SawPondValuePerMbf[0] > 500.0F));
+            Assert.IsTrue(financialScenarios.HarvestSystems.Count == 1);
+            Assert.IsTrue((financialScenarios.HarvestTaxPerMbf.Count == 1) && 
+                          (financialScenarios.HarvestTaxPerMbf[0] == Constant.Financial.OregonForestProductsHarvestTax));
+            Assert.IsTrue((financialScenarios.Name.Count == 1) && 
+                          (String.IsNullOrWhiteSpace(financialScenarios.Name[0]) == false));
+            Assert.IsTrue((financialScenarios.PropertyTaxAndManagementPerHectareYear.Count == 1) &&
+                          (financialScenarios.PropertyTaxAndManagementPerHectareYear[0] < 75.0F) &&
+                          (financialScenarios.PropertyTaxAndManagementPerHectareYear[0] > 30.0F));
+            Assert.IsTrue((financialScenarios.RegenerationHarvestCostPerHectare.Count == 1) &&
+                          (financialScenarios.RegenerationHarvestCostPerHectare[0] < 800.0F) &&
+                          (financialScenarios.RegenerationHarvestCostPerHectare[0] > 400.0F));
+            Assert.IsTrue((financialScenarios.RegenerationHaulCostPerCubicMeter.Count == 1) &&
+                          (financialScenarios.RegenerationHaulCostPerCubicMeter[0] < 15.0F) &&
+                          (financialScenarios.RegenerationHaulCostPerCubicMeter[0] > 5.0F));
+            Assert.IsTrue((financialScenarios.ReleaseSprayCostPerHectare.Count == 1) &&
+                          (financialScenarios.ReleaseSprayCostPerHectare[0] < 500.0F) &&
+                          (financialScenarios.ReleaseSprayCostPerHectare[0] > 200.0F));
+            Assert.IsTrue((financialScenarios.SeedlingCost.Count == 1) &&
+                          (financialScenarios.SeedlingCost[0] < 2.00F) &&
+                          (financialScenarios.SeedlingCost[0] > 0.25F));
+            Assert.IsTrue((financialScenarios.SitePrepAndReplantingCostPerHectare.Count == 1) &&
+                          (financialScenarios.SitePrepAndReplantingCostPerHectare[0] < 1000.0F) &&
+                          (financialScenarios.SitePrepAndReplantingCostPerHectare[0] > 500.0F));
+            Assert.IsTrue((financialScenarios.ThinningHarvestCostPerHectare.Count == 1) &&
+                          (financialScenarios.ThinningHarvestCostPerHectare[0] < 500.0F) &&
+                          (financialScenarios.ThinningHarvestCostPerHectare[0] > 250.0F));
+            Assert.IsTrue((financialScenarios.ThinningHaulCostPerCubicMeter.Count == 1) &&
+                          (financialScenarios.ThinningHaulCostPerCubicMeter[0] < 15.0F) &&
+                          (financialScenarios.ThinningHaulCostPerCubicMeter[0] > 5.0F));
+            Assert.IsTrue((financialScenarios.ThinningPondValueMultiplier.Count == 1) &&
+                          (financialScenarios.ThinningPondValueMultiplier[0] <= 1.00F) &&
+                          (financialScenarios.ThinningPondValueMultiplier[0] > 0.50F));
+            Assert.IsTrue((financialScenarios.TimberAppreciationRate.Count == 1) &&
+                          (financialScenarios.TimberAppreciationRate[0] <= 0.03F) &&
+                          (financialScenarios.TimberAppreciationRate[0] >= 0.00F));
+            Assert.IsTrue((financialScenarios.WesternRedcedarCamprunPondValuePerMbf.Count == 1) &&
+                          (financialScenarios.WesternRedcedarCamprunPondValuePerMbf[0] < 2200.0F) &&
+                          (financialScenarios.WesternRedcedarCamprunPondValuePerMbf[0] > 500.0F));
+            Assert.IsTrue((financialScenarios.WhiteWood2SawPondValuePerMbf.Count == 1) &&
+                          (financialScenarios.WhiteWood2SawPondValuePerMbf[0] < 600.0F) &&
+                          (financialScenarios.WhiteWood2SawPondValuePerMbf[0] > financialScenarios.WhiteWood3SawPondValuePerMbf[0]));
+            Assert.IsTrue((financialScenarios.WhiteWood3SawPondValuePerMbf.Count == 1) &&
+                          (financialScenarios.WhiteWood3SawPondValuePerMbf[0] <= financialScenarios.WhiteWood2SawPondValuePerMbf[0]) &&
+                          (financialScenarios.WhiteWood3SawPondValuePerMbf[0] > financialScenarios.WhiteWood4SawPondValuePerMbf[0]));
+            Assert.IsTrue((financialScenarios.WhiteWood4SawPondValuePerMbf.Count == 1) &&
+                          (financialScenarios.WhiteWood4SawPondValuePerMbf[0] <= financialScenarios.WhiteWood3SawPondValuePerMbf[0]) &&
+                          (financialScenarios.WhiteWood4SawPondValuePerMbf[0] > 350.0F));
+
+            // regeneration harvest system
+            HarvestSystems harvestSystems = financialScenarios.HarvestSystems[0];
+            Assert.IsTrue((harvestSystems.CorridorWidth > 4.0F) && // machine width + movement variability
+                          (harvestSystems.CorridorWidth < 23.0F)); // machine reach
+
+            Assert.IsTrue((harvestSystems.FellerBuncherFellingConstant < 100.0F) &&
+                          (harvestSystems.FellerBuncherFellingConstant > 5.0F));
+            Assert.IsTrue((harvestSystems.FellerBuncherFellingLinear < 25.0F) &&
+                          (harvestSystems.FellerBuncherFellingLinear > 1.0F));
+            Assert.IsTrue((harvestSystems.FellerBuncherPMh < 500.0F) &&
+                          (harvestSystems.FellerBuncherPMh > 100.0F));
+            Assert.IsTrue((harvestSystems.FellerBuncherSlopeThresholdInPercent < 65.0F) &&
+                          (harvestSystems.FellerBuncherSlopeThresholdInPercent > 20.0F));
+
+            Assert.IsTrue((harvestSystems.ForwarderPayloadInKg <= 20000.0F) &&
+                          (harvestSystems.ForwarderPayloadInKg > 15000.0F));
+            Assert.IsTrue((harvestSystems.ForwarderPMh < 500.0F) &&
+                          (harvestSystems.ForwarderPMh > 100.0F));
+            Assert.IsTrue((harvestSystems.ForwarderSpeedInStandLoadedTethered <= harvestSystems.ForwarderSpeedInStandLoadedUntethered) &&
+                          (harvestSystems.ForwarderSpeedInStandLoadedTethered > 15.0F));
+            Assert.IsTrue((harvestSystems.ForwarderSpeedInStandLoadedUntethered <= harvestSystems.ForwarderSpeedOnRoad) &&
+                          (harvestSystems.ForwarderSpeedInStandLoadedUntethered > 20.0F));
+            Assert.IsTrue((harvestSystems.ForwarderSpeedInStandUnloadedTethered <= harvestSystems.ForwarderSpeedInStandUnloadedUntethered) &&
+                          (harvestSystems.ForwarderSpeedInStandUnloadedTethered > 20.0F));
+            Assert.IsTrue((harvestSystems.ForwarderSpeedInStandUnloadedUntethered <= harvestSystems.ForwarderSpeedOnRoad) &&
+                          (harvestSystems.ForwarderSpeedInStandUnloadedUntethered > 25.0F));
+            Assert.IsTrue((harvestSystems.ForwarderSpeedOnRoad < 100.0F) &&
+                          (harvestSystems.ForwarderSpeedOnRoad >= harvestSystems.ForwarderSpeedInStandUnloadedUntethered));
+
+            Assert.IsTrue((harvestSystems.GrappleYardingConstant < 500.0F) &&
+                          (harvestSystems.GrappleYardingConstant > 0.0F));
+            Assert.IsTrue((harvestSystems.GrappleYardingLinear < 5.0F) &&
+                          (harvestSystems.GrappleYardingLinear > 0.0F));
+            Assert.IsTrue((harvestSystems.GrappleYoaderMeanPayload <= 4500.0F) &&
+                          (harvestSystems.GrappleYoaderMeanPayload >= 1000.0F));
+            Assert.IsTrue((harvestSystems.GrappleYoaderSMh < 500.0F) &&
+                          (harvestSystems.GrappleYoaderSMh > 100.0F));
+            Assert.IsTrue((harvestSystems.GrappleYoaderUtilization < 1.0F) &&
+                          (harvestSystems.GrappleYoaderUtilization > 0.0F));
+
+            Assert.IsTrue((harvestSystems.HarvesterFellingConstant < 100.0F) &&
+                          (harvestSystems.HarvesterFellingConstant > 10.0F));
+            Assert.IsTrue((harvestSystems.HarvesterFellingLinear < 100.0F) &&
+                          (harvestSystems.HarvesterFellingLinear > 10.0F));
+            Assert.IsTrue((harvestSystems.HarvesterFellingQuadratic < 10.0F) &&
+                          (harvestSystems.HarvesterFellingQuadratic > 1.0F));
+            Assert.IsTrue((harvestSystems.HarvesterPMh < 500.0F) &&
+                          (harvestSystems.HarvesterPMh > 100.0F));
+            Assert.IsTrue((harvestSystems.HarvesterQuadraticThreshold < 5.0F) &&
+                          (harvestSystems.HarvesterQuadraticThreshold > 0.5F));
+            Assert.IsTrue((harvestSystems.HarvesterSlopeThresholdInPercent < 65.0F) &&
+                          (harvestSystems.HarvesterSlopeThresholdInPercent > 20.0F));
+
+            Assert.IsTrue((harvestSystems.LoaderProductivity < 200.0F) &&
+                          (harvestSystems.LoaderProductivity > 10.0F));
+            Assert.IsTrue((harvestSystems.LoaderSMh < 500.0F) &&
+                          (harvestSystems.LoaderSMh > 100.0F));
+            Assert.IsTrue((harvestSystems.LoaderUtilization < 1.0F) &&
+                          (harvestSystems.LoaderUtilization > 0.0F));
+
+            Assert.IsTrue((harvestSystems.ProcessorConstant < 100.0F) &&
+                          (harvestSystems.ProcessorConstant > 10.0F));
+            Assert.IsTrue((harvestSystems.ProcessorLinear < 100.0F) &&
+                          (harvestSystems.ProcessorLinear > 10.0F));
+            Assert.IsTrue((harvestSystems.ProcessorQuadratic1 < 10.0F) &&
+                          (harvestSystems.ProcessorQuadratic1 > 1.0F));
+            Assert.IsTrue((harvestSystems.ProcessorQuadratic2 < 10.0F) &&
+                          (harvestSystems.ProcessorQuadratic2 > 1.0F));
+            Assert.IsTrue((harvestSystems.ProcessorQuadraticThreshold1 < 10.0F) &&
+                          (harvestSystems.ProcessorQuadraticThreshold1 > 1.0F));
+            Assert.IsTrue((harvestSystems.ProcessorQuadraticThreshold2 < 10.0F) &&
+                          (harvestSystems.ProcessorQuadraticThreshold2 > 1.0F));
+            Assert.IsTrue((harvestSystems.ProcessorSMh < 500.0F) &&
+                          (harvestSystems.ProcessorSMh > 100.0F));
+            Assert.IsTrue((harvestSystems.ProcessorUtilization < 1.0F) &&
+                          (harvestSystems.ProcessorUtilization > 0.0F));
         }
 
         [TestMethod]

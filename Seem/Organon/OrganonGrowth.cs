@@ -751,7 +751,7 @@ namespace Osu.Cof.Ferm.Organon
                 }
             }
 
-            foreach (float basalAreaRemoved in treatments.BasalAreaRemovedByPeriod)
+            foreach (float basalAreaRemoved in treatments.BasalAreaThinnedByPeriod)
             {
                 if (basalAreaRemoved < 0.0F)
                 {

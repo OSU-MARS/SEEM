@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Heuristics;
+﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Heuristics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -41,11 +42,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new ParameterOutOfRangeException(nameof(this.IterationsPerThreshold), nameof(this.IterationsPerThreshold) + " and " + this.Thresholds + " must be of the same length.");
                 }
 
-                acceptor.IterationsPerThreshold.Clear();
-                acceptor.IterationsPerThreshold.AddRange(this.IterationsPerThreshold);
-
-                acceptor.Thresholds.Clear();
-                acceptor.Thresholds.AddRange(this.Thresholds);
+                acceptor.IterationsPerThreshold.CopyFrom(this.IterationsPerThreshold);
+                acceptor.Thresholds.CopyFrom(this.Thresholds);
             }
             return acceptor;
         }

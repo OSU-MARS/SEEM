@@ -567,18 +567,26 @@ namespace Osu.Cof.Ferm.Heuristics
             int nearestLowerNeighborDistance = Int32.MaxValue;
             int nearestLowerNeighborIndex = SolutionPool.UnknownNeighbor;
             KeyValuePair<float, List<int>> nearestNeighbor = default;
-            foreach (KeyValuePair<float, List<int>> fitnessSortedIndividual in this.individualIndexByFitness)
+            foreach (KeyValuePair<float, List<int>> fitnessSortedIndividuals in this.individualIndexByFitness)
             {
-                float individualFitness = fitnessSortedIndividual.Key;
+                float individualFitness = fitnessSortedIndividuals.Key;
                 if (individualFitness > newFitness)
                 {
                     // under current replacement logic, distances to solutions with more preferable objective functions are irrelevant
                     // and therefore don't need to be evaluated
                     break;
                 }
-                for (int sortIndex = 0; sortIndex < fitnessSortedIndividual.Value.Count; ++sortIndex)
+                for (int sortIndex = 0; sortIndex < fitnessSortedIndividuals.Value.Count; ++sortIndex)
                 {
-                    int individualIndex = fitnessSortedIndividual.Value[sortIndex];
+                    int individualIndex = fitnessSortedIndividuals.Value[sortIndex];
+                    if (individualIndex >= distancesToIndividuals.Length)
+                    {
+                        // presence of identical individuals in the population means there are fewer fitnesses than individuals
+                        // A corollary of this case is there are fewer distances than individuals and some clones will therefore have
+                        // indicies which do not appear in the distance array.
+                        Debugger.Break(); // trap for closer investigation: need to confirm indices won't be mismatched
+                        continue;
+                    }
 
                     // for now, use Hamming distance as it's interchangeable with Euclidean distance for binary decision variables
                     // If needed, Euclidean distance or stand entry distance can be used when multiple thinnings are allowed.
@@ -589,15 +597,11 @@ namespace Osu.Cof.Ferm.Heuristics
                         return false;
                     }
 
-                    if ((individualIndex < 0) || (individualIndex >= distancesToIndividuals.Length))
-                    {
-                        Debugger.Break(); // rare repro trap
-                    }
                     Debug.Assert((individualIndex >= 0) && (individualIndex < distancesToIndividuals.Length));
                     distancesToIndividuals[individualIndex] = Math.Min(distanceToSolution, distancesToIndividuals[individualIndex]);
                     if (distanceToSolution < nearestLowerNeighborDistance)
                     {
-                        nearestNeighbor = fitnessSortedIndividual;
+                        nearestNeighbor = fitnessSortedIndividuals;
                         nearestLowerNeighborDistance = distanceToSolution;
                         nearestLowerNeighborIndex = individualIndex;
                     }

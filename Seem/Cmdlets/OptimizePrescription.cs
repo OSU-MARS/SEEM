@@ -1,6 +1,7 @@
 ﻿using DocumentFormat.OpenXml.Drawing.Diagrams;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -120,7 +121,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
         }
 
-        protected override IHarvest CreateThin(int thinPeriodIndex)
+        protected override Harvest CreateThin(int thinPeriodIndex)
         {
             return new ThinByPrescription(thinPeriodIndex);
         }

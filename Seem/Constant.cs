@@ -40,6 +40,7 @@ namespace Osu.Cof.Ferm
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
         public const float RoundTowardsZeroTolerance = 0.001F;
+        public const float SquareMetersPerHectare = 10000.0F;
 
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new(new List<FiaCode>()
         {
@@ -90,16 +91,19 @@ namespace Osu.Cof.Ferm
 
         public static class Bucking
         {
-            public const float DefaultMaximumDiameterInCentimeters = 120.0F;
-            public const float DefaultMaximumHeightInMeters = 75.0F;
+            public const float BarSawKerf = 0.007F; // m
+            public const float DefaultFinalHarvestLogLength = Constant.MetersPerFoot * 40.0F; // m
+            public const float DefaultFinalHarvestMaximumDiameterInCentimeters = 115.0F;
+            public const float DefaultFinalHarvestMaximumHeightInMeters = 75.0F;
+            public const float DefaultThinningLogLength = Constant.MetersPerFoot * 24.0F; // m
+            public const float DefaultThinningMaximumHeightInMeters = 65.0F;
+            public const float DefaultStumpHeight = 0.15F; // m
             public const float DefectAndBreakageReduction = 0.955F; // 100 - 4.5%
             public const float DiameterClassSizeInCentimeters = 1.0F;
             public const float EvaluationHeightStep = 0.5F; // m
             public const float HeightClassSizeInMeters = 1.0F; // m
-            public const float KerfProcessingHead = 0.007F; // m
-            public const float LogLengthRegenerationHarvest = Constant.MetersPerFoot * 40.0F; // m
-            public const float LogLengthThinning = Constant.MetersPerFoot * 24.0F; // m
             public const float LogTaperSegmentationLength = Constant.MetersPerFoot * 8.0F; // m
+            public const float MaximumThinningDiameterInCentimeters = 100.0F; // default maximum diameter for thinning volume table
             public const float MinimumBasalArea4SawEnglish = 0.14F; // 5 inch DBH + a bit for bark
             public const float MinimumLogLength2Saw = Constant.MetersPerFoot * 12.0F; // m
             public const float MinimumLogLength3Saw = Constant.MetersPerFoot * 12.0F; // m
@@ -111,7 +115,6 @@ namespace Osu.Cof.Ferm
             public const float MinimumLogScribner3Saw = 50; // board feet
             public const float MinimumLogScribner4Saw = 10; // board feet
             public const float ProcessingHeadFeedRollerHeight = 0.70F; // m
-            public const float StumpHeight = 0.15F; // m
             public const float ScribnerShortLogLength = Constant.MetersPerFoot * 20.0F; // m
             public const float ScribnerTrimLongLog = Constant.MetersPerFoot * 1.0F - 0.0001F; // m with 100 μm margin for numerical precision
             public const float ScribnerTrimShortLog = Constant.MetersPerFoot * 0.5F - 0.0001F; // m with 100 μm margin for numerical precision
@@ -148,6 +151,25 @@ namespace Osu.Cof.Ferm
             public const float FullyRandomConstructionForMaximization = 0.0F;
             public const int MinimumTreesRandomized = 5; // see Heuristic.ConstructTreeSelection()
             public const float NoConstruction = -1.0F;
+        }
+
+        public static class HarvestCost
+        {
+            public const float AdmininistrationCost = 14.82F; // US$/ha-year
+            public const float AssessedValue = 1.26F * 1128.57F; // US$/ha-year, average of northwestern Oregon counties adjusted up to site class 1
+            public const float BrushControl = 45.0F; // US$/ha
+            public const float LowboyInAndOut = 2.0F * (2.0F * 10.0F + 3.0F * 170.0F); // US$/lowboy trip ≈ US$/machine, (move in + move out) * (load + unload + travel time * lowboy $/PMh)
+            public const float PlantingLabor = 383.0F; // US$/ha
+            public const float PropertyTaxRate = 0.01F * 1.61F; // fraction of assessed value = 0.01 * percent of assessed value, average of northwestern Oregon counties
+            public const float ReleaseSpray = 100.0F + 175.0F; // US$/ha, labor + herbicide cost
+            public const float RoadMaintenance = 0.10F * 15.0F; // US$/merchantable m³-km * 15 km of access road
+            public const float RoadReopening = 25.0F; // US$/ha
+            public const float SitePrep = 145.0F + 200.0F; // US$/ha, labor + herbicide cost
+            public const float SlashDisposal = 0.35F; // US$/merchantable m³
+            public const float TimberCruisePerHectare = 65.0F; // US$/ha
+            public const float TimberSaleAdministrationPerHectare = 32.0F; // US$/ha
+            public const float UnitSize = 15.0F; // ha
+            public const float YarderLandingSlashDisposal = 0.12F; // US$/merchantable m³
         }
 
         public static class HeuristicDefault

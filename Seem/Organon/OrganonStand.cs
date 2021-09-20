@@ -58,6 +58,7 @@ namespace Osu.Cof.Ferm.Organon
             this.NumberOfPlots = other.NumberOfPlots;
             this.RedAlderSiteIndex = other.RedAlderSiteIndex;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
+            this.SlopeInPercent = other.SlopeInPercent;
             this.Warnings = new OrganonWarnings(other.Warnings);
 
             foreach (KeyValuePair<FiaCode, bool[]> species in other.TreeHeightWarningBySpecies)

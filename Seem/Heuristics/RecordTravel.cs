@@ -78,8 +78,8 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new InvalidOperationException(nameof(this.StopAfter));
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
-            if ((thinningPeriods.Count < 2) || (thinningPeriods.Count > 3))
+            IList<int> harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
+            if ((harvestPeriods.Count < 2) || (harvestPeriods.Count > 3))
             {
                 throw new NotSupportedException("Currently, only one or two thins are supported.");
             }
@@ -108,7 +108,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 switch (this.MoveType)
                 {
                     case MoveType.OneOpt:
-                        firstCandidateHarvestPeriod = this.GetOneOptCandidateRandom(firstCurrentHarvestPeriod, thinningPeriods);
+                        firstCandidateHarvestPeriod = this.GetOneOptCandidateRandom(firstCurrentHarvestPeriod, harvestPeriods);
                         candidateTrajectory.SetTreeSelection(firstTreeIndex, firstCandidateHarvestPeriod);
                         break;
                     case MoveType.TwoOptExchange:

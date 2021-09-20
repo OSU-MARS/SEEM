@@ -1,32 +1,40 @@
 ﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Osu.Cof.Ferm.Organon
 {
-    public class OrganonTreatments
+    public class OrganonTreatments : Treatments
     {
-        // basal area removed by thinning in ft²/ac in the years specified
-        // TODO: consolidate basalAreaByPeriod and BasalAreaRemovedByPeriod as they're duplicates of OrganonStandTrajectory.DensityByPeriod and
-        // BasalAreaRemoved, this requires replumbing Organon APIs with OrganonStandTrajectory
+        // TODO: avoid shadowing OrganonStandDensity.BasalArea with basalAreaByPeriod, requires replumbing Organon APIs with OrganonStandTrajectory
         private readonly List<float> basalAreaByPeriod;
         private int currentSimulationPeriod;
 
-        public List<float> BasalAreaRemovedByPeriod { get; private init; }
+        // Basal area removed by thinning in ft²/acre in the years specified
+        public List<float> BasalAreaThinnedByPeriod { get; private init; }
 
-        public List<IHarvest> Harvests { get; private init; }
-
-        // N applied in lb/ac (Hann RC 40)
+        // Nitrogen fertilization applied in lb/ac (Hann RC 40)
         public List<float> PoundsOfNitrogenPerAcreByPeriod { get; private init; }
 
         public OrganonTreatments()
         {
             this.basalAreaByPeriod = new();
-            this.BasalAreaRemovedByPeriod = new() { 0.0F }; // no removal in pre-simulation period
             this.currentSimulationPeriod = 0;
-            this.Harvests = new();
+
+            this.BasalAreaThinnedByPeriod = new() { 0.0F }; // no removal in pre-simulation period
             this.PoundsOfNitrogenPerAcreByPeriod = new();
+        }
+
+        private OrganonTreatments(OrganonTreatments other)
+            : base(other)
+        {
+            this.basalAreaByPeriod = new(other.basalAreaByPeriod);
+            this.currentSimulationPeriod = other.currentSimulationPeriod;
+
+            this.BasalAreaThinnedByPeriod = new(other.BasalAreaThinnedByPeriod);
+            this.PoundsOfNitrogenPerAcreByPeriod = new(other.PoundsOfNitrogenPerAcreByPeriod);
         }
 
         public bool ApplyToPeriod(int periodJustBeginning, OrganonStandTrajectory trajectory)
@@ -40,19 +48,19 @@ namespace Osu.Cof.Ferm.Organon
             {
                 this.basalAreaByPeriod.Add(0.0F);
             }
-            if (this.BasalAreaRemovedByPeriod.Count <= periodJustBeginning)
+            if (this.BasalAreaThinnedByPeriod.Count <= periodJustBeginning)
             {
-                this.BasalAreaRemovedByPeriod.Add(0.0F);
+                this.BasalAreaThinnedByPeriod.Add(0.0F);
             }
             OrganonStandDensity? standDensity = trajectory.DensityByPeriod[periodJustBeginning - 1];
             Debug.Assert(standDensity != null);
             this.basalAreaByPeriod[periodJustBeginning - 1] = standDensity.BasalAreaPerAcre;
-            this.BasalAreaRemovedByPeriod[periodJustBeginning] = 0.0F;
+            this.BasalAreaThinnedByPeriod[periodJustBeginning] = 0.0F;
 
             this.currentSimulationPeriod = periodJustBeginning;
 
             int harvestsEvaluated = 0;
-            foreach (IHarvest harvest in this.Harvests)
+            foreach (Harvest harvest in this.Harvests)
             {
                 if (harvest.Period == periodJustBeginning)
                 {
@@ -66,30 +74,26 @@ namespace Osu.Cof.Ferm.Organon
                     float basalAreaRemovedByHarvest = harvest.EvaluateTreeSelection(trajectory);
                     Debug.Assert(basalAreaRemovedByHarvest >= 0.0F);
 
-                    this.BasalAreaRemovedByPeriod[periodJustBeginning] = basalAreaRemovedByHarvest;
+                    this.BasalAreaThinnedByPeriod[periodJustBeginning] = basalAreaRemovedByHarvest;
                     ++harvestsEvaluated;
                 }
             }
             return harvestsEvaluated > 0;
         }
 
+        public override Treatments Clone()
+        {
+            return new OrganonTreatments(this);
+        }
+
         public void CopyFrom(OrganonTreatments other)
         {
             Debug.Assert(Object.ReferenceEquals(this, other) == false);
+            base.CopyFrom(other);
 
-            this.basalAreaByPeriod.Clear();
-            this.basalAreaByPeriod.AddRange(other.BasalAreaRemovedByPeriod);
-            this.BasalAreaRemovedByPeriod.Clear();
-            this.BasalAreaRemovedByPeriod.AddRange(other.BasalAreaRemovedByPeriod);
-
-            this.Harvests.Clear();
-            foreach (IHarvest harvest in other.Harvests)
-            {
-                this.Harvests.Add(harvest.Clone());
-            }
-
-            this.PoundsOfNitrogenPerAcreByPeriod.Clear();
-            this.PoundsOfNitrogenPerAcreByPeriod.AddRange(other.PoundsOfNitrogenPerAcreByPeriod);
+            this.basalAreaByPeriod.CopyFrom(other.basalAreaByPeriod);
+            this.BasalAreaThinnedByPeriod.CopyFrom(other.BasalAreaThinnedByPeriod);
+            this.PoundsOfNitrogenPerAcreByPeriod.CopyFrom(other.PoundsOfNitrogenPerAcreByPeriod);
         }
 
         public float GetFertX1(OrganonVariant variant, float k, out float mostRecentFertilization, out int yearsSinceMostRecentFertilization)
@@ -145,13 +149,6 @@ namespace Osu.Cof.Ferm.Organon
             return fertX1;
         }
 
-        public IList<int> GetHarvestPeriods()
-        {
-            IList<int> thinningPeriods = this.GetThinningPeriods();
-            thinningPeriods.Add(Constant.NoHarvestPeriod);
-            return thinningPeriods;
-        }
-
         public float GetPrem(OrganonVariant variant, float k, out int yearsSinceMostRecentThin)
         {
             // Hann DW, Marshall DD, Hanus ML. 2003. Equations for predicting height-to-crown-base, 5-year diameter-growth rate, 5 year height
@@ -159,14 +156,14 @@ namespace Osu.Cof.Ferm.Organon
             //   of the Pacific Northwest. Research Contribution 40, Forest Research Laboratory, College of Forestry, Oregon State University.
             //   https://ir.library.oregonstate.edu/concern/technical_reports/jd472x893
             // Diameter equation 10 (p34) and height equation 18 (p47). The two definitions of PREM have the same form with k = a9 = b11/b10.
-            float basalAreaRemovedInMostRecentThin = this.BasalAreaRemovedByPeriod[this.currentSimulationPeriod];
+            float basalAreaRemovedInMostRecentThin = this.BasalAreaThinnedByPeriod[this.currentSimulationPeriod];
             int mostRecentThinPeriod = basalAreaRemovedInMostRecentThin > 0.0F ? this.currentSimulationPeriod : Constant.NoThinPeriod;
             int mostRecentThinYear = variant.TimeStepInYears * mostRecentThinPeriod;
 
             float partiallyDiscountedBasalAreaSum = 0.0F;
             for (int previousPeriodIndex = this.currentSimulationPeriod - 1; previousPeriodIndex > 0; --previousPeriodIndex)
             {
-                float basalAreaPreviouslyRemoved = this.BasalAreaRemovedByPeriod[previousPeriodIndex];
+                float basalAreaPreviouslyRemoved = this.BasalAreaThinnedByPeriod[previousPeriodIndex];
                 if (basalAreaPreviouslyRemoved > 0.0F)
                 {
                     if (mostRecentThinPeriod == Constant.NoThinPeriod)
@@ -205,18 +202,6 @@ namespace Osu.Cof.Ferm.Organon
                 prem = 0.75F; // max without clamp is 1.0F
             }
             return prem;
-        }
-
-        // could also implement this on HeuristicResultPosition
-        public IList<int> GetThinningPeriods()
-        {
-            List<int> thinningPeriods = new(this.Harvests.Count + 1);
-            foreach (IHarvest harvest in this.Harvests)
-            {
-                Debug.Assert((harvest is ThinByIndividualTreeSelection) || (harvest is ThinByPrescription));
-                thinningPeriods.Add(harvest.Period);
-            }
-            return thinningPeriods;
         }
     }
 }
