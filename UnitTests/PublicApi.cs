@@ -110,10 +110,11 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinningPeriod = 4;
             int treeCount = 100;
-            float minFinancialValue = 1.332F; // USk$/ha
+            // TODO: second maximima at 1.286
+            float minFinancialValue = 1.117F; // USk$/ha
             #if DEBUG
                 treeCount = 48;
-                minFinancialValue = 0.255F; // USk$/ha, bilinear interpolation: 1 cm diameter classes, 1 m height classes, mean timber prices through August 2021
+                minFinancialValue = 0.198F; // USk$/ha, bilinear interpolation: 1 cm diameter classes, 1 m height classes, mean timber prices through August 2021
             #endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
@@ -832,7 +833,7 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext!.WriteLine("{0} best objective: {1} with ratio {2}", heuristic.GetName(), highestFinancialValue, highestFinancialValueRatio);
             if (heuristic.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
             {
-                Assert.IsTrue(highestFinancialValue > -0.85F);
+                Assert.IsTrue(highestFinancialValue > -1.00F);
             }
             else
             {

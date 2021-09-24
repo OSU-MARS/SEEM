@@ -16,7 +16,7 @@ namespace Osu.Cof.Ferm.Tree
             {
                 MaximumDiameterInCentimeters = Constant.Bucking.MaximumThinningDiameterInCentimeters,
                 MaximumHeightInMeters = Constant.Bucking.DefaultThinningMaximumHeightInMeters,
-                PreferredLogLengthInMeters = Constant.Bucking.DefaultThinningLogLength,
+                PreferredLogLengthInMeters = Constant.Bucking.DefaultShortLogLength,
             };
             TreeVolume.Default = new TreeVolume(finalHarvestRange, thinningRange);
         }

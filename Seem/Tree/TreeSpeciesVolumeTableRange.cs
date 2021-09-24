@@ -11,7 +11,7 @@
         {
             this.MaximumDiameterInCentimeters = Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters;
             this.MaximumHeightInMeters = Constant.Bucking.DefaultFinalHarvestMaximumHeightInMeters;
-            this.PreferredLogLengthInMeters = Constant.Bucking.DefaultFinalHarvestLogLength;
+            this.PreferredLogLengthInMeters = Constant.Bucking.DefaultLongLogLength;
             this.ScribnerFromLumberRecovery = false;
         }
 

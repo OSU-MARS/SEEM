@@ -92,10 +92,10 @@ namespace Osu.Cof.Ferm
         public static class Bucking
         {
             public const float BarSawKerf = 0.007F; // m
-            public const float DefaultFinalHarvestLogLength = Constant.MetersPerFoot * 40.0F; // m
             public const float DefaultFinalHarvestMaximumDiameterInCentimeters = 115.0F;
             public const float DefaultFinalHarvestMaximumHeightInMeters = 75.0F;
-            public const float DefaultThinningLogLength = Constant.MetersPerFoot * 24.0F; // m
+            public const float DefaultLongLogLength = Constant.MetersPerFoot * 40.0F; // m
+            public const float DefaultShortLogLength = Constant.MetersPerFoot * 24.0F; // m
             public const float DefaultThinningMaximumHeightInMeters = 65.0F;
             public const float DefaultStumpHeight = 0.15F; // m
             public const float DefectAndBreakageReduction = 0.955F; // 100 - 4.5%

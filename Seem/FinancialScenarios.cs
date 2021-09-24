@@ -236,8 +236,8 @@ namespace Osu.Cof.Ferm
             }
 
             // assmume some volume was harvested so costs are incurred
-            float fellerBuncherFellingCost = harvestSystems.GetFellerBuncherYarderProcessorLoaderCost(stand);
-            float netValuePerHectareAtHarvest = financialValue.NetPresentValue2Saw + financialValue.NetPresentValue3Saw + financialValue.NetPresentValue4Saw - fellerBuncherFellingCost - this.RegenerationHarvestCostPerHectare[financialIndex];
+            LongLogHarvest logLogHarvestCost = harvestSystems.GetLongLogHarvestCosts(stand);
+            float netValuePerHectareAtHarvest = financialValue.NetPresentValue2Saw + financialValue.NetPresentValue3Saw + financialValue.NetPresentValue4Saw - logLogHarvestCost.MinimumCost - this.RegenerationHarvestCostPerHectare[financialIndex];
 
             float discountRate = this.DiscountRate[financialIndex];
             float discountFactor = this.GetDiscountFactor(financialIndex, harvestAgeInYears);
@@ -367,7 +367,15 @@ namespace Osu.Cof.Ferm
                 for (int columnIndex = 0; columnIndex < rowAsStrings.Length; ++columnIndex)
                 {
                     string columnHeader = rowAsStrings[columnIndex];
-                    if (columnHeader.Equals("corridorWidth", StringComparison.OrdinalIgnoreCase))
+                    if (columnHeader.Equals("chainsawPMh", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.ChainsawPMh = columnIndex;
+                    }
+                    else if (columnHeader.Equals("chainsawProductivity", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.ChainsawProductivity = columnIndex;
+                    }
+                    else if (columnHeader.Equals("corridorWidth", StringComparison.OrdinalIgnoreCase))
                     {
                         FinancialScenarios.XlsxColumns.CorridorWidth = columnIndex;
                     }
@@ -427,6 +435,26 @@ namespace Osu.Cof.Ferm
                     {
                         FinancialScenarios.XlsxColumns.GrappleYardingLinear = columnIndex;
                     }
+                    else if (columnHeader.Equals("grappleSwingYarderMaxPayload", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.GrappleSwingYarderMaxPayload = columnIndex;
+                    }
+                    else if (columnHeader.Equals("grappleSwingYarderMeanPayload", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.GrappleSwingYarderMeanPayload = columnIndex;
+                    }
+                    else if (columnHeader.Equals("grappleSwingYarderSMh", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.GrappleSwingYarderSMh = columnIndex;
+                    }
+                    else if (columnHeader.Equals("grappleSwingYarderUtilization", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.GrappleSwingYarderUtilization = columnIndex;
+                    }
+                    else if (columnHeader.Equals("grappleYoaderMaxPayload", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.GrappleYoaderMaxPayload = columnIndex;
+                    }
                     else if (columnHeader.Equals("grappleYoaderMeanPayload", StringComparison.OrdinalIgnoreCase))
                     {
                         FinancialScenarios.XlsxColumns.GrappleYoaderMeanPayload = columnIndex;
@@ -438,30 +466,6 @@ namespace Osu.Cof.Ferm
                     else if (columnHeader.Equals("grappleYoaderUtilization", StringComparison.OrdinalIgnoreCase))
                     {
                         FinancialScenarios.XlsxColumns.GrappleYoaderUtilization = columnIndex;
-                    }
-                    else if (columnHeader.Equals("harvesterConstant", StringComparison.OrdinalIgnoreCase))
-                    {
-                        FinancialScenarios.XlsxColumns.HarvesterConstant = columnIndex;
-                    }
-                    else if (columnHeader.Equals("harvesterLinear", StringComparison.OrdinalIgnoreCase))
-                    {
-                        FinancialScenarios.XlsxColumns.HarvesterLinear = columnIndex;
-                    }
-                    else if (columnHeader.Equals("harvesterPMh", StringComparison.OrdinalIgnoreCase))
-                    {
-                        FinancialScenarios.XlsxColumns.HarvesterPMh = columnIndex;
-                    }
-                    else if (columnHeader.Equals("harvesterQuadratic", StringComparison.OrdinalIgnoreCase))
-                    {
-                        FinancialScenarios.XlsxColumns.HarvesterQuadratic = columnIndex;
-                    }
-                    else if (columnHeader.Equals("harvesterQuadraticThreshold", StringComparison.OrdinalIgnoreCase))
-                    {
-                        FinancialScenarios.XlsxColumns.HarvesterQuadraticThreshold = columnIndex;
-                    }
-                    else if (columnHeader.Equals("harvesterSlopeThreshold", StringComparison.OrdinalIgnoreCase))
-                    {
-                        FinancialScenarios.XlsxColumns.HarvesterSlopeThreshold = columnIndex;
                     }
                     else if (columnHeader.Equals("harvestTaxPerMbf", StringComparison.OrdinalIgnoreCase))
                     {
@@ -571,6 +575,70 @@ namespace Osu.Cof.Ferm
                     {
                         FinancialScenarios.XlsxColumns.TimberAppreciation = columnIndex;
                     }
+                    else if (columnHeader.Equals("trackedHarvesterConstant", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterConstant = columnIndex;
+                    }
+                    else if (columnHeader.Equals("trackedHarvesterDiameterLimit", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterDiameterLimit = columnIndex;
+                    }
+                    else if (columnHeader.Equals("trackedHarvesterLinear", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterLinear = columnIndex;
+                    }
+                    else if (columnHeader.Equals("trackedHarvesterPMh", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterPMh = columnIndex;
+                    }
+                    else if (columnHeader.Equals("trackedHarvesterQuadratic1", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterQuadratic1 = columnIndex;
+                    }
+                    else if (columnHeader.Equals("trackedHarvesterQuadratic2", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterQuadratic2 = columnIndex;
+                    }
+                    else if (columnHeader.Equals("trackedHarvesterQuadraticThreshold1", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterQuadraticThreshold1 = columnIndex;
+                    }
+                    else if (columnHeader.Equals("trackedHarvesterQuadraticThreshold2", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterQuadraticThreshold2 = columnIndex;
+                    }
+                    else if (columnHeader.Equals("trackedHarvesterSlopeThreshold", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.TrackedHarvesterSlopeThreshold = columnIndex;
+                    }
+                    else if (columnHeader.Equals("wheeledHarvesterConstant", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.WheeledHarvesterConstant = columnIndex;
+                    }
+                    else if (columnHeader.Equals("wheeledHarvesterDiameterLimit", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.WheeledHarvesterDiameterLimit = columnIndex;
+                    }
+                    else if (columnHeader.Equals("wheeledHarvesterLinear", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.WheeledHarvesterLinear = columnIndex;
+                    }
+                    else if (columnHeader.Equals("wheeledHarvesterPMh", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.WheeledHarvesterPMh = columnIndex;
+                    }
+                    else if (columnHeader.Equals("wheeledHarvesterQuadratic", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.WheeledHarvesterQuadratic = columnIndex;
+                    }
+                    else if (columnHeader.Equals("wheeledHarvesterQuadraticThreshold", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.WheeledHarvesterQuadraticThreshold = columnIndex;
+                    }
+                    else if (columnHeader.Equals("wheeledHarvesterSlopeThreshold", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FinancialScenarios.XlsxColumns.WheeledHarvesterSlopeThreshold = columnIndex;
+                    }
                     else if (columnHeader.StartsWith("white2Spond", StringComparison.OrdinalIgnoreCase))
                     {
                         FinancialScenarios.XlsxColumns.White2SPond = columnIndex;
@@ -590,6 +658,14 @@ namespace Osu.Cof.Ferm
                 }
 
                 // check header
+                if (FinancialScenarios.XlsxColumns.ChainsawPMh < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.ChainsawPMh), "Chainsaw crew cost column not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.ChainsawProductivity < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.ChainsawProductivity), "Chainsaw productivity column not found.");
+                }
                 if (FinancialScenarios.XlsxColumns.CorridorWidth < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.CorridorWidth), "Corridor width column not found.");
@@ -653,6 +729,26 @@ namespace Osu.Cof.Ferm
                 {
                     throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.GrappleYardingLinear), "Column for linear skyline length term in grapple yarding turn time not found.");
                 }
+                if (FinancialScenarios.XlsxColumns.GrappleSwingYarderMaxPayload < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.GrappleSwingYarderMaxPayload), "Column for grapple yoader maximum payload not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.GrappleSwingYarderMeanPayload < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.GrappleSwingYarderMeanPayload), "Column for grapple swing yarder mean payload not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.GrappleSwingYarderSMh < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.GrappleSwingYarderSMh), "Column for grapple swing yarder operating cost not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.GrappleSwingYarderUtilization < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.GrappleSwingYarderUtilization), "Column for grapple swing yarder utilization not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.GrappleYoaderMaxPayload < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.GrappleYoaderMaxPayload), "Column for grapple yoader maximum payload not found.");
+                }
                 if (FinancialScenarios.XlsxColumns.GrappleYoaderMeanPayload < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.GrappleYoaderMeanPayload), "Column for grapple yoader mean payload not found.");
@@ -664,31 +760,6 @@ namespace Osu.Cof.Ferm
                 if (FinancialScenarios.XlsxColumns.GrappleYoaderUtilization < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.GrappleYoaderUtilization), "Column for grapple yoader utilization not found.");
-                }
-
-                if (FinancialScenarios.XlsxColumns.HarvesterConstant < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.HarvesterConstant), "Column for harvester felling time intercept not found.");
-                }
-                if (FinancialScenarios.XlsxColumns.HarvesterPMh < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.HarvesterPMh), "Harvester cost column not found.");
-                }
-                if (FinancialScenarios.XlsxColumns.HarvesterLinear < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.HarvesterLinear), "Column for harvester felling time linear coefficent not found.");
-                }
-                if (FinancialScenarios.XlsxColumns.HarvesterQuadratic < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.HarvesterQuadratic), "Column for harvester felling time quadratic coefficient not found.");
-                }
-                if (FinancialScenarios.XlsxColumns.HarvesterQuadraticThreshold < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.HarvesterQuadraticThreshold), "Column for onset of quadratic harvester felling time not found.");
-                }
-                if (FinancialScenarios.XlsxColumns.HarvesterSlopeThreshold < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.HarvesterSlopeThreshold), "Column for onset of slope increases in harvester felling time not found.");
                 }
 
                 if (FinancialScenarios.XlsxColumns.HarvestTaxPerMbf < 0)
@@ -804,6 +875,72 @@ namespace Osu.Cof.Ferm
                     throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TimberAppreciation), "Annual timber appreciation rate column not found.");
                 }
 
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterConstant < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterConstant), "Column for tracked harvester felling time intercept not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterDiameterLimit < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterDiameterLimit), "Column for tracked harvester felling diameter limit not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterPMh < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterPMh), "Tracked harvester cost column not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterLinear < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterLinear), "Column for tracked harvester felling time linear coefficent not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterQuadratic1 < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterQuadratic1), "Column for tracked harvester felling time first quadratic coefficient not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterQuadratic2 < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterQuadratic2), "Column for tracked harvester felling time second quadratic coefficient not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterQuadraticThreshold1 < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterQuadraticThreshold1), "Column for first onset of quadratic tracked harvester felling time not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterQuadraticThreshold2 < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterQuadraticThreshold2), "Column for second onset of quadratic tracked harvester felling time not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.TrackedHarvesterSlopeThreshold < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.TrackedHarvesterSlopeThreshold), "Column for onset of slope increases in tracked harvester felling time not found.");
+                }
+
+                if (FinancialScenarios.XlsxColumns.WheeledHarvesterConstant < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.WheeledHarvesterConstant), "Column for wheeled harvester felling time intercept not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.WheeledHarvesterDiameterLimit < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.WheeledHarvesterDiameterLimit), "Column for wheeled harvester felling diameter limit not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.WheeledHarvesterPMh < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.WheeledHarvesterPMh), "Wheeled harvester cost column not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.WheeledHarvesterLinear < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.WheeledHarvesterLinear), "Column for wheeled harvester felling time linear coefficent not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.WheeledHarvesterQuadratic < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.WheeledHarvesterQuadratic), "Column for wheeled harvester felling time quadratic coefficient not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.WheeledHarvesterQuadraticThreshold < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.WheeledHarvesterQuadraticThreshold), "Column for onset of quadratic wheeled harvester felling time not found.");
+                }
+                if (FinancialScenarios.XlsxColumns.WheeledHarvesterSlopeThreshold < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.WheeledHarvesterSlopeThreshold), "Column for onset of slope increases in wheeled harvester felling time not found.");
+                }
+
                 if (FinancialScenarios.XlsxColumns.White2SPond < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(FinancialScenarios.XlsxColumns.White2SPond), "White wood 2S column not found.");
@@ -847,6 +984,16 @@ namespace Osu.Cof.Ferm
             this.HarvestSystems.Add(harvestSystems);
 
             // parse and check scenario's values
+            harvestSystems.ChainsawPMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ChainsawPMh]);
+            if ((harvestSystems.ChainsawPMh < 100.0F) || (harvestSystems.ChainsawPMh > 500.0F))
+            {
+                throw new NotSupportedException("Chainsaw crew cost is not in the range US$ [100.0, 500.0]/PMh.");
+            }
+            harvestSystems.ChainsawProductivity = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ChainsawProductivity]);
+            if ((harvestSystems.ChainsawProductivity < 0.0F) || (harvestSystems.ChainsawProductivity > 25.0F))
+            {
+                throw new NotSupportedException("Chainsaw crew productivity is not in the range (0.0, 25.0] m³/PMh.");
+            }
             harvestSystems.CorridorWidth = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.CorridorWidth]);
             if ((harvestSystems.CorridorWidth < 1.0F) || (harvestSystems.CorridorWidth > 25.0F))
             {
@@ -915,6 +1062,7 @@ namespace Osu.Cof.Ferm
             {
                 throw new NotSupportedException("Forwarder travel speed on roads is not in the range (0.0, 100.0] m/min.");
             }
+
             harvestSystems.GrappleYardingConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.GrappleYardingConstant]);
             if ((harvestSystems.GrappleYardingConstant <= 0.0F) || (harvestSystems.GrappleYardingConstant > 500.0F))
             {
@@ -924,6 +1072,31 @@ namespace Osu.Cof.Ferm
             if ((harvestSystems.GrappleYardingLinear <= 0.0F) || (harvestSystems.GrappleYardingLinear > 5.0F))
             {
                 throw new NotSupportedException("Grapple yarding turn time per meter of skyline length is not in the range (0.0, 5.0] seconds.");
+            }
+            harvestSystems.GrappleSwingYarderMaxPayload = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.GrappleSwingYarderMaxPayload]);
+            if ((harvestSystems.GrappleSwingYarderMaxPayload < 500.0F) || (harvestSystems.GrappleSwingYarderMaxPayload > 8000.0F))
+            {
+                throw new NotSupportedException("Grapple swing yarder maximum payload is not in the range of [500.0, 8000.0] kg.");
+            }
+            harvestSystems.GrappleSwingYarderMeanPayload = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.GrappleSwingYarderMeanPayload]);
+            if ((harvestSystems.GrappleSwingYarderMeanPayload < 100.0F) || (harvestSystems.GrappleSwingYarderMeanPayload > 4500.0F))
+            {
+                throw new NotSupportedException("Grapple swing yarder mean payload is not in the range of [100.0, 4500.0] kg.");
+            }
+            harvestSystems.GrappleSwingYarderSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.GrappleSwingYarderSMh]);
+            if ((harvestSystems.GrappleSwingYarderSMh < 100.0F) || (harvestSystems.GrappleSwingYarderSMh > 500.0F))
+            {
+                throw new NotSupportedException("Grapple swing yarder operating cost is not in the range of US$ [100.0, 500.0]/PMh.");
+            }
+            harvestSystems.GrappleSwingYarderUtilization = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.GrappleSwingYarderUtilization]);
+            if ((harvestSystems.GrappleSwingYarderUtilization <= 0.0F) || (harvestSystems.GrappleSwingYarderUtilization > 1.0F))
+            {
+                throw new NotSupportedException("Grapple swing yarder utilization is not in the range of (0.0, 1.0].");
+            }
+            harvestSystems.GrappleYoaderMaxPayload = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.GrappleYoaderMaxPayload]);
+            if ((harvestSystems.GrappleYoaderMaxPayload < 500.0F) || (harvestSystems.GrappleYoaderMaxPayload > 8000.0F))
+            {
+                throw new NotSupportedException("Grapple yoader maximum payload is not in the range of [500.0, 8000.0] kg.");
             }
             harvestSystems.GrappleYoaderMeanPayload = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.GrappleYoaderMeanPayload]);
             if ((harvestSystems.GrappleYoaderMeanPayload < 100.0F) || (harvestSystems.GrappleYoaderMeanPayload > 4500.0F))
@@ -939,37 +1112,6 @@ namespace Osu.Cof.Ferm
             if ((harvestSystems.GrappleYoaderUtilization <= 0.0F) || (harvestSystems.GrappleYoaderUtilization > 1.0F))
             {
                 throw new NotSupportedException("Grapple yoader utilization is not in the range of (0.0, 1.0].");
-            }
-
-            harvestSystems.HarvesterFellingConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.HarvesterConstant]);
-            if ((harvestSystems.HarvesterFellingConstant < 0.0F) || (harvestSystems.HarvesterFellingConstant > 500.0F))
-            {
-                throw new NotSupportedException("Intercept of harvester felling and processing time is not in the range [0.0, 500.0] seconds.");
-            }
-            harvestSystems.HarvesterFellingLinear = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.HarvesterLinear]);
-            if ((harvestSystems.HarvesterFellingLinear < 0.0F) || (harvestSystems.HarvesterFellingLinear > 250.0F))
-            {
-                throw new NotSupportedException("Linear coefficient of harvester felling and processing time is not in the range [0.0, 250.0] seconds/m³.");
-            }
-            harvestSystems.HarvesterFellingQuadratic = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.HarvesterQuadratic]);
-            if ((harvestSystems.HarvesterFellingQuadratic < 0.0F) || (harvestSystems.HarvesterFellingQuadratic > 30.0F))
-            {
-                throw new NotSupportedException("Quadratic coefficient of harvester felling and processing time is not in the range [0.0, 30.0] seconds/m⁶.");
-            }
-            harvestSystems.HarvesterPMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.HarvesterPMh]);
-            if ((harvestSystems.HarvesterPMh < 0.0F) || (harvestSystems.HarvesterPMh > 1000.0F))
-            {
-                throw new NotSupportedException("Harvester operating cost is not in the range US$ [0.0, 1000.0]/PMh.");
-            }
-            harvestSystems.HarvesterQuadraticThreshold = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.HarvesterQuadraticThreshold]);
-            if ((harvestSystems.HarvesterQuadraticThreshold <= 0.0F) || (harvestSystems.HarvesterQuadraticThreshold > 20.0F))
-            {
-                throw new NotSupportedException("Onset of quadratic increase in harvester felling and processing time is not in the range (0.0, 20.0] m³.");
-            }
-            harvestSystems.HarvesterSlopeThresholdInPercent = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.HarvesterSlopeThreshold]);
-            if ((harvestSystems.HarvesterSlopeThresholdInPercent < 0.0F) || (harvestSystems.HarvesterSlopeThresholdInPercent > 200.0F))
-            {
-                throw new NotSupportedException("Onset of slope effects on harvester felling and processing time is not in the range [0.0, 200.0] %.");
             }
 
             float harvestTaxMbf = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.HarvestTaxPerMbf]);
@@ -1141,6 +1283,88 @@ namespace Osu.Cof.Ferm
             }
             this.WesternRedcedarCamprunPondValuePerMbf.Add(thplCamprun);
 
+            harvestSystems.TrackedHarvesterDiameterLimit = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterDiameterLimit]);
+            if ((harvestSystems.TrackedHarvesterDiameterLimit < 30.0F) || (harvestSystems.TrackedHarvesterDiameterLimit > 100.0F))
+            {
+                throw new NotSupportedException("Intercept of tracked harvester's diameter limit is not in the range [30.0, 100.0] cm.");
+            }
+            harvestSystems.TrackedHarvesterFellingConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterConstant]);
+            if ((harvestSystems.TrackedHarvesterFellingConstant < 0.0F) || (harvestSystems.TrackedHarvesterFellingConstant > 500.0F))
+            {
+                throw new NotSupportedException("Intercept of tracked harvester felling and processing time is not in the range [0.0, 500.0] seconds.");
+            }
+            harvestSystems.TrackedHarvesterFellingLinear = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterLinear]);
+            if ((harvestSystems.TrackedHarvesterFellingLinear < 0.0F) || (harvestSystems.TrackedHarvesterFellingLinear > 250.0F))
+            {
+                throw new NotSupportedException("Linear coefficient of tracked harvester felling and processing time is not in the range [0.0, 250.0] seconds/m³.");
+            }
+            harvestSystems.TrackedHarvesterFellingQuadratic1 = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterQuadratic1]);
+            if ((harvestSystems.TrackedHarvesterFellingQuadratic1 < 0.0F) || (harvestSystems.TrackedHarvesterFellingQuadratic1 > 30.0F))
+            {
+                throw new NotSupportedException("First quadratic coefficient of tracked harvester felling and processing time is not in the range [0.0, 30.0] seconds/m⁶.");
+            }
+            harvestSystems.TrackedHarvesterFellingQuadratic2 = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterQuadratic2]);
+            if ((harvestSystems.TrackedHarvesterFellingQuadratic2 < 0.0F) || (harvestSystems.TrackedHarvesterFellingQuadratic2 > 30.0F))
+            {
+                throw new NotSupportedException("Second quadratic coefficient of tracked harvester felling and processing time is not in the range [0.0, 30.0] seconds/m⁶.");
+            }
+            harvestSystems.TrackedHarvesterPMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterPMh]);
+            if ((harvestSystems.TrackedHarvesterPMh < 0.0F) || (harvestSystems.TrackedHarvesterPMh > 1000.0F))
+            {
+                throw new NotSupportedException("Tracked harvester operating cost is not in the range US$ [0.0, 1000.0]/PMh.");
+            }
+            harvestSystems.TrackedHarvesterQuadraticThreshold1 = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterQuadraticThreshold1]);
+            if ((harvestSystems.TrackedHarvesterQuadraticThreshold1 <= 0.0F) || (harvestSystems.TrackedHarvesterQuadraticThreshold1 > 20.0F))
+            {
+                throw new NotSupportedException("Onset of first quadratic increase in tracked harvester felling and processing time is not in the range (0.0, 20.0] m³.");
+            }
+            harvestSystems.TrackedHarvesterQuadraticThreshold2 = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterQuadraticThreshold2]);
+            if ((harvestSystems.TrackedHarvesterQuadraticThreshold2 <= 0.0F) || (harvestSystems.TrackedHarvesterQuadraticThreshold2 > 20.0F))
+            {
+                throw new NotSupportedException("Onset of second quadratic increase in tracked harvester felling and processing time is not in the range (0.0, 20.0] m³.");
+            }
+            harvestSystems.TrackedHarvesterSlopeThresholdInPercent = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TrackedHarvesterSlopeThreshold]);
+            if ((harvestSystems.TrackedHarvesterSlopeThresholdInPercent < 0.0F) || (harvestSystems.TrackedHarvesterSlopeThresholdInPercent > 200.0F))
+            {
+                throw new NotSupportedException("Onset of slope effects on tracked harvester felling and processing time is not in the range [0.0, 200.0] %.");
+            }
+
+            harvestSystems.WheeledHarvesterDiameterLimit = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.WheeledHarvesterDiameterLimit]);
+            if ((harvestSystems.WheeledHarvesterDiameterLimit < 30.0F) || (harvestSystems.WheeledHarvesterDiameterLimit > 100.0F))
+            {
+                throw new NotSupportedException("Intercept of wheeled harvester's diameter limit is not in the range [30.0, 100.0] cm.");
+            }
+            harvestSystems.WheeledHarvesterFellingConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.WheeledHarvesterConstant]);
+            if ((harvestSystems.WheeledHarvesterFellingConstant < 0.0F) || (harvestSystems.WheeledHarvesterFellingConstant > 500.0F))
+            {
+                throw new NotSupportedException("Intercept of wheeled harvester felling and processing time is not in the range [0.0, 500.0] seconds.");
+            }
+            harvestSystems.WheeledHarvesterFellingLinear = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.WheeledHarvesterLinear]);
+            if ((harvestSystems.WheeledHarvesterFellingLinear < 0.0F) || (harvestSystems.WheeledHarvesterFellingLinear > 250.0F))
+            {
+                throw new NotSupportedException("Linear coefficient of wheeled harvester felling and processing time is not in the range [0.0, 250.0] seconds/m³.");
+            }
+            harvestSystems.WheeledHarvesterFellingQuadratic = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.WheeledHarvesterQuadratic]);
+            if ((harvestSystems.WheeledHarvesterFellingQuadratic < 0.0F) || (harvestSystems.WheeledHarvesterFellingQuadratic > 30.0F))
+            {
+                throw new NotSupportedException("Quadratic coefficient of wheeled harvester felling and processing time is not in the range [0.0, 30.0] seconds/m⁶.");
+            }
+            harvestSystems.WheeledHarvesterPMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.WheeledHarvesterPMh]);
+            if ((harvestSystems.WheeledHarvesterPMh < 0.0F) || (harvestSystems.WheeledHarvesterPMh > 1000.0F))
+            {
+                throw new NotSupportedException("Wheeled harvester operating cost is not in the range US$ [0.0, 1000.0]/PMh.");
+            }
+            harvestSystems.WheeledHarvesterQuadraticThreshold = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.WheeledHarvesterQuadraticThreshold]);
+            if ((harvestSystems.WheeledHarvesterQuadraticThreshold <= 0.0F) || (harvestSystems.WheeledHarvesterQuadraticThreshold > 20.0F))
+            {
+                throw new NotSupportedException("Onset of quadratic increase in wheeled harvester felling and processing time is not in the range (0.0, 20.0] m³.");
+            }
+            harvestSystems.WheeledHarvesterSlopeThresholdInPercent = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.WheeledHarvesterSlopeThreshold]);
+            if ((harvestSystems.WheeledHarvesterSlopeThresholdInPercent < 0.0F) || (harvestSystems.WheeledHarvesterSlopeThresholdInPercent > 200.0F))
+            {
+                throw new NotSupportedException("Onset of slope effects on wheeled harvester felling and processing time is not in the range [0.0, 200.0] %.");
+            }
+
             float white2Spond = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.White2SPond]);
             if ((white2Spond < 100.0F) || (white2Spond > 3000.0F))
             {
@@ -1193,8 +1417,11 @@ namespace Osu.Cof.Ferm
 
         private class XlsxColumnIndices
         {
+            public int ChainsawPMh { get; set; }
+            public int ChainsawProductivity { get; set; }
             public int CorridorWidth { get; set; }
             public int DiscountRate { get; set; }
+
             public int FellerBuncherConstant { get; set; }
             public int FellerBuncherPMh { get; set; }
             public int FellerBuncherLinear { get; set; }
@@ -1210,17 +1437,15 @@ namespace Osu.Cof.Ferm
 
             public int GrappleYardingConstant { get; set; }
             public int GrappleYardingLinear { get; set; }
+            public int GrappleSwingYarderMaxPayload { get; set; }
+            public int GrappleSwingYarderMeanPayload { get; set; }
+            public int GrappleSwingYarderSMh { get; set; }
+            public int GrappleSwingYarderUtilization { get; set; }
+            public int GrappleYoaderMaxPayload { get; set; }
             public int GrappleYoaderMeanPayload { get; set; }
             public int GrappleYoaderSMh { get; set; }
             public int GrappleYoaderUtilization { get; set; }
 
-            public int HarvesterConstant { get; set; }
-            public int HarvesterLinear { get; set; }
-            public int HarvesterPMh { get; set; }
-            public int HarvesterQuadratic { get; set; }
-            public int HarvesterQuadraticThreshold { get; set; }
-            public int HarvesterSlopeThreshold { get; set; }
-            
             public int HarvestTaxPerMbf { get; set; }
             public int LoaderProductivity { get; set; }
             public int LoaderSMh { get; set; }
@@ -1254,7 +1479,25 @@ namespace Osu.Cof.Ferm
             public int ThinHaulCostPerCubicMeter { get; set; }
             public int ThinPondValueMultiplier { get; set; }
             public int TimberAppreciation { get; set; }
-            
+
+            public int TrackedHarvesterConstant { get; set; }
+            public int TrackedHarvesterDiameterLimit { get; set; }
+            public int TrackedHarvesterLinear { get; set; }
+            public int TrackedHarvesterPMh { get; set; }
+            public int TrackedHarvesterQuadratic1 { get; set; }
+            public int TrackedHarvesterQuadratic2 { get; set; }
+            public int TrackedHarvesterQuadraticThreshold1 { get; set; }
+            public int TrackedHarvesterQuadraticThreshold2 { get; set; }
+            public int TrackedHarvesterSlopeThreshold { get; set; }
+
+            public int WheeledHarvesterConstant { get; set; }
+            public int WheeledHarvesterDiameterLimit { get; set; }
+            public int WheeledHarvesterLinear { get; set; }
+            public int WheeledHarvesterPMh { get; set; }
+            public int WheeledHarvesterQuadratic { get; set; }
+            public int WheeledHarvesterQuadraticThreshold { get; set; }
+            public int WheeledHarvesterSlopeThreshold { get; set; }
+
             public int White2SPond { get; set; }
             public int White3SPond { get; set; }
             public int White4SPond { get; set; }
@@ -1266,6 +1509,8 @@ namespace Osu.Cof.Ferm
 
             public void Reset()
             {
+                this.ChainsawPMh = -1;
+                this.ChainsawProductivity = -1;
                 this.CorridorWidth = -1;
                 this.DiscountRate = -1;
 
@@ -1284,17 +1529,15 @@ namespace Osu.Cof.Ferm
                 
                 this.GrappleYardingConstant = -1;
                 this.GrappleYardingLinear = -1;
+                this.GrappleSwingYarderMaxPayload = -1;
+                this.GrappleSwingYarderMeanPayload = -1;
+                this.GrappleSwingYarderSMh = -1;
+                this.GrappleSwingYarderUtilization = -1;
+                this.GrappleYoaderMaxPayload = -1;
                 this.GrappleYoaderMeanPayload = -1;
                 this.GrappleYoaderSMh = -1;
                 this.GrappleYoaderUtilization = -1;
 
-                this.HarvesterConstant = -1;
-                this.HarvesterLinear = -1;
-                this.HarvesterPMh = -1;
-                this.HarvesterQuadratic = -1;
-                this.HarvesterQuadraticThreshold = -1;
-                this.HarvesterSlopeThreshold = -1;
-                
                 this.HarvestTaxPerMbf = -1;
                 this.LoaderProductivity = -1;
                 this.LoaderSMh = -1;
@@ -1326,7 +1569,25 @@ namespace Osu.Cof.Ferm
                 this.ThplCamprun = -1;
                 this.TimberAppreciation = -1;
                 this.ThinPondValueMultiplier = -1;
-                
+
+                this.TrackedHarvesterConstant = -1;
+                this.TrackedHarvesterDiameterLimit = -1;
+                this.TrackedHarvesterLinear = -1;
+                this.TrackedHarvesterPMh = -1;
+                this.TrackedHarvesterQuadratic1 = -1;
+                this.TrackedHarvesterQuadratic2 = -1;
+                this.TrackedHarvesterQuadraticThreshold1 = -1;
+                this.TrackedHarvesterQuadraticThreshold2 = -1;
+                this.TrackedHarvesterSlopeThreshold = -1;
+
+                this.WheeledHarvesterConstant = -1;
+                this.WheeledHarvesterDiameterLimit = -1;
+                this.WheeledHarvesterLinear = -1;
+                this.WheeledHarvesterPMh = -1;
+                this.WheeledHarvesterQuadratic = -1;
+                this.WheeledHarvesterQuadraticThreshold = -1;
+                this.WheeledHarvesterSlopeThreshold = -1;
+
                 this.White2SPond = -1;
                 this.White3SPond = -1;
                 this.White4SPond = -1;

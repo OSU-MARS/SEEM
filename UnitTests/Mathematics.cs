@@ -456,7 +456,7 @@ namespace Osu.Cof.Ferm.Test
                                         {
                                             MaximumDiameterInCentimeters = Constant.Bucking.MaximumThinningDiameterInCentimeters,
                                             MaximumHeightInMeters = Constant.Bucking.DefaultThinningMaximumHeightInMeters,
-                                            PreferredLogLengthInMeters = Constant.Bucking.DefaultThinningLogLength
+                                            PreferredLogLengthInMeters = Constant.Bucking.DefaultShortLogLength
                                         });
             stopwatch.Stop();
             TimeSpan timberValueTabulationTime = stopwatch.Elapsed;
