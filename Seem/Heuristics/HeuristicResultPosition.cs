@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.FinancialIndex, this.FirstThinPeriodIndex, this.ParameterIndex, this.RotationIndex, this.SecondThinPeriodIndex, this.ThirdThinPeriodIndex);
+            return HashCode.Combine(this.FinancialIndex, this.RotationIndex, this.FirstThinPeriodIndex, this.SecondThinPeriodIndex, this.ThirdThinPeriodIndex, this.ParameterIndex);
         }
 
         public bool Equals(HeuristicResultPosition? other)
@@ -53,11 +53,11 @@ namespace Osu.Cof.Ferm.Heuristics
                 return false;
             }
             return (this.FinancialIndex == other.FinancialIndex) &&
-                   (this.RotationIndex == other.FinancialIndex) &&
-                   (this.FirstThinPeriodIndex == other.FinancialIndex) &&
-                   (this.SecondThinPeriodIndex == other.FinancialIndex) &&
-                   (this.ThirdThinPeriodIndex == other.FinancialIndex) &&
-                   (this.ParameterIndex == other.FinancialIndex);
+                   (this.RotationIndex == other.RotationIndex) &&
+                   (this.FirstThinPeriodIndex == other.FirstThinPeriodIndex) &&
+                   (this.SecondThinPeriodIndex == other.SecondThinPeriodIndex) &&
+                   (this.ThirdThinPeriodIndex == other.ThirdThinPeriodIndex) &&
+                   (this.ParameterIndex == other.ParameterIndex);
         }
 
         public override bool Equals(object? obj)

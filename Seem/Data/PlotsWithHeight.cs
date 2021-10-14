@@ -12,17 +12,17 @@ namespace Osu.Cof.Ferm.Data
     public class PlotsWithHeight
     {
         private int ageColumnIndex;
-        private readonly Dictionary<int, Stand> byAge;
         private int dbhColumnIndex;
         private float dbhScaleFactor;
         private readonly float defaultCrownRatio;
-        private readonly float defaultExpansionFactor;
+        private readonly float defaultExpansionFactorPerHa;
         private int expansionFactorColumnIndex;
         private int heightColumnIndex;
         private float heightScaleFactor;
         private int plotColumnIndex;
         private readonly IList<int> plotIDs;
         private int speciesColumnIndex;
+        private readonly Dictionary<int, Stand> standByAge;
         private int treeColumnIndex;
         private int treeConditionColumnIndex;
 
@@ -34,30 +34,30 @@ namespace Osu.Cof.Ferm.Data
             }
 
             this.ageColumnIndex = -1;
-            this.byAge = new Dictionary<int, Stand>();
             this.dbhColumnIndex = -1;
             this.dbhScaleFactor = 1.0F;
             this.defaultCrownRatio = 0.5F;
-            this.defaultExpansionFactor = -1.0F;
+            this.defaultExpansionFactorPerHa = -1.0F;
             this.expansionFactorColumnIndex = -1;
             this.heightColumnIndex = -1;
             this.heightScaleFactor = 1.0F;
             this.plotColumnIndex = -1;
             this.plotIDs = plotIDs;
             this.speciesColumnIndex = -1;
+            this.standByAge = new Dictionary<int, Stand>();
             this.treeColumnIndex = -1;
             this.treeConditionColumnIndex = -1;
         }
 
-        public PlotsWithHeight(IList<int> plotIDs, float defaultExpansionFactor)
+        public PlotsWithHeight(IList<int> plotIDs, float defaultExpansionFactorPerHa)
             : this(plotIDs)
         {
-            if ((defaultExpansionFactor <= 0.0F) || (defaultExpansionFactor > Constant.Maximum.ExpansionFactor))
+            if ((defaultExpansionFactorPerHa <= 0.0F) || (defaultExpansionFactorPerHa > Constant.Maximum.ExpansionFactorPerHa))
             {
-                throw new ArgumentOutOfRangeException(nameof(defaultExpansionFactor));
+                throw new ArgumentOutOfRangeException(nameof(defaultExpansionFactorPerHa));
             }
 
-            this.defaultExpansionFactor = defaultExpansionFactor;
+            this.defaultExpansionFactorPerHa = defaultExpansionFactorPerHa;
         }
 
         private void ParseRow(int rowIndex, string[] rowAsStrings)
@@ -93,7 +93,7 @@ namespace Osu.Cof.Ferm.Data
                         this.dbhColumnIndex = columnIndex;
                         if (columnHeader.EndsWith("mm", StringComparison.Ordinal))
                         {
-                            this.dbhScaleFactor = 0.1F; // otherwise, assume cm
+                            this.dbhScaleFactor = 0.1F; // convert from mm to cm, otherwise assume cm
                         }
                     }
                     else if (columnHeader.Equals("height", StringComparison.OrdinalIgnoreCase) ||
@@ -104,11 +104,11 @@ namespace Osu.Cof.Ferm.Data
                     else if (columnHeader.Equals("height, dm", StringComparison.OrdinalIgnoreCase))
                     {
                         this.heightColumnIndex = columnIndex;
-                        this.heightScaleFactor = 0.1F; // otherwise, assume m
+                        this.heightScaleFactor = 0.1F; // convert from dm to m, otherwise assume m
                     }
                     else if (columnHeader.StartsWith("expansion factor", StringComparison.OrdinalIgnoreCase))
                     {
-                        this.expansionFactorColumnIndex = columnIndex;
+                        this.expansionFactorColumnIndex = columnIndex; // assume trees per hectare, if not specified default expansion factor is used
                     }
                     else if (columnHeader.Equals("treecond", StringComparison.OrdinalIgnoreCase))
                     {
@@ -145,9 +145,9 @@ namespace Osu.Cof.Ferm.Data
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.heightColumnIndex), "Height column not found.");
                 }
-                if ((this.expansionFactorColumnIndex < 0) && (this.defaultExpansionFactor <= 0.0F))
+                if ((this.expansionFactorColumnIndex < 0) && (this.defaultExpansionFactorPerHa <= 0.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.expansionFactorColumnIndex), "Expansion factor column not found.");
+                    throw new ArgumentOutOfRangeException(nameof(this.expansionFactorColumnIndex), "Expansion factor column not found or default expansion factor not specified.");
                 }
 
                 return;
@@ -175,7 +175,8 @@ namespace Osu.Cof.Ferm.Data
                 return;
             }
 
-            // exclude dead trees
+            // for now, exclude dead trees
+            // TODO: include dead for snag calculations
             if (this.treeConditionColumnIndex >= 0)
             {
                 if (String.IsNullOrWhiteSpace(rowAsStrings[this.treeConditionColumnIndex]) == false)
@@ -189,11 +190,11 @@ namespace Osu.Cof.Ferm.Data
             }
 
             // parse data
-            int age = Int32.Parse(rowAsStrings[this.ageColumnIndex]);
-            if (this.byAge.TryGetValue(age, out Stand? plotAtAge) == false)
+            int ageInYears = Int32.Parse(rowAsStrings[this.ageColumnIndex]);
+            if (this.standByAge.TryGetValue(ageInYears, out Stand? plotAtAge) == false)
             {
                 plotAtAge = new Stand();
-                this.byAge.Add(age, plotAtAge);
+                this.standByAge.Add(ageInYears, plotAtAge);
             }
 
             FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[this.speciesColumnIndex]);
@@ -206,25 +207,25 @@ namespace Osu.Cof.Ferm.Data
             // for now, assume data is clean so that tag numbers are unique within each plot
             int tag = Int32.Parse(rowAsStrings[this.treeColumnIndex]);
             string dbhAsString = rowAsStrings[this.dbhColumnIndex];
-            float dbh = Single.NaN;
+            float dbhInCm = Single.NaN;
             if ((String.IsNullOrWhiteSpace(dbhAsString) == false) && (String.Equals(dbhAsString, "NA", StringComparison.OrdinalIgnoreCase) == false))
             {
-                dbh = this.dbhScaleFactor * Single.Parse(dbhAsString);
+                dbhInCm = this.dbhScaleFactor * Single.Parse(dbhAsString);
             }
             string heightAsString = rowAsStrings[this.heightColumnIndex];
-            float height = Single.NaN;
+            float heightInM = Single.NaN;
             if ((String.IsNullOrWhiteSpace(heightAsString) == false) && (String.Equals(heightAsString, "NA", StringComparison.OrdinalIgnoreCase) == false))
             {
-                height = this.heightScaleFactor * Single.Parse(heightAsString);
+                heightInM = this.heightScaleFactor * Single.Parse(heightAsString);
             }
-            float expansionFactor = this.defaultExpansionFactor;
+            float expansionFactorPerHa = this.defaultExpansionFactorPerHa;
             if (this.expansionFactorColumnIndex >= 0)
             {
-                expansionFactor = Single.Parse(rowAsStrings[this.expansionFactorColumnIndex]);
+                expansionFactorPerHa = Single.Parse(rowAsStrings[this.expansionFactorColumnIndex]);
             }
 
             // add trees with placeholder crown ratio
-            treesOfSpecies.Add(plot, tag, dbh, height, this.defaultCrownRatio, expansionFactor);
+            treesOfSpecies.Add(plot, tag, dbhInCm, heightInM, this.defaultCrownRatio, expansionFactorPerHa);
         }
 
         public void Read(string xlsxFilePath, string worksheetName)
@@ -233,40 +234,48 @@ namespace Osu.Cof.Ferm.Data
             XlsxReader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
-        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndex)
+        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndexInM)
         {
-            return this.ToOrganonStand(configuration, ageInYears, siteIndex, Int32.MaxValue);
+            return this.ToOrganonStand(configuration, ageInYears, siteIndexInM, Int32.MaxValue);
         }
 
-        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndex, int maximumTreesInStand)
+        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndexInM, int maximumTreeRecords)
         {
-            if (maximumTreesInStand < 1)
+            if ((ageInYears < 0) || (ageInYears > 1000))
             {
-                throw new ArgumentOutOfRangeException(nameof(maximumTreesInStand));
+                throw new ArgumentOutOfRangeException(nameof(ageInYears));
+            }
+            if ((siteIndexInM < 0.0F) || (siteIndexInM > Constant.Maximum.SiteIndexInM))
+            {
+                throw new ArgumentOutOfRangeException(nameof(siteIndexInM));
+            }
+            if (maximumTreeRecords < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maximumTreeRecords));
             }
 
             // copy trees from plot to Organon stand with default crown ratios
             // For now, when the stand size is limited this just copies the first n trees encountered rather than subsampling the plot.
             // Can move this to a Trees.CopyFrom() and Trees.ChangeUnits() if needed.
-            Stand plotAtAge = this.byAge[ageInYears];
-            int maximumTreesToCopy = Math.Min(plotAtAge.GetTreeRecordCount(), maximumTreesInStand);
+            Stand plotAtAge = this.standByAge[ageInYears];
+            int maximumTreesToCopy = Math.Min(plotAtAge.GetTreeRecordCount(), maximumTreeRecords);
             int treesCopied = 0;
             StringBuilder plotIDsAsString = new(this.plotIDs[0].ToString(CultureInfo.InvariantCulture));
             for (int index = 1; index < this.plotIDs.Count; ++index)
             {
                 plotIDsAsString.Append("y" + this.plotIDs[index].ToString(CultureInfo.InvariantCulture));
             }
-            OrganonStand stand = new(ageInYears, siteIndex)
+            OrganonStand organonStand = new(ageInYears, Constant.FeetPerMeter * siteIndexInM)
             {
                 Name = plotIDsAsString.ToString()
             };
             foreach (Trees plotTreesOfSpecies in plotAtAge.TreesBySpecies.Values)
             {
-                if (stand.TreesBySpecies.TryGetValue(plotTreesOfSpecies.Species, out Trees? standTreesOfSpecies) == false)
+                if (organonStand.TreesBySpecies.TryGetValue(plotTreesOfSpecies.Species, out Trees? standTreesOfSpecies) == false)
                 {
                     int minimumSize = Math.Min(maximumTreesToCopy - treesCopied, plotTreesOfSpecies.Count);
                     standTreesOfSpecies = new Trees(plotTreesOfSpecies.Species, minimumSize, Units.English);
-                    stand.TreesBySpecies.Add(plotTreesOfSpecies.Species, standTreesOfSpecies);
+                    organonStand.TreesBySpecies.Add(plotTreesOfSpecies.Species, standTreesOfSpecies);
                 }
                 for (int treeIndex = 0; treeIndex < plotTreesOfSpecies.Count; ++treeIndex)
                 {
@@ -274,14 +283,14 @@ namespace Osu.Cof.Ferm.Data
                     int tag = plotTreesOfSpecies.Tag[treeIndex];
                     float dbhInInches = Constant.InchesPerCentimeter * plotTreesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = Constant.FeetPerMeter * plotTreesOfSpecies.Height[treeIndex];
-                    float liveExpansionFactor = Constant.HectaresPerAcre * plotTreesOfSpecies.LiveExpansionFactor[treeIndex];
+                    float liveExpansionFactorPerAcre = Constant.HectaresPerAcre * plotTreesOfSpecies.LiveExpansionFactor[treeIndex];
                     if (Single.IsNaN(dbhInInches) || (dbhInInches <= 0.0F) ||
                         Single.IsNaN(heightInFeet) || (heightInFeet <= 0.0F))
                     {
                         throw new NotSupportedException("Tree " + tag + " has a missing, zero, or negative height or diameter at age " + ageInYears + ".");
                     }
 
-                    standTreesOfSpecies.Add(plot, tag, dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactor);
+                    standTreesOfSpecies.Add(plot, tag, dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactorPerAcre);
                     if (++treesCopied >= maximumTreesToCopy)
                     {
                         break; // break inner for loop
@@ -300,26 +309,27 @@ namespace Osu.Cof.Ferm.Data
                 throw new NotImplementedException("Old tree index not computed.");
             }
 
-            stand.EnsureSiteIndicesSet(configuration.Variant);
-            stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
-            stand.SetSdiMax(configuration);
+            organonStand.EnsureSiteIndicesSet(configuration.Variant);
+            organonStand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
+            organonStand.SetSdiMax(configuration);
 
             float defaultOldIndex = 0.0F;
-            OrganonStandDensity density = new(configuration.Variant, stand);
-            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
+            OrganonStandDensity density = new(configuration.Variant, organonStand);
+            foreach (Trees organonTreesOfSpecies in organonStand.TreesBySpecies.Values)
             {
                 // initialize crown ratio from Organon variant
-                for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                Debug.Assert(organonTreesOfSpecies.Units == Units.English);
+                for (int treeIndex = 0; treeIndex < organonTreesOfSpecies.Count; ++treeIndex)
                 {
-                    float dbhInInches = treesOfSpecies.Dbh[treeIndex];
-                    float heightInFeet = treesOfSpecies.Height[treeIndex];
+                    float dbhInInches = organonTreesOfSpecies.Dbh[treeIndex];
+                    float heightInFeet = organonTreesOfSpecies.Height[treeIndex];
                     float crownCompetitionFactorLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
-                    float heightToCrownBase = configuration.Variant.GetHeightToCrownBase(treesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, density.BasalAreaPerAcre, stand.SiteIndex, stand.HemlockSiteIndex, defaultOldIndex);
+                    float heightToCrownBase = configuration.Variant.GetHeightToCrownBase(organonTreesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, density.BasalAreaPerAcre, organonStand.SiteIndexInFeet, organonStand.HemlockSiteIndexInFeet, defaultOldIndex);
                     float crownRatio = (heightInFeet - heightToCrownBase) / heightInFeet;
                     Debug.Assert(crownRatio >= 0.0F);
                     Debug.Assert(crownRatio <= 1.0F);
 
-                    treesOfSpecies.CrownRatio[treeIndex] = crownRatio;
+                    organonTreesOfSpecies.CrownRatio[treeIndex] = crownRatio;
                 }
 
                 // initialize crown ratio from FVS-PN dubbing
@@ -328,7 +338,7 @@ namespace Osu.Cof.Ferm.Data
                 // for live > 1.0 inch DBH
                 //   estimated crown ratio = d0 + d1 * 100.0 * SDI / SDImax
                 //   PSME d0 = 5.666442, d1 = -0.025199
-                if ((stand.TreesBySpecies.Count != 1) || (treesOfSpecies.Species != FiaCode.PseudotsugaMenziesii))
+                if ((organonStand.TreesBySpecies.Count != 1) || (organonTreesOfSpecies.Species != FiaCode.PseudotsugaMenziesii))
                 {
                     throw new NotImplementedException();
                 }
@@ -364,7 +374,7 @@ namespace Osu.Cof.Ferm.Data
             //    treesOfSpecies.SortByDbh();
             // }
 
-            return stand;
+            return organonStand;
         }
     }
 }

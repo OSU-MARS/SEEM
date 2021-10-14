@@ -61,13 +61,13 @@ namespace Osu.Cof.Ferm.Organon
                         dbhIndex = treesPerAcreByDiameterClass.Length - 1;
                     }
 
-                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
-                    Debug.Assert(expansionFactor >= 0.0F);
-                    Debug.Assert(expansionFactor <= Constant.Maximum.ExpansionFactor);
+                    float liveExpansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    Debug.Assert(liveExpansionFactor >= 0.0F);
+                    Debug.Assert(liveExpansionFactor <= Constant.Maximum.ExpansionFactorPerAcre);
 
-                    treesPerAcreByDiameterClass[dbhIndex] += expansionFactor;
-                    weightedDbhByDiameterClass[dbhIndex] += expansionFactor * dbhInInches;
-                    weightedHeightByDiameterClass[dbhIndex] += expansionFactor * treesOfSpecies.Height[treeIndex];
+                    treesPerAcreByDiameterClass[dbhIndex] += liveExpansionFactor;
+                    weightedDbhByDiameterClass[dbhIndex] += liveExpansionFactor * dbhInInches;
+                    weightedHeightByDiameterClass[dbhIndex] += liveExpansionFactor * treesOfSpecies.Height[treeIndex];
                 }
             }
 

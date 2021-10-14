@@ -391,6 +391,9 @@ namespace Osu.Cof.Ferm.Heuristics
                 this.ConstructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
             }
 
+            // check harvest periods match the position this tree selection is being generated for
+            results.VerifyStandEntries(this.CurrentTrajectory, position);
+
             return this.ConstructTreeSelection(this.ConstructionGreediness);
         }
 

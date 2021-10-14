@@ -1,15 +1,12 @@
 ﻿using Osu.Cof.Ferm.Extensions;
 using Osu.Cof.Ferm.Tree;
+using System;
 using System.Collections.Generic;
 
 namespace Osu.Cof.Ferm.Organon
 {
     public class OrganonStand : Stand
     {
-        public float A1 { get; private set; }
-        // STOR[3] exponent for slope of SDImax line
-        public float A2 { get; private set; }
-
         // time since last stand replacing disturbance
         public int AgeInYears { get; set; }
 
@@ -19,44 +16,57 @@ namespace Osu.Cof.Ferm.Organon
         public DouglasFir.SiteConstants DouglasFirSiteConstants { get; private init; }
 
         // also used for ponderosa (SWO) and western redcedar (NWO)
-        public float HemlockSiteIndex { get; private set; }
+        public float HemlockSiteIndexInFeet { get; private set; }
 
         // number of plots tree data is from
         // If data is for entire stand use one plot.
         public float NumberOfPlots { get; set; }
 
-        // site index from ground height in feet (internal variable SI_1 is from breast height), used for most species
-        public float SiteIndex { get; private set; }
+        public float SdiMaxConstantA1 { get; private set; }
+        // exponent for slope of SDImax line
+        public float SdiMaxExponentA2 { get; private set; }
 
-        public float RedAlderSiteIndex { get; private set; }
+        // site index from ground height in feet (internal variable SI_1 is from breast height), used for most species
+        public float SiteIndexInFeet { get; private set; }
+
+        public float RedAlderSiteIndexInfeet { get; private set; }
         public float RedAlderGrowthEffectiveAge { get; set; }
 
         public OrganonWarnings Warnings { get; private init; }
 
         public SortedList<FiaCode, bool[]> TreeHeightWarningBySpecies { get; private init; }
 
-        public OrganonStand(int ageInYears, float primarySiteIndex)
+        public OrganonStand(int ageInYears, float primarySiteIndexInFeet)
         {
+            if ((ageInYears < 0) || (ageInYears > Constant.Maximum.AgeInYears))
+            {
+                throw new ArgumentOutOfRangeException(nameof(ageInYears));
+            }
+            if ((primarySiteIndexInFeet < Constant.Minimum.SiteIndexInFeet) || (primarySiteIndexInFeet > Constant.Maximum.SiteIndexInFeet))
+            {
+                throw new ArgumentOutOfRangeException(nameof(primarySiteIndexInFeet));
+            }
+
             this.AgeInYears = ageInYears;
             this.BreastHeightAgeInYears = ageInYears;
-            this.DouglasFirSiteConstants = new DouglasFir.SiteConstants(primarySiteIndex);
-            this.HemlockSiteIndex = -1.0F;
+            this.DouglasFirSiteConstants = new DouglasFir.SiteConstants(primarySiteIndexInFeet);
+            this.HemlockSiteIndexInFeet = -1.0F;
             this.NumberOfPlots = 1;
-            this.SiteIndex = primarySiteIndex;
-            this.RedAlderSiteIndex = -1.0F;
+            this.SiteIndexInFeet = primarySiteIndexInFeet;
+            this.RedAlderSiteIndexInfeet = -1.0F;
             this.RedAlderGrowthEffectiveAge = -1.0F;
             this.TreeHeightWarningBySpecies = new SortedList<FiaCode, bool[]>();
             this.Warnings = new OrganonWarnings();
         }
 
         public OrganonStand(OrganonStand other)
-            : this(other.AgeInYears, other.SiteIndex)
+            : this(other.AgeInYears, other.SiteIndexInFeet)
         {
             this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
-            this.HemlockSiteIndex = other.HemlockSiteIndex;
+            this.HemlockSiteIndexInFeet = other.HemlockSiteIndexInFeet;
             this.Name = other.Name;
             this.NumberOfPlots = other.NumberOfPlots;
-            this.RedAlderSiteIndex = other.RedAlderSiteIndex;
+            this.RedAlderSiteIndexInfeet = other.RedAlderSiteIndexInfeet;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
             this.SlopeInPercent = other.SlopeInPercent;
             this.Warnings = new OrganonWarnings(other.Warnings);
@@ -84,13 +94,13 @@ namespace Osu.Cof.Ferm.Organon
 
         public void EnsureSiteIndicesSet(OrganonVariant variant)
         {
-            if (this.SiteIndex < 0.0F)
+            if (this.SiteIndexInFeet < 0.0F)
             {
-                this.SiteIndex = variant.ToSiteIndex(this.HemlockSiteIndex);
+                this.SiteIndexInFeet = variant.ToSiteIndex(this.HemlockSiteIndexInFeet);
             }
-            if (this.HemlockSiteIndex < 0.0F)
+            if (this.HemlockSiteIndexInFeet < 0.0F)
             {
-                this.HemlockSiteIndex = variant.ToHemlockSiteIndex(this.SiteIndex);
+                this.HemlockSiteIndexInFeet = variant.ToHemlockSiteIndex(this.SiteIndexInFeet);
             }
         }
 
@@ -112,12 +122,12 @@ namespace Osu.Cof.Ferm.Organon
                 }
             }
 
-            this.RedAlderSiteIndex = RedAlder.ConiferToRedAlderSiteIndex(this.SiteIndex);
-            this.RedAlderGrowthEffectiveAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndex);
+            this.RedAlderSiteIndexInfeet = RedAlder.ConiferToRedAlderSiteIndex(this.SiteIndexInFeet);
+            this.RedAlderGrowthEffectiveAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndexInfeet);
             if (this.RedAlderGrowthEffectiveAge <= 0.0F)
             {
                 this.RedAlderGrowthEffectiveAge = Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears;
-                this.RedAlderSiteIndex = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, this.RedAlderGrowthEffectiveAge);
+                this.RedAlderSiteIndexInfeet = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, this.RedAlderGrowthEffectiveAge);
             }
             else if (this.RedAlderGrowthEffectiveAge > Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears)
             {
@@ -132,7 +142,7 @@ namespace Osu.Cof.Ferm.Organon
         public void SetSdiMax(OrganonConfiguration configuration)
         {
             // CALCULATE THE MAXIMUM SIZE-DENISTY LINE
-            this.A2 = configuration.Variant.TreeModel switch
+            this.SdiMaxExponentA2 = configuration.Variant.TreeModel switch
             {
                 TreeModel.OrganonSwo or 
                 TreeModel.OrganonNwo or 
@@ -143,7 +153,7 @@ namespace Osu.Cof.Ferm.Organon
             float TEMPA1;
             if (configuration.DefaultMaximumSdi > 0.0F)
             {
-                TEMPA1 = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.DefaultMaximumSdi);
+                TEMPA1 = Constant.NaturalLogOf10 + this.SdiMaxExponentA2 * MathV.Ln(configuration.DefaultMaximumSdi);
             }
             else
             {
@@ -205,36 +215,36 @@ namespace Osu.Cof.Ferm.Organon
                 trueFirProportion /= totalBasalArea;
             }
 
-            float A1MOD;
+            float a1multiplier;
             switch (configuration.Variant.TreeModel)
             {
                 case TreeModel.OrganonSwo:
                     float trueFirModifier = 1.03481817F;
                     if (configuration.TrueFirMaximumSdi > 0.0F)
                     {
-                        trueFirModifier = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.TrueFirMaximumSdi) / TEMPA1;
+                        trueFirModifier = Constant.NaturalLogOf10 + this.SdiMaxExponentA2 * MathV.Ln(configuration.TrueFirMaximumSdi) / TEMPA1;
                     }
                     float hemlockModifier = 0.9943501F;
                     if (configuration.HemlockMaximumSdi > 0.0F)
                     {
-                        hemlockModifier = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.HemlockMaximumSdi) / TEMPA1;
+                        hemlockModifier = Constant.NaturalLogOf10 + this.SdiMaxExponentA2 * MathV.Ln(configuration.HemlockMaximumSdi) / TEMPA1;
                     }
 
                     if (douglasFirProportion >= 0.5F)
                     {
-                        A1MOD = 1.0F;
+                        a1multiplier = 1.0F;
                     }
                     else if (trueFirProportion >= 0.6666667F)
                     {
-                        A1MOD = trueFirModifier;
+                        a1multiplier = trueFirModifier;
                     }
                     else if (ponderosaProportion >= 0.6666667F)
                     {
-                        A1MOD = hemlockModifier;
+                        a1multiplier = hemlockModifier;
                     }
                     else
                     {
-                        A1MOD = douglasFirProportion + trueFirModifier * trueFirProportion + hemlockModifier * ponderosaProportion;
+                        a1multiplier = douglasFirProportion + trueFirModifier * trueFirProportion + hemlockModifier * ponderosaProportion;
                     }
                     break;
                 case TreeModel.OrganonNwo:
@@ -242,46 +252,46 @@ namespace Osu.Cof.Ferm.Organon
                     trueFirModifier = 1.03481817F;
                     if (configuration.TrueFirMaximumSdi > 0.0F)
                     {
-                        trueFirModifier = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.TrueFirMaximumSdi) / TEMPA1;
+                        trueFirModifier = Constant.NaturalLogOf10 + this.SdiMaxExponentA2 * MathV.Ln(configuration.TrueFirMaximumSdi) / TEMPA1;
                     }
                     // Based on Johnson's (2000) analysis of Max. SDI for western hemlock
                     hemlockModifier = 1.014293245F;
                     if (configuration.HemlockMaximumSdi > 0.0F)
                     {
-                        hemlockModifier = Constant.NaturalLogOf10 + this.A2 * MathV.Ln(configuration.HemlockMaximumSdi) / TEMPA1;
+                        hemlockModifier = Constant.NaturalLogOf10 + this.SdiMaxExponentA2 * MathV.Ln(configuration.HemlockMaximumSdi) / TEMPA1;
                     }
 
                     if (douglasFirProportion >= 0.5F)
                     {
-                        A1MOD = 1.0F;
+                        a1multiplier = 1.0F;
                     }
                     else if (hemlockProportion >= 0.5F)
                     {
-                        A1MOD = hemlockModifier;
+                        a1multiplier = hemlockModifier;
                     }
                     else if (trueFirProportion >= 0.6666667)
                     {
-                        A1MOD = trueFirModifier;
+                        a1multiplier = trueFirModifier;
                     }
                     else
                     {
-                        A1MOD = douglasFirProportion + hemlockModifier * hemlockProportion + trueFirModifier * trueFirProportion;
+                        a1multiplier = douglasFirProportion + hemlockModifier * hemlockProportion + trueFirModifier * trueFirProportion;
                     }
                     break;
                 case TreeModel.OrganonRap:
-                    A1MOD = 1.0F;
+                    a1multiplier = 1.0F;
                     break;
                 default:
                     throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel);
             }
-            if (A1MOD <= 0.0F)
+            if (a1multiplier <= 0.0F)
             {
                 // BUGBUG: silently ignores error condition
                 //Debug.Assert(A1MOD > 0.0F);
-                A1MOD = 1.0F;
+                a1multiplier = 1.0F;
             }
 
-            this.A1 = TEMPA1 * A1MOD;
+            this.SdiMaxConstantA1 = a1multiplier * TEMPA1;
         }
     }
 }

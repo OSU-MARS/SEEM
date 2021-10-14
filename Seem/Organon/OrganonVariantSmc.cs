@@ -877,7 +877,7 @@ namespace Osu.Cof.Ferm.Organon
             float B3;
             float B4;
             float B5;
-            float siteIndex = stand.SiteIndex;
+            float siteIndex = stand.SiteIndexInFeet;
             switch (trees.Species)
             {
                 // Hann, Marshall, and Hanus(2006) FRL Research Contribution 49
@@ -907,7 +907,7 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -4.74019F;
                     B4 = 0.0119587F;
                     B5 = 0.00756365F;
-                    siteIndex = stand.HemlockSiteIndex; // BUGBUG: why does redcedar get hemlock site index only here?
+                    siteIndex = stand.HemlockSiteIndexInFeet; // BUGBUG: why does redcedar get hemlock site index only here?
                     break;
                 // Hann and Hanus(2001) FRL Research Contribution 34
                 case FiaCode.TaxusBrevifolia:

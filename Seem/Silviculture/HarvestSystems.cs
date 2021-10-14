@@ -204,9 +204,11 @@ namespace Osu.Cof.Ferm.Silviculture
             float wheeledHarvesterFellingTime = 0.0F; // seconds/ha
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
+                float diameterToCentimetersMultiplier = 1.0F;
                 float hectareExpansionFactorMultiplier = 1.0F;
                 if (treesOfSpecies.Units == Units.English)
                 {
+                    diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
                     hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
                 }
                 TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[treesOfSpecies.Species];
@@ -231,21 +233,17 @@ namespace Osu.Cof.Ferm.Silviculture
                         treeFellingTime += this.WheeledHarvesterFellingQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
                     }
 
-                    float expansionFactor = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    wheeledHarvesterFellingTime += expansionFactor * treeFellingTime;
+                    float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
+                    wheeledHarvesterFellingTime += expansionFactorPerHa * treeFellingTime;
 
                     // additional manual felling effort if tree is too large for processing head or beyond machine limits
                     // For now, assume manual time is in addition to mechanical time to account for harvester delays dealing with tree
                     // or chainsaw crew time to access tree. This reasonably plausible when small numbers of trees are too large for the
                     // harvester but is likely an overestimate if many trees are oversize.
-                    float dbh = treesOfSpecies.Dbh[compactedTreeIndex];
-                    if (treesOfSpecies.Units == Units.English)
+                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                    if (dbhInCm > this.WheeledHarvesterDiameterLimit)
                     {
-                        dbh *= Constant.CentimetersPerInch;
-                    }
-                    if (dbh > this.WheeledHarvesterDiameterLimit)
-                    {
-                        chainsawBuckingVolume += expansionFactor * treeMerchantableCubicVolume;
+                        chainsawBuckingVolume += expansionFactorPerHa * treeMerchantableCubicVolume;
                     }
                 }
             }
@@ -284,9 +282,13 @@ namespace Osu.Cof.Ferm.Silviculture
             float wheeledHarvesterFellingAndProcessingTime = 0.0F; // seconds/ha
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
+                float diameterToCentimetersMultiplier = 1.0F;
+                float heightToMetersMultiplier = 1.0F;
                 float hectareExpansionFactorMultiplier = 1.0F;
                 if (treesOfSpecies.Units == Units.English)
                 {
+                    diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
+                    heightToMetersMultiplier = Constant.MetersPerFoot;
                     hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
                 }
 
@@ -294,40 +296,40 @@ namespace Osu.Cof.Ferm.Silviculture
                 float treeSpeciesStemDensity = treeSpeciesProperties.GetStemDensity();
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                 {
-                    float expansionFactor = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    float treeMerchantableCubicVolume = treesOfSpecies.MerchantableCubicVolumePerStem[compactedTreeIndex];
-                    Debug.Assert(Single.IsNaN(treeMerchantableCubicVolume) == false);
+                    float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
+                    float treeMerchantableCubicVolumeInM3 = treesOfSpecies.MerchantableCubicVolumePerStem[compactedTreeIndex];
+                    Debug.Assert(Single.IsNaN(treeMerchantableCubicVolumeInM3) == false);
 
                     // feller-buncher: hot saw or directional felling head
-                    float treeFellingTime = this.FellerBuncherFellingConstant + this.FellerBuncherFellingLinear * treeMerchantableCubicVolume;
-                    fellerBuncherFellingTime += expansionFactor * treeFellingTime;
+                    float treeFellingTime = this.FellerBuncherFellingConstant + this.FellerBuncherFellingLinear * treeMerchantableCubicVolumeInM3;
+                    fellerBuncherFellingTime += expansionFactorPerHa * treeFellingTime;
 
                     // harvester
-                    float trackedHarvesterTreeFellingAndProcessingTime = this.TrackedHarvesterFellingConstant + this.TrackedHarvesterFellingLinear * treeMerchantableCubicVolume;
-                    trackedHarvesterFellingAndProcessingTime += expansionFactor * trackedHarvesterTreeFellingAndProcessingTime;
-                    if (treeMerchantableCubicVolume > this.TrackedHarvesterQuadraticThreshold1)
+                    float trackedHarvesterTreeFellingAndProcessingTime = this.TrackedHarvesterFellingConstant + this.TrackedHarvesterFellingLinear * treeMerchantableCubicVolumeInM3;
+                    trackedHarvesterFellingAndProcessingTime += expansionFactorPerHa * trackedHarvesterTreeFellingAndProcessingTime;
+                    if (treeMerchantableCubicVolumeInM3 > this.TrackedHarvesterQuadraticThreshold1)
                     {
-                        float volumeBeyondThreshold = treeMerchantableCubicVolume - this.TrackedHarvesterQuadraticThreshold1;
+                        float volumeBeyondThreshold = treeMerchantableCubicVolumeInM3 - this.TrackedHarvesterQuadraticThreshold1;
                         treeFellingTime += this.TrackedHarvesterFellingQuadratic1 * volumeBeyondThreshold * volumeBeyondThreshold;
                     }
-                    if (treeMerchantableCubicVolume > this.TrackedHarvesterQuadraticThreshold2)
+                    if (treeMerchantableCubicVolumeInM3 > this.TrackedHarvesterQuadraticThreshold2)
                     {
-                        float volumeBeyondThreshold = treeMerchantableCubicVolume - this.TrackedHarvesterQuadraticThreshold2;
+                        float volumeBeyondThreshold = treeMerchantableCubicVolumeInM3 - this.TrackedHarvesterQuadraticThreshold2;
                         treeFellingTime += this.TrackedHarvesterFellingQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
                     }
 
-                    float wheeledHarvesterTreeFellingAndProcessingTime = this.WheeledHarvesterFellingConstant + this.WheeledHarvesterFellingLinear * treeMerchantableCubicVolume;
-                    wheeledHarvesterFellingAndProcessingTime += expansionFactor * wheeledHarvesterTreeFellingAndProcessingTime;
-                    if (treeMerchantableCubicVolume > this.WheeledHarvesterQuadraticThreshold)
+                    float wheeledHarvesterTreeFellingAndProcessingTime = this.WheeledHarvesterFellingConstant + this.WheeledHarvesterFellingLinear * treeMerchantableCubicVolumeInM3;
+                    wheeledHarvesterFellingAndProcessingTime += expansionFactorPerHa * wheeledHarvesterTreeFellingAndProcessingTime;
+                    if (treeMerchantableCubicVolumeInM3 > this.WheeledHarvesterQuadraticThreshold)
                     {
-                        float volumeBeyondThreshold = treeMerchantableCubicVolume - this.WheeledHarvesterQuadraticThreshold;
+                        float volumeBeyondThreshold = treeMerchantableCubicVolumeInM3 - this.WheeledHarvesterQuadraticThreshold;
                         treeFellingTime += this.WheeledHarvesterFellingQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
                     }
 
                     // yarder
-                    float woodAndBarkVolumePerStem = treeMerchantableCubicVolume / (1.0F - treeSpeciesProperties.BarkFraction);
+                    float woodAndBarkVolumePerStem = treeMerchantableCubicVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFraction);
                     float yardedWeightPerStem = woodAndBarkVolumePerStem * treeSpeciesStemDensity;
-                    totalYardedWeight += expansionFactor * yardedWeightPerStem;
+                    totalYardedWeight += expansionFactorPerHa * yardedWeightPerStem;
 
                     // chainsaw bucking of trees too large for harvester or to fit trees in yarder weight limit
                     // For now,
@@ -335,38 +337,33 @@ namespace Osu.Cof.Ferm.Silviculture
                     //      no trees are too large for a directional felling head.
                     //   2) Neglect effects of short log production when trees are large enough full size logs still exceed the
                     //      yoader weight limit.
-                    float dbh = treesOfSpecies.Dbh[compactedTreeIndex];
-                    float height = treesOfSpecies.Height[compactedTreeIndex];
-                    if (treesOfSpecies.Units == Units.English)
+                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                    float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
+                    if (dbhInCm > this.TrackedHarvesterDiameterLimit)
                     {
-                        dbh *= Constant.CentimetersPerInch;
-                        height *= Constant.MetersPerFoot;
+                        chainsawBuckingVolumeWithTrackedHarvester += expansionFactorPerHa * treeMerchantableCubicVolumeInM3;
                     }
-                    if (dbh > this.TrackedHarvesterDiameterLimit)
+                    if (dbhInCm > this.WheeledHarvesterDiameterLimit)
                     {
-                        chainsawBuckingVolumeWithTrackedHarvester += expansionFactor * treeMerchantableCubicVolume;
-                    }
-                    if (dbh > this.WheeledHarvesterDiameterLimit)
-                    {
-                        chainsawBuckingVolumeWithWheeledHarvester += expansionFactor * treeMerchantableCubicVolume;
+                        chainsawBuckingVolumeWithWheeledHarvester += expansionFactorPerHa * treeMerchantableCubicVolumeInM3;
                     }
                     // crude Smalian estimate of first log weight for checking against yarder payload limits
                     // For now, the tree's first log is treated as a truncated cone. A more complete implementation would look up the
                     // tree's first log's merchantable volume from the volume table and adjust for bark.
-                    float conicalTaper = dbh / (height - Constant.DbhHeightInM); // cm/m
-                    float firstLogTopDiameter = dbh - conicalTaper * (Constant.Bucking.DefaultLongLogLength - Constant.DbhHeightInM + Constant.Bucking.DefaultStumpHeight);
-                    float firstLogBottomDiameter = dbh + conicalTaper * (Constant.DbhHeightInM - Constant.Bucking.DefaultStumpHeight);
+                    float conicalTaper = dbhInCm / (heightInM - Constant.DbhHeightInM); // cm/m
+                    float firstLogTopDiameter = dbhInCm - conicalTaper * (Constant.Bucking.DefaultLongLogLength - Constant.DbhHeightInM + Constant.Bucking.DefaultStumpHeight);
+                    float firstLogBottomDiameter = dbhInCm + conicalTaper * (Constant.DbhHeightInM - Constant.Bucking.DefaultStumpHeight);
                     float approximateFirstLogWeight = 0.25F * MathF.PI * 0.0001F * 0.5F * (firstLogTopDiameter * firstLogTopDiameter + firstLogBottomDiameter * firstLogBottomDiameter) * Constant.Bucking.DefaultLongLogLength * treeSpeciesStemDensity;
 
                     bool treeBuckedManuallyWithGrappleSwingYarder = false;
                     if (yardedWeightPerStem > this.GrappleSwingYarderMaxPayload)
                     {
-                        chainsawBuckingVolumeWithGrappleSwingYarder += expansionFactor * treeMerchantableCubicVolume;
+                        chainsawBuckingVolumeWithGrappleSwingYarder += expansionFactorPerHa * treeMerchantableCubicVolumeInM3;
                         treeBuckedManuallyWithGrappleSwingYarder = true;
 
                         if (approximateFirstLogWeight > this.GrappleSwingYarderMaxPayload)
                         {
-                            longLogHarvest.GrappleSwingYarderOverweightFirstLogs += expansionFactor;
+                            longLogHarvest.GrappleSwingYarderOverweightFirstLogs += expansionFactorPerHa;
                         }
                     }
 
@@ -374,49 +371,49 @@ namespace Osu.Cof.Ferm.Silviculture
                     if (yardedWeightPerStem > this.GrappleYoaderMaxPayload)
                     {
                         treeBuckedManuallyWithGrappleYoader = true;
-                        chainsawBuckingVolumeWithGrappleYoader += expansionFactor * treeMerchantableCubicVolume;
+                        chainsawBuckingVolumeWithGrappleYoader += expansionFactorPerHa * treeMerchantableCubicVolumeInM3;
 
                         if (approximateFirstLogWeight > this.GrappleYoaderMaxPayload)
                         {
-                            longLogHarvest.GrappleYoaderOverweightFirstLogs += expansionFactor;
+                            longLogHarvest.GrappleYoaderOverweightFirstLogs += expansionFactorPerHa;
                         }
                     }
 
                     // processor
-                    float treeProcessingTimeWithGrappleSwingYarder = this.ProcessorConstant + this.ProcessorLinear * treeMerchantableCubicVolume;
+                    float treeProcessingTimeWithGrappleSwingYarder = this.ProcessorConstant + this.ProcessorLinear * treeMerchantableCubicVolumeInM3;
                     if (treeBuckedManuallyWithGrappleSwingYarder == false)
                     {
-                        if (treeMerchantableCubicVolume > this.ProcessorQuadraticThreshold1)
+                        if (treeMerchantableCubicVolumeInM3 > this.ProcessorQuadraticThreshold1)
                         {
-                            float volumeBeyondThreshold = treeMerchantableCubicVolume - this.ProcessorQuadraticThreshold1;
+                            float volumeBeyondThreshold = treeMerchantableCubicVolumeInM3 - this.ProcessorQuadraticThreshold1;
                             treeProcessingTimeWithGrappleSwingYarder += this.ProcessorQuadratic1 * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
-                        if (treeMerchantableCubicVolume > this.ProcessorQuadraticThreshold2)
+                        if (treeMerchantableCubicVolumeInM3 > this.ProcessorQuadraticThreshold2)
                         {
-                            float volumeBeyondThreshold = treeMerchantableCubicVolume - this.ProcessorQuadraticThreshold2;
+                            float volumeBeyondThreshold = treeMerchantableCubicVolumeInM3 - this.ProcessorQuadraticThreshold2;
                             treeProcessingTimeWithGrappleSwingYarder += this.ProcessorQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
                     }
-                    processingTimeWithGrappleSwingYarder += expansionFactor * treeProcessingTimeWithGrappleSwingYarder;
+                    processingTimeWithGrappleSwingYarder += expansionFactorPerHa * treeProcessingTimeWithGrappleSwingYarder;
 
-                    float treeProcessingTimeWithGrappleYoader = this.ProcessorConstant + this.ProcessorLinear * treeMerchantableCubicVolume;
+                    float treeProcessingTimeWithGrappleYoader = this.ProcessorConstant + this.ProcessorLinear * treeMerchantableCubicVolumeInM3;
                     if (treeBuckedManuallyWithGrappleYoader == false)
                     {
-                        if (treeMerchantableCubicVolume > this.ProcessorQuadraticThreshold1)
+                        if (treeMerchantableCubicVolumeInM3 > this.ProcessorQuadraticThreshold1)
                         {
-                            float volumeBeyondThreshold = treeMerchantableCubicVolume - this.ProcessorQuadraticThreshold1;
+                            float volumeBeyondThreshold = treeMerchantableCubicVolumeInM3 - this.ProcessorQuadraticThreshold1;
                             treeProcessingTimeWithGrappleYoader += this.ProcessorQuadratic1 * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
-                        if (treeMerchantableCubicVolume > this.ProcessorQuadraticThreshold2)
+                        if (treeMerchantableCubicVolumeInM3 > this.ProcessorQuadraticThreshold2)
                         {
-                            float volumeBeyondThreshold = treeMerchantableCubicVolume - this.ProcessorQuadraticThreshold2;
+                            float volumeBeyondThreshold = treeMerchantableCubicVolumeInM3 - this.ProcessorQuadraticThreshold2;
                             treeProcessingTimeWithGrappleYoader += this.ProcessorQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
                     }
-                    processingTimeWithGrappleYoader += expansionFactor * treeProcessingTimeWithGrappleYoader;
+                    processingTimeWithGrappleYoader += expansionFactorPerHa * treeProcessingTimeWithGrappleYoader;
 
                     // loader cost and machine productivity calculations
-                    totalMerchantableCubicVolume += expansionFactor * treeMerchantableCubicVolume;
+                    totalMerchantableCubicVolume += expansionFactorPerHa * treeMerchantableCubicVolumeInM3;
                 }
             }
 

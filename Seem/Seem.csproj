@@ -38,7 +38,7 @@
 
   <ItemGroup>
     <PackageReference Include="DocumentFormat.OpenXml" Version="2.13.1" />
-    <PackageReference Include="Microsoft.WSMan.Runtime" Version="7.1.4" />
+    <PackageReference Include="Microsoft.WSMan.Runtime" Version="7.1.5" />
   </ItemGroup>
   
 </Project>

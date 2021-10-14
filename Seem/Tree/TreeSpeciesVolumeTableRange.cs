@@ -9,8 +9,8 @@
 
         public TreeSpeciesVolumeTableRange()
         {
-            this.MaximumDiameterInCentimeters = Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters;
-            this.MaximumHeightInMeters = Constant.Bucking.DefaultFinalHarvestMaximumHeightInMeters;
+            this.MaximumDiameterInCentimeters = Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters;
+            this.MaximumHeightInMeters = Constant.Bucking.DefaultMaximumFinalHarvestHeightInMeters;
             this.PreferredLogLengthInMeters = Constant.Bucking.DefaultLongLogLength;
             this.ScribnerFromLumberRecovery = false;
         }

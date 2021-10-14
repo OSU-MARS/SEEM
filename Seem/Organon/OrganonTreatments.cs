@@ -90,7 +90,10 @@ namespace Osu.Cof.Ferm.Organon
         {
             Debug.Assert(Object.ReferenceEquals(this, other) == false);
             base.CopyFrom(other);
+        }
 
+        public void CopyTreeGrowthFrom(OrganonTreatments other)
+        {
             this.basalAreaByPeriod.CopyFrom(other.basalAreaByPeriod);
             this.BasalAreaThinnedByPeriod.CopyFrom(other.BasalAreaThinnedByPeriod);
             this.PoundsOfNitrogenPerAcreByPeriod.CopyFrom(other.PoundsOfNitrogenPerAcreByPeriod);

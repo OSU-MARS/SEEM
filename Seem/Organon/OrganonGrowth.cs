@@ -412,16 +412,16 @@ namespace Osu.Cof.Ferm.Organon
         public static void GrowDiameter(OrganonConfiguration configuration, OrganonTreatments treatments, OrganonStand stand, Trees trees, OrganonStandDensity densityBeforeGrowth, float geneticDiseaseAndCalibrationMultiplier)
         {
             FiaCode species = trees.Species;
-            float siteIndex = stand.SiteIndex;
+            float siteIndex = stand.SiteIndexInFeet;
             if (species == FiaCode.TsugaHeterophylla)
             {
-                siteIndex = stand.HemlockSiteIndex;
+                siteIndex = stand.HemlockSiteIndexInFeet;
             }
             // questionable descisions retained from Fortran code due to calibration fragility:
             // - ponderosa index isn't used for SWO
             // - red alder index isn't used for red alder
 
-            float fertilizationMultiplier = OrganonGrowth.GetDiameterFertilizationMultiplier(configuration, treatments, species, stand.SiteIndex - 4.5F);
+            float fertilizationMultiplier = OrganonGrowth.GetDiameterFertilizationMultiplier(configuration, treatments, species, stand.SiteIndexInFeet - 4.5F);
             float thinningMultiplier = OrganonGrowth.GetDiameterThinningMultiplier(configuration, treatments, species);
             float combinedMultiplier = geneticDiseaseAndCalibrationMultiplier * fertilizationMultiplier * thinningMultiplier;
             configuration.Variant.GrowDiameter(trees, combinedMultiplier, siteIndex, densityBeforeGrowth);
@@ -445,7 +445,7 @@ namespace Osu.Cof.Ferm.Organon
             Debug.Assert(configuration.Variant.IsBigSixSpecies(species));
             oldTreeRecordCount = configuration.Variant.GrowHeightBigSix(configuration, stand, trees, crownCompetitionByHeight);
 
-            float fertilizationMultiplier = OrganonGrowth.GetHeightFertilizationMultiplier(configuration, treatments, species, stand.SiteIndex);
+            float fertilizationMultiplier = OrganonGrowth.GetHeightFertilizationMultiplier(configuration, treatments, species, stand.SiteIndexInFeet);
             float thinningMultiplier = OrganonGrowth.GetHeightThinningMultiplier(configuration, treatments, species);
             float combinedMultiplier = geneticAndDiseaseMultiplier * thinningMultiplier * fertilizationMultiplier;
             OrganonGrowth.LimitAndApplyHeightGrowth(configuration.Variant, trees, combinedMultiplier);
@@ -467,15 +467,15 @@ namespace Osu.Cof.Ferm.Organon
                         continue;
                     }
 
-                    float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(trees.Height[treeIndex], stand.RedAlderSiteIndex);
+                    float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(trees.Height[treeIndex], stand.RedAlderSiteIndexInfeet);
                     if (growthEffectiveAge <= 0.0F)
                     {
                         trees.HeightGrowth[treeIndex] = 0.0F;
                     }
                     else
                     {
-                        float RAH1 = RedAlder.GetH50(growthEffectiveAge, stand.RedAlderSiteIndex);
-                        float RAH2 = RedAlder.GetH50(growthEffectiveAge + configuration.Variant.TimeStepInYears, stand.RedAlderSiteIndex);
+                        float RAH1 = RedAlder.GetH50(growthEffectiveAge, stand.RedAlderSiteIndexInfeet);
+                        float RAH2 = RedAlder.GetH50(growthEffectiveAge + configuration.Variant.TimeStepInYears, stand.RedAlderSiteIndexInfeet);
                         trees.HeightGrowth[treeIndex] = RAH2 - RAH1;
                         Debug.Assert(trees.HeightGrowth[treeIndex] >= 0.0F);
                         Debug.Assert(trees.HeightGrowth[treeIndex] < Constant.Maximum.HeightIncrementInFeet);
@@ -651,12 +651,12 @@ namespace Osu.Cof.Ferm.Organon
                 treesOfSpecies.Height[treeIndex] = 4.5F + calibrationBySpecies[treesOfSpecies.Species].Height * (predictedHeight - 4.5F);
             }
 
-            if ((stand.SiteIndex < Constant.Minimum.SiteIndexInFeet) || (stand.HemlockSiteIndex < Constant.Minimum.SiteIndexInFeet))
+            if ((stand.SiteIndexInFeet < Constant.Minimum.SiteIndexInFeet) || (stand.HemlockSiteIndexInFeet < Constant.Minimum.SiteIndexInFeet))
             {
                 throw new ArgumentOutOfRangeException(nameof(stand));
             }
-            float siteIndexFromDbh = stand.SiteIndex - 4.5F;
-            float hemlockSiteIndexFromDbh = stand.HemlockSiteIndex - 4.5F;
+            float siteIndexFromDbh = stand.SiteIndexInFeet - 4.5F;
+            float hemlockSiteIndexFromDbh = stand.HemlockSiteIndexInFeet - 4.5F;
 
             float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(variant, stand);
             OrganonStandDensity standDensity = new(variant, stand);
@@ -711,11 +711,11 @@ namespace Osu.Cof.Ferm.Organon
             {
                 throw new ArgumentOutOfRangeException(nameof(stand), "Stand has less than one plot.");
             }
-            if ((stand.SiteIndex < Constant.Minimum.SiteIndexInFeet) || (stand.SiteIndex > Constant.Maximum.SiteIndexInFeet))
+            if ((stand.SiteIndexInFeet < Constant.Minimum.SiteIndexInFeet) || (stand.SiteIndexInFeet > Constant.Maximum.SiteIndexInFeet))
             {
                 throw new ArgumentOutOfRangeException(nameof(stand), "Default site index is implausibly small or implausibly large.");
             }
-            if ((stand.HemlockSiteIndex < Constant.Minimum.SiteIndexInFeet) || (stand.HemlockSiteIndex > Constant.Maximum.SiteIndexInFeet))
+            if ((stand.HemlockSiteIndexInFeet < Constant.Minimum.SiteIndexInFeet) || (stand.HemlockSiteIndexInFeet > Constant.Maximum.SiteIndexInFeet))
             {
                 throw new ArgumentOutOfRangeException(nameof(stand), "Hemlock site index (conifer site index for red alder) is implausibly small or implausibly large.");
             }
@@ -764,15 +764,15 @@ namespace Osu.Cof.Ferm.Organon
                 throw new ArgumentOutOfRangeException(nameof(periodIndex));
             }
 
-            if (configuration.DefaultMaximumSdi > Constant.Maximum.Sdi)
+            if (configuration.DefaultMaximumSdi > Constant.Maximum.SdiPerAcre)
             {
                 throw new ArgumentOutOfRangeException(nameof(configuration), "Default maximum SDI is implausibly large.");
             }
-            if (configuration.TrueFirMaximumSdi > Constant.Maximum.Sdi)
+            if (configuration.TrueFirMaximumSdi > Constant.Maximum.SdiPerAcre)
             {
                 throw new ArgumentOutOfRangeException(nameof(configuration), "True fir maximum SDI is implausibly large.");
             }
-            if (configuration.HemlockMaximumSdi > Constant.Maximum.Sdi)
+            if (configuration.HemlockMaximumSdi > Constant.Maximum.SdiPerAcre)
             {
                 throw new ArgumentOutOfRangeException(nameof(configuration), "Hemlock maximum SDI is implausibly large.");
             }
@@ -1025,32 +1025,32 @@ namespace Osu.Cof.Ferm.Organon
             switch (configuration.Variant.TreeModel)
             {
                 case TreeModel.OrganonSwo:
-                    if ((stand.SiteIndex > 0.0F) && ((stand.SiteIndex < 40.0F) || (stand.SiteIndex > 150.0F)))
+                    if ((stand.SiteIndexInFeet > 0.0F) && ((stand.SiteIndexInFeet < 40.0F) || (stand.SiteIndexInFeet > 150.0F)))
                     {
                         stand.Warnings.SiteIndexOutOfRange = true;
                     }
-                    if ((stand.HemlockSiteIndex > 0.0F) && ((stand.HemlockSiteIndex < 50.0F) || (stand.HemlockSiteIndex > 140.0F)))
+                    if ((stand.HemlockSiteIndexInFeet > 0.0F) && ((stand.HemlockSiteIndexInFeet < 50.0F) || (stand.HemlockSiteIndexInFeet > 140.0F)))
                     {
                         stand.Warnings.HemlockSiteIndexOutOfRange = true;
                     }
                     break;
                 case TreeModel.OrganonNwo:
                 case TreeModel.OrganonSmc:
-                    if ((stand.SiteIndex > 0.0F) && ((stand.SiteIndex < 90.0F) || (stand.SiteIndex > 142.0F)))
+                    if ((stand.SiteIndexInFeet > 0.0F) && ((stand.SiteIndexInFeet < 90.0F) || (stand.SiteIndexInFeet > 142.0F)))
                     {
                         stand.Warnings.SiteIndexOutOfRange = true;
                     }
-                    if ((stand.HemlockSiteIndex > 0.0F) && ((stand.HemlockSiteIndex < 90.0F) || (stand.HemlockSiteIndex > 142.0F)))
+                    if ((stand.HemlockSiteIndexInFeet > 0.0F) && ((stand.HemlockSiteIndexInFeet < 90.0F) || (stand.HemlockSiteIndexInFeet > 142.0F)))
                     {
                         stand.Warnings.HemlockSiteIndexOutOfRange = true;
                     }
                     break;
                 case TreeModel.OrganonRap:
-                    if ((stand.SiteIndex < 20.0F) || (stand.SiteIndex > 125.0F))
+                    if ((stand.SiteIndexInFeet < 20.0F) || (stand.SiteIndexInFeet > 125.0F))
                     {
                         stand.Warnings.SiteIndexOutOfRange = true;
                     }
-                    if ((stand.HemlockSiteIndex > 0.0F) && (stand.HemlockSiteIndex < 90.0F || stand.HemlockSiteIndex > 142.0F))
+                    if ((stand.HemlockSiteIndexInFeet > 0.0F) && (stand.HemlockSiteIndexInFeet < 90.0F || stand.HemlockSiteIndexInFeet > 142.0F))
                     {
                         stand.Warnings.HemlockSiteIndexOutOfRange = true;
                     }
@@ -1064,7 +1064,7 @@ namespace Osu.Cof.Ferm.Organon
                 case TreeModel.OrganonSwo:
                     if (maxPonderosaHeight > 0.0F)
                     {
-                        float maxHeight = (stand.HemlockSiteIndex - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.164985F * (stand.HemlockSiteIndex - 4.5F), 0.288169F)))) + 4.5F;
+                        float maxHeight = (stand.HemlockSiteIndexInFeet - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.164985F * (stand.HemlockSiteIndexInFeet - 4.5F), 0.288169F)))) + 4.5F;
                         if (maxPonderosaHeight > maxHeight)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
@@ -1072,7 +1072,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     if (maxIncenseCedarHeight > 0.0F)
                     {
-                        float incenseCedarSiteIndex = 0.66F * stand.SiteIndex - 4.5F; // TODO: same as PILA?
+                        float incenseCedarSiteIndex = 0.66F * stand.SiteIndexInFeet - 4.5F; // TODO: same as PILA?
                         float maxHeight = incenseCedarSiteIndex * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * incenseCedarSiteIndex, 0.281176F)))) + 4.5F;
                         if (maxIncenseCedarHeight > maxHeight)
                         {
@@ -1081,7 +1081,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     if (maxDouglasFirHeight > 0.0F)
                     {
-                        float maxHeight = (stand.SiteIndex - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * (stand.SiteIndex - 4.5F), 0.281176F)))) + 4.5F;
+                        float maxHeight = (stand.SiteIndexInFeet - 4.5F) * (1.0F / (1.0F - MathV.Exp(MathF.Pow(-0.174929F * (stand.SiteIndexInFeet - 4.5F), 0.281176F)))) + 4.5F;
                         if (maxDouglasFirHeight > maxHeight)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
@@ -1092,7 +1092,7 @@ namespace Osu.Cof.Ferm.Organon
                 case TreeModel.OrganonSmc:
                     if (maxDouglasFirHeight > 0.0F)
                     {
-                        float Z50 = 2500.0F / (stand.SiteIndex - 4.5F);
+                        float Z50 = 2500.0F / (stand.SiteIndexInFeet - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
                         if (maxDouglasFirHeight > MAXHT)
                         {
@@ -1101,7 +1101,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     if (maxGrandFirHeight > 0.0F)
                     {
-                        float Z50 = 2500.0F / (stand.SiteIndex - 4.5F);
+                        float Z50 = 2500.0F / (stand.SiteIndexInFeet - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (-0.000733819F + 0.000197693F * Z50);
                         if (maxGrandFirHeight > MAXHT)
                         {
@@ -1110,7 +1110,7 @@ namespace Osu.Cof.Ferm.Organon
                     }
                     if (maxWesternHemlockHeight > 0.0F)
                     {
-                        float Z50 = 2500.0F / (stand.HemlockSiteIndex - 4.5F);
+                        float Z50 = 2500.0F / (stand.HemlockSiteIndexInFeet - 4.5F);
                         float MAXHT = 4.5F + 1.0F / (0.00192F + 0.00007F * Z50);
                         if (maxWesternHemlockHeight > MAXHT)
                         {
@@ -1121,7 +1121,7 @@ namespace Osu.Cof.Ferm.Organon
                 case TreeModel.OrganonRap:
                     if (maxRedAlderHeight > 0.0F)
                     {
-                        RedAlder.WHHLB_H40(stand.SiteIndex, 20.0F, 150.0F, out float MAXHT);
+                        RedAlder.WHHLB_H40(stand.SiteIndexInFeet, 20.0F, 150.0F, out float MAXHT);
                         if (maxRedAlderHeight > MAXHT)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;

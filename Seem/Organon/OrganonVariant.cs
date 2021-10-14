@@ -219,8 +219,8 @@ namespace Osu.Cof.Ferm.Organon
         // RAP and SWO use this default implemenation
         public virtual void GrowCrown(OrganonStand stand, Trees trees, OrganonStandDensity densityAfterGrowth, float oldGrowthIndicator, float nwoSmcCrownRatioMultiplier)
         {
-            float siteIndexFromDbh = stand.SiteIndex - 4.5F;
-            float hemlockIndexFromDbh = stand.HemlockSiteIndex - 4.5F;
+            float siteIndexFromDbh = stand.SiteIndexInFeet - 4.5F;
+            float hemlockIndexFromDbh = stand.HemlockSiteIndexInFeet - 4.5F;
             FiaCode species = trees.Species;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {

@@ -4,35 +4,18 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Organon
+namespace Osu.Cof.Ferm.Silviculture
 {
-    public class SnagLogTable
+    public class SnagDownLogTable : LogTable
     {
-        public int DiameterClasses { get; private init; }
-        public float DiameterClassSizeInCentimeters { get; private init; }
-
-        public float[] LogQmdInCentimetersByPeriod { get; private init; } // average across all species
-        public float[] LogsPerHectareByPeriod { get; private init; } // total across all species
-        public SortedList<FiaCode, float[,]> LogsPerHectareBySpeciesAndDiameterClass { get; private init; } // diameter class in cm
-
-        public float MaximumDiameterInCentimeters { get; private init; }
-        public int Periods { get; private init; }
-
         public float[] SnagQmdInCentimetersByPeriod { get; private init; } // average across all species
         public float[] SnagsPerHectareByPeriod { get; private init; } // total across all species
         public SortedList<FiaCode, float[,]> SnagsPerHectareBySpeciesAndDiameterClass { get; private init; } // diameter class in cm
 
-        public SnagLogTable(OrganonStandTrajectory standTrajectory, float maximumDiameterInCm, float diameterClassSizeInCm)
+        public SnagDownLogTable(StandTrajectory standTrajectory, float maximumDiameterInCm, float diameterClassSizeInCm)
+            : base(standTrajectory.PlanningPeriods, maximumDiameterInCm, diameterClassSizeInCm)
         {
-            this.DiameterClasses = (int)(maximumDiameterInCm / diameterClassSizeInCm) + 1;
-            this.DiameterClassSizeInCentimeters = diameterClassSizeInCm;
-            this.LogsPerHectareBySpeciesAndDiameterClass = new();
-            this.MaximumDiameterInCentimeters = maximumDiameterInCm;
-            this.Periods = standTrajectory.PlanningPeriods;
             this.SnagsPerHectareBySpeciesAndDiameterClass = new();
-
-            this.LogQmdInCentimetersByPeriod = new float[this.Periods];
-            this.LogsPerHectareByPeriod = new float[this.Periods];
             this.SnagQmdInCentimetersByPeriod = new float[this.Periods];
             this.SnagsPerHectareByPeriod = new float[this.Periods];
 
@@ -40,7 +23,7 @@ namespace Osu.Cof.Ferm.Organon
             // TODO: initialize snag and log pools with trees which died prior to simulation
             for (int period = 0; period < standTrajectory.StandByPeriod.Length; ++period)
             {
-                OrganonStand standForPeriod = standTrajectory.StandByPeriod[period] ?? throw new ArgumentOutOfRangeException(nameof(standTrajectory));
+                Stand standForPeriod = standTrajectory.StandByPeriod[period] ?? throw new ArgumentOutOfRangeException(nameof(standTrajectory));
                 float decayTimeInYears = 0.5F * standTrajectory.PeriodLengthInYears;
                 foreach (Trees treesOfSpecies in standForPeriod.TreesBySpecies.Values)
                 {
@@ -58,38 +41,38 @@ namespace Osu.Cof.Ferm.Organon
                         logsPerHectare = this.LogsPerHectareBySpeciesAndDiameterClass[treesOfSpecies.Species];
                     }
 
-                    SnagLogTable.GetSnagfallCofficients(treesOfSpecies.Species, out float decayDivider0, out float decayDivider1, out float decayPower);
+                    SnagDownLogTable.GetSnagfallCofficients(treesOfSpecies.Species, out float decayDivider0, out float decayDivider1, out float decayPower);
                     for (int compactedIndex = 0; compactedIndex < treesOfSpecies.Count; ++compactedIndex)
                     {
-                        float dbhAtEndOfPeriod = treesOfSpecies.Dbh[compactedIndex];
-                        float dbhGrowthWithinPeriod = treesOfSpecies.DbhGrowth[compactedIndex];
-                        float sourceExpansionFactor = treesOfSpecies.DeadExpansionFactor[compactedIndex];
+                        float dbhAtEndOfPeriodInCm = treesOfSpecies.Dbh[compactedIndex];
+                        float dbhGrowthWithinPeriodInCm = treesOfSpecies.DbhGrowth[compactedIndex];
+                        float sourceExpansionFactorPerHa = treesOfSpecies.DeadExpansionFactor[compactedIndex];
                         if (treesOfSpecies.Units == Units.English)
                         {
-                            dbhAtEndOfPeriod *= Constant.CentimetersPerInch;
-                            dbhGrowthWithinPeriod *= Constant.CentimetersPerInch;
-                            sourceExpansionFactor *= Constant.AcresPerHectare;
+                            dbhAtEndOfPeriodInCm *= Constant.CentimetersPerInch;
+                            dbhGrowthWithinPeriodInCm *= Constant.CentimetersPerInch;
+                            sourceExpansionFactorPerHa *= Constant.AcresPerHectare;
                         }
-                        Debug.Assert(sourceExpansionFactor >= 0.0F);
+                        Debug.Assert(sourceExpansionFactorPerHa >= 0.0F);
 
                         // assume expansion factor which died within this period didn't grow in diameter before mortality
                         // These assumptions are reasonable for suppression mortality in managed stands but are incorrect for broken tops and
                         // windthrow.
-                        float diameterAtMortality = dbhAtEndOfPeriod - dbhGrowthWithinPeriod;
+                        float diameterAtMortality = dbhAtEndOfPeriodInCm - dbhGrowthWithinPeriodInCm;
                         int diameterClassIndex = (int)((diameterAtMortality + 0.5 * diameterClassSizeInCm) / diameterClassSizeInCm);
 
                         float stillStandingMultiplier = MathV.Exp(-MathV.Pow(decayTimeInYears / (decayDivider0 + decayDivider1 * diameterAtMortality), decayPower));
                         Debug.Assert(stillStandingMultiplier >= 0.0F && stillStandingMultiplier <= 1.0F);
 
-                        float unfallenExpansionFactor = stillStandingMultiplier * sourceExpansionFactor;
-                        float fallenExpansionFactor = sourceExpansionFactor - unfallenExpansionFactor;
+                        float unfallenExpansionFactor = stillStandingMultiplier * sourceExpansionFactorPerHa;
+                        float fallenExpansionFactor = sourceExpansionFactorPerHa - unfallenExpansionFactor;
 
                         logsPerHectare[period, diameterClassIndex] += fallenExpansionFactor;
                         this.LogQmdInCentimetersByPeriod[period] += fallenExpansionFactor * diameterAtMortality * diameterAtMortality;
                         this.LogsPerHectareByPeriod[period] += fallenExpansionFactor;
 
                         snagsPerHectare[period, diameterClassIndex] += unfallenExpansionFactor;
-                        this.SnagQmdInCentimetersByPeriod[period] += unfallenExpansionFactor * dbhAtEndOfPeriod * dbhAtEndOfPeriod;
+                        this.SnagQmdInCentimetersByPeriod[period] += unfallenExpansionFactor * dbhAtEndOfPeriodInCm * dbhAtEndOfPeriodInCm;
                         this.SnagsPerHectareByPeriod[period] += unfallenExpansionFactor;
                     }
                 }
@@ -104,7 +87,7 @@ namespace Osu.Cof.Ferm.Organon
             foreach (KeyValuePair<FiaCode, float[,]> speciesAndSnags in this.SnagsPerHectareBySpeciesAndDiameterClass)
             {
                 FiaCode species = speciesAndSnags.Key;
-                SnagLogTable.GetSnagfallCofficients(species, out float decayDivider0, out float decayDivider1, out float decayPower);
+                SnagDownLogTable.GetSnagfallCofficients(species, out float decayDivider0, out float decayDivider1, out float decayPower);
                 float[,] logsPerHectare = this.LogsPerHectareBySpeciesAndDiameterClass[species];
                 float[,] snagsPerHectare = speciesAndSnags.Value;
                 for (int period = standTrajectory.PlanningPeriods - 1; period >= 0; --period)
@@ -160,11 +143,6 @@ namespace Osu.Cof.Ferm.Organon
                     }
                 }
             }
-        }
-
-        public float GetDiameter(int diameterClassIndex)
-        {
-            return this.DiameterClassSizeInCentimeters * (diameterClassIndex + 0.5F);
         }
 
         private static void GetSnagfallCofficients(FiaCode species, out float decayDivider0, out float decayDivider1, out float decayPower)

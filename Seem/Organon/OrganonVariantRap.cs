@@ -73,21 +73,21 @@ namespace Osu.Cof.Ferm.Organon
             if (trees.Species == FiaCode.AlnusRubra)
             {
                 // GROWTH EFFECTIVE AGE AND POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM (2009) RED ALDER TOP HEIGHT GROWTH
-                float siteIndexFromGround = stand.SiteIndex + 4.5F;
+                float siteIndexFromGround = stand.SiteIndexInFeet + 4.5F;
                 RedAlder.WHHLB_HG(siteIndexFromGround, configuration.PDEN, trees.Height[treeIndex], 1.0F, out growthEffectiveAge, out potentialHeightGrowth);
             }
             else if (trees.Species == FiaCode.TsugaHeterophylla)
             {
                 // POTENTIAL HEIGHT GROWTH FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH
                 // BUGBUG: why isn't redcedar also on this code path?
-                float siteIndexFromGround = OrganonVariantNwo.ToHemlockSiteIndexStatic(stand.HemlockSiteIndex); // stand.HemlockSiteIndex is interpreted as PSME site index
+                float siteIndexFromGround = OrganonVariantNwo.ToHemlockSiteIndexStatic(stand.HemlockSiteIndexInFeet); // stand.HemlockSiteIndex is interpreted as PSME site index
                 WesternHemlock.SiteConstants tsheSite = new(siteIndexFromGround);
                 growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             else
             {
                 // POTENTIAL HEIGHT GROWTH FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH FOR DOUGLAS-FIR AND GRAND FIR
-                DouglasFir.SiteConstants psmeSite = new(stand.HemlockSiteIndex); // stand.HemlockSiteIndex is interpreted as PSME site index
+                DouglasFir.SiteConstants psmeSite = new(stand.HemlockSiteIndexInFeet); // stand.HemlockSiteIndex is interpreted as PSME site index
                 growthEffectiveAge = DouglasFir.GetPsmeAbgrGrowthEffectiveAge(psmeSite, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             return growthEffectiveAge;
@@ -778,10 +778,10 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             // BUGBUG: Fortran code didn't use red alder site index for red alder and used hemlock site index for all conifers, not just hemlock and redcedar
-            float siteIndex = stand.HemlockSiteIndex; // interpreted as Douglas-fir site index
+            float siteIndex = stand.HemlockSiteIndexInFeet; // interpreted as Douglas-fir site index
             if (trees.Species == FiaCode.AlnusRubra)
             {
-                siteIndex = stand.SiteIndex;
+                siteIndex = stand.SiteIndexInFeet;
             }
             else if ((trees.Species == FiaCode.TsugaHeterophylla) || (trees.Species == FiaCode.ThujaPlicata))
             {

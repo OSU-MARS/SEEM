@@ -49,6 +49,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     this.Harvests.Add(other.Harvests[index].Clone());
                 }
             }
+            Debug.Assert(this.Harvests.Count == other.Harvests.Count); // sanity check
         }
 
         public IList<int> GetHarvestPeriods()

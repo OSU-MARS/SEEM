@@ -15,23 +15,23 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int Age { get; set; }
 
         [Parameter]
-        [ValidateRange(0.1, Constant.Maximum.ExpansionFactor)]
-        public float? ExpansionFactor { get; set; }
+        [ValidateRange(0.1, Constant.Maximum.ExpansionFactorPerHa)]
+        public float? ExpansionFactorPerHa { get; set; }
 
         [Parameter]
         public TreeModel Model { get; set; }
 
         [Parameter]
         [ValidateRange(1.0F, Constant.Maximum.PlantingDensityInTreesPerHectare)]
-        public float? PlantingDensity { get; set; }
+        public float? PlantingDensityPerHa { get; set; }
 
         [Parameter(Mandatory = true)]
         [ValidateNotNullOrEmpty]
         public List<int>? Plots { get; set; }
 
         [Parameter]
-        [ValidateRange(1.0F, Constant.Maximum.SiteIndexInFeet)]
-        public float SiteIndex { get; set; }
+        [ValidateRange(1.0F, Constant.Maximum.SiteIndexInM)]
+        public float SiteIndexInM { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
@@ -47,9 +47,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public GetStandFromPlot()
         {
-            this.ExpansionFactor = null;
+            this.ExpansionFactorPerHa = null;
             this.Model = TreeModel.OrganonNwo;
-            this.SiteIndex = 130.0F;
+            this.SiteIndexInM = 130.0F;
             this.Trees = null;
             this.Xlsx = null;
             this.XlsxSheet = "1";
@@ -58,9 +58,9 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected override void ProcessRecord()
         {
             PlotsWithHeight plot;
-            if (this.ExpansionFactor.HasValue)
+            if (this.ExpansionFactorPerHa.HasValue)
             {
-                plot = new PlotsWithHeight(this.Plots!, this.ExpansionFactor.Value);
+                plot = new PlotsWithHeight(this.Plots!, this.ExpansionFactorPerHa.Value);
             }
             else
             {
@@ -72,15 +72,15 @@ namespace Osu.Cof.Ferm.Cmdlets
             OrganonStand stand;
             if (this.Trees.HasValue)
             {
-                stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndex, this.Trees.Value);
+                stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndexInM, this.Trees.Value);
             }
             else
             {
-                stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndex);
+                stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndexInM);
             }
-            if (this.PlantingDensity.HasValue)
+            if (this.PlantingDensityPerHa.HasValue)
             {
-                stand.PlantingDensityInTreesPerHectare = this.PlantingDensity.Value;
+                stand.PlantingDensityInTreesPerHectare = this.PlantingDensityPerHa.Value;
             }
             this.WriteObject(stand);
         }

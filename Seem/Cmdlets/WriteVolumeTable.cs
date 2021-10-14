@@ -27,7 +27,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine("logLength,species,height,DBH,heightDiameterRatio,cubic2S,cubic3S,cubic4S,cubic,scribner2S,scribner3S,scribner4S,scribner,fellingDiameter15,fellingDiameter30,maxFeedRollerDiameter");
+                writer.WriteLine("logLength,species,height,DBH,heightDiameterRatio,logs,logs2S,logs3S,logs4S,cubic2S,cubic3S,cubic4S,cubic,scribner2S,scribner3S,scribner4S,scribner,fellingDiameter15,fellingDiameter30,maxFeedRollerDiameter");
             }
 
             this.WriteScaledVolume(writer, this.TreeVolume.RegenerationHarvest);
@@ -62,15 +62,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                     for (int dbhIndex = 0; dbhIndex < volumeTable.DiameterClasses; ++dbhIndex)
                     {
                         float dbhInCm = volumeTable.GetDiameter(dbhIndex);
-                        float heightDiameterRatio = heightInM / (0.01F * dbhInCm);
-                        float cubic2saw = volumeTable.Cubic2Saw[dbhIndex, heightIndex];
-                        float cubic3saw = volumeTable.Cubic3Saw[dbhIndex, heightIndex];
-                        float cubic4saw = volumeTable.Cubic4Saw[dbhIndex, heightIndex];
-                        float cubicTotal = cubic2saw + cubic3saw + cubic4saw;
-                        float scribner2saw = volumeTable.Scribner2Saw[dbhIndex, heightIndex];
-                        float scribner3saw = volumeTable.Scribner3Saw[dbhIndex, heightIndex];
-                        float scribner4saw = volumeTable.Scribner4Saw[dbhIndex, heightIndex];
-                        float scribnerTotal = scribner2saw + scribner3saw + scribner4saw;
 
                         // diameter and bark regressions behaved incorrectly on trees too small to be merchantable as sawtimber below
                         // breast height
@@ -121,9 +112,26 @@ namespace Osu.Cof.Ferm.Cmdlets
                             Debug.Assert((fellingDiameter30 >= maxFeedRollerDiameter) && (maxFeedRollerDiameter > dbhInCm));
                         }
 
+                        float heightDiameterRatio = heightInM / (0.01F * dbhInCm);
+                        int logs2saw = volumeTable.Logs2Saw[dbhIndex, heightIndex];
+                        int logs3saw = volumeTable.Logs3Saw[dbhIndex, heightIndex];
+                        int logs4saw = volumeTable.Logs4Saw[dbhIndex, heightIndex];
+                        int logs = logs2saw + logs3saw + logs4saw;
+                        float cubic2saw = volumeTable.Cubic2Saw[dbhIndex, heightIndex];
+                        float cubic3saw = volumeTable.Cubic3Saw[dbhIndex, heightIndex];
+                        float cubic4saw = volumeTable.Cubic4Saw[dbhIndex, heightIndex];
+                        float cubicTotal = cubic2saw + cubic3saw + cubic4saw;
+                        float scribner2saw = volumeTable.Scribner2Saw[dbhIndex, heightIndex];
+                        float scribner3saw = volumeTable.Scribner3Saw[dbhIndex, heightIndex];
+                        float scribner4saw = volumeTable.Scribner4Saw[dbhIndex, heightIndex];
+                        float scribnerTotal = scribner2saw + scribner3saw + scribner4saw;
                         writer.WriteLine(speciesAndHeightPrefix + "," + 
                                          dbhInCm.ToString(CultureInfo.InvariantCulture) + "," +
                                          heightDiameterRatio.ToString(CultureInfo.InvariantCulture) + "," +
+                                         logs.ToString(CultureInfo.InvariantCulture) + "," +
+                                         logs2saw.ToString(CultureInfo.InvariantCulture) + "," +
+                                         logs3saw.ToString(CultureInfo.InvariantCulture) + "," +
+                                         logs4saw.ToString(CultureInfo.InvariantCulture) + "," +
                                          cubic2saw.ToString(CultureInfo.InvariantCulture) + "," + 
                                          cubic3saw.ToString(CultureInfo.InvariantCulture) + "," + 
                                          cubic4saw.ToString(CultureInfo.InvariantCulture) + "," +

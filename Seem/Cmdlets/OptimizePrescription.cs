@@ -1,6 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Drawing.Diagrams;
 using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;

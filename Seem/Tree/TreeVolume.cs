@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Osu.Cof.Ferm.Tree
+﻿namespace Osu.Cof.Ferm.Tree
 {
     public class TreeVolume
     {
@@ -14,8 +12,8 @@ namespace Osu.Cof.Ferm.Tree
             TreeSpeciesVolumeTableRange finalHarvestRange = new();
             TreeSpeciesVolumeTableRange thinningRange = new()
             {
-                MaximumDiameterInCentimeters = Constant.Bucking.MaximumThinningDiameterInCentimeters,
-                MaximumHeightInMeters = Constant.Bucking.DefaultThinningMaximumHeightInMeters,
+                MaximumDiameterInCentimeters = Constant.Bucking.DefaultMaximumThinningDiameterInCentimeters,
+                MaximumHeightInMeters = Constant.Bucking.DefaultMaximumThinningHeightInMeters,
                 PreferredLogLengthInMeters = Constant.Bucking.DefaultShortLogLength,
             };
             TreeVolume.Default = new TreeVolume(finalHarvestRange, thinningRange);

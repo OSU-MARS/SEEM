@@ -172,7 +172,7 @@ namespace Osu.Cof.Ferm.Heuristics
             minimumPercentage = MathF.Min(previousIntensityMultiplier * minimumPercentage, maximumPercentage);
             float stepSize = MathF.Min(previousIntensityMultiplier * this.HeuristicParameters.DefaultIntensityStepSize, this.HeuristicParameters.MaximumIntensityStepSize);
             Debug.Assert(previousIntensityMultiplier >= 1.0F);
-            Debug.Assert((stepSize > this.HeuristicParameters.MinimumIntensityStepSize) && (stepSize <= 100.0F));
+            Debug.Assert((stepSize >= this.HeuristicParameters.MinimumIntensityStepSize) && (stepSize <= 100.0F));
 
             // This set of loops attempts to reactively set the
             // - proportional percentage based on the from above percentage

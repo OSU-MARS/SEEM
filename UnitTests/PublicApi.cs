@@ -43,13 +43,14 @@ namespace Osu.Cof.Ferm.Test
             return position;
         }
 
-        private static HeuristicResults<HeuristicParameters> CreateResults(HeuristicParameters parameters, int rotationLength)
+        private static HeuristicResults<HeuristicParameters> CreateResults(HeuristicParameters parameters, int firstThinPeriodIndex, int rotationLength)
         {
             List<HeuristicParameters> parameterCombinations = new() { parameters };
             FinancialScenarios financialScenarios = new();
+            List<int> firstThinPeriods = new() { firstThinPeriodIndex };
             List<int> noThin = new() { Constant.NoThinPeriod };
             List<int> planningPeriods = new() { rotationLength };
-            HeuristicResults<HeuristicParameters> results = new(parameterCombinations, noThin, noThin, noThin, planningPeriods, financialScenarios, TestConstant.SolutionPoolSize);
+            HeuristicResults<HeuristicParameters> results = new(parameterCombinations, firstThinPeriods, noThin, noThin, planningPeriods, financialScenarios, TestConstant.SolutionPoolSize);
 
             HeuristicResultPosition position = new()
             {
@@ -68,7 +69,7 @@ namespace Osu.Cof.Ferm.Test
         private static PlotsWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp Nelder 1.xlsx");
-            PlotsWithHeight plot = new(new List<int>() { 1 }, 1.327F);
+            PlotsWithHeight plot = new(new List<int>() { 1 }, defaultExpansionFactorPerHa: 1.327F);
             plot.Read(plotFilePath, "1");
             return plot;
         }
@@ -76,7 +77,7 @@ namespace Osu.Cof.Ferm.Test
         private static PlotsWithHeight GetPlot14()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp plots 14-18+34 Ministry.xlsx");
-            PlotsWithHeight plot = new(new List<int>() { 14 }, 4.48F);
+            PlotsWithHeight plot = new(new List<int>() { 14 }, defaultExpansionFactorPerHa: 4.48F);
             plot.Read(plotFilePath, "0.2 ha");
             return plot;
         }
@@ -109,17 +110,14 @@ namespace Osu.Cof.Ferm.Test
         public void NelderCircularHeuristics()
         {
             int thinningPeriod = 4;
-            int treeCount = 100;
-            // TODO: second maximima at 1.286
-            float minFinancialValue = 1.117F; // USk$/ha
+            int treeRecords = 100;
             #if DEBUG
-                treeCount = 48;
-                minFinancialValue = 0.198F; // USk$/ha, bilinear interpolation: 1 cm diameter classes, 1 m height classes, mean timber prices through August 2021
+                treeRecords = 48;
             #endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, siteIndexInM: 39.6F, treeRecords);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             RunParameters landExpectationValueIts = new(new List<int>() { 9 }, configuration)
@@ -129,16 +127,16 @@ namespace Osu.Cof.Ferm.Test
             landExpectationValueIts.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
 
             // first improving circular search
-            HeuristicResults<HeuristicParameters> results = PublicApi.CreateResults(new(), landExpectationValueIts.MaximizeForPlanningPeriod);
+            HeuristicResults<HeuristicParameters> results = PublicApi.CreateResults(new(), thinningPeriod, landExpectationValueIts.MaximizeForPlanningPeriod);
             // results.ParameterCombinations[0].MinimumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization; // sometimes useful for debugging: start with no trees selected
             FirstImprovingCircularSearch firstCircular = new(stand, results.ParameterCombinations[0], landExpectationValueIts)
             {
                 //IsStochastic = true,
-                MaximumIterations = 10 * treeCount
+                MaximumIterations = 10 * treeRecords
             };
-            HeuristicResultPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
-            HeuristicPerformanceCounters firstImprovingCounters = firstCircular.Run(defaultPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(firstCircular, defaultPosition, firstImprovingCounters);
+            HeuristicResultPosition singleThinPosition = PublicApi.CreateDefaultSolutionPosition();
+            HeuristicPerformanceCounters firstImprovingCounters = firstCircular.Run(singleThinPosition, results);
+            results.AssimilateHeuristicRunIntoPosition(firstCircular, singleThinPosition, firstImprovingCounters);
 
             // hero
             Hero hero = new(stand, results.ParameterCombinations[0], landExpectationValueIts)
@@ -148,8 +146,8 @@ namespace Osu.Cof.Ferm.Test
             };
             // debugging note: it can be helpful to set fully greedy heuristic parameters so the initial prescription remains as no trees selected
             //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
-            HeuristicPerformanceCounters heroCounters = hero.Run(defaultPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(hero, defaultPosition, heroCounters);
+            HeuristicPerformanceCounters heroCounters = hero.Run(singleThinPosition, results);
+            results.AssimilateHeuristicRunIntoPosition(hero, singleThinPosition, heroCounters);
 
             // prescription coordinate descent
             RunParameters landExpectationValuePrescription = new(new List<int>() { landExpectationValueIts.MaximizeForPlanningPeriod }, configuration)
@@ -167,17 +165,17 @@ namespace Osu.Cof.Ferm.Test
                 IsStochastic = true,
                 RestartOnLocalMaximum = true
             };
-            HeuristicPerformanceCounters prescriptionAscentCounters = prescriptionAscent.Run(defaultPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(prescriptionAscent, defaultPosition, prescriptionAscentCounters);
+            HeuristicPerformanceCounters prescriptionAscentCounters = prescriptionAscent.Run(singleThinPosition, results);
+            results.AssimilateHeuristicRunIntoPosition(prescriptionAscent, singleThinPosition, prescriptionAscentCounters);
 
             this.Verify(firstCircular, firstImprovingCounters);
             this.Verify(hero, heroCounters);
             this.Verify(prescriptionAscent, prescriptionAscentCounters);
-            PublicApi.Verify(results, defaultPosition, landExpectationValueIts.MaximizeForPlanningPeriod);
+            PublicApi.Verify(results, singleThinPosition, landExpectationValueIts.MaximizeForPlanningPeriod);
 
-            TreeSelection firstCircularTreeSelection = firstCircular.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
-            TreeSelection heroTreeSelection = hero.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
-            TreeSelection prescriptionTreeSelection = prescriptionAscent.GetBestTrajectoryWithDefaulting(defaultPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            TreeSelection firstCircularTreeSelection = firstCircular.GetBestTrajectoryWithDefaulting(singleThinPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            TreeSelection heroTreeSelection = hero.GetBestTrajectoryWithDefaulting(singleThinPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            TreeSelection prescriptionTreeSelection = prescriptionAscent.GetBestTrajectoryWithDefaulting(singleThinPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesThinnedByFirstCircular = 0;
             int treesThinnedByHero = 0;
             int treesThinnedByPrescription = 0;
@@ -197,38 +195,43 @@ namespace Osu.Cof.Ferm.Test
                 }
             }
 
-            Assert.IsTrue(treesThinnedByFirstCircular == 0); // highest financial value solution happens to be the unthinned one
-            Assert.IsTrue(treesThinnedByHero == 0);
-            Assert.IsTrue(treesThinnedByPrescription == 0);
-
             float highestFirstCircularFinancialValue = firstCircular.FinancialValue.GetHighestValue();
             float highestHeroFinancialValue = hero.FinancialValue.GetHighestValue();
-            float highestPrescriptionFinancialValue = hero.FinancialValue.GetHighestValue();
-            this.TestContext!.WriteLine("highest first circular financial value: {0} observed, near {1} expected", highestFirstCircularFinancialValue, minFinancialValue);
-            this.TestContext!.WriteLine("highest hero financial value: {0} observed, near {1} expected", highestHeroFinancialValue, minFinancialValue);
-            this.TestContext!.WriteLine("highest prescription descent value: {0} observed, near {1} expected", highestPrescriptionFinancialValue, minFinancialValue);
+            float highestPrescriptionFinancialValue = prescriptionAscent.FinancialValue.GetHighestValue();
 
-            Assert.IsTrue(highestFirstCircularFinancialValue > minFinancialValue);
-            Assert.IsTrue(highestFirstCircularFinancialValue < 1.02F * minFinancialValue);
-            Assert.IsTrue(highestPrescriptionFinancialValue < 1.02F * minFinancialValue);
-
-            Assert.IsTrue(highestHeroFinancialValue > minFinancialValue);
-            Assert.IsTrue(highestHeroFinancialValue < 1.02F * minFinancialValue);
-            Assert.IsTrue(highestPrescriptionFinancialValue < 1.02F * minFinancialValue);
+            // for debug builds, the highest financial value solution happens to be the unthinned one
+            // release builds with more trees the highest may converge to different solutions
+            #if DEBUG
+                float minFinancialValue = 0.191F; // USk$/ha, bilinear interpolation: 1 cm diameter classes, 1 m height classes, mean timber prices through August 2021
+                Assert.IsTrue((highestFirstCircularFinancialValue > minFinancialValue) && (highestFirstCircularFinancialValue < 1.02F * minFinancialValue) && (treesThinnedByFirstCircular == 0));
+                Assert.IsTrue((highestHeroFinancialValue > minFinancialValue) && (highestHeroFinancialValue < 1.02F * minFinancialValue) && (treesThinnedByHero == 0));
+                Assert.IsTrue((highestPrescriptionFinancialValue > minFinancialValue) && (highestPrescriptionFinancialValue < 1.02F * minFinancialValue) && (treesThinnedByPrescription == 0));
+            #else
+                float[] minFinancialValues = new[] { 1.108F, 1.277F }; // check two values to support possibility of convergence to an alternate local maximum
+                Assert.IsTrue(((highestFirstCircularFinancialValue > minFinancialValues[0]) && (highestFirstCircularFinancialValue < 1.02F * minFinancialValues[0]) && (treesThinnedByFirstCircular == 2)) ||
+                              ((highestFirstCircularFinancialValue > minFinancialValues[1]) && (highestFirstCircularFinancialValue < 1.02F * minFinancialValues[1]) && (treesThinnedByFirstCircular == 0)),
+                              "First circular: " + highestFirstCircularFinancialValue.ToString("0.000") + "US k$/ha, " + treesThinnedByFirstCircular + " trees.");
+                Assert.IsTrue(((highestHeroFinancialValue > minFinancialValues[0]) && (highestHeroFinancialValue < 1.02F * minFinancialValues[0]) && (treesThinnedByHero == 2)) ||
+                              ((highestHeroFinancialValue > minFinancialValues[1]) && (highestHeroFinancialValue < 1.02F * minFinancialValues[1]) && (treesThinnedByHero == 0)),
+                              "Hero: " + highestHeroFinancialValue.ToString("0.000") + "US k$/ha, " + treesThinnedByHero + " trees.");
+                // prescription search should always find higher value unthinned solution
+                Assert.IsTrue((highestPrescriptionFinancialValue > minFinancialValues[1]) &&  (highestPrescriptionFinancialValue < 1.02F * minFinancialValues[1]) && (treesThinnedByPrescription == 0),
+                              "Prescription: " + highestPrescriptionFinancialValue.ToString("0.000") + "US k$/ha, " + treesThinnedByPrescription + " trees.");
+            #endif
         }
 
         [TestMethod]
         public void NelderOtherHeuristics()
         {
             int thinningPeriod = 4;
-            int treeCount = 75;
+            int treeRecords = 75;
             #if DEBUG
-                treeCount = 25;
+                treeRecords = 25;
             #endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, treeCount);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, siteIndexInM: 39.6F, treeRecords);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             // heuristics optimizing for LEV
@@ -237,12 +240,12 @@ namespace Osu.Cof.Ferm.Test
                 MaximizeForPlanningPeriod = 9
             };
             runForLandExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            HeuristicResults<HeuristicParameters> levResults = PublicApi.CreateResults(new(), runForLandExpectationValue.MaximizeForPlanningPeriod);
+            HeuristicResults<HeuristicParameters> levResults = PublicApi.CreateResults(new(), thinningPeriod, runForLandExpectationValue.MaximizeForPlanningPeriod);
             HeuristicResultPosition levPosition = levResults.PositionsEvaluated[0];
             HeuristicObjectiveDistribution levDistribution = levResults[levPosition].Distribution;
             HeuristicPerformanceCounters totalCounters = new();
 
-            GeneticParameters geneticParameters = new(treeCount)
+            GeneticParameters geneticParameters = new(treeRecords)
             {
                 PopulationSize = 7,
                 MaximumGenerations = 5,
@@ -320,7 +323,7 @@ namespace Osu.Cof.Ferm.Test
             };
             runForVolume.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
 
-            HeuristicResults<HeuristicParameters> volumeResults = PublicApi.CreateResults(new(), runForLandExpectationValue.MaximizeForPlanningPeriod);
+            HeuristicResults<HeuristicParameters> volumeResults = PublicApi.CreateResults(new(), thinningPeriod, runForLandExpectationValue.MaximizeForPlanningPeriod);
             HeuristicResultPosition volumePosition = volumeResults.PositionsEvaluated[0];
             AutocorrelatedWalk autocorrelated = new(stand, volumeResults.ParameterCombinations[0], runForVolume)
             {
@@ -397,7 +400,7 @@ namespace Osu.Cof.Ferm.Test
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, siteIndexInM: 39.6F);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
@@ -450,18 +453,17 @@ namespace Osu.Cof.Ferm.Test
             //                                                                          \s+\w+\.\w+\(\d+\)\s+(\d+.\d{1,2})\d*\s+float\r?\n
             ExpectedStandTrajectory unthinnedExpected = new()
             {
-                //                         0       1       2       3       4       5       6       7       8       9
-                MinimumQmd = new float[] { 16.84F, 20.97F, 24.63F, 27.94F, 31.02F, 33.98F, 36.88F, 39.74F, 42.60F, 45.44F }, // cm
-                //                               0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 27.94F, 31.08F, 33.94F, 36.56F, 38.96F, 41.17F, 43.21F }, // m
+                //                             0       1       2       3       4       5       6       7       8       9
+                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 27.94F, 31.01F, 33.97F, 36.86F, 39.73F, 42.58F, 45.42F }, // cm
+                //                                  0       1       2       3       4       5       6       7       8       9
+                MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 27.91F, 31.04F, 33.89F, 36.50F, 38.89F, 41.10F, 43.13F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubic = new float[] { 65.52F, 152.02F, 250.95F, 359.85F, 462.89F, 552.85F, 632.43F, 702.43F, 764.29F, 820.69F },
-                MinimumStandingMbf = new float[] { 9.64F, 18.88F, 30.71F, 46.73F, 61.79F, 74.36F, 88.18F, 102.41F, 115.29F, 127.26F },
-                MinimumHarvestCubic = new float[lastPeriod + 1],
-                MinimumHarvestMbf = new float[lastPeriod + 1]
+                MinimumStandingCubicM3PerHa = new float[] { 65.52F, 151.90F, 250.67F, 359.32F, 462.21F, 551.95F, 631.44F, 701.23F, 762.89F, 819.21F },
+                MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 46.63F, 61.66F, 74.19F, 87.95F, 102.12F, 114.95F, 126.89F },
+                MinimumHarvestCubicM3PerHa = new float[lastPeriod + 1], // no thinning -> all zero
+                MinimumHarvestMbfPerHa = new float[lastPeriod + 1] // no thinning -> all zero
             };
-
             foreach (Stand? unthinnedStand in unthinnedTrajectory.StandByPeriod)
             {
                 AssertNullable.IsNotNull(unthinnedStand);
@@ -476,17 +478,18 @@ namespace Osu.Cof.Ferm.Test
                 FirstThinPeriod = firstThinPeriod,
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 400,
-                //                         0       1       2       3       4       5       6       7       8       9
-                MinimumQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 41.35F, 44.31F, 47.06F, 49.67F }, // cm
-                //                               0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.64F, 38.12F, 40.40F, 42.51F }, // m
+                //                             0       1       2       3       4       5       6       7       8       9
+                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.33F, 44.29F, 47.05F, 49.65F }, // cm
+                //                                  0       1       2       3       4       5       6       7       8       9
+                MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.58F, 38.05F, 40.33F, 42.43F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubic = new float[] { 65.52F, 152.02F, 250.95F, 225.01F, 321.43F, 415.73F, 505.62F, 590.82F, 670.77F, 743.62F },
-                MinimumStandingMbf = new float[] { 9.64F, 18.88F, 30.71F, 27.76F, 41.29F, 53.85F, 67.46F, 83.72F, 99.19F, 113.17F },
-                MinimumHarvestCubic = new float[] { 0.0F, 0.0F, 0.0F, 105.89F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
-                MinimumHarvestMbf = new float[] { 0.0F, 0.0F, 0.0F, 14.82F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }
+                MinimumStandingCubicM3PerHa = new float[] { 65.52F, 151.90F, 250.67F, 224.77F, 321.04F, 415.20F, 504.92F, 590.05F, 669.74F, 742.48F },
+                MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 67.30F, 83.50F, 99.00F, 112.93F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 105.72F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }
             };
+
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -512,18 +515,18 @@ namespace Osu.Cof.Ferm.Test
                 SecondThinPeriod = secondThinPeriod,
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 400,
-                //                         0       1       2       3       4       5       6       7       8       9
-                MinimumQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 41.92F, 45.34F, 48.40F, 51.22F }, // cm
-                //                               0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.12F, 37.58F, 39.89F, 42.04F }, // m
+                //                             0       1       2       3       4       5       6       7       8       9
+                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 48.38F, 51.02F }, // cm
+                //                                  0       1       2       3       4       5       6       7       8       9
+                MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.88F, 42.02F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubic = new float[] { 65.52F, 152.02F, 250.95F, 225.01F, 321.43F, 415.73F, 415.75F, 500.65F, 581.91F, 658.85F },
-                MinimumStandingMbf = new float[] { 9.64F, 18.88F, 30.71F, 27.76F, 41.29F, 53.85F, 55.10F, 70.41F, 85.62F, 100.06F },
-                MinimumHarvestCubic = new float[] { 0.0F, 0.0F, 0.0F, 105.89F, 0.0F, 0.0F, 81.09F, 0.0F, 0.0F, 0.0F },
-                MinimumHarvestMbf = new float[] { 0.0F, 0.0F, 0.0F, 14.82F, 0.0F, 0.0F, 11.99F, 0.0F, 0.0F, 0.0F }
+                MinimumStandingCubicM3PerHa = new float[] { 65.52F, 151.90F, 250.67F, 224.77F, 321.04F, 415.20F, 415.50F, 500.32F, 581.43F, 658.27F },
+                MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 85.56F, 99.86F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 105.72F, 0.0F, 0.0F, 80.57F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 0.0F, 0.0F }
             };
-            float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146983F, 213170F, 168041F, 226421F, 283782F, 278175F, 329697F, 378050F, 422956F }; // kg/ha
+            float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146900F, 212987F, 167906F, 226196F, 283469F, 278099F, 329517F, 377780F, 422620F }; // kg/ha
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -563,16 +566,16 @@ namespace Osu.Cof.Ferm.Test
                 ThirdThinPeriod = thirdThinPeriod,
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 485,
-                //                                          0       1       2       3       4       5       6       7       8       9
-                MinimumQmd = new float[] { 16.84F, 20.97F, 24.63F, 30.23F, 34.49F, 38.11F, 41.92F, 45.34F, 51.91F, 55.19F }, // cm
-                //                                                0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeight = new float[] { 16.50F, 20.69F, 24.50F, 26.95F, 30.02F, 32.94F, 35.12F, 37.58F, 39.42F, 41.54F }, // m
+                //                             0       1       2       3       4       5       6       7       8       9
+                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 51.89F, 55.17F }, // cm
+                //                                  0       1       2       3       4       5       6       7       8       9
+                MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.41F, 41.52F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubic = new float[] { 65.52F, 152.02F, 250.95F, 225.01F, 321.43F, 415.73F, 415.75F, 500.65F, 477.03F, 552.72F },
-                MinimumStandingMbf = new float[] { 9.64F, 18.88F, 30.71F, 27.76F, 41.29F, 53.85F, 55.10F, 70.41F, 70.01F, 84.01F },
-                MinimumHarvestCubic = new float[] { 0.0F, 0.0F, 0.0F, 105.89F, 0.0F, 0.0F, 81.09F, 0.0F, 97.91F, 0.0F },
-                MinimumHarvestMbf = new float[] { 0.0F, 0.0F, 0.0F, 14.82F, 0.0F, 0.0F, 11.99F, 0.0F, 15.20F, 0.0F }
+                MinimumStandingCubicM3PerHa = new float[] { 65.52F, 151.90F, 250.67F, 224.77F, 321.04F, 415.20F, 415.50F, 500.32F, 477.04F, 552.26F },
+                MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 69.92F, 83.92F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 105.72F, 0.0F, 0.0F, 80.57F, 0.0F, 97.75F, 0.0F },
+                MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 15.17F, 0.0F }
             };
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
@@ -663,7 +666,7 @@ namespace Osu.Cof.Ferm.Test
 
             PlotsWithHeight plot14 = PublicApi.GetPlot14();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = plot14.ToOrganonStand(configuration, 30, 130.0F);
+            OrganonStand stand = plot14.ToOrganonStand(configuration, ageInYears: 30, siteIndexInM: 39.6F);
             stand.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
 
             OrganonStandTrajectory thinnedTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
@@ -687,25 +690,25 @@ namespace Osu.Cof.Ferm.Test
                 FirstThinPeriod = thinPeriod,
                 MinimumTreesSelected = 65,
                 MaximumTreesSelected = 70,
-                //                                 0       1       2       3       4     
-                MinimumQmd = new float[] { 23.33F, 26.88F, 30.17F, 33.13F, 35.93F }, // cm
-                //                                       0       1       2       3       4     
-                MinimumTopHeight = new float[] { 28.32F, 30.81F, 33.54F, 36.14F, 38.54F }, // m
+                //                             0       1       2       3       4     
+                MinimumQmdInCm = new float[] { 23.33F, 26.87F, 30.16F, 33.12F, 35.92F },
+                //                                  0       1       2       3       4     
+                MinimumTopHeightInM = new float[] { 28.32F, 30.80F, 33.52F, 36.11F, 38.50F },
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubic = new float[] { 356.30F, 356.29F, 468.33F, 566.24F, 652.70F },
-                MinimumStandingMbf = new float[] { 50.62F, 51.01F, 66.46F, 80.78F, 95.77F },
-                MinimumHarvestCubic = new float[] { 0.0F, 103.05F, 0.0F, 0.0F, 0.0F },
-                MinimumHarvestMbf = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
+                MinimumStandingCubicM3PerHa = new float[] { 356.30F, 356.13F, 468.00F, 565.71F, 651.97F },
+                MinimumStandingMbfPerHa = new float[] { 50.62F, 50.97F, 66.41F, 80.67F, 95.59F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 103.05F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
             };
-
+ 		
             PublicApi.Verify(thinnedTrajectory, immediateThinExpected, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(thinnedTrajectory, immediateThinExpected);
             Assert.IsTrue(thinnedTrajectory.GetFirstThinAge() == 30);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
 
             // verify snag and log calculations
-            SnagLogTable snagsAndLogs = new(thinnedTrajectory, Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
+            SnagDownLogTable snagsAndLogs = new(thinnedTrajectory, Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
             PublicApi.Verify(snagsAndLogs, thinnedTrajectory);
         }
 
@@ -739,16 +742,16 @@ namespace Osu.Cof.Ferm.Test
         {
             int thinningPeriod = 4;
             int runs = 4; // 1 warmup run + measured runs
-            int trees = 300;
+            int treeRecordCount = 300;
             #if DEBUG
-            runs = 1; // do only functional validation of test on DEBUG builds to reduce test execution time
-            trees = 10;
+                runs = 1; // do only functional validation of test on debug builds to reduce test execution time
+                treeRecordCount = 10;
             #endif
 
             List<float> discountRates = new() {  Constant.Financial.DefaultAnnualDiscountRate };
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, 20, 130.0F, trees);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, siteIndexInM: 39.6F, treeRecordCount);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             RunParameters landExpectationValue = new(new List<int>() { 9 }, configuration)
@@ -756,7 +759,7 @@ namespace Osu.Cof.Ferm.Test
                 MaximizeForPlanningPeriod = 9
             };
             landExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            HeuristicResults<HeuristicParameters> results = PublicApi.CreateResults(new(), landExpectationValue.MaximizeForPlanningPeriod);
+            HeuristicResults<HeuristicParameters> results = PublicApi.CreateResults(new(), thinningPeriod, landExpectationValue.MaximizeForPlanningPeriod);
             HeuristicResultPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
 
             TimeSpan runtime = TimeSpan.Zero;
@@ -1098,8 +1101,8 @@ namespace Osu.Cof.Ferm.Test
 
                     Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] > 0.0F);
                     Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] < standDensityBeforeThin.BasalAreaPerAcre); // assume <50% thin by volume
-                    Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbf[periodIndex]);
-                    Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbf[periodIndex]);
+                    Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
+                    Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
                 }
                 else
                 {
@@ -1168,15 +1171,15 @@ namespace Osu.Cof.Ferm.Test
                 trajectory.RecalculateThinningVolumeIfNeeded(periodIndex);
                 trajectory.RecalculateStandingVolumeIfNeeded(periodIndex);
 
-                Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) > expectedTrajectory.MinimumStandingCubic[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingCubic[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestCubic[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestCubic[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) > expectedTrajectory.MinimumStandingCubicM3PerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingCubicM3PerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestCubicM3PerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestCubicM3PerHa[periodIndex]);
 
-                Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) > expectedTrajectory.MinimumStandingMbf[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingMbf[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbf[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbf[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) > expectedTrajectory.MinimumStandingMbfPerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingMbfPerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
 
                 OrganonStand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
                 float qmdInCm = stand.GetQuadraticMeanDiameterInCentimeters();
@@ -1184,10 +1187,10 @@ namespace Osu.Cof.Ferm.Test
                 int treeRecords = stand.GetTreeRecordCount();
 
                 Assert.IsTrue((stand.Name != null) && (trajectory.Name != null) && stand.Name.StartsWith(trajectory.Name));
-                Assert.IsTrue(qmdInCm > expectedTrajectory.MinimumQmd[periodIndex]);
-                Assert.IsTrue(qmdInCm < PublicApi.QmdTolerance * expectedTrajectory.MinimumQmd[periodIndex]);
-                Assert.IsTrue(topHeight > expectedTrajectory.MinimumTopHeight[periodIndex]);
-                Assert.IsTrue(topHeight < PublicApi.TopHeightTolerance * expectedTrajectory.MinimumTopHeight[periodIndex]);
+                Assert.IsTrue(qmdInCm > expectedTrajectory.MinimumQmdInCm[periodIndex]);
+                Assert.IsTrue(qmdInCm < PublicApi.QmdTolerance * expectedTrajectory.MinimumQmdInCm[periodIndex]);
+                Assert.IsTrue(topHeight > expectedTrajectory.MinimumTopHeightInM[periodIndex]);
+                Assert.IsTrue(topHeight < PublicApi.TopHeightTolerance * expectedTrajectory.MinimumTopHeightInM[periodIndex]);
                 Assert.IsTrue(treeRecords > 0);
                 Assert.IsTrue(treeRecords < 666);
 
@@ -1231,45 +1234,45 @@ namespace Osu.Cof.Ferm.Test
             return eliteSolutions;
         }
 
-        private static void Verify(SnagLogTable snagsAndLogs, OrganonStandTrajectory trajectory)
+        private static void Verify(SnagDownLogTable snagsAndDownLogs, OrganonStandTrajectory trajectory)
         {
-            Assert.IsTrue((snagsAndLogs.DiameterClasses == (int)Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters + 1) || 
-                          (snagsAndLogs.DiameterClasses == (int)Constant.Bucking.MaximumThinningDiameterInCentimeters + 1));
-            Assert.IsTrue(snagsAndLogs.DiameterClassSizeInCentimeters == Constant.Bucking.DiameterClassSizeInCentimeters);
-            Assert.IsTrue((snagsAndLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters) ||
-                          (snagsAndLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultThinningMaximumHeightInMeters));
-            Assert.IsTrue(snagsAndLogs.Periods == trajectory.PlanningPeriods);
+            Assert.IsTrue((snagsAndDownLogs.DiameterClasses == (int)Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters + 1) || 
+                          (snagsAndDownLogs.DiameterClasses == (int)Constant.Bucking.DefaultMaximumThinningDiameterInCentimeters + 1));
+            Assert.IsTrue(snagsAndDownLogs.DiameterClassSizeInCentimeters == Constant.Bucking.DiameterClassSizeInCentimeters);
+            Assert.IsTrue((snagsAndDownLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters) ||
+                          (snagsAndDownLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultMaximumThinningHeightInMeters));
+            Assert.IsTrue(snagsAndDownLogs.Periods == trajectory.PlanningPeriods);
 
-            Assert.IsTrue(snagsAndLogs.LogQmdInCentimetersByPeriod.Length == snagsAndLogs.Periods);
-            Assert.IsTrue(snagsAndLogs.LogsPerHectareByPeriod.Length == snagsAndLogs.Periods);
-            Assert.IsTrue(snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass.Count == 1);
-            Assert.IsTrue(snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(0) == snagsAndLogs.Periods);
-            Assert.IsTrue(snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(1) == snagsAndLogs.DiameterClasses);
+            Assert.IsTrue(snagsAndDownLogs.LogQmdInCentimetersByPeriod.Length == snagsAndDownLogs.Periods);
+            Assert.IsTrue(snagsAndDownLogs.LogsPerHectareByPeriod.Length == snagsAndDownLogs.Periods);
+            Assert.IsTrue(snagsAndDownLogs.LogsPerHectareBySpeciesAndDiameterClass.Count == 1);
+            Assert.IsTrue(snagsAndDownLogs.LogsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(0) == snagsAndDownLogs.Periods);
+            Assert.IsTrue(snagsAndDownLogs.LogsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(1) == snagsAndDownLogs.DiameterClasses);
 
-            Assert.IsTrue(snagsAndLogs.SnagQmdInCentimetersByPeriod.Length == snagsAndLogs.Periods);
-            Assert.IsTrue(snagsAndLogs.SnagsPerHectareByPeriod.Length == snagsAndLogs.Periods);
-            Assert.IsTrue(snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass.Count == 1);
-            Assert.IsTrue(snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(0) == snagsAndLogs.Periods);
-            Assert.IsTrue(snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(1) == snagsAndLogs.DiameterClasses);
+            Assert.IsTrue(snagsAndDownLogs.SnagQmdInCentimetersByPeriod.Length == snagsAndDownLogs.Periods);
+            Assert.IsTrue(snagsAndDownLogs.SnagsPerHectareByPeriod.Length == snagsAndDownLogs.Periods);
+            Assert.IsTrue(snagsAndDownLogs.SnagsPerHectareBySpeciesAndDiameterClass.Count == 1);
+            Assert.IsTrue(snagsAndDownLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(0) == snagsAndDownLogs.Periods);
+            Assert.IsTrue(snagsAndDownLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(1) == snagsAndDownLogs.DiameterClasses);
 
             OrganonStandDensity? standDensity = trajectory.DensityByPeriod[0];
             AssertNullable.IsNotNull(standDensity);
             float initialTreesPerHectare = Constant.AcresPerHectare * standDensity.TreesPerAcre;
-            float initialStemsPerHectare = initialTreesPerHectare + snagsAndLogs.LogsPerHectareByPeriod[0] + snagsAndLogs.SnagsPerHectareByPeriod[0];
-            for (int period = 0; period < snagsAndLogs.Periods; ++period)
+            float initialStemsPerHectare = initialTreesPerHectare + snagsAndDownLogs.LogsPerHectareByPeriod[0] + snagsAndDownLogs.SnagsPerHectareByPeriod[0];
+            for (int period = 0; period < snagsAndDownLogs.Periods; ++period)
             {
                 standDensity = trajectory.DensityByPeriod[period];
                 AssertNullable.IsNotNull(standDensity);
 
-                float logsPerHectare = snagsAndLogs.LogsPerHectareByPeriod[period];
-                float snagPerHectare = snagsAndLogs.SnagsPerHectareByPeriod[period];
+                float logsPerHectare = snagsAndDownLogs.LogsPerHectareByPeriod[period];
+                float snagPerHectare = snagsAndDownLogs.SnagsPerHectareByPeriod[period];
                 float treesPerHectare = Constant.AcresPerHectare * standDensity.TreesPerAcre;
                 float stemsPerHectare = treesPerHectare + snagPerHectare + logsPerHectare;
 
-                Assert.IsTrue(snagsAndLogs.LogQmdInCentimetersByPeriod[period] >= 0.0F);
+                Assert.IsTrue(snagsAndDownLogs.LogQmdInCentimetersByPeriod[period] >= 0.0F);
                 Assert.IsTrue(logsPerHectare >= 0.0F);
 
-                Assert.IsTrue(snagsAndLogs.SnagQmdInCentimetersByPeriod[period] >= 0.0F);
+                Assert.IsTrue(snagsAndDownLogs.SnagQmdInCentimetersByPeriod[period] >= 0.0F);
                 Assert.IsTrue(snagPerHectare >= 0.0F);
 
                 // for now, assume no ingrowth
@@ -1321,12 +1324,12 @@ namespace Osu.Cof.Ferm.Test
             public int MaximumTreesSelected { get; init; }
             public int MinimumTreesSelected { get; init; }
 
-            public float[] MinimumHarvestCubic { get; init; }
-            public float[] MinimumHarvestMbf { get; init; }
-            public float[] MinimumQmd { get; init; }
-            public float[] MinimumStandingCubic { get; init; }
-            public float[] MinimumStandingMbf { get; init; }
-            public float[] MinimumTopHeight { get; init; }
+            public float[] MinimumHarvestCubicM3PerHa { get; init; }
+            public float[] MinimumHarvestMbfPerHa { get; init; }
+            public float[] MinimumQmdInCm { get; init; }
+            public float[] MinimumStandingCubicM3PerHa { get; init; }
+            public float[] MinimumStandingMbfPerHa { get; init; }
+            public float[] MinimumTopHeightInM { get; init; }
 
             public ExpectedStandTrajectory()
             {
@@ -1335,17 +1338,17 @@ namespace Osu.Cof.Ferm.Test
                 this.ThirdThinPeriod = Constant.NoThinPeriod;
                 this.MaximumTreesSelected = 0;
                 this.MinimumTreesSelected = 0;
-                this.MinimumHarvestCubic = Array.Empty<float>();
-                this.MinimumHarvestMbf = Array.Empty<float>();
-                this.MinimumQmd = Array.Empty<float>();
-                this.MinimumStandingCubic = Array.Empty<float>();
-                this.MinimumStandingMbf = Array.Empty<float>();
-                this.MinimumTopHeight = Array.Empty<float>();
+                this.MinimumHarvestCubicM3PerHa = Array.Empty<float>();
+                this.MinimumHarvestMbfPerHa = Array.Empty<float>();
+                this.MinimumQmdInCm = Array.Empty<float>();
+                this.MinimumStandingCubicM3PerHa = Array.Empty<float>();
+                this.MinimumStandingMbfPerHa = Array.Empty<float>();
+                this.MinimumTopHeightInM = Array.Empty<float>();
             }
 
             public int Length
             {
-                get { return this.MinimumHarvestCubic.Length; }
+                get { return this.MinimumHarvestCubicM3PerHa.Length; }
             }
         }
     }

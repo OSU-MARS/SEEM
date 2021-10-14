@@ -39,7 +39,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             this.DiameterClassSize = Constant.Bucking.DiameterClassSizeInCentimeters;
             this.Financial = FinancialScenarios.Default;
-            this.MaximumDiameter = Constant.Bucking.DefaultFinalHarvestMaximumDiameterInCentimeters;
+            this.MaximumDiameter = Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters;
             this.Results = null;
             this.Trajectories = null;
         }
@@ -47,8 +47,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         protected OrganonStandTrajectory GetHighestTrajectoryAndLinePrefix(int positionOrTrajectoryIndex, out StringBuilder linePrefix, out int endOfRotationPeriod, out int financialIndex)
         {
             OrganonStandTrajectory highTrajectory;
-            HeuristicParameters? heuristicParameters = null;
-            string scenarioName;
+            string financialScenarioName;
+            int firstThinAgeAsInteger;
+            int secondThinAgeAsInteger;
+            int thirdThinAgeAsInteger;
             if (this.Results != null)
             {
                 HeuristicResultPosition position = this.Results.PositionsEvaluated[positionOrTrajectoryIndex];
@@ -60,16 +62,42 @@ namespace Osu.Cof.Ferm.Cmdlets
                 highTrajectory = solutionPool.High.GetBestTrajectoryWithDefaulting(position);
                 endOfRotationPeriod = this.Results.RotationLengths[position.RotationIndex];
                 financialIndex = position.FinancialIndex;
-                scenarioName = this.Results.FinancialScenarios.Name[financialIndex];
+                financialScenarioName = this.Results.FinancialScenarios.Name[financialIndex];
+
+                // since both a position and trajectory are available in this case, check stand entries for consistency in debug builds
+                // If a trajectory's thins don't match the position it's assigned to then the trajectory isn't valid for the position.
+                firstThinAgeAsInteger = this.Results.FirstThinPeriods[position.FirstThinPeriodIndex];
+                if (firstThinAgeAsInteger != Constant.NoThinPeriod)
+                {
+                    firstThinAgeAsInteger = highTrajectory.GetStartOfPeriodAge(firstThinAgeAsInteger);
+                }
+                secondThinAgeAsInteger = this.Results.SecondThinPeriods[position.SecondThinPeriodIndex];
+                if (secondThinAgeAsInteger != Constant.NoThinPeriod)
+                {
+                    secondThinAgeAsInteger = highTrajectory.GetStartOfPeriodAge(secondThinAgeAsInteger);
+                }
+                thirdThinAgeAsInteger = this.Results.ThirdThinPeriods[position.ThirdThinPeriodIndex];
+                if (thirdThinAgeAsInteger != Constant.NoThinPeriod)
+                {
+                    thirdThinAgeAsInteger = highTrajectory.GetStartOfPeriodAge(thirdThinAgeAsInteger);
+                }
+                Debug.Assert(highTrajectory.GetFirstThinAge() == firstThinAgeAsInteger);
+                Debug.Assert(highTrajectory.GetSecondThinAge() == secondThinAgeAsInteger);
+                Debug.Assert(highTrajectory.GetThirdThinAge() == thirdThinAgeAsInteger);
+                Debug.Assert(highTrajectory.PlanningPeriods > endOfRotationPeriod); // trajectory periods beyond the end of rotation indicate simulation reuse but a trajectory should extend to at least the rotation length
             }
             else
             {
                 highTrajectory = this.Trajectories![positionOrTrajectoryIndex];
                 endOfRotationPeriod = highTrajectory.PlanningPeriods - 1;
                 financialIndex = Constant.HeuristicDefault.FinancialIndex;
-                scenarioName = this.Financial.Name[financialIndex];
-                // TODO: support logging of trajectory financials with multiple discount rates
+                financialScenarioName = this.Financial.Name[financialIndex];
+                firstThinAgeAsInteger = highTrajectory.GetFirstThinAge();
+                secondThinAgeAsInteger = highTrajectory.GetSecondThinAge();
+                thirdThinAgeAsInteger = highTrajectory.GetThirdThinAge();
             }
+
+            HeuristicParameters? heuristicParameters = null;
             if (highTrajectory.Heuristic != null)
             {
                 heuristicParameters = highTrajectory.Heuristic.GetParameters();
@@ -98,17 +126,30 @@ namespace Osu.Cof.Ferm.Cmdlets
                 linePrefix.Append(heuristicParameterString + ",");
             }
 
-            int firstThinAgeAsInteger = highTrajectory.GetFirstThinAge();
-            string? firstThinAge = firstThinAgeAsInteger != Constant.NoThinPeriod ? firstThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
-            int secondThinAgeAsInteger = highTrajectory.GetSecondThinAge();
-            string? secondThinAge = secondThinAgeAsInteger != Constant.NoThinPeriod ? secondThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
-            int thirdThinAgeAsInteger = highTrajectory.GetThirdThinAge();
-            string? thirdThinAge = thirdThinAgeAsInteger != Constant.NoThinPeriod ? thirdThinAgeAsInteger.ToString(CultureInfo.InvariantCulture) : null;
+            string? firstThinAge = null;
+            if (firstThinAgeAsInteger != Constant.NoThinPeriod)
+            {
+                firstThinAge = firstThinAgeAsInteger.ToString(CultureInfo.InvariantCulture);
+                Debug.Assert(Constant.NoThinPeriod < firstThinAgeAsInteger);
+            }
+            string? secondThinAge = null;
+            if (secondThinAgeAsInteger != Constant.NoThinPeriod)
+            {
+                secondThinAge = secondThinAgeAsInteger.ToString(CultureInfo.InvariantCulture);
+                Debug.Assert((Constant.NoThinPeriod < firstThinAgeAsInteger) && (firstThinAgeAsInteger < secondThinAgeAsInteger));
+            }
+            string? thirdThinAge = null;
+            if (thirdThinAgeAsInteger != Constant.NoThinPeriod)
+            {
+                thirdThinAge = thirdThinAgeAsInteger.ToString(CultureInfo.InvariantCulture);
+                Debug.Assert((Constant.NoThinPeriod < firstThinAgeAsInteger) && (firstThinAgeAsInteger < secondThinAgeAsInteger) && (secondThinAgeAsInteger < thirdThinAgeAsInteger));
+            }
 
             int rotationLengthAsInteger = highTrajectory.GetEndOfPeriodAge(endOfRotationPeriod);
             string rotationLength = rotationLengthAsInteger.ToString(CultureInfo.InvariantCulture);
+            Debug.Assert((firstThinAgeAsInteger < rotationLengthAsInteger) && (secondThinAgeAsInteger < rotationLengthAsInteger) && (thirdThinAgeAsInteger < rotationLengthAsInteger));
 
-            linePrefix.Append(firstThinAge + "," + secondThinAge + "," + thirdThinAge + "," + rotationLength + "," + scenarioName);
+            linePrefix.Append(firstThinAge + "," + secondThinAge + "," + thirdThinAge + "," + rotationLength + "," + financialScenarioName);
             return highTrajectory;
         }
 
@@ -132,7 +173,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     heuristicParameters = this.Trajectories[0].Heuristic!.GetParameters();
                 }
 
-                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(heuristicParameters) + ",standAge,TPH,QMD,Htop,BA,SDI,liveTreeBiomass,SPH,snagQMD,standingCMH,standingMBFH,thinCMH,thinMBFH,BAremoved,BAintensity,TPHdecrease,NPV,LEV,thin2Scmh,thin3Scmh,thin4Scmh,thin2Smbfh,thin3Smbfh,thin4Smbfh,thin2Snpv,thin3Snpv,thin4Snpv,standing2Scmh,standing3Scmh,standing4Scmh,standing2Smbfh,standing3Smbfh,standing4Smbfh,regen2Snpv,regen3Snpv,regen4Snpv");
+                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(heuristicParameters) + ",standAge,TPH,QMD,Htop,BA,SDI,liveTreeBiomass,SPH,snagQmd,standingCmh,standingMbfj,thinCmh,thinMbfh,BAremoved,BAintensity,TPHdecrease,NPV,LEV,thinLogs2S,thinLogs3S,thinLogs4S,thinCmh2S,thinCmh3S,thinCmh4S,thinMbfh2S,thinMbfh3S,thinMbfh4S,thinNpv2S,thinNpv3S,thinNpv4S,standingLogs2S,standingLogs3S,standingLogs4S,standingCmh2S,standingCmh3S,standingCmh4S,standingMbfh2S,standingMbfh3S,standingMbfh4S,regenNpv2S,regenNpv3S,regenNpv4S");
             }
 
             // rows for periods
@@ -149,7 +190,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 }
                 highTrajectory.GetMerchantableVolumes(out StandMerchantableVolume standingVolume, out StandMerchantableVolume thinVolume);
 
-                SnagLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
+                SnagDownLogTable snagsAndDownLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
 
                 float totalThinNetPresentValue = 0.0F;
                 for (int period = 0; period <= endOfRotationPeriod; ++period)
@@ -190,7 +231,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float treesPerHectareDecrease = Constant.AcresPerHectare * treesPerAcreDecrease;
 
                     // NPV and LEV
-                    HarvestFinancialValue thinFinancialValue = financialScenarios.GetNetPresentThinningValue(highTrajectory, financialIndex, period);
+                    HarvestFinancialValue thinFinancialValue = period == 0 ? new() : financialScenarios.GetNetPresentThinningValue(highTrajectory, financialIndex, period);
                     totalThinNetPresentValue += thinFinancialValue.NetPresentValue;
                     HarvestFinancialValue regenFinancialValue = financialScenarios.GetNetPresentRegenerationHarvestValue(highTrajectory, financialIndex, period);
                     float reforestationNetPresentValue = financialScenarios.GetNetPresentReforestationValue(financialIndex, highTrajectory.PlantingDensityInTreesPerHectare);
@@ -215,8 +256,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      basalAreaPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      liveBiomass.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     snagsAndLogs.SnagsPerHectareByPeriod[period].ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                     snagsAndLogs.SnagQmdInCentimetersByPeriod[period].ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     snagsAndDownLogs.SnagsPerHectareByPeriod[period].ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     snagsAndDownLogs.SnagQmdInCentimetersByPeriod[period].ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.GetCubicTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // m³/ha
                                      standingVolume.GetScribnerTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // MBF/ha
                                      thinVolume.GetCubicTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // m³/ha
@@ -226,6 +267,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      treesPerHectareDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      periodNetPresentValue.ToString("0", CultureInfo.InvariantCulture) + "," +
                                      landExpectationValue.ToString("0", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Logs2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Logs3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     thinVolume.Logs4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      thinVolume.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      thinVolume.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      thinVolume.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
@@ -235,6 +279,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      thinFinancialValue.NetPresentValue2Saw.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      thinFinancialValue.NetPresentValue3Saw.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      thinFinancialValue.NetPresentValue4Saw.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                     standingVolume.Logs2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     standingVolume.Logs3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                     standingVolume.Logs4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Cubic2Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Cubic3Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      standingVolume.Cubic4Saw[period].ToString("0.000", CultureInfo.InvariantCulture) + "," +

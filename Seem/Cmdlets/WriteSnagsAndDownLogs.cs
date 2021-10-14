@@ -1,6 +1,7 @@
 ﻿using Osu.Cof.Ferm.Extensions;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System.Diagnostics;
 using System.Globalization;
@@ -10,10 +11,10 @@ using System.Text;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
-    [Cmdlet(VerbsCommunications.Write, "SnagsAndLogs")]
-    public class WriteSnagsAndLogs : WriteStandTrajectory
+    [Cmdlet(VerbsCommunications.Write, "SnagsAndDownLogs")]
+    public class WriteSnagsAndDownLogs : WriteStandTrajectory
     {
-        [Parameter(HelpMessage = "Omits diameter classes without any snags or logs. In most cases this substantially reduces output file size.")]
+        [Parameter(HelpMessage = "Omits diameter classes without any snags or dead logs. In most cases this substantially reduces output file size.")]
         public SwitchParameter SkipZero { get; set; }
 
         protected override void ProcessRecord()
@@ -46,7 +47,7 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionOrTrajectoryIndex, out StringBuilder linePrefix, out int _, out int _);
 
-                SnagLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
+                SnagDownLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
                 for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)
                 {
                     OrganonStand? stand = highTrajectory.StandByPeriod[periodIndex];

@@ -261,15 +261,20 @@ namespace Osu.Cof.Ferm.Tree
             public float X2 { get; private init; }
             public float X3 { get; private init; }
 
-            public SiteConstants(float siteIndexFromGround)
+            public SiteConstants(float siteIndexFromGroundInFeet)
             {
-                this.X3 = siteIndexFromGround / 100.0F;
-                this.X2 = 63.25F - siteIndexFromGround / 20.0F;
-                this.X1 = 13.25F - siteIndexFromGround / 20.0F;
-                this.SiteIndexFromGround = siteIndexFromGround;
+                if ((siteIndexFromGroundInFeet < Constant.Minimum.SiteIndexInFeet) || (siteIndexFromGroundInFeet > Constant.Maximum.SiteIndexInFeet))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(siteIndexFromGroundInFeet));
+                }
+
+                this.X3 = siteIndexFromGroundInFeet / 100.0F;
+                this.X2 = 63.25F - siteIndexFromGroundInFeet / 20.0F;
+                this.X1 = 13.25F - siteIndexFromGroundInFeet / 20.0F;
+                this.SiteIndexFromGround = siteIndexFromGroundInFeet;
                 this.B2 = -0.447762F - 0.894427F * this.X3 + 0.793548F * this.X3 * this.X3 - 0.171666F * this.X3 * this.X3 * this.X3;
                 this.X2toB2 = MathV.Pow(this.X2, this.B2);
-                this.B1 = MathV.Ln(4.5F / siteIndexFromGround) / (MathV.Pow(X1, B2) - this.X2toB2);
+                this.B1 = MathV.Ln(4.5F / siteIndexFromGroundInFeet) / (MathV.Pow(X1, B2) - this.X2toB2);
             }
         }
     }

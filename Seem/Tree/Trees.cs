@@ -159,7 +159,7 @@ namespace Osu.Cof.Ferm.Tree
             Debug.Assert(crownRatio >= 0.0F);
             Debug.Assert(crownRatio <= 1.0F);
             Debug.Assert(liveExpansionFactor >= 0.0F);
-            Debug.Assert(liveExpansionFactor <= Constant.Maximum.ExpansionFactor);
+            Debug.Assert(liveExpansionFactor <= Constant.Maximum.ExpansionFactorPerAcre);
 
             if (this.Capacity == this.Count)
             {
@@ -197,12 +197,16 @@ namespace Osu.Cof.Ferm.Tree
 
         public float GetBasalArea(int compactedTreeIndex)
         {
-            // TODO: support metric
-            Debug.Assert(this.Units == Units.English);
-
-            float dbhInInches = this.Dbh[compactedTreeIndex];
-            float liveExpansionFactor = this.LiveExpansionFactor[compactedTreeIndex];
-            return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
+            switch (this.Units)
+            {
+                // return basal area in ft²/ac for Organon
+                case Units.English:
+                    float dbhInInches = this.Dbh[compactedTreeIndex];
+                    float liveExpansionFactor = this.LiveExpansionFactor[compactedTreeIndex];
+                    return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
+                default:
+                    throw new NotSupportedException("Unhandled units " + this.Units + ".");
+            }
         }
 
         public static int GetCapacity(int treeCount)
@@ -257,6 +261,7 @@ namespace Osu.Cof.Ferm.Tree
                         this.HeightGrowth[moreCompactedTreeIndex] = this.HeightGrowth[lessCompactedTreeIndex];
                         this.LiveExpansionFactor[moreCompactedTreeIndex] = this.LiveExpansionFactor[lessCompactedTreeIndex];
                         this.MerchantableCubicVolumePerStem[moreCompactedTreeIndex] = this.MerchantableCubicVolumePerStem[lessCompactedTreeIndex];
+                        this.Plot[moreCompactedTreeIndex] = this.Plot[lessCompactedTreeIndex];
                         this.Tag[moreCompactedTreeIndex] = this.Tag[lessCompactedTreeIndex];
                         this.UncompactedIndex[moreCompactedTreeIndex] = this.UncompactedIndex[lessCompactedTreeIndex];
                     }

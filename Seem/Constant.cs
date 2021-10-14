@@ -92,18 +92,18 @@ namespace Osu.Cof.Ferm
         public static class Bucking
         {
             public const float BarSawKerf = 0.007F; // m
-            public const float DefaultFinalHarvestMaximumDiameterInCentimeters = 115.0F;
-            public const float DefaultFinalHarvestMaximumHeightInMeters = 75.0F;
             public const float DefaultLongLogLength = Constant.MetersPerFoot * 40.0F; // m
+            public const float DefaultMaximumFinalHarvestDiameterInCentimeters = 115.0F;
+            public const float DefaultMaximumFinalHarvestHeightInMeters = 70.0F;
+            public const float DefaultMaximumThinningDiameterInCentimeters = 115.0F; // default maximum diameter for thinning volume table
+            public const float DefaultMaximumThinningHeightInMeters = 65.0F;
             public const float DefaultShortLogLength = Constant.MetersPerFoot * 24.0F; // m
-            public const float DefaultThinningMaximumHeightInMeters = 65.0F;
             public const float DefaultStumpHeight = 0.15F; // m
             public const float DefectAndBreakageReduction = 0.955F; // 100 - 4.5%
             public const float DiameterClassSizeInCentimeters = 1.0F;
             public const float EvaluationHeightStep = 0.5F; // m
             public const float HeightClassSizeInMeters = 1.0F; // m
             public const float LogTaperSegmentationLength = Constant.MetersPerFoot * 8.0F; // m
-            public const float MaximumThinningDiameterInCentimeters = 100.0F; // default maximum diameter for thinning volume table
             public const float MinimumBasalArea4SawEnglish = 0.14F; // 5 inch DBH + a bit for bark
             public const float MinimumLogLength2Saw = Constant.MetersPerFoot * 12.0F; // m
             public const float MinimumLogLength3Saw = Constant.MetersPerFoot * 12.0F; // m
@@ -193,12 +193,15 @@ namespace Osu.Cof.Ferm
 
         public static class Maximum
         {
+            public const float AgeInYears = 1000.0F;
             public const float DiameterIncrementInInches = 4.5F;
-            public const float ExpansionFactor = 1000.0F;
+            public const float ExpansionFactorPerAcre = 1000.0F; // for 1/1000 ac seedling plots
+            public const float ExpansionFactorPerHa = 2500.0F;
             public const float HeightIncrementInFeet = 20.0F;
             public const float PlantingDensityInTreesPerHectare = 40000.0F; // sanity upper bound, 0.5 m spacing
-            public const float Sdi = 1000.0F;
-            public const float SiteIndexInFeet = 300.0F;
+            public const float SdiPerAcre = 1000.0F; // Reineke SDI in English units
+            public const float SiteIndexInFeet = 200.0F; // sanity upper bound
+            public const float SiteIndexInM = 61.0F; // sanity upper bound
         }
 
         public static class Minimum

@@ -103,14 +103,14 @@ namespace Osu.Cof.Ferm.Organon
             bool treatAsDouglasFir = false;
             if (trees.Species == FiaCode.TsugaHeterophylla)
             {
-                siteIndexFromDbh = stand.HemlockSiteIndex - 4.5F;
+                siteIndexFromDbh = stand.HemlockSiteIndexInFeet - 4.5F;
             }
             else
             {
-                siteIndexFromDbh = stand.SiteIndex - 4.5F;
+                siteIndexFromDbh = stand.SiteIndexInFeet - 4.5F;
                 if (trees.Species == FiaCode.PinusLambertiana)
                 {
-                    siteIndexFromDbh = 0.66F * stand.SiteIndex - 4.5F;
+                    siteIndexFromDbh = 0.66F * stand.SiteIndexInFeet - 4.5F;
                 }
                 treatAsDouglasFir = true;
             }
@@ -1463,7 +1463,7 @@ namespace Osu.Cof.Ferm.Organon
                     basalAreaLarger = MathV.Ln(basalAreaLarger + 5.0F);
                 }
                 float crownRatio = trees.CrownRatio[treeIndex];
-                float PMK = B0 + B1 * dbhInInches + B2 * dbhInInches * dbhInInches + B3 * crownRatio + B4 * stand.SiteIndex + B5 * basalAreaLarger + B6 * basalAreaLarger * MathV.Exp(B7 * OG1) + fertilizationExponent;
+                float PMK = B0 + B1 * dbhInInches + B2 * dbhInInches * dbhInInches + B3 * crownRatio + B4 * stand.SiteIndexInFeet + B5 * basalAreaLarger + B6 * basalAreaLarger * MathV.Exp(B7 * OG1) + fertilizationExponent;
                 if (trees.Species == FiaCode.AlnusRubra)
                 {
                     mortalityKforRedAlder![treeIndex] = PMK;

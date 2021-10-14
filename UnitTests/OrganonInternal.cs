@@ -170,8 +170,8 @@ namespace Osu.Cof.Ferm.Test
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
 
                 float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
-                DouglasFir.SiteConstants psmeSite = new(stand.SiteIndex);
-                WesternHemlock.SiteConstants tsheSite = new(stand.HemlockSiteIndex);
+                DouglasFir.SiteConstants psmeSite = new(stand.SiteIndexInFeet);
+                WesternHemlock.SiteConstants tsheSite = new(stand.HemlockSiteIndexInFeet);
 
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
@@ -206,7 +206,7 @@ namespace Osu.Cof.Ferm.Test
                         {
                             if ((treesOfSpecies.Species == FiaCode.PinusPonderosa) || (treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii))
                             {
-                                DouglasFir.GetDouglasFirPonderosaHeightGrowth(treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii, stand.SiteIndex, heightInFeet, out growthEffectiveAgeInYears, out potentialHeightGrowth);
+                                DouglasFir.GetDouglasFirPonderosaHeightGrowth(treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii, stand.SiteIndexInFeet, heightInFeet, out growthEffectiveAgeInYears, out potentialHeightGrowth);
                                 verifyAgeAndHeight = true;
                             }
                         }
@@ -336,12 +336,12 @@ namespace Osu.Cof.Ferm.Test
             {
                 OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
-                this.TestContext.WriteLine("{0},{1},{2}", variant, stand.A1, stand.A2);
+                this.TestContext.WriteLine("{0},{1},{2}", variant, stand.SdiMaxConstantA1, stand.SdiMaxExponentA2);
 
-                Assert.IsTrue(stand.A1 < 7.0F);
-                Assert.IsTrue(stand.A1 > 5.0F);
-                Assert.IsTrue(stand.A2 > 0.60F);
-                Assert.IsTrue(stand.A2 < 0.65F);
+                Assert.IsTrue(stand.SdiMaxConstantA1 < 7.0F);
+                Assert.IsTrue(stand.SdiMaxConstantA1 > 5.0F);
+                Assert.IsTrue(stand.SdiMaxExponentA2 > 0.60F);
+                Assert.IsTrue(stand.SdiMaxExponentA2 < 0.65F);
                 OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
             }
         }

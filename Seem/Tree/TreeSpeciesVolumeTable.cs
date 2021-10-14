@@ -179,8 +179,12 @@ namespace Osu.Cof.Ferm.Tree
         public int[,] Logs3Saw { get; private init; }
         public int[,] Logs4Saw { get; private init; }
 
+        public float[,,] LogCubic { get; private init; }
+        public float[,,] LogTopDiameter { get; private init; }
+
         public float MaximumDiameterInCentimeters { get; private init; }
         public float MaximumHeightInMeters { get; private init; }
+        public int MaximumLogs { get; private init; }
 
         public float[,] Scribner2Saw { get; private init; } // Scriber board foot volume by DBH and height class, MBF/tree
         public float[,] Scribner3Saw { get; private init; } // Scriber board foot volume by DBH and height class, MBF/tree
@@ -188,9 +192,17 @@ namespace Osu.Cof.Ferm.Tree
 
         public TreeSpeciesVolumeTable(TreeSpeciesVolumeTableParameters parameters)
         {
-            if (parameters.PreferredLogLengthInMeters > Constant.MetersPerFoot * 40.0F)
+            if ((parameters.MaximumDiameterInCentimeters <= 0.0F) || (parameters.MaximumDiameterInCentimeters > 1500.0F))
             {
-                throw new NotSupportedException();
+                throw new ArgumentOutOfRangeException(nameof(parameters), nameof(parameters.PreferredLogLengthInMeters));
+            }
+            if ((parameters.MaximumHeightInMeters <= 0.0F) || (parameters.MaximumHeightInMeters > 125.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(parameters), nameof(parameters.PreferredLogLengthInMeters));
+            }
+            if ((parameters.PreferredLogLengthInMeters <= 0.0F) || (parameters.PreferredLogLengthInMeters > Constant.MetersPerFoot * 40.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(parameters), nameof(parameters.PreferredLogLengthInMeters));
             }
 
             this.DiameterClassSizeInCentimeters = Constant.Bucking.DiameterClassSizeInCentimeters;
@@ -200,20 +212,24 @@ namespace Osu.Cof.Ferm.Tree
 
             int diameterClasses = (int)(this.MaximumDiameterInCentimeters / this.DiameterClassSizeInCentimeters) + 1;
             int heightClasses = (int)(this.MaximumHeightInMeters / this.HeightClassSizeInMeters) + 1;
+            float defaultScribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLength ? Constant.Bucking.ScribnerTrimLongLog : Constant.Bucking.ScribnerTrimShortLog;
+            float preferredLogLengthWithTrim = parameters.PreferredLogLengthInMeters + defaultScribnerTrim;
+            this.MaximumLogs = (int)((parameters.MaximumHeightInMeters + 0.5F * preferredLogLengthWithTrim) / preferredLogLengthWithTrim);
+
             this.Cubic2Saw = new float[diameterClasses, heightClasses];
             this.Cubic3Saw = new float[diameterClasses, heightClasses];
             this.Cubic4Saw = new float[diameterClasses, heightClasses];
             this.Logs2Saw = new int[diameterClasses, heightClasses];
             this.Logs3Saw = new int[diameterClasses, heightClasses];
             this.Logs4Saw = new int[diameterClasses, heightClasses];
+            this.LogCubic = new float[diameterClasses, heightClasses, this.MaximumLogs];
+            this.LogTopDiameter = new float[diameterClasses, heightClasses, this.MaximumLogs];
             this.Scribner2Saw = new float[diameterClasses, heightClasses];
             this.Scribner3Saw = new float[diameterClasses, heightClasses];
             this.Scribner4Saw = new float[diameterClasses, heightClasses];
 
             // fill cubic and Scribner volume tables
             // start at index 1 since trees in zero diameter class have zero merchantable volume
-            float defaultScribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLength ? Constant.Bucking.ScribnerTrimLongLog : Constant.Bucking.ScribnerTrimShortLog;
-            float preferredLogLengthWithTrim = parameters.PreferredLogLengthInMeters + defaultScribnerTrim;
             for (int dbhIndex = 1; dbhIndex < diameterClasses; ++dbhIndex)
             {
                 float dbh = this.GetDiameter(dbhIndex);
@@ -242,6 +258,7 @@ namespace Osu.Cof.Ferm.Tree
                     // TODO: what do scalers actually do, particularly on larger logs?
                     float neiloidHeight = parameters.GetNeiloidHeight(dbh);
                     float previousLogLengthWithTrim;
+                    int logIndex = 0;
                     int logs2S = 0;
                     int logs3S = 0;
                     int logs4S = 0;
@@ -280,6 +297,7 @@ namespace Osu.Cof.Ferm.Tree
                                 logTopDib = logCandidateTopDib;
                             }
                         }
+                        Debug.Assert(logTopDib > 0.0F);
 
                         float logLength = logTopHeight - logBottomHeight;
                         Debug.Assert(logLength >= Constant.Bucking.MinimumLogLength4Saw - 0.0001F);
@@ -389,6 +407,10 @@ namespace Osu.Cof.Ferm.Tree
                             ++logs4S;
                         }
                         // else log not merchantable
+
+                        this.LogCubic[dbhIndex, heightIndex, logIndex] = logCubicVolume;
+                        this.LogTopDiameter[dbhIndex, heightIndex, logIndex] = logTopDib;
+                        ++logIndex;
 
                         float scribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLength ? Constant.Bucking.ScribnerTrimLongLog : Constant.Bucking.ScribnerTrimShortLog;
                         previousLogLengthWithTrim = logLength + scribnerTrim;

@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -149,11 +150,14 @@ namespace Osu.Cof.Ferm.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(position));
             }
 
+            Debug.Assert(this.PositionsEvaluated.Contains(position) == false);
             this.PositionsEvaluated.Add(position);
         }
 
         public void AssimilateHeuristicRunIntoPosition(Heuristic heuristic, HeuristicResultPosition position, HeuristicPerformanceCounters perfCounters)
         {
+            this.VerifyStandEntries(heuristic.GetBestTrajectoryWithDefaulting(position), position);
+
             HeuristicResult result = this[position];
             Debug.Assert(result != null);
             result.Distribution.AddRunAndTryAddToFinancialDistribution(heuristic, position, perfCounters);
@@ -335,6 +339,22 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             return false;
+        }
+
+        public void VerifyStandEntries(StandTrajectory trajectory, HeuristicResultPosition position)
+        {
+            // check heuristic's stand entries match the position it's being assigned to
+            int firstThinPeriod = this.FirstThinPeriods[position.FirstThinPeriodIndex];
+            int secondThinPeriod = this.SecondThinPeriods[position.SecondThinPeriodIndex];
+            int thirdThinPeriod = this.ThirdThinPeriods[position.ThirdThinPeriodIndex];
+            int rotationLength = this.RotationLengths[position.RotationIndex];
+            if ((trajectory.GetFirstThinPeriod() != firstThinPeriod) ||
+                (trajectory.GetSecondThinPeriod() != secondThinPeriod) ||
+                (trajectory.GetThirdThinPeriod() != thirdThinPeriod) ||
+                (trajectory.PlanningPeriods < rotationLength))
+            {
+                throw new ArgumentOutOfRangeException(nameof(trajectory), "Heuristic's stand entries do not match position. Heuristic versus position: first thin period " + trajectory.GetFirstThinPeriod() + " versus " + firstThinPeriod + ", second thin " + trajectory.GetSecondThinPeriod() + " versus " + secondThinPeriod + ", third thin " + trajectory.GetThirdThinPeriod() + " versus " + thirdThinPeriod + ", planning periods " + trajectory.PlanningPeriods + " versus " + rotationLength + ".");
+            }
         }
     }
 

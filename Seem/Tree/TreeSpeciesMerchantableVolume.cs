@@ -52,8 +52,7 @@ namespace Osu.Cof.Ferm.Tree
             Trees treesOfSpecies = stand.TreesBySpecies[this.Species];
             TreeSpeciesMerchantableVolumeForPeriod standingVolume = treeVolume.RegenerationHarvest.GetStandingVolume(treesOfSpecies);
 
-            float volumeMultiplier = TreeSpeciesMerchantableVolume.GetVolumeMultiplier(treesOfSpecies.Units);
-            standingVolume.Multiply(volumeMultiplier);
+            standingVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
             this.SetVolume(standingVolume, periodIndex);
 
             Debug.Assert((standingVolume.Cubic2Saw >= 0.0F) && (standingVolume.Cubic3Saw >= 0.0F) && (standingVolume.Cubic4Saw >= 0.0F));
@@ -66,8 +65,7 @@ namespace Osu.Cof.Ferm.Tree
             TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
             TreeSpeciesMerchantableVolumeForPeriod thinningVolume = treeVolume.Thinning.GetHarvestedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex);
 
-            float volumeMultiplier = TreeSpeciesMerchantableVolume.GetVolumeMultiplier(previousTreesOfSpecies.Units);
-            thinningVolume.Multiply(volumeMultiplier);
+            thinningVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
             this.SetVolume(thinningVolume, periodIndex);
 
             Debug.Assert((thinningVolume.Cubic2Saw >= 0.0F) && (thinningVolume.Cubic3Saw >= 0.0F) && (thinningVolume.Cubic4Saw >= 0.0F));
@@ -128,16 +126,6 @@ namespace Osu.Cof.Ferm.Tree
         public float GetScribnerTotal(int periodIndex)
         {
             return this.Scribner2Saw[periodIndex] + this.Scribner3Saw[periodIndex] + this.Scribner4Saw[periodIndex];
-        }
-
-        private static float GetVolumeMultiplier(Units speciesUnits)
-        {
-            float volumeMultiplier = Constant.Bucking.DefectAndBreakageReduction;
-            if (speciesUnits == Units.English)
-            {
-                volumeMultiplier *= Constant.AcresPerHectare;
-            }
-            return volumeMultiplier;
         }
 
         public bool IsCalculated(int periodIndex)

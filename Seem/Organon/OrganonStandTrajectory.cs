@@ -5,7 +5,6 @@ using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Osu.Cof.Ferm.Organon
 {
@@ -116,7 +115,7 @@ namespace Osu.Cof.Ferm.Organon
         }
 
         // this function doesn't currently copy
-        //   Financial, Heuristic, Name, PeriodLengthInYears, PeriodZeroAgeInYears, PlantingDensityInTreesPerHectare, Treatments
+        //   Financial, Heuristic, Name, PeriodLengthInYears, PeriodZeroAgeInYears, PlantingDensityInTreesPerHectare, Treatments.Harvests
         public void CopyTreeGrowthFrom(OrganonStandTrajectory other)
         {
             if (other == null)
@@ -210,7 +209,7 @@ namespace Osu.Cof.Ferm.Organon
                 thisThinningVolumeForSpecies.CopyFrom(otherThinningVolumeForSpecies);
             }
 
-            this.Treatments.CopyFrom(other.Treatments);
+            this.Treatments.CopyTreeGrowthFrom(other.Treatments);
         }
 
         public int GetInitialTreeRecordCount()

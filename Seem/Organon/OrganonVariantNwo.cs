@@ -956,13 +956,13 @@ namespace Osu.Cof.Ferm.Organon
             if (trees.Species == FiaCode.TsugaHeterophylla)
             {
                 // GROWTH EFFECTIVE AGE FROM FLEWELLING'S WESTERN HEMLOCK DOMINANT HEIGHT GROWTH EQUATION
-                WesternHemlock.SiteConstants siteConstants = new(stand.HemlockSiteIndex);
+                WesternHemlock.SiteConstants siteConstants = new(stand.HemlockSiteIndexInFeet);
                 growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(siteConstants, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             else
             {
                 // GROWTH EFFECTIVE AGE FROM BRUCE'S (1981) DOMINANT HEIGHT GROWTH EQUATION FOR DOUGLAS-FIR AND GRAND FIR
-                DouglasFir.SiteConstants siteConstants = new(stand.SiteIndex); 
+                DouglasFir.SiteConstants siteConstants = new(stand.SiteIndexInFeet); 
                 growthEffectiveAge = DouglasFir.GetPsmeAbgrGrowthEffectiveAge(siteConstants, this.TimeStepInYears, trees.Height[treeIndex], out potentialHeightGrowth);
             }
             return growthEffectiveAge;
@@ -1472,10 +1472,10 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             // grow trees' crowns
-            float siteIndexFromDbh = stand.SiteIndex;
+            float siteIndexFromDbh = stand.SiteIndexInFeet;
             if (trees.Species == FiaCode.TsugaHeterophylla)
             {
-                siteIndexFromDbh = stand.HemlockSiteIndex - 4.5F;
+                siteIndexFromDbh = stand.HemlockSiteIndexInFeet - 4.5F;
             }
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
@@ -1867,11 +1867,11 @@ namespace Osu.Cof.Ferm.Organon
             WesternHemlock.SiteConstants? tsheSite = null;
             if (trees.Species == FiaCode.TsugaHeterophylla)
             {
-                tsheSite = new WesternHemlock.SiteConstants(stand.HemlockSiteIndex);
+                tsheSite = new WesternHemlock.SiteConstants(stand.HemlockSiteIndexInFeet);
             }
             else
             {
-                psmeSite =  new DouglasFir.SiteConstants(stand.SiteIndex); // also used for grand fir
+                psmeSite =  new DouglasFir.SiteConstants(stand.SiteIndexInFeet); // also used for grand fir
             }
             Vector128<float> zero = Vector128<float>.Zero;
             Vector128<float> one = AvxExtensions.BroadcastScalarToVector128(1.0F);
@@ -1934,7 +1934,7 @@ namespace Osu.Cof.Ferm.Organon
             float B3;
             float B4;
             float B5;
-            float siteIndex = stand.SiteIndex;
+            float siteIndex = stand.SiteIndexInFeet;
             switch (trees.Species)
             {
                 // DF Coefficients from Unpublished Equation on File at OSU Dept.Forest Resources
@@ -1961,7 +1961,7 @@ namespace Osu.Cof.Ferm.Organon
                     B3 = -4.74019F;
                     B4 = 0.0119587F;
                     B5 = 0.00756365F;
-                    siteIndex = stand.HemlockSiteIndex;
+                    siteIndex = stand.HemlockSiteIndexInFeet;
                     break;
                 // Hann and Hanus(2001) FRL Research Contribution 34
                 case FiaCode.TaxusBrevifolia:

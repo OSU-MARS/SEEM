@@ -52,33 +52,36 @@ namespace Osu.Cof.Ferm.Tree
             // When different trees have varying expansion factors the calculation of QMD becomes the weighted quadratic mean
             //  QMD = sqrt(1 / ((1/100)^2 * pi/4) * sum(EF * (1/100)^2 * pi/4 * DBH^2) / sum(EF)))
             //      = sqrt(sum(EF * DBH^2) / sum(EF))
-            float metricSumExpansionFactorDbhSquared = 0.0F;
-            float metricSumExpansionFactor = 0.0F;
+            float metricSumExpansionFactorDbhSquared = 0.0F; // cm²/ha, no need to convert to m²/ha since QMD is returned in cm
+            float metricSumExpansionFactorPerHa = 0.0F;
             foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
             {
+                float diameterToCentimetersMultiplier = 1.0F;
+                float hectareExpansionFactorMultiplier = 1.0F;
+                if (treesOfSpecies.Units == Units.English)
+                {
+                    diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
+                    hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
+                }
+
                 float treeSpeciesSumExpansionFactorDbhSquared = 0.0F;
                 float treeSpeciesSumExpansionFactor = 0.0F;
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {
-                    float dbh = treesOfSpecies.Dbh[treeIndex];
-                    float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
-                    treeSpeciesSumExpansionFactorDbhSquared += expansionFactor * dbh * dbh;
-                    treeSpeciesSumExpansionFactor += expansionFactor;
-                }
-                if (treesOfSpecies.Units == Units.English)
-                {
-                    treeSpeciesSumExpansionFactorDbhSquared *= Constant.AcresPerHectare * Constant.CentimetersPerInch * Constant.CentimetersPerInch;
-                    treeSpeciesSumExpansionFactor *= Constant.AcresPerHectare;
+                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[treeIndex];
+                    float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[treeIndex];
+                    treeSpeciesSumExpansionFactorDbhSquared += expansionFactorPerHa * dbhInCm * dbhInCm;
+                    treeSpeciesSumExpansionFactor += expansionFactorPerHa;
                 }
                 metricSumExpansionFactorDbhSquared += treeSpeciesSumExpansionFactorDbhSquared;
-                metricSumExpansionFactor += treeSpeciesSumExpansionFactor;
+                metricSumExpansionFactorPerHa += treeSpeciesSumExpansionFactor;
             }
 
-            if (metricSumExpansionFactor == 0.0F)
+            if (metricSumExpansionFactorPerHa == 0.0F)
             {
                 return 0.0F;
             }
-            float qmdInCentimeters =  MathF.Sqrt(metricSumExpansionFactorDbhSquared / metricSumExpansionFactor);
+            float qmdInCentimeters =  MathF.Sqrt(metricSumExpansionFactorDbhSquared / metricSumExpansionFactorPerHa);
             Debug.Assert((qmdInCentimeters > 0.0F) && (qmdInCentimeters < 200.0F));
             return qmdInCentimeters;
         }
