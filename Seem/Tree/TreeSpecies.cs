@@ -15,8 +15,8 @@ namespace Osu.Cof.Ferm.Tree
             {
                 BarkDensity = 833.0F,
                 BarkFraction = 0.176F,
-                BarkFractionRemainingAfterProcessing = 0.12F,
-                WoodDensity = 609F
+                ProcessingBarkLoss = 0.67F, // one third bark loss with spiked feed rollers, 0.176 -> 0.120
+                WoodDensity = 609.0F
             });
         }
     }

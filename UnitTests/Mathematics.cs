@@ -32,7 +32,7 @@ namespace Osu.Cof.Ferm.Test
                     Dbh = 20.0F,
                     Height = 25.0F,
                     HeightToCrownBase = 15.0F,
-                    EvaluationHeights = new float[] { Constant.MetersPerFoot, Constant.Bucking.DefaultStumpHeight + Constant.Bucking.ProcessingHeadFeedRollerHeight, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 15.0F, 20.0F, 25.0F },
+                    EvaluationHeights = new float[] { Constant.MetersPerFoot, Constant.Bucking.DefaultStumpHeightInM + Constant.Bucking.ProcessingHeadFeedRollerHeightInM, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 15.0F, 20.0F, 25.0F },
                     ExpectedDoubleBarkThickness = new float[] { 3.24F, 2.25F, 1.33F, 1.20F, 1.01F, 0.72F, 0.50F, 0.42F, 0.28F, 0.14F, 0.00F } // diameter inside bark at DBH from Poudel et al. 2018
                     // ExpectedDoubleBarkThickness = new float[] { 3.24F, 2.76F, 2.32F, 2.09F, 1.76F, 1.25F, 0.87F, 0.73F, 0.50F, 0.25F, 0.00F } // diameter inside bark at DBH from Larson and Hann 1985 (via Maguire and Hann 1990)
                 },
@@ -41,7 +41,7 @@ namespace Osu.Cof.Ferm.Test
                     Dbh = 80.0F,
                     Height = 42.0F,
                     HeightToCrownBase = 21.0F,
-                    EvaluationHeights = new float[] { Constant.MetersPerFoot, Constant.Bucking.DefaultStumpHeight + Constant.Bucking.ProcessingHeadFeedRollerHeight, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 20.0F, 30.0F, 40.0F },
+                    EvaluationHeights = new float[] { Constant.MetersPerFoot, Constant.Bucking.DefaultStumpHeightInM + Constant.Bucking.ProcessingHeadFeedRollerHeightInM, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 20.0F, 30.0F, 40.0F },
                     ExpectedDoubleBarkThickness = new float[] { 12.82F, 9.75F, 6.91F, 6.51F, 5.91F, 4.84F, 3.78F, 3.00F, 1.89F, 1.04F, 0.17F } // diameter inside bark at DBH from Poudel et al. 2018
                     // ExpectedDoubleBarkThickness = new float[] { 12.82F, 11.52F, 10.31F, 9.71F, 8.81F, 7.22F, 5.63F, 4.48F, 2.82F, 1.56F, 0.26F } // diameter inside bark at DBH from Larson and Hann 1985 (via Maguire and Hann 1990)
                 }
@@ -456,7 +456,7 @@ namespace Osu.Cof.Ferm.Test
                                         {
                                             MaximumDiameterInCentimeters = Constant.Bucking.DefaultMaximumThinningDiameterInCentimeters,
                                             MaximumHeightInMeters = Constant.Bucking.DefaultMaximumThinningHeightInMeters,
-                                            PreferredLogLengthInMeters = Constant.Bucking.DefaultShortLogLength
+                                            PreferredLogLengthInMeters = Constant.Bucking.DefaultShortLogLengthInM
                                         });
             stopwatch.Stop();
             TimeSpan timberValueTabulationTime = stopwatch.Elapsed;

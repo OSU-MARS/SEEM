@@ -328,26 +328,48 @@ namespace Osu.Cof.Ferm.Test
 
             // regeneration harvest system
             HarvestSystems harvestSystems = financialScenarios.HarvestSystems[0];
+            Assert.IsTrue((harvestSystems.ChainsawBuckConstant < 100.0F) &&
+                          (harvestSystems.ChainsawBuckConstant > 20.0F));
+            Assert.IsTrue((harvestSystems.ChainsawBuckCostPerSMh < 125.0F) &&
+                          (harvestSystems.ChainsawBuckCostPerSMh > 60.0F));
+            Assert.IsTrue((harvestSystems.ChainsawBuckLinear < 100.0F) &&
+                          (harvestSystems.ChainsawBuckLinear > 10.0F));
+            Assert.IsTrue((harvestSystems.ChainsawBuckUtilization <= 1.0F) &&
+                          (harvestSystems.ChainsawBuckUtilization > 0.5F));
+            Assert.IsTrue((harvestSystems.ChainsawBuckQuadratic < 50.0F) &&
+                          (harvestSystems.ChainsawBuckQuadratic > 10.0F));
+            Assert.IsTrue((harvestSystems.ChainsawBuckQuadraticThreshold < 2.0F) &&
+                          (harvestSystems.ChainsawBuckQuadraticThreshold > 0.5F));
+            Assert.IsTrue((harvestSystems.ChainsawFellAndBuckCostPerSMh < 200.0F) &&
+                          (harvestSystems.ChainsawFellAndBuckCostPerSMh > 100.0F));
+            Assert.IsTrue((harvestSystems.ChainsawFellAndBuckConstant < 150.0F) &&
+                          (harvestSystems.ChainsawFellAndBuckConstant > 30.0F));
+            Assert.IsTrue((harvestSystems.ChainsawFellAndBuckLinear < 120.0F) &&
+                          (harvestSystems.ChainsawFellAndBuckLinear > 20.0F));
+            Assert.IsTrue((harvestSystems.ChainsawFellAndBuckUtilization < 1.0F) &&
+                          (harvestSystems.ChainsawFellAndBuckUtilization > 0.1F));
+            Assert.IsTrue((harvestSystems.ChainsawSlopeLinear < 0.1F) &&
+                          (harvestSystems.ChainsawSlopeLinear > 0.0F));
+            Assert.IsTrue((harvestSystems.ChainsawSlopeThresholdInPercent < 70.0F) &&
+                          (harvestSystems.ChainsawSlopeThresholdInPercent > 30.0F));
             Assert.IsTrue((harvestSystems.CorridorWidth > 4.0F) && // machine width + movement variability
                           (harvestSystems.CorridorWidth < 23.0F)); // machine reach
-            Assert.IsTrue((harvestSystems.ChainsawPMh < 500.0F) &&
-                          (harvestSystems.ChainsawPMh > 100.0F));
-            Assert.IsTrue((harvestSystems.ChainsawProductivity < 50.0F) &&
-                          (harvestSystems.ChainsawProductivity > 5.0F));
 
             Assert.IsTrue((harvestSystems.FellerBuncherFellingConstant < 100.0F) &&
                           (harvestSystems.FellerBuncherFellingConstant > 5.0F));
             Assert.IsTrue((harvestSystems.FellerBuncherFellingLinear < 25.0F) &&
                           (harvestSystems.FellerBuncherFellingLinear > 1.0F));
-            Assert.IsTrue((harvestSystems.FellerBuncherPMh < 500.0F) &&
-                          (harvestSystems.FellerBuncherPMh > 100.0F));
+            Assert.IsTrue((harvestSystems.FellerBuncherCostPerSMh < 500.0F) &&
+                          (harvestSystems.FellerBuncherCostPerSMh > 100.0F));
+            Assert.IsTrue((harvestSystems.FellerBuncherSlopeLinear < 0.1F) &&
+                          (harvestSystems.FellerBuncherSlopeLinear > 0.0F));
             Assert.IsTrue((harvestSystems.FellerBuncherSlopeThresholdInPercent < 65.0F) &&
                           (harvestSystems.FellerBuncherSlopeThresholdInPercent > 20.0F));
 
+            Assert.IsTrue((harvestSystems.ForwarderCostPerSMh < 500.0F) &&
+                          (harvestSystems.ForwarderCostPerSMh > 100.0F));
             Assert.IsTrue((harvestSystems.ForwarderPayloadInKg <= 20000.0F) &&
                           (harvestSystems.ForwarderPayloadInKg > 15000.0F));
-            Assert.IsTrue((harvestSystems.ForwarderPMh < 500.0F) &&
-                          (harvestSystems.ForwarderPMh > 100.0F));
             Assert.IsTrue((harvestSystems.ForwarderSpeedInStandLoadedTethered <= harvestSystems.ForwarderSpeedInStandLoadedUntethered) &&
                           (harvestSystems.ForwarderSpeedInStandLoadedTethered > 15.0F));
             Assert.IsTrue((harvestSystems.ForwarderSpeedInStandLoadedUntethered <= harvestSystems.ForwarderSpeedOnRoad) &&
@@ -358,83 +380,91 @@ namespace Osu.Cof.Ferm.Test
                           (harvestSystems.ForwarderSpeedInStandUnloadedUntethered > 25.0F));
             Assert.IsTrue((harvestSystems.ForwarderSpeedOnRoad < 100.0F) &&
                           (harvestSystems.ForwarderSpeedOnRoad >= harvestSystems.ForwarderSpeedInStandUnloadedUntethered));
+            Assert.IsTrue((harvestSystems.ForwarderUtilization < 1.0F) &&
+                          (harvestSystems.ForwarderUtilization > 0.5F));
 
             Assert.IsTrue((harvestSystems.GrappleYardingConstant < 500.0F) &&
                           (harvestSystems.GrappleYardingConstant > 0.0F));
             Assert.IsTrue((harvestSystems.GrappleYardingLinear < 5.0F) &&
                           (harvestSystems.GrappleYardingLinear > 0.0F));
+            Assert.IsTrue((harvestSystems.GrappleSwingYarderCostPerSMh < 500.0F) &&
+                          (harvestSystems.GrappleSwingYarderCostPerSMh > 100.0F));
             Assert.IsTrue((harvestSystems.GrappleSwingYarderMaxPayload <= 8000.0F) &&
                           (harvestSystems.GrappleSwingYarderMaxPayload >= harvestSystems.GrappleSwingYarderMeanPayload));
             Assert.IsTrue((harvestSystems.GrappleSwingYarderMeanPayload <= harvestSystems.GrappleSwingYarderMaxPayload) &&
                           (harvestSystems.GrappleSwingYarderMeanPayload >= 1000.0F));
-            Assert.IsTrue((harvestSystems.GrappleSwingYarderSMh < 500.0F) &&
-                          (harvestSystems.GrappleSwingYarderSMh > 100.0F));
             Assert.IsTrue((harvestSystems.GrappleSwingYarderUtilization < 1.0F) &&
                           (harvestSystems.GrappleSwingYarderUtilization > 0.5F));
+            Assert.IsTrue((harvestSystems.GrappleYoaderCostPerSMh < 500.0F) &&
+                          (harvestSystems.GrappleYoaderCostPerSMh > 100.0F));
             Assert.IsTrue((harvestSystems.GrappleYoaderMaxPayload <= 4500.0F) &&
                           (harvestSystems.GrappleYoaderMaxPayload >= harvestSystems.GrappleYoaderMeanPayload));
             Assert.IsTrue((harvestSystems.GrappleYoaderMeanPayload <= harvestSystems.GrappleYoaderMaxPayload) &&
                           (harvestSystems.GrappleYoaderMeanPayload >= 1000.0F));
-            Assert.IsTrue((harvestSystems.GrappleYoaderSMh < 500.0F) &&
-                          (harvestSystems.GrappleYoaderSMh > 100.0F));
             Assert.IsTrue((harvestSystems.GrappleYoaderUtilization < 1.0F) &&
                           (harvestSystems.GrappleYoaderUtilization > 0.5F));
 
+            Assert.IsTrue((harvestSystems.LoaderCostPerSMh < 500.0F) &&
+                          (harvestSystems.LoaderCostPerSMh > 100.0F));
             Assert.IsTrue((harvestSystems.LoaderProductivity < 200.0F) &&
                           (harvestSystems.LoaderProductivity > 10.0F));
-            Assert.IsTrue((harvestSystems.LoaderSMh < 500.0F) &&
-                          (harvestSystems.LoaderSMh > 100.0F));
             Assert.IsTrue((harvestSystems.LoaderUtilization < 1.0F) &&
                           (harvestSystems.LoaderUtilization > 0.5F));
 
-            Assert.IsTrue((harvestSystems.ProcessorConstant < 100.0F) &&
-                          (harvestSystems.ProcessorConstant > 10.0F));
-            Assert.IsTrue((harvestSystems.ProcessorLinear < 100.0F) &&
-                          (harvestSystems.ProcessorLinear > 10.0F));
-            Assert.IsTrue((harvestSystems.ProcessorQuadratic1 < 10.0F) &&
-                          (harvestSystems.ProcessorQuadratic1 > 1.0F));
-            Assert.IsTrue((harvestSystems.ProcessorQuadratic2 < 10.0F) &&
-                          (harvestSystems.ProcessorQuadratic2 > 1.0F));
-            Assert.IsTrue((harvestSystems.ProcessorQuadraticThreshold1 < 10.0F) &&
-                          (harvestSystems.ProcessorQuadraticThreshold1 > 1.0F));
-            Assert.IsTrue((harvestSystems.ProcessorQuadraticThreshold2 < 10.0F) &&
-                          (harvestSystems.ProcessorQuadraticThreshold2 > 1.0F));
-            Assert.IsTrue((harvestSystems.ProcessorSMh < 500.0F) &&
-                          (harvestSystems.ProcessorSMh > 100.0F));
+            Assert.IsTrue((harvestSystems.ProcessorBuckConstant < 100.0F) &&
+                          (harvestSystems.ProcessorBuckConstant > 10.0F));
+            Assert.IsTrue((harvestSystems.ProcessorBuckLinear < 100.0F) &&
+                          (harvestSystems.ProcessorBuckLinear > 10.0F));
+            Assert.IsTrue((harvestSystems.ProcessorBuckQuadratic1 < 10.0F) &&
+                          (harvestSystems.ProcessorBuckQuadratic1 > 1.0F));
+            Assert.IsTrue((harvestSystems.ProcessorBuckQuadratic2 < 10.0F) &&
+                          (harvestSystems.ProcessorBuckQuadratic2 > 1.0F));
+            Assert.IsTrue((harvestSystems.ProcessorBuckQuadraticThreshold1 < 10.0F) &&
+                          (harvestSystems.ProcessorBuckQuadraticThreshold1 > 1.0F));
+            Assert.IsTrue((harvestSystems.ProcessorBuckQuadraticThreshold2 < 10.0F) &&
+                          (harvestSystems.ProcessorBuckQuadraticThreshold2 > 1.0F));
+            Assert.IsTrue((harvestSystems.ProcessorCostPerSMh < 500.0F) &&
+                          (harvestSystems.ProcessorCostPerSMh > 100.0F));
             Assert.IsTrue((harvestSystems.ProcessorUtilization < 1.0F) &&
                           (harvestSystems.ProcessorUtilization > 0.5F));
 
-            Assert.IsTrue((harvestSystems.TrackedHarvesterFellingConstant < 100.0F) &&
-                          (harvestSystems.TrackedHarvesterFellingConstant > 10.0F));
-            Assert.IsTrue((harvestSystems.TrackedHarvesterDiameterLimit < 90.0F) &&
-                          (harvestSystems.TrackedHarvesterDiameterLimit > 30.0F));
-            Assert.IsTrue((harvestSystems.TrackedHarvesterFellingLinear < 100.0F) &&
-                          (harvestSystems.TrackedHarvesterFellingLinear > 10.0F));
-            Assert.IsTrue((harvestSystems.TrackedHarvesterFellingQuadratic1 < 10.0F) &&
-                          (harvestSystems.TrackedHarvesterFellingQuadratic1 > 1.0F));
-            Assert.IsTrue((harvestSystems.TrackedHarvesterFellingQuadratic2 < 10.0F) &&
-                          (harvestSystems.TrackedHarvesterFellingQuadratic2 > 1.0F));
-            Assert.IsTrue((harvestSystems.TrackedHarvesterPMh < 500.0F) &&
-                          (harvestSystems.TrackedHarvesterPMh > 100.0F));
+            Assert.IsTrue((harvestSystems.TrackedHarvesterCostPerSMh < 500.0F) &&
+                          (harvestSystems.TrackedHarvesterCostPerSMh > 100.0F));
+            Assert.IsTrue((harvestSystems.TrackedHarvesterFellAndBuckConstant < 100.0F) &&
+                          (harvestSystems.TrackedHarvesterFellAndBuckConstant > 10.0F));
+            Assert.IsTrue((harvestSystems.TrackedHarvesterFellAndBuckDiameterLimit < 90.0F) &&
+                          (harvestSystems.TrackedHarvesterFellAndBuckDiameterLimit > 30.0F));
+            Assert.IsTrue((harvestSystems.TrackedHarvesterFellAndBuckLinear < 100.0F) &&
+                          (harvestSystems.TrackedHarvesterFellAndBuckLinear > 10.0F));
+            Assert.IsTrue((harvestSystems.TrackedHarvesterFellAndBuckQuadratic1 < 10.0F) &&
+                          (harvestSystems.TrackedHarvesterFellAndBuckQuadratic1 > 1.0F));
+            Assert.IsTrue((harvestSystems.TrackedHarvesterFellAndBuckQuadratic2 < 10.0F) &&
+                          (harvestSystems.TrackedHarvesterFellAndBuckQuadratic2 > 1.0F));
             Assert.IsTrue((harvestSystems.TrackedHarvesterQuadraticThreshold1 < 5.0F) &&
                           (harvestSystems.TrackedHarvesterQuadraticThreshold1 > 0.5F));
             Assert.IsTrue((harvestSystems.TrackedHarvesterQuadraticThreshold2 < 7.5F) &&
                           (harvestSystems.TrackedHarvesterQuadraticThreshold2 > 0.5F));
+            Assert.IsTrue((harvestSystems.TrackedHarvesterSlopeLinear < 0.1F) &&
+                          (harvestSystems.TrackedHarvesterSlopeLinear > 0.0F));
             Assert.IsTrue((harvestSystems.TrackedHarvesterSlopeThresholdInPercent < 65.0F) &&
                           (harvestSystems.TrackedHarvesterSlopeThresholdInPercent > 20.0F));
+            Assert.IsTrue((harvestSystems.TrackedHarvesterUtilization <= 1.0F) &&
+                          (harvestSystems.TrackedHarvesterUtilization > 0.0F));
 
-            Assert.IsTrue((harvestSystems.WheeledHarvesterFellingConstant < 100.0F) &&
-                          (harvestSystems.WheeledHarvesterFellingConstant > 10.0F));
-            Assert.IsTrue((harvestSystems.WheeledHarvesterDiameterLimit < 90.0F) &&
-                          (harvestSystems.WheeledHarvesterDiameterLimit > 30.0F));
-            Assert.IsTrue((harvestSystems.WheeledHarvesterFellingLinear < 100.0F) &&
-                          (harvestSystems.WheeledHarvesterFellingLinear > 10.0F));
-            Assert.IsTrue((harvestSystems.WheeledHarvesterFellingQuadratic < 10.0F) &&
-                          (harvestSystems.WheeledHarvesterFellingQuadratic > 1.0F));
-            Assert.IsTrue((harvestSystems.WheeledHarvesterPMh < 500.0F) &&
-                          (harvestSystems.WheeledHarvesterPMh > 100.0F));
+            Assert.IsTrue((harvestSystems.WheeledHarvesterCostPerSMh < 500.0F) &&
+                          (harvestSystems.WheeledHarvesterCostPerSMh > 100.0F));
+            Assert.IsTrue((harvestSystems.WheeledHarvesterFellAndBuckConstant < 100.0F) &&
+                          (harvestSystems.WheeledHarvesterFellAndBuckConstant > 10.0F));
+            Assert.IsTrue((harvestSystems.WheeledHarvesterFellAndBuckDiameterLimit < 90.0F) &&
+                          (harvestSystems.WheeledHarvesterFellAndBuckDiameterLimit > 30.0F));
+            Assert.IsTrue((harvestSystems.WheeledHarvesterFellAndBuckLinear < 100.0F) &&
+                          (harvestSystems.WheeledHarvesterFellAndBuckLinear > 10.0F));
+            Assert.IsTrue((harvestSystems.WheeledHarvesterFellAndBuckQuadratic < 10.0F) &&
+                          (harvestSystems.WheeledHarvesterFellAndBuckQuadratic > 1.0F));
             Assert.IsTrue((harvestSystems.WheeledHarvesterQuadraticThreshold < 5.0F) &&
                           (harvestSystems.WheeledHarvesterQuadraticThreshold > 0.5F));
+            Assert.IsTrue((harvestSystems.WheeledHarvesterSlopeLinear < 0.1F) &&
+                          (harvestSystems.WheeledHarvesterSlopeLinear > 0.0F));
             Assert.IsTrue((harvestSystems.WheeledHarvesterSlopeThresholdInPercent < 65.0F) &&
                           (harvestSystems.WheeledHarvesterSlopeThresholdInPercent > 20.0F));
         }

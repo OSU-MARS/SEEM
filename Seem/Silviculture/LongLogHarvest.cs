@@ -4,42 +4,82 @@ namespace Osu.Cof.Ferm.Silviculture
 {
     public class LongLogHarvest
     {
-        public float FellerBuncherGrappleSwingYarderProcessorLoaderCost { get; set; } // $/ha
-        public float FellerBuncherGrappleYoaderProcessorLoaderCost { get; set; } // $/ha
-        public float GrappleSwingYarderOverweightFirstLogs { get; set; } // logs/ha
-        public float GrappleYoaderOverweightFirstLogs { get; set; } // logs/ha
-        public float MinimumCost { get; set; } // $/ha
-        public HarvestEquipmentProductionRates Productivity { get; private init; }
-        public float TrackedHarvesterGrappleYoaderLoaderCost { get; set; } // $/ha
-        public float TrackedHarvesterGrappleSwingYarderLoaderCost { get; set; } // $/ha
-        public float WheeledHarvesterGrappleYoaderLoaderCost { get; set; } // $/ha
-        public float WheeledHarvesterGrappleSwingYarderLoaderCost { get; set; } // $/ha
+        public float ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder { get; set; } // m²/ha
+        public float ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader { get; set; } // m²/ha
+        public float ChainsawBasalAreaPerHaWithTrackedHarvester { get; set; } // m²/ha
+        public float ChainsawBasalAreaPerHaWithWheeledHarvester { get; set; } // m²/ha
+        public float ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public float ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public float ChainsawPMhPerHaTrackedHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public float ChainsawPMhPerHaWithWheeledHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+
+        public float FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa { get; set; } // US$/ha
+        public float FellerBuncherGrappleYoaderProcessorLoaderCostPerHa { get; set; } // US$/ha
+        public float FellerBuncherPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public float GrappleSwingYarderOverweightFirstLogsPerHa { get; set; } // logs/ha
+        public float GrappleYoaderOverweightFirstLogsPerHa { get; set; } // logs/ha
+
+        public float MinimumCostPerHa { get; set; } // US$/ha
+
+        public float ProcessorPMhPerHaWithGrappleSwingYarder { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public float ProcessorPMhPerHaWithGrappleYoader { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+
+        public HarvestEquipmentProductivity Productivity { get; private init; }
+        public float TotalMerchantableCubicVolume { get; set; } // m³/ha
+        public float TotalYardedWeight { get; set; } // kg/ha
+
+        public float TrackedHarvesterGrappleYoaderLoaderCostPerHa { get; set; } // US$/ha
+        public float TrackedHarvesterGrappleSwingYarderLoaderCostPerHa { get; set; } // US$/ha
+        public float TrackedHarvesterPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public float WheeledHarvesterGrappleYoaderLoaderCostPerHa { get; set; } // US$/ha
+        public float WheeledHarvesterGrappleSwingYarderLoaderCostPerHa { get; set; } // US$/ha
+        public float WheeledHarvesterPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
 
         public LongLogHarvest()
         {
-            this.FellerBuncherGrappleSwingYarderProcessorLoaderCost = Single.NaN;
-            this.FellerBuncherGrappleYoaderProcessorLoaderCost = Single.NaN;
-            this.GrappleSwingYarderOverweightFirstLogs = 0.0F;
-            this.GrappleYoaderOverweightFirstLogs = 0.0F;
-            this.MinimumCost = Single.NaN;
+            this.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
+            this.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader = 0.0F;
+            this.ChainsawBasalAreaPerHaWithTrackedHarvester = 0.0F;
+            this.ChainsawBasalAreaPerHaWithWheeledHarvester = 0.0F;
+            this.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
+            this.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader = 0.0F;
+            this.ChainsawPMhPerHaTrackedHarvester = 0.0F;
+            this.ChainsawPMhPerHaWithWheeledHarvester = 0.0F;
+
+            this.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa = Single.NaN;
+            this.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa = Single.NaN;
+            this.FellerBuncherPMhPerHa = 0.0F;
+            this.GrappleSwingYarderOverweightFirstLogsPerHa = 0.0F;
+            this.GrappleYoaderOverweightFirstLogsPerHa = 0.0F;
+            
+            this.MinimumCostPerHa = Single.NaN;
+
+            this.ProcessorPMhPerHaWithGrappleSwingYarder = 0.0F;
+            this.ProcessorPMhPerHaWithGrappleYoader = 0.0F;
+
             this.Productivity = new();
-            this.TrackedHarvesterGrappleSwingYarderLoaderCost = Single.NaN;
-            this.TrackedHarvesterGrappleYoaderLoaderCost = Single.NaN;
-            this.WheeledHarvesterGrappleSwingYarderLoaderCost = Single.NaN;
-            this.WheeledHarvesterGrappleYoaderLoaderCost = Single.NaN;
+            this.TotalMerchantableCubicVolume = 0.0F;
+            this.TotalYardedWeight = 0.0F;
+            
+            this.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa = Single.NaN;
+            this.TrackedHarvesterGrappleYoaderLoaderCostPerHa = Single.NaN;
+            this.TrackedHarvesterPMhPerHa = 0.0F;
+            this.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = Single.NaN;
+            this.WheeledHarvesterGrappleYoaderLoaderCostPerHa = Single.NaN;
+            this.WheeledHarvesterPMhPerHa = 0.0F;
         }
 
-        public class HarvestEquipmentProductionRates
+        public class HarvestEquipmentProductivity
         {
-            public float FellerBuncher { get; set; } // m³/PMh
-            public float GrappleSwingYarder { get; set; } // m³/PMh
-            public float GrappleYoader { get; set; } // m³/PMh
-            public float ProcessorWithGrappleSwingYarder { get; set; } // m³/PMh
-            public float ProcessorWithGrappleYoader { get; set; } // m³/PMh
-            public float TrackedHarvester { get; set; } // m³/PMh
-            public float WheeledHarvester { get; set; } // m³/PMh
+            public float FellerBuncher { get; set; } // m³/PMh₀
+            public float GrappleSwingYarder { get; set; } // m³/PMh₀
+            public float GrappleYoader { get; set; } // m³/PMh₀
+            public float ProcessorWithGrappleSwingYarder { get; set; } // m³/PMh₀
+            public float ProcessorWithGrappleYoader { get; set; } // m³/PMh₀
+            public float TrackedHarvester { get; set; } // m³/PMh₀
+            public float WheeledHarvester { get; set; } // m³/PMh₀
 
-            public HarvestEquipmentProductionRates()
+            public HarvestEquipmentProductivity()
             {
                 this.FellerBuncher = Single.NaN;
                 this.GrappleSwingYarder = Single.NaN;

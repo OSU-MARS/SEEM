@@ -212,7 +212,7 @@ namespace Osu.Cof.Ferm.Tree
 
             int diameterClasses = (int)(this.MaximumDiameterInCentimeters / this.DiameterClassSizeInCentimeters) + 1;
             int heightClasses = (int)(this.MaximumHeightInMeters / this.HeightClassSizeInMeters) + 1;
-            float defaultScribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLength ? Constant.Bucking.ScribnerTrimLongLog : Constant.Bucking.ScribnerTrimShortLog;
+            float defaultScribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLengthInM ? Constant.Bucking.ScribnerTrimLongLogInM : Constant.Bucking.ScribnerTrimShortLogInM;
             float preferredLogLengthWithTrim = parameters.PreferredLogLengthInMeters + defaultScribnerTrim;
             this.MaximumLogs = (int)((parameters.MaximumHeightInMeters + 0.5F * preferredLogLengthWithTrim) / preferredLogLengthWithTrim);
 
@@ -237,7 +237,7 @@ namespace Osu.Cof.Ferm.Tree
                 {
                     // tree cannot produce a merchantable log
                     // Except in special case of a minimum log length of DBH or less, which isn't supported.
-                    Debug.Assert(Constant.Bucking.MinimumLogLength4Saw >= 1.3F);
+                    Debug.Assert(Constant.Bucking.MinimumLogLength4SawInM >= 1.3F);
                     continue;
                 }
 
@@ -245,7 +245,7 @@ namespace Osu.Cof.Ferm.Tree
                 for (int heightIndex = 1; heightIndex < heightClasses; ++heightIndex)
                 {
                     float height = this.GetHeight(heightIndex);
-                    if (height < Constant.Bucking.MinimumLogLength4Saw + Constant.Bucking.DefaultStumpHeight)
+                    if (height < Constant.Bucking.MinimumLogLength4SawInM + Constant.Bucking.DefaultStumpHeightInM)
                     {
                         // tree cannot produce a merchantable log
                         // This also avoids breakdown in Kozak 2004 form taper equations, which require trees be at least 1.3 m tall.
@@ -262,9 +262,9 @@ namespace Osu.Cof.Ferm.Tree
                     int logs2S = 0;
                     int logs3S = 0;
                     int logs4S = 0;
-                    for (float logBottomHeight = Constant.Bucking.DefaultStumpHeight; logBottomHeight < height - Constant.Bucking.MinimumLogLength4Saw; logBottomHeight += previousLogLengthWithTrim + Constant.Bucking.BarSawKerf)
+                    for (float logBottomHeight = Constant.Bucking.DefaultStumpHeightInM; logBottomHeight < height - Constant.Bucking.MinimumLogLength4SawInM; logBottomHeight += previousLogLengthWithTrim + Constant.Bucking.BarSawKerf)
                     {
-                        float logMinimumTopHeight = logBottomHeight + Constant.Bucking.MinimumLogLength4Saw;
+                        float logMinimumTopHeight = logBottomHeight + Constant.Bucking.MinimumLogLength4SawInM;
                         if (logMinimumTopHeight > height)
                         {
                             break; // no merchantable log: done with tree
@@ -286,7 +286,7 @@ namespace Osu.Cof.Ferm.Tree
                             // seeded from minimum and maximum dibs
                             logTopHeight = logMinimumTopHeight;
                             logTopDib = logMaximumTopDib;
-                            for (float logCandidateTopHeight = logMinimumTopHeight; logCandidateTopHeight < logMaximumTopHeight; logCandidateTopHeight += Constant.Bucking.EvaluationHeightStep)
+                            for (float logCandidateTopHeight = logMinimumTopHeight; logCandidateTopHeight < logMaximumTopHeight; logCandidateTopHeight += Constant.Bucking.EvaluationHeightStepInM)
                             {
                                 float logCandidateTopDib = parameters.GetDiameterInsideBark(dbh, height, logCandidateTopHeight);
                                 if (logCandidateTopDib < Constant.Bucking.MinimumScalingDiameter4Saw)
@@ -300,7 +300,7 @@ namespace Osu.Cof.Ferm.Tree
                         Debug.Assert(logTopDib > 0.0F);
 
                         float logLength = logTopHeight - logBottomHeight;
-                        Debug.Assert(logLength >= Constant.Bucking.MinimumLogLength4Saw - 0.0001F);
+                        Debug.Assert(logLength >= Constant.Bucking.MinimumLogLength4SawInM - 0.0001F);
                         // BC Firmwood cubic and Scribner.C long log volume
                         // Fonseca, M. 2005. The Measurement of Roundwood: Methodologies and Conversion Ratios. United Nations Economic 
                         //   Commission for Europe Trade and Timber Branch. Cromwell Press, Trowbridge. https://www.cabi.org/bookshop/book/9780851990798/
@@ -330,10 +330,10 @@ namespace Osu.Cof.Ferm.Tree
                         float logScribnerVolume = -1.0F;
                         if (bcFirmwoodBottomRadius > 1.5F * bcFirmwoodTopRadius)
                         {
-                            float logSegments = MathF.Round(logLength / Constant.Bucking.LogTaperSegmentationLength);
+                            float logSegments = MathF.Round(logLength / Constant.Bucking.BCFirmwoodLogTaperSegmentLengthInM);
                             if (logSegments >= 2.0F)
                             {
-                                float bcFirmwoodTaperHeight = logBottomHeight + MathF.Floor(0.5F * logSegments + 0.01F) * Constant.Bucking.LogTaperSegmentationLength;
+                                float bcFirmwoodTaperHeight = logBottomHeight + MathF.Floor(0.5F * logSegments + 0.01F) * Constant.Bucking.BCFirmwoodLogTaperSegmentLengthInM;
                                 if (bcFirmwoodTaperHeight < logTopHeight)
                                 {
                                     float bcFirmwoodTaperDiameter = parameters.GetDiameterInsideBark(dbh, height, bcFirmwoodTaperHeight);
@@ -380,7 +380,7 @@ namespace Osu.Cof.Ferm.Tree
                         Debug.Assert(logCubicVolume > 0.0F);
                         Debug.Assert(logScribnerVolume > 0.0F);
                         if ((logTopDib >= Constant.Bucking.MinimumScalingDiameter2Saw) &&
-                            (logLength >= Constant.Bucking.MinimumLogLength2Saw) &&
+                            (logLength >= Constant.Bucking.MinimumLogLength2SawInM) &&
                             (logScribnerVolume >= Constant.Bucking.MinimumLogScribner2Saw))
                         {
                             // 2S
@@ -389,7 +389,7 @@ namespace Osu.Cof.Ferm.Tree
                             ++logs2S;
                         }
                         else if ((logTopDib >= Constant.Bucking.MinimumScalingDiameter3Saw) &&
-                                 (logLength >= Constant.Bucking.MinimumLogLength3Saw) &&
+                                 (logLength >= Constant.Bucking.MinimumLogLength3SawInM) &&
                                  (logScribnerVolume >= Constant.Bucking.MinimumLogScribner3Saw))
                         {
                             // 3S
@@ -400,7 +400,7 @@ namespace Osu.Cof.Ferm.Tree
                         else if (logScribnerVolume >= Constant.Bucking.MinimumLogScribner4Saw)
                         {
                             // 4S
-                            Debug.Assert(logTopDib >= Constant.Bucking.MinimumLogLength4Saw);
+                            Debug.Assert(logTopDib >= Constant.Bucking.MinimumLogLength4SawInM);
                             Debug.Assert(logTopDib >= Constant.Bucking.MinimumScalingDiameter4Saw);
                             this.Cubic4Saw[dbhIndex, heightIndex] += logCubicVolume;
                             this.Scribner4Saw[dbhIndex, heightIndex] += logScribnerVolume;
@@ -412,7 +412,7 @@ namespace Osu.Cof.Ferm.Tree
                         this.LogTopDiameter[dbhIndex, heightIndex, logIndex] = logTopDib;
                         ++logIndex;
 
-                        float scribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLength ? Constant.Bucking.ScribnerTrimLongLog : Constant.Bucking.ScribnerTrimShortLog;
+                        float scribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLengthInM ? Constant.Bucking.ScribnerTrimLongLogInM : Constant.Bucking.ScribnerTrimShortLogInM;
                         previousLogLengthWithTrim = logLength + scribnerTrim;
                     }
 

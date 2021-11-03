@@ -128,7 +128,8 @@ namespace Osu.Cof.Ferm.Test
 
             // first improving circular search
             HeuristicResults<HeuristicParameters> results = PublicApi.CreateResults(new(), thinningPeriod, landExpectationValueIts.MaximizeForPlanningPeriod);
-            // results.ParameterCombinations[0].MinimumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization; // sometimes useful for debugging: start with no trees selected
+            // sometimes useful for debugging: start with no trees selected
+            // results.ParameterCombinations[0].MinimumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
             FirstImprovingCircularSearch firstCircular = new(stand, results.ParameterCombinations[0], landExpectationValueIts)
             {
                 //IsStochastic = true,
@@ -144,8 +145,7 @@ namespace Osu.Cof.Ferm.Test
                 //IsStochastic = true,
                 MaximumIterations = 10
             };
-            // debugging note: it can be helpful to set fully greedy heuristic parameters so the initial prescription remains as no trees selected
-            //hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod);
+            // hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod); // sometimes useful for debugging: don't thin first tree
             HeuristicPerformanceCounters heroCounters = hero.Run(singleThinPosition, results);
             results.AssimilateHeuristicRunIntoPosition(hero, singleThinPosition, heroCounters);
 
@@ -199,25 +199,50 @@ namespace Osu.Cof.Ferm.Test
             float highestHeroFinancialValue = hero.FinancialValue.GetHighestValue();
             float highestPrescriptionFinancialValue = prescriptionAscent.FinancialValue.GetHighestValue();
 
-            // for debug builds, the highest financial value solution happens to be the unthinned one
-            // release builds with more trees the highest may converge to different solutions
+            // location of financial value maxima varies as harvest cost calculations evolve and timber values change
+            // Therefore, check for convergence to a whitelist of known solutions. Since the number of trees varies between debug and
+            // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
+            // expected prescription search will always locate it it.
             #if DEBUG
-                float minFinancialValue = 0.191F; // USk$/ha, bilinear interpolation: 1 cm diameter classes, 1 m height classes, mean timber prices through August 2021
-                Assert.IsTrue((highestFirstCircularFinancialValue > minFinancialValue) && (highestFirstCircularFinancialValue < 1.02F * minFinancialValue) && (treesThinnedByFirstCircular == 0));
-                Assert.IsTrue((highestHeroFinancialValue > minFinancialValue) && (highestHeroFinancialValue < 1.02F * minFinancialValue) && (treesThinnedByHero == 0));
-                Assert.IsTrue((highestPrescriptionFinancialValue > minFinancialValue) && (highestPrescriptionFinancialValue < 1.02F * minFinancialValue) && (treesThinnedByPrescription == 0));
+                Span<float> minFinancialValues = stackalloc[] { -0.0929F, 0.112F };
+                Span<int> treesThinned = stackalloc[] { 5, 0 };
             #else
-                float[] minFinancialValues = new[] { 1.108F, 1.277F }; // check two values to support possibility of convergence to an alternate local maximum
-                Assert.IsTrue(((highestFirstCircularFinancialValue > minFinancialValues[0]) && (highestFirstCircularFinancialValue < 1.02F * minFinancialValues[0]) && (treesThinnedByFirstCircular == 2)) ||
-                              ((highestFirstCircularFinancialValue > minFinancialValues[1]) && (highestFirstCircularFinancialValue < 1.02F * minFinancialValues[1]) && (treesThinnedByFirstCircular == 0)),
-                              "First circular: " + highestFirstCircularFinancialValue.ToString("0.000") + "US k$/ha, " + treesThinnedByFirstCircular + " trees.");
-                Assert.IsTrue(((highestHeroFinancialValue > minFinancialValues[0]) && (highestHeroFinancialValue < 1.02F * minFinancialValues[0]) && (treesThinnedByHero == 2)) ||
-                              ((highestHeroFinancialValue > minFinancialValues[1]) && (highestHeroFinancialValue < 1.02F * minFinancialValues[1]) && (treesThinnedByHero == 0)),
-                              "Hero: " + highestHeroFinancialValue.ToString("0.000") + "US k$/ha, " + treesThinnedByHero + " trees.");
-                // prescription search should always find higher value unthinned solution
-                Assert.IsTrue((highestPrescriptionFinancialValue > minFinancialValues[1]) &&  (highestPrescriptionFinancialValue < 1.02F * minFinancialValues[1]) && (treesThinnedByPrescription == 0),
-                              "Prescription: " + highestPrescriptionFinancialValue.ToString("0.000") + "US k$/ha, " + treesThinnedByPrescription + " trees.");
+                Span<float> minFinancialValues = stackalloc[] { 0.993F, 1.150F };
+                Span<int> treesThinned = stackalloc[] { 2, 0 };
             #endif
+            int matchingOptimaIndexFirstCircular = -1;
+            int matchingOptimaIndexHero = -1;
+            int matchingOptimaIndexPrescription = -1;
+            float maxMinFinancialValue = Single.MinValue;
+            int maxMinFinancialValueIndex = -1;
+            for (int localOptimaIndex = 0; localOptimaIndex < minFinancialValues.Length; ++localOptimaIndex)
+            {
+                float minFinancialValue = minFinancialValues[localOptimaIndex];
+                float maxFinancialValue = (minFinancialValue < 0.0F ? 0.98F : 1.02F) * minFinancialValue;
+                if ((highestFirstCircularFinancialValue > minFinancialValue) && (highestFirstCircularFinancialValue < maxFinancialValue))
+                {
+                    matchingOptimaIndexFirstCircular = localOptimaIndex;
+                }
+                if ((highestHeroFinancialValue > minFinancialValue) && (highestHeroFinancialValue < maxFinancialValue))
+                {
+                    matchingOptimaIndexHero = localOptimaIndex;
+                }
+                if ((highestPrescriptionFinancialValue > minFinancialValue) && (highestPrescriptionFinancialValue < maxFinancialValue))
+                {
+                    matchingOptimaIndexPrescription = localOptimaIndex;
+                }
+                if (maxMinFinancialValue < minFinancialValue)
+                {
+                    maxMinFinancialValue = minFinancialValue;
+                    maxMinFinancialValueIndex = localOptimaIndex;
+                }
+            }
+            Assert.IsTrue((matchingOptimaIndexFirstCircular >= 0) && (treesThinnedByFirstCircular == treesThinned[matchingOptimaIndexFirstCircular]), 
+                          "First circular financial value " + highestFirstCircularFinancialValue + " with " + treesThinnedByFirstCircular + " trees thinned.");
+            Assert.IsTrue((matchingOptimaIndexHero >= 0) && (treesThinnedByHero == treesThinned[matchingOptimaIndexHero]),
+                          "Hero financial value " + highestHeroFinancialValue + " with " + treesThinnedByHero + " trees thinned.");
+            Assert.IsTrue((matchingOptimaIndexPrescription == maxMinFinancialValueIndex) && (treesThinnedByPrescription == treesThinned[matchingOptimaIndexPrescription]),
+                          "Prescription financial value " + highestPrescriptionFinancialValue + " with " + treesThinnedByPrescription + " trees thinned.");
         }
 
         [TestMethod]
@@ -833,7 +858,7 @@ namespace Osu.Cof.Ferm.Test
             float recalculatedHighestFinancialValue = heuristic.GetFinancialValue(bestTrajectory, Constant.HeuristicDefault.FinancialIndex);
             float highestFinancialValue = heuristic.FinancialValue.GetHighestValue();
             float highestFinancialValueRatio = highestFinancialValue / recalculatedHighestFinancialValue;
-            this.TestContext!.WriteLine("{0} best objective: {1} with ratio {2}", heuristic.GetName(), highestFinancialValue, highestFinancialValueRatio);
+            this.TestContext!.WriteLine("{0} best objective: {1} (recalculation ratio {2})", heuristic.GetName(), highestFinancialValue, highestFinancialValueRatio);
             if (heuristic.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
             {
                 Assert.IsTrue(highestFinancialValue > -1.00F);

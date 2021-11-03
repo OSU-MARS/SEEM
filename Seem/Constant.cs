@@ -40,6 +40,7 @@ namespace Osu.Cof.Ferm
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
         public const float RoundTowardsZeroTolerance = 0.001F;
+        public const float SecondsPerHour = 3600.0F;
         public const float SquareMetersPerHectare = 10000.0F;
 
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new(new List<FiaCode>()
@@ -92,32 +93,32 @@ namespace Osu.Cof.Ferm
         public static class Bucking
         {
             public const float BarSawKerf = 0.007F; // m
-            public const float DefaultLongLogLength = Constant.MetersPerFoot * 40.0F; // m
+            public const float BCFirmwoodLogTaperSegmentLengthInM = Constant.MetersPerFoot * 8.0F; // m
+            public const float DefaultLongLogLengthInM = Constant.MetersPerFoot * 40.0F; // m
             public const float DefaultMaximumFinalHarvestDiameterInCentimeters = 115.0F;
             public const float DefaultMaximumFinalHarvestHeightInMeters = 70.0F;
             public const float DefaultMaximumThinningDiameterInCentimeters = 115.0F; // default maximum diameter for thinning volume table
             public const float DefaultMaximumThinningHeightInMeters = 65.0F;
-            public const float DefaultShortLogLength = Constant.MetersPerFoot * 24.0F; // m
-            public const float DefaultStumpHeight = 0.15F; // m
+            public const float DefaultShortLogLengthInM = Constant.MetersPerFoot * 24.0F; // m
+            public const float DefaultStumpHeightInM = 0.15F; // m
             public const float DefectAndBreakageReduction = 0.955F; // 100 - 4.5%
             public const float DiameterClassSizeInCentimeters = 1.0F;
-            public const float EvaluationHeightStep = 0.5F; // m
+            public const float EvaluationHeightStepInM = 0.5F; // m
             public const float HeightClassSizeInMeters = 1.0F; // m
-            public const float LogTaperSegmentationLength = Constant.MetersPerFoot * 8.0F; // m
-            public const float MinimumBasalArea4SawEnglish = 0.14F; // 5 inch DBH + a bit for bark
-            public const float MinimumLogLength2Saw = Constant.MetersPerFoot * 12.0F; // m
-            public const float MinimumLogLength3Saw = Constant.MetersPerFoot * 12.0F; // m
-            public const float MinimumLogLength4Saw = Constant.MetersPerFoot * 8.0F; // m, typically specified as 12 but often 8 feet in practice
+            public const float MinimumBasalArea4SawEnglish = 0.14F; // ft²/acre, 5 inch DBH + a bit for bark
+            public const float MinimumLogLength2SawInM = Constant.MetersPerFoot * 12.0F; // m
+            public const float MinimumLogLength3SawInM = Constant.MetersPerFoot * 12.0F; // m
+            public const float MinimumLogLength4SawInM = Constant.MetersPerFoot * 8.0F; // m, typically specified as 12 feet but often 8 foot in practice
             public const float MinimumScalingDiameter2Saw = Constant.CentimetersPerInch * 12.0F; // cm
             public const float MinimumScalingDiameter3Saw = Constant.CentimetersPerInch * 6.0F; // cm
             public const float MinimumScalingDiameter4Saw = Constant.CentimetersPerInch * 5.0F; // cm
-            public const float MinimumLogScribner2Saw = 60; // board feet
-            public const float MinimumLogScribner3Saw = 50; // board feet
-            public const float MinimumLogScribner4Saw = 10; // board feet
-            public const float ProcessingHeadFeedRollerHeight = 0.70F; // m
-            public const float ScribnerShortLogLength = Constant.MetersPerFoot * 20.0F; // m
-            public const float ScribnerTrimLongLog = Constant.MetersPerFoot * 1.0F - 0.0001F; // m with 100 μm margin for numerical precision
-            public const float ScribnerTrimShortLog = Constant.MetersPerFoot * 0.5F - 0.0001F; // m with 100 μm margin for numerical precision
+            public const float MinimumLogScribner2Saw = 60.0F; // board feet
+            public const float MinimumLogScribner3Saw = 50.0F; // board feet
+            public const float MinimumLogScribner4Saw = 10.0F; // board feet
+            public const float ProcessingHeadFeedRollerHeightInM = 0.70F; // m
+            public const float ScribnerShortLogLengthInM = Constant.MetersPerFoot * 20.0F; // m
+            public const float ScribnerTrimLongLogInM = Constant.MetersPerFoot * 1.0F - 0.0001F; // m with 100 μm margin for numerical precision
+            public const float ScribnerTrimShortLogInM = Constant.MetersPerFoot * 0.5F - 0.0001F; // m with 100 μm margin for numerical precision
         }
 
         public static class Financial
@@ -158,6 +159,7 @@ namespace Osu.Cof.Ferm
             public const float AdmininistrationCost = 14.82F; // US$/ha-year
             public const float AssessedValue = 1.26F * 1128.57F; // US$/ha-year, average of northwestern Oregon counties adjusted up to site class 1
             public const float BrushControl = 45.0F; // US$/ha
+            public const float ChainsawBasalAreaPerHaForFullUtilization = 30.0F; // m²/ha
             public const float LowboyInAndOut = 2.0F * (2.0F * 10.0F + 3.0F * 170.0F); // US$/lowboy trip ≈ US$/machine, (move in + move out) * (load + unload + travel time * lowboy $/PMh)
             public const float PlantingLabor = 383.0F; // US$/ha
             public const float PropertyTaxRate = 0.01F * 1.61F; // fraction of assessed value = 0.01 * percent of assessed value, average of northwestern Oregon counties

@@ -36,7 +36,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         private void WriteScaledVolume(StreamWriter writer, ScaledVolume scaledVolume)
         {
-            float minimumFeedRollerHeight = Constant.Bucking.DefaultStumpHeight + Constant.Bucking.ProcessingHeadFeedRollerHeight;
+            float minimumFeedRollerHeight = Constant.Bucking.DefaultStumpHeightInM + Constant.Bucking.ProcessingHeadFeedRollerHeightInM;
             //Debug.Assert(Constant.Bucking.StumpHeight <= PoudelRegressions.MinimumKozakHeightInM);
             //Debug.Assert(minimumFeedRollerHeight <= PoudelRegressions.MinimumKozakHeightInM);
             Debug.Assert(minimumFeedRollerHeight <= Constant.DbhHeightInM);
@@ -79,7 +79,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                             // coefficients and add bark thickness at one foot from Maguire and Hann 1990.
                             // Constant.Bucking.StumpHeight <= PoudelRegressions.MinimumKozakHeightInM is asserted above
                             float candidateFellingDiameter15 = PoudelRegressions.GetDouglasFirDiameterInsideBark(dbhInCm, heightInM, 0.15F) + DouglasFir.GetDoubleBarkThickness(dbhInCm, heightInM, heightToCrownBaseInM, Constant.MetersPerFoot);
-                            Debug.Assert((candidateFellingDiameter15 > dbhInCm) || (dbhInCm < Constant.Bucking.MinimumScalingDiameter4Saw) || (heightInM < Constant.Bucking.MinimumLogLength4Saw));
+                            Debug.Assert((candidateFellingDiameter15 > dbhInCm) || (dbhInCm < Constant.Bucking.MinimumScalingDiameter4Saw) || (heightInM < Constant.Bucking.MinimumLogLength4SawInM));
                             if (candidateFellingDiameter15 > dbhInCm)
                             {
                                 fellingDiameter15 = candidateFellingDiameter15;

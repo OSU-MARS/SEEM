@@ -14,7 +14,7 @@
             {
                 MaximumDiameterInCentimeters = Constant.Bucking.DefaultMaximumThinningDiameterInCentimeters,
                 MaximumHeightInMeters = Constant.Bucking.DefaultMaximumThinningHeightInMeters,
-                PreferredLogLengthInMeters = Constant.Bucking.DefaultShortLogLength,
+                PreferredLogLengthInMeters = Constant.Bucking.DefaultShortLogLengthInM,
             };
             TreeVolume.Default = new TreeVolume(finalHarvestRange, thinningRange);
         }

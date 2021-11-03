@@ -4,7 +4,7 @@
     {
         public float BarkDensity { get; init; } // kg/m³, green
         public float BarkFraction { get; init; }
-        public float BarkFractionRemainingAfterProcessing { get; init; }
+        public float ProcessingBarkLoss { get; init; }
         public float WoodDensity { get; init; } // kg/m³, green
 
         public float GetStemDensity()
@@ -14,7 +14,8 @@
 
         public float GetStemDensityAfterProcessing()
         {
-            return (1.0F - this.BarkFractionRemainingAfterProcessing) * this.WoodDensity + this.BarkFractionRemainingAfterProcessing * this.BarkDensity;
+            float barkFractionAfterProcessing = (1.0F - this.ProcessingBarkLoss) * this.BarkFraction;
+            return (1.0F - barkFractionAfterProcessing) * this.WoodDensity + barkFractionAfterProcessing * this.BarkDensity;
         }
     }
 }
