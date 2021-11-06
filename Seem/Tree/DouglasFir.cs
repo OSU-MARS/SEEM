@@ -7,8 +7,21 @@ using System.Runtime.Intrinsics.X86;
 
 namespace Osu.Cof.Ferm.Tree
 {
-    public class DouglasFir
+    public static class DouglasFir
     {
+        public static TreeSpeciesProperties Properties { get; private set; }
+
+        static DouglasFir()
+        {
+            // Miles PD, Smith BW. 2009. Specific gravity and other properties of wood and bark for 156 tree species found in North
+            //   America (No. NRS-RN-38). Northern Research Station, US Forest Service. https://doi.org/10.2737/NRS-RN-38
+            DouglasFir.Properties = new TreeSpeciesProperties(woodDensity: 609.0F, // kg/m³
+                barkFraction: 0.176F,
+                barkDensity: 833.0F, // kg/m³
+                processingBarkLoss: 0.30F, // loss with spiked feed rollers
+                yardingBarkLoss: 0.15F); // dragging abrasion loss over full corridor (if needed, this could be reparameterized to a function of corridor length)
+        }
+
         // Diameter outside bark at heights of 30 cm to 1.37 m from
         // Maguire DA, Hann DW. 1990. Bark Thickness and Bark Volume in Southwestern Oregon Douglas-Fir. Western Journal of Applied
         //   Forestry 5(1):5–8. https://doi.org/10.1093/wjaf/5.1.5

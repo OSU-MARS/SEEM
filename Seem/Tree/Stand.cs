@@ -7,12 +7,12 @@ namespace Osu.Cof.Ferm.Tree
 {
     public class Stand
     {
+        public float CorridorLength { get; set; } // m
         public float ForwardingDistanceInStandTethered { get; private init; } // m, mean
         public float ForwardingDistanceInStandUntethered { get; private init; } // m, mean
         public float ForwardingDistanceOnRoad { get; private init; } // m, mean corridor to landing
         public string? Name { get; set; }
         public float? PlantingDensityInTreesPerHectare { get; set; }
-        public float SkylineLength { get; set; } // m
         public float SlopeInPercent { get; set; }
 
         public SortedList<FiaCode, Trees> TreesBySpecies { get; private init; }
@@ -24,9 +24,10 @@ namespace Osu.Cof.Ferm.Tree
             this.ForwardingDistanceOnRoad = 200.0F;
             this.Name = null;
             this.PlantingDensityInTreesPerHectare = null;
-            this.SkylineLength = this.ForwardingDistanceInStandUntethered + this.ForwardingDistanceInStandTethered;
             this.SlopeInPercent = 65.0F;
             this.TreesBySpecies = new SortedList<FiaCode, Trees>();
+
+            this.CorridorLength = this.ForwardingDistanceInStandUntethered + this.ForwardingDistanceInStandTethered;
         }
 
         public float GetLiveBiomass()

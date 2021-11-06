@@ -263,7 +263,7 @@ namespace Osu.Cof.Ferm.Test
         public void FinancialScenarios()
         {
             FinancialScenarios financialScenarios = new();
-            financialScenarios.Read("financial scenarios.xlsx", "Sheet1");
+            financialScenarios.Read("financial scenarios.xlsx", "parameterization");
 
             // properties of FinancialScenario
             Assert.IsTrue(financialScenarios.Count == 1);
@@ -289,9 +289,6 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue((financialScenarios.RegenerationHarvestCostPerHectare.Count == 1) &&
                           (financialScenarios.RegenerationHarvestCostPerHectare[0] < 800.0F) &&
                           (financialScenarios.RegenerationHarvestCostPerHectare[0] > 400.0F));
-            Assert.IsTrue((financialScenarios.RegenerationHaulCostPerCubicMeter.Count == 1) &&
-                          (financialScenarios.RegenerationHaulCostPerCubicMeter[0] < 15.0F) &&
-                          (financialScenarios.RegenerationHaulCostPerCubicMeter[0] > 5.0F));
             Assert.IsTrue((financialScenarios.ReleaseSprayCostPerHectare.Count == 1) &&
                           (financialScenarios.ReleaseSprayCostPerHectare[0] < 500.0F) &&
                           (financialScenarios.ReleaseSprayCostPerHectare[0] > 200.0F));
@@ -304,9 +301,6 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue((financialScenarios.ThinningHarvestCostPerHectare.Count == 1) &&
                           (financialScenarios.ThinningHarvestCostPerHectare[0] < 500.0F) &&
                           (financialScenarios.ThinningHarvestCostPerHectare[0] > 250.0F));
-            Assert.IsTrue((financialScenarios.ThinningHaulCostPerCubicMeter.Count == 1) &&
-                          (financialScenarios.ThinningHaulCostPerCubicMeter[0] < 15.0F) &&
-                          (financialScenarios.ThinningHaulCostPerCubicMeter[0] > 5.0F));
             Assert.IsTrue((financialScenarios.ThinningPondValueMultiplier.Count == 1) &&
                           (financialScenarios.ThinningPondValueMultiplier[0] <= 1.00F) &&
                           (financialScenarios.ThinningPondValueMultiplier[0] > 0.50F));
@@ -352,8 +346,16 @@ namespace Osu.Cof.Ferm.Test
                           (harvestSystems.ChainsawSlopeLinear > 0.0F));
             Assert.IsTrue((harvestSystems.ChainsawSlopeThresholdInPercent < 70.0F) &&
                           (harvestSystems.ChainsawSlopeThresholdInPercent > 30.0F));
+
             Assert.IsTrue((harvestSystems.CorridorWidth > 4.0F) && // machine width + movement variability
                           (harvestSystems.CorridorWidth < 23.0F)); // machine reach
+            
+            Assert.IsTrue((harvestSystems.CutToLengthHaulPayloadInKg < 30000.0F) &&
+                          (harvestSystems.CutToLengthHaulPayloadInKg > 28000.0F));
+            Assert.IsTrue((harvestSystems.CutToLengthHaulPerSMh < 145.0F) &&
+                          (harvestSystems.CutToLengthHaulPerSMh > 95.0F));
+            Assert.IsTrue((harvestSystems.CutToLengthRoundtripHaulSMh < 4.5F) &&
+                          (harvestSystems.CutToLengthRoundtripHaulSMh > 2.5F));
 
             Assert.IsTrue((harvestSystems.FellerBuncherFellingConstant < 100.0F) &&
                           (harvestSystems.FellerBuncherFellingConstant > 5.0F));
@@ -368,8 +370,16 @@ namespace Osu.Cof.Ferm.Test
 
             Assert.IsTrue((harvestSystems.ForwarderCostPerSMh < 500.0F) &&
                           (harvestSystems.ForwarderCostPerSMh > 100.0F));
-            Assert.IsTrue((harvestSystems.ForwarderPayloadInKg <= 20000.0F) &&
-                          (harvestSystems.ForwarderPayloadInKg > 15000.0F));
+            Assert.IsTrue((harvestSystems.ForwarderDriveWhileLoadingLogs < 0.9F) &&
+                          (harvestSystems.ForwarderDriveWhileLoadingLogs > 0.7F));
+            Assert.IsTrue((harvestSystems.ForwarderEmptyWeight <= 30000.0F) &&
+                          (harvestSystems.ForwarderEmptyWeight > 15000.0F));
+            Assert.IsTrue((harvestSystems.ForwarderLoadMeanLogVolume < 0.7F) &&
+                          (harvestSystems.ForwarderLoadMeanLogVolume > 0.5F));
+            Assert.IsTrue((harvestSystems.ForwarderLoadPayload < 1.1F) &&
+                          (harvestSystems.ForwarderLoadPayload > 0.9F));
+            Assert.IsTrue((harvestSystems.ForwarderMaximumPayloadInKg <= 20000.0F) &&
+                          (harvestSystems.ForwarderMaximumPayloadInKg > 15000.0F));
             Assert.IsTrue((harvestSystems.ForwarderSpeedInStandLoadedTethered <= harvestSystems.ForwarderSpeedInStandLoadedUntethered) &&
                           (harvestSystems.ForwarderSpeedInStandLoadedTethered > 15.0F));
             Assert.IsTrue((harvestSystems.ForwarderSpeedInStandLoadedUntethered <= harvestSystems.ForwarderSpeedOnRoad) &&
@@ -380,6 +390,18 @@ namespace Osu.Cof.Ferm.Test
                           (harvestSystems.ForwarderSpeedInStandUnloadedUntethered > 25.0F));
             Assert.IsTrue((harvestSystems.ForwarderSpeedOnRoad < 100.0F) &&
                           (harvestSystems.ForwarderSpeedOnRoad >= harvestSystems.ForwarderSpeedInStandUnloadedUntethered));
+            Assert.IsTrue((harvestSystems.ForwarderTractiveForce < 250.0F) &&
+                          (harvestSystems.ForwarderTractiveForce > 100.0F));
+            Assert.IsTrue((harvestSystems.ForwarderUnloadLinearOneSort < harvestSystems.ForwarderUnloadLinearTwoSorts) &&
+                          (harvestSystems.ForwarderUnloadLinearOneSort > 0.4F));
+            Assert.IsTrue((harvestSystems.ForwarderUnloadLinearTwoSorts < harvestSystems.ForwarderUnloadLinearThreeSorts) &&
+                          (harvestSystems.ForwarderUnloadLinearTwoSorts > harvestSystems.ForwarderUnloadLinearOneSort));
+            Assert.IsTrue((harvestSystems.ForwarderUnloadLinearThreeSorts < 1.0F) &&
+                          (harvestSystems.ForwarderUnloadLinearThreeSorts > harvestSystems.ForwarderUnloadLinearTwoSorts));
+            Assert.IsTrue((harvestSystems.ForwarderUnloadMeanLogVolume < 0.6F) &&
+                          (harvestSystems.ForwarderUnloadMeanLogVolume > 0.4F));
+            Assert.IsTrue((harvestSystems.ForwarderUnloadPayload < 0.7F) &&
+                          (harvestSystems.ForwarderUnloadPayload > 0.5F));
             Assert.IsTrue((harvestSystems.ForwarderUtilization < 1.0F) &&
                           (harvestSystems.ForwarderUtilization > 0.5F));
 
@@ -410,6 +432,13 @@ namespace Osu.Cof.Ferm.Test
                           (harvestSystems.LoaderProductivity > 10.0F));
             Assert.IsTrue((harvestSystems.LoaderUtilization < 1.0F) &&
                           (harvestSystems.LoaderUtilization > 0.5F));
+
+            Assert.IsTrue((harvestSystems.LongLogHaulPayloadInKg < 27000.0F) &&
+                          (harvestSystems.LongLogHaulPayloadInKg > 25000.0F));
+            Assert.IsTrue((harvestSystems.LongLogHaulPerSMh < 125.0F) &&
+                          (harvestSystems.LongLogHaulPerSMh > 75.0F));
+            Assert.IsTrue((harvestSystems.LongLogHaulRoundtripSMh < 4.5F) &&
+                          (harvestSystems.LongLogHaulRoundtripSMh > 2.5F));
 
             Assert.IsTrue((harvestSystems.ProcessorBuckConstant < 100.0F) &&
                           (harvestSystems.ProcessorBuckConstant > 10.0F));

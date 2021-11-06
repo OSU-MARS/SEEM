@@ -204,10 +204,10 @@ namespace Osu.Cof.Ferm.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { -0.0929F, 0.112F };
-                Span<int> treesThinned = stackalloc[] { 5, 0 };
+                Span<float> minFinancialValues = stackalloc[] { 0.128F };
+                Span<int> treesThinned = stackalloc[] { 0 };
             #else
-                Span<float> minFinancialValues = stackalloc[] { 0.993F, 1.150F };
+                Span<float> minFinancialValues = stackalloc[] { 1.043F, 1.179F };
                 Span<int> treesThinned = stackalloc[] { 2, 0 };
             #endif
             int matchingOptimaIndexFirstCircular = -1;
@@ -861,11 +861,11 @@ namespace Osu.Cof.Ferm.Test
             this.TestContext!.WriteLine("{0} best objective: {1} (recalculation ratio {2})", heuristic.GetName(), highestFinancialValue, highestFinancialValueRatio);
             if (heuristic.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
             {
-                Assert.IsTrue(highestFinancialValue > -1.00F);
+                Assert.IsTrue(highestFinancialValue > -3.25F, "Highest financial value found by " + heuristic.GetName() + " is " + highestFinancialValue + ".");
             }
             else
             {
-                Assert.IsTrue(highestFinancialValue > 0.0F); // actually volume
+                Assert.IsTrue(highestFinancialValue > 0.0F, "Highest volume is zero or negative."); // actually volume due to incomplete migration of code from 2019
             }
 
             IList<float> candidateMoveFinancialValues = heuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
@@ -882,28 +882,27 @@ namespace Osu.Cof.Ferm.Test
             // only guaranteed for monotonic heuristics: hero, prescription enumeration, others depending on configuration
             IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
             float lastAcceptedFinancialValue = acceptedMoveFinancialValues[^1];
-            if ((heuristic is Hero) || (heuristic is PrescriptionEnumeration) || (heuristic is ThresholdAccepting))
+            if ((heuristic is Hero) || (heuristic is ThresholdAccepting))
             {
                 Assert.IsTrue(highestFinancialValue == lastAcceptedFinancialValue);
-                Assert.IsTrue(recalculatedCurrentObjectiveFunction >= beginFinancialValue);
+                // may not hold for prescription enumerations initated from higher value heuristic solutions unreachable by the enumeration
+                Assert.IsTrue(recalculatedCurrentObjectiveFunction >= beginFinancialValue); 
             }
             else
             {
                 if (lastAcceptedFinancialValue >= 0.0F)
                 {
                     Assert.IsTrue(highestFinancialValue > 0.95F * lastAcceptedFinancialValue);
+                    float fraction = 0.85F;
                     if (heuristic is AutocorrelatedWalk)
                     {
-                        Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.50F * beginFinancialValue);
+                        fraction = 0.50F;
                     }
                     else if (heuristic is SimulatedAnnealing)
                     {
-                        Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.72F * beginFinancialValue);
+                        fraction = 0.72F;
                     }
-                    else
-                    {
-                        Assert.IsTrue(recalculatedCurrentObjectiveFunction > 0.85F * beginFinancialValue);
-                    }
+                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > fraction * beginFinancialValue, heuristic.GetName() + ": " + recalculatedCurrentObjectiveFunction + " is " + recalculatedCurrentObjectiveFunction / beginFinancialValue + " of " + beginFinancialValue + ".");
                 }
                 else
                 {
@@ -970,13 +969,14 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(bestHarvestedVolume.Scribner4Saw[periodIndex] >= 0.0F);
 
                     Assert.IsTrue(bestCubicThinningVolume <= previousBestCubicStandingVolume);
-                    Assert.IsTrue(bestHarvestedVolume.Cubic2Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestHarvestedVolume.Cubic2Saw[periodIndex] >= 0.0F, "2S cubic volume is negative.");
+                    Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] >= 0.0F, "3S cubic volume is negative.");
+                    Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] >= 0.0F, "4S cubic volume is negative.");
 
-                    Assert.IsTrue(bestThinNpv.NetPresentValue2Saw >= -75.0F);
-                    Assert.IsTrue(bestThinNpv.NetPresentValue3Saw >= -75.0F);
-                    Assert.IsTrue(bestThinNpv.NetPresentValue4Saw >= -75.0F);
+                    // TODO: investigate deeply negative NPVs
+                    Assert.IsTrue(bestThinNpv.NetPresentValue2Saw >= 0.0F, "2S NPV is " + bestThinNpv.NetPresentValue2Saw + ".");
+                    Assert.IsTrue(bestThinNpv.NetPresentValue3Saw >= 0.0F, "3S NPV is " + bestThinNpv.NetPresentValue3Saw + ".");
+                    Assert.IsTrue(bestThinNpv.NetPresentValue4Saw >= 0.0F, "4S NPV is " + bestThinNpv.NetPresentValue4Saw + "."); // potentially fairly low when only 4S is removed
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
@@ -986,9 +986,9 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(currentCubicThinningVolume >= 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume <= previousCurrentCubicStandingVolume);
 
-                    Assert.IsTrue(currentThinNpv.NetPresentValue2Saw >= -75.0F);
-                    Assert.IsTrue(currentThinNpv.NetPresentValue3Saw >= -75.0F);
-                    Assert.IsTrue(currentThinNpv.NetPresentValue4Saw >= -75.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue2Saw >= 0.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue3Saw >= 0.0F);
+                    Assert.IsTrue(currentThinNpv.NetPresentValue4Saw >= 0.0F);
                 }
                 else
                 {

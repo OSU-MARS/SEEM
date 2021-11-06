@@ -28,6 +28,7 @@ namespace Osu.Cof.Ferm
         public const float InchesPerCentimeter = 0.393701F;
         public const int MaximizeForAllPlanningPeriods = -2;
         public const float MetersPerFoot = 0.3048F;
+        public const float MinutesPerHour = 60.0F;
         public const float NaturalLogOf10 = 2.3025850930F;
         public const int NoHarvestPeriod = 0;
         public const int NoThinPeriod = -1;
@@ -160,6 +161,7 @@ namespace Osu.Cof.Ferm
             public const float AssessedValue = 1.26F * 1128.57F; // US$/ha-year, average of northwestern Oregon counties adjusted up to site class 1
             public const float BrushControl = 45.0F; // US$/ha
             public const float ChainsawBasalAreaPerHaForFullUtilization = 30.0F; // m²/ha
+            public const float ForwardingDistanceOnRoadPerSortInM = 10.0F; // m
             public const float LowboyInAndOut = 2.0F * (2.0F * 10.0F + 3.0F * 170.0F); // US$/lowboy trip ≈ US$/machine, (move in + move out) * (load + unload + travel time * lowboy $/PMh)
             public const float PlantingLabor = 383.0F; // US$/ha
             public const float PropertyTaxRate = 0.01F * 1.61F; // fraction of assessed value = 0.01 * percent of assessed value, average of northwestern Oregon counties

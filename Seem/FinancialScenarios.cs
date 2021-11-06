@@ -21,14 +21,12 @@ namespace Osu.Cof.Ferm
         public IList<string> Name { get; private init; }
         public IList<float> PropertyTaxAndManagementPerHectareYear { get; private init; }
         public IList<float> RegenerationHarvestCostPerHectare { get; private init; }
-        public IList<float> RegenerationHaulCostPerCubicMeter { get; private init; }
         public IList<float> RegenerationRoadCostPerCubicMeter { get; private init; }
         public IList<float> RegenerationSlashCostPerCubicMeter { get; private init; }
         public IList<float> ReleaseSprayCostPerHectare { get; private init; }
         public IList<float> SeedlingCost { get; private init; }
         public IList<float> SitePrepAndReplantingCostPerHectare { get; private init; }
         public IList<float> ThinningHarvestCostPerHectare { get; private init; }
-        public IList<float> ThinningHaulCostPerCubicMeter { get; private init; }
         public IList<float> ThinningPondValueMultiplier { get; private init; }
         public IList<float> ThinningRoadCostPerCubicMeter { get; private init; }
         public IList<float> ThinningSlashCostPerCubicMeter { get; private init; }
@@ -86,14 +84,12 @@ namespace Osu.Cof.Ferm
             this.Name = new List<string>() { "default" };
             this.PropertyTaxAndManagementPerHectareYear = new List<float>() { Constant.HarvestCost.PropertyTaxRate * Constant.HarvestCost.AssessedValue + Constant.HarvestCost.AdmininistrationCost }; // US$/ha-year
             this.RegenerationHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + 5.0F * Constant.HarvestCost.LowboyInAndOut / Constant.HarvestCost.UnitSize + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha, machines are dozer + feller-buncher + yarder + processor + loader
-            this.RegenerationHaulCostPerCubicMeter = new List<float>() { 8.79F }; // US$/m³, 6 axle long log truck assumed
             this.RegenerationRoadCostPerCubicMeter = new List<float>() { Constant.HarvestCost.RoadMaintenance }; // US$/m³
             this.RegenerationSlashCostPerCubicMeter = new List<float>() { Constant.HarvestCost.SlashDisposal + Constant.HarvestCost.YarderLandingSlashDisposal }; // US$/m³
             this.ReleaseSprayCostPerHectare = new List<float>() { Constant.HarvestCost.ReleaseSpray }; // US$/ha, one release spray
             this.SeedlingCost = new List<float>() { 0.50F }; // US$ per seedling, make species specific when needed
             this.SitePrepAndReplantingCostPerHectare = new List<float>() { Constant.HarvestCost.SitePrep + Constant.HarvestCost.PlantingLabor }; // US$/ha: site prep + planting labor, cost of seedlings not included
             this.ThinningHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + 3.0F * Constant.HarvestCost.LowboyInAndOut / Constant.HarvestCost.UnitSize + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha, machines are dozer + harvester + forwarder
-            this.ThinningHaulCostPerCubicMeter = new List<float>() { 10.17F }; // US$/m³, 7 axle mule train assumed
             this.ThinningPondValueMultiplier = new List<float>() { 0.90F }; // short log price penalty
             this.ThinningRoadCostPerCubicMeter = new List<float>() { Constant.HarvestCost.RoadMaintenance }; // US$/m³
             this.ThinningSlashCostPerCubicMeter = new List<float>() { Constant.HarvestCost.SlashDisposal }; // US$/m³
@@ -102,35 +98,6 @@ namespace Osu.Cof.Ferm
             this.WhiteWood2SawPondValuePerMbf = new List<float>() { 531.00F }; // US$/MBF 2S
             this.WhiteWood3SawPondValuePerMbf = new List<float>() { 525.00F }; // US$/MBF 3S
             this.WhiteWood4SawPondValuePerMbf = new List<float>() { 454.00F }; // US$/MBF 4S/CNS
-        }
-
-        public FinancialScenarios(FinancialScenarios other)
-        {
-            this.DiscountRate = new List<float>(other.DiscountRate);
-            this.DouglasFir2SawPondValuePerMbf = new List<float>(other.DouglasFir2SawPondValuePerMbf);
-            this.DouglasFir3SawPondValuePerMbf = new List<float>(other.DouglasFir3SawPondValuePerMbf);
-            this.DouglasFir4SawPondValuePerMbf = new List<float>(other.DouglasFir4SawPondValuePerMbf);
-            this.HarvestSystems = new List<HarvestSystems>(other.HarvestSystems);
-            this.HarvestTaxPerMbf = new List<float>(other.HarvestTaxPerMbf);
-            this.Name = new List<string>(other.Name);
-            this.PropertyTaxAndManagementPerHectareYear = new List<float>(other.PropertyTaxAndManagementPerHectareYear);
-            this.RegenerationHarvestCostPerHectare = new List<float>(other.RegenerationHarvestCostPerHectare);
-            this.RegenerationHaulCostPerCubicMeter = new List<float>(other.RegenerationHaulCostPerCubicMeter);
-            this.RegenerationRoadCostPerCubicMeter = new List<float>(other.RegenerationRoadCostPerCubicMeter);
-            this.RegenerationSlashCostPerCubicMeter = new List<float>(other.RegenerationSlashCostPerCubicMeter);
-            this.ReleaseSprayCostPerHectare = new List<float>(other.ReleaseSprayCostPerHectare);
-            this.SeedlingCost = new List<float>(other.SeedlingCost);
-            this.SitePrepAndReplantingCostPerHectare = new List<float>(other.SitePrepAndReplantingCostPerHectare);
-            this.ThinningHarvestCostPerHectare = new List<float>(other.ThinningHarvestCostPerHectare);
-            this.ThinningHaulCostPerCubicMeter = new List<float>(other.ThinningHaulCostPerCubicMeter);
-            this.ThinningPondValueMultiplier = new List<float>(other.ThinningPondValueMultiplier);
-            this.ThinningRoadCostPerCubicMeter = new List<float>(other.ThinningRoadCostPerCubicMeter);
-            this.ThinningSlashCostPerCubicMeter = new List<float>(other.ThinningSlashCostPerCubicMeter);
-            this.TimberAppreciationRate = new List<float>(other.TimberAppreciationRate);
-            this.WesternRedcedarCamprunPondValuePerMbf = new List<float>(other.WesternRedcedarCamprunPondValuePerMbf);
-            this.WhiteWood2SawPondValuePerMbf = new List<float>(other.WhiteWood2SawPondValuePerMbf);
-            this.WhiteWood3SawPondValuePerMbf = new List<float>(other.WhiteWood3SawPondValuePerMbf);
-            this.WhiteWood4SawPondValuePerMbf = new List<float>(other.WhiteWood4SawPondValuePerMbf);
         }
 
         public int Count
@@ -191,8 +158,8 @@ namespace Osu.Cof.Ferm
             int harvestAgeInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
             float appreciationFactor = this.GetTimberAppreciationFactor(financialIndex, harvestAgeInYears);
             HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
+            float regenHarvestTaskCostPerCubicMeter = this.RegenerationSlashCostPerCubicMeter[financialIndex] + this.RegenerationRoadCostPerCubicMeter[financialIndex];
             float harvestTaxPerMbf = this.HarvestTaxPerMbf[financialIndex];
-            float regenerationHarvestCostPerCubicMeter = this.RegenerationHaulCostPerCubicMeter[financialIndex] + this.RegenerationSlashCostPerCubicMeter[financialIndex] + this.RegenerationRoadCostPerCubicMeter[financialIndex];
             HarvestFinancialValue financialValue = new();
             foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in trajectory.StandingVolumeBySpecies.Values)
             {
@@ -224,20 +191,20 @@ namespace Osu.Cof.Ferm
 
                 float cubic2saw = standingVolumeForSpecies.Cubic2Saw[endOfRotationPeriod];
                 float scribner2saw = standingVolumeForSpecies.Scribner2Saw[endOfRotationPeriod];
-                financialValue.NetPresentValue2Saw += appreciationFactor * (pondValue2saw - harvestTaxPerMbf) * scribner2saw - regenerationHarvestCostPerCubicMeter * cubic2saw;
+                financialValue.NetPresentValue2Saw += appreciationFactor * (pondValue2saw - harvestTaxPerMbf) * scribner2saw - regenHarvestTaskCostPerCubicMeter * cubic2saw;
 
                 float cubic3saw = standingVolumeForSpecies.Cubic3Saw[endOfRotationPeriod];
                 float scribner3saw = standingVolumeForSpecies.Scribner3Saw[endOfRotationPeriod];
-                financialValue.NetPresentValue3Saw += appreciationFactor * (pondValue3saw - harvestTaxPerMbf) * scribner3saw - regenerationHarvestCostPerCubicMeter * cubic3saw;
+                financialValue.NetPresentValue3Saw += appreciationFactor * (pondValue3saw - harvestTaxPerMbf) * scribner3saw - regenHarvestTaskCostPerCubicMeter * cubic3saw;
 
                 float cubic4saw = standingVolumeForSpecies.Cubic4Saw[endOfRotationPeriod];
                 float scribner4saw = standingVolumeForSpecies.Scribner4Saw[endOfRotationPeriod];
-                financialValue.NetPresentValue4Saw += appreciationFactor * (pondValue4saw - harvestTaxPerMbf) * scribner4saw - regenerationHarvestCostPerCubicMeter * cubic4saw;
+                financialValue.NetPresentValue4Saw += appreciationFactor * (pondValue4saw - harvestTaxPerMbf) * scribner4saw - regenHarvestTaskCostPerCubicMeter * cubic4saw;
             }
 
             // assmume some volume was harvested so costs are incurred
-            LongLogHarvest logLogHarvestCost = harvestSystems.GetLongLogHarvestCosts(stand, trajectory.TreeVolume.RegenerationHarvest);
-            float netValuePerHectareAtHarvest = financialValue.NetPresentValue2Saw + financialValue.NetPresentValue3Saw + financialValue.NetPresentValue4Saw - logLogHarvestCost.MinimumCostPerHa - this.RegenerationHarvestCostPerHectare[financialIndex];
+            LongLogHarvest logLogHarvestSystems = harvestSystems.GetLongLogHarvestCosts(stand, trajectory.TreeVolume.RegenerationHarvest);
+            float netValuePerHectareAtHarvest = financialValue.NetPresentValue2Saw + financialValue.NetPresentValue3Saw + financialValue.NetPresentValue4Saw - logLogHarvestSystems.MinimumCostPerHa - this.RegenerationHarvestCostPerHectare[financialIndex];
 
             float discountRate = this.DiscountRate[financialIndex];
             float discountFactor = this.GetDiscountFactor(financialIndex, harvestAgeInYears);
@@ -257,7 +224,7 @@ namespace Osu.Cof.Ferm
             HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
             float harvestTaxPerMbf = this.HarvestTaxPerMbf[financialIndex];
             int thinningAgeInYears = trajectory.GetStartOfPeriodAge(thinningPeriod);
-            float thinningHaulAndSlashCostPerCubicMeter = this.ThinningHaulCostPerCubicMeter[financialIndex] + this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
+            float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
             float thinningPondValueMultiplier = this.ThinningPondValueMultiplier[financialIndex] * this.GetTimberAppreciationFactor(financialIndex, thinningAgeInYears);
 
             // pond value net of log movement costs
@@ -276,13 +243,6 @@ namespace Osu.Cof.Ferm
 
                 // account for volume harvested
                 financialValue.CubicVolume += cubicVolumeFromSpecies;
-
-                float logs2saw = harvestVolumeForSpecies.Logs2Saw[thinningPeriod];
-                float forwardingCost2Saw = harvestSystems.GetForwardingCostForSort(previousStand, harvestVolumeForSpecies.Species, cubic2Saw, logs2saw);
-                float logs3saw = harvestVolumeForSpecies.Logs3Saw[thinningPeriod];
-                float forwardingCost3Saw = harvestSystems.GetForwardingCostForSort(previousStand, harvestVolumeForSpecies.Species, cubic3Saw, logs3saw);
-                float logs4saw = harvestVolumeForSpecies.Logs4Saw[thinningPeriod];
-                float forwardingCost4Saw = harvestSystems.GetForwardingCostForSort(previousStand, harvestVolumeForSpecies.Species, cubic4Saw, logs4saw);
 
                 // Scribner volume
                 float pondValue2Saw;
@@ -313,20 +273,20 @@ namespace Osu.Cof.Ferm
 
                 // NPV = scale adjustment * appreciation * $/MBF * MBF/ha - $/m³ * m³/ha = $/ha
                 float scribner2saw = harvestVolumeForSpecies.Scribner2Saw[thinningPeriod]; // MBF/ha
-                financialValue.NetPresentValue2Saw += thinningPondValueMultiplier * (pondValue2Saw - harvestTaxPerMbf) * scribner2saw - forwardingCost2Saw - thinningHaulAndSlashCostPerCubicMeter * cubic2Saw;
+                financialValue.NetPresentValue2Saw += thinningPondValueMultiplier * (pondValue2Saw - harvestTaxPerMbf) * scribner2saw - thinningHarvestTaskCostPerCubicMeter * cubic2Saw;
 
                 float scribner3saw = harvestVolumeForSpecies.Scribner3Saw[thinningPeriod];
-                financialValue.NetPresentValue3Saw += thinningPondValueMultiplier * (pondValue3Saw - harvestTaxPerMbf) * scribner3saw - forwardingCost3Saw - thinningHaulAndSlashCostPerCubicMeter * cubic3Saw;
+                financialValue.NetPresentValue3Saw += thinningPondValueMultiplier * (pondValue3Saw - harvestTaxPerMbf) * scribner3saw - thinningHarvestTaskCostPerCubicMeter * cubic3Saw;
 
                 float scribner4saw = harvestVolumeForSpecies.Scribner4Saw[thinningPeriod];
-                financialValue.NetPresentValue4Saw += thinningPondValueMultiplier * (pondValue4Saw - harvestTaxPerMbf) * scribner4saw - forwardingCost4Saw - thinningHaulAndSlashCostPerCubicMeter * cubic4Saw;
+                financialValue.NetPresentValue4Saw += thinningPondValueMultiplier * (pondValue4Saw - harvestTaxPerMbf) * scribner4saw - thinningHarvestTaskCostPerCubicMeter * cubic4Saw;
             }
 
             if (financialValue.CubicVolume > 0.0F)
             {
                 // volume was harvested so thinning costs are incurred
-                float harvesterFellingCost = harvestSystems.GetHarvesterFellingAndProcessingCost(previousStand, trajectory.IndividualTreeSelectionBySpecies, thinningPeriod);
-                float netValuePerHectareAtHarvest = financialValue.NetPresentValue2Saw + financialValue.NetPresentValue3Saw + financialValue.NetPresentValue4Saw - harvesterFellingCost - this.ThinningHarvestCostPerHectare[financialIndex];
+                CutToLengthHarvest ctlHarvestSystem = harvestSystems.GetCutToLengthHarvestCost(previousStand, trajectory.IndividualTreeSelectionBySpecies, trajectory.ThinningVolumeBySpecies, thinningPeriod);
+                float netValuePerHectareAtHarvest = financialValue.NetPresentValue2Saw + financialValue.NetPresentValue3Saw + financialValue.NetPresentValue4Saw - ctlHarvestSystem.MinimumCostPerHa - this.ThinningHarvestCostPerHectare[financialIndex];
                 float discountFactor = this.GetDiscountFactor(financialIndex, thinningAgeInYears);
                 financialValue.NetPresentValue = discountFactor * netValuePerHectareAtHarvest;
             }
@@ -379,12 +339,10 @@ namespace Osu.Cof.Ferm
                 this.Name.Clear();
                 this.PropertyTaxAndManagementPerHectareYear.Clear();
                 this.RegenerationHarvestCostPerHectare.Clear();
-                this.RegenerationHaulCostPerCubicMeter.Clear();
                 this.ReleaseSprayCostPerHectare.Clear();
                 this.SeedlingCost.Clear();
                 this.SitePrepAndReplantingCostPerHectare.Clear();
                 this.ThinningHarvestCostPerHectare.Clear();
-                this.ThinningHaulCostPerCubicMeter.Clear();
                 this.ThinningPondValueMultiplier.Clear();
                 this.TimberAppreciationRate.Clear();
                 this.WesternRedcedarCamprunPondValuePerMbf.Clear();
@@ -421,7 +379,11 @@ namespace Osu.Cof.Ferm
             harvestSystems.ChainsawFellAndBuckUtilization = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ChainsawFellAndBuckUtilization]);
             harvestSystems.ChainsawSlopeLinear = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ChainsawSlopeLinear]);
             harvestSystems.ChainsawSlopeThresholdInPercent = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ChainsawSlopeThreshold]);
+
             harvestSystems.CorridorWidth = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.CorridorWidth]);
+            harvestSystems.CutToLengthHaulPayloadInKg = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.CutToLengthHaulPayload]);
+            harvestSystems.CutToLengthHaulPerSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.CutToLengthHaulPerSMh]);
+            harvestSystems.CutToLengthRoundtripHaulSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.CutToLengthHaulHours]);
 
             harvestSystems.FellerBuncherCostPerSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.FellerBuncherCostPerSMh]);
             harvestSystems.FellerBuncherFellingConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.FellerBuncherConstant]);
@@ -431,12 +393,22 @@ namespace Osu.Cof.Ferm
             harvestSystems.FellerBuncherUtilization = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.FellerBuncherUtilization]);
 
             harvestSystems.ForwarderCostPerSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderCostPerSMh]);
-            harvestSystems.ForwarderPayloadInKg = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderPayload]);
+            harvestSystems.ForwarderDriveWhileLoadingLogs = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderDriveWhileLoadingLogs]);
+            harvestSystems.ForwarderEmptyWeight = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderWeight]);
+            harvestSystems.ForwarderLoadMeanLogVolume = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderLoadMeanLogVolume]);
+            harvestSystems.ForwarderLoadPayload = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderLoadPayload]);
+            harvestSystems.ForwarderMaximumPayloadInKg = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderPayload]);
             harvestSystems.ForwarderSpeedInStandLoadedTethered = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderLoadedTethered]);
             harvestSystems.ForwarderSpeedInStandLoadedUntethered = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderLoadedUntethered]);
             harvestSystems.ForwarderSpeedInStandUnloadedTethered = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderUnloadedTethered]);
             harvestSystems.ForwarderSpeedInStandUnloadedUntethered = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderUnloadedUntethered]);
             harvestSystems.ForwarderSpeedOnRoad = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderOnRoad]);
+            harvestSystems.ForwarderTractiveForce = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderTractiveForce]);
+            harvestSystems.ForwarderUnloadLinearOneSort = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderUnloadLinearOneSort]);
+            harvestSystems.ForwarderUnloadLinearTwoSorts = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderUnloadLinearTwoSorts]);
+            harvestSystems.ForwarderUnloadLinearThreeSorts = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderUnloadLinearThreeSorts]);
+            harvestSystems.ForwarderUnloadMeanLogVolume = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderUnloadMeanLogVolume]);
+            harvestSystems.ForwarderUnloadPayload = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderUnloadPayload]);
             harvestSystems.ForwarderUtilization = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ForwarderUtilization]);
 
             harvestSystems.GrappleYardingConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.GrappleYardingConstant]);
@@ -453,6 +425,10 @@ namespace Osu.Cof.Ferm
             harvestSystems.LoaderCostPerSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.LoaderCostPerSMh]);
             harvestSystems.LoaderProductivity = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.LoaderProductivity]);
             harvestSystems.LoaderUtilization = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.LoaderUtilization]);
+
+            harvestSystems.LongLogHaulPayloadInKg = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.LongLogHaulPayload]);
+            harvestSystems.LongLogHaulPerSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.LongLogHaulPerSMh]);
+            harvestSystems.LongLogHaulRoundtripSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.LongLogHaulHours]);
 
             harvestSystems.ProcessorBuckConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ProcessorConstant]);
             harvestSystems.ProcessorBuckLinear = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ProcessorLinear]);
@@ -538,13 +514,6 @@ namespace Osu.Cof.Ferm
             }
             this.RegenerationHarvestCostPerHectare.Add(regenHarvestPerHectare);
 
-            float regenHarvestHaulCost = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.RegenHaulPerCubicMeter]);
-            if ((regenHarvestHaulCost <= 0.0F) || (regenHarvestHaulCost > 100.0F))
-            {
-                throw new NotSupportedException("Regeneration harvest haul cost is not in the range US$ (0.0, 100.0]/m³.");
-            }
-            this.RegenerationHaulCostPerCubicMeter.Add(regenHarvestHaulCost);
-
             float releaseSpray = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ReleaseSpray]);
             if ((releaseSpray <= 0.0F) || (releaseSpray > 1000.0F))
             {
@@ -572,13 +541,6 @@ namespace Osu.Cof.Ferm
                 throw new NotSupportedException("Thinning harvest cost is not in the range US$ (0.0, 1000.0]/ha.");
             }
             this.ThinningHarvestCostPerHectare.Add(thinHectare);
-
-            float thinHaulCost = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ThinHaulCostPerCubicMeter]);
-            if ((thinHaulCost <= 0.0F) || (thinHaulCost > 100.0F))
-            {
-                throw new NotSupportedException("Thinning haul cost is not in the range US$ (0.0, 100.0]/m³.");
-            }
-            this.ThinningHaulCostPerCubicMeter.Add(thinHaulCost);
 
             float thinPondMultiplier = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ThinPondValueMultiplier]);
             if ((thinPondMultiplier <= 0.0F) || (thinPondMultiplier > 2.0F))
@@ -636,13 +598,11 @@ namespace Osu.Cof.Ferm
             Debug.Assert(this.Count == this.HarvestTaxPerMbf.Count);
             Debug.Assert(this.Count == this.Name.Count);
             Debug.Assert(this.Count == this.ReleaseSprayCostPerHectare.Count);
-            Debug.Assert(this.Count == this.RegenerationHaulCostPerCubicMeter.Count);
             Debug.Assert(this.Count == this.RegenerationHarvestCostPerHectare.Count);
             Debug.Assert(this.Count == this.SeedlingCost.Count);
             Debug.Assert(this.Count == this.SitePrepAndReplantingCostPerHectare.Count);
             Debug.Assert(this.Count == this.PropertyTaxAndManagementPerHectareYear.Count);
             Debug.Assert(this.Count == this.ThinningHarvestCostPerHectare.Count);
-            Debug.Assert(this.Count == this.ThinningHaulCostPerCubicMeter.Count);
             Debug.Assert(this.Count == this.ThinningPondValueMultiplier.Count);
             Debug.Assert(this.Count == this.TimberAppreciationRate.Count);
             Debug.Assert(this.Count == this.WesternRedcedarCamprunPondValuePerMbf.Count);
@@ -667,7 +627,13 @@ namespace Osu.Cof.Ferm
             public int ChainsawFellAndBuckUtilization { get; set; }
             public int ChainsawSlopeLinear { get; set; }
             public int ChainsawSlopeThreshold { get; set; }
+
             public int CorridorWidth { get; set; }
+
+            public int CutToLengthHaulHours { get; set; }
+            public int CutToLengthHaulPayload { get; set; }
+            public int CutToLengthHaulPerSMh { get; set; }
+
             public int DiscountRate { get; set; }
 
             public int FellerBuncherConstant { get; set; }
@@ -678,13 +644,23 @@ namespace Osu.Cof.Ferm
             public int FellerBuncherUtilization { get; set; }
 
             public int ForwarderCostPerSMh { get; set; }
+            public int ForwarderDriveWhileLoadingLogs { get; set; }
             public int ForwarderLoadedTethered { get; set; }
             public int ForwarderLoadedUntethered { get; set; }
+            public int ForwarderLoadMeanLogVolume { get; set; }
+            public int ForwarderLoadPayload { get; set; }
             public int ForwarderOnRoad { get; set; }
             public int ForwarderPayload { get; set; }
+            public int ForwarderTractiveForce { get; set; }
             public int ForwarderUnloadedTethered { get; set; }
             public int ForwarderUnloadedUntethered { get; set; }
+            public int ForwarderUnloadLinearOneSort { get; set; }
+            public int ForwarderUnloadLinearTwoSorts { get; set; }
+            public int ForwarderUnloadLinearThreeSorts { get; set; }
+            public int ForwarderUnloadMeanLogVolume { get; set; }
+            public int ForwarderUnloadPayload { get; set; }
             public int ForwarderUtilization { get; set; }
+            public int ForwarderWeight { get; set; }
 
             public int GrappleYardingConstant { get; set; }
             public int GrappleYardingLinear { get; set; }
@@ -698,9 +674,14 @@ namespace Osu.Cof.Ferm
             public int GrappleYoaderUtilization { get; set; }
 
             public int HarvestTaxPerMbf { get; set; }
+
             public int LoaderProductivity { get; set; }
             public int LoaderCostPerSMh { get; set; }
             public int LoaderUtilization { get; set; }
+            public int LongLogHaulHours { get; set; }
+            public int LongLogHaulPayload { get; set; }
+            public int LongLogHaulPerSMh { get; set; }
+
             public int Name { get; set; }
 
             public int ProcessorConstant { get; set; }
@@ -719,7 +700,6 @@ namespace Osu.Cof.Ferm
             public int Psme4SPond { get; set; }
 
             public int RegenPerHa { get; set; }
-            public int RegenHaulPerCubicMeter { get; set; }
             public int ReleaseSpray { get; set; }
             public int Seedling { get; set; }
             public int SitePrepFixed { get; set; }
@@ -727,7 +707,6 @@ namespace Osu.Cof.Ferm
             public int ThplCamprun { get; set; }
 
             public int ThinPerHa { get; set; }
-            public int ThinHaulCostPerCubicMeter { get; set; }
             public int ThinPondValueMultiplier { get; set; }
             public int TimberAppreciation { get; set; }
 
@@ -813,6 +792,15 @@ namespace Osu.Cof.Ferm
                     case "corridorWidth":
                         this.CorridorWidth = columnIndex;
                         break;
+                    case "ctlHaulHours":
+                        this.CutToLengthHaulHours = columnIndex;
+                        break;
+                    case "ctlHaulPayload":
+                        this.CutToLengthHaulPayload = columnIndex;
+                        break;
+                    case "ctlHaulSMh":
+                        this.CutToLengthHaulPerSMh = columnIndex;
+                        break;
                     case "discountRate":
                         this.DiscountRate = columnIndex;
                         break;
@@ -834,6 +822,9 @@ namespace Osu.Cof.Ferm
                     case "fellerBuncherUtilization":
                         this.FellerBuncherUtilization = columnIndex;
                         break;
+                    case "forwarderDriveWhileLoadingLogs":
+                        this.ForwarderDriveWhileLoadingLogs = columnIndex;
+                        break;
                     case "forwarderPayload":
                         this.ForwarderPayload = columnIndex;
                         break;
@@ -843,11 +834,20 @@ namespace Osu.Cof.Ferm
                     case "forwarderLoadedUntethered":
                         this.ForwarderLoadedUntethered = columnIndex;
                         break;
+                    case "forwarderLoadMeanLogVolume":
+                        this.ForwarderLoadMeanLogVolume = columnIndex;
+                        break;
+                    case "forwarderLoadPayload":
+                        this.ForwarderLoadPayload = columnIndex;
+                        break;
                     case "forwarderOnRoad":
                         this.ForwarderOnRoad = columnIndex;
                         break;
                     case "forwarderSMh":
                         this.ForwarderCostPerSMh = columnIndex;
+                        break;
+                    case "forwarderTractiveForce":
+                        this.ForwarderTractiveForce = columnIndex;
                         break;
                     case "forwarderUnloadedTethered":
                         this.ForwarderUnloadedTethered = columnIndex;
@@ -855,8 +855,26 @@ namespace Osu.Cof.Ferm
                     case "forwarderUnloadedUntethered":
                         this.ForwarderUnloadedUntethered = columnIndex;
                         break;
+                    case "forwarderUnloadLinearOneSort":
+                        this.ForwarderUnloadLinearOneSort = columnIndex;
+                        break;
+                    case "forwarderUnloadLinearTwoSorts":
+                        this.ForwarderUnloadLinearTwoSorts = columnIndex;
+                        break;
+                    case "forwarderUnloadLinearThreeSorts":
+                        this.ForwarderUnloadLinearThreeSorts = columnIndex;
+                        break;
+                    case "forwarderUnloadMeanLogVolume":
+                        this.ForwarderUnloadMeanLogVolume = columnIndex;
+                        break;
+                    case "forwarderUnloadPayload":
+                        this.ForwarderUnloadPayload = columnIndex;
+                        break;
                     case "forwarderUtilization":
                         this.ForwarderUtilization = columnIndex;
+                        break;
+                    case "forwarderWeight":
+                        this.ForwarderWeight = columnIndex;
                         break;
                     case "grappleYardingConstant":
                         this.GrappleYardingConstant = columnIndex;
@@ -900,6 +918,15 @@ namespace Osu.Cof.Ferm
                     case "loaderUtilization":
                         this.LoaderUtilization = columnIndex;
                         break;
+                    case "longLogHaulHours":
+                        this.LongLogHaulHours = columnIndex;
+                        break;
+                    case "longLogHaulPayload":
+                        this.LongLogHaulPayload = columnIndex;
+                        break;
+                    case "longLogHaulSMh":
+                        this.LongLogHaulPerSMh = columnIndex;
+                        break;
                     case "name":
                         this.Name = columnIndex;
                         break;
@@ -942,9 +969,6 @@ namespace Osu.Cof.Ferm
                     case "regenPerHa":
                         this.RegenPerHa = columnIndex;
                         break;
-                    case "regenHaulPerM3":
-                        this.RegenHaulPerCubicMeter = columnIndex;
-                        break;
                     case "releaseSpray":
                         this.ReleaseSpray = columnIndex;
                         break;
@@ -956,9 +980,6 @@ namespace Osu.Cof.Ferm
                         break;
                     case "thinPerHa":
                         this.ThinPerHa = columnIndex;
-                        break;
-                    case "thinHaulPerM3":
-                        this.ThinHaulCostPerCubicMeter = columnIndex;
                         break;
                     case "thinPondMultiplier":
                         this.ThinPondValueMultiplier = columnIndex;
@@ -1067,6 +1088,9 @@ namespace Osu.Cof.Ferm
                 this.ChainsawSlopeThreshold = -1;
 
                 this.CorridorWidth = -1;
+                this.CutToLengthHaulHours = -1;
+                this.CutToLengthHaulPayload = -1;
+                this.CutToLengthHaulPerSMh = -1;
                 this.DiscountRate = -1;
 
                 this.FellerBuncherConstant = -1;
@@ -1077,13 +1101,23 @@ namespace Osu.Cof.Ferm
                 this.FellerBuncherUtilization = -1;
 
                 this.ForwarderCostPerSMh = -1;
+                this.ForwarderDriveWhileLoadingLogs = -1;
                 this.ForwarderLoadedTethered = -1;
                 this.ForwarderLoadedUntethered = -1;
+                this.ForwarderLoadMeanLogVolume = -1;
+                this.ForwarderLoadPayload = -1;
                 this.ForwarderOnRoad = -1;
                 this.ForwarderPayload = -1;
+                this.ForwarderTractiveForce = -1;
                 this.ForwarderUnloadedTethered = -1;
                 this.ForwarderUnloadedUntethered = -1;
+                this.ForwarderUnloadLinearOneSort = -1;
+                this.ForwarderUnloadLinearTwoSorts = -1;
+                this.ForwarderUnloadLinearThreeSorts = -1;
+                this.ForwarderUnloadMeanLogVolume = -1;
+                this.ForwarderUnloadPayload = -1;
                 this.ForwarderUtilization = -1;
+                this.ForwarderWeight = -1;
 
                 this.GrappleYardingConstant = -1;
                 this.GrappleYardingLinear = -1;
@@ -1100,6 +1134,9 @@ namespace Osu.Cof.Ferm
                 this.LoaderProductivity = -1;
                 this.LoaderCostPerSMh = -1;
                 this.LoaderUtilization = -1;
+                this.LongLogHaulHours = -1;
+                this.LongLogHaulPayload = -1;
+                this.LongLogHaulPerSMh = -1;
                 this.Name = -1;
 
                 this.ProcessorCostPerSMh = -1;
@@ -1117,16 +1154,15 @@ namespace Osu.Cof.Ferm
                 this.Psme4SPond = -1;
 
                 this.RegenPerHa = -1;
-                this.RegenHaulPerCubicMeter = -1;
                 this.ReleaseSpray = -1;
                 this.Seedling = -1;
                 this.SitePrepFixed = -1;
 
                 this.ThinPerHa = -1;
-                this.ThinHaulCostPerCubicMeter = -1;
+                this.ThinPondValueMultiplier = -1;
+
                 this.ThplCamprun = -1;
                 this.TimberAppreciation = -1;
-                this.ThinPondValueMultiplier = -1;
 
                 this.TrackedHarvesterConstant = -1;
                 this.TrackedHarvesterFellAndBuckDiameterLimit = -1;
@@ -1220,6 +1256,18 @@ namespace Osu.Cof.Ferm
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.CorridorWidth), "Corridor width column not found.");
                 }
+                if (this.CutToLengthHaulHours < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.CutToLengthHaulHours), "Thinning haul roundtrip hours column not found.");
+                }
+                if (this.CutToLengthHaulPayload < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.CutToLengthHaulPayload), "Thinning haul payload column not found.");
+                }
+                if (this.CutToLengthHaulPerSMh < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.CutToLengthHaulPerSMh), "Thinning haul cost per m³ column not found.");
+                }
                 if (this.DiscountRate < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.DiscountRate), "Discount rate column not found.");
@@ -1254,6 +1302,10 @@ namespace Osu.Cof.Ferm
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ForwarderCostPerSMh), "Forwarder cost column not found.");
                 }
+                if (this.ForwarderDriveWhileLoadingLogs < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderDriveWhileLoadingLogs), "Column for forwarder coefficient of number of logs in payload for driving while loading not found.");
+                }
                 if (this.ForwarderLoadedTethered < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ForwarderLoadedTethered), "Column for forwarder movement speed when loaded and tethered not found.");
@@ -1261,6 +1313,14 @@ namespace Osu.Cof.Ferm
                 if (this.ForwarderLoadedUntethered < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ForwarderLoadedUntethered), "Column for forwarder movement speed when loaded and not tethered cost column not found.");
+                }
+                if (this.ForwarderLoadMeanLogVolume < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderLoadMeanLogVolume), "Column for forwarder coefficient of mean log volume while loading not found.");
+                }
+                if (this.ForwarderLoadPayload < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderLoadPayload), "Column for forwarder coefficient of payload size while loading not found.");
                 }
                 if (this.ForwarderOnRoad < 0)
                 {
@@ -1274,13 +1334,41 @@ namespace Osu.Cof.Ferm
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ForwarderUnloadedTethered), "Column for forwarder movement speed when unloaded and tethered not found.");
                 }
+                if (this.ForwarderUnloadLinearOneSort < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderUnloadLinearOneSort), "Column for linear coefficient of forwarder unload time with one sort not found.");
+                }
+                if (this.ForwarderUnloadLinearTwoSorts < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderUnloadLinearTwoSorts), "Column for linear coefficient of forwarder unload time with two sorts not found.");
+                }
+                if (this.ForwarderUnloadLinearThreeSorts < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderUnloadLinearThreeSorts), "Column for linear coefficient of forwarder unload time with three sorts not found.");
+                }
+                if (this.ForwarderUnloadMeanLogVolume < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderLoadMeanLogVolume), "Column for forwarder coefficient of mean log volume while unloading not found.");
+                }
+                if (this.ForwarderUnloadPayload < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderLoadPayload), "Column for forwarder coefficient of payload size while unloading not found.");
+                }
                 if (this.ForwarderUnloadedUntethered < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ForwarderUnloadedUntethered), "Column for forwarder movement speed when unloaded and not tethered column not found.");
                 }
+                if (this.ForwarderTractiveForce < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderTractiveForce), "Forwarder tractive force column not found.");
+                }
                 if (this.ForwarderUtilization < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ForwarderUtilization), "Forwarder utilization column not found.");
+                }
+                if (this.ForwarderWeight < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.ForwarderWeight), "Forwarder weight column not found.");
                 }
 
                 if (this.GrappleYardingConstant < 0)
@@ -1339,6 +1427,19 @@ namespace Osu.Cof.Ferm
                 if (this.LoaderUtilization < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.LoaderUtilization), "Column for loader utilization not found.");
+                }
+
+                if (this.LongLogHaulHours < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.LongLogHaulPerSMh), "Regeneration haul roundtrip hours column not found.");
+                }
+                if (this.LongLogHaulPayload < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.LongLogHaulPayload), "Regeneration haul payload column not found.");
+                }
+                if (this.LongLogHaulPerSMh < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.LongLogHaulPerSMh), "Regeneration haul cost per SMh column not found.");
                 }
                 if (this.Name < 0)
                 {
@@ -1399,10 +1500,6 @@ namespace Osu.Cof.Ferm
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.RegenPerHa), "Per hectare regeneration harvest cost column not found.");
                 }
-                if (this.RegenHaulPerCubicMeter < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(this.RegenHaulPerCubicMeter), "Regeneration haul cost per m³ column not found.");
-                }
                 if (this.ReleaseSpray < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ReleaseSpray), "Release spray column not found.");
@@ -1423,10 +1520,6 @@ namespace Osu.Cof.Ferm
                 if (this.ThinPerHa < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ThinPerHa), "Per hectare thinning cost column not found.");
-                }
-                if (this.ThinHaulCostPerCubicMeter < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(this.ThinHaulCostPerCubicMeter), "Thinning haul cost per m³ column not found.");
                 }
                 if (this.ThinPondValueMultiplier < 0)
                 {
