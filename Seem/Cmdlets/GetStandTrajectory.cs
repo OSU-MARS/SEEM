@@ -1,6 +1,7 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
+using System.Collections.Generic;
 using System.Management.Automation;
 
 namespace Osu.Cof.Ferm.Cmdlets
@@ -10,19 +11,16 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateNotNullOrEmpty]
-        public FinancialScenarios FinancialScenarios { get; set; }
-
-        [Parameter]
-        [ValidateNotNullOrEmpty]
         public string? Name { get; set; }
-
-        [Parameter]
-        [ValidateRange(1, 100)]
-        public int PlanningPeriods { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, 100.0F)]
         public float ProportionalThinPercentage { get; set; }
+
+        [Parameter]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(0, 100)]
+        public List<int> RotationLengths { get; set; }
 
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
@@ -46,10 +44,9 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public GetStandTrajectory()
         {
-            this.FinancialScenarios = FinancialScenarios.Default;
             this.Name = null;
-            this.PlanningPeriods = 20; // 100 years of simulation with Organon's 5 year timestep
             this.ProportionalThinPercentage = 0.0F; // %
+            this.RotationLengths = new() { 15 }; // 75 years of simulation with Organon's 5 year timestep
             this.ThinFromAbovePercentage = 0.0F; // %
             this.ThinFromBelowPercentage = 0.0F; // %
             this.ThinPeriod = Constant.NoThinPeriod; // no stand entry
@@ -58,33 +55,37 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            if (this.ThinPeriod >= this.PlanningPeriods)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.ThinPeriod));
-            }
-
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
-            OrganonStandTrajectory trajectory = new(this.Stand!, configuration, this.TreeVolume, this.PlanningPeriods);
-            if (this.Name != null)
+            for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
             {
-                trajectory.Name = this.Name;
-            }
-            if (this.ThinPeriod != Constant.NoThinPeriod)
-            {
-                trajectory.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod)
+                int rotationLength = this.RotationLengths[rotationIndex];
+                if (this.ThinPeriod >= rotationIndex)
                 {
-                    FromAbovePercentage = this.ThinFromAbovePercentage,
-                    ProportionalPercentage = this.ProportionalThinPercentage,
-                    FromBelowPercentage = this.ThinFromBelowPercentage
-                });
+                    throw new ParameterOutOfRangeException(nameof(this.ThinPeriod));
+                }
+
+                OrganonStandTrajectory trajectory = new(this.Stand!, configuration, this.TreeVolume, rotationLength);
+                if (this.Name != null)
+                {
+                    trajectory.Name = this.Name;
+                }
+                if (this.ThinPeriod != Constant.NoThinPeriod)
+                {
+                    trajectory.Treatments.Harvests.Add(new ThinByPrescription(this.ThinPeriod)
+                    {
+                        FromAbovePercentage = this.ThinFromAbovePercentage,
+                        ProportionalPercentage = this.ProportionalThinPercentage,
+                        FromBelowPercentage = this.ThinFromBelowPercentage
+                    });
+                }
+
+                // performance: if needed, remove unnecessary repetition of stand simulation for each discount rate
+                // Only one growth simulation is necessary but StandTrajectory lacks an API to recompute its net present value arrays
+                // for a new discount rate.
+                trajectory.Simulate();
+
+                this.WriteObject(trajectory);
             }
-
-            // performance: if needed, remove unnecessary repetition of stand simulation for each discount rate
-            // Only one growth simulation is necessary but StandTrajectory lacks an API to recompute its net present value arrays
-            // for a new discount rate.
-            trajectory.Simulate();
-
-            this.WriteObject(trajectory);
         }
     }
 }

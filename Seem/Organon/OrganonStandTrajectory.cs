@@ -313,13 +313,17 @@ namespace Osu.Cof.Ferm.Organon
 
         public int Simulate()
         {
+            if ((this.StandByPeriod.Length < 1) || (this.StandByPeriod[0] == null))
+            {
+                throw new InvalidOperationException("Initialization required for stand.");
+            }
             if (this.StandByPeriod.Length < 2)
             {
-                throw new NotSupportedException("Stand has no periods to simulate.");
-            }
-            if (this.StandByPeriod[0] == null)
-            {
-                throw new NotSupportedException("Pre-simulation information required for stand.");
+                // no periods to simulate, so nothing to do
+                // This is potentially an error condition in that Simulate() is being called as no op though, given Simulate()'s lazy
+                // behavior and caching, it seems unlikely this will be a problem. And allowing this case permits consideration of rotation
+                // lengths equal to the stand measurement age, which is sometimes useful for completeness.
+                return 0;
             }
 
             // period 0 is the initial condition and therefore never needs to be simulated

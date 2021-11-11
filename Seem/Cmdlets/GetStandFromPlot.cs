@@ -15,8 +15,18 @@ namespace Osu.Cof.Ferm.Cmdlets
         public int Age { get; set; }
 
         [Parameter]
-        [ValidateRange(0.1, Constant.Maximum.ExpansionFactorPerHa)]
+        [ValidateRange(0.1F, Constant.Maximum.ExpansionFactorPerHa)]
         public float? ExpansionFactorPerHa { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0F, 1000.0F)]
+        public float ForwardingTethered { get; set; }
+        [Parameter]
+        [ValidateRange(0.0F, 2000.0F)]
+        public float ForwardingUntethered { get; set; }
+        [Parameter]
+        [ValidateRange(0.0F, 2500.0F)]
+        public float ForwardingRoad { get; set; }
 
         [Parameter]
         public TreeModel Model { get; set; }
@@ -28,6 +38,10 @@ namespace Osu.Cof.Ferm.Cmdlets
         [Parameter(Mandatory = true)]
         [ValidateNotNullOrEmpty]
         public List<int>? Plots { get; set; }
+
+        [Parameter]
+        [ValidateRange(0.0F, 200.0F)]
+        public float SlopeInPercent { get; set; }
 
         [Parameter]
         [ValidateRange(1.0F, Constant.Maximum.SiteIndexInM)]
@@ -48,7 +62,11 @@ namespace Osu.Cof.Ferm.Cmdlets
         public GetStandFromPlot()
         {
             this.ExpansionFactorPerHa = null;
+            this.ForwardingTethered = Constant.HarvestCost.DefaultForwardingDistanceInStandTethered;
+            this.ForwardingUntethered = Constant.HarvestCost.DefaultForwardingDistanceInStandUntethered;
+            this.ForwardingRoad = Constant.HarvestCost.DefaultForwardingDistanceOnRoad;
             this.Model = TreeModel.OrganonNwo;
+            this.SlopeInPercent = Constant.HarvestCost.DefaultSlopeInPercent;
             this.SiteIndexInM = 130.0F;
             this.Trees = null;
             this.Xlsx = null;
@@ -78,10 +96,15 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndexInM);
             }
+
+            stand.SetCorridorLength(this.ForwardingTethered, this.ForwardingUntethered);
+            stand.ForwardingDistanceOnRoad = this.ForwardingRoad;
             if (this.PlantingDensityPerHa.HasValue)
             {
                 stand.PlantingDensityInTreesPerHectare = this.PlantingDensityPerHa.Value;
             }
+            stand.SlopeInPercent = this.SlopeInPercent;
+
             this.WriteObject(stand);
         }
     }

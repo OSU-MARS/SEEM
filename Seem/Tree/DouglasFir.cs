@@ -289,6 +289,18 @@ namespace Osu.Cof.Ferm.Tree
                 this.X2toB2 = MathV.Pow(this.X2, this.B2);
                 this.B1 = MathV.Ln(4.5F / siteIndexFromGroundInFeet) / (MathV.Pow(X1, B2) - this.X2toB2);
             }
+
+            // if this class becomes mutable, implement copy constructor and call in OrganonStand's copy constructor
+            //public SiteConstants(SiteConstants other)
+            //{
+            //    this.B1 = other.B1;
+            //    this.B2 = other.B2;
+            //    this.SiteIndexFromGround = other.SiteIndexFromGround;
+            //    this.X1 = other.X1;
+            //    this.X2toB2 = other.X2toB2;
+            //    this.X2 = other.X2;
+            //    this.X3 = other.X3;
+            //}
         }
     }
 }

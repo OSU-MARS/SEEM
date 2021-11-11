@@ -27,7 +27,7 @@ namespace Osu.Cof.Ferm.Tree
 
         protected StandTrajectory(TreeVolume treeVolume, int lastPlanningPeriod, float plantingDensityInTreesPerHectare)
         {
-            if (lastPlanningPeriod < 1)
+            if (lastPlanningPeriod < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(lastPlanningPeriod));
             }
@@ -234,7 +234,7 @@ namespace Osu.Cof.Ferm.Tree
             {
                 return -1;
             }
-            return this.GetStartOfPeriodAge(firstHarvestPeriod);
+            return this.GetEndOfPeriodAge(firstHarvestPeriod);
         }
 
         public abstract int GetFirstThinPeriod();
@@ -275,7 +275,7 @@ namespace Osu.Cof.Ferm.Tree
             {
                 return Constant.NoThinPeriod;
             }
-            return this.GetStartOfPeriodAge(harvestPeriod);
+            return this.GetEndOfPeriodAge(harvestPeriod);
         }
 
         protected abstract int GetThinPeriod(int thinning);

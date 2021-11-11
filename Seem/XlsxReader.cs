@@ -47,35 +47,38 @@ namespace Osu.Cof.Ferm
             using FileStream stream = new(xlsxFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using SpreadsheetDocument xlsx = SpreadsheetDocument.Open(stream, false);
             WorkbookPart? workbook = xlsx.WorkbookPart;
-            if ((workbook == null) || (workbook.SharedStringTablePart == null) || (workbook.Workbook.Sheets == null))
+            if ((workbook == null) || (workbook.Workbook.Sheets == null))
             {
-                throw new NotSupportedException("Could not find workbook for worksheet '" + worksheetName + "', it is missing a shared string table, or the workbook is missing a sheets part.");
+                throw new NotSupportedException("Could not find workbook for worksheet '" + worksheetName + "'. The workbook is null or is missing a sheets part.");
             }
 
             // read shared strings
             List<string> sharedStrings = new();
-            using Stream sharedStringStream = workbook.SharedStringTablePart.GetStream(FileMode.Open, FileAccess.Read);
-            using XmlReader sharedStringReader = XmlReader.Create(sharedStringStream);
-            sharedStringReader.MoveToContent();
-            while (sharedStringReader.EOF == false)
+            if (workbook.SharedStringTablePart != null)
             {
-                if (sharedStringReader.NodeType != XmlNodeType.Element)
+                using Stream sharedStringStream = workbook.SharedStringTablePart.GetStream(FileMode.Open, FileAccess.Read);
+                using XmlReader sharedStringReader = XmlReader.Create(sharedStringStream);
+                sharedStringReader.MoveToContent();
+                while (sharedStringReader.EOF == false)
                 {
-                    sharedStringReader.Read();
-                }
-                else if (String.Equals(sharedStringReader.LocalName, Constant.OpenXml.Element.SharedString, StringComparison.Ordinal))
-                {
-                    if (sharedStringReader.ReadToDescendant(Constant.OpenXml.Element.SharedStringText, Constant.OpenXml.Namespace) == false)
+                    if (sharedStringReader.NodeType != XmlNodeType.Element)
                     {
-                        throw new XmlException("Value of shared string not found.");
+                        sharedStringReader.Read();
                     }
-                    string value = sharedStringReader.ReadElementContentAsString();
-                    sharedStrings.Add(value);
-                    sharedStringReader.ReadEndElement();
-                }
-                else
-                {
-                    sharedStringReader.Read();
+                    else if (String.Equals(sharedStringReader.LocalName, Constant.OpenXml.Element.SharedString, StringComparison.Ordinal))
+                    {
+                        if (sharedStringReader.ReadToDescendant(Constant.OpenXml.Element.String, Constant.OpenXml.Namespace) == false)
+                        {
+                            throw new XmlException("Value of shared string not found.");
+                        }
+                        string value = sharedStringReader.ReadElementContentAsString();
+                        sharedStrings.Add(value);
+                        sharedStringReader.ReadEndElement();
+                    }
+                    else
+                    {
+                        sharedStringReader.Read();
+                    }
                 }
             }
 
@@ -142,12 +145,17 @@ namespace Osu.Cof.Ferm
                                 int column = XlsxReader.GetExcelColumnIndex(cellReference);
 
                                 // get cell's value
-                                bool isSharedString = String.Equals(rowReader.GetAttribute(Constant.OpenXml.Attribute.CellType), Constant.OpenXml.CellType.SharedString, StringComparison.Ordinal);
-                                if (rowReader.ReadToDescendant(Constant.OpenXml.Element.CellValue, Constant.OpenXml.Namespace))
+                                string? cellType = rowReader.GetAttribute(Constant.OpenXml.Attribute.CellType);
+                                string valueElement = Constant.OpenXml.Element.CellValue;
+                                if (String.Equals(cellType, Constant.OpenXml.CellType.InlineString, StringComparison.Ordinal))
+                                {
+                                    valueElement = Constant.OpenXml.Element.String;
+                                }
+                                if (rowReader.ReadToDescendant(valueElement, Constant.OpenXml.Namespace))
                                 {
                                     string value = rowReader.ReadElementContentAsString();
 
-                                    if (isSharedString)
+                                    if (String.Equals(cellType, Constant.OpenXml.CellType.SharedString, StringComparison.Ordinal))
                                     {
                                         int sharedStringIndex = 0;
                                         for (int index = 0; index < value.Length; ++index)
@@ -170,7 +178,7 @@ namespace Osu.Cof.Ferm
                                 }
                                 else
                                 {
-                                    rowReader.Read();
+                                    throw new XmlException("Value element <" + valueElement + "> not found for cell of type t=\"" + cellType + "\".");
                                 }
                             }
                             else

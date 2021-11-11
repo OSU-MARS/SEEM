@@ -146,89 +146,106 @@ namespace Osu.Cof.Ferm
             return reforestationNpv;
         }
 
-        public HarvestFinancialValue GetNetPresentRegenerationHarvestValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
+        public LongLogHarvest GetNetPresentRegenerationHarvestValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
         {
-            Stand? stand = trajectory.StandByPeriod[endOfRotationPeriod];
-            if (stand == null)
+            Stand? endOfRotationStand = trajectory.StandByPeriod[endOfRotationPeriod];
+            if (endOfRotationStand == null)
             {
                 throw new InvalidOperationException("Stand information is missing for period " + endOfRotationPeriod + ". Has the stand trajectory been fully simulated?");
             }
+
+            // get harvest revenue
             trajectory.RecalculateStandingVolumeIfNeeded(endOfRotationPeriod);
 
+            LongLogHarvest longLogHarvest = new();
             int harvestAgeInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
             float appreciationFactor = this.GetTimberAppreciationFactor(financialIndex, harvestAgeInYears);
-            HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
-            float regenHarvestTaskCostPerCubicMeter = this.RegenerationSlashCostPerCubicMeter[financialIndex] + this.RegenerationRoadCostPerCubicMeter[financialIndex];
             float harvestTaxPerMbf = this.HarvestTaxPerMbf[financialIndex];
-            HarvestFinancialValue financialValue = new();
             foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in trajectory.StandingVolumeBySpecies.Values)
             {
-                float pondValue2saw;
-                float pondValue3saw;
-                float pondValue4saw;
+                // check for nonzero cubic volume removal
+                float cubic2Saw = standingVolumeForSpecies.Cubic2Saw[endOfRotationPeriod];
+                float cubic3Saw = standingVolumeForSpecies.Cubic3Saw[endOfRotationPeriod];
+                float cubic4Saw = standingVolumeForSpecies.Cubic4Saw[endOfRotationPeriod];
+                float cubicVolumeFromSpecies = cubic2Saw + cubic3Saw + cubic4Saw;
+                if (cubicVolumeFromSpecies == 0.0F)
+                {
+                    continue;
+                }
+
+                // account for volume harvested
+                longLogHarvest.CubicVolumePerHa += cubicVolumeFromSpecies;
+
+                float pondValue2Saw;
+                float pondValue3Saw;
+                float pondValue4Saw;
                 switch (standingVolumeForSpecies.Species)
                 {
                     case FiaCode.PseudotsugaMenziesii:
-                        pondValue2saw = this.DouglasFir2SawPondValuePerMbf[financialIndex];
-                        pondValue3saw = this.DouglasFir3SawPondValuePerMbf[financialIndex];
-                        pondValue4saw = this.DouglasFir4SawPondValuePerMbf[financialIndex];
+                        pondValue2Saw = this.DouglasFir2SawPondValuePerMbf[financialIndex];
+                        pondValue3Saw = this.DouglasFir3SawPondValuePerMbf[financialIndex];
+                        pondValue4Saw = this.DouglasFir4SawPondValuePerMbf[financialIndex];
                         break;
                     case FiaCode.ThujaPlicata:
-                        pondValue2saw = this.WesternRedcedarCamprunPondValuePerMbf[financialIndex];
-                        pondValue3saw = pondValue2saw;
-                        pondValue4saw = pondValue2saw;
+                        pondValue2Saw = this.WesternRedcedarCamprunPondValuePerMbf[financialIndex];
+                        pondValue3Saw = pondValue2Saw;
+                        pondValue4Saw = pondValue2Saw;
                         break;
                     case FiaCode.TsugaHeterophylla:
                     case FiaCode.AbiesGrandis: // also Abies amabalis and A. procera, westside
                     case FiaCode.PiceaSitchensis: // also Picea engelmanii
-                        pondValue2saw = this.WhiteWood2SawPondValuePerMbf[financialIndex];
-                        pondValue3saw = this.WhiteWood3SawPondValuePerMbf[financialIndex];
-                        pondValue4saw = this.WhiteWood4SawPondValuePerMbf[financialIndex];
+                        pondValue2Saw = this.WhiteWood2SawPondValuePerMbf[financialIndex];
+                        pondValue3Saw = this.WhiteWood3SawPondValuePerMbf[financialIndex];
+                        pondValue4Saw = this.WhiteWood4SawPondValuePerMbf[financialIndex];
                         break;
                     default:
                         throw new NotSupportedException("Unhandled species " + standingVolumeForSpecies.Species + ".");
                 }
 
-                float cubic2saw = standingVolumeForSpecies.Cubic2Saw[endOfRotationPeriod];
                 float scribner2saw = standingVolumeForSpecies.Scribner2Saw[endOfRotationPeriod];
-                financialValue.NetPresentValue2Saw += appreciationFactor * (pondValue2saw - harvestTaxPerMbf) * scribner2saw - regenHarvestTaskCostPerCubicMeter * cubic2saw;
+                longLogHarvest.PondValue2SawPerHa += appreciationFactor * (pondValue2Saw - harvestTaxPerMbf) * scribner2saw;
 
-                float cubic3saw = standingVolumeForSpecies.Cubic3Saw[endOfRotationPeriod];
                 float scribner3saw = standingVolumeForSpecies.Scribner3Saw[endOfRotationPeriod];
-                financialValue.NetPresentValue3Saw += appreciationFactor * (pondValue3saw - harvestTaxPerMbf) * scribner3saw - regenHarvestTaskCostPerCubicMeter * cubic3saw;
+                longLogHarvest.PondValue3SawPerHa += appreciationFactor * (pondValue3Saw - harvestTaxPerMbf) * scribner3saw;
 
-                float cubic4saw = standingVolumeForSpecies.Cubic4Saw[endOfRotationPeriod];
                 float scribner4saw = standingVolumeForSpecies.Scribner4Saw[endOfRotationPeriod];
-                financialValue.NetPresentValue4Saw += appreciationFactor * (pondValue4saw - harvestTaxPerMbf) * scribner4saw - regenHarvestTaskCostPerCubicMeter * cubic4saw;
+                longLogHarvest.PondValue4SawPerHa += appreciationFactor * (pondValue4Saw - harvestTaxPerMbf) * scribner4saw;
             }
 
-            // assmume some volume was harvested so costs are incurred
-            LongLogHarvest logLogHarvestSystems = harvestSystems.GetLongLogHarvestCosts(stand, trajectory.TreeVolume.RegenerationHarvest);
-            float netValuePerHectareAtHarvest = financialValue.NetPresentValue2Saw + financialValue.NetPresentValue3Saw + financialValue.NetPresentValue4Saw - logLogHarvestSystems.MinimumCostPerHa - this.RegenerationHarvestCostPerHectare[financialIndex];
+            // get harvest cost
+            // TODO: unify standing volume calculation
+            if (longLogHarvest.CubicVolumePerHa > 0.0F)
+            {
+                HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
+                harvestSystems.GetLongLogHarvestCosts(endOfRotationStand, trajectory.TreeVolume.RegenerationHarvest, longLogHarvest);
+
+                float regenHarvestTaskCostPerCubicMeter = this.RegenerationSlashCostPerCubicMeter[financialIndex] + this.RegenerationRoadCostPerCubicMeter[financialIndex];
+                longLogHarvest.TaskCostPerHa = regenHarvestTaskCostPerCubicMeter * longLogHarvest.CubicVolumePerHa + this.RegenerationHarvestCostPerHectare[financialIndex];
+            }
+
+            float netValuePerHectareAtHarvest = longLogHarvest.PondValue2SawPerHa + longLogHarvest.PondValue3SawPerHa + longLogHarvest.PondValue4SawPerHa - longLogHarvest.MinimumSystemCostPerHa - longLogHarvest.TaskCostPerHa;
 
             float discountRate = this.DiscountRate[financialIndex];
             float discountFactor = this.GetDiscountFactor(financialIndex, harvestAgeInYears);
-            financialValue.NetPresentValue = discountFactor * netValuePerHectareAtHarvest - this.PropertyTaxAndManagementPerHectareYear[financialIndex] * (1.0F - discountFactor) / discountRate; // present value of finite series of annual payments = (1 - (1 + r)^-n) / r
-            return financialValue;
+            longLogHarvest.NetPresentValuePerHa = discountFactor * netValuePerHectareAtHarvest - this.PropertyTaxAndManagementPerHectareYear[financialIndex] * (1.0F - discountFactor) / discountRate; // present value of finite series of annual payments = (1 - (1 + r)^-n) / r
+            return longLogHarvest;
         }
 
-        public HarvestFinancialValue GetNetPresentThinningValue(StandTrajectory trajectory, int financialIndex, int thinningPeriod)
+        public CutToLengthHarvest GetNetPresentThinningValue(StandTrajectory trajectory, int financialIndex, int thinningPeriod)
         {
             Stand? previousStand = trajectory.StandByPeriod[thinningPeriod - 1];
             if (previousStand == null)
             {
                 throw new InvalidOperationException("Stand information is missing for period " + (thinningPeriod - 1) + ". Has the stand trajectory been simulated?");
             }
+
+            // get harvest revenue
             trajectory.RecalculateThinningVolumeIfNeeded(thinningPeriod);
 
-            HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
+            CutToLengthHarvest ctlHarvest = new();
             float harvestTaxPerMbf = this.HarvestTaxPerMbf[financialIndex];
-            int thinningAgeInYears = trajectory.GetStartOfPeriodAge(thinningPeriod);
-            float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
+            int thinningAgeInYears = trajectory.GetEndOfPeriodAge(thinningPeriod);
             float thinningPondValueMultiplier = this.ThinningPondValueMultiplier[financialIndex] * this.GetTimberAppreciationFactor(financialIndex, thinningAgeInYears);
-
-            // pond value net of log movement costs
-            HarvestFinancialValue financialValue = new();
             foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in trajectory.ThinningVolumeBySpecies.Values)
             {
                 // check for nonzero cubic volume removal
@@ -242,7 +259,7 @@ namespace Osu.Cof.Ferm
                 }
 
                 // account for volume harvested
-                financialValue.CubicVolume += cubicVolumeFromSpecies;
+                ctlHarvest.CubicVolumePerHa += cubicVolumeFromSpecies;
 
                 // Scribner volume
                 float pondValue2Saw;
@@ -273,38 +290,50 @@ namespace Osu.Cof.Ferm
 
                 // NPV = scale adjustment * appreciation * $/MBF * MBF/ha - $/m³ * m³/ha = $/ha
                 float scribner2saw = harvestVolumeForSpecies.Scribner2Saw[thinningPeriod]; // MBF/ha
-                financialValue.NetPresentValue2Saw += thinningPondValueMultiplier * (pondValue2Saw - harvestTaxPerMbf) * scribner2saw - thinningHarvestTaskCostPerCubicMeter * cubic2Saw;
+                ctlHarvest.PondValue2SawPerHa += thinningPondValueMultiplier * (pondValue2Saw - harvestTaxPerMbf) * scribner2saw;
 
                 float scribner3saw = harvestVolumeForSpecies.Scribner3Saw[thinningPeriod];
-                financialValue.NetPresentValue3Saw += thinningPondValueMultiplier * (pondValue3Saw - harvestTaxPerMbf) * scribner3saw - thinningHarvestTaskCostPerCubicMeter * cubic3Saw;
+                ctlHarvest.PondValue3SawPerHa += thinningPondValueMultiplier * (pondValue3Saw - harvestTaxPerMbf) * scribner3saw;
 
                 float scribner4saw = harvestVolumeForSpecies.Scribner4Saw[thinningPeriod];
-                financialValue.NetPresentValue4Saw += thinningPondValueMultiplier * (pondValue4Saw - harvestTaxPerMbf) * scribner4saw - thinningHarvestTaskCostPerCubicMeter * cubic4Saw;
+                ctlHarvest.PondValue4SawPerHa += thinningPondValueMultiplier * (pondValue4Saw - harvestTaxPerMbf) * scribner4saw;
             }
 
-            if (financialValue.CubicVolume > 0.0F)
+            // get harvest cost
+            // TODO: unify standing volume calculation
+            HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
+            if (ctlHarvest.CubicVolumePerHa > 0.0F)
             {
                 // volume was harvested so thinning costs are incurred
-                CutToLengthHarvest ctlHarvestSystem = harvestSystems.GetCutToLengthHarvestCost(previousStand, trajectory.IndividualTreeSelectionBySpecies, trajectory.ThinningVolumeBySpecies, thinningPeriod);
-                float netValuePerHectareAtHarvest = financialValue.NetPresentValue2Saw + financialValue.NetPresentValue3Saw + financialValue.NetPresentValue4Saw - ctlHarvestSystem.MinimumCostPerHa - this.ThinningHarvestCostPerHectare[financialIndex];
+                harvestSystems.GetCutToLengthHarvestCost(previousStand, trajectory.IndividualTreeSelectionBySpecies, trajectory.ThinningVolumeBySpecies, thinningPeriod, ctlHarvest);
+
+                float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
+                ctlHarvest.TaskCostPerHa = thinningHarvestTaskCostPerCubicMeter * ctlHarvest.CubicVolumePerHa + this.ThinningHarvestCostPerHectare[financialIndex];
+
+                float netValuePerHaAtHarvest = ctlHarvest.PondValue2SawPerHa + ctlHarvest.PondValue3SawPerHa + ctlHarvest.PondValue4SawPerHa - ctlHarvest.MinimumSystemCostPerHa - ctlHarvest.TaskCostPerHa;
                 float discountFactor = this.GetDiscountFactor(financialIndex, thinningAgeInYears);
-                financialValue.NetPresentValue = discountFactor * netValuePerHectareAtHarvest;
+                ctlHarvest.NetPresentValuePerHa = discountFactor * netValuePerHaAtHarvest;
             }
 
-            return financialValue;
+            return ctlHarvest;
         }
 
         public float GetNetPresentValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
         {
-            float netPresentValue = this.GetNetPresentReforestationValue(financialIndex, trajectory.PlantingDensityInTreesPerHectare);
+            float netPresentValue = 0.0F;
             foreach (Harvest harvest in trajectory.Treatments.Harvests)
             {
                 // for now, assume only one harvest per period
-                HarvestFinancialValue thinFinancialValue = this.GetNetPresentThinningValue(trajectory, financialIndex, harvest.Period);
-                netPresentValue += thinFinancialValue.NetPresentValue;
+                CutToLengthHarvest thinFinancialValue = this.GetNetPresentThinningValue(trajectory, financialIndex, harvest.Period);
+                netPresentValue += thinFinancialValue.NetPresentValuePerHa;
             }
-            HarvestFinancialValue regenFinancialValue = this.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, endOfRotationPeriod);
-            netPresentValue += regenFinancialValue.NetPresentValue;
+
+            LongLogHarvest regenFinancialValue = this.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, endOfRotationPeriod);
+            float reforestationNpv = this.GetNetPresentReforestationValue(financialIndex, trajectory.PlantingDensityInTreesPerHectare);
+            regenFinancialValue.NetPresentValuePerHa += reforestationNpv;
+            regenFinancialValue.TaskCostPerHa -= reforestationNpv;
+
+            netPresentValue += regenFinancialValue.NetPresentValuePerHa;
             return netPresentValue;
         }
 
@@ -514,6 +543,20 @@ namespace Osu.Cof.Ferm
             }
             this.RegenerationHarvestCostPerHectare.Add(regenHarvestPerHectare);
 
+            float regenRoadMaintenancePerCubicMeter = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.RegenRoads]);
+            if ((regenRoadMaintenancePerCubicMeter <= 0.0F) || (regenRoadMaintenancePerCubicMeter > 10.0F))
+            {
+                throw new NotSupportedException("Regeneration harvest road maintenance cost per cubic meter is not in the range US$ (0.0, 10.0]/ha.");
+            }
+            this.RegenerationRoadCostPerCubicMeter.Add(regenRoadMaintenancePerCubicMeter);
+
+            float regenSlashDisposalPerCubicMeter = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.RegenSlash]);
+            if ((regenSlashDisposalPerCubicMeter <= 0.0F) || (regenSlashDisposalPerCubicMeter > 10.0F))
+            {
+                throw new NotSupportedException("Regeneration harvest slash disposal cost per cubic meter is not in the range US$ (0.0, 10.0]/ha.");
+            }
+            this.RegenerationSlashCostPerCubicMeter.Add(regenRoadMaintenancePerCubicMeter);
+
             float releaseSpray = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ReleaseSpray]);
             if ((releaseSpray <= 0.0F) || (releaseSpray > 1000.0F))
             {
@@ -548,6 +591,20 @@ namespace Osu.Cof.Ferm
                 throw new NotSupportedException("Pond value multiplier for thinned logs is not in the range (0.0, 2.0].");
             }
             this.ThinningPondValueMultiplier.Add(thinPondMultiplier);
+
+            float thinRoadMaintenancePerCubicMeter = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ThinRoads]);
+            if ((thinRoadMaintenancePerCubicMeter <= 0.0F) || (thinRoadMaintenancePerCubicMeter > 10.0F))
+            {
+                throw new NotSupportedException("Thinning road maintenance cost per cubic meter is not in the range US$ (0.0, 10.0]/ha.");
+            }
+            this.ThinningRoadCostPerCubicMeter.Add(thinRoadMaintenancePerCubicMeter);
+
+            float thinSlashDisposalPerCubicMeter = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ThinSlash]);
+            if ((thinSlashDisposalPerCubicMeter <= 0.0F) || (thinSlashDisposalPerCubicMeter > 10.0F))
+            {
+                throw new NotSupportedException("Thinning slash disposal cost per cubic meter is not in the range US$ (0.0, 10.0]/ha.");
+            }
+            this.ThinningSlashCostPerCubicMeter.Add(thinSlashDisposalPerCubicMeter);
 
             float timberAppreciation = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.TimberAppreciation]);
             if ((discountRate < -0.2F) || (discountRate > 0.2F))
@@ -700,6 +757,8 @@ namespace Osu.Cof.Ferm
             public int Psme4SPond { get; set; }
 
             public int RegenPerHa { get; set; }
+            public int RegenRoads { get; set; }
+            public int RegenSlash { get; set; }
             public int ReleaseSpray { get; set; }
             public int Seedling { get; set; }
             public int SitePrepFixed { get; set; }
@@ -707,6 +766,8 @@ namespace Osu.Cof.Ferm
             public int ThplCamprun { get; set; }
 
             public int ThinPerHa { get; set; }
+            public int ThinRoads { get; set; }
+            public int ThinSlash { get; set; }
             public int ThinPondValueMultiplier { get; set; }
             public int TimberAppreciation { get; set; }
 
@@ -969,6 +1030,12 @@ namespace Osu.Cof.Ferm
                     case "regenPerHa":
                         this.RegenPerHa = columnIndex;
                         break;
+                    case "regenRoads":
+                        this.RegenRoads = columnIndex;
+                        break;
+                    case "regenSlash":
+                        this.RegenSlash = columnIndex;
+                        break;
                     case "releaseSpray":
                         this.ReleaseSpray = columnIndex;
                         break;
@@ -983,6 +1050,12 @@ namespace Osu.Cof.Ferm
                         break;
                     case "thinPondMultiplier":
                         this.ThinPondValueMultiplier = columnIndex;
+                        break;
+                    case "thinRoads":
+                        this.ThinRoads = columnIndex;
+                        break;
+                    case "thinSlash":
+                        this.ThinSlash = columnIndex;
                         break;
                     case "thplCamprun":
                         this.ThplCamprun = columnIndex;
@@ -1066,7 +1139,7 @@ namespace Osu.Cof.Ferm
                         this.White4SPond = columnIndex;
                         break;
                     default:
-                        throw new NotSupportedException("Unknown column " + columnHeader + ".");
+                        throw new NotSupportedException("Unknown column '" + columnHeader + "'.");
                 }
             }
 
@@ -1154,12 +1227,16 @@ namespace Osu.Cof.Ferm
                 this.Psme4SPond = -1;
 
                 this.RegenPerHa = -1;
+                this.RegenRoads = -1;
+                this.RegenSlash = -1;
                 this.ReleaseSpray = -1;
                 this.Seedling = -1;
                 this.SitePrepFixed = -1;
 
                 this.ThinPerHa = -1;
                 this.ThinPondValueMultiplier = -1;
+                this.ThinRoads = -1;
+                this.ThinSlash = -1;
 
                 this.ThplCamprun = -1;
                 this.TimberAppreciation = -1;
@@ -1500,6 +1577,14 @@ namespace Osu.Cof.Ferm
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.RegenPerHa), "Per hectare regeneration harvest cost column not found.");
                 }
+                if (this.RegenRoads < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.RegenPerHa), "Regeneration harvest road maintenance cost column not found.");
+                }
+                if (this.RegenSlash < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.RegenPerHa), "Regeneration harvest slash disposal cost column not found.");
+                }
                 if (this.ReleaseSpray < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ReleaseSpray), "Release spray column not found.");
@@ -1520,6 +1605,14 @@ namespace Osu.Cof.Ferm
                 if (this.ThinPerHa < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ThinPerHa), "Per hectare thinning cost column not found.");
+                }
+                if (this.ThinRoads < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.RegenPerHa), "Thinning road maintenance cost column not found.");
+                }
+                if (this.ThinSlash < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.RegenPerHa), "Thinning slash disposal cost column not found.");
                 }
                 if (this.ThinPondValueMultiplier < 0)
                 {

@@ -2,7 +2,7 @@
 
 namespace Osu.Cof.Ferm.Silviculture
 {
-    public class LongLogHarvest
+    public class LongLogHarvest : HarvestFinancialValue
     {
         public float ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder { get; set; } // m²/ha
         public float ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader { get; set; } // m²/ha
@@ -10,27 +10,26 @@ namespace Osu.Cof.Ferm.Silviculture
         public float ChainsawBasalAreaPerHaWithWheeledHarvester { get; set; } // m²/ha
         public float ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-        public float ChainsawPMhPerHaTrackedHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public float ChainsawPMhPerHaWithTrackedHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float ChainsawPMhPerHaWithWheeledHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
 
         public float FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa { get; set; } // US$/ha
         public float FellerBuncherGrappleYoaderProcessorLoaderCostPerHa { get; set; } // US$/ha
         public float FellerBuncherPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float GrappleSwingYarderOverweightFirstLogsPerHa { get; set; } // logs/ha
+        public float GrappleSwingYarderPMhPerHectare { get; set; } // PMh₀/ha
         public float GrappleYoaderOverweightFirstLogsPerHa { get; set; } // logs/ha
+        public float GrappleYoaderPMhPerHectare { get; set; } // PMh₀/ha
 
-        public float MinimumCostPerHa { get; set; } // US$/ha
+        public float LoadedWeightPerHa { get; set; } // m³/ha
+        // TODO: merge into base class
+        public float MerchantableCubicVolumePerHa { get; set; } // m³/ha
+        public float MinimumSystemCostPerHa { get; set; } // US$/ha
 
         public float ProcessorPMhPerHaWithGrappleSwingYarder { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float ProcessorPMhPerHaWithGrappleYoader { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
 
         public HarvestEquipmentProductivity Productivity { get; private init; }
-
-        public float TotalLoadedWeightPerHa { get; set; } // m³/ha
-        public float TotalMerchantableCubicVolumePerHa { get; set; } // m³/ha
-        public float TotalYardedWeightPerHaWithFellerBuncher { get; set; } // kg/ha
-        public float TotalYardedWeightPerHaWithTrackedHarvester { get; set; } // kg/ha
-        public float TotalYardedWeightPerHaWithWheeledHarvester { get; set; } // kg/ha
 
         public float TrackedHarvesterGrappleYoaderLoaderCostPerHa { get; set; } // US$/ha
         public float TrackedHarvesterGrappleSwingYarderLoaderCostPerHa { get; set; } // US$/ha
@@ -38,6 +37,12 @@ namespace Osu.Cof.Ferm.Silviculture
         public float WheeledHarvesterGrappleYoaderLoaderCostPerHa { get; set; } // US$/ha
         public float WheeledHarvesterGrappleSwingYarderLoaderCostPerHa { get; set; } // US$/ha
         public float WheeledHarvesterPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+
+        // yarded weight with feller buncher (plus chainsaw) should be highest as bark loss is lowest
+        // yarded weight with harvesters depends on bark loss from processing by the harvester versus chainsaw bucking
+        public float YardedWeightPerHaWithFellerBuncher { get; set; } // kg/ha
+        public float YardedWeightPerHaWithTrackedHarvester { get; set; } // kg/ha
+        public float YardedWeightPerHaWithWheeledHarvester { get; set; } // kg/ha
 
         public LongLogHarvest()
         {
@@ -47,27 +52,25 @@ namespace Osu.Cof.Ferm.Silviculture
             this.ChainsawBasalAreaPerHaWithWheeledHarvester = 0.0F;
             this.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
             this.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader = 0.0F;
-            this.ChainsawPMhPerHaTrackedHarvester = 0.0F;
+            this.ChainsawPMhPerHaWithTrackedHarvester = 0.0F;
             this.ChainsawPMhPerHaWithWheeledHarvester = 0.0F;
 
             this.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa = Single.NaN;
             this.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa = Single.NaN;
             this.FellerBuncherPMhPerHa = 0.0F;
             this.GrappleSwingYarderOverweightFirstLogsPerHa = 0.0F;
+            this.GrappleSwingYarderPMhPerHectare = 0.0F;
             this.GrappleYoaderOverweightFirstLogsPerHa = 0.0F;
-            
-            this.MinimumCostPerHa = Single.NaN;
+            this.GrappleYoaderPMhPerHectare = 0.0F;
+
+            this.LoadedWeightPerHa = 0.0F;
+            this.MerchantableCubicVolumePerHa = 0.0F;
+            this.MinimumSystemCostPerHa = Single.NaN;
 
             this.ProcessorPMhPerHaWithGrappleSwingYarder = 0.0F;
             this.ProcessorPMhPerHaWithGrappleYoader = 0.0F;
 
             this.Productivity = new();
-
-            this.TotalLoadedWeightPerHa = 0.0F;
-            this.TotalMerchantableCubicVolumePerHa = 0.0F;
-            this.TotalYardedWeightPerHaWithFellerBuncher = 0.0F;
-            this.TotalYardedWeightPerHaWithTrackedHarvester = 0.0F;
-            this.TotalYardedWeightPerHaWithWheeledHarvester = 0.0F;
 
             this.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa = Single.NaN;
             this.TrackedHarvesterGrappleYoaderLoaderCostPerHa = Single.NaN;
@@ -75,6 +78,40 @@ namespace Osu.Cof.Ferm.Silviculture
             this.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = Single.NaN;
             this.WheeledHarvesterGrappleYoaderLoaderCostPerHa = Single.NaN;
             this.WheeledHarvesterPMhPerHa = 0.0F;
+
+            this.YardedWeightPerHaWithFellerBuncher = 0.0F;
+            this.YardedWeightPerHaWithTrackedHarvester = 0.0F;
+            this.YardedWeightPerHaWithWheeledHarvester = 0.0F;
+        }
+
+        public HarvestSystem GetMinimumCostHarvestSystem()
+        {
+            if (this.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa == this.MinimumSystemCostPerHa)
+            {
+                return HarvestSystem.FellerBuncherGrappleSwingYarderProcessorLoader;
+            }
+            if (this.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa == this.MinimumSystemCostPerHa)
+            {
+                return HarvestSystem.FellerBuncherGrappleYoaderProcessorLoader;
+            }
+            if (this.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa == this.MinimumSystemCostPerHa)
+            {
+                return HarvestSystem.TrackedHarvesterGrappleSwingYarderLoader;
+            }
+            if (this.TrackedHarvesterGrappleYoaderLoaderCostPerHa == this.MinimumSystemCostPerHa)
+            {
+                return HarvestSystem.TrackedHarvesterGrappleYoaderLoader;
+            }
+            if (this.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa == this.MinimumSystemCostPerHa)
+            {
+                return HarvestSystem.WheeledHarvesterGrappleSwingYarderLoader;
+            }
+            if (this.WheeledHarvesterGrappleYoaderLoaderCostPerHa == this.MinimumSystemCostPerHa)
+            {
+                return HarvestSystem.WheeledHarvesterGrappleYoaderLoader;
+            }
+
+            throw new InvalidOperationException("Minimum harvest cost per hectare does not match any harvest system.");
         }
 
         public class HarvestEquipmentProductivity

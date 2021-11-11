@@ -42,10 +42,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // rows for periods
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxIndex = resultsSpecified ? this.Results!.PositionsEvaluated.Count : this.Trajectories!.Count;
-            for (int positionOrTrajectoryIndex = 0; positionOrTrajectoryIndex < maxIndex; ++positionOrTrajectoryIndex)
+            int maxPositionIndex = this.GetMaxPositionIndex();
+            for (int positionIndex = 0; positionIndex < maxPositionIndex; ++positionIndex)
             {
-                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionOrTrajectoryIndex, out StringBuilder linePrefix, out int _, out int _);
+                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionIndex, out StringBuilder linePrefix, out int _, out int _);
 
                 SnagDownLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
                 for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)

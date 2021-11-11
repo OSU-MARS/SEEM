@@ -2,21 +2,21 @@
 
 namespace Osu.Cof.Ferm.Silviculture
 {
-    public class CutToLengthHarvest
+    public class CutToLengthHarvest : HarvestFinancialValue
     {
         //public float ChainsawBasalAreaPerHaWithTrackedHarvester { get; set; } // m²/ha
         public float ChainsawBasalAreaPerHaWithWheeledHarvester { get; set; } // m²/ha
         //public float ChainsawPMhPerHaTrackedHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float ChainsawPMhPerHaWithWheeledHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
 
+        public float ForwardedWeightPeHa { get; set; } // kg/ha
         public float ForwarderCostPerHa { get; set; } // US$/ha
         public float ForwarderPMhPerHa { get; set; } // accumulated in delay free minutes/ha and then converted to PMh₀/ha
 
-        public float MinimumCostPerHa { get; set; } // US$/ha
-
+        // TODO: merge into base class
+        public float MerchantableCubicVolumePerHa { get; set; } // m³/ha
+        public float MinimumSystemCostPerHa { get; set; } // US$/ha
         public HarvestEquipmentProductivity Productivity { get; private init; }
-        public float TotalForwardedWeightPeHa { get; set; } // kg
-        public float TotalMerchantableCubicVolume { get; set; } // m³/ha
 
         //public float TrackedHarvesterCostPerHa { get; set; } // US$/ha
         //public float TrackedHarvesterPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
@@ -30,11 +30,13 @@ namespace Osu.Cof.Ferm.Silviculture
             //this.ChainsawPMhPerHaTrackedHarvester = 0.0F;
             this.ChainsawPMhPerHaWithWheeledHarvester = 0.0F;
 
-            this.MinimumCostPerHa = Single.NaN;
+            this.ForwardedWeightPeHa = 0.0F;
+            this.ForwarderCostPerHa = 0.0F;
+            this.ForwarderPMhPerHa = 0.0F;
 
+            this.MerchantableCubicVolumePerHa = 0.0F;
+            this.MinimumSystemCostPerHa = Single.NaN;
             this.Productivity = new();
-            this.TotalMerchantableCubicVolume = 0.0F;
-            this.TotalForwardedWeightPeHa = 0.0F;
             
             //this.TrackedHarvesterCostPerHa = Single.NaN;
             //this.TrackedHarvesterPMhPerHa = 0.0F;

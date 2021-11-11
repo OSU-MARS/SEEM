@@ -13,7 +13,7 @@ namespace Osu.Cof.Ferm.Organon
         // time since oldest cohort of trees in the stand reached breast height (4.5 feet) (DOUG?)
         public int BreastHeightAgeInYears { get; set; }
 
-        public DouglasFir.SiteConstants DouglasFirSiteConstants { get; private init; }
+        public DouglasFir.SiteConstants DouglasFirSiteConstants { get; private set; }
 
         // also used for ponderosa (SWO) and western redcedar (NWO)
         public float HemlockSiteIndexInFeet { get; private set; }
@@ -52,23 +52,29 @@ namespace Osu.Cof.Ferm.Organon
             this.DouglasFirSiteConstants = new DouglasFir.SiteConstants(primarySiteIndexInFeet);
             this.HemlockSiteIndexInFeet = -1.0F;
             this.NumberOfPlots = 1;
-            this.SiteIndexInFeet = primarySiteIndexInFeet;
+            this.PlantingDensityInTreesPerHectare = 0.0F;
             this.RedAlderSiteIndexInfeet = -1.0F;
             this.RedAlderGrowthEffectiveAge = -1.0F;
-            this.TreeHeightWarningBySpecies = new SortedList<FiaCode, bool[]>();
+            this.SiteIndexInFeet = primarySiteIndexInFeet;
+            this.TreeHeightWarningBySpecies = new();
             this.Warnings = new OrganonWarnings();
         }
 
         public OrganonStand(OrganonStand other)
-            : this(other.AgeInYears, other.SiteIndexInFeet)
+            : base(other)
         {
+            this.AgeInYears = other.AgeInYears;
             this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
+            this.DouglasFirSiteConstants = other.DouglasFirSiteConstants; // currently immutable, so shallow copy for now
             this.HemlockSiteIndexInFeet = other.HemlockSiteIndexInFeet;
             this.Name = other.Name;
             this.NumberOfPlots = other.NumberOfPlots;
             this.RedAlderSiteIndexInfeet = other.RedAlderSiteIndexInfeet;
-            this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
-            this.SlopeInPercent = other.SlopeInPercent;
+            this.RedAlderGrowthEffectiveAge = other.RedAlderGrowthEffectiveAge;
+            this.SdiMaxConstantA1 = other.SdiMaxConstantA1;
+            this.SdiMaxExponentA2 = other.SdiMaxExponentA2;
+            this.SiteIndexInFeet = other.SiteIndexInFeet;
+            this.TreeHeightWarningBySpecies = new();
             this.Warnings = new OrganonWarnings(other.Warnings);
 
             foreach (KeyValuePair<FiaCode, bool[]> species in other.TreeHeightWarningBySpecies)
@@ -76,10 +82,6 @@ namespace Osu.Cof.Ferm.Organon
                 bool[] heightWarnings = new bool[species.Value.Length];
                 species.Value.CopyTo(heightWarnings, 0);
                 this.TreeHeightWarningBySpecies.Add(species.Key, heightWarnings);
-            }
-            foreach (KeyValuePair<FiaCode, Trees> species in other.TreesBySpecies)
-            {
-                this.TreesBySpecies.Add(species.Key, new Trees(species.Value));
             }
         }
 
@@ -97,6 +99,7 @@ namespace Osu.Cof.Ferm.Organon
             if (this.SiteIndexInFeet < 0.0F)
             {
                 this.SiteIndexInFeet = variant.ToSiteIndex(this.HemlockSiteIndexInFeet);
+                this.DouglasFirSiteConstants = new(this.SiteIndexInFeet);
             }
             if (this.HemlockSiteIndexInFeet < 0.0F)
             {

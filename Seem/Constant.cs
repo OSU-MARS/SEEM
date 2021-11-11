@@ -161,6 +161,10 @@ namespace Osu.Cof.Ferm
             public const float AssessedValue = 1.26F * 1128.57F; // US$/ha-year, average of northwestern Oregon counties adjusted up to site class 1
             public const float BrushControl = 45.0F; // US$/ha
             public const float ChainsawBasalAreaPerHaForFullUtilization = 30.0F; // m²/ha
+            public const float DefaultForwardingDistanceInStandTethered = 310.0F; // m
+            public const float DefaultForwardingDistanceInStandUntethered = 10.0F; // m
+            public const float DefaultForwardingDistanceOnRoad = 30.0F; // m
+            public const float DefaultSlopeInPercent = 65.0F;
             public const float ForwardingDistanceOnRoadPerSortInM = 10.0F; // m
             public const float LowboyInAndOut = 2.0F * (2.0F * 10.0F + 3.0F * 170.0F); // US$/lowboy trip ≈ US$/machine, (move in + move out) * (load + unload + travel time * lowboy $/PMh)
             public const float PlantingLabor = 383.0F; // US$/ha
@@ -256,6 +260,7 @@ namespace Osu.Cof.Ferm
 
             public static class CellType
             {
+                public const string InlineString = "inlineStr";
                 public const string SharedString = "s";
             }
 
@@ -264,10 +269,11 @@ namespace Osu.Cof.Ferm
                 public const string Cell = "c";
                 public const string CellValue = "v";
                 public const string Dimension = "dimension";
+                public const string InlineString = "is";
                 public const string Row = "row";
                 public const string SharedString = "si";
-                public const string SharedStringText = "t";
                 public const string SheetData = "sheetData";
+                public const string String = "t";
             }
         }
 

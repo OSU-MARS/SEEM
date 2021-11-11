@@ -281,9 +281,17 @@ namespace Osu.Cof.Ferm.Silviculture
             return productivity;
         }
 
-        public CutToLengthHarvest GetCutToLengthHarvestCost(Stand stand, SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, SortedList<FiaCode, TreeSpeciesMerchantableVolume> harvestVolumeBySpecies, int harvestPeriod)
+        public void GetCutToLengthHarvestCost(Stand stand, SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, SortedList<FiaCode, TreeSpeciesMerchantableVolume> harvestVolumeBySpecies, int harvestPeriod, CutToLengthHarvest ctlHarvest)
         {
-            CutToLengthHarvest ctlHarvest = new();
+            if ((ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester != 0.0F) ||
+                (ctlHarvest.ForwarderPMhPerHa != 0.0F) ||
+                (ctlHarvest.TotalMerchantableCubicVolume != 0.0F) ||
+                (ctlHarvest.TotalForwardedWeightPeHa != 0.0F) ||
+                (ctlHarvest.WheeledHarvesterPMhPerHa != 0.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(ctlHarvest));
+            }
+
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 float diameterToCentimetersMultiplier = 1.0F;
@@ -392,7 +400,7 @@ namespace Osu.Cof.Ferm.Silviculture
             ctlHarvest.WheeledHarvesterCostPerHa = this.WheeledHarvesterCostPerSMh * wheeledHarvesterSMhPerHectare;
 
             // find payload available for slope from traction
-            float forwarderPayloadInKg = MathF.Max(this.ForwarderMaximumPayloadInKg, this.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * stand.SlopeInPercent))) - this.ForwarderEmptyWeight);
+            float forwarderPayloadInKg = MathF.Min(this.ForwarderMaximumPayloadInKg, this.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * stand.SlopeInPercent))) - this.ForwarderEmptyWeight);
             if (forwarderPayloadInKg <= 0.0F)
             {
                 throw new NotSupportedException("Stand slope (" + stand.SlopeInPercent + "%) is too steep for forwarding.");
@@ -449,13 +457,12 @@ namespace Osu.Cof.Ferm.Silviculture
 
                 ctlHarvest.ForwarderPMhPerHa += forwarderPMhPerSpecies;
             }
-            ctlHarvest.ForwarderCostPerHa += this.ForwarderCostPerSMh * ctlHarvest.ForwarderPMhPerHa / this.ForwarderUtilization;
+            ctlHarvest.ForwarderCostPerHa = this.ForwarderCostPerSMh * ctlHarvest.ForwarderPMhPerHa / this.ForwarderUtilization;
 
             float haulRoundtripsPerHectare = ctlHarvest.TotalForwardedWeightPeHa / this.CutToLengthHaulPayloadInKg;
             float haulCostPerHectare = this.CutToLengthRoundtripHaulSMh * haulRoundtripsPerHectare * this.CutToLengthHaulPerSMh;
 
             ctlHarvest.MinimumCostPerHa = ctlHarvest.WheeledHarvesterCostPerHa + minimumChainsawCostWithWheeledHarvester + ctlHarvest.ForwarderCostPerHa + haulCostPerHectare;
-            return ctlHarvest;
         }
 
         public LongLogHarvest GetLongLogHarvestCosts(Stand stand, ScaledVolume scaledVolume)
@@ -600,7 +607,7 @@ namespace Osu.Cof.Ferm.Silviculture
                         }
 
                         // tree is not bucked by harvester, so bark loss is only from yarding
-                        longLogHarvest.ChainsawPMhPerHaTrackedHarvester += expansionFactorPerHa * treeChainsawTime;
+                        longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester += expansionFactorPerHa * treeChainsawTime;
                         longLogHarvest.TotalYardedWeightPerHaWithTrackedHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
                         longLogHarvest.TrackedHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                     }
@@ -684,7 +691,7 @@ namespace Osu.Cof.Ferm.Silviculture
 
                     // loader productivity is specified so no loader calculations
 
-                    // haul hweight
+                    // haul weight
                     float woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAfterYardingAndProcessing);
                     longLogHarvest.TotalLoadedWeightPerHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing * treeSpeciesProperties.StemDensityAfterYardingAndProcessing;
                 }
@@ -723,9 +730,9 @@ namespace Osu.Cof.Ferm.Silviculture
                 }
 
                 float grappleSwingYarderTurnsPerHectare = longLogHarvest.TotalYardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
-                float grappleSwingYarderPMhPerHectare = grappleSwingYarderTurnsPerHectare * meanGrappleYardingTurnTime / Constant.SecondsPerHour;
-                longLogHarvest.Productivity.GrappleSwingYarder = longLogHarvest.TotalMerchantableCubicVolumePerHa / grappleSwingYarderPMhPerHectare;
-                float grappleSwingYarderSMhPerHectare = grappleSwingYarderPMhPerHectare / this.GrappleSwingYarderUtilization;
+                longLogHarvest.GrappleSwingYarderPMhPerHectare = grappleSwingYarderTurnsPerHectare * meanGrappleYardingTurnTime / Constant.SecondsPerHour;
+                longLogHarvest.Productivity.GrappleSwingYarder = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.GrappleSwingYarderPMhPerHectare;
+                float grappleSwingYarderSMhPerHectare = longLogHarvest.GrappleSwingYarderPMhPerHectare / this.GrappleSwingYarderUtilization;
 
                 longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder /= Constant.SecondsPerHour;
                 longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder;
@@ -767,13 +774,13 @@ namespace Osu.Cof.Ferm.Silviculture
                 }
 
                 float grappleYoaderTurnsPerHectare = longLogHarvest.TotalYardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
-                float grappleYoaderPMhPerHectare = grappleYoaderTurnsPerHectare * meanGrappleYardingTurnTime / Constant.SecondsPerHour;
-                longLogHarvest.Productivity.GrappleYoader = longLogHarvest.TotalMerchantableCubicVolumePerHa / grappleYoaderPMhPerHectare;
-                float grappleYoaderSMhPerHectare = grappleYoaderPMhPerHectare / this.GrappleYoaderUtilization;
+                longLogHarvest.GrappleYoaderPMhPerHectare = grappleYoaderTurnsPerHectare * meanGrappleYardingTurnTime / Constant.SecondsPerHour;
+                longLogHarvest.Productivity.GrappleYoader = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.GrappleYoaderPMhPerHectare;
+                float grappleYoaderSMhPerHectare = longLogHarvest.GrappleYoaderPMhPerHectare / this.GrappleYoaderUtilization;
 
-                float processorPMhPerHectareWithGrappleYoader = longLogHarvest.ProcessorPMhPerHaWithGrappleYoader / Constant.SecondsPerHour;
-                longLogHarvest.Productivity.ProcessorWithGrappleYoader = longLogHarvest.TotalMerchantableCubicVolumePerHa / processorPMhPerHectareWithGrappleYoader;
-                float processorSMhPerHectareWithGrappleYoader = processorPMhPerHectareWithGrappleYoader / this.ProcessorUtilization;
+                longLogHarvest.ProcessorPMhPerHaWithGrappleYoader /= Constant.SecondsPerHour;
+                longLogHarvest.Productivity.ProcessorWithGrappleYoader = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleYoader;
+                float processorSMhPerHectareWithGrappleYoader = longLogHarvest.ProcessorPMhPerHaWithGrappleYoader / this.ProcessorUtilization;
 
                 float limitingSMhWithFellerBuncherAndGrappleYoader = MathE.Max(grappleYoaderSMhPerHectare, processorSMhPerHectareWithGrappleYoader, loaderSMhPerHectare);
                 float grappleYoaderCostPerHectareWithFellerBuncher = this.GrappleYoaderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleYoader;
@@ -783,8 +790,9 @@ namespace Osu.Cof.Ferm.Silviculture
                     grappleYoaderCostPerHectareWithFellerBuncher + processorCostPerHectareWithGrappleYoader + loaderCostPerHectareWithFellerBuncherAndGrappleYoader +
                     haulCostPerHectare;
 
-                Debug.Assert((limitingSMhWithFellerBuncherAndGrappleSwingYarder > 0.0F) && (Single.IsNaN(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa) == false) && (longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa > 0.0F) && (longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa < 50000.0F) &&
-                             (limitingSMhWithFellerBuncherAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa) == false) && (longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa > 0.0F) && (longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa < 50000.0F));
+                // if heuristic selects all trees for thinning then there are no trees at final harvest and SMh and costs are zero
+                Debug.Assert((limitingSMhWithFellerBuncherAndGrappleSwingYarder >= 0.0F) && (Single.IsNaN(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa) == false) && (longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa >= 0.0F) && (longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa < 75.0F * 1000.0F) &&
+                             (limitingSMhWithFellerBuncherAndGrappleYoader >= 0.0F) && (Single.IsNaN(longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa) == false) && (longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa >= 0.0F) && (longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa < 85.0F * 1000.0F));
 
                 // coupled utilization not currently calculated but may be of debugging interest
                 //float swingYarderCoupledUtilization = grappleSwingYarderPMhPerHectare / limitingSMh;
@@ -800,8 +808,7 @@ namespace Osu.Cof.Ferm.Silviculture
                 // For now, assume uniform slope across stand.
                 if (stand.SlopeInPercent > this.TrackedHarvesterSlopeThresholdInPercent)
                 {
-                    float harvesterSlopeMultiplier = 1.0F + this.TrackedHarvesterSlopeLinear * (stand.SlopeInPercent - this.TrackedHarvesterSlopeThresholdInPercent);
-                    longLogHarvest.TrackedHarvesterPMhPerHa *= harvesterSlopeMultiplier;
+                    longLogHarvest.TrackedHarvesterPMhPerHa *= 1.0F + this.TrackedHarvesterSlopeLinear * (stand.SlopeInPercent - this.TrackedHarvesterSlopeThresholdInPercent);
                 }
                 longLogHarvest.TrackedHarvesterPMhPerHa /= Constant.SecondsPerHour;
                 longLogHarvest.Productivity.TrackedHarvester = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.TrackedHarvesterPMhPerHa;
@@ -809,16 +816,17 @@ namespace Osu.Cof.Ferm.Silviculture
                 float trackedHarvesterCostPerHectare = this.TrackedHarvesterCostPerSMh * longLogHarvest.TrackedHarvesterPMhPerHa / this.TrackedHarvesterUtilization;
 
                 float minimumChainsawCostWithTrackedHarvester = 0.0F;
-                if (longLogHarvest.ChainsawPMhPerHaTrackedHarvester > 0.0F)
+                if (longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester > 0.0F)
                 {
                     if (stand.SlopeInPercent > this.ChainsawSlopeThresholdInPercent)
                     {
-                        longLogHarvest.ChainsawPMhPerHaTrackedHarvester *= 1.0F + this.ChainsawSlopeLinear * (stand.SlopeInPercent - this.ChainsawSlopeThresholdInPercent);
+                        longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester *= 1.0F + this.ChainsawSlopeLinear * (stand.SlopeInPercent - this.ChainsawSlopeThresholdInPercent);
                     }
-                    float chainsawFellAndBuckPMhPerHectare = longLogHarvest.ChainsawPMhPerHaTrackedHarvester / Constant.SecondsPerHour;
+                    longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester /= Constant.SecondsPerHour;
+
                     float chainsawFellAndBuckUtilization = this.ChainsawFellAndBuckUtilization * MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                    float chainsawFellAndBuckCost = this.ChainsawFellAndBuckCostPerSMh * chainsawFellAndBuckPMhPerHectare / chainsawFellAndBuckUtilization;
-                    float chainsawByOperatorSMh = chainsawFellAndBuckPMhPerHectare / this.ChainsawByOperatorUtilization; // SMh
+                    float chainsawFellAndBuckCost = this.ChainsawFellAndBuckCostPerSMh * longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / chainsawFellAndBuckUtilization;
+                    float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / this.ChainsawByOperatorUtilization; // SMh
                     float chainsawByOperatorCost = (this.TrackedHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
                     minimumChainsawCostWithTrackedHarvester = MathF.Min(chainsawFellAndBuckCost, chainsawByOperatorCost);
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester > 0.0F);
@@ -865,9 +873,10 @@ namespace Osu.Cof.Ferm.Silviculture
                     {
                         longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester *= 1.0F + this.ChainsawSlopeLinear * (stand.SlopeInPercent - this.ChainsawSlopeThresholdInPercent);
                     }
-                    float chainsawFellAndBuckPMhPerHectare = longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / Constant.SecondsPerHour;
+                    longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester /= Constant.SecondsPerHour;
+
                     float chainsawFellAndBuckUtilization = this.ChainsawFellAndBuckUtilization * MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                    float chainsawFellAndBuckCost = this.ChainsawFellAndBuckCostPerSMh * chainsawFellAndBuckPMhPerHectare / chainsawFellAndBuckUtilization;
+                    float chainsawFellAndBuckCost = this.ChainsawFellAndBuckCostPerSMh * longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / chainsawFellAndBuckUtilization;
                     float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / (Constant.SecondsPerHour * this.ChainsawByOperatorUtilization); // SMh
                     float chainsawByOperatorCost = chainsawByOperatorSMh * (this.WheeledHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh);
                     minimumChainsawCostWithWheeledHarvester = MathF.Min(chainsawFellAndBuckCost, chainsawByOperatorCost);
@@ -891,10 +900,10 @@ namespace Osu.Cof.Ferm.Silviculture
                     grappleYoaderCostPerHectareWithWheeledHarvester + loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader +
                     haulCostPerHectareWithWheeledHarvester;
 
-                Debug.Assert((limitingSMhWithTrackedHarvesterAndGrappleSwingYarder > 0.0F) && (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa < 50000.0F) &&
-                             (limitingSMhWithTrackedHarvesterAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa < 50000.0F) &&
-                             (limitingSMhWithWheeledHarvesterAndGrappleSwingYarder > 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa < 50000.0F) &&
-                             (limitingSMhWithWheeledHarvesterAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa < 50000.0F));
+                Debug.Assert((limitingSMhWithTrackedHarvesterAndGrappleSwingYarder > 0.0F) && (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa < 100.0F * 1000.0F) &&
+                             (limitingSMhWithTrackedHarvesterAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa < 100.0F * 1000.0F) &&
+                             (limitingSMhWithWheeledHarvesterAndGrappleSwingYarder > 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa < 125.0F * 1000.0F) &&
+                             (limitingSMhWithWheeledHarvesterAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa < 125.0F * 1000.0F));
             }
 
             longLogHarvest.MinimumCostPerHa = MathE.Min(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa, longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa,
@@ -909,17 +918,17 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Intercept of chainsaw bucking time is not in the range [0.0, 90.0] seconds.");
             }
-            if ((this.ChainsawBuckCostPerSMh < 0.0F) || (this.ChainsawBuckCostPerSMh > 250.0F))
+            if ((this.ChainsawBuckCostPerSMh < 50.0F) || (this.ChainsawBuckCostPerSMh > 250.0F))
             {
-                throw new NotSupportedException("Cost of chainsaw bucking time is not in the range US$ [0.0, 250.0]/PMh.");
+                throw new NotSupportedException("Cost of chainsaw bucking time is not in the range US$ [50.0, 250.0]/PMh.");
             }
             if ((this.ChainsawBuckLinear < 0.0F) || (this.ChainsawBuckLinear > 150.0F))
             {
                 throw new NotSupportedException("Linear coefficient of chainsaw bucking time is not in the range [0.0, 150.0] seconds/m³.");
             }
-            if ((this.ChainsawBuckUtilization <= 0.0F) || (this.ChainsawBuckUtilization > 1.0F))
+            if ((this.ChainsawBuckUtilization < 0.1F) || (this.ChainsawBuckUtilization > 1.0F))
             {
-                throw new NotSupportedException("Utilization of chainsw bucker is not in the range (0.0, 1.0].");
+                throw new NotSupportedException("Utilization of chainsw bucker is not in the range [0.1, 1.0].");
             }
             if ((this.ChainsawBuckQuadratic < 0.0F) || (this.ChainsawBuckQuadratic > 90.0F))
             {
@@ -929,37 +938,37 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Onset of quadratic chainsaw bucking time is not in the range [0.0, 25.0] m³.");
             }
-            if ((this.ChainsawByOperatorCostPerSMh < 0.0F) || (this.ChainsawByOperatorCostPerSMh > 250.0F))
+            if ((this.ChainsawByOperatorCostPerSMh < 0.0F) || (this.ChainsawByOperatorCostPerSMh > 25.0F))
             {
-                throw new NotSupportedException("Cost of chainsaw use by heavy equipment operator is not in the range US$ [0.0, 250.0]/PMh.");
+                throw new NotSupportedException("Cost of chainsaw use by heavy equipment operator is not in the range US$ [0.0, 25.0]/PMh.");
             }
-            if ((this.ChainsawByOperatorUtilization < 0.0F) || (this.ChainsawByOperatorUtilization > 250.0F))
+            if ((this.ChainsawByOperatorUtilization < 0.1F) || (this.ChainsawByOperatorUtilization > 1.0F))
             {
-                throw new NotSupportedException("Utilization of chainsaw use by heavy equipment operator is not in the range (0.0, 1.0].");
+                throw new NotSupportedException("Utilization of chainsaw use by heavy equipment operator is not in the range [0.1, 1.0].");
             }
             if ((this.ChainsawFellAndBuckConstant < 0.0F) || (this.ChainsawFellAndBuckConstant > 90.0F))
             {
                 throw new NotSupportedException("Intercept of chainsaw felling and bucking time is not in the range (0.0, 90.0] seconds.");
             }
-            if ((this.ChainsawFellAndBuckCostPerSMh < 0.0F) || (this.ChainsawFellAndBuckCostPerSMh > 500.0F))
+            if ((this.ChainsawFellAndBuckCostPerSMh < 50.0F) || (this.ChainsawFellAndBuckCostPerSMh > 400.0F))
             {
-                throw new NotSupportedException("Cost of chainsaw felling and bucking is not in the range US$ [0.0, 500.0]/SMh.");
+                throw new NotSupportedException("Cost of chainsaw felling and bucking is not in the range US$ [50.0, 400.0]/SMh.");
             }
             if ((this.ChainsawFellAndBuckLinear < 0.0F) || (this.ChainsawFellAndBuckLinear > 250.0F))
             {
                 throw new NotSupportedException("Linear coefficient of chainsaw felling and bucking time is not in the range (0.0, 250.0] seconds/m³.");
             }
-            if ((this.ChainsawSlopeLinear < 0.0F) || (this.ChainsawSlopeLinear > 0.1F))
+            if ((this.ChainsawSlopeLinear < 0.0F) || (this.ChainsawSlopeLinear > 0.2F))
             {
-                throw new NotSupportedException("Linear slope coeffcient on chainsaw cycle time is not in the range of [0.0, 0.1].");
+                throw new NotSupportedException("Linear slope coeffcient on chainsaw cycle time is not in the range of [0.0, 0.2].");
             }
             if ((this.ChainsawSlopeThresholdInPercent <= 0.0F) || (this.ChainsawSlopeThresholdInPercent > 200.0F))
             {
                 throw new NotSupportedException("Onset of slope effects on chainsaw crews is not in the range of [0.0, 200.0]%.");
             }
-            if ((this.ChainsawFellAndBuckUtilization <= 0.0F) || (this.ChainsawFellAndBuckUtilization > 1.0F))
+            if ((this.ChainsawFellAndBuckUtilization <= 0.1F) || (this.ChainsawFellAndBuckUtilization > 1.0F))
             {
-                throw new NotSupportedException("Utilization of chainsaw felling and bucking crew is not in the range (0.0, 1.0].");
+                throw new NotSupportedException("Utilization of chainsaw felling and bucking crew is not in the range [0.1, 1.0].");
             }
 
             if ((this.CorridorWidth < 1.0F) || (this.CorridorWidth > 25.0F))
@@ -988,9 +997,9 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Linear coefficient of feller-buncher per tree felling time is not in the range [0.0, 250.0] seconds/m³.");
             }
-            if ((this.FellerBuncherCostPerSMh < 0.0F) || (this.FellerBuncherCostPerSMh > 1000.0F))
+            if ((this.FellerBuncherCostPerSMh < 100.0F) || (this.FellerBuncherCostPerSMh > 500.0F))
             {
-                throw new NotSupportedException("Feller-buncher operating cost is not in the range US$ [0.0, 1000.0]/PMh.");
+                throw new NotSupportedException("Feller-buncher operating cost is not in the range US$ [100.0, 500.0]/PMh.");
             }
             if ((this.FellerBuncherSlopeLinear < 0.0F) || (this.FellerBuncherSlopeLinear > 0.1F))
             {
@@ -1001,9 +1010,9 @@ namespace Osu.Cof.Ferm.Silviculture
                 throw new NotSupportedException("Onset of slope effects on feller-buncher felling time is not in the range [0.0, 200.0]%.");
             }
 
-            if ((this.ForwarderCostPerSMh < 0.0F) || (this.ForwarderCostPerSMh > 750.0F))
+            if ((this.ForwarderCostPerSMh < 100.0F) || (this.ForwarderCostPerSMh > 500.0F))
             {
-                throw new NotSupportedException("Forwarder operating cost is not in the range US$ [0.0, 750.0]/SMh.");
+                throw new NotSupportedException("Forwarder operating cost is not in the range US$ [0.0, 500.0]/SMh.");
             }
             if ((this.ForwarderDriveWhileLoadingLogs < 0.65F) || (this.ForwarderDriveWhileLoadingLogs > 0.9F))
             {
@@ -1029,21 +1038,21 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Forwarder loaded travel speed while tethered is not in the range (0.0, 100.0] m/min.");
             }
-            if ((this.ForwarderSpeedInStandLoadedUntethered <= 0.0F) || (this.ForwarderSpeedInStandLoadedUntethered > 100.0F))
+            if ((this.ForwarderSpeedInStandLoadedUntethered <= 0.0F) || (this.ForwarderSpeedInStandLoadedUntethered > 125.0F))
             {
-                throw new NotSupportedException("Forwarder loaded travel speed without a tether is not in the range (0.0, 100.0] m/min.");
+                throw new NotSupportedException("Forwarder loaded travel speed without a tether is not in the range (0.0, 125.0] m/min.");
             }
             if ((this.ForwarderSpeedInStandUnloadedTethered <= 0.0F) || (this.ForwarderSpeedInStandUnloadedTethered > 100.0F))
             {
                 throw new NotSupportedException("Forwarder unloaded travel speed while tethered is not in the range (0.0, 100.0] m/min.");
             }
-            if ((this.ForwarderSpeedInStandUnloadedUntethered <= 0.0F) || (this.ForwarderSpeedInStandUnloadedUntethered > 100.0F))
+            if ((this.ForwarderSpeedInStandUnloadedUntethered <= 0.0F) || (this.ForwarderSpeedInStandUnloadedUntethered > 150.0F))
             {
-                throw new NotSupportedException("Forwarder unloaded travel speed without a tether is not in the range (0.0, 100.0] m/min.");
+                throw new NotSupportedException("Forwarder unloaded travel speed without a tether is not in the range (0.0, 150.0] m/min.");
             }
-            if ((this.ForwarderSpeedOnRoad <= 0.0F) || (this.ForwarderSpeedOnRoad > 100.0F))
+            if ((this.ForwarderSpeedOnRoad <= 0.0F) || (this.ForwarderSpeedOnRoad > 150.0F))
             {
-                throw new NotSupportedException("Forwarder travel speed on roads is not in the range (0.0, 100.0] m/min.");
+                throw new NotSupportedException("Forwarder travel speed on roads is not in the range (0.0, 150.0] m/min.");
             }
             if ((this.ForwarderTractiveForce < 50.0F) || (this.ForwarderTractiveForce > 500.0F))
             {
@@ -1069,9 +1078,9 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Forwarder unload coefficient for payload size is not in the range [0.5, 0.7].");
             }
-            if ((this.ForwarderUtilization <= 0.0F) || (this.ForwarderUtilization > 1.0F))
+            if ((this.ForwarderUtilization < 0.1F) || (this.ForwarderUtilization > 1.0F))
             {
-                throw new NotSupportedException("Forwarder utilization is not in the range (0.0, 1.0].");
+                throw new NotSupportedException("Forwarder utilization is not in the range [0.1, 1.0].");
             }
 
             if ((this.GrappleYardingConstant <= 0.0F) || (this.GrappleYardingConstant > 500.0F))
@@ -1094,9 +1103,9 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Grapple swing yarder mean payload is not in the range of [100.0, 4500.0] kg.");
             }
-            if ((this.GrappleSwingYarderUtilization <= 0.0F) || (this.GrappleSwingYarderUtilization > 1.0F))
+            if ((this.GrappleSwingYarderUtilization <= 0.1F) || (this.GrappleSwingYarderUtilization > 1.0F))
             {
-                throw new NotSupportedException("Grapple swing yarder utilization is not in the range of (0.0, 1.0].");
+                throw new NotSupportedException("Grapple swing yarder utilization is not in the range of [0.1, 1.0].");
             }
             if ((this.GrappleYoaderMaxPayload < 500.0F) || (this.GrappleYoaderMaxPayload > 8000.0F))
             {
@@ -1106,26 +1115,26 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Grapple yoader mean payload is not in the range of [100.0, 4500.0] kg.");
             }
-            if ((this.GrappleYoaderCostPerSMh < 100.0F) || (this.GrappleYoaderCostPerSMh > 750.0F))
+            if ((this.GrappleYoaderCostPerSMh < 100.0F) || (this.GrappleYoaderCostPerSMh > 500.0F))
             {
-                throw new NotSupportedException("Grapple yoader operating cost is not in the range of US$ [100.0, 750.0]/PMh.");
+                throw new NotSupportedException("Grapple yoader operating cost is not in the range of US$ [100.0, 500.0]/SMh.");
             }
-            if ((this.GrappleYoaderUtilization <= 0.0F) || (this.GrappleYoaderUtilization > 1.0F))
+            if ((this.GrappleYoaderUtilization < 0.1F) || (this.GrappleYoaderUtilization > 1.0F))
             {
-                throw new NotSupportedException("Grapple yoader utilization is not in the range of (0.0, 1.0].");
+                throw new NotSupportedException("Grapple yoader utilization is not in the range of [0.1, 1.0].");
             }
 
-            if ((this.LoaderCostPerSMh < 0.0F) || (this.LoaderCostPerSMh > 750.0F))
+            if ((this.LoaderCostPerSMh < 100.0F) || (this.LoaderCostPerSMh > 500.0F))
             {
-                throw new NotSupportedException("Loader operating cost is not in the range US$ [0.0, 750.0]/SMh.");
+                throw new NotSupportedException("Loader operating cost is not in the range US$ [100.0, 500.0]/SMh.");
             }
             if ((this.LoaderProductivity < 20000.0F) || (this.LoaderProductivity > 80000.0F))
             {
                 throw new NotSupportedException("Loader productivity is not in the range [20000.0, 80000.0] kg/PMh.");
             }
-            if ((this.LoaderUtilization <= 0.0F) || (this.LoaderUtilization > 1.0F))
+            if ((this.LoaderUtilization < 0.1F) || (this.LoaderUtilization > 1.0F))
             {
-                throw new NotSupportedException("Loader utilization is not in the range of (0.0, 1.0].");
+                throw new NotSupportedException("Loader utilization is not in the range of [0.1, 1.0].");
             }
 
             if ((this.LongLogHaulPayloadInKg < 20000.0F) || (this.LongLogHaulPayloadInKg > 32000.0F))
@@ -1165,18 +1174,18 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Onset of second quadratic increase in processing time is not in the range (0.0, 20.0] m³.");
             }
-            if ((this.ProcessorCostPerSMh < 0.0F) || (this.ProcessorCostPerSMh > 750.0F))
+            if ((this.ProcessorCostPerSMh < 100.0F) || (this.ProcessorCostPerSMh > 500.0F))
             {
-                throw new NotSupportedException("Processor operating cost is not in the range US$ [0.0, 750.0]/PMh.");
+                throw new NotSupportedException("Processor operating cost is not in the range US$ [100.0, 500.0]/PMh.");
             }
-            if ((this.ProcessorUtilization <= 0.0F) || (this.LoaderUtilization > 1.0F))
+            if ((this.ProcessorUtilization < 0.1F) || (this.LoaderUtilization > 1.0F))
             {
-                throw new NotSupportedException("Processor utilization is not in the range of (0.0, 1.0].");
+                throw new NotSupportedException("Processor utilization is not in the range of [0.1, 1.0].");
             }
 
-            if ((this.TrackedHarvesterCostPerSMh < 0.0F) || (this.TrackedHarvesterCostPerSMh > 750.0F))
+            if ((this.TrackedHarvesterCostPerSMh < 100.0F) || (this.TrackedHarvesterCostPerSMh > 500.0F))
             {
-                throw new NotSupportedException("Tracked harvester operating cost is not in the range US$ [0.0, 750.0]/SMh.");
+                throw new NotSupportedException("Tracked harvester operating cost is not in the range US$ [100.0, 500.0]/SMh.");
             }
             if ((this.TrackedHarvesterFellAndBuckDiameterLimit < 30.0F) || (this.TrackedHarvesterFellAndBuckDiameterLimit > 100.0F))
             {
@@ -1214,14 +1223,14 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Onset of slope effects on tracked harvester felling and processing time is not in the range [0.0, 200.0] %.");
             }
-            if ((this.TrackedHarvesterUtilization <= 0.0F) || (this.TrackedHarvesterUtilization > 1.0F))
+            if ((this.TrackedHarvesterUtilization < 0.1F) || (this.TrackedHarvesterUtilization > 1.0F))
             {
-                throw new NotSupportedException("Tracked harvester utilization is not in the range (0.0, 1.0].");
+                throw new NotSupportedException("Tracked harvester utilization is not in the range [0.1, 1.0].");
             }
 
-            if ((this.WheeledHarvesterCostPerSMh < 0.0F) || (this.WheeledHarvesterCostPerSMh > 750.0F))
+            if ((this.WheeledHarvesterCostPerSMh < 100.0F) || (this.WheeledHarvesterCostPerSMh > 500.0F))
             {
-                throw new NotSupportedException("Wheeled harvester operating cost is not in the range US$ [0.0, 750.0]/SMh.");
+                throw new NotSupportedException("Wheeled harvester operating cost is not in the range US$ [100.0, 500.0]/SMh.");
             }
             if ((this.WheeledHarvesterFellAndBuckDiameterLimit < 30.0F) || (this.WheeledHarvesterFellAndBuckDiameterLimit > 100.0F))
             {
@@ -1251,9 +1260,9 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Onset of slope effects on wheeled harvester felling and processing time is not in the range [0.0, 200.0] %.");
             }
-            if ((this.WheeledHarvesterUtilization <= 0.0F) || (this.WheeledHarvesterUtilization > 1.0F))
+            if ((this.WheeledHarvesterUtilization < 0.1F) || (this.WheeledHarvesterUtilization > 1.0F))
             {
-                throw new NotSupportedException("Wheeled harvester utilization is not in the range (0.0, 1.0].");
+                throw new NotSupportedException("Wheeled harvester utilization is not in the range [0.1, 1.0].");
             }
         }
     }

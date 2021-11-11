@@ -1,7 +1,6 @@
 ﻿using Osu.Cof.Ferm.Extensions;
 using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
 using System.Diagnostics;
@@ -40,10 +39,10 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // rows for periods
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxIndex = resultsSpecified ? this.Results!.PositionsEvaluated.Count : this.Trajectories!.Count;
-            for (int positionOrTrajectoryIndex = 0; positionOrTrajectoryIndex < maxIndex; ++positionOrTrajectoryIndex)
+            int maxPositionIndex = this.GetMaxPositionIndex();
+            for (int positionIndex = 0; positionIndex < maxPositionIndex; ++positionIndex)
             {
-                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionOrTrajectoryIndex, out StringBuilder linePrefix, out int _, out int _);
+                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionIndex, out StringBuilder linePrefix, out int _, out int _);
 
                 for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)
                 {

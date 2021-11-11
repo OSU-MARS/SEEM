@@ -76,9 +76,9 @@ namespace Osu.Cof.Ferm.Cmdlets
             OrganonStandTrajectory highTrajectory = solutions.High.GetBestTrajectoryWithDefaulting(position);
 
             string? heuristicParameters = solutions.High.GetParameters().GetCsvValues();
-            string? firstThinAge = firstThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetStartOfPeriodAge(firstThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
-            string? secondThinAge = secondThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetStartOfPeriodAge(secondThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
-            string? thirdThinAge = thirdThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetStartOfPeriodAge(thirdThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
+            string? firstThinAge = firstThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetEndOfPeriodAge(firstThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
+            string? secondThinAge = secondThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetEndOfPeriodAge(secondThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
+            string? thirdThinAge = thirdThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetEndOfPeriodAge(thirdThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
             string rotationLength = highTrajectory.GetEndOfPeriodAge(endOfRotationPeriod).ToString(CultureInfo.InvariantCulture);
             string financialScenario = results.FinancialScenarios.Name[position.FinancialIndex];
             

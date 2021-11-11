@@ -204,7 +204,7 @@ namespace Osu.Cof.Ferm.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { -0.0467F, 0.128F };
+                Span<float> minFinancialValues = stackalloc[] { -0.0468F, 0.128F };
                 Span<int> treesThinned = stackalloc[] { 5, 0 };
             #else
                 Span<float> minFinancialValues = stackalloc[] { 1.043F, 1.179F };
@@ -932,8 +932,8 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue(firstThinningPeriod != Constant.NoHarvestPeriod);
             bestTrajectory.GetMerchantableVolumes(out StandMerchantableVolume bestStandingVolume, out StandMerchantableVolume bestHarvestedVolume);
             heuristic.CurrentTrajectory.GetMerchantableVolumes(out StandMerchantableVolume currentStandingVolume, out StandMerchantableVolume currentHarvestedVolume);
-            HarvestFinancialValue bestThinNpv = new();
-            HarvestFinancialValue currentThinNpv = new();
+            CutToLengthHarvest bestThinNpv = new();
+            CutToLengthHarvest currentThinNpv = new();
             float previousBestCubicStandingVolume = Single.NaN;
             float previousCurrentCubicStandingVolume = Single.NaN;
             for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)

@@ -8,9 +8,9 @@ namespace Osu.Cof.Ferm.Tree
     public class Stand
     {
         public float CorridorLength { get; set; } // m
-        public float ForwardingDistanceInStandTethered { get; private init; } // m, mean
-        public float ForwardingDistanceInStandUntethered { get; private init; } // m, mean
-        public float ForwardingDistanceOnRoad { get; private init; } // m, mean corridor to landing
+        public float ForwardingDistanceInStandTethered { get; private set; } // m, mean
+        public float ForwardingDistanceInStandUntethered { get; private set; } // m, mean
+        public float ForwardingDistanceOnRoad { get; set; } // m, mean distance from corridor to log unload point
         public string? Name { get; set; }
         public float? PlantingDensityInTreesPerHectare { get; set; }
         public float SlopeInPercent { get; set; }
@@ -19,15 +19,29 @@ namespace Osu.Cof.Ferm.Tree
 
         public Stand()
         {
-            this.ForwardingDistanceInStandTethered = 310.0F;
-            this.ForwardingDistanceInStandUntethered = 10.0F;
-            this.ForwardingDistanceOnRoad = 200.0F;
+            // this.CorridorLength, ForwardingDistanceInStandTethered, and ForwardingDistanceInStandUntethered
+            this.SetCorridorLength(Constant.HarvestCost.DefaultForwardingDistanceInStandTethered, Constant.HarvestCost.DefaultForwardingDistanceInStandUntethered);
+            this.ForwardingDistanceOnRoad = Constant.HarvestCost.DefaultForwardingDistanceOnRoad;
             this.Name = null;
             this.PlantingDensityInTreesPerHectare = null;
-            this.SlopeInPercent = 65.0F;
+            this.SlopeInPercent = Constant.HarvestCost.DefaultSlopeInPercent;
             this.TreesBySpecies = new SortedList<FiaCode, Trees>();
+        }
 
-            this.CorridorLength = this.ForwardingDistanceInStandUntethered + this.ForwardingDistanceInStandTethered;
+        public Stand(Stand other)
+        {
+            // this.CorridorLength, ForwardingDistanceInStandTethered, and ForwardingDistanceInStandUntethered
+            this.SetCorridorLength(other.ForwardingDistanceInStandTethered, other.ForwardingDistanceInStandUntethered);
+            this.ForwardingDistanceOnRoad = other.ForwardingDistanceOnRoad;
+            this.Name = other.Name;
+            this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
+            this.SlopeInPercent = other.SlopeInPercent;
+            this.TreesBySpecies = new(other.TreesBySpecies.Count);
+
+            foreach (KeyValuePair<FiaCode, Trees> species in other.TreesBySpecies)
+            {
+                this.TreesBySpecies.Add(species.Key, new Trees(species.Value));
+            }
         }
 
         public float GetLiveBiomass()
@@ -204,6 +218,13 @@ namespace Osu.Cof.Ferm.Tree
                 }
             }
             return units!.Value;
+        }
+
+        public void SetCorridorLength(float forwardingDistanceInStandTethered, float forwardingDistanceInStandUntethered)
+        {
+            this.CorridorLength = forwardingDistanceInStandTethered + forwardingDistanceInStandUntethered;
+            this.ForwardingDistanceInStandTethered = forwardingDistanceInStandTethered;
+            this.ForwardingDistanceInStandUntethered = forwardingDistanceInStandUntethered;
         }
     }
 }
