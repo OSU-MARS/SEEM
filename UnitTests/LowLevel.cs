@@ -428,8 +428,8 @@ namespace Osu.Cof.Ferm.Test
 
             Assert.IsTrue((harvestSystems.LoaderCostPerSMh < 500.0F) &&
                           (harvestSystems.LoaderCostPerSMh > 100.0F));
-            Assert.IsTrue((harvestSystems.LoaderProductivity < 200.0F) &&
-                          (harvestSystems.LoaderProductivity > 10.0F));
+            Assert.IsTrue((harvestSystems.LoaderProductivity < 80000.0F) &&
+                          (harvestSystems.LoaderProductivity > 20000.0F));
             Assert.IsTrue((harvestSystems.LoaderUtilization < 1.0F) &&
                           (harvestSystems.LoaderUtilization > 0.5F));
 

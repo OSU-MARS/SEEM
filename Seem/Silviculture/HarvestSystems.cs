@@ -69,7 +69,7 @@ namespace Osu.Cof.Ferm.Silviculture
         public float GrappleYoaderUtilization { get; set; } // fraction
 
         public float LoaderCostPerSMh { get; set; } // US$/SMh
-        public float LoaderProductivity { get; set; } // m³/PMh
+        public float LoaderProductivity { get; set; } // kg/PMh₀
         public float LoaderUtilization { get; set; } // fraction
 
         public float LongLogHaulPayloadInKg { get; set; } // kg
@@ -183,11 +183,11 @@ namespace Osu.Cof.Ferm.Silviculture
 
             // nominal loader at landing
             this.LoaderCostPerSMh = 177.0F; // US$/SMh
-            this.LoaderProductivity = 72.5F; // m³/PMh
+            this.LoaderProductivity = 2.0F * 0.99F * 26275.0F; // kg/PMh₀, two six axle long log truckloads per hour
             this.LoaderUtilization = 0.90F;
 
             // long log truck
-            this.LongLogHaulPayloadInKg = 26012.0F; // kg, 6 axle long log truck assumed
+            this.LongLogHaulPayloadInKg = 0.99F * 26275.0F; // kg, 6 axle long log truck assumed
             this.LongLogHaulPerSMh = 83.72F; // US$/m³
             this.LongLogHaulRoundtripSMh = 3.58F; // SMh
 
@@ -686,13 +686,13 @@ namespace Osu.Cof.Ferm.Silviculture
 
                     // haul hweight
                     float woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAfterYardingAndProcessing);
-                    longLogHarvest.TotalHaulWeightPerHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing * treeSpeciesProperties.StemDensityAfterYardingAndProcessing;
+                    longLogHarvest.TotalLoadedWeightPerHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing * treeSpeciesProperties.StemDensityAfterYardingAndProcessing;
                 }
             }
 
             // feller-buncher + chainsaw + yarder-processor-loader system costs
             float meanGrappleYardingTurnTime = this.GrappleYardingConstant + this.GrappleYardingLinear * 0.5F * stand.CorridorLength; // parallel yarding
-            float loaderSMhPerHectare = longLogHarvest.TotalMerchantableCubicVolumePerHa / (this.LoaderUtilization * this.LoaderProductivity);
+            float loaderSMhPerHectare = longLogHarvest.TotalLoadedWeightPerHa / (this.LoaderUtilization * this.LoaderProductivity);
             // TODO: full corridor and processing bark loss
             {
                 if (stand.SlopeInPercent > this.FellerBuncherSlopeThresholdInPercent)
@@ -734,7 +734,7 @@ namespace Osu.Cof.Ferm.Silviculture
                 // TODO: chainsaw productivity
                 // loader productivity is specified so doesn't need to be output
 
-                float haulRoundtripsPerHectare = longLogHarvest.TotalHaulWeightPerHa / this.LongLogHaulPayloadInKg;
+                float haulRoundtripsPerHectare = longLogHarvest.TotalLoadedWeightPerHa / this.LongLogHaulPayloadInKg;
                 float haulCostPerHectare = this.LongLogHaulRoundtripSMh * haulRoundtripsPerHectare * this.LongLogHaulPerSMh;
 
                 float limitingSMhWithFellerBuncherAndGrappleSwingYarder = MathE.Max(grappleSwingYarderSMhPerHectare, processorSMhPerHectareWithGrappleSwingYarder, loaderSMhPerHectare);
@@ -1119,9 +1119,9 @@ namespace Osu.Cof.Ferm.Silviculture
             {
                 throw new NotSupportedException("Loader operating cost is not in the range US$ [0.0, 750.0]/SMh.");
             }
-            if ((this.LoaderProductivity < 0.0F) || (this.LoaderProductivity > 200.0F))
+            if ((this.LoaderProductivity < 20000.0F) || (this.LoaderProductivity > 80000.0F))
             {
-                throw new NotSupportedException("Loader productivity is not in the range [0.0, 200.0] m³/PMh.");
+                throw new NotSupportedException("Loader productivity is not in the range [20000.0, 80000.0] kg/PMh.");
             }
             if ((this.LoaderUtilization <= 0.0F) || (this.LoaderUtilization > 1.0F))
             {

@@ -26,7 +26,7 @@ namespace Osu.Cof.Ferm.Silviculture
 
         public HarvestEquipmentProductivity Productivity { get; private init; }
 
-        public float TotalHaulWeightPerHa { get; set; } // m³/ha
+        public float TotalLoadedWeightPerHa { get; set; } // m³/ha
         public float TotalMerchantableCubicVolumePerHa { get; set; } // m³/ha
         public float TotalYardedWeightPerHaWithFellerBuncher { get; set; } // kg/ha
         public float TotalYardedWeightPerHaWithTrackedHarvester { get; set; } // kg/ha
@@ -63,7 +63,7 @@ namespace Osu.Cof.Ferm.Silviculture
 
             this.Productivity = new();
 
-            this.TotalHaulWeightPerHa = 0.0F;
+            this.TotalLoadedWeightPerHa = 0.0F;
             this.TotalMerchantableCubicVolumePerHa = 0.0F;
             this.TotalYardedWeightPerHaWithFellerBuncher = 0.0F;
             this.TotalYardedWeightPerHaWithTrackedHarvester = 0.0F;
