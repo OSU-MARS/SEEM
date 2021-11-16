@@ -125,7 +125,7 @@ namespace Osu.Cof.Ferm.Silviculture
             this.ChainsawBuckUtilization = 0.75F; // fraction
             this.ChainsawBuckQuadratic = 30.0F; // seconds/m⁶
             this.ChainsawBuckQuadraticThreshold = 1.0F; // m³
-            this.ChainsawByOperatorCostPerSMh = 3.77F; // US$/SMh
+            this.ChainsawByOperatorCostPerSMh = 2.17F; // US$/SMh
             this.ChainsawByOperatorUtilization = 0.25F; // fraction
             this.ChainsawFellAndBuckConstant = 65.0F; // seconds
             this.ChainsawFellAndBuckCostPerSMh = 149.50F; // US$/SMh
@@ -142,7 +142,7 @@ namespace Osu.Cof.Ferm.Silviculture
             this.CutToLengthRoundtripHaulSMh = 3.92F; // SMh
 
             // tracked feller-buncher, either hot saw or directional felling head
-            this.FellerBuncherCostPerSMh = 289.50F; // US$/SMh
+            this.FellerBuncherCostPerSMh = 263.00F; // US$/SMh
             this.FellerBuncherFellingConstant = 18.0F; // seconds
             this.FellerBuncherFellingLinear = 4.7F; // seconds/m³
             this.FellerBuncherSlopeLinear = 0.0115F; // multiplier
@@ -150,7 +150,7 @@ namespace Osu.Cof.Ferm.Silviculture
             this.FellerBuncherUtilization = 0.77F; // fraction
 
             // forwarder default: Ponsse Elephant King
-            this.ForwarderCostPerSMh = 211.50F; // US$/SMh
+            this.ForwarderCostPerSMh = 200.00F; // US$/SMh
             this.ForwarderDriveWhileLoadingLogs = 0.7698F; // regression coefficient
             this.ForwarderEmptyWeight = 23700.0F + 1900.0F + 0.5F * 2.0F * 2600.0F; // kg, typical configured weight + Synchrowinch + half weight of tracks
             this.ForwarderLoadMeanLogVolume = 0.5955F; // regression coefficient
@@ -174,15 +174,15 @@ namespace Osu.Cof.Ferm.Silviculture
             this.GrappleYardingLinear = 0.72F; // seconds/m of yarding distance
             this.GrappleSwingYarderMaxPayload = 4000.0F; // kg
             this.GrappleSwingYarderMeanPayload = 2000.0F; // kg
-            this.GrappleSwingYarderCostPerSMh = 367.00F; // US$/SMh
+            this.GrappleSwingYarderCostPerSMh = 360.00F; // US$/SMh
             this.GrappleSwingYarderUtilization = 0.80F;
             this.GrappleYoaderMaxPayload = 2900.0F; // kg
             this.GrappleYoaderMeanPayload = 1550.0F; // kg
-            this.GrappleYoaderCostPerSMh = 263.50F; // US$/SMh
+            this.GrappleYoaderCostPerSMh = 248.00F; // US$/SMh
             this.GrappleYoaderUtilization = 0.75F;
 
             // nominal loader at landing
-            this.LoaderCostPerSMh = 177.0F; // US$/SMh
+            this.LoaderCostPerSMh = 172.0F; // US$/SMh
             this.LoaderProductivity = 2.0F * 0.99F * 26275.0F; // kg/PMh₀, two six axle long log truckloads per hour
             this.LoaderUtilization = 0.90F;
 
@@ -198,7 +198,7 @@ namespace Osu.Cof.Ferm.Silviculture
             this.ProcessorBuckQuadratic2 = 4.5F; // seconds/m⁶
             this.ProcessorBuckQuadraticThreshold1 = 2.5F; // m³
             this.ProcessorBuckQuadraticThreshold2 = 6.0F; // m³
-            this.ProcessorCostPerSMh = 212.00F; // US$/SMh
+            this.ProcessorCostPerSMh = 204.00F; // US$/SMh
             this.ProcessorUtilization = 0.89F;
 
             // nominal tracked harvester
@@ -212,7 +212,7 @@ namespace Osu.Cof.Ferm.Silviculture
             this.TrackedHarvesterQuadraticThreshold2 = 6.0F; // m³
             this.TrackedHarvesterSlopeLinear = 0.0115F; // multiplier
             this.TrackedHarvesterSlopeThresholdInPercent = 30.0F;
-            this.TrackedHarvesterCostPerSMh = 290.50F; // US$/SMh
+            this.TrackedHarvesterCostPerSMh = 264.00F; // US$/SMh
             this.TrackedHarvesterUtilization = 0.77F; // fraction
 
             // eight wheel harvesters
@@ -225,7 +225,7 @@ namespace Osu.Cof.Ferm.Silviculture
             //this.WheeledHarvesterQuadraticThreshold = 1.6F; // m³
             //this.WheeledHarvesterSlopeThresholdInPercent = 45.0F;
             // Ponsse Bear with H8, Synchrowinch, and tracks
-            this.WheeledHarvesterCostPerSMh = 239.50F; // US$/SMh
+            this.WheeledHarvesterCostPerSMh = 225.00F; // US$/SMh
             this.WheeledHarvesterFellAndBuckConstant = 28.0F; // seconds
             this.WheeledHarvesterFellAndBuckDiameterLimit = 70.0F; // cm, felling diameter and feed roller limit of H8 head
             this.WheeledHarvesterFellAndBuckLinear = 43.0F; // seconds/m³
@@ -285,8 +285,8 @@ namespace Osu.Cof.Ferm.Silviculture
         {
             if ((ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester != 0.0F) ||
                 (ctlHarvest.ForwarderPMhPerHa != 0.0F) ||
-                (ctlHarvest.TotalMerchantableCubicVolume != 0.0F) ||
-                (ctlHarvest.TotalForwardedWeightPeHa != 0.0F) ||
+                (ctlHarvest.MerchantableCubicVolumePerHa != 0.0F) ||
+                (ctlHarvest.ForwardedWeightPeHa != 0.0F) ||
                 (ctlHarvest.WheeledHarvesterPMhPerHa != 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(ctlHarvest));
@@ -319,7 +319,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
                     float treeMerchantableVolumeInM3 = treesOfSpecies.MerchantableCubicVolumePerStem[compactedTreeIndex];
                     Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
-                    ctlHarvest.TotalMerchantableCubicVolume += expansionFactorPerHa * treeMerchantableVolumeInM3;
+                    ctlHarvest.MerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
 
                     // TODO: check tracked harvester
 
@@ -335,7 +335,7 @@ namespace Osu.Cof.Ferm.Silviculture
                         }
 
                         float woodAndRemainingBarkVolumePerStem = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAfterHarvester);
-                        ctlHarvest.TotalForwardedWeightPeHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStem * treeSpeciesProperties.StemDensityAfterHarvester;
+                        ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStem * treeSpeciesProperties.StemDensityAfterHarvester;
                         ctlHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                     }
                     else
@@ -363,7 +363,7 @@ namespace Osu.Cof.Ferm.Silviculture
 
                         float woodAndBarkVolumePerStem = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFraction); // no bark loss from going through feed rollers
                         ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester += expansionFactorPerHa * treeChainsawTime;
-                        ctlHarvest.TotalForwardedWeightPeHa += expansionFactorPerHa * woodAndBarkVolumePerStem * treeSpeciesProperties.StemDensity;
+                        ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndBarkVolumePerStem * treeSpeciesProperties.StemDensity;
                         ctlHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                     }
                 }
@@ -375,7 +375,7 @@ namespace Osu.Cof.Ferm.Silviculture
                 ctlHarvest.WheeledHarvesterPMhPerHa *= 1.0F + this.WheeledHarvesterSlopeLinear * (stand.SlopeInPercent - this.WheeledHarvesterSlopeThresholdInPercent);
             }
             ctlHarvest.WheeledHarvesterPMhPerHa /= Constant.SecondsPerHour;
-            ctlHarvest.Productivity.WheeledHarvester = ctlHarvest.TotalMerchantableCubicVolume / ctlHarvest.WheeledHarvesterPMhPerHa;
+            ctlHarvest.Productivity.WheeledHarvester = ctlHarvest.MerchantableCubicVolumePerHa / ctlHarvest.WheeledHarvesterPMhPerHa;
 
             float minimumChainsawCostWithWheeledHarvester = 0.0F;
             if (ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester > 0.0F)
@@ -459,15 +459,34 @@ namespace Osu.Cof.Ferm.Silviculture
             }
             ctlHarvest.ForwarderCostPerHa = this.ForwarderCostPerSMh * ctlHarvest.ForwarderPMhPerHa / this.ForwarderUtilization;
 
-            float haulRoundtripsPerHectare = ctlHarvest.TotalForwardedWeightPeHa / this.CutToLengthHaulPayloadInKg;
+            float haulRoundtripsPerHectare = ctlHarvest.ForwardedWeightPeHa / this.CutToLengthHaulPayloadInKg;
             float haulCostPerHectare = this.CutToLengthRoundtripHaulSMh * haulRoundtripsPerHectare * this.CutToLengthHaulPerSMh;
 
-            ctlHarvest.MinimumCostPerHa = ctlHarvest.WheeledHarvesterCostPerHa + minimumChainsawCostWithWheeledHarvester + ctlHarvest.ForwarderCostPerHa + haulCostPerHectare;
+            ctlHarvest.MinimumSystemCostPerHa = ctlHarvest.WheeledHarvesterCostPerHa + minimumChainsawCostWithWheeledHarvester + ctlHarvest.ForwarderCostPerHa + haulCostPerHectare;
         }
 
-        public LongLogHarvest GetLongLogHarvestCosts(Stand stand, ScaledVolume scaledVolume)
+        public void GetLongLogHarvestCosts(Stand stand, ScaledVolume scaledVolume, LongLogHarvest longLogHarvest)
         {
-            LongLogHarvest longLogHarvest = new();
+            if ((longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder != 0.0F) ||
+                (longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader != 0.0F) ||
+                (longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester != 0.0F) ||
+                (longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester != 0.0F) ||
+                (longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder != 0.0F) ||
+                (longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader != 0.0F) ||
+                (longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester != 0.0F) ||
+                (longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester != 0.0F) ||
+                (longLogHarvest.GrappleSwingYarderPMhPerHectare != 0.0F) ||
+                (longLogHarvest.GrappleYoaderPMhPerHectare != 0.0F) ||
+                (longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder != 0.0F) ||
+                (longLogHarvest.ProcessorPMhPerHaWithGrappleYoader != 0.0F) ||
+                (longLogHarvest.MerchantableCubicVolumePerHa != 0.0F) ||
+                (longLogHarvest.LoadedWeightPerHa != 0.0F) ||
+                (longLogHarvest.TrackedHarvesterPMhPerHa != 0.0F) ||
+                (longLogHarvest.WheeledHarvesterPMhPerHa != 0.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(longLogHarvest));
+            }
+
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 float diameterToCentimetersMultiplier = 1.0F;
@@ -486,7 +505,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
                     float treeMerchantableVolumeInM3 = treesOfSpecies.MerchantableCubicVolumePerStem[compactedTreeIndex];
                     Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
-                    longLogHarvest.TotalMerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
+                    longLogHarvest.MerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
 
                     // feller-buncher with hot saw or directional felling head
                     // For now, assume directional felling head where needed and no diameter limit to directional felling.
@@ -501,7 +520,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     // TODO: include weight of crown not broken off during felling (and swinging)
                     float woodAndRemainingBarkVolumePerStemAfterFelling = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAtMidspanWithoutHarvester);
                     float yardedWeightPerStemWithFellerBuncher = woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
-                    longLogHarvest.TotalYardedWeightPerHaWithFellerBuncher += expansionFactorPerHa * yardedWeightPerStemWithFellerBuncher; // before bark loss since 
+                    longLogHarvest.YardedWeightPerHaWithFellerBuncher += expansionFactorPerHa * yardedWeightPerStemWithFellerBuncher; // before bark loss since 
 
                     // chainsaw bucking of trees felled with a feller buncher but too heavy to be yarded as whole stems
                     // For now,
@@ -577,7 +596,7 @@ namespace Osu.Cof.Ferm.Silviculture
                             float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.TrackedHarvesterQuadraticThreshold2;
                             treeHarvesterTime += this.TrackedHarvesterFellAndBuckQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
-                        longLogHarvest.TotalYardedWeightPerHaWithTrackedHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemWithHarvester * treeSpeciesProperties.StemDensityAtMidspanAfterHarvester;
+                        longLogHarvest.YardedWeightPerHaWithTrackedHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemWithHarvester * treeSpeciesProperties.StemDensityAtMidspanAfterHarvester;
                         longLogHarvest.TrackedHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                     }
                     else
@@ -608,7 +627,7 @@ namespace Osu.Cof.Ferm.Silviculture
 
                         // tree is not bucked by harvester, so bark loss is only from yarding
                         longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester += expansionFactorPerHa * treeChainsawTime;
-                        longLogHarvest.TotalYardedWeightPerHaWithTrackedHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
+                        longLogHarvest.YardedWeightPerHaWithTrackedHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
                         longLogHarvest.TrackedHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                     }
 
@@ -622,7 +641,7 @@ namespace Osu.Cof.Ferm.Silviculture
                             float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.WheeledHarvesterQuadraticThreshold;
                             treeHarvesterTime += this.WheeledHarvesterFellAndBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
-                        longLogHarvest.TotalYardedWeightPerHaWithWheeledHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemWithHarvester * treeSpeciesProperties.StemDensityAtMidspanAfterHarvester;
+                        longLogHarvest.YardedWeightPerHaWithWheeledHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemWithHarvester * treeSpeciesProperties.StemDensityAtMidspanAfterHarvester;
                         longLogHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                     }
                     else
@@ -650,7 +669,7 @@ namespace Osu.Cof.Ferm.Silviculture
 
                         // tree is not bucked by harvester, so bark loss is only from yarding
                         longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester += expansionFactorPerHa * treeChainsawTime;
-                        longLogHarvest.TotalYardedWeightPerHaWithWheeledHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
+                        longLogHarvest.YardedWeightPerHaWithWheeledHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
                         longLogHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                     }
 
@@ -693,13 +712,13 @@ namespace Osu.Cof.Ferm.Silviculture
 
                     // haul weight
                     float woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAfterYardingAndProcessing);
-                    longLogHarvest.TotalLoadedWeightPerHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing * treeSpeciesProperties.StemDensityAfterYardingAndProcessing;
+                    longLogHarvest.LoadedWeightPerHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing * treeSpeciesProperties.StemDensityAfterYardingAndProcessing;
                 }
             }
 
             // feller-buncher + chainsaw + yarder-processor-loader system costs
             float meanGrappleYardingTurnTime = this.GrappleYardingConstant + this.GrappleYardingLinear * 0.5F * stand.CorridorLength; // parallel yarding
-            float loaderSMhPerHectare = longLogHarvest.TotalLoadedWeightPerHa / (this.LoaderUtilization * this.LoaderProductivity);
+            float loaderSMhPerHectare = longLogHarvest.LoadedWeightPerHa / (this.LoaderUtilization * this.LoaderProductivity);
             // TODO: full corridor and processing bark loss
             {
                 if (stand.SlopeInPercent > this.FellerBuncherSlopeThresholdInPercent)
@@ -707,7 +726,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     longLogHarvest.FellerBuncherPMhPerHa *= 1.0F + this.FellerBuncherSlopeLinear * (stand.SlopeInPercent - this.FellerBuncherSlopeThresholdInPercent);
                 }
                 longLogHarvest.FellerBuncherPMhPerHa /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.FellerBuncher = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.FellerBuncherPMhPerHa;
+                longLogHarvest.Productivity.FellerBuncher = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.FellerBuncherPMhPerHa;
                 float fellerBuncherCostPerHectare = this.FellerBuncherCostPerSMh * longLogHarvest.FellerBuncherPMhPerHa / this.FellerBuncherUtilization;
 
                 float minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = 0.0F;
@@ -729,19 +748,19 @@ namespace Osu.Cof.Ferm.Silviculture
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder > 0.0F);
                 }
 
-                float grappleSwingYarderTurnsPerHectare = longLogHarvest.TotalYardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
+                float grappleSwingYarderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
                 longLogHarvest.GrappleSwingYarderPMhPerHectare = grappleSwingYarderTurnsPerHectare * meanGrappleYardingTurnTime / Constant.SecondsPerHour;
-                longLogHarvest.Productivity.GrappleSwingYarder = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.GrappleSwingYarderPMhPerHectare;
+                longLogHarvest.Productivity.GrappleSwingYarder = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.GrappleSwingYarderPMhPerHectare;
                 float grappleSwingYarderSMhPerHectare = longLogHarvest.GrappleSwingYarderPMhPerHectare / this.GrappleSwingYarderUtilization;
 
                 longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder;
+                longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder;
                 float processorSMhPerHectareWithGrappleSwingYarder = longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder / this.ProcessorUtilization;
 
                 // TODO: chainsaw productivity
                 // loader productivity is specified so doesn't need to be output
 
-                float haulRoundtripsPerHectare = longLogHarvest.TotalLoadedWeightPerHa / this.LongLogHaulPayloadInKg;
+                float haulRoundtripsPerHectare = longLogHarvest.LoadedWeightPerHa / this.LongLogHaulPayloadInKg;
                 float haulCostPerHectare = this.LongLogHaulRoundtripSMh * haulRoundtripsPerHectare * this.LongLogHaulPerSMh;
 
                 float limitingSMhWithFellerBuncherAndGrappleSwingYarder = MathE.Max(grappleSwingYarderSMhPerHectare, processorSMhPerHectareWithGrappleSwingYarder, loaderSMhPerHectare);
@@ -773,13 +792,13 @@ namespace Osu.Cof.Ferm.Silviculture
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader > 0.0F);
                 }
 
-                float grappleYoaderTurnsPerHectare = longLogHarvest.TotalYardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
+                float grappleYoaderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
                 longLogHarvest.GrappleYoaderPMhPerHectare = grappleYoaderTurnsPerHectare * meanGrappleYardingTurnTime / Constant.SecondsPerHour;
-                longLogHarvest.Productivity.GrappleYoader = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.GrappleYoaderPMhPerHectare;
+                longLogHarvest.Productivity.GrappleYoader = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.GrappleYoaderPMhPerHectare;
                 float grappleYoaderSMhPerHectare = longLogHarvest.GrappleYoaderPMhPerHectare / this.GrappleYoaderUtilization;
 
                 longLogHarvest.ProcessorPMhPerHaWithGrappleYoader /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.ProcessorWithGrappleYoader = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleYoader;
+                longLogHarvest.Productivity.ProcessorWithGrappleYoader = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleYoader;
                 float processorSMhPerHectareWithGrappleYoader = longLogHarvest.ProcessorPMhPerHaWithGrappleYoader / this.ProcessorUtilization;
 
                 float limitingSMhWithFellerBuncherAndGrappleYoader = MathE.Max(grappleYoaderSMhPerHectare, processorSMhPerHectareWithGrappleYoader, loaderSMhPerHectare);
@@ -811,7 +830,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     longLogHarvest.TrackedHarvesterPMhPerHa *= 1.0F + this.TrackedHarvesterSlopeLinear * (stand.SlopeInPercent - this.TrackedHarvesterSlopeThresholdInPercent);
                 }
                 longLogHarvest.TrackedHarvesterPMhPerHa /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.TrackedHarvester = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.TrackedHarvesterPMhPerHa;
+                longLogHarvest.Productivity.TrackedHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.TrackedHarvesterPMhPerHa;
 
                 float trackedHarvesterCostPerHectare = this.TrackedHarvesterCostPerSMh * longLogHarvest.TrackedHarvesterPMhPerHa / this.TrackedHarvesterUtilization;
 
@@ -832,10 +851,10 @@ namespace Osu.Cof.Ferm.Silviculture
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester > 0.0F);
                 }
 
-                float grappleSwingYarderTurnsPerHectare = longLogHarvest.TotalYardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
+                float grappleSwingYarderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
                 float grappleSwingYarderSMhPerHectare = grappleSwingYarderTurnsPerHectare * meanGrappleYardingTurnTime / (Constant.SecondsPerHour * this.GrappleSwingYarderUtilization);
 
-                float haulRoundtripsPerHectareWithTrackedHarvester = longLogHarvest.TotalYardedWeightPerHaWithTrackedHarvester / this.LongLogHaulPayloadInKg;
+                float haulRoundtripsPerHectareWithTrackedHarvester = longLogHarvest.YardedWeightPerHaWithTrackedHarvester / this.LongLogHaulPayloadInKg;
                 float haulCostPerHectareWithTrackedHarvester = this.LongLogHaulRoundtripSMh * haulRoundtripsPerHectareWithTrackedHarvester * this.LongLogHaulPerSMh;
 
                 float limitingSMhWithTrackedHarvesterAndGrappleSwingYarder = MathF.Max(grappleSwingYarderSMhPerHectare, loaderSMhPerHectare);
@@ -845,7 +864,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     swingYarderCostPerHectareWithTrackedHarvester + loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder +
                     haulCostPerHectareWithTrackedHarvester;
 
-                float grappleYoaderTurnsPerHectare = longLogHarvest.TotalYardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
+                float grappleYoaderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
                 float grappleYoaderSMhPerHectare = grappleYoaderTurnsPerHectare * meanGrappleYardingTurnTime / (Constant.SecondsPerHour * this.GrappleYoaderUtilization);
 
                 float limitingSMhWithTrackedHarvesterAndGrappleYoader = MathF.Max(grappleYoaderSMhPerHectare, loaderSMhPerHectare);
@@ -861,7 +880,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     longLogHarvest.WheeledHarvesterPMhPerHa *= 1.0F + this.WheeledHarvesterSlopeLinear * (stand.SlopeInPercent - this.WheeledHarvesterSlopeThresholdInPercent);
                 }
                 longLogHarvest.WheeledHarvesterPMhPerHa /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.WheeledHarvester = longLogHarvest.TotalMerchantableCubicVolumePerHa / longLogHarvest.WheeledHarvesterPMhPerHa;
+                longLogHarvest.Productivity.WheeledHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.WheeledHarvesterPMhPerHa;
 
                 float wheeledHarvesterSMh = longLogHarvest.WheeledHarvesterPMhPerHa / this.WheeledHarvesterUtilization;
                 float wheeledHarvesterCostPerHectare = this.WheeledHarvesterCostPerSMh * wheeledHarvesterSMh;
@@ -883,7 +902,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester > 0.0F);
                 }
 
-                float haulRoundtripsPerHectareWithWheeledHarvester = longLogHarvest.TotalYardedWeightPerHaWithWheeledHarvester / this.LongLogHaulPayloadInKg;
+                float haulRoundtripsPerHectareWithWheeledHarvester = longLogHarvest.YardedWeightPerHaWithWheeledHarvester / this.LongLogHaulPayloadInKg;
                 float haulCostPerHectareWithWheeledHarvester = this.LongLogHaulRoundtripSMh * haulRoundtripsPerHectareWithWheeledHarvester * this.LongLogHaulPerSMh;
 
                 float limitingSMhWithWheeledHarvesterAndGrappleSwingYarder = MathF.Max(grappleSwingYarderSMhPerHectare, loaderSMhPerHectare);
@@ -906,10 +925,9 @@ namespace Osu.Cof.Ferm.Silviculture
                              (limitingSMhWithWheeledHarvesterAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa < 125.0F * 1000.0F));
             }
 
-            longLogHarvest.MinimumCostPerHa = MathE.Min(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa, longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa,
+            longLogHarvest.MinimumSystemCostPerHa = MathE.Min(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa, longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa,
                                                         longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa, longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa,
                                                         longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa, longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa);
-            return longLogHarvest;
         }
 
         public void VerifyPropertyValues()

@@ -204,11 +204,11 @@ namespace Osu.Cof.Ferm.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { -0.0468F, 0.128F };
-                Span<int> treesThinned = stackalloc[] { 5, 0 };
+                Span<float> minFinancialValues = stackalloc[] { 0.252F };
+                Span<int> treesThinned = stackalloc[] { 0 };
             #else
-                Span<float> minFinancialValues = stackalloc[] { 1.043F, 1.179F };
-                Span<int> treesThinned = stackalloc[] { 2, 0 };
+                Span<float> minFinancialValues = stackalloc[] { 1.311F };
+                Span<int> treesThinned = stackalloc[] { 0 };
             #endif
             int matchingOptimaIndexFirstCircular = -1;
             int matchingOptimaIndexHero = -1;
@@ -729,7 +729,7 @@ namespace Osu.Cof.Ferm.Test
  		
             PublicApi.Verify(thinnedTrajectory, immediateThinExpected, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(thinnedTrajectory, immediateThinExpected);
-            Assert.IsTrue(thinnedTrajectory.GetFirstThinAge() == 30);
+            Assert.IsTrue(thinnedTrajectory.GetFirstThinAge() == 35);
             Assert.IsTrue(thinnedTrajectory.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
 
             // verify snag and log calculations
@@ -974,9 +974,9 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] >= 0.0F, "4S cubic volume is negative.");
 
                     // TODO: investigate deeply negative NPVs
-                    Assert.IsTrue(bestThinNpv.NetPresentValue2Saw >= 0.0F, "2S NPV is " + bestThinNpv.NetPresentValue2Saw + ".");
-                    Assert.IsTrue(bestThinNpv.NetPresentValue3Saw >= 0.0F, "3S NPV is " + bestThinNpv.NetPresentValue3Saw + ".");
-                    Assert.IsTrue(bestThinNpv.NetPresentValue4Saw >= 0.0F, "4S NPV is " + bestThinNpv.NetPresentValue4Saw + "."); // potentially fairly low when only 4S is removed
+                    Assert.IsTrue(bestThinNpv.PondValue2SawPerHa >= 0.0F, "2S NPV is " + bestThinNpv.PondValue2SawPerHa + ".");
+                    Assert.IsTrue(bestThinNpv.PondValue3SawPerHa >= 0.0F, "3S NPV is " + bestThinNpv.PondValue3SawPerHa + ".");
+                    Assert.IsTrue(bestThinNpv.PondValue4SawPerHa >= 0.0F, "4S NPV is " + bestThinNpv.PondValue4SawPerHa + "."); // potentially fairly low when only 4S is removed
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
@@ -986,9 +986,9 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(currentCubicThinningVolume >= 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume <= previousCurrentCubicStandingVolume);
 
-                    Assert.IsTrue(currentThinNpv.NetPresentValue2Saw >= 0.0F);
-                    Assert.IsTrue(currentThinNpv.NetPresentValue3Saw >= 0.0F);
-                    Assert.IsTrue(currentThinNpv.NetPresentValue4Saw >= 0.0F);
+                    Assert.IsTrue(currentThinNpv.PondValue2SawPerHa >= 0.0F);
+                    Assert.IsTrue(currentThinNpv.PondValue3SawPerHa >= 0.0F);
+                    Assert.IsTrue(currentThinNpv.PondValue4SawPerHa >= 0.0F);
                 }
                 else
                 {
@@ -1004,9 +1004,9 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] == 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] == 0.0F);
 
-                    Assert.IsTrue(bestThinNpv.NetPresentValue2Saw == 0.0F);
-                    Assert.IsTrue(bestThinNpv.NetPresentValue3Saw == 0.0F);
-                    Assert.IsTrue(bestThinNpv.NetPresentValue4Saw == 0.0F);
+                    Assert.IsTrue(bestThinNpv.PondValue2SawPerHa == 0.0F);
+                    Assert.IsTrue(bestThinNpv.PondValue3SawPerHa == 0.0F);
+                    Assert.IsTrue(bestThinNpv.PondValue4SawPerHa == 0.0F);
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
                     Assert.IsTrue(currentHarvestedVolume.Scribner2Saw[periodIndex] == 0.0F);
@@ -1019,9 +1019,9 @@ namespace Osu.Cof.Ferm.Test
                     Assert.IsTrue(currentHarvestedVolume.Cubic3Saw[periodIndex] == 0.0F);
                     Assert.IsTrue(currentHarvestedVolume.Cubic4Saw[periodIndex] == 0.0F);
 
-                    Assert.IsTrue(currentThinNpv.NetPresentValue2Saw == 0.0F);
-                    Assert.IsTrue(currentThinNpv.NetPresentValue3Saw == 0.0F);
-                    Assert.IsTrue(currentThinNpv.NetPresentValue4Saw == 0.0F);
+                    Assert.IsTrue(currentThinNpv.PondValue2SawPerHa == 0.0F);
+                    Assert.IsTrue(currentThinNpv.PondValue3SawPerHa == 0.0F);
+                    Assert.IsTrue(currentThinNpv.PondValue4SawPerHa == 0.0F);
                 }
 
                 if (periodIndex == 0)
