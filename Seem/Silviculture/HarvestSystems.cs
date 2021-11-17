@@ -76,6 +76,8 @@ namespace Osu.Cof.Ferm.Silviculture
         public float LongLogHaulPerSMh { get; set; } // US$/SMh
         public float LongLogHaulRoundtripSMh { get; set; } // SMh
 
+        public float MachineMoveInOrOut { get; set; } // US$ per piece of heavy equipment
+
         public float ProcessorBuckConstant { get; set; } // seconds
         // TODO: public float ProcessorDiameterLimit { get; set; } // m
         public float ProcessorBuckLinear { get; set; } // seconds/m³
@@ -191,6 +193,9 @@ namespace Osu.Cof.Ferm.Silviculture
             this.LongLogHaulPerSMh = 83.72F; // US$/m³
             this.LongLogHaulRoundtripSMh = 3.58F; // SMh
 
+            // lowboy roundtrip plus load and unload
+            this.MachineMoveInOrOut = 2.0F * 10.0F + 3.0F * 170.0F; // US$/lowboy trip ≈ US$/machine = load + unload + roundtrip travel time * lowboy $/PMh
+
             // nominal processor at landing
             this.ProcessorBuckConstant = 21.0F; // seconds
             this.ProcessorBuckLinear = 30.0F; // seconds/m³
@@ -236,57 +241,22 @@ namespace Osu.Cof.Ferm.Silviculture
             this.WheeledHarvesterUtilization = 0.77F; // fraction
         }
 
-        private float GetForwardingProductivity(Stand stand, float merchM3PerHa, float logsPerHa, float forwarderMaxMerchM3, int sortsLoaded)
-        {
-            Debug.Assert((forwarderMaxMerchM3 > 0.0F) && (sortsLoaded > 0) && (sortsLoaded < 4));
-            if (merchM3PerHa <= 0.0F)
-            {
-                Debug.Assert((merchM3PerHa == 0.0F) && (logsPerHa == 0.0F));
-                return 0.0F;
-            }
-
-            float merchM3perM = merchM3PerHa * this.CorridorWidth / Constant.SquareMetersPerHectare; //  merchantable m³ logs/m of corridor = m³/ha * (m²/m corridor) / m²/ha
-            float meanLogMerchM3 = merchM3PerHa / logsPerHa; // merchantable m³/log = m³/ha / logs/ha
-            float volumePerCorridor = stand.CorridorLength * merchM3perM; // merchantable m³/corridor
-            float turnsPerCorridor = volumePerCorridor / forwarderMaxMerchM3;
-            float completeLoadsInCorridor = MathF.Floor(turnsPerCorridor);
-            float fractionalLoadsInCorridor = turnsPerCorridor - completeLoadsInCorridor;
-            float forwardingDistanceOnRoad = stand.ForwardingDistanceOnRoad + (sortsLoaded - 1) * Constant.HarvestCost.ForwardingDistanceOnRoadPerSortInM;
-
-            float driveEmptyRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min, driving empty on road
-            // nonspatial approximation (level zero): both tethered and untethered distances decrease in turns after the first
-            // TODO: assume tethered distance decreases to zero before untethered distance decreases?
-            float driveEmptyUntethered = turnsPerCorridor * stand.ForwardingDistanceInStandUntethered / this.ForwarderSpeedInStandUnloadedUntethered; // min
-            // tethering time is treated as a delay
-            float driveEmptyTethered = turnsPerCorridor * stand.ForwardingDistanceInStandTethered / this.ForwarderSpeedInStandUnloadedTethered; // min
-            float loading = completeLoadsInCorridor * MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
-                            MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)); // min
-            float driveWhileLoading = completeLoadsInCorridor * MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(forwarderMaxMerchM3 / merchM3perM)) +
-                                      MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3 / merchM3perM)); // min
-            float driveLoadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.ForwardingDistanceInStandTethered / this.ForwarderSpeedInStandLoadedTethered; // min
-            // untethering time is treated as a delay
-            float driveUnloadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.ForwardingDistanceInStandUntethered / this.ForwarderSpeedInStandLoadedUntethered; // min
-            float driveLoadedRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min
-            float unloadLinear = sortsLoaded switch
-            {
-                1 => this.ForwarderUnloadLinearOneSort,
-                2 => this.ForwarderUnloadLinearTwoSorts,
-                3 => this.ForwarderUnloadLinearThreeSorts,
-                _ => throw new ArgumentOutOfRangeException(nameof(sortsLoaded))
-            };
-            float unloading = unloadLinear * (completeLoadsInCorridor * MathF.Exp(this.ForwarderUnloadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderUnloadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
-                                              MathF.Exp(this.ForwarderUnloadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderUnloadMeanLogVolume * MathF.Log(meanLogMerchM3)));
-            float turnTime = driveEmptyRoad + driveEmptyUntethered + driveEmptyTethered + loading + driveWhileLoading + driveLoadedTethered + driveUnloadedTethered + driveLoadedRoad + unloading; // min
-            float productivity = Constant.MinutesPerHour * volumePerCorridor / turnTime; // m³/PMh₀
-            return productivity;
-        }
-
         public void GetCutToLengthHarvestCost(Stand stand, SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, SortedList<FiaCode, TreeSpeciesMerchantableVolume> harvestVolumeBySpecies, int harvestPeriod, CutToLengthHarvest ctlHarvest)
         {
+            if ((stand.AreaInHa <= 0.0F) ||
+                (stand.CorridorLengthInM <= 0.0F) ||
+                (stand.ForwardingDistanceOnRoad < 0.0F) || 
+                (stand.ForwardingDistanceTethered < 0.0F) ||
+                (stand.ForwardingDistanceUntethered < 0.0F) ||
+                (stand.SlopeInPercent < 0.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand));
+            }
             if ((ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester != 0.0F) ||
+                (ctlHarvest.ForwardedWeightPeHa != 0.0F) ||
                 (ctlHarvest.ForwarderPMhPerHa != 0.0F) ||
                 (ctlHarvest.MerchantableCubicVolumePerHa != 0.0F) ||
-                (ctlHarvest.ForwardedWeightPeHa != 0.0F) ||
+                (ctlHarvest.TaskCostPerHa != 0.0F) ||
                 (ctlHarvest.WheeledHarvesterPMhPerHa != 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(ctlHarvest));
@@ -403,7 +373,7 @@ namespace Osu.Cof.Ferm.Silviculture
             float forwarderPayloadInKg = MathF.Min(this.ForwarderMaximumPayloadInKg, this.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * stand.SlopeInPercent))) - this.ForwarderEmptyWeight);
             if (forwarderPayloadInKg <= 0.0F)
             {
-                throw new NotSupportedException("Stand slope (" + stand.SlopeInPercent + "%) is too steep for forwarding.");
+                throw new NotSupportedException("Stand slope of " + stand.SlopeInPercent + "% is too steep for forwarding.");
             }
 
             // TODO: full bark retention on trees bucked by chainsaw (for now it's assumed all trees are bucked by a harvester)
@@ -457,16 +427,71 @@ namespace Osu.Cof.Ferm.Silviculture
 
                 ctlHarvest.ForwarderPMhPerHa += forwarderPMhPerSpecies;
             }
+
             ctlHarvest.ForwarderCostPerHa = this.ForwarderCostPerSMh * ctlHarvest.ForwarderPMhPerHa / this.ForwarderUtilization;
 
-            float haulRoundtripsPerHectare = ctlHarvest.ForwardedWeightPeHa / this.CutToLengthHaulPayloadInKg;
-            float haulCostPerHectare = this.CutToLengthRoundtripHaulSMh * haulRoundtripsPerHectare * this.CutToLengthHaulPerSMh;
+            if (ctlHarvest.CubicVolumePerHa > 0.0F)
+            {
+                Debug.Assert((ctlHarvest.ForwarderPMhPerHa > 0.0F) && (ctlHarvest.ForwardedWeightPeHa > 0.0F));
+                
+                float machineMoveInAndOutPerHa = 2.0F * 3.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + harvester + forwarder
+                float haulRoundtripsPerHectare = ctlHarvest.ForwardedWeightPeHa / this.CutToLengthHaulPayloadInKg;
+                float haulCostPerHectare = this.CutToLengthRoundtripHaulSMh * haulRoundtripsPerHectare * this.CutToLengthHaulPerSMh;
+                ctlHarvest.MinimumSystemCostPerHa = ctlHarvest.WheeledHarvesterCostPerHa + minimumChainsawCostWithWheeledHarvester + ctlHarvest.ForwarderCostPerHa + haulCostPerHectare + machineMoveInAndOutPerHa;
+            }
+        }
 
-            ctlHarvest.MinimumSystemCostPerHa = ctlHarvest.WheeledHarvesterCostPerHa + minimumChainsawCostWithWheeledHarvester + ctlHarvest.ForwarderCostPerHa + haulCostPerHectare;
+        private float GetForwardingProductivity(Stand stand, float merchM3PerHa, float logsPerHa, float forwarderMaxMerchM3, int sortsLoaded)
+        {
+            Debug.Assert((forwarderMaxMerchM3 > 0.0F) && (sortsLoaded > 0) && (sortsLoaded < 4));
+            if (merchM3PerHa <= 0.0F)
+            {
+                Debug.Assert((merchM3PerHa == 0.0F) && (logsPerHa == 0.0F));
+                return 0.0F;
+            }
+
+            float merchM3perM = merchM3PerHa * this.CorridorWidth / Constant.SquareMetersPerHectare; //  merchantable m³ logs/m of corridor = m³/ha * (m²/m corridor) / m²/ha
+            float meanLogMerchM3 = merchM3PerHa / logsPerHa; // merchantable m³/log = m³/ha / logs/ha
+            float volumePerCorridor = stand.CorridorLengthInM * merchM3perM; // merchantable m³/corridor
+            float turnsPerCorridor = volumePerCorridor / forwarderMaxMerchM3;
+            float completeLoadsInCorridor = MathF.Floor(turnsPerCorridor);
+            float fractionalLoadsInCorridor = turnsPerCorridor - completeLoadsInCorridor;
+            float forwardingDistanceOnRoad = stand.ForwardingDistanceOnRoad + (sortsLoaded - 1) * Constant.HarvestCost.ForwardingDistanceOnRoadPerSortInM;
+
+            float driveEmptyRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min, driving empty on road
+            // nonspatial approximation (level zero): both tethered and untethered distances decrease in turns after the first
+            // TODO: assume tethered distance decreases to zero before untethered distance decreases?
+            float driveEmptyUntethered = turnsPerCorridor * stand.ForwardingDistanceUntethered / this.ForwarderSpeedInStandUnloadedUntethered; // min
+            // tethering time is treated as a delay
+            float driveEmptyTethered = turnsPerCorridor * stand.ForwardingDistanceTethered / this.ForwarderSpeedInStandUnloadedTethered; // min
+            float loading = completeLoadsInCorridor * MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
+                            MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)); // min
+            float driveWhileLoading = completeLoadsInCorridor * MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(forwarderMaxMerchM3 / merchM3perM)) +
+                                      MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3 / merchM3perM)); // min
+            float driveLoadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.ForwardingDistanceTethered / this.ForwarderSpeedInStandLoadedTethered; // min
+            // untethering time is treated as a delay
+            float driveUnloadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.ForwardingDistanceUntethered / this.ForwarderSpeedInStandLoadedUntethered; // min
+            float driveLoadedRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min
+            float unloadLinear = sortsLoaded switch
+            {
+                1 => this.ForwarderUnloadLinearOneSort,
+                2 => this.ForwarderUnloadLinearTwoSorts,
+                3 => this.ForwarderUnloadLinearThreeSorts,
+                _ => throw new ArgumentOutOfRangeException(nameof(sortsLoaded))
+            };
+            float unloading = unloadLinear * (completeLoadsInCorridor * MathF.Exp(this.ForwarderUnloadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderUnloadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
+                                              MathF.Exp(this.ForwarderUnloadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderUnloadMeanLogVolume * MathF.Log(meanLogMerchM3)));
+            float turnTime = driveEmptyRoad + driveEmptyUntethered + driveEmptyTethered + loading + driveWhileLoading + driveLoadedTethered + driveUnloadedTethered + driveLoadedRoad + unloading; // min
+            float productivity = Constant.MinutesPerHour * volumePerCorridor / turnTime; // m³/PMh₀
+            return productivity;
         }
 
         public void GetLongLogHarvestCosts(Stand stand, ScaledVolume scaledVolume, LongLogHarvest longLogHarvest)
         {
+            if ((stand.AreaInHa <= 0.0F) || (stand.CorridorLengthInM <= 0.0F) || (stand.SlopeInPercent < 0.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand));
+            }
             if ((longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder != 0.0F) ||
                 (longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader != 0.0F) ||
                 (longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester != 0.0F) ||
@@ -717,7 +742,7 @@ namespace Osu.Cof.Ferm.Silviculture
             }
 
             // feller-buncher + chainsaw + yarder-processor-loader system costs
-            float meanGrappleYardingTurnTime = this.GrappleYardingConstant + this.GrappleYardingLinear * 0.5F * stand.CorridorLength; // parallel yarding
+            float meanGrappleYardingTurnTime = this.GrappleYardingConstant + this.GrappleYardingLinear * 0.5F * stand.CorridorLengthInM; // parallel yarding
             float loaderSMhPerHectare = longLogHarvest.LoadedWeightPerHa / (this.LoaderUtilization * this.LoaderProductivity);
             // TODO: full corridor and processing bark loss
             {
@@ -767,9 +792,10 @@ namespace Osu.Cof.Ferm.Silviculture
                 float grappleSwingYarderCostPerHectareWithFellerBuncher = this.GrappleSwingYarderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
                 float processorCostPerHectareWithGrappleSwingYarder = this.ProcessorCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
                 float loaderCostPerHectareWithFellerBuncherAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
+                float machineMoveInAndOutPerHectareWithFellerBuncher = 2.0F * 6.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + feller-buncher + anchor + yarder + processor + loader
                 longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa = fellerBuncherCostPerHectare + minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder + 
                     grappleSwingYarderCostPerHectareWithFellerBuncher + processorCostPerHectareWithGrappleSwingYarder + loaderCostPerHectareWithFellerBuncherAndGrappleSwingYarder + 
-                    haulCostPerHectare;
+                    haulCostPerHectare + machineMoveInAndOutPerHectareWithFellerBuncher;
 
                 // grapple yoader
                 float minimumChainsawCostWithFellerBuncherAndGrappleYoader = 0.0F;
@@ -807,7 +833,7 @@ namespace Osu.Cof.Ferm.Silviculture
                 float loaderCostPerHectareWithFellerBuncherAndGrappleYoader = this.LoaderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleYoader;
                 longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa = fellerBuncherCostPerHectare + minimumChainsawCostWithFellerBuncherAndGrappleYoader + 
                     grappleYoaderCostPerHectareWithFellerBuncher + processorCostPerHectareWithGrappleYoader + loaderCostPerHectareWithFellerBuncherAndGrappleYoader +
-                    haulCostPerHectare;
+                    haulCostPerHectare + machineMoveInAndOutPerHectareWithFellerBuncher; 
 
                 // if heuristic selects all trees for thinning then there are no trees at final harvest and SMh and costs are zero
                 Debug.Assert((limitingSMhWithFellerBuncherAndGrappleSwingYarder >= 0.0F) && (Single.IsNaN(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa) == false) && (longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa >= 0.0F) && (longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa < 75.0F * 1000.0F) &&
@@ -860,9 +886,10 @@ namespace Osu.Cof.Ferm.Silviculture
                 float limitingSMhWithTrackedHarvesterAndGrappleSwingYarder = MathF.Max(grappleSwingYarderSMhPerHectare, loaderSMhPerHectare);
                 float swingYarderCostPerHectareWithTrackedHarvester = this.GrappleSwingYarderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleSwingYarder;
                 float loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleSwingYarder;
+                float machineMoveInAndOutPerHectareWithTrackedHarvester = 2.0F * 5.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + harvester + anchor + yarder + loader
                 longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa = trackedHarvesterCostPerHectare + minimumChainsawCostWithTrackedHarvester + 
                     swingYarderCostPerHectareWithTrackedHarvester + loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder +
-                    haulCostPerHectareWithTrackedHarvester;
+                    haulCostPerHectareWithTrackedHarvester + machineMoveInAndOutPerHectareWithTrackedHarvester;
 
                 float grappleYoaderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
                 float grappleYoaderSMhPerHectare = grappleYoaderTurnsPerHectare * meanGrappleYardingTurnTime / (Constant.SecondsPerHour * this.GrappleYoaderUtilization);
@@ -872,7 +899,7 @@ namespace Osu.Cof.Ferm.Silviculture
                 float loaderCostPerHectareWithTrackedHarvesterAndGrappleYoader = this.LoaderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleYoader;
                 longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa = trackedHarvesterCostPerHectare + minimumChainsawCostWithTrackedHarvester + 
                     grappleYoaderCostPerHectareWithTrackedHarvester + loaderCostPerHectareWithTrackedHarvesterAndGrappleYoader +
-                    haulCostPerHectareWithTrackedHarvester;
+                    haulCostPerHectareWithTrackedHarvester + machineMoveInAndOutPerHectareWithTrackedHarvester;
 
                 // wheeled harvester
                 if (stand.SlopeInPercent > this.WheeledHarvesterSlopeThresholdInPercent)
@@ -908,16 +935,17 @@ namespace Osu.Cof.Ferm.Silviculture
                 float limitingSMhWithWheeledHarvesterAndGrappleSwingYarder = MathF.Max(grappleSwingYarderSMhPerHectare, loaderSMhPerHectare);
                 float swingYarderCostPerHectareWithWheeledHarvester = this.GrappleSwingYarderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleSwingYarder;
                 float loaderCostPerHectareWithWheeledHarvesterAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleSwingYarder;
+                float machineMoveInAndOutPerHectareWithWheeledHarvester = 2.0F * 4.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + wheeled harvester + yarder + loader
                 longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = wheeledHarvesterCostPerHectare + minimumChainsawCostWithWheeledHarvester + 
                     swingYarderCostPerHectareWithWheeledHarvester + loaderCostPerHectareWithWheeledHarvesterAndGrappleSwingYarder +
-                    haulCostPerHectareWithWheeledHarvester;
+                    haulCostPerHectareWithWheeledHarvester + machineMoveInAndOutPerHectareWithWheeledHarvester;
 
                 float limitingSMhWithWheeledHarvesterAndGrappleYoader = MathF.Max(grappleYoaderSMhPerHectare, loaderSMhPerHectare);
                 float grappleYoaderCostPerHectareWithWheeledHarvester = this.GrappleYoaderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleYoader;
                 float loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader = this.LoaderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleYoader;
                 longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa = wheeledHarvesterCostPerHectare + minimumChainsawCostWithWheeledHarvester + 
                     grappleYoaderCostPerHectareWithWheeledHarvester + loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader +
-                    haulCostPerHectareWithWheeledHarvester;
+                    haulCostPerHectareWithWheeledHarvester + machineMoveInAndOutPerHectareWithWheeledHarvester;
 
                 Debug.Assert((limitingSMhWithTrackedHarvesterAndGrappleSwingYarder > 0.0F) && (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa < 100.0F * 1000.0F) &&
                              (limitingSMhWithTrackedHarvesterAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa < 100.0F * 1000.0F) &&
@@ -926,8 +954,8 @@ namespace Osu.Cof.Ferm.Silviculture
             }
 
             longLogHarvest.MinimumSystemCostPerHa = MathE.Min(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa, longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa,
-                                                        longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa, longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa,
-                                                        longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa, longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa);
+                                                              longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa, longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa,
+                                                              longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa, longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa);
         }
 
         public void VerifyPropertyValues()
@@ -1050,7 +1078,7 @@ namespace Osu.Cof.Ferm.Silviculture
             }
             if ((this.ForwarderMaximumPayloadInKg < 1000.0F) || (this.ForwarderMaximumPayloadInKg > 30000.0F))
             {
-                throw new NotSupportedException("Forwarder payload is not in the range [1000.0, 30000.0] kg.");
+                throw new NotSupportedException("Forwarder maximum payload is not in the range [1000.0, 30000.0] kg.");
             }
             if ((this.ForwarderSpeedInStandLoadedTethered <= 0.0F) || (this.ForwarderSpeedInStandLoadedTethered > 100.0F))
             {
@@ -1166,6 +1194,11 @@ namespace Osu.Cof.Ferm.Silviculture
             if ((this.LongLogHaulRoundtripSMh < 0.0F) || (this.LongLogHaulRoundtripSMh > 24.0F))
             {
                 throw new NotSupportedException("Regeneration harvest haul time is not in the range [0.0, 24.0] hours.");
+            }
+
+            if ((this.MachineMoveInOrOut < 100.0F) || (this.MachineMoveInOrOut > 1000.0F))
+            {
+                throw new NotSupportedException("Cost to move one piece of heavy equipment in or out is not in the range of US$ [100.0, 1000.0].");
             }
 
             if ((this.ProcessorBuckConstant < 0.0F) || (this.ProcessorBuckConstant > 500.0F))

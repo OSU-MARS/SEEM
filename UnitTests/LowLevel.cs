@@ -440,6 +440,9 @@ namespace Osu.Cof.Ferm.Test
             Assert.IsTrue((harvestSystems.LongLogHaulRoundtripSMh < 4.5F) &&
                           (harvestSystems.LongLogHaulRoundtripSMh > 2.5F));
 
+            Assert.IsTrue((harvestSystems.MachineMoveInOrOut < 600F) &&
+                          (harvestSystems.MachineMoveInOrOut > 400F));
+
             Assert.IsTrue((harvestSystems.ProcessorBuckConstant < 100.0F) &&
                           (harvestSystems.ProcessorBuckConstant > 10.0F));
             Assert.IsTrue((harvestSystems.ProcessorBuckLinear < 100.0F) &&

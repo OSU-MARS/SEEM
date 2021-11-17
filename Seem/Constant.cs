@@ -164,9 +164,9 @@ namespace Osu.Cof.Ferm
             public const float DefaultForwardingDistanceInStandTethered = 310.0F; // m
             public const float DefaultForwardingDistanceInStandUntethered = 10.0F; // m
             public const float DefaultForwardingDistanceOnRoad = 30.0F; // m
+            public const float DefaultHarvestUnitSizeInHa = 15.0F;
             public const float DefaultSlopeInPercent = 65.0F;
             public const float ForwardingDistanceOnRoadPerSortInM = 10.0F; // m
-            public const float LowboyInAndOut = 2.0F * (2.0F * 10.0F + 3.0F * 170.0F); // US$/lowboy trip ≈ US$/machine, (move in + move out) * (load + unload + travel time * lowboy $/PMh)
             public const float PlantingLabor = 383.0F; // US$/ha
             public const float PropertyTaxRate = 0.01F * 1.61F; // fraction of assessed value = 0.01 * percent of assessed value, average of northwestern Oregon counties
             public const float ReleaseSpray = 100.0F + 175.0F; // US$/ha, labor + herbicide cost
@@ -176,7 +176,6 @@ namespace Osu.Cof.Ferm
             public const float SlashDisposal = 0.35F; // US$/merchantable m³
             public const float TimberCruisePerHectare = 65.0F; // US$/ha
             public const float TimberSaleAdministrationPerHectare = 32.0F; // US$/ha
-            public const float UnitSize = 15.0F; // ha
             public const float YarderLandingSlashDisposal = 0.12F; // US$/merchantable m³
         }
 

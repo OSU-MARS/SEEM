@@ -204,10 +204,10 @@ namespace Osu.Cof.Ferm.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { 0.252F };
+                Span<float> minFinancialValues = stackalloc[] { 0.258F };
                 Span<int> treesThinned = stackalloc[] { 0 };
             #else
-                Span<float> minFinancialValues = stackalloc[] { 1.311F };
+                Span<float> minFinancialValues = stackalloc[] { 1.317F };
                 Span<int> treesThinned = stackalloc[] { 0 };
             #endif
             int matchingOptimaIndexFirstCircular = -1;

@@ -10,28 +10,32 @@ namespace Osu.Cof.Ferm.Cmdlets
     [Cmdlet(VerbsCommon.Get, "StandFromPlot")]
     public class GetStandFromPlot : Cmdlet
     {
-        [Parameter(Mandatory = true)]
+        [Parameter(Mandatory = true, HelpMessage = "Stand age in years, if even aged.")]
         [ValidateRange(0, 1000)]
         public int Age { get; set; }
 
-        [Parameter]
+        [Parameter(Mandatory = true, HelpMessage = "Stand area in hectares.")]
+        [ValidateRange(0, 1000)]
+        public float Area { get; set; }
+
+        [Parameter(HelpMessage = "Expansion factor in units of trees per hectare.")]
         [ValidateRange(0.1F, Constant.Maximum.ExpansionFactorPerHa)]
         public float? ExpansionFactorPerHa { get; set; }
 
-        [Parameter]
+        [Parameter(HelpMessage = "Mean tethered forwarding distance in stand, in meters.")]
         [ValidateRange(0.0F, 1000.0F)]
         public float ForwardingTethered { get; set; }
-        [Parameter]
+        [Parameter(HelpMessage = "Mean untethered forwarding distance in stand, in meters.")]
         [ValidateRange(0.0F, 2000.0F)]
         public float ForwardingUntethered { get; set; }
-        [Parameter]
+        [Parameter(HelpMessage = "Mean forwarding distance on road between top of corridor and unloading point (roadside, landing, or hot load into mule train), in meters.")]
         [ValidateRange(0.0F, 2500.0F)]
         public float ForwardingRoad { get; set; }
 
         [Parameter]
         public TreeModel Model { get; set; }
 
-        [Parameter]
+        [Parameter(HelpMessage = "Replanting density after regeneration harvest in seedlings per hectare.")]
         [ValidateRange(1.0F, Constant.Maximum.PlantingDensityInTreesPerHectare)]
         public float? PlantingDensityPerHa { get; set; }
 
@@ -61,6 +65,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         public GetStandFromPlot()
         {
+            this.Area = Constant.HarvestCost.DefaultHarvestUnitSizeInHa;
             this.ExpansionFactorPerHa = null;
             this.ForwardingTethered = Constant.HarvestCost.DefaultForwardingDistanceInStandTethered;
             this.ForwardingUntethered = Constant.HarvestCost.DefaultForwardingDistanceInStandUntethered;
@@ -97,6 +102,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndexInM);
             }
 
+            stand.AreaInHa = this.Area;
             stand.SetCorridorLength(this.ForwardingTethered, this.ForwardingUntethered);
             stand.ForwardingDistanceOnRoad = this.ForwardingRoad;
             if (this.PlantingDensityPerHa.HasValue)

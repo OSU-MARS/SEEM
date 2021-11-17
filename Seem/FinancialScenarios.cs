@@ -83,13 +83,13 @@ namespace Osu.Cof.Ferm
             this.HarvestTaxPerMbf = new List<float>() { Constant.Financial.OregonForestProductsHarvestTax };
             this.Name = new List<string>() { "default" };
             this.PropertyTaxAndManagementPerHectareYear = new List<float>() { Constant.HarvestCost.PropertyTaxRate * Constant.HarvestCost.AssessedValue + Constant.HarvestCost.AdmininistrationCost }; // US$/ha-year
-            this.RegenerationHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + 5.0F * Constant.HarvestCost.LowboyInAndOut / Constant.HarvestCost.UnitSize + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha, machines are dozer + feller-buncher + yarder + processor + loader
+            this.RegenerationHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha
             this.RegenerationRoadCostPerCubicMeter = new List<float>() { Constant.HarvestCost.RoadMaintenance }; // US$/m³
             this.RegenerationSlashCostPerCubicMeter = new List<float>() { Constant.HarvestCost.SlashDisposal + Constant.HarvestCost.YarderLandingSlashDisposal }; // US$/m³
             this.ReleaseSprayCostPerHectare = new List<float>() { Constant.HarvestCost.ReleaseSpray }; // US$/ha, one release spray
             this.SeedlingCost = new List<float>() { 0.50F }; // US$ per seedling, make species specific when needed
             this.SitePrepAndReplantingCostPerHectare = new List<float>() { Constant.HarvestCost.SitePrep + Constant.HarvestCost.PlantingLabor }; // US$/ha: site prep + planting labor, cost of seedlings not included
-            this.ThinningHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + 3.0F * Constant.HarvestCost.LowboyInAndOut / Constant.HarvestCost.UnitSize + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha, machines are dozer + harvester + forwarder
+            this.ThinningHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha
             this.ThinningPondValueMultiplier = new List<float>() { 0.90F }; // short log price penalty
             this.ThinningRoadCostPerCubicMeter = new List<float>() { Constant.HarvestCost.RoadMaintenance }; // US$/m³
             this.ThinningSlashCostPerCubicMeter = new List<float>() { Constant.HarvestCost.SlashDisposal }; // US$/m³
@@ -308,7 +308,7 @@ namespace Osu.Cof.Ferm
                 harvestSystems.GetCutToLengthHarvestCost(previousStand, trajectory.IndividualTreeSelectionBySpecies, trajectory.ThinningVolumeBySpecies, thinningPeriod, ctlHarvest);
 
                 float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
-                ctlHarvest.TaskCostPerHa = thinningHarvestTaskCostPerCubicMeter * ctlHarvest.CubicVolumePerHa + this.ThinningHarvestCostPerHectare[financialIndex];
+                ctlHarvest.TaskCostPerHa += thinningHarvestTaskCostPerCubicMeter * ctlHarvest.CubicVolumePerHa + this.ThinningHarvestCostPerHectare[financialIndex];
 
                 float netValuePerHaAtHarvest = ctlHarvest.PondValue2SawPerHa + ctlHarvest.PondValue3SawPerHa + ctlHarvest.PondValue4SawPerHa - ctlHarvest.MinimumSystemCostPerHa - ctlHarvest.TaskCostPerHa;
                 float discountFactor = this.GetDiscountFactor(financialIndex, thinningAgeInYears);
@@ -459,6 +459,8 @@ namespace Osu.Cof.Ferm
             harvestSystems.LongLogHaulPerSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.LongLogHaulPerSMh]);
             harvestSystems.LongLogHaulRoundtripSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.LongLogHaulHours]);
 
+            harvestSystems.MachineMoveInOrOut = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.MachineInOut]);
+
             harvestSystems.ProcessorBuckConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ProcessorConstant]);
             harvestSystems.ProcessorBuckLinear = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ProcessorLinear]);
             harvestSystems.ProcessorBuckQuadratic1 = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ProcessorQuadratic1]);
@@ -571,7 +573,7 @@ namespace Osu.Cof.Ferm
             }
             this.SeedlingCost.Add(seedling);
 
-            float sitePrepAndReplanting = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.SitePrepFixed]);
+            float sitePrepAndReplanting = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.SitePrepAndPlantPerHa]);
             if ((sitePrepAndReplanting <= 0.0F) || (sitePrepAndReplanting > 1000.0F))
             {
                 throw new NotSupportedException("Site preparation and replanting cost is not in the range US$ (0.0, 1000.0]/ha.");
@@ -739,6 +741,7 @@ namespace Osu.Cof.Ferm
             public int LongLogHaulPayload { get; set; }
             public int LongLogHaulPerSMh { get; set; }
 
+            public int MachineInOut { get; set; }
             public int Name { get; set; }
 
             public int ProcessorConstant { get; set; }
@@ -761,7 +764,7 @@ namespace Osu.Cof.Ferm
             public int RegenSlash { get; set; }
             public int ReleaseSpray { get; set; }
             public int Seedling { get; set; }
-            public int SitePrepFixed { get; set; }
+            public int SitePrepAndPlantPerHa { get; set; }
 
             public int ThplCamprun { get; set; }
 
@@ -988,6 +991,9 @@ namespace Osu.Cof.Ferm
                     case "longLogHaulSMh":
                         this.LongLogHaulPerSMh = columnIndex;
                         break;
+                    case "machineInOut":
+                        this.MachineInOut = columnIndex;
+                        break;
                     case "name":
                         this.Name = columnIndex;
                         break;
@@ -1042,8 +1048,8 @@ namespace Osu.Cof.Ferm
                     case "seedling":
                         this.Seedling = columnIndex;
                         break;
-                    case "sitePrepFixed":
-                        this.SitePrepFixed = columnIndex;
+                    case "sitePrepPlant":
+                        this.SitePrepAndPlantPerHa = columnIndex;
                         break;
                     case "thinPerHa":
                         this.ThinPerHa = columnIndex;
@@ -1210,6 +1216,8 @@ namespace Osu.Cof.Ferm
                 this.LongLogHaulHours = -1;
                 this.LongLogHaulPayload = -1;
                 this.LongLogHaulPerSMh = -1;
+
+                this.MachineInOut = -1;
                 this.Name = -1;
 
                 this.ProcessorCostPerSMh = -1;
@@ -1231,7 +1239,7 @@ namespace Osu.Cof.Ferm
                 this.RegenSlash = -1;
                 this.ReleaseSpray = -1;
                 this.Seedling = -1;
-                this.SitePrepFixed = -1;
+                this.SitePrepAndPlantPerHa = -1;
 
                 this.ThinPerHa = -1;
                 this.ThinPondValueMultiplier = -1;
@@ -1518,6 +1526,11 @@ namespace Osu.Cof.Ferm
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.LongLogHaulPerSMh), "Regeneration haul cost per SMh column not found.");
                 }
+
+                if (this.MachineInOut < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.Name), "Column for cost of moving heavy equipment in and out not found.");
+                }
                 if (this.Name < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.Name), "Scenario name column not found.");
@@ -1593,9 +1606,9 @@ namespace Osu.Cof.Ferm
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.Seedling), "Cost per seedling column not found.");
                 }
-                if (this.SitePrepFixed < 0)
+                if (this.SitePrepAndPlantPerHa < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.SitePrepFixed), "Fixed site prep cost column not found.");
+                    throw new ArgumentOutOfRangeException(nameof(this.SitePrepAndPlantPerHa), "Fixed site prep cost column not found.");
                 }
                 if (this.ThplCamprun < 0)
                 {

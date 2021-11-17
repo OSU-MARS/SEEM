@@ -7,9 +7,10 @@ namespace Osu.Cof.Ferm.Tree
 {
     public class Stand
     {
-        public float CorridorLength { get; set; } // m
-        public float ForwardingDistanceInStandTethered { get; private set; } // m, mean
-        public float ForwardingDistanceInStandUntethered { get; private set; } // m, mean
+        public float AreaInHa { get; set; }
+        public float CorridorLengthInM { get; set; }
+        public float ForwardingDistanceTethered { get; private set; } // m, mean
+        public float ForwardingDistanceUntethered { get; private set; } // m, mean
         public float ForwardingDistanceOnRoad { get; set; } // m, mean distance from corridor to log unload point
         public string? Name { get; set; }
         public float? PlantingDensityInTreesPerHectare { get; set; }
@@ -21,6 +22,7 @@ namespace Osu.Cof.Ferm.Tree
         {
             // this.CorridorLength, ForwardingDistanceInStandTethered, and ForwardingDistanceInStandUntethered
             this.SetCorridorLength(Constant.HarvestCost.DefaultForwardingDistanceInStandTethered, Constant.HarvestCost.DefaultForwardingDistanceInStandUntethered);
+            this.AreaInHa = Constant.HarvestCost.DefaultHarvestUnitSizeInHa;
             this.ForwardingDistanceOnRoad = Constant.HarvestCost.DefaultForwardingDistanceOnRoad;
             this.Name = null;
             this.PlantingDensityInTreesPerHectare = null;
@@ -30,8 +32,9 @@ namespace Osu.Cof.Ferm.Tree
 
         public Stand(Stand other)
         {
+            this.AreaInHa = other.AreaInHa;
             // this.CorridorLength, ForwardingDistanceInStandTethered, and ForwardingDistanceInStandUntethered
-            this.SetCorridorLength(other.ForwardingDistanceInStandTethered, other.ForwardingDistanceInStandUntethered);
+            this.SetCorridorLength(other.ForwardingDistanceTethered, other.ForwardingDistanceUntethered);
             this.ForwardingDistanceOnRoad = other.ForwardingDistanceOnRoad;
             this.Name = other.Name;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
@@ -222,9 +225,9 @@ namespace Osu.Cof.Ferm.Tree
 
         public void SetCorridorLength(float forwardingDistanceInStandTethered, float forwardingDistanceInStandUntethered)
         {
-            this.CorridorLength = forwardingDistanceInStandTethered + forwardingDistanceInStandUntethered;
-            this.ForwardingDistanceInStandTethered = forwardingDistanceInStandTethered;
-            this.ForwardingDistanceInStandUntethered = forwardingDistanceInStandUntethered;
+            this.CorridorLengthInM = forwardingDistanceInStandTethered + forwardingDistanceInStandUntethered;
+            this.ForwardingDistanceTethered = forwardingDistanceInStandTethered;
+            this.ForwardingDistanceUntethered = forwardingDistanceInStandUntethered;
         }
     }
 }
