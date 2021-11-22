@@ -24,7 +24,11 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            if (this.Results!.PositionsEvaluated.Count < 1)
+            if (this.Results == null)
+            {
+                throw new ParameterOutOfRangeException(nameof(this.Results), "-" + nameof(this.Results) + " must be specified.");
+            }
+            if (this.Results.PositionsEvaluated.Count < 1)
             {
                 throw new ParameterOutOfRangeException(nameof(this.Results));
             }

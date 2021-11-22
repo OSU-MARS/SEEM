@@ -92,6 +92,25 @@ namespace Osu.Cof.Ferm.Cmdlets
                    financialScenario;
         }
 
+        protected static void GetMetricConversions(Units inputUnits, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor)
+        {
+            switch (inputUnits)
+            {
+                case Units.English:
+                    areaConversionFactor = Constant.AcresPerHectare;
+                    dbhConversionFactor = Constant.CentimetersPerInch;
+                    heightConversionFactor = Constant.MetersPerFoot;
+                    break;
+                case Units.Metric:
+                    areaConversionFactor = 1.0F;
+                    dbhConversionFactor = 1.0F;
+                    heightConversionFactor = 1.0F;
+                    break;
+                default:
+                    throw new NotSupportedException("Unhandled units " + inputUnits + ".");
+            }
+        }
+
         protected long GetMaxFileSizeInBytes()
         {
             return (long)(1E9F * this.LimitGB);
@@ -105,46 +124,6 @@ namespace Osu.Cof.Ferm.Cmdlets
                 this.openedExistingFile = File.Exists(this.CsvFile);
             }
             return new StreamWriter(new FileStream(this.CsvFile!, fileMode, FileAccess.Write, FileShare.Read));
-        }
-
-        protected static void GetBasalAreaConversion(Units inputUnits, Units outputUnits, out float basalAreaConversionFactor)
-        {
-            if (inputUnits == outputUnits)
-            {
-                basalAreaConversionFactor = 1.0F;
-                return;
-            }
-
-            // English to metric
-            if ((inputUnits == Units.English) && (outputUnits == Units.Metric))
-            {
-                basalAreaConversionFactor = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot;
-                return;
-            }
-
-            throw new NotSupportedException();
-        }
-
-        protected static void GetDimensionConversions(Units inputUnits, Units outputUnits, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor)
-        {
-            if (inputUnits == outputUnits)
-            {
-                areaConversionFactor = 1.0F;
-                dbhConversionFactor = 1.0F;
-                heightConversionFactor = 1.0F;
-                return;
-            }
-
-            // English to metric
-            if ((inputUnits == Units.English) && (outputUnits == Units.Metric))
-            {
-                areaConversionFactor = Constant.AcresPerHectare;
-                dbhConversionFactor = Constant.CentimetersPerInch;
-                heightConversionFactor = Constant.MetersPerFoot;
-                return;
-            }
-
-            throw new NotSupportedException();
         }
 
         protected bool ShouldWriteHeader()

@@ -5,7 +5,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 {
     public class WriteHeuristicResultsCmdlet : WriteCmdlet
     {
-        [Parameter(Mandatory = true)]
+        [Parameter]
         [ValidateNotNull]
         public HeuristicResults? Results { get; set; }
     }

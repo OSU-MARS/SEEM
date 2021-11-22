@@ -443,6 +443,13 @@ namespace Osu.Cof.Ferm.Tree
             return this.HeightClassSizeInMeters * heightIndex;
         }
 
+        public float GetCubicVolume(float dbhInCm, float heightInM)
+        {
+            int diameterClass = this.ToDiameterIndex(dbhInCm);
+            int heightClass = this.ToHeightIndex(heightInM);
+            return this.Cubic2Saw[diameterClass, heightClass] + this.Cubic3Saw[diameterClass, heightClass] + this.Cubic4Saw[diameterClass, heightClass];
+        }
+
         public int ToDiameterIndex(float dbhInCentimeters)
         {
             // TODO: shift rounding to reduce bias?

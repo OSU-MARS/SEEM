@@ -43,7 +43,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
-                    WriteTreeList.GetDimensionConversions(treesOfSpecies.Units, this.Units, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
+                    WriteTreeList.GetMetricConversions(treesOfSpecies.Units, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor);
 
                     string species = treesOfSpecies.Species.ToFourLetterCode();
                     for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
