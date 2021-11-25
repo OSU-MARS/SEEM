@@ -241,7 +241,7 @@ namespace Osu.Cof.Ferm.Silviculture
             this.WheeledHarvesterUtilization = 0.77F; // fraction
         }
 
-        public void GetCutToLengthHarvestCost(Stand stand, SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, SortedList<FiaCode, TreeSpeciesMerchantableVolume> harvestVolumeBySpecies, int harvestPeriod, CutToLengthHarvest ctlHarvest)
+        public void GetCutToLengthHarvestCost(Stand stand, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, SortedList<FiaCode, TreeSpeciesMerchantableVolume> harvestVolumeBySpecies, int harvestPeriod, CutToLengthHarvest ctlHarvest)
         {
             if ((stand.AreaInHa <= 0.0F) ||
                 (stand.CorridorLengthInM <= 0.0F) ||
@@ -271,7 +271,7 @@ namespace Osu.Cof.Ferm.Silviculture
                     diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
                     hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
                 }
-                TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[treesOfSpecies.Species];
+                IndividualTreeSelection individualTreeSelection = individualTreeSelectionBySpecies[treesOfSpecies.Species];
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
 
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)

@@ -59,10 +59,10 @@ namespace Osu.Cof.Ferm.Tree
             Debug.Assert((standingVolume.Scribner2Saw >= 0.0F) && (standingVolume.Scribner3Saw >= 0.0F) && (standingVolume.Scribner4Saw >= 0.0F));
         }
 
-        public void CalculateThinningVolume(Stand previousStand, SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, int periodIndex, TreeVolume treeVolume)
+        public void CalculateThinningVolume(Stand previousStand, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, int periodIndex, TreeVolume treeVolume)
         {
             Trees previousTreesOfSpecies = previousStand.TreesBySpecies[this.Species];
-            TreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
+            IndividualTreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
             TreeSpeciesMerchantableVolumeForPeriod thinningVolume = treeVolume.Thinning.GetHarvestedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex);
 
             thinningVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);

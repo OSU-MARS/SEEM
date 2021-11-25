@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Osu.Cof.Ferm.Silviculture
 {
-    public class HeuristicResultPosition : IEquatable<HeuristicResultPosition>
+    public class StandTrajectoryCoordinate : IEquatable<StandTrajectoryCoordinate>
     {
         public int FinancialIndex { get; set; }
         public int FirstThinPeriodIndex { get; init; }
@@ -11,17 +11,17 @@ namespace Osu.Cof.Ferm.Heuristics
         public int SecondThinPeriodIndex { get; init; }
         public int ThirdThinPeriodIndex { get; init; }
 
-        public HeuristicResultPosition()
+        public StandTrajectoryCoordinate()
         {
-            this.FinancialIndex = -1;
-            this.FirstThinPeriodIndex = Constant.NoThinPeriod;
-            this.SecondThinPeriodIndex = Constant.NoThinPeriod;
-            this.ThirdThinPeriodIndex = Constant.NoThinPeriod;
-            this.ParameterIndex = -1;
-            this.RotationIndex = -1;
+            this.FinancialIndex = Constant.HeuristicDefault.CoordinateIndex;
+            this.FirstThinPeriodIndex = Constant.HeuristicDefault.CoordinateIndex;
+            this.SecondThinPeriodIndex = Constant.HeuristicDefault.CoordinateIndex;
+            this.ThirdThinPeriodIndex = Constant.HeuristicDefault.CoordinateIndex;
+            this.ParameterIndex = Constant.HeuristicDefault.CoordinateIndex;
+            this.RotationIndex = Constant.HeuristicDefault.CoordinateIndex;
         }
 
-        public HeuristicResultPosition(HeuristicResultPosition other)
+        public StandTrajectoryCoordinate(StandTrajectoryCoordinate other)
         {
             this.FinancialIndex = other.FinancialIndex;
             this.FirstThinPeriodIndex = other.FirstThinPeriodIndex;
@@ -31,14 +31,14 @@ namespace Osu.Cof.Ferm.Heuristics
             this.RotationIndex = other.RotationIndex;
         }
 
-        public static bool operator ==(HeuristicResultPosition position1, HeuristicResultPosition position2)
+        public static bool operator ==(StandTrajectoryCoordinate coordinate1, StandTrajectoryCoordinate coordinate2)
         {
-            return position1.Equals(position2);
+            return coordinate1.Equals(coordinate2);
         }
 
-        public static bool operator !=(HeuristicResultPosition position1, HeuristicResultPosition position2)
+        public static bool operator !=(StandTrajectoryCoordinate coordinate1, StandTrajectoryCoordinate coordinate2)
         {
-            return position1.Equals(position2) == false;
+            return coordinate1.Equals(coordinate2) == false;
         }
 
         public override int GetHashCode()
@@ -46,7 +46,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return HashCode.Combine(this.FinancialIndex, this.RotationIndex, this.FirstThinPeriodIndex, this.SecondThinPeriodIndex, this.ThirdThinPeriodIndex, this.ParameterIndex);
         }
 
-        public bool Equals(HeuristicResultPosition? other)
+        public bool Equals(StandTrajectoryCoordinate? other)
         {
             if (other is null)
             {
@@ -62,7 +62,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
         public override bool Equals(object? obj)
         {
-            if (obj is HeuristicResultPosition other)
+            if (obj is StandTrajectoryCoordinate other)
             {
                 return this.Equals(other);
             }

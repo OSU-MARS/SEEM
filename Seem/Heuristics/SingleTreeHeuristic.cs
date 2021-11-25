@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
@@ -7,18 +8,18 @@ namespace Osu.Cof.Ferm.Heuristics
         public SingleTreeMoveLog MoveLog { get; private init; }
 
         public SingleTreeHeuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, heuristicParameters, runParameters, false)
+            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndFinancialScenarios: false)
         {
             this.MoveLog = new SingleTreeMoveLog(runParameters.MoveCapacity);
         }
 
-        protected override float EvaluateInitialSelection(HeuristicResultPosition position, int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected override float EvaluateInitialSelection(StandTrajectoryCoordinate coordinate, int moveCapacity, PrescriptionPerformanceCounters perfCounters)
         {
-            float financialValue = base.EvaluateInitialSelection(position, moveCapacity, perfCounters);
+            float initialFinancialValue = base.EvaluateInitialSelection(coordinate, moveCapacity, perfCounters);
             
             this.MoveLog.TreeIDByMove.Capacity = moveCapacity;
             this.MoveLog.TryAddMove(-1);
-            return financialValue;
+            return initialFinancialValue;
         }
 
         public override HeuristicMoveLog? GetMoveLog()

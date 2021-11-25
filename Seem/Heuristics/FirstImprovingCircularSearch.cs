@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Extensions;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,7 +19,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.MaximumIterations = Constant.HeuristicDefault.FirstCircularIterationMultiplier * stand.GetTreeRecordCount();
         }
 
-        private bool EvaluateMove(MoveDirection moveDirection, MoveState moveState, HeuristicResultPosition position)
+        private bool EvaluateMove(MoveDirection moveDirection, MoveState moveState, StandTrajectoryCoordinate coordinate)
         {
             int currentThinningPeriodIndex = moveState.UncompactedPeriodIndices[moveState.TreeIndex];
             int candidateThinningPeriodIndex = currentThinningPeriodIndex + (moveDirection == MoveDirection.Decrease ? -1 : 1);
@@ -29,7 +30,7 @@ namespace Osu.Cof.Ferm.Heuristics
             moveState.CandidateTrajectory.SetTreeSelection(moveState.TreeIndex, candidateHarvestPeriod);
             moveState.PerfCounters.GrowthModelTimesteps += moveState.CandidateTrajectory.Simulate();
 
-            float candidateFinancialValue = this.GetFinancialValue(moveState.CandidateTrajectory, position.FinancialIndex);
+            float candidateFinancialValue = this.GetFinancialValue(moveState.CandidateTrajectory, coordinate.FinancialIndex);
             bool acceptMove = candidateFinancialValue > moveState.AcceptedFinancialValue;
             if (acceptMove)
             {
@@ -48,7 +49,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++moveState.PerfCounters.MovesRejected;
             }
 
-            this.FinancialValue.TryAddMove(moveState.AcceptedFinancialValue, candidateFinancialValue);
+            this.FinancialValue.TryAddMove(coordinate, moveState.AcceptedFinancialValue, candidateFinancialValue);
             this.MoveLog.TryAddMove(moveState.TreeIndex);
 
             return acceptMove;
@@ -63,7 +64,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "FirstCircular";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
+        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.MaximumIterations < 1)
             {
@@ -73,9 +74,9 @@ namespace Osu.Cof.Ferm.Heuristics
             Stopwatch stopwatch = new();
             stopwatch.Start();
 
-            int treesRandomizedInConstructingInitialTreeSelection = this.ConstructTreeSelection(position, results);
+            int treesRandomizedInConstructingInitialTreeSelection = this.ConstructTreeSelection(coordinate, trajectories);
             MoveState moveState = new(this.CurrentTrajectory, treesRandomizedInConstructingInitialTreeSelection);
-            moveState.AcceptedFinancialValue = this.EvaluateInitialSelection(position, this.MaximumIterations, moveState.PerfCounters);
+            moveState.AcceptedFinancialValue = this.EvaluateInitialSelection(coordinate, this.MaximumIterations, moveState.PerfCounters);
 
             int lastImprovingSourceTreeIndex = 0;
             int sourceTreeIndex = moveState.UncompactedPeriodIndices.Length;
@@ -103,13 +104,13 @@ namespace Osu.Cof.Ferm.Heuristics
                 bool canDecrementPeriodIndex = currentPeriodIndex > 0;
                 bool canIncrementPeriodIndex = currentPeriodIndex != moveState.ThinningPeriods.Count - 1;
                 MoveDirection firstMoveDirection = canDecrementPeriodIndex ? MoveDirection.Decrease : MoveDirection.Increase;
-                if (this.EvaluateMove(firstMoveDirection, moveState, position))
+                if (this.EvaluateMove(firstMoveDirection, moveState, coordinate))
                 {
                     lastImprovingSourceTreeIndex = sourceTreeIndex;
                 }
                 else if (canIncrementPeriodIndex)
                 {
-                    if (this.EvaluateMove(MoveDirection.Increase, moveState, position))
+                    if (this.EvaluateMove(MoveDirection.Increase, moveState, coordinate))
                     {
                         lastImprovingSourceTreeIndex = sourceTreeIndex;
                     }
@@ -124,7 +125,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++sourceTreeIndex;
             }
 
-            this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
+            this.CopyTreeGrowthToBestTrajectory(coordinate, this.CurrentTrajectory);
 
             stopwatch.Stop();
             moveState.PerfCounters.Duration = stopwatch.Elapsed;
@@ -136,7 +137,7 @@ namespace Osu.Cof.Ferm.Heuristics
             public float AcceptedFinancialValue { get; set; }
             public OrganonStandTrajectory CandidateTrajectory { get; private init; }
             public int MovesSinceLastImprovement { get; set; }
-            public HeuristicPerformanceCounters PerfCounters { get; private init; }
+            public PrescriptionPerformanceCounters PerfCounters { get; private init; }
             public IList<int> ThinningPeriods { get; private init; }
             public int TreeIndex { get; set; }
             public int[] UncompactedPeriodIndices { get; private init; }

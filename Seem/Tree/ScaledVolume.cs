@@ -18,7 +18,7 @@ namespace Osu.Cof.Ferm.Tree
             };
         }
 
-        public TreeSpeciesMerchantableVolumeForPeriod GetHarvestedVolume(Trees treesOfSpecies, TreeSelection individualTreeSelection, int harvestPeriod)
+        public TreeSpeciesMerchantableVolumeForPeriod GetHarvestedVolume(Trees treesOfSpecies, IndividualTreeSelection individualTreeSelection, int harvestPeriod)
         {
             TreeSpeciesVolumeTable volumeTable = this.VolumeBySpecies[treesOfSpecies.Species];
             TreeSpeciesMerchantableVolumeForPeriod harvestVolume = new();

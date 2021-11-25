@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Optimization;
 using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
@@ -101,31 +102,31 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected abstract Heuristic<TParameters> CreateHeuristic(TParameters heuristicParameters, RunParameters runParameters);
 
-        private RunParameters CreateRunParameters(HeuristicResultPosition position, OrganonConfiguration organonConfiguration)
+        private RunParameters CreateRunParameters(StandTrajectoryCoordinate coordinate, OrganonConfiguration organonConfiguration)
         {
             RunParameters runParameters = new(this.RotationLengths, organonConfiguration)
             {
                 Financial = this.Financial,
                 LogOnlyImprovingMoves = this.LogImprovingOnly,
-                MaximizeForPlanningPeriod = this.HeuristicEvaluatesAcrossRotationsAndScenarios ? Constant.MaximizeForAllPlanningPeriods : this.RotationLengths[position.RotationIndex],
+                MaximizeForPlanningPeriod = this.HeuristicEvaluatesAcrossRotationsAndScenarios ? Constant.MaximizeForAllPlanningPeriods : this.RotationLengths[coordinate.RotationIndex],
                 MoveCapacity = this.MoveCapacity,
                 TimberObjective = this.TimberObjective
             };
 
             int lastThinPeriod = Constant.NoThinPeriod;
-            if (this.TryCreateFirstThin(position.FirstThinPeriodIndex, out Harvest? firstThin))
+            if (this.TryCreateFirstThin(coordinate.FirstThinPeriodIndex, out Harvest? firstThin))
             {
-                lastThinPeriod = Math.Max(lastThinPeriod, this.FirstThinPeriod[position.FirstThinPeriodIndex]);
+                lastThinPeriod = Math.Max(lastThinPeriod, this.FirstThinPeriod[coordinate.FirstThinPeriodIndex]);
                 runParameters.Treatments.Harvests.Add(firstThin);
 
-                if (this.TryCreateSecondThin(position.SecondThinPeriodIndex, out Harvest? secondThin))
+                if (this.TryCreateSecondThin(coordinate.SecondThinPeriodIndex, out Harvest? secondThin))
                 {
-                    lastThinPeriod = Math.Max(lastThinPeriod, this.SecondThinPeriod[position.SecondThinPeriodIndex]);
+                    lastThinPeriod = Math.Max(lastThinPeriod, this.SecondThinPeriod[coordinate.SecondThinPeriodIndex]);
                     runParameters.Treatments.Harvests.Add(secondThin);
 
-                    if (this.TryCreateThirdThin(position.ThirdThinPeriodIndex, out Harvest? thirdThin))
+                    if (this.TryCreateThirdThin(coordinate.ThirdThinPeriodIndex, out Harvest? thirdThin))
                     {
-                        lastThinPeriod = Math.Max(lastThinPeriod, this.ThirdThinPeriod[position.ThirdThinPeriodIndex]);
+                        lastThinPeriod = Math.Max(lastThinPeriod, this.ThirdThinPeriod[coordinate.ThirdThinPeriodIndex]);
                         runParameters.Treatments.Harvests.Add(thirdThin);
                     }
                 }
@@ -170,29 +171,29 @@ namespace Osu.Cof.Ferm.Cmdlets
         // for now, assume runtime complexity is linear with the number of periods requiring thinning optimization
         // This is simplified, but it's more accurate than assuming all runs have equal cost regardless of the number of timesteps required and is
         // a reasonable approximation for hero, Monte Carlo heuristics, prescription enumeration, and genetic algorithms.
-        protected static int EstimateRuntimeCost(HeuristicResultPosition position, HeuristicResults<TParameters> results)
+        protected static int EstimateRuntimeCost(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories<TParameters> results)
         {
             int periodWeight = 0; // no thins so only a single trajectory need be simulated; assume cost is negligible as no optimization occurs
-            int firstThinPeriod = results.FirstThinPeriods[position.FirstThinPeriodIndex];
+            int firstThinPeriod = results.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
             if (firstThinPeriod != Constant.NoThinPeriod)
             {
                 int endOfRotationPeriod;
-                if (position.RotationIndex == Constant.AllRotationPosition)
+                if (coordinate.RotationIndex == Constant.AllRotationPosition)
                 {
                     endOfRotationPeriod = results.RotationLengths.Max();
                 }
                 else
                 {
-                    endOfRotationPeriod = results.RotationLengths[position.RotationIndex];
+                    endOfRotationPeriod = results.RotationLengths[coordinate.RotationIndex];
                 }
                 periodWeight = endOfRotationPeriod - firstThinPeriod;
 
-                int secondThinPeriod = results.SecondThinPeriods[position.SecondThinPeriodIndex];
+                int secondThinPeriod = results.SecondThinPeriods[coordinate.SecondThinPeriodIndex];
                 if (secondThinPeriod != Constant.NoThinPeriod)
                 {
                     periodWeight += endOfRotationPeriod - secondThinPeriod;
 
-                    int thirdThinPeriod = results.ThirdThinPeriods[position.ThirdThinPeriodIndex];
+                    int thirdThinPeriod = results.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex];
                     if (thirdThinPeriod == Constant.NoThinPeriod)
                     {
                         return endOfRotationPeriod - thirdThinPeriod;
@@ -208,7 +209,7 @@ namespace Osu.Cof.Ferm.Cmdlets
         // ideally this would be virtual but, as of C# 9.0, the nature of C# generics requires GetDefaultParameterCombinations() to be separate
         protected abstract IList<TParameters> GetParameterCombinations();
 
-        private string GetStatusDescription(IList<TParameters> parameterCombinations, HeuristicResultPosition currentPosition)
+        private string GetStatusDescription(IList<TParameters> parameterCombinations, StandTrajectoryCoordinate currentPosition)
         {
             string mostRecentEvaluationDescription = String.Empty;
             if (parameterCombinations.Count > 1)
@@ -284,13 +285,13 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
-            HeuristicPerformanceCounters totalPerfCounters = new();
+            PrescriptionPerformanceCounters totalPerfCounters = new();
             int totalRuntimeCost = 0;
 
             int treeCount = this.Stand!.GetTreeRecordCount();
-            List<HeuristicResultPosition> combinationsToEvaluate = new();
+            List<StandTrajectoryCoordinate> combinationsToEvaluate = new();
             IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
-            HeuristicResults<TParameters> results = new(parameterCombinationsForHeuristic, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.RotationLengths, this.Financial, this.SolutionPoolSize);
+            HeuristicStandTrajectories<TParameters> results = new(parameterCombinationsForHeuristic, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.RotationLengths, this.Financial, this.SolutionPoolSize);
             for (int parameterIndex = 0; parameterIndex < parameterCombinationsForHeuristic.Count; ++parameterIndex)
             {
                 for (int firstThinIndex = 0; firstThinIndex < this.FirstThinPeriod.Count; ++firstThinIndex)
@@ -342,7 +343,7 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                             if (this.HeuristicEvaluatesAcrossRotationsAndScenarios)
                             {
-                                HeuristicResultPosition position = new()
+                                StandTrajectoryCoordinate coordinate = new()
                                 {
                                     FinancialIndex = Constant.AllFinancialScenariosPosition,
                                     FirstThinPeriodIndex = firstThinIndex,
@@ -351,8 +352,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     SecondThinPeriodIndex = secondThinIndex,
                                     ThirdThinPeriodIndex = thirdThinIndex
                                 };
-                                combinationsToEvaluate.Add(position);
-                                totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
+                                combinationsToEvaluate.Add(coordinate);
+                                totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(coordinate, results);
                             }
                             else
                             {
@@ -371,7 +372,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     {
                                         // distributions are unique per combination of run tuple (discount rate, thins 1, 2, 3, and rotation)
                                         // and heuristic parameters but solution pools are shared across heuristic parameters
-                                        HeuristicResultPosition position = new()
+                                        StandTrajectoryCoordinate coordinate = new()
                                         {
                                             FinancialIndex = financialIndex,
                                             FirstThinPeriodIndex = firstThinIndex,
@@ -380,8 +381,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                             SecondThinPeriodIndex = secondThinIndex,
                                             ThirdThinPeriodIndex = thirdThinIndex
                                         };
-                                        combinationsToEvaluate.Add(position);
-                                        totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
+                                        combinationsToEvaluate.Add(coordinate);
+                                        totalRuntimeCost += OptimizeCmdlet<TParameters>.EstimateRuntimeCost(coordinate, results);
                                     }
                                 }
                             }
@@ -411,23 +412,23 @@ namespace Osu.Cof.Ferm.Cmdlets
                             }
 
                             int combinationIndex = runNumber / this.BestOf;
-                            HeuristicResultPosition position = combinationsToEvaluate[combinationIndex];
+                            StandTrajectoryCoordinate coordinate = combinationsToEvaluate[combinationIndex];
                             try
                             {
-                                TParameters heuristicParameters = parameterCombinationsForHeuristic[position.ParameterIndex];
-                                RunParameters runParameters = this.CreateRunParameters(position, organonConfiguration);
+                                TParameters heuristicParameters = parameterCombinationsForHeuristic[coordinate.ParameterIndex];
+                                RunParameters runParameters = this.CreateRunParameters(coordinate, organonConfiguration);
                                 Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(heuristicParameters, runParameters);
-                                HeuristicPerformanceCounters perfCounters = currentHeuristic.Run(position, results);
+                                PrescriptionPerformanceCounters perfCounters = currentHeuristic.Run(coordinate, results);
 
                                 // accumulate run into results and tracking counters
-                                int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(position, results);
+                                int estimatedRuntimeCost = OptimizeCmdlet<TParameters>.EstimateRuntimeCost(coordinate, results);
                                 int runWithinCombination = runNumber - this.BestOf * combinationIndex;
                                 lock (results)
                                 {
                                     if (this.HeuristicEvaluatesAcrossRotationsAndScenarios)
                                     {
                                         // scatter heuristic's results to rotation lengths and discount rates
-                                        HeuristicPerformanceCounters perfCountersToAssmilate = perfCounters;
+                                        PrescriptionPerformanceCounters perfCountersToAssmilate = perfCounters;
                                         bool perfCountersLogged = false;
                                         for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
                                         {
@@ -439,13 +440,14 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                                             for (int financialIndex = 0; financialIndex < this.Financial.Count; ++financialIndex)
                                             {
-                                                HeuristicResultPosition evaluatedPosition = new(position) // must be new each time to uniquely populate results.CombinationsEvaluated through AddEvaluatedPosition()
+                                                // must be new each time to uniquely populate results.CombinationsEvaluated through AddEvaluatedPosition()
+                                                StandTrajectoryCoordinate evaluatedPosition = new(coordinate)
                                                 {
                                                     FinancialIndex = financialIndex,
                                                     RotationIndex = rotationIndex
                                                 };
 
-                                                results.AssimilateHeuristicRunIntoPosition(currentHeuristic, evaluatedPosition, perfCountersToAssmilate);
+                                                results.AssimilateIntoCoordinate(currentHeuristic, evaluatedPosition, perfCountersToAssmilate);
                                                 if (runWithinCombination == this.BestOf - 1)
                                                 {
                                                     // last run in combination adds the evaluated positions to CombinationsEvaluated
@@ -457,7 +459,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                                 if (perfCountersLogged == false)
                                                 {
                                                     perfCountersLogged = true;
-                                                    perfCountersToAssmilate = HeuristicPerformanceCounters.Zero;
+                                                    perfCountersToAssmilate = PrescriptionPerformanceCounters.Zero;
                                                 }
                                             }
                                         }
@@ -465,11 +467,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                                     else
                                     {
                                         // heuristic is specific to a single discount rate
-                                        results.AssimilateHeuristicRunIntoPosition(currentHeuristic, position, perfCounters);
+                                        results.AssimilateIntoCoordinate(currentHeuristic, coordinate, perfCounters);
                                         if (runWithinCombination == this.BestOf - 1)
                                         {
                                             // last run in combination adds the position to CombinationsEvaluated
-                                            results.AddEvaluatedPosition(position);
+                                            results.AddEvaluatedPosition(coordinate);
                                         }
                                     }
 
@@ -484,13 +486,13 @@ namespace Osu.Cof.Ferm.Cmdlets
                                 string financialScenario = "vectorized";
                                 if (this.HeuristicEvaluatesAcrossRotationsAndScenarios == false)
                                 {
-                                    financialScenario = results.FinancialScenarios.DiscountRate[position.FinancialIndex].ToString();
-                                    rotationLength = results.RotationLengths[position.RotationIndex].ToString();
+                                    financialScenario = results.FinancialScenarios.DiscountRate[coordinate.FinancialIndex].ToString();
+                                    rotationLength = results.RotationLengths[coordinate.RotationIndex].ToString();
                                 }
-                                throw new AggregateException("Exception encountered during optimization. Parameters " + position.ParameterIndex +
-                                                             ", first thin period " + results.FirstThinPeriods[position.FirstThinPeriodIndex] +
-                                                             ", second thin period " + results.SecondThinPeriods[position.SecondThinPeriodIndex] +
-                                                             ", third thin period " + results.ThirdThinPeriods[position.ThirdThinPeriodIndex] +
+                                throw new AggregateException("Exception encountered during optimization. Parameters " + coordinate.ParameterIndex +
+                                                             ", first thin period " + results.FirstThinPeriods[coordinate.FirstThinPeriodIndex] +
+                                                             ", second thin period " + results.SecondThinPeriods[coordinate.SecondThinPeriodIndex] +
+                                                             ", third thin period " + results.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] +
                                                              ", rotation length " + rotationLength +
                                                              ", financial scenario " + financialScenario +
                                                              ".",
@@ -521,7 +523,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 {
                     int currentRun = Math.Min(runsCompleted + 1, totalRuns);
                     int currentPositionIndex = Math.Min(currentRun / this.BestOf, combinationsToEvaluate.Count - 1);
-                    HeuristicResultPosition mostRecentCombination = combinationsToEvaluate[currentPositionIndex];
+                    StandTrajectoryCoordinate mostRecentCombination = combinationsToEvaluate[currentPositionIndex];
 
                     string mostRecentEvaluationDescription = "run " + currentRun + "/" + totalRuns + this.GetStatusDescription(parameterCombinationsForHeuristic, mostRecentCombination);
                     double fractionComplete = (double)runtimeCostCompleted / (double)totalRuntimeCost;
@@ -552,12 +554,12 @@ namespace Osu.Cof.Ferm.Cmdlets
                 });
             }
 
-            if (results.PositionsEvaluated.Count == 1)
+            if (results.CoordinatesEvaluated.Count == 1)
             {
-                HeuristicResultPosition firstPosition = results.PositionsEvaluated[0];
+                StandTrajectoryCoordinate firstPosition = results.CoordinatesEvaluated[0];
                 this.WriteSingleDistributionSummary(results[firstPosition], totalPerfCounters, stopwatch.Elapsed);
             }
-            else if (results.PositionsEvaluated.Count > 1)
+            else if (results.CoordinatesEvaluated.Count > 1)
             {
                 this.WriteMultipleDistributionSummary(results, totalPerfCounters, stopwatch.Elapsed);
             }
@@ -567,14 +569,14 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
         }
 
-        private void WriteMultipleDistributionSummary(HeuristicResults<TParameters> results, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
+        private void WriteMultipleDistributionSummary(HeuristicStandTrajectories<TParameters> results, PrescriptionPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
         {
             results.GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected);
 
             this.WriteVerbose("{0}: {1} configurations with {2} runs in {3:0.00} minutes ({4:0.00}M timesteps in {5:0.00} core-minutes, {6:0.00}% move acceptance, {7} solutions pooled, {8:0.00}% pool acceptance).",
                               this.GetName(),
-                              results.PositionsEvaluated.Count,
-                              this.BestOf * results.PositionsEvaluated.Count,
+                              results.CoordinatesEvaluated.Count,
+                              this.BestOf * results.CoordinatesEvaluated.Count,
                               elapsedTime.TotalMinutes,
                               1E-6F * totalPerfCounters.GrowthModelTimesteps,
                               totalPerfCounters.Duration.TotalMinutes,
@@ -583,18 +585,18 @@ namespace Osu.Cof.Ferm.Cmdlets
                               100.0F * solutionsAccepted / (solutionsAccepted + solutionsRejected));
         }
 
-        private void WriteSingleDistributionSummary(HeuristicResult result, HeuristicPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
+        private void WriteSingleDistributionSummary(StandTrajectoryArrayElement element, PrescriptionPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
         {
-            Heuristic? highHeuristic = result.Pool.High;
+            Heuristic? highHeuristic = element.Pool.High.Heuristic;
             if (highHeuristic == null)
             {
-                throw new ArgumentNullException(nameof(result), "Result's solution pool does not have a high heuristic.");
+                throw new ArgumentOutOfRangeException(nameof(element), "Element's prescription pool does not have a high heuristic.");
             }
 
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             int totalMoves = totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected;
             this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", highHeuristic.GetName(), totalMoves, totalPerfCounters.MovesAccepted, (float)totalPerfCounters.MovesAccepted / (float)totalMoves, totalPerfCounters.MovesRejected, (float)totalPerfCounters.MovesRejected / (float)totalMoves);
-            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", highHeuristic.FinancialValue.GetHighestValue(), result.Distribution.HighestFinancialValueBySolution.Average(), highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex).Last());
+            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", highHeuristic.FinancialValue.GetHighestValue(), element.Distribution.HighestFinancialValueBySolution.Average(), highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(Constant.HeuristicDefault.CoordinateIndex, Constant.HeuristicDefault.CoordinateIndex).Last());
 
             double totalSeconds = totalPerfCounters.Duration.TotalSeconds;
             double movesPerSecond = totalMoves / totalSeconds;

@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public PopulationStatistics PopulationStatistics { get; private init; }
 
         public GeneticAlgorithm(OrganonStand stand, GeneticParameters heuristicPparameters, RunParameters runParameters)
-            : base(stand, heuristicPparameters, runParameters, false)
+            : base(stand, heuristicPparameters, runParameters, evaluatesAcrossRotationsAndFinancialScenarios: false)
         {
             this.harvestPeriods = null;
 
@@ -81,7 +82,7 @@ namespace Osu.Cof.Ferm.Heuristics
             //}
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
+        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             // TODO: support initialization from existing population?
             if ((this.HeuristicParameters.CrossoverProbabilityEnd < 0.0F) || (this.HeuristicParameters.CrossoverProbabilityEnd > 1.0F))
@@ -133,7 +134,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
-            HeuristicPerformanceCounters perfCounters = new();
+            PrescriptionPerformanceCounters perfCounters = new();
 
             int moveCapacity = this.HeuristicParameters.MaximumGenerations * this.HeuristicParameters.PopulationSize;
             this.FinancialValue.SetMoveCapacity(moveCapacity);
@@ -146,21 +147,21 @@ namespace Osu.Cof.Ferm.Heuristics
             float acceptedFinancialValue = Single.MinValue;
             for (int individualIndex = 0; individualIndex < this.HeuristicParameters.PopulationSize; ++individualIndex)
             {
-                SortedList<FiaCode, TreeSelection> individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
+                IndividualTreeSelectionBySpecies individualTreeSelection = currentGeneration.IndividualTreeSelections[individualIndex];
                 this.CurrentTrajectory.CopyTreeSelectionFrom(individualTreeSelection);
                 perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-                float individualFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, position.FinancialIndex);
+                float individualFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, coordinate.FinancialIndex);
                 currentGeneration.InsertFitness(individualIndex, individualFinancialValue);
                 ++perfCounters.MovesAccepted;
 
                 if (individualFinancialValue > acceptedFinancialValue)
                 {
                     acceptedFinancialValue = individualFinancialValue;
-                    this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
+                    this.CopyTreeGrowthToBestTrajectory(coordinate, this.CurrentTrajectory);
                 }
 
-                this.FinancialValue.TryAddMove(acceptedFinancialValue, individualFinancialValue);
+                this.FinancialValue.TryAddMove(coordinate, acceptedFinancialValue, individualFinancialValue);
             }
             Debug.Assert((currentGeneration.SolutionsAccepted == this.HeuristicParameters.PopulationSize) && (currentGeneration.SolutionsAccepted == currentGeneration.SolutionsInPool));
             this.PopulationStatistics.AddGeneration(currentGeneration, this.harvestPeriods);
@@ -197,10 +198,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     // If crossover and mutation induced no changes simulation will be a no op. While this is handled by timestep caching additional checks
                     // could be made here.
                     perfCounters.GrowthModelTimesteps += firstChildTrajectory.Simulate();
-                    float firstChildFinancialValue = this.GetFinancialValue(firstChildTrajectory, position.FinancialIndex);
+                    float firstChildFinancialValue = this.GetFinancialValue(firstChildTrajectory, coordinate.FinancialIndex);
 
                     perfCounters.GrowthModelTimesteps += secondChildTrajectory.Simulate();
-                    float secondChildFinancialValue = this.GetFinancialValue(secondChildTrajectory, position.FinancialIndex);
+                    float secondChildFinancialValue = this.GetFinancialValue(secondChildTrajectory, coordinate.FinancialIndex);
 
                     // include offspring in next generation if they're more fit than members of the current population
                     if (nextGeneration.TryReplace(firstChildFinancialValue, firstChildTrajectory, this.HeuristicParameters.ReplacementStrategy))
@@ -209,7 +210,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (firstChildFinancialValue > acceptedFinancialValue)
                         {
                             acceptedFinancialValue = firstChildFinancialValue;
-                            this.CopyTreeGrowthToBestTrajectory(firstChildTrajectory);
+                            this.CopyTreeGrowthToBestTrajectory(coordinate, firstChildTrajectory);
                         }
                     }
                     else
@@ -217,7 +218,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         Debug.Assert(acceptedFinancialValue >= firstChildFinancialValue);
                         ++perfCounters.MovesRejected;
                     }
-                    this.FinancialValue.TryAddMove(acceptedFinancialValue, firstChildFinancialValue);
+                    this.FinancialValue.TryAddMove(coordinate, acceptedFinancialValue, firstChildFinancialValue);
 
                     if (nextGeneration.TryReplace(secondChildFinancialValue, secondChildTrajectory, this.HeuristicParameters.ReplacementStrategy))
                     {
@@ -225,7 +226,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         if (secondChildFinancialValue > acceptedFinancialValue)
                         {
                             acceptedFinancialValue = secondChildFinancialValue;
-                            this.CopyTreeGrowthToBestTrajectory(secondChildTrajectory);
+                            this.CopyTreeGrowthToBestTrajectory(coordinate, secondChildTrajectory);
                         }
                     }
                     else
@@ -233,7 +234,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         Debug.Assert(acceptedFinancialValue >= secondChildFinancialValue);
                         ++perfCounters.MovesRejected;
                     }
-                    this.FinancialValue.TryAddMove(acceptedFinancialValue, secondChildFinancialValue);
+                    this.FinancialValue.TryAddMove(coordinate, acceptedFinancialValue, secondChildFinancialValue);
 
                     // identify the fittest individual among the two parents and the two offspring and place it in the next generation
                     //float firstParentFitness = currentGeneration.IndividualFitness[firstParentIndex];
@@ -299,7 +300,10 @@ namespace Osu.Cof.Ferm.Heuristics
                 }
             }
 
-            OrganonStandTrajectory bestTrajectory = this.GetBestTrajectory(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex);
+            if (this.TryGetBestTrajectory(coordinate, out OrganonStandTrajectory? bestTrajectory) == false)
+            {
+                throw new InvalidOperationException("Best trajectory is null");
+            }
             this.CurrentTrajectory.CopyTreeGrowthFrom(bestTrajectory);
 
             stopwatch.Stop();

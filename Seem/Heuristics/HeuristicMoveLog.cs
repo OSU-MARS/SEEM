@@ -1,4 +1,6 @@
-﻿namespace Osu.Cof.Ferm.Heuristics
+﻿using Osu.Cof.Ferm.Silviculture;
+
+namespace Osu.Cof.Ferm.Heuristics
 {
     public abstract class HeuristicMoveLog
     {
@@ -10,9 +12,9 @@
         }
 
         public abstract string GetCsvHeader(string prefix);
-        public abstract string GetCsvValues(HeuristicResultPosition position, int moveNumber);
+        public abstract string GetCsvValues(StandTrajectoryCoordinate coordinate, int moveNumber);
 
-        public virtual int GetMoveNumberWithDefaulting(HeuristicResultPosition position, int moveIndex)
+        public virtual int GetMoveNumberWithDefaulting(StandTrajectoryCoordinate coordinate, int moveIndex)
         {
             return moveIndex;
         }

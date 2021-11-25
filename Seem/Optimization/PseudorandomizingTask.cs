@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Osu.Cof.Ferm.Optimization
 {
     public class PseudorandomizingTask
     {

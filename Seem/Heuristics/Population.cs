@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Extensions;
+using Osu.Cof.Ferm.Optimization;
 using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Tree;
 using System;
@@ -15,7 +16,7 @@ namespace Osu.Cof.Ferm.Heuristics
         private float reservedPopulationProportion;
 
         public float[] IndividualFitness { get; private init; }
-        public SortedList<FiaCode, TreeSelection>[] IndividualTreeSelections { get; private init; }
+        public IndividualTreeSelectionBySpecies[] IndividualTreeSelections { get; private init; }
         public int TreeCount { get; private set; }
 
         public Population(int numberOfIndividuals, float reservedPopulationProportion, int allTreeCount)
@@ -26,7 +27,7 @@ namespace Osu.Cof.Ferm.Heuristics
             this.reservedPopulationProportion = reservedPopulationProportion;
 
             this.IndividualFitness = new float[numberOfIndividuals];
-            this.IndividualTreeSelections = new SortedList<FiaCode, TreeSelection>[numberOfIndividuals];
+            this.IndividualTreeSelections = new IndividualTreeSelectionBySpecies[numberOfIndividuals];
             this.SolutionsAccepted = 0;
             this.TreeCount = allTreeCount;
 
@@ -90,10 +91,10 @@ namespace Osu.Cof.Ferm.Heuristics
             for (int individualIndex = 0; individualIndex < this.PoolCapacity; ++individualIndex)
             {
                 // randomly select this individual's trees based on current diameter class selection probabilities
-                SortedList<FiaCode, TreeSelection> individualTreeSelection = this.IndividualTreeSelections[individualIndex];
-                foreach (KeyValuePair<FiaCode, TreeSelection> trajectoryTreeSelectionForSpecies in standTrajectory.IndividualTreeSelectionBySpecies)
+                IndividualTreeSelectionBySpecies individualTreeSelection = this.IndividualTreeSelections[individualIndex];
+                foreach (KeyValuePair<FiaCode, IndividualTreeSelection> trajectoryTreeSelectionForSpecies in standTrajectory.TreeSelectionBySpecies)
                 {
-                    TreeSelection individualTreeSelectionForSpecies = new(trajectoryTreeSelectionForSpecies.Value.Capacity)
+                    IndividualTreeSelection individualTreeSelectionForSpecies = new(trajectoryTreeSelectionForSpecies.Value.Capacity)
                     {
                         Count = trajectoryTreeSelectionForSpecies.Value.Count
                     };
@@ -169,12 +170,12 @@ namespace Osu.Cof.Ferm.Heuristics
             Array.Copy(other.IndividualFitness, 0, this.IndividualFitness, 0, this.IndividualFitness.Length);
             for (int individualIndex = 0; individualIndex < other.PoolCapacity; ++individualIndex)
             {
-                SortedList<FiaCode, TreeSelection> otherSelection = other.IndividualTreeSelections[individualIndex];
-                SortedList<FiaCode, TreeSelection> thisSelection = this.IndividualTreeSelections[individualIndex];
+                IndividualTreeSelectionBySpecies otherSelection = other.IndividualTreeSelections[individualIndex];
+                IndividualTreeSelectionBySpecies thisSelection = this.IndividualTreeSelections[individualIndex];
 
-                foreach (KeyValuePair<FiaCode, TreeSelection> otherSelectionForSpecies in otherSelection)
+                foreach (KeyValuePair<FiaCode, IndividualTreeSelection> otherSelectionForSpecies in otherSelection)
                 {
-                    TreeSelection thisSelectionForSpecies = thisSelection.GetOrAdd(otherSelectionForSpecies.Key, () => new TreeSelection(otherSelectionForSpecies.Value.Capacity));
+                    IndividualTreeSelection thisSelectionForSpecies = thisSelection.GetOrAdd(otherSelectionForSpecies.Key, () => new IndividualTreeSelection(otherSelectionForSpecies.Value.Capacity));
                     thisSelectionForSpecies.CopyFrom(otherSelectionForSpecies.Value);
                 }
 
@@ -193,12 +194,12 @@ namespace Osu.Cof.Ferm.Heuristics
         public void CrossoverKPoint(int points, int firstParentIndex, int secondParentIndex, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
         {
             // get parents' schedules
-            SortedList<FiaCode, TreeSelection> firstParentTreeSelection = this.IndividualTreeSelections[firstParentIndex];
-            SortedList<FiaCode, TreeSelection> secondParentTreeSelection = this.IndividualTreeSelections[secondParentIndex];
+            IndividualTreeSelectionBySpecies firstParentTreeSelection = this.IndividualTreeSelections[firstParentIndex];
+            IndividualTreeSelectionBySpecies secondParentTreeSelection = this.IndividualTreeSelections[secondParentIndex];
             Debug.Assert(firstParentTreeSelection.Count == secondParentTreeSelection.Count);
 
             // find length and position of crossover
-            int treeRecordCount = firstChildTrajectory.IndividualTreeSelectionBySpecies.Values.Sum(treeSelection => treeSelection.Count);
+            int treeRecordCount = firstChildTrajectory.TreeSelectionBySpecies.Values.Sum(treeSelection => treeSelection.Count);
             float treeScalingFactor = (treeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
             int[] crossoverPoints = new int[points];
             for (int pointIndex = 0; pointIndex < points; ++pointIndex)
@@ -211,13 +212,13 @@ namespace Osu.Cof.Ferm.Heuristics
             bool isCrossed = false; // initial value is unimportant as designation of first vs second child is arbitrary
             int crossoverIndex = 0;
             int crossoverPosition = crossoverPoints[crossoverIndex];
-            foreach (KeyValuePair<FiaCode, TreeSelection> firstParentSelectionForSpecies in firstParentTreeSelection)
+            foreach (KeyValuePair<FiaCode, IndividualTreeSelection> firstParentSelectionForSpecies in firstParentTreeSelection)
             {
                 int treesOfSpecies = firstParentSelectionForSpecies.Value.Count;
                 FiaCode treeSpecies = firstParentSelectionForSpecies.Key;
-                TreeSelection secondParentSelectionForSpecies = secondParentTreeSelection[treeSpecies];
-                TreeSelection firstChildSelectionForSpecies = firstChildTrajectory.IndividualTreeSelectionBySpecies[treeSpecies];
-                TreeSelection secondChildSelectionForSpecies = secondChildTrajectory.IndividualTreeSelectionBySpecies[treeSpecies];
+                IndividualTreeSelection secondParentSelectionForSpecies = secondParentTreeSelection[treeSpecies];
+                IndividualTreeSelection firstChildSelectionForSpecies = firstChildTrajectory.TreeSelectionBySpecies[treeSpecies];
+                IndividualTreeSelection secondChildSelectionForSpecies = secondChildTrajectory.TreeSelectionBySpecies[treeSpecies];
 
                 if ((secondParentSelectionForSpecies.Count != treesOfSpecies) ||
                     (firstChildSelectionForSpecies.Count != treesOfSpecies) ||
@@ -255,13 +256,13 @@ namespace Osu.Cof.Ferm.Heuristics
         public void CrossoverUniform(int firstParentIndex, int secondParentIndex, float changeProbability, StandTrajectory firstChildTrajectory, StandTrajectory secondChildTrajectory)
         {
             // get parents' schedules
-            SortedList<FiaCode, TreeSelection> firstParentTreeSelection = this.IndividualTreeSelections[firstParentIndex];
-            SortedList<FiaCode, TreeSelection> secondParentTreeSelection = this.IndividualTreeSelections[secondParentIndex];
+            IndividualTreeSelectionBySpecies firstParentTreeSelection = this.IndividualTreeSelections[firstParentIndex];
+            IndividualTreeSelectionBySpecies secondParentTreeSelection = this.IndividualTreeSelections[secondParentIndex];
             Debug.Assert(IDictionaryExtensions.KeysIdentical(firstParentTreeSelection, secondParentTreeSelection));
 
-            foreach (KeyValuePair<FiaCode, TreeSelection> firstParentSelectionForSpecies in firstParentTreeSelection)
+            foreach (KeyValuePair<FiaCode, IndividualTreeSelection> firstParentSelectionForSpecies in firstParentTreeSelection)
             {
-                TreeSelection secondParentSelectionForSpecies = secondParentTreeSelection[firstParentSelectionForSpecies.Key];
+                IndividualTreeSelection secondParentSelectionForSpecies = secondParentTreeSelection[firstParentSelectionForSpecies.Key];
                 if (firstParentSelectionForSpecies.Value.Count != secondParentSelectionForSpecies.Count)
                 {
                     throw new NotSupportedException("Parents have different numbers of trees for species " + firstParentSelectionForSpecies.Key + ".");
@@ -590,7 +591,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     // for now, use Hamming distance as it's interchangeable with Euclidean distance for binary decision variables
                     // If needed, Euclidean distance or stand entry distance can be used when multiple thinnings are allowed.
-                    int distanceToSolution = SolutionPool.GetHammingDistance(trajectory.IndividualTreeSelectionBySpecies, this.IndividualTreeSelections[individualIndex]);
+                    int distanceToSolution = SolutionPool.GetHammingDistance(trajectory.TreeSelectionBySpecies, this.IndividualTreeSelections[individualIndex]);
                     if (distanceToSolution == 0)
                     {
                         // this tree selection is already present in the population

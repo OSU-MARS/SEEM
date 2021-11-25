@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Osu.Cof.Ferm.Optimization;
+using System;
 
 namespace Osu.Cof.Ferm.Heuristics
 {

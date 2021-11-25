@@ -67,9 +67,9 @@ namespace Osu.Cof.Ferm.Heuristics
                     minimumFitness = individualFitness;
                 }
 
-                SortedList<FiaCode, TreeSelection> individualTreeSelection = population.IndividualTreeSelections[individualIndex];
+                IndividualTreeSelectionBySpecies individualTreeSelection = population.IndividualTreeSelections[individualIndex];
                 int allTreeIndex = 0;
-                foreach (KeyValuePair<FiaCode, TreeSelection> treeSelectionForSpecies in individualTreeSelection)
+                foreach (KeyValuePair<FiaCode, IndividualTreeSelection> treeSelectionForSpecies in individualTreeSelection)
                 {
                     for (int treeIndex = 0; treeIndex < population.TreeCount; ++treeIndex)
                     {

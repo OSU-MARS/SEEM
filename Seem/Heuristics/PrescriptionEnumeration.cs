@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Silviculture;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,12 +12,12 @@ namespace Osu.Cof.Ferm.Heuristics
         private int prescriptionsEnumerated;
 
         public PrescriptionEnumeration(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndDiscountRates: true)
+            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndFinancialScenarios: true)
         {
             // this.prescriptionsEnumerated is (re)set in EvaluateThinningPrescriptions()
         }
 
-        protected override void EvaluateThinningPrescriptions(HeuristicResultPosition position, HeuristicResults results, HeuristicPerformanceCounters perfCounters)
+        protected override void EvaluateThinningPrescriptions(StandTrajectoryCoordinate coordinate, StandTrajectories trajectories, PrescriptionPerformanceCounters perfCounters)
         {
             this.prescriptionsEnumerated = 0;
 
@@ -24,7 +25,7 @@ namespace Osu.Cof.Ferm.Heuristics
             if (harvests.Count == 0)
             {
                 // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory
-                this.EvaluateThinningPrescriptions(null, null, null, perfCounters);
+                this.EvaluateThinningPrescriptions(coordinate, null, null, null, perfCounters);
                 return;
             }
 
@@ -34,7 +35,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 // one thin
                 this.EnumerateThinningIntensities(firstThinPrescription, 0.0F, (float firstIntensity) =>
                 {
-                    this.EvaluateThinningPrescriptions(firstThinPrescription, null, null, perfCounters);
+                    this.EvaluateThinningPrescriptions(coordinate, firstThinPrescription, null, null, perfCounters);
                 }, perfCounters);
             }
             else
@@ -48,7 +49,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     {
                         this.EnumerateThinningIntensities(secondThinPrescription!, firstIntensity, (float secondIntensity) =>
                         {
-                            this.EvaluateThinningPrescriptions(firstThinPrescription, secondThinPrescription, null, perfCounters);
+                            this.EvaluateThinningPrescriptions(coordinate, firstThinPrescription, secondThinPrescription, null, perfCounters);
                         }, perfCounters);
                     }, perfCounters);
                 }
@@ -63,7 +64,7 @@ namespace Osu.Cof.Ferm.Heuristics
                             float previousIntensity = firstIntensity + (100.0F - firstIntensity) * 0.01F * secondIntensity;
                             this.EnumerateThinningIntensities(thirdThinPrescription, previousIntensity, (float thirdIntensity) =>
                             {
-                                this.EvaluateThinningPrescriptions(firstThinPrescription, secondThinPrescription, thirdThinPrescription, perfCounters);
+                                this.EvaluateThinningPrescriptions(coordinate, firstThinPrescription, secondThinPrescription, thirdThinPrescription, perfCounters);
                             }, perfCounters);
                         }, perfCounters);
                     }, perfCounters);
@@ -71,13 +72,14 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        protected void EvaluateThinningPrescriptions(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription, HeuristicPerformanceCounters perfCounters)
+        protected void EvaluateThinningPrescriptions(StandTrajectoryCoordinate coordinate, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription, PrescriptionPerformanceCounters perfCounters)
         {
             // for now, assume execution with fixed thinning times and rotation lengths, meaning tree selections do not need to be moved between periods
             // this.CurrentTrajectory.DeselectAllTrees();
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-            float[,] financialValueByDiscountRate = this.GetFinancialValueByRotationAndScenario(this.CurrentTrajectory);
+            OrganonStandTrajectory? acceptedTrajectory = null; // lazily instantiated clone of current trajectory
+            StandTrajectoryCoordinate currentCoordinate = new(coordinate);
             for (int rotationIndex = 0; rotationIndex < this.RunParameters.RotationLengths.Count; ++rotationIndex)
             {
                 int endOfRotationPeriod = this.RunParameters.RotationLengths[rotationIndex];
@@ -85,30 +87,38 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     continue; // not a valid rotation length because it doesn't include the last thinning scheduled
                 }
+                currentCoordinate.RotationIndex = rotationIndex;
 
                 for (int financialIndex = 0; financialIndex < this.RunParameters.Financial.Count; ++financialIndex)
                 {
-                    float candidateFinancialValue = financialValueByDiscountRate[rotationIndex, financialIndex];
                     float acceptedFinancialValue = this.FinancialValue.GetHighestValue(rotationIndex, financialIndex);
+                    float candidateFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, financialIndex, endOfRotationPeriod);
+                    currentCoordinate.FinancialIndex = financialIndex;
                     if (candidateFinancialValue > acceptedFinancialValue)
                     {
                         // accept change of prescription if it improves upon the best solution
-                        acceptedFinancialValue = candidateFinancialValue;
-                        this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory, rotationIndex, financialIndex);
+                        // Clone the current trajectory only once to minimize memory consumption and, in some cases, reduce data file size. For
+                        // example, if this is the first tree selection generated it will be accepted across all combinations of rotation length
+                        // and financial scenario.
+                        if (acceptedTrajectory == null)
+                        {
+                            acceptedTrajectory = this.CurrentTrajectory.Clone();
+                        }
+                        this.BestTrajectoryByRotationAndScenario[rotationIndex, financialIndex] = acceptedTrajectory;
 
                         if (this.lastNImprovingMovesLog != null)
                         {
-                            this.lastNImprovingMovesLog.TryAddMove(rotationIndex, financialIndex, this.prescriptionsEnumerated, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                            this.lastNImprovingMovesLog.TryAddMove(currentCoordinate, this.prescriptionsEnumerated, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
                         }
 
-                        this.FinancialValue.TryAddMove(rotationIndex, financialIndex, acceptedFinancialValue, candidateFinancialValue);
+                        this.FinancialValue.TryAddMove(currentCoordinate, candidateFinancialValue, candidateFinancialValue); // candidate value is accepted
                         ++perfCounters.MovesAccepted;
                     }
                     else
                     {
                         if (this.RunParameters.LogOnlyImprovingMoves == false)
                         {
-                            this.FinancialValue.TryAddMove(rotationIndex, financialIndex, acceptedFinancialValue, candidateFinancialValue);
+                            this.FinancialValue.TryAddMove(currentCoordinate, acceptedFinancialValue, candidateFinancialValue);
                         }
                         ++perfCounters.MovesRejected;
                     }
@@ -122,7 +132,7 @@ namespace Osu.Cof.Ferm.Heuristics
             ++this.prescriptionsEnumerated;
         }
 
-        private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float percentIntensityOfPreviousThins, Action<float> evaluatePrescriptions, HeuristicPerformanceCounters perfCounters)
+        private void EnumerateThinningIntensities(ThinByPrescription thinPrescription, float percentIntensityOfPreviousThins, Action<float> evaluatePrescriptions, PrescriptionPerformanceCounters perfCounters)
         {
             if ((percentIntensityOfPreviousThins < 0.0F) || (percentIntensityOfPreviousThins > 100.0F))
             {

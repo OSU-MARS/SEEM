@@ -23,5 +23,13 @@ namespace Osu.Cof.Ferm.Extensions
                 }
             }
         }
+
+        public static void Extend<T>(this List<T?> list, int lastIndexDesired)
+        {
+            for (int elementsToAdd = lastIndexDesired - list.Count; elementsToAdd >= 0; --elementsToAdd)
+            {
+                list.Add(default);
+            }
+        }
     }
 }

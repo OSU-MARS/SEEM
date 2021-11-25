@@ -1,5 +1,7 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
+using Osu.Cof.Ferm.Tree;
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -13,7 +15,7 @@ namespace Osu.Cof.Ferm.Cmdlets
     {
         [Parameter]
         [ValidateNotNull]
-        public HeuristicResults? Results { get; set; }
+        public HeuristicStandTrajectories? Results { get; set; }
 
         protected override void ProcessRecord()
         {
@@ -24,26 +26,26 @@ namespace Osu.Cof.Ferm.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine("stand,heuristic,alpha,selected,rejected");
+                writer.WriteLine("stand,alpha,selected,rejected");
             }
 
             // rows for bin counts
-            HeuristicResultPosition position = this.Results.PositionsEvaluated[0];
-            HeuristicSolutionPool solutions = this.Results[position].Pool;
-            if (solutions.High == null)
-            {
-                throw new NotSupportedException("First solution pool is missing a high solution");
-            }
-            OrganonStandTrajectory highTrajectory = solutions.High.GetBestTrajectoryWithDefaulting(position);
+            StandTrajectoryCoordinate coordinate = this.Results.CoordinatesEvaluated[0];
+            SilviculturalPrescriptionPool prescriptions = this.Results[coordinate].Pool;
 
-            string linePrefix = highTrajectory.Name + "," + solutions.High.GetName();
+            StandTrajectory? highTrajectory = prescriptions.High.Trajectory;
+            if (highTrajectory == null)
+            {
+                throw new NotSupportedException("First coordinate evaluated is missing a high heuristic or trajectory.");
+            }
+
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int binIndex = 0; binIndex < this.Results.GraspReactivity.SelectionHistogram.Length; ++binIndex)
             {
                 string binCenter = (this.Results.GraspReactivity.GreedinessBinWidth * (binIndex + 0.5F)).ToString(CultureInfo.InvariantCulture);
                 string selected = this.Results.GraspReactivity.SelectionHistogram[binIndex].ToString(CultureInfo.InvariantCulture);
                 string rejected = this.Results.GraspReactivity.RejectionHistogram[binIndex].ToString(CultureInfo.InvariantCulture);
-                writer.WriteLine(linePrefix + "," +
+                writer.WriteLine(highTrajectory.Name + "," +
                                  binCenter + "," +
                                  selected + "," +
                                  rejected);

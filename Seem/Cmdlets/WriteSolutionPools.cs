@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Heuristics;
+﻿using Osu.Cof.Ferm.Optimization;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -8,25 +9,24 @@ using System.Management.Automation;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "SolutionPools")]
-    public class WriteSolutionPools : WriteCmdlet
+    public class WriteSolutionPools : WriteTrajectoriesCmdlet
     {
-        [Parameter]
-        [ValidateNotNull]
-        public HeuristicResults? Results { get; set; }
-
         protected override void ProcessRecord()
         {
+            this.ValidateParameters();
+            Debug.Assert(this.Trajectories != null);
+
             int poolCapacity = 0;
-            if (this.Results!.PositionsEvaluated.Count > 0)
+            if (this.Trajectories.CoordinatesEvaluated.Count > 0)
             {
-                HeuristicResultPosition position = this.Results.PositionsEvaluated[0];
-                poolCapacity = this.Results[position].Pool.PoolCapacity;
+                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[0];
+                poolCapacity = this.Trajectories[coordinate].Pool.PoolCapacity;
             }
 
             using StreamWriter writer = this.GetWriter();
 
             // header
-            bool resultsSpecified = this.Results != null;
+            bool resultsSpecified = this.Trajectories != null;
             if (this.ShouldWriteHeader())
             {
                 string?[] financialHeader = new string?[poolCapacity];
@@ -37,7 +37,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                     distanceHeader[solutionIndex] = "distance" + solutionIndex.ToString(CultureInfo.InvariantCulture);
                 }
 
-                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",pooled,accepted,rejected," + 
+                writer.WriteLine(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories!) + ",pooled,accepted,rejected," + 
                                  String.Join(',', financialHeader) + "," +
                                  String.Join(',', distanceHeader));
             }
@@ -46,27 +46,27 @@ namespace Osu.Cof.Ferm.Cmdlets
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             string?[] financialValues = new string?[poolCapacity];
             string?[] distances = new string?[poolCapacity];
-            for (int resultIndex = 0; resultIndex < this.Results!.PositionsEvaluated.Count; ++resultIndex)
+            for (int resultIndex = 0; resultIndex < this.Trajectories!.CoordinatesEvaluated.Count; ++resultIndex)
             {
-                HeuristicResultPosition position = this.Results.PositionsEvaluated[resultIndex];
-                HeuristicSolutionPool solutions = this.Results[position].Pool;
-                if (solutions.PoolCapacity != poolCapacity)
+                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
+                SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
+                if (prescriptions.PoolCapacity != poolCapacity)
                 {
-                    throw new NotSupportedException("Solution pool capacity changed from " + poolCapacity + " to " + solutions.PoolCapacity + ".");
+                    throw new NotSupportedException("Solution pool capacity changed from " + poolCapacity + " to " + prescriptions.PoolCapacity + ".");
                 }
 
-                string heuristicAndPosition = WriteCmdlet.GetHeuristicAndPositionCsvValues(solutions, this.Results, position);
-                for (int solutionIndex = 0; solutionIndex < solutions.SolutionsInPool; ++solutionIndex)
+                string linePrefx = this.GetPositionPrefix(coordinate);
+                for (int solutionIndex = 0; solutionIndex < prescriptions.SolutionsInPool; ++solutionIndex)
                 {
-                    Heuristic? eliteSolution = solutions.EliteSolutions[solutionIndex];
-                    Debug.Assert(eliteSolution != null);
-                    float highestFinancialValue = eliteSolution.FinancialValue.GetHighestValueWithDefaulting(position);
+                    //TreeSelectionBySpecies? eliteTreeSelection = prescriptions.EliteTreeSelections[solutionIndex];
+                    //Debug.Assert(eliteTreeSelection != null);
+                    float highestFinancialValue = prescriptions.EliteFinancialValues[solutionIndex];
                     int nearestNeighborDistance = SolutionPool.UnknownDistance;
-                    int nearestNeighborIndex = solutions.NearestNeighborIndex[solutionIndex];
+                    int nearestNeighborIndex = prescriptions.NearestNeighborIndex[solutionIndex];
                     if (nearestNeighborIndex != SolutionPool.UnknownNeighbor)
                     {
-                        nearestNeighborDistance = solutions.DistanceMatrix[nearestNeighborIndex, solutionIndex];
-                        Debug.Assert((nearestNeighborIndex != solutionIndex) && (nearestNeighborDistance == solutions.DistanceMatrix[solutionIndex, nearestNeighborIndex]));
+                        nearestNeighborDistance = prescriptions.DistanceMatrix[nearestNeighborIndex, solutionIndex];
+                        Debug.Assert((nearestNeighborIndex != solutionIndex) && (nearestNeighborDistance == prescriptions.DistanceMatrix[solutionIndex, nearestNeighborIndex]));
                     }
 
                     financialValues[solutionIndex] = highestFinancialValue.ToString(CultureInfo.InvariantCulture);
@@ -79,16 +79,16 @@ namespace Osu.Cof.Ferm.Cmdlets
                         distances[solutionIndex] = null;
                     }
                 }
-                for (int solutionIndex = solutions.SolutionsInPool; solutionIndex < financialValues.Length; ++solutionIndex)
+                for (int solutionIndex = prescriptions.SolutionsInPool; solutionIndex < financialValues.Length; ++solutionIndex)
                 {
                     financialValues[solutionIndex] = null;
                     distances[solutionIndex] = null;
                 }
 
-                writer.WriteLine(heuristicAndPosition + "," +
-                                 solutions.SolutionsInPool.ToString(CultureInfo.InvariantCulture) + "," +
-                                 solutions.SolutionsAccepted.ToString(CultureInfo.InvariantCulture) + "," +
-                                 solutions.SolutionsRejected.ToString(CultureInfo.InvariantCulture) + "," +
+                writer.WriteLine(linePrefx + "," +
+                                 prescriptions.SolutionsInPool.ToString(CultureInfo.InvariantCulture) + "," +
+                                 prescriptions.SolutionsAccepted.ToString(CultureInfo.InvariantCulture) + "," +
+                                 prescriptions.SolutionsRejected.ToString(CultureInfo.InvariantCulture) + "," +
                                  String.Join(',', financialValues) + "," + 
                                  String.Join(',', distances));
 

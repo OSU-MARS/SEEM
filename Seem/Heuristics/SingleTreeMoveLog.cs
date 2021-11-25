@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Osu.Cof.Ferm.Silviculture;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace Osu.Cof.Ferm.Heuristics
@@ -19,7 +20,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return prefix + "TreeEvaluated";
         }
 
-        public override string GetCsvValues(HeuristicResultPosition position, int moveNumber)
+        public override string GetCsvValues(StandTrajectoryCoordinate coordinate, int moveNumber)
         {
             return this.TreeIDByMove[moveNumber].ToString(CultureInfo.InvariantCulture);
         }

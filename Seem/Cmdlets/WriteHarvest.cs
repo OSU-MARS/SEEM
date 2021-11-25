@@ -1,8 +1,8 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -12,13 +12,13 @@ using System.Text;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Harvest")]
-    public class WriteHarvest : WriteHeuristicResultsCmdlet
+    public class WriteHarvest : WriteTrajectoriesCmdlet
     {
         protected override void ProcessRecord()
         {
-            if (this.Results == null)
+            if (this.Trajectories == null)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Results), "-" + nameof(this.Results) + " must be specified.");
+                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " must be specified.");
             }
 
             using StreamWriter writer = this.GetWriter();
@@ -28,49 +28,46 @@ namespace Osu.Cof.Ferm.Cmdlets
             {
                 line.Append("period");
                 // harvest volume headers
-                for (int resultIndex = 0; resultIndex < this.Results.PositionsEvaluated.Count; ++resultIndex)
+                for (int coordinateIndex = 0; coordinateIndex < this.Trajectories.CoordinatesEvaluated.Count; ++coordinateIndex)
                 {
-                    HeuristicResultPosition position = this.Results.PositionsEvaluated[resultIndex];
-                    Heuristic? highHeuristic = this.Results[position].Pool.High;
-                    if (highHeuristic == null)
+                    StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
+                    StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory;
+                    if (trajectory == null)
                     {
-                        throw new NotSupportedException("Cannot write harvest becaue no heuristic solution was provided for run " + resultIndex + ".");
+                        throw new NotSupportedException("Cannot write harvest becaue no high trajectory is present at evaluated coordinate index " + coordinateIndex + ".");
                     }
 
-                    
-                    OrganonStandTrajectory bestTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
-                    line.Append("," + bestTrajectory.Name + "harvest");
+                    line.Append("," + trajectory.Name + "harvest");
                 }
+
                 // standing volume headers
-                for (int resultIndex = 0; resultIndex < this.Results.PositionsEvaluated.Count; ++resultIndex)
+                for (int resultIndex = 0; resultIndex < this.Trajectories.CoordinatesEvaluated.Count; ++resultIndex)
                 {
-                    HeuristicResultPosition position = this.Results.PositionsEvaluated[resultIndex];
-                    OrganonStandTrajectory bestTrajectory = this.Results[position].Pool.High!.GetBestTrajectoryWithDefaulting(position);
-                    line.Append("," + bestTrajectory.Name + "standing");
+                    StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
+                    StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked in previous loop
+                    line.Append("," + trajectory.Name + "standing");
                 }
                 writer.WriteLine(line);
             }
 
-            int maxPlanningPeriod = this.Results.RotationLengths.Max();
+            int maxPlanningPeriod = this.Trajectories.RotationLengths.Max();
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
             {
                 line.Clear();
                 line.Append(periodIndex);
 
-                foreach (HeuristicResultPosition position in this.Results.PositionsEvaluated)
+                foreach (StandTrajectoryCoordinate coordinate in this.Trajectories.CoordinatesEvaluated)
                 {
-                    Heuristic highHeuristic = this.Results[position].Pool.High!;
-                    StandTrajectory bestTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
-                    float harvestVolumeScibner = bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex);
+                    StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked loops above
+                    float harvestVolumeScibner = trajectory.GetTotalScribnerVolumeThinned(periodIndex);
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
-                foreach (HeuristicResultPosition position in this.Results.PositionsEvaluated)
+                foreach (StandTrajectoryCoordinate coordinate in this.Trajectories.CoordinatesEvaluated)
                 {
-                    Heuristic highHeuristic = this.Results[position].Pool.High!;
-                    StandTrajectory bestTrajectory = highHeuristic.GetBestTrajectoryWithDefaulting(position);
-                    float standingVolumeScribner = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex);
+                    StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked loops above
+                    float standingVolumeScribner = trajectory.GetTotalStandingScribnerVolume(periodIndex);
                     line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
                 }
 

@@ -149,7 +149,7 @@ namespace Osu.Cof.Ferm.Silviculture
 
                 // selection of previously harvested trees is a defect but trees 1) not selected for thinning, selected for thinning in
                 // 2) this period or 3) later periods are eligible for removal in this period
-                int currentHarvestPeriod = trajectory.IndividualTreeSelectionBySpecies[treesWithLargest.Species][uncompactedTreeIndex];
+                int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesWithLargest.Species][uncompactedTreeIndex];
                 if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
                 {
                     throw new NotSupportedException("Could not select tree " + treesWithLargest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
@@ -198,7 +198,7 @@ namespace Osu.Cof.Ferm.Silviculture
                 int uncompactedTreeIndex = treesWithSmallest.UncompactedIndex[compactedTreeIndex];
                 float basalAreaOfTree = treesWithSmallest.GetBasalArea(compactedTreeIndex);
 
-                int currentHarvestPeriod = trajectory.IndividualTreeSelectionBySpecies[treesWithSmallest.Species][uncompactedTreeIndex];
+                int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesWithSmallest.Species][uncompactedTreeIndex];
                 if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
                 {
                     throw new NotSupportedException("Could not select tree " + treesWithSmallest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
@@ -256,7 +256,7 @@ namespace Osu.Cof.Ferm.Silviculture
                 {
                     int compactedTreeIndex = dbhSortOrder[thinIndex];
                     int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
-                    int currentHarvestPeriod = trajectory.IndividualTreeSelectionBySpecies[treesOfSpecies.Species][uncompactedTreeIndex];
+                    int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species][uncompactedTreeIndex];
 
                     proportionalThinAccumulator += proportionalIncrement;
                     if (proportionalThinAccumulator >= 1.0F)

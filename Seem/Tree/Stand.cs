@@ -47,6 +47,11 @@ namespace Osu.Cof.Ferm.Tree
             }
         }
 
+        public virtual Stand Clone()
+        {
+            return new Stand(this);
+        }
+
         public float GetLiveBiomass()
         {
             float liveBiomass = 0.0F;

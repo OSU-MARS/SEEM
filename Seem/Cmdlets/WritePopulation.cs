@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Globalization;
 using System.IO;
@@ -7,34 +8,34 @@ using System.Management.Automation;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Population")]
-    public class WritePopulation : WriteHeuristicResultsCmdlet
+    public class WritePopulation : WriteTrajectoriesCmdlet
     {
         protected override void ProcessRecord()
         {
-            if (this.Results == null)
+            if (this.Trajectories == null)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Results), "-" + nameof(this.Results) + " must be specified.");
+                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " must be specified.");
             }
-            if (this.Results!.PositionsEvaluated.Count < 1)
+            if (this.Trajectories!.CoordinatesEvaluated.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Results));
+                throw new ParameterOutOfRangeException(nameof(this.Trajectories));
             }
 
             using StreamWriter writer = this.GetWriter();
 
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
+                writer.WriteLine(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories) + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            for (int positionIndex = 0; positionIndex < this.Results.PositionsEvaluated.Count; ++positionIndex)
+            for (int positionIndex = 0; positionIndex < this.Trajectories.CoordinatesEvaluated.Count; ++positionIndex)
             {
-                HeuristicResultPosition position = this.Results.PositionsEvaluated[positionIndex];
-                HeuristicResult result = this.Results[position];
-                string heuristicAndPosition = WriteCmdlet.GetHeuristicAndPositionCsvValues(result.Pool, this.Results, position);
-                PopulationStatistics highStatistics = ((GeneticAlgorithm)result.Pool.High!).PopulationStatistics;
-                PopulationStatistics lowStatistics = ((GeneticAlgorithm)result.Pool.Low!).PopulationStatistics;
+                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[positionIndex];
+                StandTrajectoryArrayElement element = this.Trajectories[coordinate];
+                string linePrefix = this.GetPositionPrefix(coordinate);
+                PopulationStatistics highStatistics = ((GeneticAlgorithm)element.Pool.High.Heuristic!).PopulationStatistics;
+                PopulationStatistics lowStatistics = ((GeneticAlgorithm)element.Pool.Low.Heuristic!).PopulationStatistics;
                 int maxGenerations = Math.Max(highStatistics.Generations, lowStatistics.Generations);
                 for (int generationIndex = 0; generationIndex < maxGenerations; ++generationIndex)
                 {
@@ -78,7 +79,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         lowPolymorphism = lowStatistics.PolymorphismByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    writer.WriteLine(heuristicAndPosition + "," +
+                    writer.WriteLine(linePrefix + "," +
                                      generationIndex + "," +
                                      highMinimumFitness + "," +
                                      highMeanFitness + "," +

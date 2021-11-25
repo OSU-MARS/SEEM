@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Osu.Cof.Ferm.Optimization
 {
     public class SolutionPool : PseudorandomizingTask
     {
@@ -51,7 +51,7 @@ namespace Osu.Cof.Ferm.Heuristics
             get { return this.NearestNeighborIndex.Length; }
         }
 
-        protected static int GetHammingDistance(SortedList<FiaCode, TreeSelection> selectionBySpecies1, SortedList<FiaCode, TreeSelection> selectionBySpecies2)
+        protected static int GetHammingDistance(IndividualTreeSelectionBySpecies selectionBySpecies1, IndividualTreeSelectionBySpecies selectionBySpecies2)
         {
             if (selectionBySpecies1.Count != selectionBySpecies2.Count)
             {
@@ -59,10 +59,10 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             int hammingDistance = 0;
-            foreach (KeyValuePair<FiaCode, TreeSelection> selection1forSpecies in selectionBySpecies1)
+            foreach (KeyValuePair<FiaCode, IndividualTreeSelection> selection1forSpecies in selectionBySpecies1)
             {
-                TreeSelection selection1 = selection1forSpecies.Value;
-                TreeSelection selection2 = selectionBySpecies2[selection1forSpecies.Key];
+                IndividualTreeSelection selection1 = selection1forSpecies.Value;
+                IndividualTreeSelection selection2 = selectionBySpecies2[selection1forSpecies.Key];
                 if (selection1.Count != selection2.Count)
                 {
                     throw new ArgumentException("Tree selections for " + selection1forSpecies.Key + " have different tree counts.");

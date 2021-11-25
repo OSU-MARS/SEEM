@@ -181,13 +181,12 @@ namespace Osu.Cof.Ferm
 
         public static class HeuristicDefault
         {
-            public const int FinancialIndex = 0;
+            public const int CoordinateIndex = 0;
             public const int FirstCircularIterationMultiplier = 20;
             public const int HeroMaximumIterations = 20;
             public const float InitialThinningProbability = 0.5F;
             public const bool LogOnlyImprovingMoves = false;
             public const int MoveCapacity = 1024 * 1024;
-            public const int RotationIndex = 0;
         }
 
         public static class MalcolmKnapp

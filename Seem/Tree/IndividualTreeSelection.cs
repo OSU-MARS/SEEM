@@ -2,25 +2,25 @@
 
 namespace Osu.Cof.Ferm.Tree
 {
-    public class TreeSelection
+    public class IndividualTreeSelection
     {
         private int count;
-        private readonly int[] treeSelection;
+        private readonly int[] treeSelection; // by compacted tree index
 
-        public TreeSelection(int capacity)
+        public IndividualTreeSelection(int capacity)
         {
             this.count = 0;
             this.treeSelection = new int[capacity];
         }
 
-        public TreeSelection(TreeSelection other)
+        public IndividualTreeSelection(IndividualTreeSelection other)
             : this(other.Capacity)
         {
             this.CopyFrom(other);
         }
 
         // test hook
-        public TreeSelection(int[] treeSelection)
+        public IndividualTreeSelection(int[] treeSelection)
         {
             this.count = treeSelection.Length;
             this.treeSelection = treeSelection;
@@ -57,7 +57,7 @@ namespace Osu.Cof.Ferm.Tree
         /// Low level clone of tree selections. Use <see cref="StandTrajectory"/> methods to maintain cache coherency when modifying
         /// a <see cref="StandTrajectory"/>'s tree selections.
         /// </summary>
-        public void CopyFrom(TreeSelection other)
+        public void CopyFrom(IndividualTreeSelection other)
         {
             other.CopyTo(this);
         }
@@ -66,7 +66,7 @@ namespace Osu.Cof.Ferm.Tree
         /// Low level clone of tree selections. Use <see cref="StandTrajectory"/> methods to maintain cache coherency when modifying
         /// a <see cref="StandTrajectory"/>'s tree selections.
         /// </summary>
-        public void CopyTo(TreeSelection other)
+        public void CopyTo(IndividualTreeSelection other)
         {
             if (other.treeSelection.Length != this.treeSelection.Length)
             {

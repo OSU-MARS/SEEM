@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Diagnostics;
 
@@ -9,7 +10,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public int Iterations { get; set; }
 
         public AutocorrelatedWalk(OrganonStand stand, HeuristicParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, heuristicParameters, runParameters, false)
+            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndFinancialScenarios: false)
         {
             this.Iterations = 4 * stand.GetTreeRecordCount();
         }
@@ -19,7 +20,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "AutocorrelatedWalk";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
+        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.Iterations < 1)
             {
@@ -32,24 +33,24 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
-            HeuristicPerformanceCounters perfCounters = new();
+            PrescriptionPerformanceCounters perfCounters = new();
 
             this.FinancialValue.SetMoveCapacity(this.Iterations);
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float acceptedFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(coordinate, trajectories);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(coordinate, this.Iterations, perfCounters);
 
             for (int iteration = 1; iteration < this.Iterations; ++iteration)
             {
                 this.ConstructTreeSelection(this.HeuristicParameters.MinimumConstructionGreediness);
                 perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
-                float candidateFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, position.FinancialIndex);
+                float candidateFinancialValue = this.GetFinancialValue(this.CurrentTrajectory, coordinate.FinancialIndex);
                 if (candidateFinancialValue > acceptedFinancialValue)
                 {
                     // for now, accept change of tree selection if it increases financial value
                     acceptedFinancialValue = candidateFinancialValue;
-                    this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
+                    this.CopyTreeGrowthToBestTrajectory(coordinate, this.CurrentTrajectory);
                     ++perfCounters.MovesAccepted;
                 }
                 else
@@ -57,7 +58,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                this.FinancialValue.TryAddMove(coordinate, acceptedFinancialValue, candidateFinancialValue);
             }
 
             stopwatch.Stop();

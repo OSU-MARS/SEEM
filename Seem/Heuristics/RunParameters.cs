@@ -1,4 +1,5 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Optimization;
+using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Tree;
 using System.Collections.Generic;
 
@@ -21,7 +22,7 @@ namespace Osu.Cof.Ferm.Heuristics
         {
             this.Financial = FinancialScenarios.Default;
             this.LastThinPeriod = Constant.NoThinPeriod;
-            this.MaximizeForPlanningPeriod = Constant.HeuristicDefault.RotationIndex;
+            this.MaximizeForPlanningPeriod = Constant.HeuristicDefault.CoordinateIndex;
             this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
             this.LogOnlyImprovingMoves = Constant.HeuristicDefault.LogOnlyImprovingMoves;
             this.OrganonConfiguration = organonConfiguration;

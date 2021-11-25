@@ -1,5 +1,4 @@
 ﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Heuristics;
 using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
@@ -15,8 +14,6 @@ namespace Osu.Cof.Ferm.Organon
 
         public OrganonConfiguration Configuration { get; private init; }
         public OrganonStandDensity?[] DensityByPeriod { get; private init; }
-
-        public Heuristic? Heuristic { get; set; }
 
         public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TreeVolume treeVolume, int lastPlanningPeriod)
             : base(treeVolume, lastPlanningPeriod, 
@@ -35,7 +32,6 @@ namespace Osu.Cof.Ferm.Organon
             this.Configuration = new OrganonConfiguration(organonConfiguration);
             this.DensityByPeriod = new OrganonStandDensity[maximumPlanningPeriodIndex];
 
-            this.Heuristic = null;
             this.Name = stand.Name;
             this.PeriodLengthInYears = organonConfiguration.Variant.TimeStepInYears;
             this.PeriodZeroAgeInYears = stand.AgeInYears;
@@ -45,7 +41,7 @@ namespace Osu.Cof.Ferm.Organon
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 FiaCode species = treesOfSpecies.Species;
-                this.IndividualTreeSelectionBySpecies.Add(species, new TreeSelection(treesOfSpecies.Capacity)
+                this.TreeSelectionBySpecies.Add(species, new IndividualTreeSelection(treesOfSpecies.Capacity)
                 {
                     Count = treesOfSpecies.Count
                 });
@@ -66,7 +62,6 @@ namespace Osu.Cof.Ferm.Organon
 
             this.Configuration = new OrganonConfiguration(other.Configuration);
             this.DensityByPeriod = new OrganonStandDensity[other.PlanningPeriods];
-            this.Heuristic = other.Heuristic;
 
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
@@ -74,12 +69,6 @@ namespace Osu.Cof.Ferm.Organon
                 if (otherDensity != null)
                 {
                     this.DensityByPeriod[periodIndex] = new OrganonStandDensity(otherDensity);
-                }
-
-                OrganonStand? otherStand = other.StandByPeriod[periodIndex];
-                if (otherStand != null)
-                {
-                    this.StandByPeriod[periodIndex] = new OrganonStand(otherStand);
                 }
             }
         }
@@ -114,26 +103,14 @@ namespace Osu.Cof.Ferm.Organon
             base.ChangeThinningPeriod(currentPeriod, newPeriod);
         }
 
-        // this function doesn't currently copy
-        //   Financial, Heuristic, Name, PeriodLengthInYears, PeriodZeroAgeInYears, PlantingDensityInTreesPerHectare, Treatments.Harvests
+        public override OrganonStandTrajectory Clone()
+        {
+            return new OrganonStandTrajectory(this);
+        }
+
         public void CopyTreeGrowthFrom(OrganonStandTrajectory other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
-            Debug.Assert(Object.ReferenceEquals(this, other) == false);
-
-            if ((Object.ReferenceEquals(this.TreeVolume, other.TreeVolume) == false) ||
-                (this.PeriodLengthInYears != other.PeriodLengthInYears) ||
-                (this.PeriodZeroAgeInYears != other.PeriodZeroAgeInYears) ||
-                (this.PlantingDensityInTreesPerHectare != other.PlantingDensityInTreesPerHectare) ||
-                (this.Treatments.Harvests.Count != other.Treatments.Harvests.Count))
-            {
-                // no apparent need to check heuristics for compatibility
-                // number of planning periods may differ: as many periods are copied as possible
-                throw new ArgumentOutOfRangeException(nameof(other));
-            }
+            base.CopyTreeGrowthFrom(other);
 
             // for now, shallow copies where feasible
             this.organonCalibration = other.organonCalibration;
@@ -145,15 +122,6 @@ namespace Osu.Cof.Ferm.Organon
                          (this.StandByPeriod.Length == this.PlanningPeriods));
 
             this.Configuration.CopyFrom(other.Configuration);
-
-            // update period changed and copy tree selection
-            // Since period changed is flowed, low level copy of selections doesn't result in loss of state integrity.
-            this.EarliestPeriodChangedSinceLastSimulation = Math.Min(other.EarliestPeriodChangedSinceLastSimulation, this.PlanningPeriods);
-            foreach (KeyValuePair<FiaCode, TreeSelection> otherSelectionForSpecies in other.IndividualTreeSelectionBySpecies)
-            {
-                TreeSelection thisSelectionForSpecies = this.IndividualTreeSelectionBySpecies[otherSelectionForSpecies.Key];
-                thisSelectionForSpecies.CopyFrom(otherSelectionForSpecies.Value);
-            }
 
             for (int periodIndex = 0; periodIndex < copyablePeriods; ++periodIndex)
             {
@@ -212,10 +180,38 @@ namespace Osu.Cof.Ferm.Organon
             this.Treatments.CopyTreeGrowthFrom(other.Treatments);
         }
 
+        public override void CopyTreeGrowthFrom(StandTrajectory other)
+        {
+            if (other is OrganonStandTrajectory organonTrajectory)
+            {
+                this.CopyTreeGrowthFrom(organonTrajectory);
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(other));
+            }
+        }
+
+        public override float GetBasalAreaHarvested(int periodIndex)
+        {
+            float squareFeetPerAcre = this.Treatments.BasalAreaThinnedByPeriod[periodIndex]; // m²/acre
+            return Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * squareFeetPerAcre; // m²/acre
+        }
+
         public int GetInitialTreeRecordCount()
         {
             Stand initialStand = this.StandByPeriod[0] ?? throw new NotSupportedException("Initial stand infomation is missing.");
             return initialStand.GetTreeRecordCount();
+        }
+
+        public override StandDensity GetStandDensity(int periodIndex)
+        {
+            OrganonStandDensity density = this.DensityByPeriod[periodIndex] ?? throw new InvalidOperationException("Stand density is null for period " + periodIndex + ". Has the stand trajectory been simulated?");
+            return new()
+            {
+                BasalAreaPerHa = Constant.AcresPerHectare * density.BasalAreaPerAcre,
+                TreesPerHa = Constant.AcresPerHectare * density.TreesPerAcre
+            };
         }
 
         public float GetTreeDiameter(int allSpeciesUncompactedTreeIndex, int periodIndex)
@@ -243,21 +239,6 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             throw new ArgumentOutOfRangeException(nameof(allSpeciesUncompactedTreeIndex));
-        }
-
-        public Units GetUnits()
-        {
-            Debug.Assert(this.StandByPeriod[0] != null);
-            Units units = this.StandByPeriod[0]!.GetUnits();
-            for (int periodIndex = 1; periodIndex < this.PlanningPeriods; ++periodIndex)
-            {
-                Debug.Assert(this.StandByPeriod[periodIndex] != null);
-                if (this.StandByPeriod[periodIndex]!.GetUnits() != units)
-                {
-                    throw new NotSupportedException();
-                }
-            }
-            return units;
         }
 
         public override void RecalculateStandingVolumeIfNeeded(int periodIndex)
@@ -293,7 +274,7 @@ namespace Osu.Cof.Ferm.Organon
                 {
                     if (thinVolumeForSpecies.IsCalculated(periodIndex) == false)
                     {
-                        thinVolumeForSpecies.CalculateThinningVolume(previousStand, this.IndividualTreeSelectionBySpecies, periodIndex, this.TreeVolume);
+                        thinVolumeForSpecies.CalculateThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeVolume);
                     }
                 }
 
@@ -358,7 +339,7 @@ namespace Osu.Cof.Ferm.Organon
                         OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
                         simulationStand = new OrganonStand(previousStand);
                     }
-                    foreach (KeyValuePair<FiaCode, TreeSelection> individualTreeSelection in this.IndividualTreeSelectionBySpecies)
+                    foreach (KeyValuePair<FiaCode, IndividualTreeSelection> individualTreeSelection in this.TreeSelectionBySpecies)
                     {
                         Trees treesOfSpecies = simulationStand.TreesBySpecies[individualTreeSelection.Key];
                         bool atLeastOneTreeRemoved = false;

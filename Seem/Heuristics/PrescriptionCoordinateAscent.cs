@@ -14,14 +14,14 @@ namespace Osu.Cof.Ferm.Heuristics
         public bool RestartOnLocalMaximum { get; set; }
 
         public PrescriptionCoordinateAscent(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndDiscountRates: false)
+            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndFinancialScenarios: false)
         {
             this.Gradient = false;
             this.IsStochastic = false;
             this.RestartOnLocalMaximum = false;
         }
 
-        private float EvaluateCandidatePosition(MoveState moveState, HeuristicPerformanceCounters perfCounters)
+        private float EvaluateCandidatePosition(MoveState moveState, PrescriptionPerformanceCounters perfCounters)
         {
             // skip moves which return to recently visited positions
             if (moveState.CandidatePositionIsRecentlyVisited())
@@ -67,21 +67,21 @@ namespace Osu.Cof.Ferm.Heuristics
             {
                 // accept change of prescription if it improves upon the best solution
                 acceptedFinancialValue = candidateFinancialValue;
-                this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
+                this.CopyTreeGrowthToBestTrajectory(moveState.Coordinate, this.CurrentTrajectory);
 
                 if (this.lastNImprovingMovesLog != null)
                 {
-                    this.lastNImprovingMovesLog.TryAddMove(perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
+                    this.lastNImprovingMovesLog.TryAddMove(moveState.Coordinate, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
                 }
 
-                this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                this.FinancialValue.TryAddMove(moveState.Coordinate, acceptedFinancialValue, candidateFinancialValue);
                 ++perfCounters.MovesAccepted;
             }
             else
             {
                 if (this.RunParameters.LogOnlyImprovingMoves == false)
                 {
-                    this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                    this.FinancialValue.TryAddMove(moveState.Coordinate, acceptedFinancialValue, candidateFinancialValue);
                 }
                 ++perfCounters.MovesRejected;
             }
@@ -98,7 +98,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return financialValueChange;
         }
 
-        private bool EvaluateGradientMove(MoveState moveState, HeuristicPerformanceCounters perfCounters)
+        private bool EvaluateGradientMove(MoveState moveState, PrescriptionPerformanceCounters perfCounters)
         {
             // synthesize vector in direction of most recent improving gradient with length step size
             int dimensions = moveState.MostRecentIncrementGradient.Length;
@@ -201,7 +201,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return moveAccepted;
         }
 
-        private bool EvaluateOneDimensionalMove(MoveDirection direction, int thinIndex, int dimensionIndex, MoveState moveState, HeuristicPerformanceCounters perfCounters)
+        private bool EvaluateOneDimensionalMove(MoveDirection direction, int thinIndex, int dimensionIndex, MoveState moveState, PrescriptionPerformanceCounters perfCounters)
         {
             // generate move
             float candidateStep = PrescriptionCoordinateAscent.GetCandidateStep(direction, thinIndex, dimensionIndex, moveState, out float candidateStepSize);
@@ -363,15 +363,15 @@ namespace Osu.Cof.Ferm.Heuristics
         //    return moveAccepted;
         //}
 
-        protected override void EvaluateThinningPrescriptions(HeuristicResultPosition position, HeuristicResults results, HeuristicPerformanceCounters perfCounters)
+        protected override void EvaluateThinningPrescriptions(StandTrajectoryCoordinate coordinate, StandTrajectories trajectories, PrescriptionPerformanceCounters perfCounters)
         {
             // initialize search position from whatever values are already set on the current trajectory
             // This allows prescriptions to flow between positions in sweeps using GRASP, potentially reducing search effort.
             // TODO: move this code into an override of ConstructTreeSelection(float)
             IList<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
-            MoveState moveState = new(harvests.Count, 3)
+            MoveState moveState = new(coordinate, harvests.Count, 3)
             {
-                FinancialIndex = position.FinancialIndex,
+                FinancialIndex = coordinate.FinancialIndex,
             };
 
             // if no thinning is specified assume, for now, that no elite solution is flowing and the search should begin from a set of
@@ -568,7 +568,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "PrescriptionCoordinateAscent";
         }
 
-        private void SearchFromPosition(MoveState moveState, HeuristicPerformanceCounters perfCounters)
+        private void SearchFromPosition(MoveState moveState, PrescriptionPerformanceCounters perfCounters)
         {
             Array.Fill(moveState.StepSizeByThinning, this.HeuristicParameters.DefaultIntensityStepSize);
             while (moveState.StepSizeByThinning[0] >= this.HeuristicParameters.MinimumIntensityStepSize)
@@ -761,6 +761,7 @@ namespace Osu.Cof.Ferm.Heuristics
             private int recentlyVisitedPositionUpdateIndex;
 
             public float[] CandidateIntensities { get; private init; }
+            public StandTrajectoryCoordinate Coordinate { get; private init; }
             public int[] Dimensions { get; private init; }
             public int FinancialIndex { get; init; }
             public float[] MaximumIntensities { get; private init; }
@@ -771,7 +772,7 @@ namespace Osu.Cof.Ferm.Heuristics
             public float[] ThinningIntensities { get; set; }
             public int Thinnings { get; init; }
 
-            public MoveState(int thinnings, int dimensionsPerHarvest)
+            public MoveState(StandTrajectoryCoordinate coordinate, int thinnings, int dimensionsPerHarvest)
             {
                 int dimensions = dimensionsPerHarvest * thinnings;
 
@@ -783,8 +784,9 @@ namespace Osu.Cof.Ferm.Heuristics
                 this.recentlyVisitedPositionUpdateIndex = 0;
 
                 this.CandidateIntensities = new float[dimensions];
+                this.Coordinate = coordinate;
                 this.Dimensions = ArrayExtensions.CreateSequentialIndices(dimensions);
-                this.FinancialIndex = Constant.HeuristicDefault.FinancialIndex;
+                this.FinancialIndex = Constant.HeuristicDefault.CoordinateIndex;
                 this.MaximumIntensities = new float[dimensions];
                 this.MostRecentAcceptedDirection = new MoveDirection[dimensions]; // defaults to increment
                 this.MostRecentDecrementGradient = new float[dimensions]; // unused if gradient disabled

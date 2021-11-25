@@ -1,13 +1,10 @@
 ﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
-using System.Text;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
@@ -24,35 +21,25 @@ namespace Osu.Cof.Ferm.Cmdlets
             using StreamWriter writer = this.GetWriter();
 
             // header
-            bool resultsSpecified = this.Results != null;
+            bool resultsSpecified = this.Trajectories != null;
             if (this.ShouldWriteHeader())
             {
-                HeuristicParameters? heuristicParameters = null;
-                if (resultsSpecified)
-                {
-                    heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
-                }
-                else if (this.Trajectories![0].Heuristic != null)
-                {
-                    heuristicParameters = this.Trajectories[0].Heuristic!.GetParameters();
-                }
-
-                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(heuristicParameters) + ",standAge,species,diameter class,snags,logs");
+                writer.WriteLine(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories!) + ",standAge,species,diameter class,snags,logs");
             }
 
             // rows for periods
+            int maxCoordinateIndex = this.GetMaxCoordinateIndex();
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxPositionIndex = this.GetMaxPositionIndex();
-            for (int positionIndex = 0; positionIndex < maxPositionIndex; ++positionIndex)
+            for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
             {
-                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionIndex, out StringBuilder linePrefix, out int _, out int _);
+                StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix);
 
                 SnagDownLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
                 for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)
                 {
-                    OrganonStand? stand = highTrajectory.StandByPeriod[periodIndex];
+                    Stand? stand = highTrajectory.StandByPeriod[periodIndex];
                     Debug.Assert(stand != null);
-                    string standAge = stand.AgeInYears.ToString(CultureInfo.InvariantCulture);
+                    string standAge = highTrajectory.GetEndOfPeriodAge(periodIndex).ToString(CultureInfo.InvariantCulture);
 
                     foreach (FiaCode species in snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass.Keys)
                     {

@@ -1,21 +1,25 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Optimization;
+using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Osu.Cof.Ferm.Heuristics
 {
     public abstract class Heuristic : PseudorandomizingTask
     {
-        public OrganonStandTrajectory?[,] BestTrajectoryByRotationAndScenario { get; private init; }
+        protected OrganonStandTrajectory?[,] BestTrajectoryByRotationAndScenario { get; private init; }
+
         public float ConstructionGreediness { get; protected set; }
-        public OrganonStandTrajectory CurrentTrajectory { get; private init; } // could be protected but left public for test access
-        public FinancialValueTrajectory FinancialValue { get; protected set; }
+        public OrganonStandTrajectory CurrentTrajectory { get; private init; } // could be protected get but left public for test access
+        public FinancialOptimizationTrajectory FinancialValue { get; protected set; }
         public RunParameters RunParameters { get; private init; }
 
-        protected Heuristic(OrganonStand stand, RunParameters runParameters, bool evaluatesAcrossRotationsAndDiscountRates)
+        protected Heuristic(OrganonStand stand, RunParameters runParameters, bool evaluatesAcrossRotationsAndFinancialScenarios)
         {
             if ((runParameters.RotationLengths.Count < 1) || (runParameters.Financial.Count < 1))
             {
@@ -25,180 +29,79 @@ namespace Osu.Cof.Ferm.Heuristics
             int financialScenarioCapacity = 1;
             int lastSimulationPeriod = runParameters.MaximizeForPlanningPeriod;
             int rotationLengthCapacity = 1;
-            if (evaluatesAcrossRotationsAndDiscountRates)
+            if (evaluatesAcrossRotationsAndFinancialScenarios)
             {
                 financialScenarioCapacity = runParameters.Financial.Count;
                 lastSimulationPeriod = runParameters.RotationLengths.Max();
                 rotationLengthCapacity = runParameters.RotationLengths.Count;
             }
 
+            // best trajectories are set as runs complete so elements are left as null
             this.BestTrajectoryByRotationAndScenario = new OrganonStandTrajectory[rotationLengthCapacity, financialScenarioCapacity];
-            OrganonStandTrajectory? trajectoryToCloneToCurrent = null;
-            for (int rotationIndex = 0; rotationIndex < rotationLengthCapacity; ++rotationIndex)
-            {
-                if (evaluatesAcrossRotationsAndDiscountRates)
-                {
-                    int endOfRotationPeriod = runParameters.RotationLengths[rotationIndex];
-                    if (endOfRotationPeriod <= runParameters.LastThinPeriod) // if needed, use < instead of <=, see also PrescriptionEnumeration.EvaluateThinningPrescriptions()
-                    {
-                        continue; // not a valid rotation length because it doesn't include the last thinning scheduled
-                    }
-                }
-
-                for (int financialIndex = 0; financialIndex < financialScenarioCapacity; ++financialIndex)
-                {
-                    OrganonStandTrajectory trajectory = new(stand, runParameters.OrganonConfiguration, runParameters.TreeVolume, lastSimulationPeriod)
-                    {
-                        Heuristic = this
-                    };
-                    trajectory.Treatments.CopyFrom(runParameters.Treatments);
-
-                    this.BestTrajectoryByRotationAndScenario[rotationIndex, financialIndex] = trajectory;
-                    trajectoryToCloneToCurrent = trajectory;
-                }
-            }
-            // depending on the thinnings specified this.BestTrajectoryByRotationAndRate[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex]
-            // can be null
-            if (trajectoryToCloneToCurrent == null)
-            {
-                throw new ArgumentOutOfRangeException(nameof(runParameters), "No valid rotation lengths found.");
-            }
-
-            this.CurrentTrajectory = new OrganonStandTrajectory(trajectoryToCloneToCurrent);
-            this.CurrentTrajectory.Name += "Current";
-
             this.ConstructionGreediness = Constant.Grasp.NoConstruction;
+
+            this.CurrentTrajectory = new(stand, runParameters.OrganonConfiguration, runParameters.TreeVolume, lastSimulationPeriod);
+            this.CurrentTrajectory.Treatments.CopyFrom(runParameters.Treatments);
+
             this.FinancialValue = new(rotationLengthCapacity, financialScenarioCapacity, runParameters.MoveCapacity);
             this.RunParameters = runParameters;
         }
 
-        protected void CopyTreeGrowthToBestTrajectory(OrganonStandTrajectory trajectory)
+        protected void CopyTreeGrowthToBestTrajectory(StandTrajectoryCoordinate coordinate, OrganonStandTrajectory trajectory)
         {
-            this.CopyTreeGrowthToBestTrajectory(trajectory, Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex);
+            if (this.TryGetBestTrajectory(coordinate, out OrganonStandTrajectory? bestTrajectory) == false)
+            {
+                this.BestTrajectoryByRotationAndScenario[coordinate.RotationIndex, coordinate.FinancialIndex] = trajectory.Clone();
+            }
+            else
+            {
+                bestTrajectory.CopyTreeGrowthFrom(trajectory);
+            }
         }
 
-        protected void CopyTreeGrowthToBestTrajectory(OrganonStandTrajectory trajectory, int rotationIndex, int financialIndex)
+        public OrganonStandTrajectory GetBestTrajectory(StandTrajectoryCoordinate coordinate)
         {
-            OrganonStandTrajectory bestTrajectory = this.GetBestTrajectory(rotationIndex, financialIndex);
-            bestTrajectory.CopyTreeGrowthFrom(trajectory);
-        }
-
-        public OrganonStandTrajectory FindNearestBestTrajectory(HeuristicResultPosition position)
-        {
-            // trivial case: there is only one trajectory since this heuristic does not evaluate across rotations and scenarios
-            if (this.BestTrajectoryByRotationAndScenario.Length == 1)
+            if (this.TryGetBestTrajectory(coordinate, out OrganonStandTrajectory? bestTrajectory) == false)
             {
-                return this.GetBestTrajectory(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex);
-            }
-
-            // for now, search only within rotation lengths on the expectation all financial scenarios are always evaluated
-            // Other assumptions, for now:
-            //  - An arbitrarily large change in rotation length remains nearer than a financial scenario increment or decrement.
-            //  - At time of writing, the only possibility is short rotations aren't evaluated and it's needful to search only among
-            //    longer rotations. For now, rotations searched in the order listed rather than sorting to find the closest rotation
-            //    lengths.
-            // Can't use a BreadthFirstEnumerator here as the data structures don't match.
-            // TODO: define closeness based on similarlity of financial values
-            for (int rotationIndex = position.RotationIndex; rotationIndex < this.RunParameters.RotationLengths.Count; ++rotationIndex)
-            {
-                OrganonStandTrajectory? trajectory = this.BestTrajectoryByRotationAndScenario[rotationIndex, position.FinancialIndex];
-                if (trajectory != null)
-                {
-                    return trajectory;
-                }
-            }
-            for (int rotationIndex = position.RotationIndex - 1; rotationIndex >= 0; --rotationIndex)
-            {
-                OrganonStandTrajectory? trajectory = this.BestTrajectoryByRotationAndScenario[rotationIndex, position.FinancialIndex];
-                if (trajectory != null)
-                {
-                    return trajectory;
-                }
-            }
-
-            throw new InvalidOperationException("No trajectories found within search range of rotation index " + position.RotationIndex + " and financial index " + position.FinancialIndex + ".");
-        }
-
-        protected OrganonStandTrajectory GetBestTrajectory(int rotationIndex, int financialIndex)
-        {
-            OrganonStandTrajectory? bestTrajectory = this.BestTrajectoryByRotationAndScenario[rotationIndex, financialIndex];
-            if (bestTrajectory == null)
-            {
-                throw new InvalidOperationException("Trajectory for rotation index " + rotationIndex + " and financial scenario index " + financialIndex + " is null. This may indicate an indexing error or failure to accept a solution at this position. Is the rotation length at this index valid for the combination of thins this heuristic optimized for? The highest financial value at these indices is " + this.FinancialValue.GetHighestValue(rotationIndex, financialIndex) + ".");
+                throw new InvalidOperationException("Best trajectory for rotation index " + coordinate.RotationIndex + " and financial scenario index " + coordinate.FinancialIndex + " is null.");
             }
             return bestTrajectory;
-        }
-
-        public OrganonStandTrajectory GetBestTrajectoryWithDefaulting(HeuristicResultPosition position)
-        {
-            if (this.BestTrajectoryByRotationAndScenario.Length == 1)
-            {
-                return this.GetBestTrajectory(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex);
-            }
-            return this.GetBestTrajectory(position.RotationIndex, position.FinancialIndex);
         }
 
         public abstract string GetName();
 
         public float GetFinancialValue(StandTrajectory trajectory, int financialIndex) // public for test code access
         {
-            return this.GetFinancialValue(trajectory, trajectory.PlanningPeriods - 1, financialIndex);
+            return this.GetFinancialValue(trajectory, financialIndex, trajectory.PlanningPeriods - 1);
         }
 
-        protected float GetFinancialValue(StandTrajectory trajectory, int endOfRotationPeriodIndex, int financialIndex)
+        protected float GetFinancialValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
         {
             Debug.Assert(trajectory.PeriodLengthInYears > 0);
 
-            // find objective function value
-            if ((this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue) ||
-                (this.RunParameters.TimberObjective == TimberObjective.NetPresentValue))
+            switch(this.RunParameters.TimberObjective)
             {
+                case TimberObjective.LandExpectationValue:
+                    // convert from US$/ha to USk$/ha
+                    return 0.001F * this.RunParameters.Financial.GetLandExpectationValue(trajectory, financialIndex, endOfRotationPeriod);
                 // net present value of first rotation
-                float financialValue = this.RunParameters.Financial.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriodIndex);
-
-                if (this.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
-                {
-                    int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriodIndex);
-                    float presentToFutureConversionFactor = this.RunParameters.Financial.GetAppreciationFactor(financialIndex, rotationLengthInYears);
-                    float landExpectationValue = presentToFutureConversionFactor * financialValue / (presentToFutureConversionFactor - 1.0F);
-                    financialValue = landExpectationValue;
-                }
-
-                // convert from US$/ha to USk$/ha
-                financialValue *= 0.001F;
-                return financialValue;
+                case TimberObjective.NetPresentValue:
+                    return 0.001F * this.RunParameters.Financial.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriod);
+                // TODO: move this out of financial objective calculations
+                case TimberObjective.ScribnerVolume:
+                    // direct volume addition
+                    float scribnerVolumeInMbf = 0.0F;
+                    foreach (int periodIndex in trajectory.Treatments.GetThinningPeriods())
+                    {
+                        trajectory.RecalculateThinningVolumeIfNeeded(periodIndex);
+                        scribnerVolumeInMbf += trajectory.GetTotalScribnerVolumeThinned(periodIndex);
+                    }
+                    trajectory.RecalculateStandingVolumeIfNeeded(endOfRotationPeriod);
+                    scribnerVolumeInMbf += trajectory.GetTotalStandingScribnerVolume(endOfRotationPeriod);
+                    return scribnerVolumeInMbf;
+                default:
+                    throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");
             }
-            if (this.RunParameters.TimberObjective == TimberObjective.ScribnerVolume)
-            {
-                // TODO: move this out of financial objective calculations, left here as legacy support for now 
-                // direct volume addition
-                float scribnerVolumeInMbf = 0.0F;
-                foreach (int periodIndex in trajectory.Treatments.GetThinningPeriods())
-                {
-                    trajectory.RecalculateThinningVolumeIfNeeded(periodIndex);
-                    scribnerVolumeInMbf += trajectory.GetTotalScribnerVolumeThinned(periodIndex);
-                }
-
-                trajectory.RecalculateStandingVolumeIfNeeded(endOfRotationPeriodIndex);
-                scribnerVolumeInMbf += trajectory.GetTotalStandingScribnerVolume(endOfRotationPeriodIndex);
-                return scribnerVolumeInMbf;
-            }
-
-            throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");
-        }
-
-        protected float[,] GetFinancialValueByRotationAndScenario(StandTrajectory trajectory)
-        {
-            float[,] financialValueByScenario = new float[this.RunParameters.RotationLengths.Count, this.RunParameters.Financial.Count];
-            for (int rotationIndex = 0; rotationIndex < this.RunParameters.RotationLengths.Count; ++rotationIndex)
-            {
-                int endOfRotationPeriod = this.RunParameters.RotationLengths[rotationIndex];
-                for (int financialIndex = 0; financialIndex < this.RunParameters.Financial.Count; ++financialIndex)
-                {
-                    financialValueByScenario[rotationIndex, financialIndex] = this.GetFinancialValue(trajectory, endOfRotationPeriod, financialIndex);
-                }
-            }
-            return financialValueByScenario;
         }
 
         public virtual HeuristicMoveLog? GetMoveLog()
@@ -207,15 +110,21 @@ namespace Osu.Cof.Ferm.Heuristics
         }
 
         public abstract HeuristicParameters GetParameters();
-        public abstract HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results);
+        public abstract PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories);
+
+        protected bool TryGetBestTrajectory(StandTrajectoryCoordinate coordinate, [NotNullWhen(true)] out OrganonStandTrajectory? bestTrajectory)
+        {
+            bestTrajectory = this.BestTrajectoryByRotationAndScenario[coordinate.RotationIndex, coordinate.FinancialIndex];
+            return bestTrajectory != null;
+        }
     }
 
     public abstract class Heuristic<TParameters> : Heuristic where TParameters : HeuristicParameters
     {
-        public TParameters HeuristicParameters { get; private init; }
+        protected TParameters HeuristicParameters { get; private init; }
 
-        public Heuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters, bool evaluatesAcrossRotationsAndDiscountRates)
-            : base(stand, runParameters, evaluatesAcrossRotationsAndDiscountRates)
+        public Heuristic(OrganonStand stand, TParameters heuristicParameters, RunParameters runParameters, bool evaluatesAcrossRotationsAndFinancialScenarios)
+            : base(stand, runParameters, evaluatesAcrossRotationsAndFinancialScenarios)
         {
             if ((heuristicParameters.MinimumConstructionGreediness < Constant.Grasp.FullyRandomConstructionForMaximization) || (heuristicParameters.MinimumConstructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
             {
@@ -322,14 +231,14 @@ namespace Osu.Cof.Ferm.Heuristics
             return treeSelectionsRandomized;
         }
 
-        protected int ConstructTreeSelection(HeuristicResultPosition position, HeuristicResults results)
+        protected int ConstructTreeSelection(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             // attempt to find an existing solution with the same set of thinning timings
             // If found, the existing solution's discount rate and number of planning periods may differ.
-            if (results.TryGetSelfOrFindNearestNeighbor(position, out HeuristicSolutionPool? existingSolutions, out HeuristicResultPosition? positionOfExistingSolutions))
+            if (trajectories.TryGetSelfOrFindNearestNeighbor(coordinate, out SilviculturalPrescriptionPool? existingSolutions, out StandTrajectoryCoordinate? positionOfExistingSolutions))
             {
-                OrganonStandTrajectory eliteSolution = existingSolutions.SelectSolutionAndFindNearestStandTrajectory(position); // throws if pool is empty
-                this.CurrentTrajectory.CopyTreeGrowthFrom(eliteSolution);
+                IndividualTreeSelectionBySpecies eliteTreeSelection = existingSolutions.GetRandomEliteTreeSelection(); // throws if pool is empty
+                this.CurrentTrajectory.CopyTreeSelectionFrom(eliteTreeSelection);
 
                 // assuming an existing elite solution at this position has reached first order convergence, must randomize at least two trees
                 // to potentially shift to some other domain of attraction
@@ -344,10 +253,10 @@ namespace Osu.Cof.Ferm.Heuristics
                     // especially high
                     maximumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
                 }
-                if (position == positionOfExistingSolutions)
+                if (coordinate == positionOfExistingSolutions)
                 {
                     // if one elite solution is available, begin this search with semi-greeding construction
-                    this.ConstructionGreediness = results.GraspReactivity.GetConstructionGreediness(this.HeuristicParameters.MinimumConstructionGreediness, maximumConstructionGreediness);
+                    this.ConstructionGreediness = trajectories.GraspReactivity.GetConstructionGreediness(this.HeuristicParameters.MinimumConstructionGreediness, maximumConstructionGreediness);
                     // TODO: if two or more elite solutions are available, within position path relinking is possible
                     // this.ConstructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
                 }
@@ -365,22 +274,22 @@ namespace Osu.Cof.Ferm.Heuristics
                     // this.ConstructionGreediness = Constant.Grasp.FullyRandomConstructionForMaximization;
 
                     // sync prescription to new thinning timings
-                    if (position.FirstThinPeriodIndex != positionOfExistingSolutions.FirstThinPeriodIndex)
+                    if (coordinate.FirstThinPeriodIndex != positionOfExistingSolutions.FirstThinPeriodIndex)
                     {
-                        int currentThinPeriod = results.FirstThinPeriods[position.FirstThinPeriodIndex];
-                        int existingSolutionThinPeriod = results.FirstThinPeriods[positionOfExistingSolutions.FirstThinPeriodIndex];
+                        int currentThinPeriod = trajectories.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
+                        int existingSolutionThinPeriod = trajectories.FirstThinPeriods[positionOfExistingSolutions.FirstThinPeriodIndex];
                         this.CurrentTrajectory.ChangeThinningPeriod(existingSolutionThinPeriod, currentThinPeriod);
                     }
-                    if (position.SecondThinPeriodIndex != positionOfExistingSolutions.SecondThinPeriodIndex)
+                    if (coordinate.SecondThinPeriodIndex != positionOfExistingSolutions.SecondThinPeriodIndex)
                     {
-                        int currentThinPeriod = results.SecondThinPeriods[position.SecondThinPeriodIndex];
-                        int existingSolutionThinPeriod = results.SecondThinPeriods[positionOfExistingSolutions.SecondThinPeriodIndex];
+                        int currentThinPeriod = trajectories.SecondThinPeriods[coordinate.SecondThinPeriodIndex];
+                        int existingSolutionThinPeriod = trajectories.SecondThinPeriods[positionOfExistingSolutions.SecondThinPeriodIndex];
                         this.CurrentTrajectory.ChangeThinningPeriod(existingSolutionThinPeriod, currentThinPeriod);
                     }
-                    if (position.ThirdThinPeriodIndex != positionOfExistingSolutions.ThirdThinPeriodIndex)
+                    if (coordinate.ThirdThinPeriodIndex != positionOfExistingSolutions.ThirdThinPeriodIndex)
                     {
-                        int currentThinPeriod = results.ThirdThinPeriods[position.ThirdThinPeriodIndex];
-                        int existingSolutionThinPeriod = results.ThirdThinPeriods[positionOfExistingSolutions.ThirdThinPeriodIndex];
+                        int currentThinPeriod = trajectories.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex];
+                        int existingSolutionThinPeriod = trajectories.ThirdThinPeriods[positionOfExistingSolutions.ThirdThinPeriodIndex];
                         this.CurrentTrajectory.ChangeThinningPeriod(existingSolutionThinPeriod, currentThinPeriod);
                     }
                 }
@@ -392,24 +301,25 @@ namespace Osu.Cof.Ferm.Heuristics
             }
 
             // check harvest periods match the position this tree selection is being generated for
-            results.VerifyStandEntries(this.CurrentTrajectory, position);
+            trajectories.VerifyStandEntries(this.CurrentTrajectory, coordinate);
 
             return this.ConstructTreeSelection(this.ConstructionGreediness);
         }
 
-        protected virtual float EvaluateInitialSelection(HeuristicResultPosition position, int moveCapacity, HeuristicPerformanceCounters perfCounters)
+        protected virtual float EvaluateInitialSelection(StandTrajectoryCoordinate coordinate, int moveCapacity, PrescriptionPerformanceCounters perfCounters)
         {
             this.FinancialValue.SetMoveCapacity(moveCapacity);
 
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
-            this.BestTrajectoryByRotationAndScenario[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex]!.CopyTreeGrowthFrom(this.CurrentTrajectory);
+            Debug.Assert(this.BestTrajectoryByRotationAndScenario[Constant.HeuristicDefault.CoordinateIndex, Constant.HeuristicDefault.CoordinateIndex] == null);
+            this.BestTrajectoryByRotationAndScenario[Constant.HeuristicDefault.CoordinateIndex, Constant.HeuristicDefault.CoordinateIndex] = this.CurrentTrajectory.Clone();
 
-            float financialValue = this.GetFinancialValue(this.CurrentTrajectory, position.FinancialIndex);
-            this.FinancialValue.TryAddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex, financialValue, financialValue);
+            float financialValue = this.GetFinancialValue(this.CurrentTrajectory, coordinate.FinancialIndex);
+            this.FinancialValue.TryAddMove(coordinate, financialValue, financialValue);
             return financialValue;
         }
 
-        public override HeuristicParameters GetParameters()
+        public override TParameters GetParameters()
         {
             return this.HeuristicParameters;
         }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Osu.Cof.Ferm.Data;
 using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Optimization;
 using Osu.Cof.Ferm.Organon;
 using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
@@ -29,39 +30,25 @@ namespace Osu.Cof.Ferm.Test
             PublicApi.VolumeTolerance = 1.01F;
         }
 
-        private static HeuristicResultPosition CreateDefaultSolutionPosition()
-        {
-            HeuristicResultPosition position = new()
-            {
-                ParameterIndex = 0,
-                FinancialIndex = Constant.HeuristicDefault.FinancialIndex,
-                FirstThinPeriodIndex = 0,
-                SecondThinPeriodIndex = 0,
-                ThirdThinPeriodIndex = 0,
-                RotationIndex = 0
-            };
-            return position;
-        }
-
-        private static HeuristicResults<HeuristicParameters> CreateResults(HeuristicParameters parameters, int firstThinPeriodIndex, int rotationLength)
+        private static HeuristicStandTrajectories<HeuristicParameters> CreateResults(HeuristicParameters parameters, int firstThinPeriodIndex, int rotationLength)
         {
             List<HeuristicParameters> parameterCombinations = new() { parameters };
             FinancialScenarios financialScenarios = new();
             List<int> firstThinPeriods = new() { firstThinPeriodIndex };
             List<int> noThin = new() { Constant.NoThinPeriod };
             List<int> planningPeriods = new() { rotationLength };
-            HeuristicResults<HeuristicParameters> results = new(parameterCombinations, firstThinPeriods, noThin, noThin, planningPeriods, financialScenarios, TestConstant.SolutionPoolSize);
+            HeuristicStandTrajectories<HeuristicParameters> results = new(parameterCombinations, firstThinPeriods, noThin, noThin, planningPeriods, financialScenarios, TestConstant.SolutionPoolSize);
 
-            HeuristicResultPosition position = new()
+            StandTrajectoryCoordinate coordinate = new()
             {
-                FinancialIndex = Constant.HeuristicDefault.FinancialIndex,
+                FinancialIndex = Constant.HeuristicDefault.CoordinateIndex,
                 FirstThinPeriodIndex = 0,
                 SecondThinPeriodIndex = 0,
                 ThirdThinPeriodIndex = 0,
-                ParameterIndex = Constant.HeuristicDefault.RotationIndex,
-                RotationIndex = 0
+                ParameterIndex = Constant.HeuristicDefault.CoordinateIndex,
+                RotationIndex = Constant.HeuristicDefault.CoordinateIndex
             };
-            results.AddEvaluatedPosition(position);
+            results.AddEvaluatedPosition(coordinate);
             
             return results;
         }
@@ -127,7 +114,7 @@ namespace Osu.Cof.Ferm.Test
             landExpectationValueIts.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
 
             // first improving circular search
-            HeuristicResults<HeuristicParameters> results = PublicApi.CreateResults(new(), thinningPeriod, landExpectationValueIts.MaximizeForPlanningPeriod);
+            HeuristicStandTrajectories<HeuristicParameters> results = PublicApi.CreateResults(new(), thinningPeriod, landExpectationValueIts.MaximizeForPlanningPeriod);
             // sometimes useful for debugging: start with no trees selected
             // results.ParameterCombinations[0].MinimumConstructionGreediness = Constant.Grasp.FullyGreedyConstructionForMaximization;
             FirstImprovingCircularSearch firstCircular = new(stand, results.ParameterCombinations[0], landExpectationValueIts)
@@ -135,9 +122,9 @@ namespace Osu.Cof.Ferm.Test
                 //IsStochastic = true,
                 MaximumIterations = 10 * treeRecords
             };
-            HeuristicResultPosition singleThinPosition = PublicApi.CreateDefaultSolutionPosition();
-            HeuristicPerformanceCounters firstImprovingCounters = firstCircular.Run(singleThinPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(firstCircular, singleThinPosition, firstImprovingCounters);
+            StandTrajectoryCoordinate singleThinCoordinate = new();
+            PrescriptionPerformanceCounters firstImprovingCounters = firstCircular.Run(singleThinCoordinate, results);
+            results.AssimilateIntoCoordinate(firstCircular, singleThinCoordinate, firstImprovingCounters);
 
             // hero
             Hero hero = new(stand, results.ParameterCombinations[0], landExpectationValueIts)
@@ -146,8 +133,8 @@ namespace Osu.Cof.Ferm.Test
                 MaximumIterations = 10
             };
             // hero.CurrentTrajectory.SetTreeSelection(0, thinningPeriod); // sometimes useful for debugging: don't thin first tree
-            HeuristicPerformanceCounters heroCounters = hero.Run(singleThinPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(hero, singleThinPosition, heroCounters);
+            PrescriptionPerformanceCounters heroCounters = hero.Run(singleThinCoordinate, results);
+            results.AssimilateIntoCoordinate(hero, singleThinCoordinate, heroCounters);
 
             // prescription coordinate descent
             RunParameters landExpectationValuePrescription = new(new List<int>() { landExpectationValueIts.MaximizeForPlanningPeriod }, configuration)
@@ -165,17 +152,17 @@ namespace Osu.Cof.Ferm.Test
                 IsStochastic = true,
                 RestartOnLocalMaximum = true
             };
-            HeuristicPerformanceCounters prescriptionAscentCounters = prescriptionAscent.Run(singleThinPosition, results);
-            results.AssimilateHeuristicRunIntoPosition(prescriptionAscent, singleThinPosition, prescriptionAscentCounters);
+            PrescriptionPerformanceCounters prescriptionAscentCounters = prescriptionAscent.Run(singleThinCoordinate, results);
+            results.AssimilateIntoCoordinate(prescriptionAscent, singleThinCoordinate, prescriptionAscentCounters);
 
             this.Verify(firstCircular, firstImprovingCounters);
             this.Verify(hero, heroCounters);
             this.Verify(prescriptionAscent, prescriptionAscentCounters);
-            PublicApi.Verify(results, singleThinPosition, landExpectationValueIts.MaximizeForPlanningPeriod);
+            PublicApi.Verify(results, singleThinCoordinate);
 
-            TreeSelection firstCircularTreeSelection = firstCircular.GetBestTrajectoryWithDefaulting(singleThinPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
-            TreeSelection heroTreeSelection = hero.GetBestTrajectoryWithDefaulting(singleThinPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
-            TreeSelection prescriptionTreeSelection = prescriptionAscent.GetBestTrajectoryWithDefaulting(singleThinPosition).IndividualTreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            IndividualTreeSelection firstCircularTreeSelection = firstCircular.GetBestTrajectory(singleThinCoordinate).TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            IndividualTreeSelection heroTreeSelection = hero.GetBestTrajectory(singleThinCoordinate).TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            IndividualTreeSelection prescriptionTreeSelection = prescriptionAscent.GetBestTrajectory(singleThinCoordinate).TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesThinnedByFirstCircular = 0;
             int treesThinnedByHero = 0;
             int treesThinnedByPrescription = 0;
@@ -265,10 +252,10 @@ namespace Osu.Cof.Ferm.Test
                 MaximizeForPlanningPeriod = 9
             };
             runForLandExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            HeuristicResults<HeuristicParameters> levResults = PublicApi.CreateResults(new(), thinningPeriod, runForLandExpectationValue.MaximizeForPlanningPeriod);
-            HeuristicResultPosition levPosition = levResults.PositionsEvaluated[0];
-            HeuristicObjectiveDistribution levDistribution = levResults[levPosition].Distribution;
-            HeuristicPerformanceCounters totalCounters = new();
+            HeuristicStandTrajectories<HeuristicParameters> levResults = PublicApi.CreateResults(new(), thinningPeriod, runForLandExpectationValue.MaximizeForPlanningPeriod);
+            StandTrajectoryCoordinate levCoordinate = levResults.CoordinatesEvaluated[0];
+            OptimizationObjectiveDistribution levDistribution = levResults[levCoordinate].Distribution;
+            PrescriptionPerformanceCounters totalCounters = new();
 
             GeneticParameters geneticParameters = new(treeRecords)
             {
@@ -276,9 +263,9 @@ namespace Osu.Cof.Ferm.Test
                 MaximumGenerations = 5,
             };
             GeneticAlgorithm genetic = new(stand, geneticParameters, runForLandExpectationValue);
-            HeuristicPerformanceCounters geneticCounters = genetic.Run(levPosition, levResults);
+            PrescriptionPerformanceCounters geneticCounters = genetic.Run(levCoordinate, levResults);
             totalCounters += geneticCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(genetic, levPosition, geneticCounters);
+            levResults.AssimilateIntoCoordinate(genetic, levCoordinate, geneticCounters);
 
             GreatDeluge deluge = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
@@ -286,24 +273,24 @@ namespace Osu.Cof.Ferm.Test
                 LowerWaterAfter = 9,
                 StopAfter = 10
             };
-            HeuristicPerformanceCounters delugeCounters = deluge.Run(levPosition, levResults);
+            PrescriptionPerformanceCounters delugeCounters = deluge.Run(levCoordinate, levResults);
             totalCounters += delugeCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(deluge, levPosition, delugeCounters);
+            levResults.AssimilateIntoCoordinate(deluge, levCoordinate, delugeCounters);
 
             RecordTravel recordTravel = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
                 StopAfter = 10
             };
-            HeuristicPerformanceCounters recordCounters = recordTravel.Run(levPosition, levResults);
-            levResults.AssimilateHeuristicRunIntoPosition(recordTravel, levPosition, recordCounters);
+            PrescriptionPerformanceCounters recordCounters = recordTravel.Run(levCoordinate, levResults);
+            levResults.AssimilateIntoCoordinate(recordTravel, levCoordinate, recordCounters);
 
             SimulatedAnnealing annealer = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue)
             {
                 Iterations = 100
             };
-            HeuristicPerformanceCounters annealerCounters = annealer.Run(levPosition, levResults);
+            PrescriptionPerformanceCounters annealerCounters = annealer.Run(levCoordinate, levResults);
             totalCounters += annealerCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(annealer, levPosition, annealerCounters);
+            levResults.AssimilateIntoCoordinate(annealer, levCoordinate, annealerCounters);
 
             TabuParameters tabuParameters = new();
             TabuSearch tabu = new(stand, tabuParameters, runForLandExpectationValue)
@@ -312,18 +299,18 @@ namespace Osu.Cof.Ferm.Test
                 //Jump = 2,
                 MaximumTenure = 5
             };
-            HeuristicPerformanceCounters tabuCounters = tabu.Run(levPosition, levResults);
+            PrescriptionPerformanceCounters tabuCounters = tabu.Run(levCoordinate, levResults);
             totalCounters += tabuCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(tabu, levPosition, tabuCounters);
+            levResults.AssimilateIntoCoordinate(tabu, levCoordinate, tabuCounters);
 
             ThresholdAccepting thresholdAcceptor = new(stand, levResults.ParameterCombinations[0], runForLandExpectationValue);
             thresholdAcceptor.IterationsPerThreshold.Clear();
             thresholdAcceptor.Thresholds.Clear();
             thresholdAcceptor.IterationsPerThreshold.Add(10);
             thresholdAcceptor.Thresholds.Add(1.0F);
-            HeuristicPerformanceCounters thresholdCounters = thresholdAcceptor.Run(levPosition, levResults);
+            PrescriptionPerformanceCounters thresholdCounters = thresholdAcceptor.Run(levCoordinate, levResults);
             totalCounters += thresholdCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(thresholdAcceptor, levPosition, thresholdCounters);
+            levResults.AssimilateIntoCoordinate(thresholdAcceptor, levCoordinate, thresholdCounters);
 
             PrescriptionParameters prescriptionParameters = new()
             {
@@ -333,12 +320,12 @@ namespace Osu.Cof.Ferm.Test
             };
             runForLandExpectationValue.Treatments.Harvests[0] = new ThinByPrescription(thinningPeriod); // must change from individual tree selection
             PrescriptionEnumeration enumerator = new(stand, prescriptionParameters, runForLandExpectationValue);
-            HeuristicPerformanceCounters enumerationCounters = enumerator.Run(levPosition, levResults);
+            PrescriptionPerformanceCounters enumerationCounters = enumerator.Run(levCoordinate, levResults);
             totalCounters += enumerationCounters;
-            levResults.AssimilateHeuristicRunIntoPosition(enumerator, levPosition, enumerationCounters);
+            levResults.AssimilateIntoCoordinate(enumerator, levCoordinate, enumerationCounters);
 
             // check solution pool
-            HeuristicSolutionPool levEliteSolutions = PublicApi.Verify(levResults, levPosition, runForLandExpectationValue.MaximizeForPlanningPeriod);
+            SilviculturalPrescriptionPool levEliteSolutions = PublicApi.Verify(levResults, levCoordinate);
 
             // heuristic optimizing for volume
             RunParameters runForVolume = new(runForLandExpectationValue.RotationLengths, configuration)
@@ -348,16 +335,15 @@ namespace Osu.Cof.Ferm.Test
             };
             runForVolume.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
 
-            HeuristicResults<HeuristicParameters> volumeResults = PublicApi.CreateResults(new(), thinningPeriod, runForLandExpectationValue.MaximizeForPlanningPeriod);
-            HeuristicResultPosition volumePosition = volumeResults.PositionsEvaluated[0];
+            HeuristicStandTrajectories<HeuristicParameters> volumeResults = PublicApi.CreateResults(new(), thinningPeriod, runForLandExpectationValue.MaximizeForPlanningPeriod);
+            StandTrajectoryCoordinate volumeCoordinate = volumeResults.CoordinatesEvaluated[0];
             AutocorrelatedWalk autocorrelated = new(stand, volumeResults.ParameterCombinations[0], runForVolume)
             {
                 Iterations = 4
             };
-            HeuristicPerformanceCounters autocorrlatedCounters = autocorrelated.Run(volumePosition, volumeResults);
+            PrescriptionPerformanceCounters autocorrlatedCounters = autocorrelated.Run(volumeCoordinate, volumeResults);
             totalCounters += autocorrlatedCounters;
-            volumeResults[volumePosition].Distribution.AddRunAndTryAddToFinancialDistribution(autocorrelated, volumePosition, autocorrlatedCounters);
-            volumeResults[volumePosition].Pool.TryAddOrReplace(autocorrelated, volumePosition);
+            volumeResults.AssimilateIntoCoordinate(autocorrelated, volumeCoordinate, autocorrlatedCounters);
 
             // heuristics assigned to net present value optimization
             this.Verify(genetic, geneticCounters);
@@ -375,7 +361,7 @@ namespace Osu.Cof.Ferm.Test
             float maxHeuristicLev = new float[] { deluge.FinancialValue.GetHighestValue(), annealer.FinancialValue.GetHighestValue(), thresholdAcceptor.FinancialValue.GetHighestValue(), genetic.FinancialValue.GetHighestValue(), enumerator.FinancialValue.GetHighestValue(), recordTravel.FinancialValue.GetHighestValue(), tabu.FinancialValue.GetHighestValue() }.Max();
             float maxLevInDistribution = levDistribution.HighestFinancialValueBySolution.Max();
             Assert.IsTrue(maxHeuristicLev == maxLevInDistribution);
-            Assert.IsTrue(maxHeuristicLev == levEliteSolutions.High!.FinancialValue.GetHighestValue());
+            Assert.IsTrue(maxHeuristicLev == levEliteSolutions.High!.FinancialValue);
 
             int maxMove = levDistribution.GetMaximumMoveIndex();
             Assert.IsTrue(maxMove > 0);
@@ -784,8 +770,8 @@ namespace Osu.Cof.Ferm.Test
                 MaximizeForPlanningPeriod = 9
             };
             landExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
-            HeuristicResults<HeuristicParameters> results = PublicApi.CreateResults(new(), thinningPeriod, landExpectationValue.MaximizeForPlanningPeriod);
-            HeuristicResultPosition defaultPosition = PublicApi.CreateDefaultSolutionPosition();
+            HeuristicStandTrajectories<HeuristicParameters> results = PublicApi.CreateResults(new(), thinningPeriod, landExpectationValue.MaximizeForPlanningPeriod);
+            StandTrajectoryCoordinate defaultCoordinate = new();
 
             TimeSpan runtime = TimeSpan.Zero;
             for (int run = 0; run < runs; ++run)
@@ -801,7 +787,7 @@ namespace Osu.Cof.Ferm.Test
                 if (run > 0)
                 {
                     // skip first run as a warmup run
-                    HeuristicPerformanceCounters heroCounters = hero.Run(defaultPosition, results);
+                    PrescriptionPerformanceCounters heroCounters = hero.Run(defaultCoordinate, results);
                     runtime += heroCounters.Duration;
                 }
             }
@@ -810,22 +796,24 @@ namespace Osu.Cof.Ferm.Test
 
         private static void TryAppendAcceptedFinancialValue(List<float> objectives, Heuristic heuristic, int moveIndex)
         {
-            HeuristicResultPosition position = PublicApi.CreateDefaultSolutionPosition();
-            IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
+            StandTrajectoryCoordinate defaultCoordinate = new();
+            IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(defaultCoordinate);
             if (acceptedMoveFinancialValues.Count > moveIndex)
             {
                 float acceptedFinancialValue = acceptedMoveFinancialValues[moveIndex];
                 objectives.Add(acceptedFinancialValue);
-                Assert.IsTrue(acceptedFinancialValue >= heuristic.FinancialValue.GetCandidateValuesWithDefaulting(position)[moveIndex]);
+                Assert.IsTrue(acceptedFinancialValue >= heuristic.FinancialValue.GetCandidateValuesWithDefaulting(defaultCoordinate)[moveIndex]);
             }
         }
 
-        private void Verify(GeneticAlgorithm genetic, HeuristicPerformanceCounters perfCounters)
+        private void Verify(GeneticAlgorithm genetic, PrescriptionPerformanceCounters perfCounters)
         {
-            this.Verify((Heuristic<GeneticParameters>)genetic, perfCounters);
+            // do general heuristic validation (disambiguation with <T> or similar required to avoid call to self and stack overflow)
+            this.Verify<GeneticParameters>(genetic, perfCounters);
 
+            GeneticParameters geneticParameters = genetic.GetParameters();
             PopulationStatistics statistics = genetic.PopulationStatistics;
-            Assert.IsTrue(statistics.Generations <= genetic.HeuristicParameters.MaximumGenerations);
+            Assert.IsTrue(statistics.Generations <= geneticParameters.MaximumGenerations);
             Assert.IsTrue(statistics.CoefficientOfVarianceByGeneration.Count == statistics.Generations);
             Assert.IsTrue(statistics.MeanAllelesPerLocusByGeneration.Count == statistics.Generations);
             Assert.IsTrue(statistics.MeanHeterozygosityByGeneration.Count == statistics.Generations);
@@ -842,20 +830,20 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(coefficientOfVariation >= 0.0F);
                 Assert.IsTrue((meanAllelesPerLocus >= 0.0F) && (meanAllelesPerLocus <= 2.0F)); // assumes HarvestPeriodSelection.All
                 Assert.IsTrue((meanHeterozygosity >= 0.0F) && (meanHeterozygosity <= 1.0F));
-                Assert.IsTrue((newIndividuals >= 0) && (newIndividuals <= 2 * genetic.HeuristicParameters.PopulationSize)); // two children per breeding
+                Assert.IsTrue((newIndividuals >= 0) && (newIndividuals <= 2 * geneticParameters.PopulationSize)); // two children per breeding
                 Assert.IsTrue((polymorphism >= 0.0F) && (polymorphism <= 1.0F));
             }
         }
 
-        private void Verify<TParameters>(Heuristic<TParameters> heuristic, HeuristicPerformanceCounters perfCounters) where TParameters : HeuristicParameters
+        private void Verify<TParameters>(Heuristic<TParameters> heuristic, PrescriptionPerformanceCounters perfCounters) where TParameters : HeuristicParameters
         {
             // check objective functions
-            HeuristicResultPosition position = PublicApi.CreateDefaultSolutionPosition();
-            OrganonStandTrajectory bestTrajectory = heuristic.FindNearestBestTrajectory(position);
+            StandTrajectoryCoordinate defaultCoordinate = new();
+            OrganonStandTrajectory bestTrajectory = heuristic.GetBestTrajectory(defaultCoordinate);
             Assert.IsTrue(bestTrajectory.PlantingDensityInTreesPerHectare == heuristic.CurrentTrajectory.PlantingDensityInTreesPerHectare);
             Assert.IsTrue(bestTrajectory.PlantingDensityInTreesPerHectare >= TestConstant.NelderReplantingDensityInTreesPerHectare);
 
-            float recalculatedHighestFinancialValue = heuristic.GetFinancialValue(bestTrajectory, Constant.HeuristicDefault.FinancialIndex);
+            float recalculatedHighestFinancialValue = heuristic.GetFinancialValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex);
             float highestFinancialValue = heuristic.FinancialValue.GetHighestValue();
             float highestFinancialValueRatio = highestFinancialValue / recalculatedHighestFinancialValue;
             this.TestContext!.WriteLine("{0} best objective: {1} (recalculation ratio {2})", heuristic.GetName(), highestFinancialValue, highestFinancialValueRatio);
@@ -868,19 +856,19 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(highestFinancialValue > 0.0F, "Highest volume is zero or negative."); // actually volume due to incomplete migration of code from 2019
             }
 
-            IList<float> candidateMoveFinancialValues = heuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
+            IList<float> candidateMoveFinancialValues = heuristic.FinancialValue.GetCandidateValuesWithDefaulting(defaultCoordinate);
             float beginFinancialValue = candidateMoveFinancialValues[0];
             Assert.IsTrue(highestFinancialValue >= beginFinancialValue);
 
-            Assert.IsTrue(heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position).Count >= 3);
+            Assert.IsTrue(heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(defaultCoordinate).Count >= 3);
             Assert.IsTrue(highestFinancialValueRatio > 0.99999);
             Assert.IsTrue(highestFinancialValueRatio < 1.00001);
 
-            float recalculatedCurrentObjectiveFunction = heuristic.GetFinancialValue(heuristic.CurrentTrajectory, Constant.HeuristicDefault.FinancialIndex);
+            float recalculatedCurrentObjectiveFunction = heuristic.GetFinancialValue(heuristic.CurrentTrajectory, Constant.HeuristicDefault.CoordinateIndex);
             Assert.IsTrue(recalculatedCurrentObjectiveFunction <= highestFinancialValue);
 
             // only guaranteed for monotonic heuristics: hero, prescription enumeration, others depending on configuration
-            IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
+            IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(defaultCoordinate);
             float lastAcceptedFinancialValue = acceptedMoveFinancialValues[^1];
             if ((heuristic is Hero) || (heuristic is ThresholdAccepting))
             {
@@ -915,10 +903,10 @@ namespace Osu.Cof.Ferm.Test
 
             // check harvest schedule
             int firstThinningPeriod = bestTrajectory.Treatments.GetThinningPeriods()[0];
-            foreach (KeyValuePair<FiaCode, TreeSelection> selectionForSpecies in bestTrajectory.IndividualTreeSelectionBySpecies)
+            foreach (KeyValuePair<FiaCode, IndividualTreeSelection> selectionForSpecies in bestTrajectory.TreeSelectionBySpecies)
             {
-                TreeSelection bestTreeSelection = selectionForSpecies.Value;
-                TreeSelection currentTreeSelection = heuristic.CurrentTrajectory.IndividualTreeSelectionBySpecies[selectionForSpecies.Key];
+                IndividualTreeSelection bestTreeSelection = selectionForSpecies.Value;
+                IndividualTreeSelection currentTreeSelection = heuristic.CurrentTrajectory.TreeSelectionBySpecies[selectionForSpecies.Key];
                 Assert.IsTrue(bestTreeSelection.Capacity == currentTreeSelection.Capacity);
                 Assert.IsTrue(bestTreeSelection.Count == currentTreeSelection.Count);
                 for (int treeIndex = 0; treeIndex < bestTreeSelection.Count; ++treeIndex)
@@ -954,8 +942,8 @@ namespace Osu.Cof.Ferm.Test
 
                 if (periodIndex > 1)
                 {
-                    bestThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.FinancialIndex, periodIndex);
-                    currentThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.FinancialIndex, periodIndex);
+                    bestThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex);
+                    currentThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex);
                 }
                 if (periodIndex == firstThinningPeriod)
                 {
@@ -1076,7 +1064,7 @@ namespace Osu.Cof.Ferm.Test
 
                 for (int moveIndex = 0; moveIndex < acceptedMoveFinancialValues.Count; ++moveIndex)
                 {
-                    string moveCsvValues = moveLog.GetCsvValues(position, moveIndex);
+                    string moveCsvValues = moveLog.GetCsvValues(defaultCoordinate, moveIndex);
                     Assert.IsTrue(String.IsNullOrWhiteSpace(moveCsvValues) == false);
                 }
             }
@@ -1099,8 +1087,9 @@ namespace Osu.Cof.Ferm.Test
             int treeRecordCount = bestTrajectory.GetInitialTreeRecordCount();
             if (heuristic is GeneticAlgorithm genetic)
             {
-                Assert.IsTrue(perfCounters.TreesRandomizedInConstruction > 0.4F * genetic.HeuristicParameters.PopulationSize * treeRecordCount);
-                Assert.IsTrue(perfCounters.TreesRandomizedInConstruction < 0.6F * genetic.HeuristicParameters.PopulationSize * treeRecordCount);
+                GeneticParameters geneticParameters = genetic.GetParameters();
+                Assert.IsTrue(perfCounters.TreesRandomizedInConstruction > 0.4F * geneticParameters.PopulationSize * treeRecordCount);
+                Assert.IsTrue(perfCounters.TreesRandomizedInConstruction < 0.6F * geneticParameters.PopulationSize * treeRecordCount);
             }
             else if (heuristic is PrescriptionEnumeration)
             {
@@ -1184,7 +1173,7 @@ namespace Osu.Cof.Ferm.Test
                 Assert.IsTrue(thinningPeriods.Count == 1);
             }
 
-            PublicApi.Verify(trajectory.IndividualTreeSelectionBySpecies, expectedTrajectory);
+            PublicApi.Verify(trajectory.TreeSelectionBySpecies, expectedTrajectory);
 
             for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
             {
@@ -1223,13 +1212,13 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static HeuristicSolutionPool Verify(HeuristicResults results, HeuristicResultPosition position, int endOfRotationPeriod)
+        private static SilviculturalPrescriptionPool Verify(StandTrajectories trajectories, StandTrajectoryCoordinate coordinate)
         {
-            Assert.IsTrue(results.TryGetSelfOrFindNearestNeighbor(position, out HeuristicSolutionPool? eliteSolutions, out HeuristicResultPosition? eliteSolutionsPosition));
+            Assert.IsTrue(trajectories.TryGetSelfOrFindNearestNeighbor(coordinate, out SilviculturalPrescriptionPool? eliteSolutions, out StandTrajectoryCoordinate? eliteSolutionsPosition));
             Assert.IsTrue(eliteSolutions!.High != null);
-            Assert.IsTrue(eliteSolutions.Low != null);
+            Assert.IsTrue(eliteSolutions.Low.Trajectory != null);
             Assert.IsTrue(eliteSolutions.SolutionsInPool == Math.Min(eliteSolutions.SolutionsAccepted, TestConstant.SolutionPoolSize));
-            Assert.IsTrue(position == eliteSolutionsPosition!);
+            Assert.IsTrue(coordinate == eliteSolutionsPosition!);
 
             for (int solutionIndex = 0; solutionIndex < eliteSolutions.SolutionsInPool; ++solutionIndex)
             {
@@ -1253,8 +1242,8 @@ namespace Osu.Cof.Ferm.Test
                 }
             }
 
-            OrganonStandTrajectory eliteSolution = eliteSolutions.SelectSolutionAndFindNearestStandTrajectory(position);
-            Assert.IsTrue(eliteSolution.EarliestPeriodChangedSinceLastSimulation == endOfRotationPeriod + 1);
+            IndividualTreeSelectionBySpecies eliteTreeSelection = eliteSolutions.GetRandomEliteTreeSelection();
+            Assert.IsTrue(eliteTreeSelection.Count > 0);
 
             return eliteSolutions;
         }
@@ -1305,11 +1294,11 @@ namespace Osu.Cof.Ferm.Test
             }
         }
 
-        private static void Verify(SortedList<FiaCode, TreeSelection> individualTreeSelectionBySpecies, ExpectedStandTrajectory expectedTrajectory)
+        private static void Verify(IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, ExpectedStandTrajectory expectedTrajectory)
         {
             int outOfRangeTrees = 0;
             int treesSelected = 0;
-            foreach (TreeSelection individualTreeSelection in individualTreeSelectionBySpecies.Values)
+            foreach (IndividualTreeSelection individualTreeSelection in individualTreeSelectionBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < individualTreeSelection.Count; ++treeIndex)
                 {

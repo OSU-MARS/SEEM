@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Diagnostics;
 
@@ -9,8 +10,8 @@ namespace Osu.Cof.Ferm.Heuristics
         protected readonly PrescriptionAllMoveLog? allMoveLog;
         protected readonly PrescriptionLastNMoveLog? lastNImprovingMovesLog;
 
-        protected PrescriptionHeuristic(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters, bool evaluatesAcrossRotationsAndDiscountRates)
-            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndDiscountRates)
+        protected PrescriptionHeuristic(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters, bool evaluatesAcrossRotationsAndFinancialScenarios)
+            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndFinancialScenarios)
         {
             if (this.RunParameters.LogOnlyImprovingMoves)
             {
@@ -19,7 +20,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 // size of objective log files. If needed, this can be changed to storing a larger number of prescriptions.
                 int rotationLengthCapacity = 1;
                 int financialScenarioCapacity = 1;
-                if (evaluatesAcrossRotationsAndDiscountRates)
+                if (evaluatesAcrossRotationsAndFinancialScenarios)
                 {
                     rotationLengthCapacity = runParameters.RotationLengths.Count;
                     financialScenarioCapacity = runParameters.Financial.Count;
@@ -32,7 +33,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        protected abstract void EvaluateThinningPrescriptions(HeuristicResultPosition position, HeuristicResults results, HeuristicPerformanceCounters perfCounters);
+        protected abstract void EvaluateThinningPrescriptions(StandTrajectoryCoordinate coordinate, StandTrajectories trajectories, PrescriptionPerformanceCounters perfCounters);
 
         public override HeuristicMoveLog? GetMoveLog()
         {
@@ -48,7 +49,7 @@ namespace Osu.Cof.Ferm.Heuristics
             }
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
+        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.HeuristicParameters.MinimumConstructionGreediness != Constant.Grasp.FullyGreedyConstructionForMaximization)
             {
@@ -107,27 +108,27 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
-            HeuristicPerformanceCounters perfCounters = new();
+            PrescriptionPerformanceCounters perfCounters = new();
 
             // call solution construction to reuse cached growth model timesteps and thinning prescriptions where practical
             // Prescriptions and tree selection are overwritten in prescription enumeration, leaving only the minor benefit of reusing a few
             // timesteps. However, since construction is fully greedy, new coordinate descents can begin from the copied solution without
             // modifying it.
-            HeuristicResultPosition constructionSourcePosition = position;
-            if (position.RotationIndex == Constant.AllRotationPosition)
+            StandTrajectoryCoordinate constructionSourcePosition = coordinate;
+            if (coordinate.RotationIndex == Constant.AllRotationPosition)
             {
                 // for now, choose a initial position to search from within all rotations and all financial scenarios here
                 // This can be moved into lower level code if needed.
                 // Not valid to choose a rotation length which ends before the last thin. For now, the loop below is conservative and chooses
                 // a rotation length one period longer than the last thinning. This is, at least for the moment, consistent with the filtering
                 // logic in OptimizeCmdlet.
-                int latestThinPeriod = Math.Max(Math.Max(results.FirstThinPeriods[position.FirstThinPeriodIndex], 
-                                                         results.SecondThinPeriods[position.SecondThinPeriodIndex]),
-                                                results.ThirdThinPeriods[position.ThirdThinPeriodIndex]);
+                int latestThinPeriod = Math.Max(Math.Max(trajectories.FirstThinPeriods[coordinate.FirstThinPeriodIndex], 
+                                                         trajectories.SecondThinPeriods[coordinate.SecondThinPeriodIndex]),
+                                                trajectories.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex]);
                 int minimumRotationIndex = -1;
-                for (int rotationIndex = 0; rotationIndex < results.RotationLengths.Count; ++rotationIndex)
+                for (int rotationIndex = 0; rotationIndex < trajectories.RotationLengths.Count; ++rotationIndex)
                 {
-                    if (results.RotationLengths[rotationIndex] > latestThinPeriod)
+                    if (trajectories.RotationLengths[rotationIndex] > latestThinPeriod)
                     {
                         minimumRotationIndex = rotationIndex;
                         break;
@@ -137,15 +138,15 @@ namespace Osu.Cof.Ferm.Heuristics
                 {
                     throw new InvalidOperationException("Couldn't find rotation length exceeding last thin period of " + latestThinPeriod + ".");
                 }
-                constructionSourcePosition = new(position)
+                constructionSourcePosition = new(coordinate)
                 {
-                    FinancialIndex = Constant.HeuristicDefault.FinancialIndex, // for now, assume searching from default index is most efficient
+                    FinancialIndex = Constant.HeuristicDefault.CoordinateIndex, // for now, assume searching from default index is most efficient
                     RotationIndex = minimumRotationIndex
                 };
             }
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(constructionSourcePosition, results);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(constructionSourcePosition, trajectories);
 
-            this.EvaluateThinningPrescriptions(position, results, perfCounters);
+            this.EvaluateThinningPrescriptions(coordinate, trajectories, perfCounters);
 
             stopwatch.Stop();
             perfCounters.Duration = stopwatch.Elapsed;

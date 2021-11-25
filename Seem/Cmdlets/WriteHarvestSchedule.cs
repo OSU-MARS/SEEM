@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
 using System.Collections.Generic;
@@ -7,28 +6,28 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
-using System.Text;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "HarvestSchedule")]
-    public class WriteHarvestSchedule : WriteHeuristicResultsOrStandTrajectoriesCmdlet
+    public class WriteHarvestSchedule : WriteTrajectoriesCmdlet
     {
         protected override void ProcessRecord()
         {
             this.ValidateParameters();
+            Debug.Assert(this.Trajectories != null);
 
             using StreamWriter writer = this.GetWriter();
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
+                writer.WriteLine(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories) + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
             }
 
+            int maxCoordinateIndex = this.GetMaxCoordinateIndex();
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxPositionIndex = this.GetMaxPositionIndex();
-            for (int positionIndex = 0; positionIndex < maxPositionIndex; ++positionIndex)
+            for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
             {
-                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionIndex, out StringBuilder linePrefix, out int endOfRotationPeriod, out int financialIndex);
+                StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix, out int endOfRotationPeriod, out int financialIndex);
                 int firstThinPeriod = highTrajectory.GetFirstThinPeriod();
                 int periodBeforeFirstThin = firstThinPeriod - 1;
                 if (periodBeforeFirstThin < 0)
@@ -54,7 +53,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                 Stand? highStandAtEnd = highTrajectory.StandByPeriod[^1];
                 if ((highStandBeforeFirstThin == null) || (highStandBeforeSecondThin == null) || (highStandBeforeThirdThin == null) || (highStandAtEnd == null))
                 {
-                    throw new ParameterOutOfRangeException(nameof(this.Results), "High trajectory in run has not been fully simulated. Did the heuristic perform at least one move?");
+                    throw new ParameterOutOfRangeException(nameof(this.Trajectories), "High trajectory in run has not been fully simulated. Did the heuristic perform at least one move?");
                 }
                 Units regenUnits = highStandAtEnd.GetUnits();
                 if ((highStandBeforeFirstThin.GetUnits() != regenUnits) || (highStandBeforeSecondThin.GetUnits() != regenUnits))
@@ -62,14 +61,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                     throw new NotSupportedException("Units differ between simulation periods.");
                 }
 
-                OrganonStandTrajectory lowTrajectory = highTrajectory;
-                if (this.Results != null)
-                {
-                    HeuristicResultPosition position = this.Results.PositionsEvaluated[positionIndex];
-                    lowTrajectory = this.Results[position].Pool.Low!.GetBestTrajectoryWithDefaulting(position);
-                }
+                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
+                StandTrajectory lowTrajectory = this.Trajectories[coordinate].Pool.Low.Trajectory ?? throw new InvalidOperationException("Low trajectory is null.");
+
                 int previousSpeciesCount = 0;
-                foreach (KeyValuePair<FiaCode, TreeSelection> highTreeSelectionForSpecies in highTrajectory.IndividualTreeSelectionBySpecies)
+                foreach (KeyValuePair<FiaCode, IndividualTreeSelection> highTreeSelectionForSpecies in highTrajectory.TreeSelectionBySpecies)
                 {
                     Trees highTreesBeforeFirstThin = highStandBeforeFirstThin.TreesBySpecies[highTreeSelectionForSpecies.Key];
                     Trees highTreesBeforeSecondThin = highStandBeforeSecondThin.TreesBySpecies[highTreeSelectionForSpecies.Key];
@@ -82,8 +78,8 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                     // uncompactedTreeIndex: tree index in periods before thinned trees are removed
                     // compactedTreeIndex: index of retained trees in periods after thinning
-                    TreeSelection lowTreeSelection = lowTrajectory.IndividualTreeSelectionBySpecies[highTreeSelectionForSpecies.Key];
-                    TreeSelection highTreeSelection = highTreeSelectionForSpecies.Value;
+                    IndividualTreeSelection lowTreeSelection = lowTrajectory.TreeSelectionBySpecies[highTreeSelectionForSpecies.Key];
+                    IndividualTreeSelection highTreeSelection = highTreeSelectionForSpecies.Value;
                     Debug.Assert(highTreesBeforeFirstThin.Capacity == highTreeSelection.Capacity);
                     int secondThinCompactedTreeIndex = 0;
                     int thirdThinCompactedTreeIndex = 0;

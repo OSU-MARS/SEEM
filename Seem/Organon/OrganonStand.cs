@@ -85,6 +85,11 @@ namespace Osu.Cof.Ferm.Organon
             }
         }
 
+        public override OrganonStand Clone()
+        {
+            return new OrganonStand(this);
+        }
+
         public void CopyTreeGrowthFrom(OrganonStand other)
         {
             foreach (Trees otherTreesOfSpecies in other.TreesBySpecies.Values)

@@ -1,5 +1,4 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
+﻿using Osu.Cof.Ferm.Optimization;
 using Osu.Cof.Ferm.Silviculture;
 using Osu.Cof.Ferm.Tree;
 using System;
@@ -7,12 +6,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
-using System.Text;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "StandTrajectory")]
-    public class WriteStandTrajectory : WriteHeuristicResultsOrStandTrajectoriesCmdlet
+    public class WriteStandTrajectory : WriteTrajectoriesCmdlet
     {
         [Parameter]
         [ValidateRange(0.1F, 100.0F)]
@@ -32,23 +30,14 @@ namespace Osu.Cof.Ferm.Cmdlets
         {
             // this.DiameterClassSize and MaximumDiameter are checked by PowerShell
             this.ValidateParameters();
+            Debug.Assert(this.Trajectories != null);
 
             using StreamWriter writer = this.GetWriter();
 
             // header
             if (this.ShouldWriteHeader())
             {
-                HeuristicParameters? heuristicParameters = null;
-                if (this.Results != null)
-                {
-                    heuristicParameters = WriteCmdlet.GetFirstHeuristicParameters(this.Results);
-                }
-                else if(this.Trajectories![0].Heuristic != null)
-                {
-                    heuristicParameters = this.Trajectories[0].Heuristic!.GetParameters();
-                }
-
-                writer.WriteLine(WriteCmdlet.GetHeuristicAndPositionCsvHeader(heuristicParameters) + "," +
+                writer.WriteLine(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories) + "," +
                     "standAge,TPH,QMD,Htop,BA,SDI,liveTreeBiomass,SPH,snagQmd,standingCmh,standingMbfj,thinCmh,thinMbfh,BAremoved,BAintensity,TPHdecrease," + 
                     "NPV,LEV,thinLogs2S,thinLogs3S,thinLogs4S,thinCmh2S,thinCmh3S,thinCmh4S,thinMbfh2S,thinMbfh3S,thinMbfh4S,thinPond2S,thinPond3S,thinPond4S," + 
                     "thinWheeledHarvesterForwarderCost,thinTaskCost,thinWheeledHarvesterPMh,thinChainsawPMhWithWheeledHarvester,thinForwarderPMh,thinForwardedWeight,thinWheeledHarvesterProductivity,thinForwarderProductivity," +
@@ -59,12 +48,11 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             // rows for periods
-            FinancialScenarios financialScenarios = this.Results != null ? this.Results.FinancialScenarios : this.Financial;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxPositionIndex = this.GetMaxPositionIndex();
-            for (int positionIndex = 0; positionIndex < maxPositionIndex; ++positionIndex)
+            int maxCoordinateIndex = this.GetMaxCoordinateIndex();
+            for (int positionIndex = 0; positionIndex < maxCoordinateIndex; ++positionIndex)
             {
-                OrganonStandTrajectory highTrajectory = this.GetHighestTrajectoryAndLinePrefix(positionIndex, out StringBuilder linePrefix, out int endOfRotationPeriod, out int financialIndex);
+                StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(positionIndex, out string linePrefix, out int endOfRotationPeriod, out int financialIndex);
                 Units trajectoryUnits = highTrajectory.GetUnits();
                 if (trajectoryUnits != Units.English)
                 {
@@ -74,46 +62,39 @@ namespace Osu.Cof.Ferm.Cmdlets
 
                 SnagDownLogTable snagsAndDownLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
 
+                StandDensity? previousStandDensity = null;
                 float totalThinNetPresentValue = 0.0F;
                 for (int period = 0; period <= endOfRotationPeriod; ++period)
                 {
+                    Stand stand = highTrajectory.StandByPeriod[period] ?? throw new NotSupportedException("Stand information missing for period " + period + ".");
+
                     // get density and volumes
-                    float basalAreaRemoved = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * highTrajectory.Treatments.BasalAreaThinnedByPeriod[period]; // m²/acre
+                    float basalAreaThinnedPerHectare = highTrajectory.GetBasalAreaHarvested(period);
                     float basalAreaIntensity = 0.0F;
                     if (period > 0)
                     {
-                        OrganonStandDensity? previousDensity = highTrajectory.DensityByPeriod[period - 1];
-                        Debug.Assert(previousDensity != null, "Already checked in previous iteration of loop.");
-                        basalAreaIntensity = basalAreaRemoved / previousDensity.BasalAreaPerAcre;
+                        Debug.Assert(previousStandDensity != null, "Already checked in previous iteration of loop.");
+                        basalAreaIntensity = basalAreaThinnedPerHectare / previousStandDensity.BasalAreaPerHa;
                     }
                     float thinVolumeScribner = thinVolume.GetScribnerTotal(period); // MBF/ha
-                    Debug.Assert((thinVolumeScribner == 0.0F && basalAreaRemoved == 0.0F) || (thinVolumeScribner > 0.0F && basalAreaRemoved > 0.0F));
+                    Debug.Assert((thinVolumeScribner == 0.0F && basalAreaThinnedPerHectare == 0.0F) || (thinVolumeScribner > 0.0F && basalAreaThinnedPerHectare > 0.0F));
 
-                    OrganonStandDensity? currentDensity = highTrajectory.DensityByPeriod[period];
-                    if (currentDensity == null)
-                    {
-                        throw new ParameterOutOfRangeException(null, "Stand density information is missing for period " + period + ". Did the heuristic perform at least one fully simulated move?");
-                    }
-
-                    float treesPerAcreDecrease = 0.0F;
+                    StandDensity currentStandDensity = highTrajectory.GetStandDensity(period);
+                    float treesPerHectareDecrease = 0.0F;
                     if (period > 0)
                     {
-                        OrganonStandDensity? previousDensity = highTrajectory.DensityByPeriod[period - 1];
-                        Debug.Assert(previousDensity != null, "Already checked in if clause above.");
-                        treesPerAcreDecrease = 1.0F - currentDensity.TreesPerAcre / previousDensity.TreesPerAcre;
+                        Debug.Assert(previousStandDensity != null, "Already checked in if clause above.");
+                        treesPerHectareDecrease = 1.0F - currentStandDensity.TreesPerHa / previousStandDensity.TreesPerHa;
                     }
 
-                    OrganonStand stand = highTrajectory.StandByPeriod[period] ?? throw new NotSupportedException("Stand information missing for period " + period + ".");
                     float quadraticMeanDiameterInCm = stand.GetQuadraticMeanDiameterInCentimeters();
                     float topHeightInM = stand.GetTopHeightInMeters();
                     // 1/(10 in * 2.54 cm/in) = 0.03937008
-                    float reinekeStandDensityIndex = Constant.AcresPerHectare * currentDensity.TreesPerAcre * MathF.Pow(0.03937008F * quadraticMeanDiameterInCm, Constant.ReinekeExponent);
-
-                    float treesPerHectare = Constant.AcresPerHectare * currentDensity.TreesPerAcre;
-                    float basalAreaPerHectare = Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * currentDensity.BasalAreaPerAcre;
-                    float treesPerHectareDecrease = Constant.AcresPerHectare * treesPerAcreDecrease;
+                    float reinekeStandDensityIndex = currentStandDensity.TreesPerHa * MathF.Pow(0.03937008F * quadraticMeanDiameterInCm, Constant.ReinekeExponent);
 
                     // NPV and LEV
+                    // TODO: remove duplication of code in financialScenarios.GetLandExpectationValue() and GetNetPresentValue()
+                    FinancialScenarios financialScenarios = this.Trajectories.FinancialScenarios;
                     CutToLengthHarvest thinFinancialValue = period == 0 ? new() : financialScenarios.GetNetPresentThinningValue(highTrajectory, financialIndex, period);
                     totalThinNetPresentValue += thinFinancialValue.NetPresentValuePerHa;
                     LongLogHarvest regenFinancialValue = financialScenarios.GetNetPresentRegenerationHarvestValue(highTrajectory, financialIndex, period);
@@ -134,11 +115,11 @@ namespace Osu.Cof.Ferm.Cmdlets
                     float liveBiomass = 0.001F * stand.GetLiveBiomass(); // Mg/ha
 
                     writer.WriteLine(linePrefix + "," +
-                                     stand.AgeInYears.ToString(CultureInfo.InvariantCulture) + "," +
-                                     treesPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     highTrajectory.GetEndOfPeriodAge(period).ToString(CultureInfo.InvariantCulture) + "," +
+                                     currentStandDensity.TreesPerHa.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      quadraticMeanDiameterInCm.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      topHeightInM.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     basalAreaPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     currentStandDensity.BasalAreaPerHa.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      liveBiomass.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      snagsAndDownLogs.SnagsPerHectareByPeriod[period].ToString("0.0", CultureInfo.InvariantCulture) + "," +
@@ -147,7 +128,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      standingVolume.GetScribnerTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // MBF/ha
                                      thinVolume.GetCubicTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // m³/ha
                                      thinVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     basalAreaRemoved.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     basalAreaThinnedPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      treesPerHectareDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      periodNetPresentValue.ToString("0", CultureInfo.InvariantCulture) + "," +
@@ -211,6 +192,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                                      regenFinancialValue.Productivity.GrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      regenFinancialValue.Productivity.ProcessorWithGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                                      regenFinancialValue.Productivity.ProcessorWithGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture));
+
+                    previousStandDensity = currentStandDensity;
                 }
 
                 if (writer.BaseStream.Length > maxFileSizeInBytes)

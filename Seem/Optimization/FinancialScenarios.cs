@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm
+namespace Osu.Cof.Ferm.Optimization
 {
     public class FinancialScenarios
     {
@@ -117,6 +117,18 @@ namespace Osu.Cof.Ferm
             return 1.0F / MathF.Pow(1.0F + discountRate, years);
         }
 
+        public float GetLandExpectationValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
+        {
+            float netPresentValue = this.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriod);
+
+            int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
+            float presentToFutureConversionFactor = this.GetAppreciationFactor(financialIndex, rotationLengthInYears);
+            float landExpectationValue = presentToFutureConversionFactor * netPresentValue / (presentToFutureConversionFactor - 1.0F);
+            Debug.Assert(Single.IsNaN(landExpectationValue) == false);
+
+            return landExpectationValue;
+        }
+
         public float GetNetPresentReforestationValue(int financialIndex, float plantingDensityInTreesPerHectare)
         {
             // amoritzed reforestation expenses under 26 USC § 194 https://www.law.cornell.edu/uscode/text/26/194
@@ -221,13 +233,18 @@ namespace Osu.Cof.Ferm
 
                 float regenHarvestTaskCostPerCubicMeter = this.RegenerationSlashCostPerCubicMeter[financialIndex] + this.RegenerationRoadCostPerCubicMeter[financialIndex];
                 longLogHarvest.TaskCostPerHa = regenHarvestTaskCostPerCubicMeter * longLogHarvest.CubicVolumePerHa + this.RegenerationHarvestCostPerHectare[financialIndex];
+
+                float netValuePerHectareAtHarvest = longLogHarvest.PondValue2SawPerHa + longLogHarvest.PondValue3SawPerHa + longLogHarvest.PondValue4SawPerHa - longLogHarvest.MinimumSystemCostPerHa - longLogHarvest.TaskCostPerHa;
+
+                float discountRate = this.DiscountRate[financialIndex];
+                float discountFactor = this.GetDiscountFactor(financialIndex, harvestAgeInYears);
+                longLogHarvest.NetPresentValuePerHa = discountFactor * netValuePerHectareAtHarvest - this.PropertyTaxAndManagementPerHectareYear[financialIndex] * (1.0F - discountFactor) / discountRate; // present value of finite series of annual payments = (1 - (1 + r)^-n) / r
+            }
+            else
+            {
+                longLogHarvest.NetPresentValuePerHa = 0.0F; // presumably, all trees died or were removed in earlier harvests
             }
 
-            float netValuePerHectareAtHarvest = longLogHarvest.PondValue2SawPerHa + longLogHarvest.PondValue3SawPerHa + longLogHarvest.PondValue4SawPerHa - longLogHarvest.MinimumSystemCostPerHa - longLogHarvest.TaskCostPerHa;
-
-            float discountRate = this.DiscountRate[financialIndex];
-            float discountFactor = this.GetDiscountFactor(financialIndex, harvestAgeInYears);
-            longLogHarvest.NetPresentValuePerHa = discountFactor * netValuePerHectareAtHarvest - this.PropertyTaxAndManagementPerHectareYear[financialIndex] * (1.0F - discountFactor) / discountRate; // present value of finite series of annual payments = (1 - (1 + r)^-n) / r
             return longLogHarvest;
         }
 
@@ -305,7 +322,7 @@ namespace Osu.Cof.Ferm
             if (ctlHarvest.CubicVolumePerHa > 0.0F)
             {
                 // volume was harvested so thinning costs are incurred
-                harvestSystems.GetCutToLengthHarvestCost(previousStand, trajectory.IndividualTreeSelectionBySpecies, trajectory.ThinningVolumeBySpecies, thinningPeriod, ctlHarvest);
+                harvestSystems.GetCutToLengthHarvestCost(previousStand, trajectory.TreeSelectionBySpecies, trajectory.ThinningVolumeBySpecies, thinningPeriod, ctlHarvest);
 
                 float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
                 ctlHarvest.TaskCostPerHa += thinningHarvestTaskCostPerCubicMeter * ctlHarvest.CubicVolumePerHa + this.ThinningHarvestCostPerHectare[financialIndex];

@@ -103,8 +103,11 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             float prem = treatments.GetPrem(configuration.Variant, a9, out int yearsSinceMostRecentThin);
-            if (prem == 0.0F)
+            if ((prem == 0.0F) || (a9 * yearsSinceMostRecentThin < -20.0F))
             {
+                // diameter growth multiplier is unity when
+                //   1) prem is zero because the stand hasn't been thinned.
+                //   2) It's been so long since the last thin the a9 exponent term below drops below single precison epsilon.
                 return 1.0F;
             }
 
@@ -184,8 +187,11 @@ namespace Osu.Cof.Ferm.Organon
             }
 
             float prem = treatments.GetPrem(configuration.Variant, b11 / b10, out int yearsSinceMostRecentThin);
-            if (prem == 0.0F)
+            if ((prem == 0.0F) || (b11 * yearsSinceMostRecentThin < -20.0F))
             {
+                // diameter growth multiplier is unity when
+                //   1) prem is zero because the stand hasn't been thinned.
+                //   2) It's been so long since the last thin the b11 exponent term below drops below single precison epsilon.
                 return 1.0F;
             }
 

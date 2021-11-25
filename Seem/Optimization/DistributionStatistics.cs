@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm
+namespace Osu.Cof.Ferm.Optimization
 {
     // get basic statistics from a list of values sampling a distribution
     // Immutable, so could be made a struct if needed.
@@ -17,8 +17,8 @@ namespace Osu.Cof.Ferm
         public float? LowerQuartile{ get; private init; }
         public float? UpperQuartile{ get; private init; }
 
-        public float? FifthPercentile{ get; private init; }
-        public float? NinetyFifthPercentile{ get; private init; }
+        public float? TenthPercentile{ get; private init; }
+        public float? NinetiethPercentile{ get; private init; }
 
         public float? TwoPointFivePercentile{ get; private init; }
         public float? NinetySevenPointFivePercentile{ get; private init; }
@@ -86,34 +86,34 @@ namespace Osu.Cof.Ferm
                     Debug.Assert(this.UpperQuartile <= sampledValues[^1]);
                 }
 
-                if (sampledValues.Count > 19)
+                if (sampledValues.Count > 9)
                 {
-                    bool exactPercentiles = (sampledValues.Count % 20) == 0;
+                    bool exactPercentiles = (sampledValues.Count % 10) == 0;
                     if (exactPercentiles)
                     {
-                        this.FifthPercentile = sampledValues[sampledValues.Count / 20];
-                        this.NinetyFifthPercentile = sampledValues[19 * sampledValues.Count / 20];
+                        this.TenthPercentile = sampledValues[sampledValues.Count / 10];
+                        this.NinetiethPercentile = sampledValues[9 * sampledValues.Count / 10];
                     }
                     else
                     {
-                        float fifthPercentilePosition = 0.05F * sampledValues.Count;
-                        float ceilingIndex = MathF.Ceiling(fifthPercentilePosition);
-                        float floorIndex = MathF.Floor(fifthPercentilePosition);
-                        float ceilingWeight = 1.0F + fifthPercentilePosition - ceilingIndex;
-                        float floorWeight = 1.0F - fifthPercentilePosition + floorIndex;
-                        this.FifthPercentile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
+                        float tenthPercentilePosition = 0.1F * sampledValues.Count;
+                        float ceilingIndex = MathF.Ceiling(tenthPercentilePosition);
+                        float floorIndex = MathF.Floor(tenthPercentilePosition);
+                        float ceilingWeight = 1.0F + tenthPercentilePosition - ceilingIndex;
+                        float floorWeight = 1.0F - tenthPercentilePosition + floorIndex;
+                        this.TenthPercentile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
 
-                        float ninetyFifthPercentilePosition = 0.95F * sampledValues.Count;
-                        ceilingIndex = MathF.Ceiling(ninetyFifthPercentilePosition);
-                        floorIndex = MathF.Floor(ninetyFifthPercentilePosition);
-                        ceilingWeight = 1.0F + ninetyFifthPercentilePosition - ceilingIndex;
-                        floorWeight = 1.0F - ninetyFifthPercentilePosition + floorIndex;
-                        this.NinetyFifthPercentile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
+                        float ninetiethPercentilePosition = 0.9F * sampledValues.Count;
+                        ceilingIndex = MathF.Ceiling(ninetiethPercentilePosition);
+                        floorIndex = MathF.Floor(ninetiethPercentilePosition);
+                        ceilingWeight = 1.0F + ninetiethPercentilePosition - ceilingIndex;
+                        floorWeight = 1.0F - ninetiethPercentilePosition + floorIndex;
+                        this.NinetiethPercentile = floorWeight * sampledValues[(int)floorIndex] + ceilingWeight * sampledValues[(int)ceilingIndex];
 
-                        Debug.Assert(this.FifthPercentile >= sampledValues[0]);
-                        Debug.Assert(this.FifthPercentile <= Median);
-                        Debug.Assert(this.NinetyFifthPercentile >= Median);
-                        Debug.Assert(this.NinetyFifthPercentile <= sampledValues[^1]);
+                        Debug.Assert(this.TenthPercentile >= sampledValues[0]);
+                        Debug.Assert(this.TenthPercentile <= Median);
+                        Debug.Assert(this.NinetiethPercentile >= Median);
+                        Debug.Assert(this.NinetiethPercentile <= sampledValues[^1]);
                     }
 
                     if (sampledValues.Count > 39)

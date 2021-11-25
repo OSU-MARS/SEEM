@@ -42,7 +42,7 @@ namespace Osu.Cof.Ferm.Heuristics
                    prefix + "Thin3above," + prefix + "Thin3proportional," + prefix + "Thin3below";
         }
 
-        public override string GetCsvValues(HeuristicResultPosition position, int moveNumber)
+        public override string GetCsvValues(StandTrajectoryCoordinate coordinate, int moveNumber)
         {
             return this.FromAbovePercentageByMove1[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
                    this.ProportionalPercentageByMove1[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +

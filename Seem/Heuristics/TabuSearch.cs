@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -200,7 +201,7 @@ namespace Osu.Cof.Ferm.Heuristics
             };
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
+        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.EscapeAfter < 1)
             {
@@ -235,10 +236,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
-            HeuristicPerformanceCounters perfCounters = new();
+            PrescriptionPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float highestFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(coordinate, trajectories);
+            float highestFinancialValue = this.EvaluateInitialSelection(coordinate, this.Iterations, perfCounters);
 
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
             int[,] remainingTabuTenures = new int[initialTreeRecordCount, thinningPeriods.Max() + 1];
@@ -320,7 +321,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         // find objective function for this tree in this period
                         candidateTrajectory.SetTreeSelection(treeIndex, thinningPeriod);
                         perfCounters.GrowthModelTimesteps += candidateTrajectory.Simulate();
-                        float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
+                        float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, coordinate.FinancialIndex);
 
                         if (candidateFinancialValue > highestUnrestrictedFinancialValue)
                         {
@@ -379,7 +380,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     this.CurrentTrajectory.CopyTreeGrowthFrom(highTrajectoryInIteration);
 
                     remainingTabuTenures[bestTreeIndex, bestHarvestPeriod] = this.GetTenure(tenureScalingFactor);
-                    this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
+                    this.CopyTreeGrowthToBestTrajectory(coordinate, this.CurrentTrajectory);
 
                     highestFinancialValueSinceLastEscape = highestUnrestrictedFinancialValue;
                     iterationsSinceFinancialValueIncreasedOrEscape = 0;
@@ -410,7 +411,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     }
                 }
 
-                this.FinancialValue.TryAddMove(acceptedFinancialValue, highestNonTabuFinancialValue);
+                this.FinancialValue.TryAddMove(coordinate, acceptedFinancialValue, highestNonTabuFinancialValue);
 
                 //if (++jumpBase >= this.Jump)
                 //{

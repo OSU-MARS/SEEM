@@ -1,4 +1,6 @@
 ﻿using Osu.Cof.Ferm.Heuristics;
+using Osu.Cof.Ferm.Optimization;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +12,7 @@ using System.Text;
 namespace Osu.Cof.Ferm.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Objective")]
-    public class WriteObjective : WriteHeuristicResultsCmdlet
+    public class WriteObjective : WriteTrajectoriesCmdlet
     {
         [Parameter(HelpMessage = "Number of iterations between CSV file lines. Default is 1, which logs objective function values for every move.")]
         [ValidateRange(1, Int32.MaxValue)]
@@ -24,13 +26,13 @@ namespace Osu.Cof.Ferm.Cmdlets
 
         protected override void ProcessRecord()
         {
-            if (this.Results == null)
+            if (this.Trajectories == null)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Results), "-" + nameof(this.Results) + " must be specified.");
+                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " must be specified.");
             }
-            if (this.Results.PositionsEvaluated.Count < 1)
+            if (this.Trajectories.CoordinatesEvaluated.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Results));
+                throw new ParameterOutOfRangeException(nameof(this.Trajectories));
             }
 
             using StreamWriter writer = this.GetWriter();
@@ -38,26 +40,26 @@ namespace Osu.Cof.Ferm.Cmdlets
             // for now, perform no reduction when Object.ReferenceEquals(lowSolution, highSolution) is true
             if (this.ShouldWriteHeader())
             {
-                HeuristicResultPosition position = this.Results.PositionsEvaluated[0];
-                HeuristicSolutionPool solution = this.Results[position].Pool;
-                if ((solution.High == null) || (solution.Low == null))
+                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[0];
+                SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
+                if ((prescriptions.High.Heuristic == null) || (prescriptions.Low.Heuristic == null))
                 {
-                    throw new NotSupportedException("Cannot generate header because first result is missing a high solution or a low solution.");
+                    throw new NotSupportedException("Cannot generate header because first result is missing a high or low heuristic.");
                 }
-                StringBuilder line = new(WriteCmdlet.GetHeuristicAndPositionCsvHeader(this.Results) + ",move,count");
+                StringBuilder line = new(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories) + ",move,count");
 
                 string lowMoveLogHeader = "lowMoveLog";
-                HeuristicMoveLog? lowMoveLog = solution.Low!.GetMoveLog();
+                HeuristicMoveLog? lowMoveLog = prescriptions.Low.Heuristic.GetMoveLog();
                 if (lowMoveLog != null)
                 {
                     lowMoveLogHeader = lowMoveLog.GetCsvHeader("low");
                 }
                 line.Append("," + lowMoveLogHeader);
 
-                line.Append(",low,lowCandidate,min,percentile2.5,percentile5,lowerQuartile,median,mean,upperQuartile,percentile95,percentile97.5,max");
+                line.Append(",low,lowCandidate,min,percentile2.5,percentile10,lowerQuartile,median,mean,upperQuartile,percentile90,percentile97.5,max");
 
                 string highMoveLogHeader = "highMoveLog";
-                HeuristicMoveLog? highMoveLog = solution.High!.GetMoveLog();
+                HeuristicMoveLog? highMoveLog = prescriptions.High.Heuristic.GetMoveLog();
                 if (highMoveLog != null)
                 {
                     highMoveLogHeader = highMoveLog.GetCsvHeader("high");
@@ -69,48 +71,42 @@ namespace Osu.Cof.Ferm.Cmdlets
             }
 
             // sort each discount rate's runs by decreasing objective function value  
-            List<List<(float, HeuristicResultPosition)>> solutionsByFinancialIndexAndValue = new();
-            for (int positionIndex = 0; positionIndex < this.Results.PositionsEvaluated.Count; ++positionIndex)
+            List<List<(float, StandTrajectoryCoordinate)>> solutionsByFinancialIndexAndValue = new();
+            for (int positionIndex = 0; positionIndex < this.Trajectories.CoordinatesEvaluated.Count; ++positionIndex)
             {
-                HeuristicResultPosition position = this.Results.PositionsEvaluated[positionIndex];
-                HeuristicResult result = this.Results[position];
-                HeuristicObjectiveDistribution distribution = result.Distribution;
-                int maxFinancialIndex = position.FinancialIndex;
+                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[positionIndex];
+                StandTrajectoryArrayElement element = this.Trajectories[coordinate];
+                OptimizationObjectiveDistribution distribution = element.Distribution;
+                int maxFinancialIndex = coordinate.FinancialIndex;
                 while (maxFinancialIndex >= solutionsByFinancialIndexAndValue.Count)
                 {
                     solutionsByFinancialIndexAndValue.Add(new());
                 }
 
-                Heuristic? highHeuristic = result.Pool.High;
-                if (highHeuristic == null)
-                {
-                    throw new NotSupportedException("Result at position " + positionIndex + " is missing a high solution.");
-                }
-
-                List<(float, HeuristicResultPosition)> runsForDiscountRate = solutionsByFinancialIndexAndValue[maxFinancialIndex];
-                runsForDiscountRate.Add((highHeuristic.FinancialValue.GetHighestValueWithDefaulting(position.RotationIndex, maxFinancialIndex), position));
+                List<(float, StandTrajectoryCoordinate)> runsForDiscountRate = solutionsByFinancialIndexAndValue[maxFinancialIndex];
+                runsForDiscountRate.Add((element.Pool.High.FinancialValue, coordinate));
             }
             for (int financialIndex = 0; financialIndex < solutionsByFinancialIndexAndValue.Count; ++financialIndex)
             {
-                List<(float Objective, HeuristicResultPosition)> runsForDiscountRate = solutionsByFinancialIndexAndValue[financialIndex];
+                List<(float Objective, StandTrajectoryCoordinate)> runsForDiscountRate = solutionsByFinancialIndexAndValue[financialIndex];
                 runsForDiscountRate.Sort((run1, run2) => run2.Objective.CompareTo(run1.Objective)); // sort descending
             }
 
             // list runs in declining order of objective function value for logging
             // Runs are listed in groups with each discount rate having the ability to be represented within each group. This controls for reduction in
             // land expectation values with increasing discount rate, enabling preferentiall logging of the move histories for the most desirable runs.
-            List<HeuristicResultPosition> prioritizedResults = new();
+            List<StandTrajectoryCoordinate> prioritizedCoordinates = new();
             int[] resultIndicesByFinancialScenario = new int[solutionsByFinancialIndexAndValue.Count];
             for (bool atLeastOneRunAddedByInnerLoop = true; atLeastOneRunAddedByInnerLoop; )
             {
                 atLeastOneRunAddedByInnerLoop = false;
                 for (int financialIndex = 0; financialIndex < solutionsByFinancialIndexAndValue.Count; ++financialIndex)
                 {
-                    List<(float Objective, HeuristicResultPosition Position)> runsForScenario = solutionsByFinancialIndexAndValue[financialIndex];
+                    List<(float Objective, StandTrajectoryCoordinate Coordinate)> runsForScenario = solutionsByFinancialIndexAndValue[financialIndex];
                     int resultIndexForScenario = resultIndicesByFinancialScenario[financialIndex];
                     if (resultIndexForScenario < runsForScenario.Count)
                     {
-                        prioritizedResults.Add(runsForScenario[resultIndexForScenario].Position);
+                        prioritizedCoordinates.Add(runsForScenario[resultIndexForScenario].Coordinate);
                         resultIndicesByFinancialScenario[financialIndex] = ++resultIndexForScenario;
                         atLeastOneRunAddedByInnerLoop = true;
                     }
@@ -119,30 +115,30 @@ namespace Osu.Cof.Ferm.Cmdlets
 
             // log runs in declining priority order until either all runs are logged or the file size limit is reached
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            for (int positionIndex = 0; positionIndex < prioritizedResults.Count; ++positionIndex)
+            for (int coordinateIndex = 0; coordinateIndex < prioritizedCoordinates.Count; ++coordinateIndex)
             {
                 // since high and low solutions are from the same position, they use the same heuristic parameters
-                HeuristicResultPosition position = prioritizedResults[positionIndex];
-                HeuristicResult result = this.Results[position];
-                string heuristicAndPosition = WriteCmdlet.GetHeuristicAndPositionCsvValues(result.Pool, this.Results, position);
-                Heuristic highHeuristic = result.Pool.High!; // checked for null in GetHeuristicAndPositionCsvValues()
-                Heuristic lowHeuristic = result.Pool.Low!; // also checked for null
+                StandTrajectoryCoordinate coordinate = prioritizedCoordinates[coordinateIndex];
+                StandTrajectoryArrayElement element = this.Trajectories[coordinate];
+                string linePrefix = this.GetPositionPrefix(coordinate);
+                Heuristic highHeuristic = element.Pool.High.Heuristic!; // checked for null in GetHeuristicAndPositionCsvValues()
+                Heuristic lowHeuristic = element.Pool.Low.Heuristic ?? throw new InvalidOperationException("Evaluated coordinate " + coordinateIndex + " does not have a low heuristic.");
 
                 if (highHeuristic.RunParameters.LogOnlyImprovingMoves != lowHeuristic.RunParameters.LogOnlyImprovingMoves)
                 {
                     throw new NotSupportedException("High and low heuristic move logs are mismatched. They must either both contain all moves or both contain only improving moves.");
                 }
 
-                IList<float> acceptedFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
-                IList<float> acceptedFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(position);
-                IList<float> candidateFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
-                IList<float> candidateFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetCandidateValuesWithDefaulting(position);
+                IList<float> acceptedFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(coordinate);
+                IList<float> acceptedFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(coordinate);
+                IList<float> candidateFinancialValueByMoveHigh = highHeuristic.FinancialValue.GetCandidateValuesWithDefaulting(coordinate);
+                IList<float> candidateFinancialValueByMoveLow = lowHeuristic.FinancialValue.GetCandidateValuesWithDefaulting(coordinate);
                 if ((acceptedFinancialValueByMoveLow.Count != candidateFinancialValueByMoveLow.Count) ||
                     (acceptedFinancialValueByMoveHigh.Count != candidateFinancialValueByMoveHigh.Count))
                 {
                     throw new NotSupportedException("Mismatch between accepted and candidate move lengths of high or low heuristic.");
                 }
-                int maximumMoveInFinancialDistribution = result.Distribution.GetMaximumMoveIndex();
+                int maximumMoveInFinancialDistribution = element.Distribution.GetMaximumMoveIndex();
                 int maximumMoveIndex = Math.Max(Math.Max(acceptedFinancialValueByMoveLow.Count, acceptedFinancialValueByMoveHigh.Count), maximumMoveInFinancialDistribution);
 
                 HeuristicMoveLog? highMoveLog = highHeuristic.GetMoveLog();
@@ -153,8 +149,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int lowMoveNumber = moveIndex;
                     if (lowMoveLog != null)
                     {
-                        lowMoveNumber = lowMoveLog.GetMoveNumberWithDefaulting(position, moveIndex);
-                        lowMove = lowMoveLog.GetCsvValues(position, lowMoveNumber);
+                        lowMoveNumber = lowMoveLog.GetMoveNumberWithDefaulting(coordinate, moveIndex);
+                        lowMove = lowMoveLog.GetCsvValues(coordinate, lowMoveNumber);
                     }
                     string? lowObjectiveFunction = null;
                     if (acceptedFinancialValueByMoveLow.Count > moveIndex)
@@ -180,16 +176,16 @@ namespace Osu.Cof.Ferm.Cmdlets
                     string? maxFinancialValue = null;
                     if (maximumMoveInFinancialDistribution > moveIndex)
                     {
-                        DistributionStatistics financialStatistics = result.Distribution.GetFinancialStatisticsForMove(moveIndex);
+                        DistributionStatistics financialStatistics = element.Distribution.GetFinancialStatisticsForMove(moveIndex);
                         runsWithMoveAtIndex = financialStatistics.Count.ToString(CultureInfo.InvariantCulture);
                         minFinancialValue = financialStatistics.Minimum.ToString(CultureInfo.InvariantCulture);
                         if (financialStatistics.TwoPointFivePercentile.HasValue)
                         {
                             twoPointFivePercentileFinancialValue = financialStatistics.TwoPointFivePercentile.Value.ToString(CultureInfo.InvariantCulture);
                         }
-                        if (financialStatistics.FifthPercentile.HasValue)
+                        if (financialStatistics.TenthPercentile.HasValue)
                         {
-                            fifthPercentileFinancialValue = financialStatistics.FifthPercentile.Value.ToString(CultureInfo.InvariantCulture);
+                            fifthPercentileFinancialValue = financialStatistics.TenthPercentile.Value.ToString(CultureInfo.InvariantCulture);
                         }
                         if (financialStatistics.LowerQuartile.HasValue)
                         {
@@ -202,9 +198,9 @@ namespace Osu.Cof.Ferm.Cmdlets
                         {
                             upperQuartileFinancialValue = financialStatistics.UpperQuartile.Value.ToString(CultureInfo.InvariantCulture);
                         }
-                        if (financialStatistics.NinetyFifthPercentile.HasValue)
+                        if (financialStatistics.NinetiethPercentile.HasValue)
                         {
-                            ninetyFifthPercentileFinancialValue = financialStatistics.NinetyFifthPercentile.Value.ToString(CultureInfo.InvariantCulture);
+                            ninetyFifthPercentileFinancialValue = financialStatistics.NinetiethPercentile.Value.ToString(CultureInfo.InvariantCulture);
                         }
                         if (financialStatistics.NinetySevenPointFivePercentile.HasValue)
                         {
@@ -220,8 +216,8 @@ namespace Osu.Cof.Ferm.Cmdlets
                     int highMoveNumber = moveIndex;
                     if (highMoveLog != null)
                     {
-                        highMoveNumber = highMoveLog.GetMoveNumberWithDefaulting(position, moveIndex);
-                        highMove = highMoveLog!.GetCsvValues(position, highMoveNumber);
+                        highMoveNumber = highMoveLog.GetMoveNumberWithDefaulting(coordinate, moveIndex);
+                        highMove = highMoveLog!.GetCsvValues(coordinate, highMoveNumber);
                     }
                     string? highFinancialValue = null;
                     if (acceptedFinancialValueByMoveHigh.Count > moveIndex)
@@ -248,7 +244,7 @@ namespace Osu.Cof.Ferm.Cmdlets
                         moveNumber = moveIndex.ToString(CultureInfo.InvariantCulture);
                     }
 
-                    writer.WriteLine(heuristicAndPosition + "," +
+                    writer.WriteLine(linePrefix + "," +
                                      moveNumber + "," +
                                      runsWithMoveAtIndex + "," +
                                      lowMove + "," +

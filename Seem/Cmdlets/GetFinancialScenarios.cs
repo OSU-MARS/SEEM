@@ -1,4 +1,5 @@
-﻿using System.Management.Automation;
+﻿using Osu.Cof.Ferm.Optimization;
+using System.Management.Automation;
 
 namespace Osu.Cof.Ferm.Cmdlets
 {

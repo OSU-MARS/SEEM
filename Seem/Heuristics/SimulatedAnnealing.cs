@@ -1,5 +1,6 @@
 ﻿using Osu.Cof.Ferm.Extensions;
 using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -43,7 +44,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "SimulatedAnnealing";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
+        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if ((this.Alpha <= 0.0) || (this.Alpha >= 1.0))
             {
@@ -94,10 +95,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
-            HeuristicPerformanceCounters perfCounters = new();
+            PrescriptionPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float acceptedFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(coordinate, trajectories);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(coordinate, this.Iterations, perfCounters);
 
             int iterationsSinceMoveTypeOrObjectiveChange = 0;
             int iterationsSinceReheatOrFinancialValueIncreased = 0;
@@ -155,7 +156,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++iterationsSinceMoveTypeOrObjectiveChange;
                     ++iterationsSinceReheatOrFinancialValueIncreased;
 
-                    float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
+                    float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, coordinate.FinancialIndex);
 
                     bool acceptMove = candidateFinancialValue > acceptedFinancialValue;
                     // require at least one improving move be accepted to set moving average before accepting disimproving moves
@@ -198,7 +199,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                         if (acceptedFinancialValue > this.FinancialValue.GetHighestValue())
                         {
-                            this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
+                            this.CopyTreeGrowthToBestTrajectory(coordinate, this.CurrentTrajectory);
                             iterationsSinceReheatOrFinancialValueIncreased = 0;
                         }
 
@@ -223,7 +224,7 @@ namespace Osu.Cof.Ferm.Heuristics
                         ++perfCounters.MovesRejected;
                     }
 
-                    this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                    this.FinancialValue.TryAddMove(coordinate, acceptedFinancialValue, candidateFinancialValue);
                     this.MoveLog.TryAddMove(firstTreeIndex);
 
                     if (iterationsSinceMoveTypeOrObjectiveChange > this.ChangeToExchangeAfter)

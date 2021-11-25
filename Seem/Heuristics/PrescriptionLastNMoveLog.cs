@@ -96,7 +96,7 @@ namespace Osu.Cof.Ferm.Heuristics
                    prefix + "Thin3above," + prefix + "Thin3proportional," + prefix + "Thin3below";
         }
 
-        public override string GetCsvValues(HeuristicResultPosition position, int moveNumber)
+        public override string GetCsvValues(StandTrajectoryCoordinate coordinate, int moveNumber)
         {
             // apply defaulting
             // If this move log instance is specific to a single rotation and financial scenario then the provided position is ignored.
@@ -104,8 +104,8 @@ namespace Osu.Cof.Ferm.Heuristics
             int financialIndex = 0;
             if (this.setIndexByRotationAndRate.Length > 1)
             {
-                rotationIndex = position.RotationIndex;
-                financialIndex = position.FinancialIndex;
+                rotationIndex = coordinate.RotationIndex;
+                financialIndex = coordinate.FinancialIndex;
             }
 
             for (int fifoIndex = 0; fifoIndex < this.fifoLength; ++fifoIndex)
@@ -137,22 +137,19 @@ namespace Osu.Cof.Ferm.Heuristics
             return ",,,,,,,,";
         }
 
-        public override int GetMoveNumberWithDefaulting(HeuristicResultPosition position, int moveIndex)
+        public override int GetMoveNumberWithDefaulting(StandTrajectoryCoordinate coordinate, int moveIndex)
         {
             if (this.moveNumberByRotationAndRate.Length == 1)
             {
-                return this.moveNumberByRotationAndRate[Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex][moveIndex];
+                return this.moveNumberByRotationAndRate[Constant.HeuristicDefault.CoordinateIndex, Constant.HeuristicDefault.CoordinateIndex][moveIndex];
             }
-            return this.moveNumberByRotationAndRate[position.RotationIndex, position.FinancialIndex][moveIndex];
+            return this.moveNumberByRotationAndRate[coordinate.RotationIndex, coordinate.FinancialIndex][moveIndex];
         }
 
-        public bool TryAddMove(int moveNumber, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        public bool TryAddMove(StandTrajectoryCoordinate coordinate, int moveNumber, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
         {
-            return this.TryAddMove(Constant.HeuristicDefault.RotationIndex, Constant.HeuristicDefault.FinancialIndex, moveNumber, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
-        }
-
-        public bool TryAddMove(int rotationIndex, int financialIndex, int moveNumber, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
-        {
+            int rotationIndex = coordinate.RotationIndex;
+            int financialIndex = coordinate.FinancialIndex;
             List<int> moveNumbers = this.moveNumberByRotationAndRate[rotationIndex, financialIndex];
             if (moveNumbers.Count > this.MoveCapacity)
             {

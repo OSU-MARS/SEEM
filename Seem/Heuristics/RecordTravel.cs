@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,7 +40,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "RecordTravel";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
+        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if ((this.Alpha < 0.0F) || (this.Alpha >  1.0F))
             {
@@ -86,10 +87,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
-            HeuristicPerformanceCounters perfCounters = new();
+            PrescriptionPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float acceptedFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(coordinate, trajectories);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(coordinate, this.Iterations, perfCounters);
 
             //float harvestPeriodScalingFactor = ((float)this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / (float)byte.MaxValue;
             int iterationsSinceBestObjectiveImproved = 0;
@@ -140,7 +141,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++iterationsSinceBestObjectiveImproved;
                 ++iterationsSinceFinancialValueIncreaseOrReheat;
 
-                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
+                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, coordinate.FinancialIndex);
                 float highestFinancialValue = this.FinancialValue.GetHighestValue();
                 float minimumAcceptableFinancialValue = highestFinancialValue - deviation;
                 if ((candidateFinancialValue > minimumAcceptableFinancialValue) || (candidateFinancialValue > previousObjectiveFunction))
@@ -153,7 +154,7 @@ namespace Osu.Cof.Ferm.Heuristics
 
                     if (acceptedFinancialValue > highestFinancialValue)
                     {
-                        this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
+                        this.CopyTreeGrowthToBestTrajectory(coordinate, this.CurrentTrajectory);
                         iterationsSinceBestObjectiveImproved = 0;
                     }
                 }
@@ -175,7 +176,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                this.FinancialValue.TryAddMove(coordinate, acceptedFinancialValue, candidateFinancialValue);
                 this.MoveLog.TryAddMove(firstTreeIndex);
 
                 if (iterationsSinceBestObjectiveImproved > this.ChangeToExchangeAfter)

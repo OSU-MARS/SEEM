@@ -1,4 +1,5 @@
 ﻿using Osu.Cof.Ferm.Organon;
+using Osu.Cof.Ferm.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,7 +38,7 @@ namespace Osu.Cof.Ferm.Heuristics
             return "Deluge";
         }
 
-        public override HeuristicPerformanceCounters Run(HeuristicResultPosition position, HeuristicResults results)
+        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.ChangeToExchangeAfter < 0)
             {
@@ -73,10 +74,10 @@ namespace Osu.Cof.Ferm.Heuristics
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
-            HeuristicPerformanceCounters perfCounters = new();
+            PrescriptionPerformanceCounters perfCounters = new();
 
-            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(position, results);
-            float acceptedFinancialValue = this.EvaluateInitialSelection(position, this.Iterations, perfCounters);
+            perfCounters.TreesRandomizedInConstruction += this.ConstructTreeSelection(coordinate, trajectories);
+            float acceptedFinancialValue = this.EvaluateInitialSelection(coordinate, this.Iterations, perfCounters);
             if (this.RainRate.HasValue == false)
             {
                 this.RainRate = (this.FinalMultiplier - this.IntitialMultiplier) * acceptedFinancialValue / this.Iterations;
@@ -139,7 +140,7 @@ namespace Osu.Cof.Ferm.Heuristics
                 ++iterationsSinceFinancialValueIncreaseOrMoveTypeChanged;
                 ++iterationsSinceObjectiveImprovedOrWaterLevelLowered;
 
-                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, position.FinancialIndex);
+                float candidateFinancialValue = this.GetFinancialValue(candidateTrajectory, coordinate.FinancialIndex);
                 if ((candidateFinancialValue > waterLevel) || (candidateFinancialValue > hillClimbingThreshold))
                 {
                     // accept move
@@ -153,7 +154,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     if (candidateFinancialValue > highestFinancialValue)
                     {
                         highestFinancialValue = candidateFinancialValue;
-                        this.CopyTreeGrowthToBestTrajectory(this.CurrentTrajectory);
+                        this.CopyTreeGrowthToBestTrajectory(coordinate, this.CurrentTrajectory);
 
                         iterationsSinceFinancialValueIncrease = 0;
                     }
@@ -176,7 +177,7 @@ namespace Osu.Cof.Ferm.Heuristics
                     ++perfCounters.MovesRejected;
                 }
 
-                this.FinancialValue.TryAddMove(acceptedFinancialValue, candidateFinancialValue);
+                this.FinancialValue.TryAddMove(coordinate, acceptedFinancialValue, candidateFinancialValue);
                 this.MoveLog.TryAddMove(firstTreeIndex);
 
                 if (iterationsSinceFinancialValueIncrease > this.StopAfter)

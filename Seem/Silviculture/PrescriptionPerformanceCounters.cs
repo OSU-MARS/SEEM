@@ -1,10 +1,10 @@
 ﻿using System;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Osu.Cof.Ferm.Silviculture
 {
-    public class HeuristicPerformanceCounters
+    public class PrescriptionPerformanceCounters
     {
-        public static readonly HeuristicPerformanceCounters Zero = new();
+        public static readonly PrescriptionPerformanceCounters Zero = new();
 
         public TimeSpan Duration { get; set; }
         // an i7-3770 can easily exceed 2^31 steps per a day with Organon
@@ -15,7 +15,7 @@ namespace Osu.Cof.Ferm.Heuristics
         public int MovesRejected { get; set; }
         public int TreesRandomizedInConstruction { get; set; }
 
-        public HeuristicPerformanceCounters()
+        public PrescriptionPerformanceCounters()
         {
             this.Duration = TimeSpan.Zero;
             this.GrowthModelTimesteps = 0;
@@ -24,9 +24,9 @@ namespace Osu.Cof.Ferm.Heuristics
             this.TreesRandomizedInConstruction = 0;
         }
 
-        public static HeuristicPerformanceCounters operator +(HeuristicPerformanceCounters counters1, HeuristicPerformanceCounters counters2)
+        public static PrescriptionPerformanceCounters operator +(PrescriptionPerformanceCounters counters1, PrescriptionPerformanceCounters counters2)
         {
-            return new HeuristicPerformanceCounters()
+            return new PrescriptionPerformanceCounters()
             {
                 Duration = counters1.Duration + counters2.Duration,
                 GrowthModelTimesteps = counters1.GrowthModelTimesteps + counters2.GrowthModelTimesteps,
