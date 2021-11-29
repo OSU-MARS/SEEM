@@ -358,7 +358,7 @@ namespace Mars.Seem.Heuristics
         // for now, if a tree is too large to be eligible for any thin checking it is still considered a randomization
         protected void RandomizeTreeSelection(int uncompactedTreeIndex, IList<int> thinningPeriods, float finalHarvestProbability)
         {
-            int harvestPeriod = Constant.NoHarvestPeriod;
+            int harvestPeriod = Constant.RegenerationHarvestPeriod;
             float harvestProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
             if (harvestProbability < finalHarvestProbability)
             {

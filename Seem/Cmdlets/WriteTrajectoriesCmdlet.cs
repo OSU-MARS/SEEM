@@ -74,7 +74,6 @@ namespace Mars.Seem.Cmdlets
             linePrefix = this.GetPositionPrefix(coordinate);
 
             SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
-
             StandTrajectory? highTrajectory = prescriptions.High.Trajectory;
             if (highTrajectory == null)
             {
@@ -101,6 +100,7 @@ namespace Mars.Seem.Cmdlets
             return this.Trajectories.CoordinatesEvaluated.Count;
         }
 
+        [MemberNotNull(nameof(WriteTrajectoriesCmdlet.Trajectories))]
         protected void ValidateParameters()
         {
             if (this.Trajectories == null)

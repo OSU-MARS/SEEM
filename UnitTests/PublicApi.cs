@@ -168,15 +168,15 @@ namespace Mars.Seem.Test
             int treesThinnedByPrescription = 0;
             for (int treeIndex = 0; treeIndex < heroTreeSelection.Count; ++treeIndex)
             {
-                if (firstCircularTreeSelection[treeIndex] != Constant.NoHarvestPeriod)
+                if (firstCircularTreeSelection[treeIndex] != Constant.RegenerationHarvestPeriod)
                 {
                     ++treesThinnedByFirstCircular;
                 }
-                if (heroTreeSelection[treeIndex] != Constant.NoHarvestPeriod)
+                if (heroTreeSelection[treeIndex] != Constant.RegenerationHarvestPeriod)
                 {
                     ++treesThinnedByHero;
                 }
-                if (prescriptionTreeSelection[treeIndex] != Constant.NoHarvestPeriod)
+                if (prescriptionTreeSelection[treeIndex] != Constant.RegenerationHarvestPeriod)
                 {
                     ++treesThinnedByPrescription;
                 }
@@ -911,13 +911,13 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(bestTreeSelection.Count == currentTreeSelection.Count);
                 for (int treeIndex = 0; treeIndex < bestTreeSelection.Count; ++treeIndex)
                 {
-                    Assert.IsTrue((bestTreeSelection[treeIndex] == Constant.NoHarvestPeriod) || (bestTreeSelection[treeIndex] == firstThinningPeriod));
-                    Assert.IsTrue((currentTreeSelection[treeIndex] == Constant.NoHarvestPeriod) || (currentTreeSelection[treeIndex] == firstThinningPeriod));
+                    Assert.IsTrue((bestTreeSelection[treeIndex] == Constant.RegenerationHarvestPeriod) || (bestTreeSelection[treeIndex] == firstThinningPeriod));
+                    Assert.IsTrue((currentTreeSelection[treeIndex] == Constant.RegenerationHarvestPeriod) || (currentTreeSelection[treeIndex] == firstThinningPeriod));
                 }
             }
 
             // check volumes
-            Assert.IsTrue(firstThinningPeriod != Constant.NoHarvestPeriod);
+            Assert.IsTrue(firstThinningPeriod != Constant.RegenerationHarvestPeriod);
             bestTrajectory.GetMerchantableVolumes(out StandMerchantableVolume bestStandingVolume, out StandMerchantableVolume bestHarvestedVolume);
             heuristic.CurrentTrajectory.GetMerchantableVolumes(out StandMerchantableVolume currentStandingVolume, out StandMerchantableVolume currentHarvestedVolume);
             CutToLengthHarvest bestThinNpv = new();
@@ -1148,7 +1148,7 @@ namespace Mars.Seem.Test
             Assert.IsTrue(trajectory.GetSecondThinPeriod() == expectedTrajectory.SecondThinPeriod);
 
             IList<int> thinningPeriods = trajectory.Treatments.GetHarvestPeriods();
-            Assert.IsTrue(thinningPeriods[^1] == Constant.NoHarvestPeriod);
+            Assert.IsTrue(thinningPeriods[^1] == Constant.RegenerationHarvestPeriod);
             if (expectedTrajectory.FirstThinPeriod != Constant.NoThinPeriod)
             {
                 Assert.IsTrue(thinningPeriods[0] == expectedTrajectory.FirstThinPeriod);

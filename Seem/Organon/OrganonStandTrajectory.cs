@@ -37,7 +37,7 @@ namespace Mars.Seem.Organon
             this.PeriodZeroAgeInYears = stand.AgeInYears;
 
             this.DensityByPeriod[0] = new OrganonStandDensity(organonConfiguration.Variant, stand);
-            Debug.Assert(Constant.NoHarvestPeriod == 0, "Tree selection initialization assumes .");
+            Debug.Assert(Constant.RegenerationHarvestPeriod == 0, "Tree selection initialization assumes .");
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 FiaCode species = treesOfSpecies.Species;
@@ -354,7 +354,7 @@ namespace Mars.Seem.Organon
                                 treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] = 0.0F;
                                 atLeastOneTreeRemoved = true;
                             }
-                            if ((treeSelection == Constant.NoHarvestPeriod) || (treeSelection >= periodIndex))
+                            if ((treeSelection == Constant.RegenerationHarvestPeriod) || (treeSelection >= periodIndex))
                             {
                                 // if tree is retained up to this period it's present in the current, compacted tree list and a compacted index increment 
                                 // is needed

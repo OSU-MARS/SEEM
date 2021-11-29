@@ -151,7 +151,7 @@ namespace Mars.Seem.Cmdlets
                         string? highRegenCrownRatio = null;
                         string? highRegenExpansionFactorPerHa = null;
                         string? highRegenCubicM3 = null;
-                        bool isThinned = highTreeSelection[uncompactedTreeIndex] != Constant.NoHarvestPeriod;
+                        bool isThinned = highTreeSelection[uncompactedTreeIndex] != Constant.RegenerationHarvestPeriod;
                         if (isThinned == false)
                         {
                             Debug.Assert(highTreesAtRegen.Tag[regenCompactedTreeIndex] == highTreesBeforeFirstThin.Tag[uncompactedTreeIndex]);

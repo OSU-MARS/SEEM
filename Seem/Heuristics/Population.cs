@@ -106,7 +106,7 @@ namespace Mars.Seem.Heuristics
                         int selectionIndex = selectionProbabilityIndexByTree[treeIndex];
                         if (selectionIndex >= 0) // diameter class of unused capacity is set to -1
                         {
-                            int thinningPeriod = Constant.NoHarvestPeriod;
+                            int thinningPeriod = Constant.RegenerationHarvestPeriod;
                             float probability = this.Pseudorandom.GetPseudorandomByteAsProbability();
                             float selectionProbability = selectionProbabilityByIndex[selectionIndex];
                             if (probability < selectionProbability)

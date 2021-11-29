@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Management.Automation;
 
 namespace Mars.Seem.Cmdlets
@@ -12,7 +13,10 @@ namespace Mars.Seem.Cmdlets
     [Cmdlet(VerbsCommunications.Write, "MerchantableLogs")]
     public class WriteMerchantableLogs : WriteStandTrajectory
     {
-        [Parameter]
+        [Parameter(HelpMessage = "Write logs only for trees which are eligible for harvest based on the stand's thinning prescription rather than for all trees at all model timesteps.")]
+        public SwitchParameter Harvestable { get; set; }
+
+        [Parameter(HelpMessage = "Write a histogram of log sizes across trees rather than logs for each individual tree. Histogram bins with zero counts are omitted to reduce file size.")]
         public SwitchParameter Histogram { get; set; }
         [Parameter]
         [ValidateRange(0.0F, 1.0F)]
@@ -22,11 +26,16 @@ namespace Mars.Seem.Cmdlets
         [ValidateRange(0.0F, 20.0F)]
         public float MinimumLogVolume { get; set; } // m³
 
+        [Parameter(HelpMessage = "Suppress repeated logging of a stand trajectory if it occurs across multiple combinations of rotation length and financial scenario. This can reduce file sizes substantially when optimiation prefers one stand trajectory across multiple rotation lengths and financial scenarios.")]
+        public SwitchParameter SuppressIdentical { get; set; }
+
         public WriteMerchantableLogs()
         {
+            this.Harvestable = false;
             this.Histogram = false;
             this.HistogramBinSize = 0.01F; // m³
             this.MinimumLogVolume = 0.0F; // log all logs by default
+            this.SuppressIdentical = false;
         }
 
         protected override void ProcessRecord()
@@ -37,11 +46,11 @@ namespace Mars.Seem.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.HistogramBinSize));
             }
             // this.MinimumLogVolume checked by PowerShell
+            // this.SuppressIdentical is a switch
             this.ValidateParameters();
 
+            // write header
             using StreamWriter writer = this.GetWriter();
-
-            // header
             bool resultsSpecified = this.Trajectories != null;
             if (this.ShouldWriteHeader())
             {
@@ -56,36 +65,110 @@ namespace Mars.Seem.Cmdlets
                 }
             }
 
-            // data
+            // write data
+            int firstRegenerationHarvestPeriodAcrossAllTrajectories = this.Trajectories!.RotationLengths.Min(); // VS 16.11.7: nullability checking doesn't see [MemberNotNull] on ValidateParameters() call above
+            HashSet<StandTrajectory> knownTrajectories = new();
             int maxCoordinateIndex = this.GetMaxCoordinateIndex();
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             List<int> regenHistogram = new();
-            List<int> thinHistogram = new();
-            for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
+            List<int> thinHistogram = new();       
+            for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++ coordinateIndex)
             {
                 StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix);
-
-                for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)
+                if (this.SuppressIdentical)
                 {
-                    Stand stand = highTrajectory.StandByPeriod[periodIndex] ?? throw new InvalidOperationException("Stand has not been simulated for period " + periodIndex + ".");
-                    string linePrefixForStandAge = linePrefix + "," + highTrajectory.GetEndOfPeriodAge(periodIndex).ToString(CultureInfo.InvariantCulture);
+                    // for now, identification of unique trajectories relies on reference equality
+                    // This amounts to an assumption heuristics don't generate duplicate duplicate prescriptions. This is likely a good
+                    // approximation but unlikely to be true in general.
+                    if (knownTrajectories.Contains(highTrajectory))
+                    {
+                        continue; // skip trajectory since it's already been logged
+                    }
+                    knownTrajectories.Add(highTrajectory);
+                }
 
-                    regenHistogram.Clear();
-                    thinHistogram.Clear();
+                int lastThinningPeriod = Constant.RegenerationHarvestPeriod;
+                List<int> thinningPeriods = highTrajectory.Treatments.GetThinningPeriods();
+                if (this.Harvestable && (thinningPeriods.Count > 0))
+                {
+                    lastThinningPeriod = thinningPeriods.Max();
+                }
+
+                int firstRegenerationHarvestPeriod = Math.Max(lastThinningPeriod, firstRegenerationHarvestPeriodAcrossAllTrajectories); // see below
+                for (int period = 0; period < highTrajectory.PlanningPeriods; ++period)
+                {
+                    bool isThinningPeriod = thinningPeriods.Contains(period);
+                    if (this.Harvestable && (isThinningPeriod == false) && (period < firstRegenerationHarvestPeriod))
+                    {
+                        // no data to write for unthinned periods before the first regeneration harvest which applies to this trajectory
+                        // Checks are made against both the last thinning period for this trajectory and the earliest regeneration harvest
+                        // available across all trajectories since this trajectory's last thinning period might be later than the earliest
+                        // included regeneration harvest.
+                        continue;
+                    }
+
+                    Stand? stand;
+                    if (this.Harvestable && isThinningPeriod)
+                    {
+                        // have to get tree sizes from previous period as trees have been removed by end of this period
+                        stand = highTrajectory.StandByPeriod[period - 1];
+                    }
+                    else
+                    {
+                        // log trees at end of timestep by default
+                        stand = highTrajectory.StandByPeriod[period];
+                    }
+                    if (stand == null)
+                    {
+                        throw new InvalidOperationException("Stand has not been simulated for period " + period + ".");
+                    }
+                    string linePrefixForStandAge = linePrefix + "," + highTrajectory.GetEndOfPeriodAge(period).ToString(CultureInfo.InvariantCulture);
+
+                    if (this.Histogram)
+                    {
+                        // reset histograms if they're in used
+                        // If needed, per species histograms can be supported.
+                        regenHistogram.Clear();
+                        thinHistogram.Clear();
+                    }
 
                     foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                     {
                         string linePrefixForStandAgeAndSpecies = linePrefixForStandAge + "," + treesOfSpecies.Species.ToFourLetterCode();
+                        IndividualTreeSelection treeSelectionForSpecies = highTrajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
 
                         TreeSpeciesVolumeTable regenVolume = highTrajectory.TreeVolume.RegenerationHarvest.VolumeBySpecies[treesOfSpecies.Species];
                         TreeSpeciesVolumeTable thinningVolume = highTrajectory.TreeVolume.Thinning.VolumeBySpecies[treesOfSpecies.Species];
                         if (thinningVolume.MaximumLogs < regenVolume.MaximumLogs)
                         {
-                            throw new NotSupportedException();
+                            throw new NotSupportedException(thinningVolume.MaximumLogs + " logs are buckable from " + treesOfSpecies.Species + " in period " + period + ", which is more than the " + regenVolume.MaximumLogs + " logs buckable in regeneration harvest.");
                         }
 
                         for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                         {
+                            if (this.Harvestable)
+                            {
+                                // if appropriate, skip this tree
+                                int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
+                                int harvestPeriod = treeSelectionForSpecies[uncompactedTreeIndex];
+                                if (isThinningPeriod)
+                                {
+                                    if (harvestPeriod != period)
+                                    {
+                                        // tree shouldn't be logged because it is not selected for thinning in this period
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    if (harvestPeriod != Constant.RegenerationHarvestPeriod)
+                                    {
+                                        // tree should be logged in periods eligible for regeneration harvest because it is selected for thinning
+                                        continue;
+                                    }
+                                }
+                            }
+
                             float dbhInCm = treesOfSpecies.Dbh[compactedTreeIndex];
                             float heightInM = treesOfSpecies.Height[compactedTreeIndex];
                             float expansionFactorPerHa = treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
@@ -165,18 +248,19 @@ namespace Mars.Seem.Cmdlets
                                     }
                                     else if (thinLogVolume < this.MinimumLogVolume)
                                     {
-                                        // thinning log is below threshold there is no regen log, so log shouldn't be written to file
+                                        // since thinning log is below threshold there is no regen log, so log shouldn't be written to file
                                         continue;
                                     }
                                 }
                                 else if (thinLogVolume < this.MinimumLogVolume)
                                 {
-                                    // thinning log is below threshold there is no regen log, so log shouldn't be written to file
+                                    // since thinning log is below threshold there is no regen log, so log shouldn't be written to file
                                     continue;
                                 }
 
                                 if (this.Histogram)
                                 {
+                                    // accumulate thinning and regen logs into histogram
                                     int thinIndex = (int)(thinLogVolume / this.HistogramBinSize + 0.5F);
                                     if (thinHistogram.Count <= thinIndex)
                                     {
@@ -196,6 +280,7 @@ namespace Mars.Seem.Cmdlets
                                 }
                                 else
                                 {
+                                    // write log to file
                                     writer.WriteLine(linePrefixForTree + "," +
                                                      logIndex.ToString(CultureInfo.InvariantCulture) + "," +
                                                      thinGrade + "," +
@@ -211,8 +296,9 @@ namespace Mars.Seem.Cmdlets
 
                     if (this.Histogram)
                     {
-                        // for now, assume histogram bin sizes have granularity no finer than 0.01 m³
-                        // More digits can be added to the volume format if needed.
+                        // write histogram to file
+                        // for now, assume histogram bin sizes have granularity no finer than 0.01 m³. More digits can be added to the volume
+                        // format if needed.
                         string logVolumeFormat = "0.00";
 
                         int maxVolumeClass = Math.Max(regenHistogram.Count, thinHistogram.Count);
@@ -231,6 +317,7 @@ namespace Mars.Seem.Cmdlets
                         }
                     }
                 }
+
                 if (writer.BaseStream.Length > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-MechantableLogs: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");

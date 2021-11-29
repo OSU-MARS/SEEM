@@ -178,7 +178,7 @@ namespace Mars.Seem.Tree
                         thisSelectionForSpecies[uncompactedTreeIndex] = otherSelection;
                         atLeastOneTreeMoved = true;
 
-                        if (otherSelection == Constant.NoHarvestPeriod)
+                        if (otherSelection == Constant.RegenerationHarvestPeriod)
                         {
                             earliestThinningPeriod = Math.Min(earliestThinningPeriod, thisSelection);
                         }
@@ -209,16 +209,16 @@ namespace Mars.Seem.Tree
         public void DeselectAllTrees()
         {
             // see remarks in loop
-            Debug.Assert(Constant.NoHarvestPeriod == 0);
+            Debug.Assert(Constant.RegenerationHarvestPeriod == 0);
 
             foreach (IndividualTreeSelection selectionForSpecies in this.TreeSelectionBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < selectionForSpecies.Count; ++treeIndex)
                 {
                     int currentHarvestPeriod = selectionForSpecies[treeIndex];
-                    if (currentHarvestPeriod != Constant.NoHarvestPeriod)
+                    if (currentHarvestPeriod != Constant.RegenerationHarvestPeriod)
                     {
-                        selectionForSpecies[treeIndex] = Constant.NoHarvestPeriod;
+                        selectionForSpecies[treeIndex] = Constant.RegenerationHarvestPeriod;
                         // if stand has been simulated then the earliest period affected by removing all thinning is the first thin performed
                         this.EarliestPeriodChangedSinceLastSimulation = Math.Min(this.EarliestPeriodChangedSinceLastSimulation, currentHarvestPeriod);
                     }
@@ -444,7 +444,7 @@ namespace Mars.Seem.Tree
 
         public void SetTreeSelection(FiaCode species, int uncompactedTreeIndex, int newHarvestPeriod)
         {
-            if ((newHarvestPeriod < Constant.NoHarvestPeriod) || (newHarvestPeriod >= this.PlanningPeriods))
+            if ((newHarvestPeriod < Constant.RegenerationHarvestPeriod) || (newHarvestPeriod >= this.PlanningPeriods))
             {
                 throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod));
             }
@@ -459,7 +459,7 @@ namespace Mars.Seem.Tree
 
         private void UpdateEariestPeriodChanged(int currentPeriod, int newPeriod)
         {
-            Debug.Assert((currentPeriod >= 0) && (currentPeriod <= this.PlanningPeriods) && (newPeriod >= 0) && (newPeriod <= this.PlanningPeriods) && (Constant.NoHarvestPeriod == 0));
+            Debug.Assert((currentPeriod >= 0) && (currentPeriod <= this.PlanningPeriods) && (newPeriod >= 0) && (newPeriod <= this.PlanningPeriods) && (Constant.RegenerationHarvestPeriod == 0));
 
             // four cases
             //   1) tree is not scheduled for thinning and becomes scheduled -> earliest affected period is harvest period
@@ -467,11 +467,11 @@ namespace Mars.Seem.Tree
             //   3) tree is reassinged to an earlier harvest period -> earliest affected period is earliest harvest period
             //   4) tree is reassinged to a later harvest period -> earliest affected period is still the earliest harvest period
             int earliestAffectedPeriod;
-            if (currentPeriod == Constant.NoHarvestPeriod)
+            if (currentPeriod == Constant.RegenerationHarvestPeriod)
             {
                 earliestAffectedPeriod = newPeriod;
             }
-            else if (newPeriod == Constant.NoHarvestPeriod)
+            else if (newPeriod == Constant.RegenerationHarvestPeriod)
             {
                 earliestAffectedPeriod = currentPeriod;
             }

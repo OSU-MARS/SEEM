@@ -150,7 +150,7 @@ namespace Mars.Seem.Silviculture
                 // selection of previously harvested trees is a defect but trees 1) not selected for thinning, selected for thinning in
                 // 2) this period or 3) later periods are eligible for removal in this period
                 int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesWithLargest.Species][uncompactedTreeIndex];
-                if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
+                if ((currentHarvestPeriod != Constant.RegenerationHarvestPeriod) && (currentHarvestPeriod < this.Period))
                 {
                     throw new NotSupportedException("Could not select tree " + treesWithLargest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
                 }
@@ -199,7 +199,7 @@ namespace Mars.Seem.Silviculture
                 float basalAreaOfTree = treesWithSmallest.GetBasalArea(compactedTreeIndex);
 
                 int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesWithSmallest.Species][uncompactedTreeIndex];
-                if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
+                if ((currentHarvestPeriod != Constant.RegenerationHarvestPeriod) && (currentHarvestPeriod < this.Period))
                 {
                     throw new NotSupportedException("Could not select tree " + treesWithSmallest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
                 }
@@ -262,7 +262,7 @@ namespace Mars.Seem.Silviculture
                     if (proportionalThinAccumulator >= 1.0F)
                     {
                         float basalAreaOfTree = treesOfSpecies.GetBasalArea(compactedTreeIndex);
-                        if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
+                        if ((currentHarvestPeriod != Constant.RegenerationHarvestPeriod) && (currentHarvestPeriod < this.Period))
                         {
                             throw new NotSupportedException("Could not select tree " + treesOfSpecies.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
                         }
@@ -280,9 +280,9 @@ namespace Mars.Seem.Silviculture
                         // for now, assume this is the only harvest prescription active for this period
                         // This makes the prescription authorative for tree assignments in the period and, therefore, able to release trees from
                         // harvest.
-                        trajectory.SetTreeSelection(speciesDbhSortOrder.Key, uncompactedTreeIndex, Constant.NoHarvestPeriod);
+                        trajectory.SetTreeSelection(speciesDbhSortOrder.Key, uncompactedTreeIndex, Constant.RegenerationHarvestPeriod);
                     }
-                    else if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod < this.Period))
+                    else if ((currentHarvestPeriod != Constant.RegenerationHarvestPeriod) && (currentHarvestPeriod < this.Period))
                     {
                         // tree is expected to be retained through this period (but possible harvested later), so prior removal is an error
                         throw new NotSupportedException("Tree " + treesOfSpecies.Tag[compactedTreeIndex] + " is thinned in period " + currentHarvestPeriod + " but is expected to be retained through period " + this.Period + ".");

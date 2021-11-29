@@ -55,7 +55,7 @@ namespace Mars.Seem.Silviculture
         public IList<int> GetHarvestPeriods()
         {
             IList<int> thinningPeriods = this.GetThinningPeriods();
-            thinningPeriods.Add(Constant.NoHarvestPeriod);
+            thinningPeriods.Add(Constant.RegenerationHarvestPeriod);
             return thinningPeriods;
         }
 
