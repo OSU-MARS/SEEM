@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Data;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Organon;
+using Mars.Seem.Data;
+using Mars.Seem.Tree;
 using System;
 using System.Management.Automation;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommon.Get, "StandFromPlot")]
     public class GetStandFromPlot : Cmdlet

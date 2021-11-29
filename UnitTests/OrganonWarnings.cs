@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     [Flags]
     public enum OrganonWarnings

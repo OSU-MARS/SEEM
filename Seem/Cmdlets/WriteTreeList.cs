@@ -1,12 +1,12 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Organon;
+using Mars.Seem.Tree;
 using System;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "TreeList")]
     public class WriteTreeList : WriteCmdlet

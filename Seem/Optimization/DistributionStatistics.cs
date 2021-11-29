@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Optimization
+namespace Mars.Seem.Optimization
 {
     // get basic statistics from a list of values sampling a distribution
     // Immutable, so could be made a struct if needed.

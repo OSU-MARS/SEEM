@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class PrescriptionEnumeration : PrescriptionHeuristic
     {

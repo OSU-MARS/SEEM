@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Extensions
+namespace Mars.Seem.Extensions
 {
     public static class ListExtensions
     {

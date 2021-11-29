@@ -1,4 +1,4 @@
-﻿namespace Osu.Cof.Ferm.Extensions
+﻿namespace Mars.Seem.Extensions
 {
     // extensions to Math and MathF for syntactic convenience
     public static class MathE

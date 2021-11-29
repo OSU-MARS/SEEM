@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 
-namespace Osu.Cof.Ferm
+namespace Mars.Seem
 {
     internal class XlsxReader
     {

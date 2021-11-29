@@ -1,11 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Tree;
+using Mars.Seem.Organon;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     public class OrganonTest
     {

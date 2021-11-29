@@ -1,8 +1,8 @@
-﻿using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Organon;
+using Mars.Seem.Tree;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     public class TreeLifeAndDeath
     {

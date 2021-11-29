@@ -1,12 +1,12 @@
-﻿using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Optimization;
+using Mars.Seem.Silviculture;
 using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "SolutionPools")]
     public class WriteSolutionPools : WriteTrajectoriesCmdlet

@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Heuristics;
+using Mars.Seem.Silviculture;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Optimization
+namespace Mars.Seem.Optimization
 {
     /// <summary>
     /// Distribution of heuristic objective function values at a given tuple and their associated performance counters.

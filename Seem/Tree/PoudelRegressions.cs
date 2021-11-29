@@ -1,8 +1,8 @@
-﻿using Osu.Cof.Ferm.Extensions;
+﻿using Mars.Seem.Extensions;
 using System;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Tree
+namespace Mars.Seem.Tree
 {
     public class PoudelRegressions
     {

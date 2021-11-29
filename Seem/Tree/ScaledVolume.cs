@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Tree
+namespace Mars.Seem.Tree
 {
     public class ScaledVolume
     {

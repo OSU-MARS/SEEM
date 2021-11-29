@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace Osu.Cof.Ferm.Optimization
+namespace Mars.Seem.Optimization
 {
     public class PseudorandomizingTask
     {

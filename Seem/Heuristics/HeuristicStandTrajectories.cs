@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Optimization;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public abstract class HeuristicStandTrajectories : StandTrajectories
     {

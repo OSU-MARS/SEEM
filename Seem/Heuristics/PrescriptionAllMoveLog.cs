@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class PrescriptionAllMoveLog : HeuristicMoveLog
     {

@@ -1,13 +1,13 @@
-﻿using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Optimization;
+using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommon.Get, "StandTrajectory")]
     public class GetStandTrajectory : Cmdlet

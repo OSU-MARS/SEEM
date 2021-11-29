@@ -1,12 +1,12 @@
 ﻿using DocumentFormat.OpenXml.Drawing.Diagrams;
-using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Silviculture;
+using Mars.Seem.Heuristics;
+using Mars.Seem.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "Prescription")]
     public class OptimizePrescription : OptimizeCmdlet<PrescriptionParameters>

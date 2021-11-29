@@ -1,4 +1,4 @@
-﻿namespace Osu.Cof.Ferm.Heuristics
+﻿namespace Mars.Seem.Heuristics
 {
     internal enum MoveDirection
     {

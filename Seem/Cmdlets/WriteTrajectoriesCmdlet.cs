@@ -1,13 +1,13 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Heuristics;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     public class WriteTrajectoriesCmdlet : WriteCmdlet
     {

@@ -1,12 +1,12 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Optimization;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     // provide a non-template base class to allow PowerShell cmdlets to accept results from any heuristic as a parameter
     public class StandTrajectories

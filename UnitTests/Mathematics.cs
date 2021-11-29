@@ -1,15 +1,15 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Tree;
+using Mars.Seem.Extensions;
+using Mars.Seem.Heuristics;
+using Mars.Seem.Optimization;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     [TestClass]
     public class Mathematics

@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Heuristics;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Heuristics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "ThresholdAccepting")]
     public class OptimizeThresholdAccepting : OptimizeCmdlet<HeuristicParameters>

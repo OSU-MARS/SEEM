@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Tree
+namespace Mars.Seem.Tree
 {
     public abstract class StandTrajectory
     {

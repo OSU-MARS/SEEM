@@ -1,8 +1,8 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Tree;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Organon
+namespace Mars.Seem.Organon
 {
     internal class OrganonMortality
     {

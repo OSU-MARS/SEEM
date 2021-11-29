@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     // if needed, derive parameter classes specific to ascent and enumeration
     public class PrescriptionParameters : HeuristicParameters

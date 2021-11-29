@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     public class Treatments
     {

@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Optimization;
+﻿using Mars.Seem.Optimization;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommon.Get, "FinancialScenarios")]
     public class GetFinancialScenarios : Cmdlet

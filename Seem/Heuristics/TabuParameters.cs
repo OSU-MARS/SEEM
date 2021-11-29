@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class TabuParameters : HeuristicParameters
     {

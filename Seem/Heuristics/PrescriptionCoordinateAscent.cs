@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class PrescriptionCoordinateAscent: PrescriptionHeuristic
     {

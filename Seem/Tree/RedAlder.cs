@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Extensions;
+﻿using Mars.Seem.Extensions;
 using System;
 
-namespace Osu.Cof.Ferm.Tree
+namespace Mars.Seem.Tree
 {
     internal class RedAlder
     {

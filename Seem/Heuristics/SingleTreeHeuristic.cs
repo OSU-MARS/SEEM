@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public abstract class SingleTreeHeuristic<TParameters> : Heuristic<TParameters> where TParameters : HeuristicParameters
     {

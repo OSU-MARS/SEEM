@@ -1,6 +1,6 @@
-﻿using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Silviculture;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public abstract class HeuristicMoveLog
     {

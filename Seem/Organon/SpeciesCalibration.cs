@@ -1,4 +1,4 @@
-﻿namespace Osu.Cof.Ferm.Organon
+﻿namespace Mars.Seem.Organon
 {
     public class SpeciesCalibration
     {

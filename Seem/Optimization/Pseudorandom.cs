@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 
-namespace Osu.Cof.Ferm.Optimization
+namespace Mars.Seem.Optimization
 {
     public class Pseudorandom
     {

@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Mars.Seem.Organon;
 using System.IO;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     internal class TestStandDensity : OrganonStandDensity
     {

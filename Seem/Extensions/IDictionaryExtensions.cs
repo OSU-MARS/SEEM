@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Extensions
+namespace Mars.Seem.Extensions
 {
     internal static class IDictionaryExtensions
     {

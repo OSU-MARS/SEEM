@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Extensions
+namespace Mars.Seem.Extensions
 {
     // doesn't use offset maps like the higher dimensional BreadthFirstEnumerators, so not range limited
     internal class BreadthFirstEnumerator<T> : IEnumerator<T> where T : class

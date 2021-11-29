@@ -1,6 +1,6 @@
-﻿using Osu.Cof.Ferm.Optimization;
+﻿using Mars.Seem.Optimization;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     public class StandTrajectoryArrayElement
     {

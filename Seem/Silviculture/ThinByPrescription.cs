@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Organon;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     public class ThinByPrescription : Harvest
     {

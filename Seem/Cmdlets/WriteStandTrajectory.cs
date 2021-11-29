@@ -1,13 +1,13 @@
-﻿using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Optimization;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "StandTrajectory")]
     public class WriteStandTrajectory : WriteTrajectoriesCmdlet

@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Heuristics;
+using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Globalization;
 using System.IO;
@@ -9,7 +9,7 @@ using System.Linq;
 using System.Management.Automation;
 using System.Text;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Harvest")]
     public class WriteHarvest : WriteTrajectoriesCmdlet

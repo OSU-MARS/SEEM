@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Heuristics;
+using Mars.Seem.Tree;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Osu.Cof.Ferm
+namespace Mars.Seem
 {
     internal static class Constant
     {

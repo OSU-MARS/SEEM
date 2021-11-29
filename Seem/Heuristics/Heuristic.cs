@@ -1,14 +1,14 @@
-﻿using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Optimization;
+using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public abstract class Heuristic : PseudorandomizingTask
     {

@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Optimization
+namespace Mars.Seem.Optimization
 {
     public class SolutionPool : PseudorandomizingTask
     {

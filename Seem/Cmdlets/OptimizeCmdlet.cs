@@ -1,8 +1,8 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Heuristics;
+using Mars.Seem.Optimization;
+using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,7 +13,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     public abstract class OptimizeCmdlet<TParameters> : Cmdlet where TParameters : HeuristicParameters
     {

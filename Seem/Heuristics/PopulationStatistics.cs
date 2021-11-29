@@ -1,10 +1,10 @@
-﻿using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     // numerous references for genetic diversity
     // one such: https://cropgenebank.sgrp.cgiar.org/index.php/learning-space-mainmenu-454/training-modules-mainmenu-455/molecular-markers-mainmenu-545

@@ -1,11 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+using Mars.Seem.Extensions;
+using Mars.Seem.Optimization;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     [DeploymentItem("financial scenarios.xlsx")]
     [TestClass]

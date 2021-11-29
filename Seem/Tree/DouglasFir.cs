@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Extensions;
+﻿using Mars.Seem.Extensions;
 using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace Osu.Cof.Ferm.Tree
+namespace Mars.Seem.Tree
 {
     public static class DouglasFir
     {

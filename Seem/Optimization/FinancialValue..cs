@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Silviculture;
 using System;
 
-namespace Osu.Cof.Ferm.Optimization
+namespace Mars.Seem.Optimization
 {
     public class FinancialValue
     {

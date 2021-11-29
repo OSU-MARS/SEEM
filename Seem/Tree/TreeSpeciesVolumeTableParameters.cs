@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Osu.Cof.Ferm.Tree
+namespace Mars.Seem.Tree
 {
     public class TreeSpeciesVolumeTableParameters : TreeSpeciesVolumeTableRange
     {

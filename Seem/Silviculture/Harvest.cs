@@ -1,6 +1,6 @@
-﻿using Osu.Cof.Ferm.Organon;
+﻿using Mars.Seem.Organon;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     public abstract class Harvest
     {

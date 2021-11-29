@@ -1,13 +1,13 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Optimization;
+using Mars.Seem.Organon;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class Population : SolutionPool
     {

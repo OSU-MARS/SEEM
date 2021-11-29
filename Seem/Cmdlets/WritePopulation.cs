@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Heuristics;
+using Mars.Seem.Silviculture;
 using System;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Population")]
     public class WritePopulation : WriteTrajectoriesCmdlet

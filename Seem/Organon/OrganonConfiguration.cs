@@ -1,10 +1,10 @@
-﻿using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Organon
+namespace Mars.Seem.Organon
 {
     public class OrganonConfiguration
     {

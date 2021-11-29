@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Tree;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     public class LogTable
     {

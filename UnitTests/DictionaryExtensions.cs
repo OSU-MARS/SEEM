@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     internal static class DictionaryExtensions
     {

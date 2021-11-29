@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Tree;
 using System;
 
-namespace Osu.Cof.Ferm.Extensions
+namespace Mars.Seem.Extensions
 {
     internal static class FiaCodeExtensions
     {

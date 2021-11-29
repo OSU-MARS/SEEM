@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Heuristics;
+using Mars.Seem.Optimization;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     public class SilviculturalPrescriptionPool : SolutionPool
     {

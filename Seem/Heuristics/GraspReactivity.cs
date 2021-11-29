@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Optimization;
+﻿using Mars.Seem.Optimization;
 using System;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class GraspReactivity : PseudorandomizingTask
     {

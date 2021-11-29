@@ -1,16 +1,16 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Osu.Cof.Ferm.Data;
-using Osu.Cof.Ferm.Heuristics;
-using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+using Mars.Seem.Data;
+using Mars.Seem.Heuristics;
+using Mars.Seem.Optimization;
+using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     [TestClass]
     public class PublicApi : OrganonTest

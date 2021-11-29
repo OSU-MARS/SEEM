@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Extensions;
+﻿using Mars.Seem.Extensions;
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-namespace Osu.Cof.Ferm.Tree
+namespace Mars.Seem.Tree
 {
     // Subroutines required for the calculation of
     // height growth using the western hemlock top height curves of

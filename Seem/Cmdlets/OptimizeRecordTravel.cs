@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Heuristics;
+﻿using Mars.Seem.Heuristics;
 using System;
 using System.Collections.Generic;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommon.Optimize, "RecordTravel")]
     public class OptimizeRecordTravel : OptimizeCmdlet<HeuristicParameters>

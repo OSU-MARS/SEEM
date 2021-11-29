@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Tree;
 using System;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     public class TreeRecord
     {

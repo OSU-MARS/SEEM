@@ -1,10 +1,10 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Organon
+namespace Mars.Seem.Organon
 {
     public class OrganonTreatments : Treatments
     {

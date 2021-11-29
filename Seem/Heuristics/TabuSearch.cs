@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class TabuSearch : SingleTreeHeuristic<TabuParameters>
     {

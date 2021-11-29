@@ -1,7 +1,7 @@
-﻿using Osu.Cof.Ferm.Extensions;
+﻿using Mars.Seem.Extensions;
 using System;
 
-namespace Osu.Cof.Ferm.Organon
+namespace Mars.Seem.Organon
 {
     internal class OrganonGrowthModifiers
     {

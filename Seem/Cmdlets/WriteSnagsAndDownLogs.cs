@@ -1,12 +1,12 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Silviculture;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 
-namespace Osu.Cof.Ferm.Cmdlets
+namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "SnagsAndDownLogs")]
     public class WriteSnagsAndDownLogs : WriteStandTrajectory

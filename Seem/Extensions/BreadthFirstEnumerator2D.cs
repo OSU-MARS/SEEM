@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Osu.Cof.Ferm.Extensions
+namespace Mars.Seem.Extensions
 {
     internal class BreadthFirstEnumerator2D
     {

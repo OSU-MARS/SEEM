@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Osu.Cof.Ferm.Test
+namespace Mars.Seem.Test
 {
     internal class AssertNullable
     {

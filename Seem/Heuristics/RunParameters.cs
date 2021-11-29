@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Optimization;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Optimization;
+using Mars.Seem.Organon;
+using Mars.Seem.Tree;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class RunParameters
     {

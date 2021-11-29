@@ -1,11 +1,11 @@
-﻿using Osu.Cof.Ferm.Extensions;
-using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Organon;
+using Mars.Seem.Silviculture;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     // arrays are allocated for all possible combinations of rotations and discount rates
     // This is likely to be an overallocation as thinnings will probably preclude some rotations, leading to unused elements within the arrays. For now,

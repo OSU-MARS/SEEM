@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     public class PrescriptionPerformanceCounters
     {

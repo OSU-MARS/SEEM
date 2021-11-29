@@ -1,9 +1,9 @@
-﻿using Osu.Cof.Ferm.Organon;
-using Osu.Cof.Ferm.Tree;
+﻿using Mars.Seem.Organon;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 
-namespace Osu.Cof.Ferm.Silviculture
+namespace Mars.Seem.Silviculture
 {
     public class ThinByIndividualTreeSelection : Harvest
     {

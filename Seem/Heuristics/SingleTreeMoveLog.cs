@@ -1,8 +1,8 @@
-﻿using Osu.Cof.Ferm.Silviculture;
+﻿using Mars.Seem.Silviculture;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Osu.Cof.Ferm.Heuristics
+namespace Mars.Seem.Heuristics
 {
     public class SingleTreeMoveLog : HeuristicMoveLog
     {
