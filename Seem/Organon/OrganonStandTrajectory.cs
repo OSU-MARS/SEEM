@@ -192,10 +192,10 @@ namespace Mars.Seem.Organon
             }
         }
 
-        public override float GetBasalAreaHarvested(int periodIndex)
+        public override float GetBasalAreaThinnedPerHa(int periodIndex)
         {
             float squareFeetPerAcre = this.Treatments.BasalAreaThinnedByPeriod[periodIndex]; // m²/acre
-            return Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * squareFeetPerAcre; // m²/acre
+            return Constant.AcresPerHectare * Constant.MetersPerFoot * Constant.MetersPerFoot * squareFeetPerAcre; // m²/ha
         }
 
         public int GetInitialTreeRecordCount()

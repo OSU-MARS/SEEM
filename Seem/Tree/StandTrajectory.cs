@@ -226,7 +226,7 @@ namespace Mars.Seem.Tree
             }
         }
 
-        public abstract float GetBasalAreaHarvested(int periodIndex);
+        public abstract float GetBasalAreaThinnedPerHa(int periodIndex);
 
         public int GetEndOfPeriodAge(int period)
         {

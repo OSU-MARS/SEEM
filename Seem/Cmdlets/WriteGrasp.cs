@@ -1,5 +1,4 @@
 ﻿using Mars.Seem.Heuristics;
-using Mars.Seem.Organon;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;

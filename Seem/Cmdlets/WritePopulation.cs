@@ -25,7 +25,7 @@ namespace Mars.Seem.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories) + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
+                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories) + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
@@ -33,7 +33,7 @@ namespace Mars.Seem.Cmdlets
             {
                 StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[positionIndex];
                 StandTrajectoryArrayElement element = this.Trajectories[coordinate];
-                string linePrefix = this.GetPositionPrefix(coordinate);
+                string linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
                 PopulationStatistics highStatistics = ((GeneticAlgorithm)element.Pool.High.Heuristic!).PopulationStatistics;
                 PopulationStatistics lowStatistics = ((GeneticAlgorithm)element.Pool.Low.Heuristic!).PopulationStatistics;
                 int maxGenerations = Math.Max(highStatistics.Generations, lowStatistics.Generations);

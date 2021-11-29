@@ -37,7 +37,7 @@ namespace Mars.Seem.Cmdlets
                     distanceHeader[solutionIndex] = "distance" + solutionIndex.ToString(CultureInfo.InvariantCulture);
                 }
 
-                writer.WriteLine(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories!) + ",pooled,accepted,rejected," + 
+                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories!) + ",pooled,accepted,rejected," + 
                                  String.Join(',', financialHeader) + "," +
                                  String.Join(',', distanceHeader));
             }
@@ -55,7 +55,7 @@ namespace Mars.Seem.Cmdlets
                     throw new NotSupportedException("Solution pool capacity changed from " + poolCapacity + " to " + prescriptions.PoolCapacity + ".");
                 }
 
-                string linePrefx = this.GetPositionPrefix(coordinate);
+                string linePrefx = this.GetCsvPrefixForCoordinate(coordinate);
                 for (int solutionIndex = 0; solutionIndex < prescriptions.SolutionsInPool; ++solutionIndex)
                 {
                     //TreeSelectionBySpecies? eliteTreeSelection = prescriptions.EliteTreeSelections[solutionIndex];

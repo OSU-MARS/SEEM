@@ -54,7 +54,7 @@ namespace Mars.Seem.Cmdlets
             bool resultsSpecified = this.Trajectories != null;
             if (this.ShouldWriteHeader())
             {
-                string heuristicAndPositionHeader = WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories!) + ",standAge";
+                string heuristicAndPositionHeader = this.GetCsvHeaderForCoordinate(this.Trajectories!) + ",standAge";
                 if (this.Histogram)
                 {
                     writer.WriteLine(heuristicAndPositionHeader + ",cubic,thinCount,regenCount");

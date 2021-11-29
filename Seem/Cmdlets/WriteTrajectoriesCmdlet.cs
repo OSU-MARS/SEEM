@@ -11,28 +11,34 @@ namespace Mars.Seem.Cmdlets
 {
     public class WriteTrajectoriesCmdlet : WriteCmdlet
     {
+        [Parameter(HelpMessage = "Include columns with heuristic parameter values (for heuristics with parameters) in output file.")]
+        public SwitchParameter HeuristicParameters { get; set; }
+
         [Parameter]
         [ValidateNotNull]
         public StandTrajectories? Trajectories { get; set; }
 
-        protected static string GetHeuristicAndPositionCsvHeader(StandTrajectories trajectories)
+        public WriteTrajectoriesCmdlet()
         {
-            HeuristicParameters? firstHeuristicParameters = null;
-            if (trajectories is HeuristicStandTrajectories heuristicTrajectories)
-            {
-                firstHeuristicParameters = heuristicTrajectories.GetParameters(Constant.HeuristicDefault.CoordinateIndex);
-            }
+            this.HeuristicParameters = false;
+        }
 
-            string? heuristicParametersWithTrailingComma = null;
-            if (firstHeuristicParameters != null)
+        protected string GetCsvHeaderForCoordinate(StandTrajectories trajectories)
+        {
+            string? maybeHeuristicParametersWithTrailingComma = null;
+            if (this.HeuristicParameters && (trajectories is HeuristicStandTrajectories heuristicTrajectories))
             {
-                heuristicParametersWithTrailingComma = firstHeuristicParameters.GetCsvHeader() + ",";
+                HeuristicParameters? firstHeuristicParameters = heuristicTrajectories.GetParameters(Constant.HeuristicDefault.CoordinateIndex);
+                if (firstHeuristicParameters != null)
+                {
+                    maybeHeuristicParametersWithTrailingComma = firstHeuristicParameters.GetCsvHeader() + ",";
+                }
             }
-            return "stand," + heuristicParametersWithTrailingComma + "thin1,thin2,thin3,rotation,financialScenario";
+            return "stand," + maybeHeuristicParametersWithTrailingComma + "thin1,thin2,thin3,rotation,financialScenario";
         }
 
         [MemberNotNull(nameof(WriteTrajectoriesCmdlet.Trajectories))]
-        protected string GetPositionPrefix(StandTrajectoryCoordinate coordinate)
+        protected string GetCsvPrefixForCoordinate(StandTrajectoryCoordinate coordinate)
         {
             Debug.Assert(this.Trajectories != null);
             StandTrajectory? highTrajectory = this.Trajectories[coordinate].Pool.High.Trajectory;
@@ -46,10 +52,10 @@ namespace Mars.Seem.Cmdlets
             int thirdThinPeriod = this.Trajectories.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex];
             int endOfRotationPeriod = this.Trajectories.RotationLengths[coordinate.RotationIndex];
 
-            string? heuristicParametersWithTrailingComma = null;
-            if (this.Trajectories is HeuristicStandTrajectories heuristicTrajectories)
+            string? maybeHeuristicParametersWithTrailingComma = null;
+            if (this.HeuristicParameters && (this.Trajectories is HeuristicStandTrajectories heuristicTrajectories))
             {
-                heuristicParametersWithTrailingComma = heuristicTrajectories.GetParameters(coordinate.ParameterIndex).GetCsvValues() + ",";
+                maybeHeuristicParametersWithTrailingComma = heuristicTrajectories.GetParameters(coordinate.ParameterIndex).GetCsvValues() + ",";
             }
             string? firstThinAge = firstThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetEndOfPeriodAge(firstThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
             string? secondThinAge = secondThinPeriod != Constant.NoThinPeriod ? highTrajectory.GetEndOfPeriodAge(secondThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
@@ -58,7 +64,7 @@ namespace Mars.Seem.Cmdlets
             string financialScenario = this.Trajectories.FinancialScenarios.Name[coordinate.FinancialIndex];
 
             return highTrajectory.Name + "," +
-                   heuristicParametersWithTrailingComma +
+                   maybeHeuristicParametersWithTrailingComma +
                    firstThinAge + "," +
                    secondThinAge + "," +
                    thirdThinAge + "," +
@@ -71,7 +77,7 @@ namespace Mars.Seem.Cmdlets
         {
             Debug.Assert(this.Trajectories != null);
             StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
-            linePrefix = this.GetPositionPrefix(coordinate);
+            linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
 
             SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
             StandTrajectory? highTrajectory = prescriptions.High.Trajectory;

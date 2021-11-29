@@ -46,7 +46,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     throw new NotSupportedException("Cannot generate header because first result is missing a high or low heuristic.");
                 }
-                StringBuilder line = new(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories) + ",move,count");
+                StringBuilder line = new(this.GetCsvHeaderForCoordinate(this.Trajectories) + ",move,count");
 
                 string lowMoveLogHeader = "lowMoveLog";
                 HeuristicMoveLog? lowMoveLog = prescriptions.Low.Heuristic.GetMoveLog();
@@ -120,7 +120,7 @@ namespace Mars.Seem.Cmdlets
                 // since high and low solutions are from the same position, they use the same heuristic parameters
                 StandTrajectoryCoordinate coordinate = prioritizedCoordinates[coordinateIndex];
                 StandTrajectoryArrayElement element = this.Trajectories[coordinate];
-                string linePrefix = this.GetPositionPrefix(coordinate);
+                string linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
                 Heuristic highHeuristic = element.Pool.High.Heuristic!; // checked for null in GetHeuristicAndPositionCsvValues()
                 Heuristic lowHeuristic = element.Pool.Low.Heuristic ?? throw new InvalidOperationException("Evaluated coordinate " + coordinateIndex + " does not have a low heuristic.");
 

@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.Drawing.Diagrams;
-using Mars.Seem.Heuristics;
+﻿using Mars.Seem.Heuristics;
 using Mars.Seem.Silviculture;
 using System;
 using System.Collections.Generic;

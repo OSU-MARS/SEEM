@@ -16,6 +16,9 @@ namespace Mars.Seem.Cmdlets
         [ValidateRange(0.1F, 100.0F)]
         public float DiameterClassSize { get; set; } // cm
 
+        [Parameter(HelpMessage = "Write only simulation timesteps where a harvest (thinning or regeneration) occurs.")]
+        public SwitchParameter Harvests { get; set; }
+
         [Parameter]
         [ValidateRange(1.0F, 1000.0F)]
         public float MaximumDiameter { get; set; } // cm
@@ -23,6 +26,7 @@ namespace Mars.Seem.Cmdlets
         public WriteStandTrajectory()
         {
             this.DiameterClassSize = Constant.Bucking.DiameterClassSizeInCentimeters;
+            this.Harvests = false;
             this.MaximumDiameter = Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters;
         }
 
@@ -37,8 +41,8 @@ namespace Mars.Seem.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(WriteTrajectoriesCmdlet.GetHeuristicAndPositionCsvHeader(this.Trajectories) + "," +
-                    "standAge,TPH,QMD,Htop,BA,SDI,liveTreeBiomass,SPH,snagQmd,standingCmh,standingMbfj,thinCmh,thinMbfh,BAremoved,BAintensity,TPHdecrease," + 
+                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories) + "," +
+                    "standAge,TPH,QMD,Htop,BA,SDI,liveTreeBiomass,SPH,snagQmd,standingCmh,standingMbf,thinCmh,thinMbfh,BAremoved,BAintensity,TPHdecrease," + 
                     "NPV,LEV,thinLogs2S,thinLogs3S,thinLogs4S,thinCmh2S,thinCmh3S,thinCmh4S,thinMbfh2S,thinMbfh3S,thinMbfh4S,thinPond2S,thinPond3S,thinPond4S," + 
                     "thinWheeledHarvesterForwarderCost,thinTaskCost,thinWheeledHarvesterPMh,thinChainsawPMhWithWheeledHarvester,thinForwarderPMh,thinForwardedWeight,thinWheeledHarvesterProductivity,thinForwarderProductivity," +
                     "standingLogs2S,standingLogs3S,standingLogs4S,standingCmh2S,standingCmh3S,standingCmh4S,standingMbfh2S,standingMbfh3S,standingMbfh4S,regenPond2S,regenPond3S,regenPond4S," +
@@ -56,7 +60,7 @@ namespace Mars.Seem.Cmdlets
                 Units trajectoryUnits = highTrajectory.GetUnits();
                 if (trajectoryUnits != Units.English)
                 {
-                    throw new NotSupportedException("Expected Organon stand trajectory with English Units.");
+                    throw new NotSupportedException("Expected stand trajectory with English Units.");
                 }
                 highTrajectory.GetMerchantableVolumes(out StandMerchantableVolume standingVolume, out StandMerchantableVolume thinVolume);
 
@@ -67,19 +71,27 @@ namespace Mars.Seem.Cmdlets
                 for (int period = 0; period <= endOfRotationPeriod; ++period)
                 {
                     Stand stand = highTrajectory.StandByPeriod[period] ?? throw new NotSupportedException("Stand information missing for period " + period + ".");
+                    float basalAreaThinnedPerHa = highTrajectory.GetBasalAreaThinnedPerHa(period); // m²/ha
+                    StandDensity currentStandDensity = highTrajectory.GetStandDensity(period);
+                    if (this.Harvests)
+                    {
+                        if ((basalAreaThinnedPerHa == 0.0F) && (period != endOfRotationPeriod))
+                        {
+                            previousStandDensity = currentStandDensity;
+                            continue; // no harvest in this period so no data to write
+                        }
+                    }
 
                     // get density and volumes
-                    float basalAreaThinnedPerHectare = highTrajectory.GetBasalAreaHarvested(period);
-                    float basalAreaIntensity = 0.0F;
+                    float basalAreaIntensity = 0.0F; // fraction
                     if (period > 0)
                     {
                         Debug.Assert(previousStandDensity != null, "Already checked in previous iteration of loop.");
-                        basalAreaIntensity = basalAreaThinnedPerHectare / previousStandDensity.BasalAreaPerHa;
+                        basalAreaIntensity = basalAreaThinnedPerHa / previousStandDensity.BasalAreaPerHa;
                     }
                     float thinVolumeScribner = thinVolume.GetScribnerTotal(period); // MBF/ha
-                    Debug.Assert((thinVolumeScribner == 0.0F && basalAreaThinnedPerHectare == 0.0F) || (thinVolumeScribner > 0.0F && basalAreaThinnedPerHectare > 0.0F));
+                    Debug.Assert((thinVolumeScribner == 0.0F && basalAreaThinnedPerHa == 0.0F) || (thinVolumeScribner > 0.0F && basalAreaThinnedPerHa > 0.0F));
 
-                    StandDensity currentStandDensity = highTrajectory.GetStandDensity(period);
                     float treesPerHectareDecrease = 0.0F;
                     if (period > 0)
                     {
@@ -128,7 +140,7 @@ namespace Mars.Seem.Cmdlets
                                      standingVolume.GetScribnerTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // MBF/ha
                                      thinVolume.GetCubicTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // m³/ha
                                      thinVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                     basalAreaThinnedPerHectare.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                     basalAreaThinnedPerHa.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                                      basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      treesPerHectareDecrease.ToString("0.000", CultureInfo.InvariantCulture) + "," +
                                      periodNetPresentValue.ToString("0", CultureInfo.InvariantCulture) + "," +
