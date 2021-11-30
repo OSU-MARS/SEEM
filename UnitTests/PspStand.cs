@@ -213,10 +213,9 @@ namespace Mars.Seem.Test
             }
 
             // complete stand initialization
-            stand.EnsureSiteIndicesSet(configuration.Variant);
             stand.SetQuantiles();
             stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
-            stand.SetSdiMax(configuration);
+            //stand.SetSdiMax(configuration);
 
             return stand;
         }

@@ -78,18 +78,18 @@ namespace Mars.Seem.Test
             }
 
             stand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
-            stand.SetSdiMax(configuration);
+            //stand.SetSdiMax(configuration);
             return stand;
         }
 
         protected static OrganonConfiguration CreateOrganonConfiguration(OrganonVariant variant)
         {
-            OrganonConfiguration configuration = new(variant)
-            {
-                DefaultMaximumSdi = TestConstant.Default.MaximumReinekeStandDensityIndex,
-                TrueFirMaximumSdi = TestConstant.Default.MaximumReinekeStandDensityIndex,
-                HemlockMaximumSdi = TestConstant.Default.MaximumReinekeStandDensityIndex,
-            };
+            OrganonConfiguration configuration = new(variant);
+            //{
+            //    DefaultMaximumSdi = TestConstant.Maximum.SdiDouglasFir,
+            //    TrueFirMaximumSdi = TestConstant.Maximum.SdiDouglasFir,
+            //    HemlockMaximumSdi = TestConstant.Maximum.SdiWesternHemlock,
+            //};
 
             return configuration;
         }

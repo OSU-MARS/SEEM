@@ -44,9 +44,9 @@ namespace Mars.Seem.Cmdlets
                 SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
                 if ((prescriptions.High.Heuristic == null) || (prescriptions.Low.Heuristic == null))
                 {
-                    throw new NotSupportedException("Cannot generate header because first result is missing a high or low heuristic.");
+                    throw new NotSupportedException("Cannot generate csv header because first result is missing a high or low heuristic.");
                 }
-                StringBuilder line = new(this.GetCsvHeaderForCoordinate(this.Trajectories) + ",move,count");
+                StringBuilder line = new(this.GetCsvHeaderForCoordinate() + ",move,count");
 
                 string lowMoveLogHeader = "lowMoveLog";
                 HeuristicMoveLog? lowMoveLog = prescriptions.Low.Heuristic.GetMoveLog();

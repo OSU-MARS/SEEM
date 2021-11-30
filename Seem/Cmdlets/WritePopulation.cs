@@ -25,7 +25,7 @@ namespace Mars.Seem.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories) + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
+                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();

@@ -1937,7 +1937,8 @@ namespace Mars.Seem.Organon
             float siteIndex = stand.SiteIndexInFeet;
             switch (trees.Species)
             {
-                // DF Coefficients from Unpublished Equation on File at OSU Dept.Forest Resources
+                // from unpublished equation on file at OSU Department of Forest Resources
+                // Supersedes FRL RC 40 Table 36, apparently.
                 case FiaCode.PseudotsugaMenziesii:
                     B0 = -4.13142F;
                     B1 = -1.13736F;
@@ -1945,7 +1946,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.0307749F;
                     B5 = 0.00991005F;
                     break;
-                // Unpublished Equation on File at OSU Dept. Forest Resources
+                // unpublished equation on file at OSU Department of Forest Resources
                 case FiaCode.AbiesGrandis:
                     B0 = -7.60159F;
                     B1 = -0.200523F;
@@ -1953,7 +1954,11 @@ namespace Mars.Seem.Organon
                     B4 = 0.0441333F;
                     B5 = 0.00063849F;
                     break;
-                // Hann, Marshall, Hanus (2003) FRL Research Contribution 40
+                // Hann DW, Marshall DD, Hanus ML. 2003. Equations for predicting height to crown base, 5-year diameter growth rate, 5-year height
+                // growth rate, 5-year mortality rate, and maximum size-density trajectory for Douglas-for and western hemlock in the coastal region
+                // of the Pacific Northwest. Forest Research Laboratory Research Contribution 40, Oregon State University.
+                // https://ir.library.oregonstate.edu/concern/technical_reports/jd472x893.
+                // mortality coefficients from Table 36
                 case FiaCode.TsugaHeterophylla:
                 case FiaCode.ThujaPlicata:
                     B0 = -0.761609F;
@@ -2012,7 +2017,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.013966388F;
                     B5 = 0.009461545F;
                     break;
-                // Best Guess
+                // best guess
                 case FiaCode.Salix:
                     B0 = -1.386294361F;
                     B1 = 0.0F;

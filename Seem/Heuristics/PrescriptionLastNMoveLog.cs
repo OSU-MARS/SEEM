@@ -122,15 +122,15 @@ namespace Mars.Seem.Heuristics
                     float proportionalPercentage3 = this.proportionalPercentageByRotationAndRate3[rotationIndex, financialIndex, fifoIndex];
                     float fromBelowPercentage3 = this.fromBelowPercentageByRotationAndRate3[rotationIndex, financialIndex, fifoIndex];
 
-                    return fromAbovePercentage1.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                           proportionalPercentage1.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                           fromBelowPercentage1.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                           fromAbovePercentage2.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                           proportionalPercentage2.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                           fromBelowPercentage2.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                           fromAbovePercentage3.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                           proportionalPercentage3.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                           fromBelowPercentage3.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture);
+                    return fromAbovePercentage1.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                           proportionalPercentage1.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                           fromBelowPercentage1.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                           fromAbovePercentage2.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                           proportionalPercentage2.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                           fromBelowPercentage2.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                           fromAbovePercentage3.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                           proportionalPercentage3.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                           fromBelowPercentage3.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture);
                 }
             }
 

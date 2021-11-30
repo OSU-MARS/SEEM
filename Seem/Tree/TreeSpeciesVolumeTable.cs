@@ -232,8 +232,8 @@ namespace Mars.Seem.Tree
             // start at index 1 since trees in zero diameter class have zero merchantable volume
             for (int dbhIndex = 1; dbhIndex < diameterClasses; ++dbhIndex)
             {
-                float dbh = this.GetDiameter(dbhIndex);
-                if (dbh < Constant.Bucking.MinimumScalingDiameter4Saw)
+                float dbhInCm = this.GetDiameter(dbhIndex);
+                if (dbhInCm < Constant.Bucking.MinimumScalingDiameter4Saw)
                 {
                     // tree cannot produce a merchantable log
                     // Except in special case of a minimum log length of DBH or less, which isn't supported.
@@ -244,8 +244,8 @@ namespace Mars.Seem.Tree
                 // start at index 1 since trees in zero height class have zero merchantable volume
                 for (int heightIndex = 1; heightIndex < heightClasses; ++heightIndex)
                 {
-                    float height = this.GetHeight(heightIndex);
-                    if (height < Constant.Bucking.MinimumLogLength4SawInM + Constant.Bucking.DefaultStumpHeightInM)
+                    float heightInM = this.GetHeight(heightIndex);
+                    if (heightInM < Constant.Bucking.MinimumLogLength4SawInM + Constant.Bucking.DefaultStumpHeightInM)
                     {
                         // tree cannot produce a merchantable log
                         // This also avoids breakdown in Kozak 2004 form taper equations, which require trees be at least 1.3 m tall.
@@ -256,27 +256,27 @@ namespace Mars.Seem.Tree
                     // For now, assume assume all trees are felled by bar saws. If needed, the bottom of the first log can be raised
                     // in final harvests to account for feller-bunchers using hot saws (~6 cm kerf).
                     // TODO: what do scalers actually do, particularly on larger logs?
-                    float neiloidHeight = parameters.GetNeiloidHeight(dbh);
+                    float neiloidHeight = parameters.GetNeiloidHeight(dbhInCm, heightInM);
                     float previousLogLengthWithTrim;
                     int logIndex = 0;
                     int logs2S = 0;
                     int logs3S = 0;
                     int logs4S = 0;
-                    for (float logBottomHeight = Constant.Bucking.DefaultStumpHeightInM; logBottomHeight < height - Constant.Bucking.MinimumLogLength4SawInM; logBottomHeight += previousLogLengthWithTrim + Constant.Bucking.BarSawKerf)
+                    for (float logBottomHeight = Constant.Bucking.DefaultStumpHeightInM; logBottomHeight < heightInM - Constant.Bucking.MinimumLogLength4SawInM; logBottomHeight += previousLogLengthWithTrim + Constant.Bucking.BarSawKerf)
                     {
                         float logMinimumTopHeight = logBottomHeight + Constant.Bucking.MinimumLogLength4SawInM;
-                        if (logMinimumTopHeight > height)
+                        if (logMinimumTopHeight > heightInM)
                         {
                             break; // no merchantable log: done with tree
                         }
 
-                        float logMaximumTopHeight = Math.Min(height, logBottomHeight + preferredLogLengthWithTrim);
-                        float logMinimumTopDib = parameters.GetDiameterInsideBark(dbh, height, logMaximumTopHeight);
+                        float logMaximumTopHeight = Math.Min(heightInM, logBottomHeight + preferredLogLengthWithTrim);
+                        float logMinimumTopDib = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logMaximumTopHeight);
                         float logTopHeight = logMaximumTopHeight;
                         float logTopDib = logMinimumTopDib;
                         if (logMinimumTopDib < Constant.Bucking.MinimumScalingDiameter4Saw)
                         {
-                            float logMaximumTopDib = parameters.GetDiameterInsideBark(dbh, height, logMinimumTopHeight);
+                            float logMaximumTopDib = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logMinimumTopHeight);
                             if (logMaximumTopDib < Constant.Bucking.MinimumScalingDiameter4Saw)
                             {
                                 break; // log undersize: done with tree
@@ -288,7 +288,7 @@ namespace Mars.Seem.Tree
                             logTopDib = logMaximumTopDib;
                             for (float logCandidateTopHeight = logMinimumTopHeight; logCandidateTopHeight < logMaximumTopHeight; logCandidateTopHeight += Constant.Bucking.EvaluationHeightStepInM)
                             {
-                                float logCandidateTopDib = parameters.GetDiameterInsideBark(dbh, height, logCandidateTopHeight);
+                                float logCandidateTopDib = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logCandidateTopHeight);
                                 if (logCandidateTopDib < Constant.Bucking.MinimumScalingDiameter4Saw)
                                 {
                                     break;
@@ -312,17 +312,17 @@ namespace Mars.Seem.Tree
                         if (logBottomHeight > neiloidHeight)
                         {
                             // bottom of log is above base neiloid
-                            bcFirmwoodBottomDiameter = parameters.GetDiameterInsideBark(dbh, height, logBottomHeight);
+                            bcFirmwoodBottomDiameter = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logBottomHeight);
                         }
                         else
                         {
                             // caliper above neiloid and project per Fonseca section 2.2.2.1.6
                             float bcFirmwoodLogBottomHeight = Math.Min(neiloidHeight, logTopHeight - 0.5F); // avoid math errors on very low height-diameter ratio trees
-                            float bcFirmwoodCaliperDibAboveNeiloid = parameters.GetDiameterInsideBark(dbh, height, bcFirmwoodLogBottomHeight);
+                            float bcFirmwoodCaliperDibAboveNeiloid = parameters.GetDiameterInsideBark(dbhInCm, heightInM, bcFirmwoodLogBottomHeight);
                             float bcFirmwoodProjectionTaper = (bcFirmwoodCaliperDibAboveNeiloid - logTopDib) / (logTopHeight - bcFirmwoodLogBottomHeight); // taper in diameter
                             bcFirmwoodBottomDiameter = bcFirmwoodCaliperDibAboveNeiloid + bcFirmwoodProjectionTaper * (bcFirmwoodLogBottomHeight - logBottomHeight);
                             Debug.Assert(bcFirmwoodBottomDiameter > bcFirmwoodCaliperDibAboveNeiloid);
-                            Debug.Assert(bcFirmwoodBottomDiameter < (1.0F + 0.01F * dbh / height * dbh / height) * parameters.GetDiameterInsideBark(dbh, height, logBottomHeight)); // allow substantial overshoot on low height-diameter ratio trees
+                            Debug.Assert(bcFirmwoodBottomDiameter < (1.0F + 0.01F * dbhInCm / heightInM * dbhInCm / heightInM) * parameters.GetDiameterInsideBark(dbhInCm, heightInM, logBottomHeight)); // allow substantial overshoot on low height-diameter ratio trees
                         }
                         float bcFirmwoodBottomRadius = MathF.Round(0.5F * bcFirmwoodBottomDiameter); // rounded cm = diameter in rads
                         float bcFirmwoodTopRadius = MathF.Round(0.5F * logTopDib); // rounded cm = diameter in rads
@@ -336,7 +336,7 @@ namespace Mars.Seem.Tree
                                 float bcFirmwoodTaperHeight = logBottomHeight + MathF.Floor(0.5F * logSegments + 0.01F) * Constant.Bucking.BCFirmwoodLogTaperSegmentLengthInM;
                                 if (bcFirmwoodTaperHeight < logTopHeight)
                                 {
-                                    float bcFirmwoodTaperDiameter = parameters.GetDiameterInsideBark(dbh, height, bcFirmwoodTaperHeight);
+                                    float bcFirmwoodTaperDiameter = parameters.GetDiameterInsideBark(dbhInCm, heightInM, bcFirmwoodTaperHeight);
                                     float bcFirmwoodTaperRadius = MathF.Round(0.5F * bcFirmwoodTaperDiameter);
                                     // Debug.Assert(bcFirmwoodBottomRadius <= 1.5F * bcFirmwoodTaperRadius); // violated by low height-diameter ratio trees
                                     // Debug.Assert(bcFirmwoodTaperRadius <= 1.5F * bcFirmwoodTopRadius); // prone to 10 cm taper radius with 6 cm top

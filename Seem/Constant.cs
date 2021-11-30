@@ -16,12 +16,6 @@ namespace Mars.Seem
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
         public const float DbhHeightInM = 1.37F; // cm
-        public const string DefaultPercentageFormat = "0.0#";
-        public const string DefaultProbabilityFormat = "0.00##";
-        public const int DefaultRotationLengths = 9;
-        public const int DefaultSolutionPoolSize = 4;
-        public const int DefaultThinningPeriod = 3;
-        public const int DefaultTimeStepInYears = 5;
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
         public const float HectaresPerAcre = 0.404685F;
@@ -122,6 +116,18 @@ namespace Mars.Seem
             public const float ScribnerTrimShortLogInM = Constant.MetersPerFoot * 0.5F - 0.0001F; // m with 100 μm margin for numerical precision
         }
 
+        public static class Default
+        {
+            public const float DouglasFirSiteIndexInM = 39.6F; // from Malcolm Knapp Research Forest spacing trials, Douglas-fir site class 1 (~130 feet)
+            public const float WesternHemlockSiteIndexInM = 29.1F; // from Malcolm Knapp Research Forest spacing trial plot 21
+            public const string PercentageFormat = "0.0#";
+            public const string ProbabilityFormat = "0.00##";
+            public const int RotationLengths = 9;
+            public const int SolutionPoolSize = 4;
+            public const int ThinningPeriod = 3;
+            public const int TimeStepInYears = 5;
+        }
+
         public static class Financial
         {
             public const float DefaultAnnualDiscountRate = 0.04F;
@@ -205,7 +211,7 @@ namespace Mars.Seem
             public const float ExpansionFactorPerHa = 2500.0F;
             public const float HeightIncrementInFeet = 20.0F;
             public const float PlantingDensityInTreesPerHectare = 40000.0F; // sanity upper bound, 0.5 m spacing
-            public const float SdiPerAcre = 1000.0F; // Reineke SDI in English units
+            //public const float SdiPerAcre = 1000.0F; // Reineke SDI in English units
             public const float SiteIndexInFeet = 200.0F; // sanity upper bound
             public const float SiteIndexInM = 61.0F; // sanity upper bound
         }

@@ -102,7 +102,7 @@ namespace Mars.Seem.Silviculture
                         for (int diameterClassIndex = 0; diameterClassIndex < this.DiameterClasses; ++diameterClassIndex)
                         {
                             float diameterInCm = this.GetDiameter(diameterClassIndex);
-                            float stillStandingMultiplier = MathV.Exp(-MathV.Pow(decayTimeInYears / (decayDivider0 + decayDivider1 * diameterInCm), decayPower));
+                            float stillStandingMultiplier = MathV.ExpWithTruncationToZero(-MathV.Pow(decayTimeInYears / (decayDivider0 + decayDivider1 * diameterInCm), decayPower));
                             Debug.Assert(stillStandingMultiplier >= 0.0F && stillStandingMultiplier <= 1.0F);
 
                             float sourceExpansionFactor = snagsPerHectare[previousPeriod, diameterClassIndex];

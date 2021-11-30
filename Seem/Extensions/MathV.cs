@@ -15,6 +15,8 @@ namespace Mars.Seem.Extensions
         private const float Exp2Beta4 = 0.0096779180F;
         private const float ExpToExp2 = 1.442695040888963F; // log2(e)
 
+        public const float ExpToZeroThreshold = -16.2F; // truncate exponents less than 1E-7 to zero
+
         private const int FloatExponentMask = 0x7F800000;
         private const int FloatMantissaBits = 23;
         private const int FloatMantissaZero = 127;
@@ -128,6 +130,16 @@ namespace Mars.Seem.Extensions
         public unsafe static Vector128<float> Exp10(Vector128<float> power)
         {
             return MathV.Exp2(Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(MathV.Exp10ToExp2), power));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ExpWithTruncationToZero(float power)
+        {
+            if (power < MathV.ExpToZeroThreshold)
+            {
+                return 0.0F;
+            }
+            return MathV.Exp(power);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

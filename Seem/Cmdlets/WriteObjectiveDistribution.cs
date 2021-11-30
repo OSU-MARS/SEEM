@@ -26,7 +26,7 @@ namespace Mars.Seem.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories) + ",solution,objective,movesAccepted,movesRejected,runtime,timesteps,treesRandomized");
+                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",solution,objective,movesAccepted,movesRejected,runtime,timesteps,treesRandomized");
             }
 
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();

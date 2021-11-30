@@ -22,10 +22,12 @@
         public TreeVolume(TreeSpeciesVolumeTableRange finalHarvestTableRange, TreeSpeciesVolumeTableRange thinningTableRange)
         {
             TreeSpeciesVolumeTableParameters psmeFinalHarvestParameters = new(finalHarvestTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight);
-            this.RegenerationHarvest = new ScaledVolume(psmeFinalHarvestParameters);
+            TreeSpeciesVolumeTableParameters tsheFinalHarvestParameters = new(finalHarvestTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight);
+            this.RegenerationHarvest = new ScaledVolume(psmeFinalHarvestParameters, tsheFinalHarvestParameters);
 
             TreeSpeciesVolumeTableParameters psmeThinningParameters = new(thinningTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight);
-            this.Thinning = new ScaledVolume(psmeThinningParameters);
+            TreeSpeciesVolumeTableParameters thseThinningParameters = new(thinningTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight);
+            this.Thinning = new ScaledVolume(psmeThinningParameters, thseThinningParameters);
         }
     }
 }

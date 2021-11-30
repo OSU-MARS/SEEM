@@ -44,15 +44,15 @@ namespace Mars.Seem.Heuristics
 
         public override string GetCsvValues(StandTrajectoryCoordinate coordinate, int moveNumber)
         {
-            return this.FromAbovePercentageByMove1[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentageByMove1[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromBelowPercentageByMove1[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromAbovePercentageByMove2[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentageByMove2[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromBelowPercentageByMove2[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromAbovePercentageByMove3[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentageByMove3[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromBelowPercentageByMove3[moveNumber].ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture);
+            return this.FromAbovePercentageByMove1[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ProportionalPercentageByMove1[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromBelowPercentageByMove1[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromAbovePercentageByMove2[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ProportionalPercentageByMove2[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromBelowPercentageByMove2[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromAbovePercentageByMove3[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ProportionalPercentageByMove3[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromBelowPercentageByMove3[moveNumber].ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture);
         }
 
         public bool TryAddMove(ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)

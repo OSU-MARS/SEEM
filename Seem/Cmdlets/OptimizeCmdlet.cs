@@ -82,14 +82,14 @@ namespace Mars.Seem.Cmdlets
             this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
 
             this.Financial = FinancialScenarios.Default;
-            this.FirstThinPeriod = new() { Constant.DefaultThinningPeriod };
+            this.FirstThinPeriod = new() { Constant.Default.ThinningPeriod };
             this.ConstructionGreediness = new() { Constant.Grasp.DefaultMinimumConstructionGreedinessForMaximization };
             this.LogImprovingOnly = false;
             this.InitialThinningProbability = new() { Constant.HeuristicDefault.InitialThinningProbability };
             this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
-            this.RotationLengths = new() { Constant.DefaultRotationLengths };
+            this.RotationLengths = new() { Constant.Default.RotationLengths };
             this.SecondThinPeriod = new() { Constant.NoThinPeriod };
-            this.SolutionPoolSize = Constant.DefaultSolutionPoolSize;
+            this.SolutionPoolSize = Constant.Default.SolutionPoolSize;
             this.ThirdThinPeriod = new() { Constant.NoThinPeriod };
             this.TimberObjective = TimberObjective.LandExpectationValue;
             this.TreeModel = TreeModel.OrganonNwo;

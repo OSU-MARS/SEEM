@@ -27,6 +27,19 @@ namespace Mars.Seem.Tree
     /// </remarks>
     internal class WesternHemlock
     {
+        public static TreeSpeciesProperties Properties { get; private set; }
+
+        static WesternHemlock()
+        {
+            // Miles PD, Smith BW. 2009. Specific gravity and other properties of wood and bark for 156 tree species found in North
+            //   America (No. NRS-RN-38). Northern Research Station, US Forest Service. https://doi.org/10.2737/NRS-RN-38
+            WesternHemlock.Properties = new TreeSpeciesProperties(woodDensity: 657.0F, // kg/m³
+                barkFraction: 0.158F,
+                barkDensity: 1009.0F, // kg/m³
+                processingBarkLoss: 0.30F, // loss with spiked feed rollers
+                yardingBarkLoss: 0.15F); // dragging abrasion loss over full corridor (if needed, this could be reparameterized to a function of corridor length)
+        }
+
         /// <summary>
         /// Calculate western hemlock growth effective age and potential height growth using Flewelling's model for dominant individuals.
         /// </summary>
@@ -91,6 +104,22 @@ namespace Mars.Seem.Tree
             potentialHeightGrowth = Vector128.Create(potentialHeightGrowth0, potentialHeightGrowth1, potentialHeightGrowth2, potentialHeightGrowth3);
             Vector128<float> growthEffectiveAge = Vector128.Create(growthEffectiveAge0, growthEffectiveAge1, growthEffectiveAge2, growthEffectiveAge3);
             return growthEffectiveAge;
+        }
+
+        internal static float GetNeiloidHeight(float dbhInCm, float heightInM)
+        {
+            // approximation from plotting Poudel et al. 2018 dib curves in R
+            // Poudel et al's fitting is problematic as diameter inside bark becomes non-monotonic with height for slender trees, predicting
+            // logs with bottom diameters inside bark which are smaller than their top diameters. As a workaround, lower the neiloid height on
+            // slender trees.
+            float heightDiameterRatio = heightInM / (0.01F * dbhInCm);
+            float heightDiameterWorkaroundThreshold = 200.0F * (1.0F - 0.005F * dbhInCm);
+            if (heightDiameterRatio <= heightDiameterWorkaroundThreshold)
+            {
+                return Constant.DbhHeightInM + 0.01F * 7.0F * (dbhInCm - 20.0F);
+            }
+
+            return Constant.DbhHeightInM + 0.01F * 7.0F * (1.0F + 0.05F * (heightDiameterRatio - heightDiameterWorkaroundThreshold)) * (dbhInCm - 40.0F);
         }
 
         /// <summary>

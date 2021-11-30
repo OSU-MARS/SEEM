@@ -234,20 +234,19 @@ namespace Mars.Seem.Data
             XlsxReader.ReadWorksheet(xlsxFilePath, worksheetName, this.ParseRow);
         }
 
-        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndexInM)
-        {
-            return this.ToOrganonStand(configuration, ageInYears, siteIndexInM, Int32.MaxValue);
-        }
-
-        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float siteIndexInM, int maximumTreeRecords)
+        public OrganonStand ToOrganonStand(OrganonConfiguration configuration, int ageInYears, float primarySpeciesSiteIndexInM, float hemlockSiteIndexInM, int maximumTreeRecords)
         {
             if ((ageInYears < 0) || (ageInYears > 1000))
             {
                 throw new ArgumentOutOfRangeException(nameof(ageInYears));
             }
-            if ((siteIndexInM < 0.0F) || (siteIndexInM > Constant.Maximum.SiteIndexInM))
+            if ((primarySpeciesSiteIndexInM < 0.0F) || (primarySpeciesSiteIndexInM > Constant.Maximum.SiteIndexInM))
             {
-                throw new ArgumentOutOfRangeException(nameof(siteIndexInM));
+                throw new ArgumentOutOfRangeException(nameof(primarySpeciesSiteIndexInM));
+            }
+            if ((hemlockSiteIndexInM < 0.0F) || (hemlockSiteIndexInM > Constant.Maximum.SiteIndexInM))
+            {
+                throw new ArgumentOutOfRangeException(nameof(primarySpeciesSiteIndexInM));
             }
             if (maximumTreeRecords < 1)
             {
@@ -265,8 +264,9 @@ namespace Mars.Seem.Data
             {
                 plotIDsAsString.Append("y" + this.plotIDs[index].ToString(CultureInfo.InvariantCulture));
             }
-            OrganonStand organonStand = new(ageInYears, Constant.FeetPerMeter * siteIndexInM)
+            OrganonStand organonStand = new(configuration.Variant, ageInYears, Constant.FeetPerMeter * primarySpeciesSiteIndexInM)
             {
+                HemlockSiteIndexInFeet = Constant.FeetPerMeter * hemlockSiteIndexInM,
                 Name = plotIDsAsString.ToString()
             };
             foreach (Trees plotTreesOfSpecies in plotAtAge.TreesBySpecies.Values)
@@ -287,7 +287,7 @@ namespace Mars.Seem.Data
                     if (Single.IsNaN(dbhInInches) || (dbhInInches <= 0.0F) ||
                         Single.IsNaN(heightInFeet) || (heightInFeet <= 0.0F))
                     {
-                        throw new NotSupportedException("Tree " + tag + " has a missing, zero, or negative height or diameter at age " + ageInYears + ".");
+                        throw new NotSupportedException("Tree " + tag + " on plot " + plot + " has a missing, zero, or negative height or diameter at age " + ageInYears + ".");
                     }
 
                     standTreesOfSpecies.Add(plot, tag, dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactorPerAcre);
@@ -309,9 +309,8 @@ namespace Mars.Seem.Data
                 throw new NotImplementedException("Old tree index not computed.");
             }
 
-            organonStand.EnsureSiteIndicesSet(configuration.Variant);
             organonStand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
-            organonStand.SetSdiMax(configuration);
+            //organonStand.SetSdiMax(configuration);
 
             float defaultOldIndex = 0.0F;
             OrganonStandDensity density = new(configuration.Variant, organonStand);
@@ -332,16 +331,16 @@ namespace Mars.Seem.Data
                     organonTreesOfSpecies.CrownRatio[treeIndex] = crownRatio;
                 }
 
-                // initialize crown ratio from FVS-PN dubbing
+                // alternatively, initialize crown ratio from FVS-PN dubbing
                 // https://www.fs.fed.us/fmsc/ftp/fvs/docs/overviews/FVSpn_Overview.pdf, section 4.3.1
                 // https://sourceforge.net/p/open-fvs/code/HEAD/tree/trunk/pn/crown.f#l67
                 // for live > 1.0 inch DBH
                 //   estimated crown ratio = d0 + d1 * 100.0 * SDI / SDImax
                 //   PSME d0 = 5.666442, d1 = -0.025199
-                if ((organonStand.TreesBySpecies.Count != 1) || (organonTreesOfSpecies.Species != FiaCode.PseudotsugaMenziesii))
-                {
-                    throw new NotImplementedException();
-                }
+                //if ((organonStand.TreesBySpecies.Count != 1) || (organonTreesOfSpecies.Species != FiaCode.PseudotsugaMenziesii))
+                //{
+                //    throw new NotImplementedException();
+                //}
 
                 // FVS-PN crown ratio dubbing for Douglas-fir
                 // Resulted in 0.28% less volume than Organon NWO on Malcolm Knapp Nelder 1 at stand age 70.

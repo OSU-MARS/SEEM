@@ -2,6 +2,7 @@
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Mars.Seem.Heuristics
 {
@@ -44,8 +45,12 @@ namespace Mars.Seem.Heuristics
             // value of solution diversity and objective function improvements.
             float financialValue = heuristic.FinancialValue.GetHighestValueWithDefaulting(coordinate);
             bool poolAlreadyFull = element.Pool.IsFull;
-            bool acceptedAsEliteSolution = element.Pool.TryAddOrReplace(trajectory, financialValue);
+            bool acceptedAsEliteSolution = element.Pool.TryAddOrReplace(trajectory, financialValue, heuristic);
             this.GraspReactivity.Add(heuristic.ConstructionGreediness, acceptedAsEliteSolution && poolAlreadyFull);
+
+            Debug.Assert((element.Pool.SolutionsInPool > 0) && 
+                         (element.Pool.High.Heuristic != null) && (element.Pool.High.Trajectory != null) &&
+                         (element.Pool.Low.Heuristic != null) && (element.Pool.Low.Trajectory != null));
         }
 
         public override HeuristicParameters GetParameters(int parameterIndex)

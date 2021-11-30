@@ -880,7 +880,7 @@ namespace Mars.Seem.Organon
             float siteIndex = stand.SiteIndexInFeet;
             switch (trees.Species)
             {
-                // Hann, Marshall, and Hanus(2006) FRL Research Contribution 49
+                // Hann, Marshall, and Hanus (2006) FRL Research Contribution 49
                 case FiaCode.PseudotsugaMenziesii:
                     B0 = -3.12161659F;
                     B1 = -0.44724396F;
@@ -889,7 +889,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.01843137F;
                     B5 = 0.01353918F;
                     break;
-                // Unpublished Equation on File at OSU Dept.Forest Resources
+                // unpublished equation on file at OSU Deptartment of Forest Resources
                 case FiaCode.AbiesGrandis:
                     B0 = -7.60159F;
                     B1 = -0.200523F;
@@ -898,7 +898,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.0441333F;
                     B5 = 0.00063849F;
                     break;
-                // Hann, Marshall, Hanus(2003) FRL Research Contribution 40
+                // Hann et al. 2003. FRL Research Contribution 40.
                 case FiaCode.TsugaHeterophylla:
                 case FiaCode.ThujaPlicata:
                     B0 = -0.761609F;
@@ -907,9 +907,9 @@ namespace Mars.Seem.Organon
                     B3 = -4.74019F;
                     B4 = 0.0119587F;
                     B5 = 0.00756365F;
-                    siteIndex = stand.HemlockSiteIndexInFeet; // BUGBUG: why does redcedar get hemlock site index only here?
+                    siteIndex = stand.HemlockSiteIndexInFeet; // redcedar site index is approximated by hemlock site index here
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.TaxusBrevifolia:
                     B0 = -4.072781265F;
                     B1 = -0.176433475F;
@@ -918,7 +918,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.0F;
                     B5 = 0.012525642F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.ArbutusMenziesii:
                     B0 = -6.089598985F;
                     B1 = -0.245615070F;
@@ -927,7 +927,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.033348079F;
                     B5 = 0.013571319F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.AcerMacrophyllum:
                     B0 = -2.976822456F;
                     B1 = 0.0F;
@@ -936,7 +936,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.0F;
                     B5 = 0.0F;
                     break;
-                // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
+                // Gould, Marshall, and Harrington (2008) Western Journal of Applied Forestry 23:26-33
                 case FiaCode.QuercusGarryana:
                     B0 = -6.00031085F;
                     B1 = -0.10490823F;

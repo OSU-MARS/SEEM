@@ -16,9 +16,10 @@ namespace Mars.Seem.Extensions
             {
                 return twoOrFourLetterCode switch
                 {
+                    "CW" => FiaCode.ThujaPlicata,
                     "DR" => FiaCode.AlnusRubra,
                     "FD" => FiaCode.PseudotsugaMenziesii,
-                    "CW" => FiaCode.ThujaPlicata,
+                    "MB" => FiaCode.AcerMacrophyllum,
                     "HW" => FiaCode.TsugaHeterophylla,
                     _ => throw new NotSupportedException(String.Format("Unhandled species '{0}'.", twoOrFourLetterCode))
                 };

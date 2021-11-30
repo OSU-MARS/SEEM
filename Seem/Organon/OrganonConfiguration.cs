@@ -23,12 +23,13 @@ namespace Mars.Seem.Organon
         // enables Swiss needle cast (Nothophaeocryptopus gaeumanii) growth modifiers, applies only to NWO and SMC variants
         public bool SwissNeedleCast { get; set; }
 
-        // Ignored if less than or equal to zero.
-        public float DefaultMaximumSdi { get; set; }
+        // SDImax values present in Organon Fortran but not actually used
+        // Default Reineke SDI (English units). Ignored if less than or equal to zero.
+        //public float DefaultMaximumSdi { get; set; }
         // Maximum stand density index for Abies species, ignored if less than or equal to zero. Contributes to SWO SDImax.
-        public float TrueFirMaximumSdi { get; set; }
+        //public float TrueFirMaximumSdi { get; set; }
         // Maximum stand density index for western hemblock, ignored if less than or equal to zero.
-        public float HemlockMaximumSdi { get; set; }
+        //public float HemlockMaximumSdi { get; set; }
         // RVARS[5] genetic diameter growth modifier (requires Genetics = true)
         public float GWDG { get; set; }
         // RVARS[6] genetic height growth modifier (requires Genetics = true)
@@ -67,9 +68,9 @@ namespace Mars.Seem.Organon
             this.IsEvenAge = other.IsEvenAge;
             this.SwissNeedleCast = other.SwissNeedleCast;
 
-            this.DefaultMaximumSdi = other.DefaultMaximumSdi;
-            this.HemlockMaximumSdi = other.HemlockMaximumSdi;
-            this.TrueFirMaximumSdi = other.TrueFirMaximumSdi;
+            //this.DefaultMaximumSdi = other.DefaultMaximumSdi;
+            //this.HemlockMaximumSdi = other.HemlockMaximumSdi;
+            //this.TrueFirMaximumSdi = other.TrueFirMaximumSdi;
             this.GWDG = other.GWDG;
             this.GWHG = other.GWHG;
             this.FR = other.FR;

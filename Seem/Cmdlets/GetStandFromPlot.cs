@@ -33,6 +33,10 @@ namespace Mars.Seem.Cmdlets
         public float ForwardingRoad { get; set; }
 
         [Parameter]
+        [ValidateRange(1.37F, Constant.Maximum.SiteIndexInM)]
+        public float HemlockSiteIndexInM { get; set; }
+
+        [Parameter]
         public TreeModel Model { get; set; }
 
         [Parameter(HelpMessage = "Replanting density after regeneration harvest in seedlings per hectare.")]
@@ -48,12 +52,12 @@ namespace Mars.Seem.Cmdlets
         public float SlopeInPercent { get; set; }
 
         [Parameter]
-        [ValidateRange(1.0F, Constant.Maximum.SiteIndexInM)]
+        [ValidateRange(1.37F, Constant.Maximum.SiteIndexInM)]
         public float SiteIndexInM { get; set; }
 
         [Parameter]
         [ValidateRange(1, Int32.MaxValue)]
-        public int? Trees { get; set; }
+        public int Trees { get; set; }
 
         [Parameter(Mandatory = true)]
         [ValidateNotNullOrEmpty]
@@ -70,10 +74,11 @@ namespace Mars.Seem.Cmdlets
             this.ForwardingTethered = Constant.HarvestCost.DefaultForwardingDistanceInStandTethered;
             this.ForwardingUntethered = Constant.HarvestCost.DefaultForwardingDistanceInStandUntethered;
             this.ForwardingRoad = Constant.HarvestCost.DefaultForwardingDistanceOnRoad;
+            this.HemlockSiteIndexInM = Constant.Default.WesternHemlockSiteIndexInM;
             this.Model = TreeModel.OrganonNwo;
             this.SlopeInPercent = Constant.HarvestCost.DefaultSlopeInPercent;
-            this.SiteIndexInM = 130.0F;
-            this.Trees = null;
+            this.SiteIndexInM = Constant.Default.DouglasFirSiteIndexInM; 
+            this.Trees = Int32.MaxValue;
             this.Xlsx = null;
             this.XlsxSheet = "1";
         }
@@ -92,15 +97,7 @@ namespace Mars.Seem.Cmdlets
             plot.Read(this.Xlsx!, this.XlsxSheet);
 
             OrganonConfiguration configuration = new(OrganonVariant.Create(this.Model));
-            OrganonStand stand;
-            if (this.Trees.HasValue)
-            {
-                stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndexInM, this.Trees.Value);
-            }
-            else
-            {
-                stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndexInM);
-            }
+            OrganonStand stand = plot.ToOrganonStand(configuration, this.Age, this.SiteIndexInM, this.HemlockSiteIndexInM, this.Trees);
 
             stand.AreaInHa = this.Area;
             stand.SetCorridorLength(this.ForwardingTethered, this.ForwardingUntethered);

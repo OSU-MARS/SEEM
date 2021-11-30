@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
 
 namespace Mars.Seem.Test
 {
@@ -104,7 +105,7 @@ namespace Mars.Seem.Test
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, siteIndexInM: 39.6F, treeRecords);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             RunParameters landExpectationValueIts = new(new List<int>() { 9 }, configuration)
@@ -243,7 +244,7 @@ namespace Mars.Seem.Test
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, siteIndexInM: 39.6F, treeRecords);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             // heuristics optimizing for LEV
@@ -411,7 +412,7 @@ namespace Mars.Seem.Test
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, siteIndexInM: 39.6F);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
@@ -677,7 +678,7 @@ namespace Mars.Seem.Test
 
             PlotsWithHeight plot14 = PublicApi.GetPlot14();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = plot14.ToOrganonStand(configuration, ageInYears: 30, siteIndexInM: 39.6F);
+            OrganonStand stand = plot14.ToOrganonStand(configuration, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue);
             stand.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
 
             OrganonStandTrajectory thinnedTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
@@ -762,7 +763,7 @@ namespace Mars.Seem.Test
             List<float> discountRates = new() {  Constant.Financial.DefaultAnnualDiscountRate };
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, siteIndexInM: 39.6F, treeRecordCount);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecordCount);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             RunParameters landExpectationValue = new(new List<int>() { 9 }, configuration)
@@ -950,8 +951,14 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F); // best selection with debug stand is no harvest
                     Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
 
+                    float thinVolumeScribner = bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex);
+                    float previousStandingVolumeScribner = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1);
                     Assert.IsTrue(bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= 0.0F);
-                    Assert.IsTrue(bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex) < bestTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1) + 0.000001F); // allow for numerical error in case where all trees are harvested
+                    if (thinVolumeScribner > previousStandingVolumeScribner)
+                    {
+                        Debugger.Break();
+                    }
+                    Assert.IsTrue(thinVolumeScribner < previousStandingVolumeScribner + 0.000001F, "Thinning volume: " + thinVolumeScribner + " MBF/ha in period " + periodIndex + " but previous period's standing volume is " + previousStandingVolumeScribner + " MBF/ha."); // allow for numerical error in case where all trees are harvested
                     Assert.IsTrue(bestHarvestedVolume.Scribner2Saw[periodIndex] >= 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Scribner3Saw[periodIndex] >= 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Scribner4Saw[periodIndex] >= 0.0F);

@@ -25,7 +25,7 @@ namespace Mars.Seem.Silviculture
         public IList<int> ThirdThinPeriods { get; private init; }
 
         public StandTrajectories(IList<int> firstThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios)
-            : this(1, firstThinPeriods, new List<int>() { Constant.NoThinPeriod }, new List<int>() { Constant.NoThinPeriod }, rotationLengths, financialScenarios, Constant.DefaultSolutionPoolSize)
+            : this(1, firstThinPeriods, new List<int>() { Constant.NoThinPeriod }, new List<int>() { Constant.NoThinPeriod }, rotationLengths, financialScenarios, Constant.Default.SolutionPoolSize)
         {
             // forwards
         }
@@ -172,6 +172,8 @@ namespace Mars.Seem.Silviculture
             // One interpretation of this is the pool size sets the minimum amount of information needed to make decisions about the
             // value of solution diversity and objective function improvements.
             element.Pool.TryAddOrReplace(trajectory, financialValue);
+
+            Debug.Assert((element.Pool.SolutionsInPool > 0) && (element.Pool.High.Trajectory != null) && (element.Pool.Low.Trajectory != null));
         }
 
         public void GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected)

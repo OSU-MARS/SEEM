@@ -74,7 +74,6 @@ namespace Mars.Seem.Test
                     {
                         float[] previousTreeDiameters = previousTreeDiametersBySpecies[treesOfSpecies.Species];
                         OrganonGrowth.GrowDiameter(configuration, treatments, stand, treesOfSpecies, treeCompetition, calibrationBySpecies[treesOfSpecies.Species].Diameter);
-                        stand.SetSdiMax(configuration);
                         for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                         {
                             float dbhInInches = treesOfSpecies.Dbh[treeIndex];
@@ -117,7 +116,6 @@ namespace Mars.Seem.Test
                     float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
                     OrganonGrowth.Grow(configuration, treatments, stand, densityStartOfStep, calibrationBySpecies, ref crownCompetitionByHeight, 
                                        out OrganonStandDensity densityEndOfStep, out int _);
-                    stand.SetSdiMax(configuration);
 
                     OrganonTest.Verify(ExpectedTreeChanges.DiameterGrowth | ExpectedTreeChanges.HeightGrowth, stand, variant);
                     OrganonTest.Verify(calibrationBySpecies);
@@ -131,7 +129,7 @@ namespace Mars.Seem.Test
         public void GrowthModifiersApi()
         {
             this.TestContext!.WriteLine("tree age, diameter genetic factor, height genetic factor, diameter growth modifier, height growth modifier");
-            for (float treeAgeInYears = 0.0F; treeAgeInYears <= 50.0F; treeAgeInYears += Constant.DefaultTimeStepInYears)
+            for (float treeAgeInYears = 0.0F; treeAgeInYears <= 50.0F; treeAgeInYears += Constant.Default.TimeStepInYears)
             {
                 for (float diameterGeneticFactor = 0.0F; diameterGeneticFactor <= 25.0F; diameterGeneticFactor += 5.0F)
                 {
@@ -233,7 +231,6 @@ namespace Mars.Seem.Test
                         {
                             OrganonGrowth.GrowHeightMinorSpecies(configuration, stand, treesOfSpecies, calibrationBySpecies[treesOfSpecies.Species].Height);
                         }
-                        stand.SetSdiMax(configuration);
 
                         for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                         {
@@ -264,7 +261,6 @@ namespace Mars.Seem.Test
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     OrganonMortality.ReduceExpansionFactors(configuration, treatments, stand, density);
-                    stand.SetSdiMax(configuration);
                     OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
                     float oldGrowthIndicator  = OrganonMortality.GetOldGrowthIndicator(variant, stand);
                     Assert.IsTrue(oldGrowthIndicator >= 0.0F);
@@ -328,23 +324,23 @@ namespace Mars.Seem.Test
         //    RedAlder.WHHLB_SI_UC();
         //}
 
-        [TestMethod]
-        public void SubmaxApi()
-        {
-            this.TestContext!.WriteLine("version, A1, A2");
-            foreach (OrganonVariant variant in TestConstant.Variants)
-            {
-                OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
-                TestStand stand = OrganonTest.CreateDefaultStand(configuration);
-                this.TestContext.WriteLine("{0},{1},{2}", variant, stand.SdiMaxConstantA1, stand.SdiMaxExponentA2);
+        //[TestMethod]
+        //public void SubmaxApi()
+        //{
+        //    this.TestContext!.WriteLine("version, A1, A2");
+        //    foreach (OrganonVariant variant in TestConstant.Variants)
+        //    {
+        //        OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
+        //        TestStand stand = OrganonTest.CreateDefaultStand(configuration);
+        //        this.TestContext.WriteLine("{0},{1},{2}", variant, stand.SdiMaxLnQmd, stand.SdiMaxReciprocalExponent);
 
-                Assert.IsTrue(stand.SdiMaxConstantA1 < 7.0F);
-                Assert.IsTrue(stand.SdiMaxConstantA1 > 5.0F);
-                Assert.IsTrue(stand.SdiMaxExponentA2 > 0.60F);
-                Assert.IsTrue(stand.SdiMaxExponentA2 < 0.65F);
-                OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
-            }
-        }
+        //        Assert.IsTrue(stand.SdiMaxLnQmd < 7.0F);
+        //        Assert.IsTrue(stand.SdiMaxLnQmd > 5.0F);
+        //        Assert.IsTrue(stand.SdiMaxReciprocalExponent > 0.60F);
+        //        Assert.IsTrue(stand.SdiMaxReciprocalExponent < 0.65F);
+        //        OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
+        //    }
+        //}
 
         [TestMethod]
         public void WesternHemlockApi()

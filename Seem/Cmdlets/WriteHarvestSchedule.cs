@@ -29,7 +29,7 @@ namespace Mars.Seem.Cmdlets
             using StreamWriter writer = this.GetWriter();
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories) + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
+                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
             }
 
             // write data

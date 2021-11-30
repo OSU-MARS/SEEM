@@ -157,9 +157,10 @@ namespace Mars.Seem.Tree
             return doubleBarkThicknessInCm;
         }
 
-        internal static float GetNeiloidHeight(float dbhInCm)
+        internal static float GetNeiloidHeight(float dbhInCm, float _)
         {
-            return Constant.DbhHeightInM + 0.01F * 5.0F * (dbhInCm - 20.0F); // approximation from R plots
+            // approximation from plotting Poudel et al. 2018 dib curves in R
+            return Constant.DbhHeightInM + 0.01F * 5.0F * (dbhInCm - 20.0F);
         }
 
         /// <summary>

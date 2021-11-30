@@ -1240,7 +1240,7 @@ namespace Mars.Seem.Organon
             float B7;
             switch (trees.Species)
             {
-                // DF Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.PseudotsugaMenziesii:
                     B0 = -4.648483270F;
                     B1 = -0.266558690F;
@@ -1251,7 +1251,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.013553950F;
                     B7 = -2.723470950F;
                     break;
-                // GW Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.AbiesConcolor:
                 case FiaCode.AbiesGrandis:
                     B0 = -2.215777201F;
@@ -1263,7 +1263,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // PP Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.PinusPonderosa:
                     B0 = -1.050000682F;
                     B1 = -0.194363402F;
@@ -1275,7 +1275,7 @@ namespace Mars.Seem.Organon
                     B7 = 0.0F;
                     // BUGBUG: doesn't use ponderosa site index?
                     break;
-                // SP Coefficients from Unpublished Equation on File at OSU Dept.Forest Resources
+                // unpublished equation on file at OSU Deptartment of Forest Resources
                 case FiaCode.PinusLambertiana:
                     B0 = -1.531051304F;
                     B1 = 0.0F;
@@ -1286,7 +1286,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // IC Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.CalocedrusDecurrens:
                     B0 = -1.922689902F;
                     B1 = -0.136081990F;
@@ -1297,7 +1297,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // WH Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.TsugaHeterophylla:
                     B0 = -1.166211991F;
                     B1 = 0.0F;
@@ -1308,7 +1308,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // RC Coefficients from WH of Hann, Marshall, Hanus(2003) FRL Research Contribution 40
+                // adapted from western hemlock in Hann et al. 2003. FRL Research Contribution 40.
                 case FiaCode.ThujaPlicata:
                     B0 = -0.761609F;
                     B1 = -0.529366F;
@@ -1319,7 +1319,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // PY Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.TaxusBrevifolia:
                     B0 = -4.072781265F;
                     B1 = -0.176433475F;
@@ -1330,7 +1330,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.ArbutusMenziesii:
                     B0 = -6.089598985F;
                     B1 = -0.245615070F;
@@ -1341,7 +1341,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.ChrysolepisChrysophyllaVarChrysophylla:
                     B0 = -4.317549852F;
                     B1 = -0.057696253F;
@@ -1352,7 +1352,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.NotholithocarpusDensiflorus:
                     B0 = -2.410756914F;
                     B1 = 0.0F;
@@ -1363,7 +1363,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.QuercusChrysolepis:
                     B0 = -2.990451960F;
                     B1 = 0.0F;
@@ -1374,7 +1374,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.AcerMacrophyllum:
                     B0 = -2.976822456F;
                     B1 = 0.0F;
@@ -1385,7 +1385,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
+                // Gould, Marshall, and Harrington (2008) West.J.Appl.For. 23: 26-33
                 case FiaCode.QuercusGarryana:
                     B0 = -6.00031085F;
                     B1 = -0.10490823F;
@@ -1396,7 +1396,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.QuercusKelloggii:
                     B0 = -3.108619921F;
                     B1 = -0.570366764F;
@@ -1407,7 +1407,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Best Guess
+                // best guess
                 case FiaCode.AlnusRubra:
                     B0 = -2.0F;
                     B1 = -0.5F;
@@ -1418,7 +1418,7 @@ namespace Mars.Seem.Organon
                     B6 = 0.0F;
                     B7 = 0.0F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.CornusNuttallii:
                     B0 = -3.020345211F;
                     B1 = 0.0F;

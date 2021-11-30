@@ -9,12 +9,13 @@ namespace Mars.Seem.Tree
         public float PreferredLogLengthInMeters { get; private init; }
         public SortedList<FiaCode, TreeSpeciesVolumeTable> VolumeBySpecies { get; private init; }
 
-        public ScaledVolume(TreeSpeciesVolumeTableParameters psmeParameters)
+        public ScaledVolume(TreeSpeciesVolumeTableParameters psmeParameters, TreeSpeciesVolumeTableParameters tsheParameters)
         {
             this.PreferredLogLengthInMeters = psmeParameters.PreferredLogLengthInMeters;
             this.VolumeBySpecies = new SortedList<FiaCode, TreeSpeciesVolumeTable>
             {
-                { FiaCode.PseudotsugaMenziesii, new TreeSpeciesVolumeTable(psmeParameters) }
+                { FiaCode.PseudotsugaMenziesii, new TreeSpeciesVolumeTable(psmeParameters) },
+                { FiaCode.TsugaHeterophylla, new TreeSpeciesVolumeTable(tsheParameters) }
             };
         }
 
@@ -48,11 +49,11 @@ namespace Mars.Seem.Tree
                 // compare greater than or equals to avoid overstep in bilinear interpolation
                 if (dbhInCm >= volumeTable.MaximumDiameterInCentimeters)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm.");
+                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm in harvest period " + harvestPeriod + ".");
                 }
                 if (heightInMeters >= volumeTable.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString("0.0") + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m.");
+                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString("0.0") + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m in harvest period " + harvestPeriod + ".");
                 }
 
                 // bilinear interpolation setup

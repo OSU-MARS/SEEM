@@ -85,6 +85,44 @@ namespace Mars.Seem.Tree
             return dibInCm;
         }
 
+        public static float GetWesternHemlockDiameterInsideBark(float dbhInCm, float heightInM, float evaluationHeightInM)
+        {
+            // same code as GetDouglasFirDiameterInsideBark() with western hemlock values of b1-b9, also from Table 4: M4 (Kozak 2004) form
+            if ((dbhInCm < 0.0F) || (dbhInCm > 135.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString("0.0") + " cm is either negative or exceeds regression limit of 135.0 cm.");
+            }
+            if ((heightInM < PoudelRegressions.MinimumKozakHeightInM) || (heightInM > 75.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString("0.0") + " m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 75.0 m.");
+            }
+            if ((evaluationHeightInM < 0.0F) || (evaluationHeightInM > heightInM))
+            {
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString("0.00") + " m is negative or exceeds tree height of " + heightInM.ToString("0.00") + " m.");
+            }
+            if (evaluationHeightInM == heightInM)
+            {
+                return 0.0F; // numerical edge case
+            }
+
+            const float b1 = 1.05981F;
+            const float b2 = 0.99433F;
+            const float b3 = -0.01684F;
+            const float b4 = 0.64632F;
+            const float b5 = -1.56599F;
+            const float b6 = 0.74293F;
+            const float b7 = 4.75618F;
+            const float b8 = 0.0389F;
+            const float b9 = -0.19425F;
+            float t = evaluationHeightInM / heightInM;
+            float k = 1.3F / heightInM; // greater than 1 if tree is less than 1.3 m tall
+            float oneMinusCubeRootT = 1 - MathV.Pow(t, 1.0F / 3.0F);
+            float tkRatio = oneMinusCubeRootT / (1 - MathV.Pow(k, 1.0F / 3.0F)); // dib calculation fails for k >= 1 since tkRatio is infinite at k = 1 and negative for k > 1
+            float dibInCm = b1 * MathV.Pow(dbhInCm, b2) * MathV.Pow(heightInM, b3) * MathV.Pow(tkRatio, b4 * t * t * t * t + b5 / MathV.Exp(dbhInCm / heightInM) + b6 * MathV.Pow(tkRatio, 0.1F) + b7 / dbhInCm + b8 * MathV.Pow(heightInM, oneMinusCubeRootT) + b9 * tkRatio);
+            // float dibMathFcheck = b1 * MathF.Pow(dbhInCm, b2) * MathF.Pow(heightInM, b3) * MathF.Pow(tkRatio, b4 * t * t * t * t + b5 / MathF.Exp(dbhInCm / heightInM) + b6 * MathF.Pow(tkRatio, 0.1F) + b7 / dbhInCm + b8 * MathF.Pow(heightInM, 1 - MathF.Pow(evaluationHeightInM / heightInM, 1.0F / 3.0F)) + b9 * tkRatio);
+            return dibInCm;
+        }
+
         /// <summary>
         /// Find total per hectare biomass of trees.
         /// </summary>

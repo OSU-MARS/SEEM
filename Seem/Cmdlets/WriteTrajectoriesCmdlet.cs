@@ -23,10 +23,10 @@ namespace Mars.Seem.Cmdlets
             this.HeuristicParameters = false;
         }
 
-        protected string GetCsvHeaderForCoordinate(StandTrajectories trajectories)
+        protected string GetCsvHeaderForCoordinate()
         {
             string? maybeHeuristicParametersWithTrailingComma = null;
-            if (this.HeuristicParameters && (trajectories is HeuristicStandTrajectories heuristicTrajectories))
+            if (this.HeuristicParameters && (this.Trajectories is HeuristicStandTrajectories heuristicTrajectories))
             {
                 HeuristicParameters? firstHeuristicParameters = heuristicTrajectories.GetParameters(Constant.HeuristicDefault.CoordinateIndex);
                 if (firstHeuristicParameters != null)

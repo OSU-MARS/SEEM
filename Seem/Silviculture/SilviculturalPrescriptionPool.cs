@@ -2,7 +2,6 @@
 using Mars.Seem.Optimization;
 using Mars.Seem.Tree;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Mars.Seem.Silviculture
@@ -78,12 +77,12 @@ namespace Mars.Seem.Silviculture
             return eliteTreeSelection;
         }
 
-        public bool TryAddOrReplace(StandTrajectory trajectory, float financialValue)
+        public bool TryAddOrReplace(StandTrajectory candidateTrajectory, float candidateFinancialValue)
         {
-            return this.TryAddOrReplace(trajectory, financialValue, (Heuristic?)null);
+            return this.TryAddOrReplace(candidateTrajectory, candidateFinancialValue, null);
         }
 
-        private bool TryAddOrReplace(StandTrajectory candidateTrajectory, float candidateFinancialValue, Heuristic? heuristic)
+        public bool TryAddOrReplace(StandTrajectory candidateTrajectory, float candidateFinancialValue, Heuristic? heuristic)
         {
             if (this.SolutionsInPool == 0)
             {

@@ -14,11 +14,9 @@ namespace Mars.Seem.Test
         public SortedDictionary<FiaCode, int[]> InitialDbhQuantileBySpecies { get; private set; }
 
         public TestStand(OrganonVariant variant, int ageInYears, float primarySiteIndex)
-            : base(ageInYears, primarySiteIndex)
+            : base(variant, ageInYears, primarySiteIndex)
         {
             this.InitialDbhQuantileBySpecies = new SortedDictionary<FiaCode, int[]>();
-
-            this.EnsureSiteIndicesSet(variant);
         }
 
         public TestStand(TestStand other)

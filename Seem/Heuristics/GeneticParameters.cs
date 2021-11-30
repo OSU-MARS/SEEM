@@ -50,12 +50,12 @@ namespace Mars.Seem.Heuristics
                    this.MaximumGenerations.ToString(CultureInfo.InvariantCulture) + "," +
                    this.ReplacementStrategy.ToString() + "," +
                    this.CrossoverProbabilityEnd.ToString(CultureInfo.InvariantCulture) + "," +
-                   this.ExchangeProbabilityStart.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ExchangeProbabilityEnd.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FlipProbabilityStart.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FlipProbabilityEnd.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ExponentK.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ReservedProportion.ToString(Constant.DefaultProbabilityFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ExchangeProbabilityStart.ToString(Constant.Default.ProbabilityFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ExchangeProbabilityEnd.ToString(Constant.Default.ProbabilityFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FlipProbabilityStart.ToString(Constant.Default.ProbabilityFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FlipProbabilityEnd.ToString(Constant.Default.ProbabilityFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ExponentK.ToString(Constant.Default.ProbabilityFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ReservedProportion.ToString(Constant.Default.ProbabilityFormat, CultureInfo.InvariantCulture) + "," +
                    this.MinimumCoefficientOfVariation.ToString(CultureInfo.InvariantCulture);
         }
     }

@@ -8,7 +8,11 @@ namespace Mars.Seem.Tree
 
         static TreeSpecies()
         {
-            TreeSpecies.Properties = new() { { FiaCode.PseudotsugaMenziesii, DouglasFir.Properties } };
+            TreeSpecies.Properties = new()
+            {
+                { FiaCode.PseudotsugaMenziesii, DouglasFir.Properties },
+                { FiaCode.TsugaHeterophylla, WesternHemlock.Properties }
+            };
         }
     }
 }

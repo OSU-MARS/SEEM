@@ -30,7 +30,7 @@ namespace Mars.Seem.Heuristics
         public virtual string GetCsvValues()
         {
             return this.MinimumConstructionGreediness.ToString(CultureInfo.InvariantCulture) + "," + 
-                   this.InitialThinningProbability.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture);
+                   this.InitialThinningProbability.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture);
         }
     }
 }

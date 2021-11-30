@@ -63,9 +63,9 @@ namespace Mars.Seem.Heuristics
         {
             return base.GetCsvValues() + "," +
                    this.Units.ToString() + "," +
-                   this.FromAbovePercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.ProportionalPercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
-                   this.FromBelowPercentageUpperLimit.ToString(Constant.DefaultPercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromAbovePercentageUpperLimit.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.ProportionalPercentageUpperLimit.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
+                   this.FromBelowPercentageUpperLimit.ToString(Constant.Default.PercentageFormat, CultureInfo.InvariantCulture) + "," +
                    this.MinimumIntensity.ToString(CultureInfo.InvariantCulture) + "," +
                    this.MinimumIntensityStepSize.ToString(CultureInfo.InvariantCulture) + "," +
                    this.StepSizeMultiplier.ToString(CultureInfo.InvariantCulture) + "," +

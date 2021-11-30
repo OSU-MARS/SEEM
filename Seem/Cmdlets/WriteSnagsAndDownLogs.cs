@@ -24,7 +24,7 @@ namespace Mars.Seem.Cmdlets
             bool resultsSpecified = this.Trajectories != null;
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories!) + ",standAge,species,diameter class,snags,logs");
+                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",standAge,species,diameter class,snags,logs");
             }
 
             // rows for periods

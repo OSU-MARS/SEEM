@@ -7,7 +7,7 @@ using System;
 
 namespace Mars.Seem.Test
 {
-    [DeploymentItem("financial scenarios.xlsx")]
+    [DeploymentItem("financial scenarios psme.xlsx")]
     [TestClass]
     public class LowLevel
     {
@@ -264,7 +264,7 @@ namespace Mars.Seem.Test
         public void FinancialScenarios()
         {
             FinancialScenarios financialScenarios = new();
-            financialScenarios.Read("financial scenarios.xlsx", "parameterization");
+            financialScenarios.Read("financial scenarios tshe.xlsx", "parameterization");
 
             // properties of FinancialScenario
             Assert.IsTrue(financialScenarios.Count == 1);

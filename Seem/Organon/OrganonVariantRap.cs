@@ -699,7 +699,6 @@ namespace Mars.Seem.Organon
 
         public override void ReduceExpansionFactors(OrganonStand stand, OrganonStandDensity densityBeforeGrowth, Trees trees, float fertilizationExponent)
         {
-            // RAP MORTALITY
             float B0;
             float B1;
             float B2;
@@ -709,7 +708,7 @@ namespace Mars.Seem.Organon
             float POW = 0.2F;
             switch (trees.Species)
             {
-                // RA Coefficients from Hann, Bluhm, and Hibbs New Red Alder Equation
+                // Hann, Bluhm, and Hibbs (?) new red alder equation
                 case FiaCode.AlnusRubra:
                     B0 = -4.333150734F;
                     B1 = -0.9856713799F;
@@ -719,7 +718,7 @@ namespace Mars.Seem.Organon
                     B5 = 0.0394546978F;
                     POW = 1.0F;
                     break;
-                // Hann, Marshall, and Hanus(2006) FRL Research Contribution 49
+                // Hann, Marshall, and Hanus (2006) FRL Research Contribution 49
                 case FiaCode.PseudotsugaMenziesii:
                     B0 = -3.12161659F;
                     B1 = -0.44724396F;
@@ -728,16 +727,8 @@ namespace Mars.Seem.Organon
                     B4 = 0.01843137F;
                     B5 = 0.01353918F;
                     break;
-                // Hann, Marshall, Hanus(2003) FRL Research Contribution 40
+                // Hann et al. 2003. FRL Research Contribution 40.
                 case FiaCode.TsugaHeterophylla:
-                    B0 = -0.761609F;
-                    B1 = -0.529366F;
-                    B2 = 0.0F;
-                    B3 = -4.74019F;
-                    B4 = 0.0119587F;
-                    B5 = 0.00756365F;
-                    break;
-                // WH of Hann, Marshall, Hanus(2003) FRL Research Contribution 40
                 case FiaCode.ThujaPlicata:
                     B0 = -0.761609F;
                     B1 = -0.529366F;
@@ -746,7 +737,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.0119587F;
                     B5 = 0.00756365F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.AcerMacrophyllum:
                     B0 = -2.976822456F;
                     B1 = 0.0F;
@@ -755,7 +746,7 @@ namespace Mars.Seem.Organon
                     B4 = 0.0F;
                     B5 = 0.0F;
                     break;
-                // Hann and Hanus(2001) FRL Research Contribution 34
+                // Hann and Hanus (2001) FRL Research Contribution 34
                 case FiaCode.CornusNuttallii:
                     B0 = -3.020345211F;
                     B1 = 0.0F;

@@ -37,7 +37,7 @@ namespace Mars.Seem.Cmdlets
                     distanceHeader[solutionIndex] = "distance" + solutionIndex.ToString(CultureInfo.InvariantCulture);
                 }
 
-                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories!) + ",pooled,accepted,rejected," + 
+                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",pooled,accepted,rejected," + 
                                  String.Join(',', financialHeader) + "," +
                                  String.Join(',', distanceHeader));
             }

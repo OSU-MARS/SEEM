@@ -41,8 +41,8 @@ namespace Mars.Seem.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate(this.Trajectories) + "," +
-                    "standAge,TPH,QMD,Htop,BA,SDI,liveTreeBiomass,SPH,snagQmd,standingCmh,standingMbf,thinCmh,thinMbfh,BAremoved,BAintensity,TPHdecrease," + 
+                writer.WriteLine(this.GetCsvHeaderForCoordinate() + "," +
+                    "standAge,TPH,QMD,Htop,BA,SDI,liveTreeBiomass,SPH,snagQmd,standingCmh,standingMbfh,thinCmh,thinMbfh,BAremoved,BAintensity,TPHdecrease," + 
                     "NPV,LEV,thinLogs2S,thinLogs3S,thinLogs4S,thinCmh2S,thinCmh3S,thinCmh4S,thinMbfh2S,thinMbfh3S,thinMbfh4S,thinPond2S,thinPond3S,thinPond4S," + 
                     "thinWheeledHarvesterForwarderCost,thinTaskCost,thinWheeledHarvesterPMh,thinChainsawPMhWithWheeledHarvester,thinForwarderPMh,thinForwardedWeight,thinWheeledHarvesterProductivity,thinForwarderProductivity," +
                     "standingLogs2S,standingLogs3S,standingLogs4S,standingCmh2S,standingCmh3S,standingCmh4S,standingMbfh2S,standingMbfh3S,standingMbfh4S,regenPond2S,regenPond3S,regenPond4S," +

@@ -103,7 +103,7 @@ namespace Mars.Seem.Organon
             }
 
             float prem = treatments.GetPrem(configuration.Variant, a9, out int yearsSinceMostRecentThin);
-            if ((prem == 0.0F) || (a9 * yearsSinceMostRecentThin < -20.0F))
+            if ((prem == 0.0F) || (a9 * yearsSinceMostRecentThin < MathV.ExpToZeroThreshold))
             {
                 // diameter growth multiplier is unity when
                 //   1) prem is zero because the stand hasn't been thinned.
@@ -187,7 +187,7 @@ namespace Mars.Seem.Organon
             }
 
             float prem = treatments.GetPrem(configuration.Variant, b11 / b10, out int yearsSinceMostRecentThin);
-            if ((prem == 0.0F) || (b11 * yearsSinceMostRecentThin < -20.0F))
+            if ((prem == 0.0F) || (b11 * yearsSinceMostRecentThin < MathV.ExpToZeroThreshold))
             {
                 // diameter growth multiplier is unity when
                 //   1) prem is zero because the stand hasn't been thinned.
@@ -421,7 +421,7 @@ namespace Mars.Seem.Organon
             float siteIndex = stand.SiteIndexInFeet;
             if (species == FiaCode.TsugaHeterophylla)
             {
-                siteIndex = stand.HemlockSiteIndexInFeet;
+                siteIndex = stand.HemlockSiteIndexInFeet; // why isn't this also used for redcedar? Cupressaceae taper?
             }
             // questionable descisions retained from Fortran code due to calibration fragility:
             // - ponderosa index isn't used for SWO
@@ -770,18 +770,18 @@ namespace Mars.Seem.Organon
                 throw new ArgumentOutOfRangeException(nameof(periodIndex));
             }
 
-            if (configuration.DefaultMaximumSdi > Constant.Maximum.SdiPerAcre)
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration), "Default maximum SDI is implausibly large.");
-            }
-            if (configuration.TrueFirMaximumSdi > Constant.Maximum.SdiPerAcre)
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration), "True fir maximum SDI is implausibly large.");
-            }
-            if (configuration.HemlockMaximumSdi > Constant.Maximum.SdiPerAcre)
-            {
-                throw new ArgumentOutOfRangeException(nameof(configuration), "Hemlock maximum SDI is implausibly large.");
-            }
+            //if (configuration.DefaultMaximumSdi > Constant.Maximum.SdiPerAcre)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(configuration), "Default maximum SDI is implausibly large.");
+            //}
+            //if (configuration.TrueFirMaximumSdi > Constant.Maximum.SdiPerAcre)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(configuration), "True fir maximum SDI is implausibly large.");
+            //}
+            //if (configuration.HemlockMaximumSdi > Constant.Maximum.SdiPerAcre)
+            //{
+            //    throw new ArgumentOutOfRangeException(nameof(configuration), "Hemlock maximum SDI is implausibly large.");
+            //}
 
             if (configuration.Genetics)
             {
