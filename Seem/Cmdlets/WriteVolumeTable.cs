@@ -42,6 +42,8 @@ namespace Mars.Seem.Cmdlets
             Debug.Assert(minimumFeedRollerHeight <= Constant.DbhHeightInM);
 
             string logLengthAsString = scaledVolume.PreferredLogLengthInMeters.ToString(CultureInfo.InvariantCulture);
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             foreach (FiaCode species in scaledVolume.VolumeBySpecies.Keys)
             {
@@ -125,28 +127,36 @@ namespace Mars.Seem.Cmdlets
                         float scribner3saw = volumeTable.Scribner3Saw[dbhIndex, heightIndex];
                         float scribner4saw = volumeTable.Scribner4Saw[dbhIndex, heightIndex];
                         float scribnerTotal = scribner2saw + scribner3saw + scribner4saw;
-                        writer.WriteLine(speciesAndHeightPrefix + "," + 
-                                         dbhInCm.ToString(CultureInfo.InvariantCulture) + "," +
-                                         heightDiameterRatio.ToString(CultureInfo.InvariantCulture) + "," +
-                                         logs.ToString(CultureInfo.InvariantCulture) + "," +
-                                         logs2saw.ToString(CultureInfo.InvariantCulture) + "," +
-                                         logs3saw.ToString(CultureInfo.InvariantCulture) + "," +
-                                         logs4saw.ToString(CultureInfo.InvariantCulture) + "," +
-                                         cubic2saw.ToString(CultureInfo.InvariantCulture) + "," + 
-                                         cubic3saw.ToString(CultureInfo.InvariantCulture) + "," + 
-                                         cubic4saw.ToString(CultureInfo.InvariantCulture) + "," +
-                                         cubicTotal.ToString(CultureInfo.InvariantCulture) + "," +
-                                         scribner2saw.ToString(CultureInfo.InvariantCulture) + "," + 
-                                         scribner3saw.ToString(CultureInfo.InvariantCulture) + "," + 
-                                         scribner4saw.ToString(CultureInfo.InvariantCulture) + "," +
-                                         scribnerTotal.ToString(CultureInfo.InvariantCulture) + "," +
-                                         fellingDiameter15.ToString(CultureInfo.InvariantCulture) + "," +
-                                         fellingDiameter30.ToString(CultureInfo.InvariantCulture) + "," +
-                                         maxFeedRollerDiameter.ToString(CultureInfo.InvariantCulture));
+                        string line = speciesAndHeightPrefix + "," +
+                            dbhInCm.ToString(CultureInfo.InvariantCulture) + "," +
+                            heightDiameterRatio.ToString(CultureInfo.InvariantCulture) + "," +
+                            logs.ToString(CultureInfo.InvariantCulture) + "," +
+                            logs2saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            logs3saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            logs4saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            cubic2saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            cubic3saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            cubic4saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            cubicTotal.ToString(CultureInfo.InvariantCulture) + "," +
+                            scribner2saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            scribner3saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            scribner4saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            scribnerTotal.ToString(CultureInfo.InvariantCulture) + "," +
+                            fellingDiameter15.ToString(CultureInfo.InvariantCulture) + "," +
+                            fellingDiameter30.ToString(CultureInfo.InvariantCulture) + "," +
+                            maxFeedRollerDiameter.ToString(CultureInfo.InvariantCulture);
+                        writer.WriteLine(line);
+                        estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                     }
                 }
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-VolumeTable: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;

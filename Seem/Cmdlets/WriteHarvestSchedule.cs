@@ -35,6 +35,8 @@ namespace Mars.Seem.Cmdlets
             // write data
             Dictionary<int, HashSet<StandTrajectory>> knownTrajectoriesByEndOfRotationPeriod = new();
             int maxCoordinateIndex = this.GetMaxCoordinateIndex();
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
             {
@@ -226,37 +228,46 @@ namespace Mars.Seem.Cmdlets
                             plot = highTreesAtRegen.Plot[uncompactedTreeIndex];
                             tag = highTreesAtRegen.Tag[uncompactedTreeIndex];
                         }
-                        writer.WriteLine(linePrefix + "," +
-                                         plot.ToString(CultureInfo.InvariantCulture) + "," +
-                                         tag.ToString(CultureInfo.InvariantCulture) + "," +
-                                         lowTreeSelection[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                         highTreeSelection[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                         highFirstThinDbhInCm + "," +
-                                         highFirstThinHeightInM + "," +
-                                         highFirstThinCrownRatio + "," +
-                                         highFirstThinExpansionFactorPerHa + "," +
-                                         highFirstThinCubicM3 + "," +
-                                         highSecondThinDbhInCm + "," +
-                                         highSecondThinHeightInM + "," +
-                                         highSecondThinCrownRatio + "," +
-                                         highSecondThinExpansionFactorPerHa + "," +
-                                         highSecondThinCubicM3 + "," +
-                                         highThirdThinDbhInCm + "," +
-                                         highThirdThinHeightInM + "," +
-                                         highThirdThinCrownRatio + "," +
-                                         highThirdThinExpansionFactorPerHa + "," +
-                                         highThirdThinCubicM3 + "," +
-                                         highRegenDbhInCm + "," +
-                                         highRegenHeightInM + "," +
-                                         highRegenCrownRatio + "," +
-                                         highRegenExpansionFactorPerHa + "," +
-                                         highRegenCubicM3);
+
+                        string line = linePrefix + "," +
+                            plot.ToString(CultureInfo.InvariantCulture) + "," +
+                            tag.ToString(CultureInfo.InvariantCulture) + "," +
+                            lowTreeSelection[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                            highTreeSelection[uncompactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                            highFirstThinDbhInCm + "," +
+                            highFirstThinHeightInM + "," +
+                            highFirstThinCrownRatio + "," +
+                            highFirstThinExpansionFactorPerHa + "," +
+                            highFirstThinCubicM3 + "," +
+                            highSecondThinDbhInCm + "," +
+                            highSecondThinHeightInM + "," +
+                            highSecondThinCrownRatio + "," +
+                            highSecondThinExpansionFactorPerHa + "," +
+                            highSecondThinCubicM3 + "," +
+                            highThirdThinDbhInCm + "," +
+                            highThirdThinHeightInM + "," +
+                            highThirdThinCrownRatio + "," +
+                            highThirdThinExpansionFactorPerHa + "," +
+                            highThirdThinCubicM3 + "," +
+                            highRegenDbhInCm + "," +
+                            highRegenHeightInM + "," +
+                            highRegenCrownRatio + "," +
+                            highRegenExpansionFactorPerHa + "," +
+                            highRegenCubicM3;
+                        writer.WriteLine(line);
+                        estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                     }
 
                     previousSpeciesCount += highTreeSelection.Count;
                 }
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-HarvestSchedule: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;

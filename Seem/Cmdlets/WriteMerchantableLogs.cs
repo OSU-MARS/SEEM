@@ -69,6 +69,8 @@ namespace Mars.Seem.Cmdlets
             int firstRegenerationHarvestPeriodAcrossAllTrajectories = this.Trajectories!.RotationLengths.Min(); // VS 16.11.7: nullability checking doesn't see [MemberNotNull] on ValidateParameters() call above
             HashSet<StandTrajectory> knownTrajectories = new();
             int maxCoordinateIndex = this.GetMaxCoordinateIndex();
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             List<int> regenHistogram = new();
             List<int> thinHistogram = new();       
@@ -281,14 +283,16 @@ namespace Mars.Seem.Cmdlets
                                 else
                                 {
                                     // write log to file
-                                    writer.WriteLine(linePrefixForTree + "," +
-                                                     logIndex.ToString(CultureInfo.InvariantCulture) + "," +
-                                                     thinGrade + "," +
-                                                     thinTopDiameter.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                                     thinLogVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," +
-                                                     regenGrade + "," +
-                                                     regenTopDiameter + "," +
-                                                     regenLogVolume);
+                                    string line = linePrefixForTree + "," +
+                                        logIndex.ToString(CultureInfo.InvariantCulture) + "," +
+                                        thinGrade + "," +
+                                        thinTopDiameter.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                        thinLogVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                        regenGrade + "," +
+                                        regenTopDiameter + "," +
+                                        regenLogVolume;
+                                    writer.WriteLine(line);
+                                    estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                                 }
                             }
                         }
@@ -309,16 +313,24 @@ namespace Mars.Seem.Cmdlets
                             int regenCount = regenHistogram.Count > volumeIndex ? regenHistogram[volumeIndex] : 0;
                             if ((thinCount > 0) || (regenCount > 0))
                             {
-                                writer.WriteLine(linePrefixForStandAge + "," +
-                                                 volumeClass.ToString(logVolumeFormat, CultureInfo.InvariantCulture) + "," +
-                                                 thinCount.ToString(CultureInfo.InvariantCulture) + "," +
-                                                 regenCount.ToString(CultureInfo.InvariantCulture));
+                                string line = linePrefixForStandAge + "," +
+                                    volumeClass.ToString(logVolumeFormat, CultureInfo.InvariantCulture) + "," +
+                                    thinCount.ToString(CultureInfo.InvariantCulture) + "," +
+                                    regenCount.ToString(CultureInfo.InvariantCulture);
+                                writer.WriteLine(line);
+                                estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                             }
                         }
                     }
                 }
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-MechantableLogs: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;

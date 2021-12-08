@@ -1,6 +1,7 @@
 ﻿using Mars.Seem.Extensions;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -29,6 +30,8 @@ namespace Mars.Seem.Cmdlets
 
             // rows for periods
             int maxCoordinateIndex = this.GetMaxCoordinateIndex();
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
             {
@@ -58,15 +61,23 @@ namespace Mars.Seem.Cmdlets
                             }
                             float diameterClass = snagsAndLogs.GetDiameter(diameterClassIndex);
 
-                            writer.WriteLine(linePrefixForPeriodAndSpecies + "," +
-                                             diameterClass.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                             snagsPerHectare.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                             logsPerHectare.ToString("0.00", CultureInfo.InvariantCulture));
+                            string line = linePrefixForPeriodAndSpecies + "," +
+                                diameterClass.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                snagsPerHectare.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                                logsPerHectare.ToString("0.00", CultureInfo.InvariantCulture);
+                            writer.WriteLine(line);
+                            estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                         }
                     }
                 }
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-SnagsAndLogs: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;

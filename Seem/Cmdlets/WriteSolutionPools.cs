@@ -43,9 +43,11 @@ namespace Mars.Seem.Cmdlets
             }
 
             // pool contents
-            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            string?[] financialValues = new string?[poolCapacity];
             string?[] distances = new string?[poolCapacity];
+            string?[] financialValues = new string?[poolCapacity];
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int resultIndex = 0; resultIndex < this.Trajectories!.CoordinatesEvaluated.Count; ++resultIndex)
             {
                 StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
@@ -85,14 +87,22 @@ namespace Mars.Seem.Cmdlets
                     distances[solutionIndex] = null;
                 }
 
-                writer.WriteLine(linePrefx + "," +
-                                 prescriptions.SolutionsInPool.ToString(CultureInfo.InvariantCulture) + "," +
-                                 prescriptions.SolutionsAccepted.ToString(CultureInfo.InvariantCulture) + "," +
-                                 prescriptions.SolutionsRejected.ToString(CultureInfo.InvariantCulture) + "," +
-                                 String.Join(',', financialValues) + "," + 
-                                 String.Join(',', distances));
+                string line = linePrefx + "," +
+                    prescriptions.SolutionsInPool.ToString(CultureInfo.InvariantCulture) + "," +
+                    prescriptions.SolutionsAccepted.ToString(CultureInfo.InvariantCulture) + "," +
+                    prescriptions.SolutionsRejected.ToString(CultureInfo.InvariantCulture) + "," +
+                    String.Join(',', financialValues) + "," +
+                    String.Join(',', distances);
+                writer.WriteLine(line);
+                estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-SolutionPool: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;

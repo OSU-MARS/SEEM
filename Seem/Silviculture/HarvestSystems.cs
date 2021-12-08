@@ -432,12 +432,14 @@ namespace Mars.Seem.Silviculture
 
             if (ctlHarvest.CubicVolumePerHa > 0.0F)
             {
-                Debug.Assert((ctlHarvest.ForwarderPMhPerHa > 0.0F) && (ctlHarvest.ForwardedWeightPeHa > 0.0F));
-                
                 float machineMoveInAndOutPerHa = 2.0F * 3.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + harvester + forwarder
                 float haulRoundtripsPerHectare = ctlHarvest.ForwardedWeightPeHa / this.CutToLengthHaulPayloadInKg;
                 float haulCostPerHectare = this.CutToLengthRoundtripHaulSMh * haulRoundtripsPerHectare * this.CutToLengthHaulPerSMh;
                 ctlHarvest.MinimumSystemCostPerHa = ctlHarvest.WheeledHarvesterCostPerHa + minimumChainsawCostWithWheeledHarvester + ctlHarvest.ForwarderCostPerHa + haulCostPerHectare + machineMoveInAndOutPerHa;
+                Debug.Assert((ctlHarvest.WheeledHarvesterCostPerHa >= 0.0F) && (minimumChainsawCostWithWheeledHarvester >= 0.0F) && 
+                             (ctlHarvest.ForwarderPMhPerHa > 0.0F) && (ctlHarvest.ForwardedWeightPeHa > 0.0F) && 
+                             (haulCostPerHectare > 0.0F) && (machineMoveInAndOutPerHa > 0.0F) &&
+                             (Single.IsNaN(ctlHarvest.MinimumSystemCostPerHa) == false) && (ctlHarvest.MinimumSystemCostPerHa > 0.0F));
             }
         }
 
@@ -947,10 +949,17 @@ namespace Mars.Seem.Silviculture
                     grappleYoaderCostPerHectareWithWheeledHarvester + loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader +
                     haulCostPerHectareWithWheeledHarvester + machineMoveInAndOutPerHectareWithWheeledHarvester;
 
-                Debug.Assert((limitingSMhWithTrackedHarvesterAndGrappleSwingYarder > 0.0F) && (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa < 100.0F * 1000.0F) &&
-                             (limitingSMhWithTrackedHarvesterAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa < 100.0F * 1000.0F) &&
-                             (limitingSMhWithWheeledHarvesterAndGrappleSwingYarder > 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa < 125.0F * 1000.0F) &&
-                             (limitingSMhWithWheeledHarvesterAndGrappleYoader > 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa < 125.0F * 1000.0F));
+                // if all trees are especially large harvester costs per hectare can be zero as only chainsaw felling and bucking is performed
+                Debug.Assert((trackedHarvesterCostPerHectare >= 0.0F) && (minimumChainsawCostWithTrackedHarvester >= 0.0F) && (haulCostPerHectareWithTrackedHarvester > 0.0F) && (machineMoveInAndOutPerHectareWithTrackedHarvester > 0.0F) &&
+                             (limitingSMhWithTrackedHarvesterAndGrappleSwingYarder > 0.0F) && (swingYarderCostPerHectareWithTrackedHarvester > 0.0F) && (loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder > 0.0F) &&
+                             (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa < 100.0F * 1000.0F) &&
+                             (limitingSMhWithTrackedHarvesterAndGrappleYoader > 0.0F) && (grappleYoaderCostPerHectareWithTrackedHarvester > 0.0F) && (loaderCostPerHectareWithTrackedHarvesterAndGrappleYoader > 0.0F) &&
+                             (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa < 100.0F * 1000.0F) &&
+                             (wheeledHarvesterCostPerHectare >= 0.0F) && (minimumChainsawCostWithWheeledHarvester >= 0.0F) && (haulCostPerHectareWithWheeledHarvester > 0.0F) && (machineMoveInAndOutPerHectareWithWheeledHarvester > 0.0F) &&
+                             (limitingSMhWithWheeledHarvesterAndGrappleSwingYarder > 0.0F) && (grappleYoaderCostPerHectareWithWheeledHarvester > 0.0F) && (loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader > 0.0F) &&
+                             (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa < 125.0F * 1000.0F) &&
+                             (limitingSMhWithWheeledHarvesterAndGrappleYoader > 0.0F) && 
+                             (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa < 125.0F * 1000.0F));
             }
 
             longLogHarvest.MinimumSystemCostPerHa = MathE.Min(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa, longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa,

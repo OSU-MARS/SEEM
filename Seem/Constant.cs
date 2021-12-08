@@ -119,13 +119,14 @@ namespace Mars.Seem
         public static class Default
         {
             public const float DouglasFirSiteIndexInM = 39.6F; // from Malcolm Knapp Research Forest spacing trials, Douglas-fir site class 1 (~130 feet)
-            public const float WesternHemlockSiteIndexInM = 29.1F; // from Malcolm Knapp Research Forest spacing trial plot 21
+            public const int FileWriteBufferSizeInBytes = 64 * 1024; // .NET FileWriter() defaults to 4 kB
             public const string PercentageFormat = "0.0#";
             public const string ProbabilityFormat = "0.00##";
             public const int RotationLengths = 9;
             public const int SolutionPoolSize = 4;
             public const int ThinningPeriod = 3;
             public const int TimeStepInYears = 5;
+            public const float WesternHemlockSiteIndexInM = 29.1F; // from Malcolm Knapp Research Forest spacing trial plot 21
         }
 
         public static class Financial

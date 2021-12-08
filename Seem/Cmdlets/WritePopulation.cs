@@ -28,6 +28,8 @@ namespace Mars.Seem.Cmdlets
                 writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
             }
 
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int positionIndex = 0; positionIndex < this.Trajectories.CoordinatesEvaluated.Count; ++positionIndex)
             {
@@ -79,27 +81,35 @@ namespace Mars.Seem.Cmdlets
                         lowPolymorphism = lowStatistics.PolymorphismByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
                     }
 
-                    writer.WriteLine(linePrefix + "," +
-                                     generationIndex + "," +
-                                     highMinimumFitness + "," +
-                                     highMeanFitness + "," +
-                                     highMaximumFitness + "," +
-                                     highCoefficientOfVariance + "," +
-                                     highMeanAlleles + "," +
-                                     highMeanHeterozygosity + "," +
-                                     highNewIndividuals + "," +
-                                     highPolymorphism + "," +
-                                     lowMinimumFitness + "," +
-                                     lowMeanFitness + "," +
-                                     lowMaximumFitness + "," +
-                                     lowCoefficientOfVariance + "," +
-                                     lowMeanAlleles + "," +
-                                     lowMeanHeterozygosity + "," +
-                                     lowNewIndividuals + "," +
-                                     lowPolymorphism);
+                    string line = linePrefix + "," +
+                        generationIndex + "," +
+                        highMinimumFitness + "," +
+                        highMeanFitness + "," +
+                        highMaximumFitness + "," +
+                        highCoefficientOfVariance + "," +
+                        highMeanAlleles + "," +
+                        highMeanHeterozygosity + "," +
+                        highNewIndividuals + "," +
+                        highPolymorphism + "," +
+                        lowMinimumFitness + "," +
+                        lowMeanFitness + "," +
+                        lowMaximumFitness + "," +
+                        lowCoefficientOfVariance + "," +
+                        lowMeanAlleles + "," +
+                        lowMeanHeterozygosity + "," +
+                        lowNewIndividuals + "," +
+                        lowPolymorphism;
+                    writer.WriteLine(line);
+                    estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                 }
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-Population: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;

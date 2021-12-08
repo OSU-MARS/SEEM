@@ -114,6 +114,8 @@ namespace Mars.Seem.Cmdlets
             }
 
             // log runs in declining priority order until either all runs are logged or the file size limit is reached
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int coordinateIndex = 0; coordinateIndex < prioritizedCoordinates.Count; ++coordinateIndex)
             {
@@ -244,28 +246,36 @@ namespace Mars.Seem.Cmdlets
                         moveNumber = moveIndex.ToString(CultureInfo.InvariantCulture);
                     }
 
-                    writer.WriteLine(linePrefix + "," +
-                                     moveNumber + "," +
-                                     runsWithMoveAtIndex + "," +
-                                     lowMove + "," +
-                                     lowObjectiveFunction + "," +
-                                     lowObjectiveFunctionCandidate + "," +
-                                     minFinancialValue + "," +
-                                     twoPointFivePercentileFinancialValue + "," +
-                                     fifthPercentileFinancialValue + "," +
-                                     lowerQuartileFinancialValue + "," +
-                                     medianFinancialValue + "," +
-                                     meanFinancialValue + "," +
-                                     upperQuartileFinancialValue + "," +
-                                     ninetyFifthPercentileFinancialValue + "," +
-                                     ninetySevenPointFivePercentileFinancialValue + "," +
-                                     maxFinancialValue + "," +
-                                     highMove + "," +
-                                     highFinancialValue + "," +
-                                     highFinancialCandidate);
+                    string line = linePrefix + "," +
+                        moveNumber + "," +
+                        runsWithMoveAtIndex + "," +
+                        lowMove + "," +
+                        lowObjectiveFunction + "," +
+                        lowObjectiveFunctionCandidate + "," +
+                        minFinancialValue + "," +
+                        twoPointFivePercentileFinancialValue + "," +
+                        fifthPercentileFinancialValue + "," +
+                        lowerQuartileFinancialValue + "," +
+                        medianFinancialValue + "," +
+                        meanFinancialValue + "," +
+                        upperQuartileFinancialValue + "," +
+                        ninetyFifthPercentileFinancialValue + "," +
+                        ninetySevenPointFivePercentileFinancialValue + "," +
+                        maxFinancialValue + "," +
+                        highMove + "," +
+                        highFinancialValue + "," +
+                        highFinancialCandidate;
+                    writer.WriteLine(line);
+                    estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                 }
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-Objective: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;

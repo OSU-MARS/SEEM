@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>Osu.Cof.Ferm</RootNamespace>
+    <RootNamespace>Mars.Seem</RootNamespace>
     <Version>0.0.0</Version>
     <Company>Oregon State University</Company>
     <Authors>Management, Algorithms, and Remote Sensing</Authors>

@@ -4,7 +4,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <AssemblyName>Seem.UnitTests</AssemblyName>
-    <RootNamespace>Osu.Cof.Ferm.Test</RootNamespace>
+    <RootNamespace>Mars.Seem.Test</RootNamespace>
     <Platforms>x64</Platforms>
     <Nullable>enable</Nullable>
     <Copyright>Copyright © 2020-2021 Oregon State University</Copyright>

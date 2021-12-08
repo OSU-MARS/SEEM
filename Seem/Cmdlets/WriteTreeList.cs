@@ -34,8 +34,10 @@ namespace Mars.Seem.Cmdlets
             }
 
             // rows for trees
-            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             int age = this.Trajectory!.PeriodZeroAgeInYears;
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
+            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int periodIndex = 0; periodIndex < this.Trajectory.PlanningPeriods; ++periodIndex)
             {
                 Stand stand = this.Trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information not available for period " + periodIndex + ".");
@@ -53,22 +55,30 @@ namespace Mars.Seem.Cmdlets
                         float liveExpansionFactor = areaConversionFactor * treesOfSpecies.LiveExpansionFactor[treeIndex];
                         float deadExpansionFactor = areaConversionFactor * treesOfSpecies.DeadExpansionFactor[treeIndex];
 
-                        writer.WriteLine(stand.Name + "," +
-                                         treesOfSpecies.Plot[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                         treesOfSpecies.Tag[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                         species + "," +
-                                         ageAsString + "," +
-                                         dbh.ToString(CultureInfo.InvariantCulture) + "," +
-                                         height.ToString(CultureInfo.InvariantCulture) + "," +
-                                         treesOfSpecies.CrownRatio[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                         liveExpansionFactor.ToString(CultureInfo.InvariantCulture) + "," +
-                                         deadExpansionFactor.ToString(CultureInfo.InvariantCulture));
+                        string line = stand.Name + "," +
+                            treesOfSpecies.Plot[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                            treesOfSpecies.Tag[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                            species + "," +
+                            ageAsString + "," +
+                            dbh.ToString(CultureInfo.InvariantCulture) + "," +
+                            height.ToString(CultureInfo.InvariantCulture) + "," +
+                            treesOfSpecies.CrownRatio[treeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                            liveExpansionFactor.ToString(CultureInfo.InvariantCulture) + "," +
+                            deadExpansionFactor.ToString(CultureInfo.InvariantCulture);
+                        writer.WriteLine(line);
+                        estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                     }
                 }
 
                 age += this.Trajectory.PeriodLengthInYears;
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-TreeList: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
                     break;

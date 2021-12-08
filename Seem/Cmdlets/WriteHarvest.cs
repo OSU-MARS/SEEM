@@ -48,8 +48,10 @@ namespace Mars.Seem.Cmdlets
                 writer.WriteLine(line);
             }
 
-            int maxPlanningPeriod = this.Trajectories.RotationLengths.Max();
+            long estimatedBytesSinceLastFileLength = 0;
+            long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            int maxPlanningPeriod = this.Trajectories.RotationLengths.Max();
             for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
             {
                 line.Clear();
@@ -70,8 +72,15 @@ namespace Mars.Seem.Cmdlets
                 }
 
                 writer.WriteLine(line);
+                estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
 
-                if (writer.BaseStream.Length > maxFileSizeInBytes)
+                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                {
+                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                    knownFileSizeInBytes = writer.BaseStream.Length;
+                    estimatedBytesSinceLastFileLength = 0;
+                }
+                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
                     this.WriteWarning("Write-Harvest: Maximum file size of " + this.LimitGB.ToString("0.00") + " GB reached.");
                     break;
