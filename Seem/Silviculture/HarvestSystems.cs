@@ -262,6 +262,8 @@ namespace Mars.Seem.Silviculture
                 throw new ArgumentOutOfRangeException(nameof(ctlHarvest));
             }
 
+            bool chainsawFallingWithWheeledHarvester = false;
+            bool previousOversizeTreeBehindHarvester = true;
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 float diameterToCentimetersMultiplier = 1.0F;
@@ -311,12 +313,29 @@ namespace Mars.Seem.Silviculture
                     else
                     {
                         // a chainsaw is used on this tree, so it applies towards chainsaw utilization
+                        // For now, assume all CTL harvests are thins and that the harvester operates in two scenarios occuring with equal
+                        // probability.
+                        //
+                        //   1) A tree requiring chainsaw work is encountered behind the harvester's direction of progress across the stand. In
+                        //      this case falling the tree away from the harvester does not impede the harvester in subsequent corridors and it's
+                        //      unimportant whether the harvester operator or a separate chainsaw crew bucks the tree.
+                        //   2) The tree is ahead of harvester, in which case falling it away from the harvester is unlikely to affect operations
+                        //      in the current corridor but does block subsequent corridors. In this case either the operator has to buck the 
+                        //      tree and move the logs out of the way with the harvester's processing head or leave the tree standing for falling
+                        //      once the harvester has passed, either by the operator from the next corridor or independently by a falling crew.
+                        //
+                        // Since modelling is currently nonspatial, occurence of these two cases is approximated by a toggle forcing every other
+                        // tree too large for the processing head to be manually felled. In a spatial model whether the tree needs to be manually
+                        // felled would be determined by its position with respect to the harvester and whether the cutting pattern allows it to
+                        // be felled with the processing head. In spatial modelling edge effects, such as needing to fell trees into a unit rather
+                        // than across a property line or onto smaller trees in an adjacent stand, can also be considered.
                         ctlHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
 
                         float treeChainsawTime; // seconds
                         float treeHarvesterTime; // seconds
-                        if (dbhInCm > this.WheeledHarvesterFellingDiameterLimit)
+                        if ((dbhInCm > this.WheeledHarvesterFellingDiameterLimit) || previousOversizeTreeBehindHarvester)
                         {
+                            chainsawFallingWithWheeledHarvester = true;
                             treeChainsawTime = this.ChainsawFellAndBuckConstant + this.ChainsawFellAndBuckLinear * treeMerchantableVolumeInM3;
                             treeHarvesterTime = 0.0F;
                         }
@@ -333,8 +352,10 @@ namespace Mars.Seem.Silviculture
 
                         float woodAndBarkVolumePerStem = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFraction); // no bark loss from going through feed rollers
                         ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester += expansionFactorPerHa * treeChainsawTime;
+                        ctlHarvest.ChainsawCubicVolumePerHaWithWheeledHarvester += expansionFactorPerHa * treeMerchantableVolumeInM3;
                         ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndBarkVolumePerStem * treeSpeciesProperties.StemDensity;
                         ctlHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
+                        previousOversizeTreeBehindHarvester = !previousOversizeTreeBehindHarvester;
                     }
                 }
             }
@@ -356,13 +377,34 @@ namespace Mars.Seem.Silviculture
                 }
                 ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester /= Constant.SecondsPerHour;
 
-                float chainsawBuckUtilization = this.ChainsawBuckUtilization * MathF.Min(ctlHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                float chainsawBuckCost = this.ChainsawBuckCostPerSMh * ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester / chainsawBuckUtilization;
+                float chainsawByOperatorSMh = ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester / this.ChainsawByOperatorUtilization; // SMh
+                float chainsawByOperatorCost = (this.WheeledHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
+                float chainsawCrewCost;
+                float chainsawCrewUtilization;
+                if (chainsawFallingWithWheeledHarvester)
+                {
+                    chainsawCrewCost = this.ChainsawFellAndBuckCostPerSMh;
+                    chainsawCrewUtilization = this.ChainsawFellAndBuckUtilization;
+                }
+                else
+                {
+                    chainsawCrewCost = this.ChainsawBuckCostPerSMh;
+                    chainsawCrewUtilization = this.ChainsawBuckUtilization;
+                }
+                chainsawCrewUtilization *= MathF.Min(ctlHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
+                chainsawCrewCost *= ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester / chainsawCrewUtilization;
 
-                float chainsawByOperatorSMh = ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester / this.ChainsawByOperatorUtilization;
-                float chainsawByOperatorCost = chainsawByOperatorSMh * (this.FellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
+                if (chainsawByOperatorCost < chainsawCrewCost)
+                {
+                    minimumChainsawCostWithWheeledHarvester = chainsawByOperatorCost;
+                    ctlHarvest.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.Operator;
+                }
+                else
+                {
+                    minimumChainsawCostWithWheeledHarvester = chainsawCrewCost;
+                    ctlHarvest.ChainsawCrewWithWheeledHarvester = chainsawFallingWithWheeledHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
+                }
 
-                minimumChainsawCostWithWheeledHarvester = MathF.Min(chainsawBuckCost, chainsawByOperatorCost);
                 Debug.Assert(ctlHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester > 0.0F);
             }
 
@@ -514,6 +556,8 @@ namespace Mars.Seem.Silviculture
                 throw new ArgumentOutOfRangeException(nameof(longLogHarvest));
             }
 
+            bool chainsawFallingWithTrackedHarvester = false;
+            bool chainsawFallingWithWheeledHarvester = false;
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 float diameterToCentimetersMultiplier = 1.0F;
@@ -574,6 +618,7 @@ namespace Mars.Seem.Silviculture
                             float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
                             treeChainsawBuckTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
+                        longLogHarvest.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder += expansionFactorPerHa * treeMerchantableVolumeInM3;
                         longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder += expansionFactorPerHa * treeChainsawBuckTime;
                         treeBuckedManuallyWithGrappleSwingYarder = true;
 
@@ -595,6 +640,7 @@ namespace Mars.Seem.Silviculture
                             float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
                             treeChainsawBuckTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
+                        longLogHarvest.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader += expansionFactorPerHa * treeMerchantableVolumeInM3;
                         longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader += expansionFactorPerHa * treeChainsawBuckTime;
                         treeBuckedManuallyWithGrappleYoader = true;
 
@@ -629,6 +675,9 @@ namespace Mars.Seem.Silviculture
                     else
                     {
                         // a chainsaw is used on this tree, so it applies towards chainsaw utilization
+                        // For now, since long log harvests are assumed to be regeneration harvests, assume the harvester is free to maneuver
+                        // across corridors to fall all trees behind its progression across the unit. This implies the harvester is free to assist
+                        // chainsaw work by felling as many trees as it can.
                         longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
 
                         float treeChainsawTime; // seconds
@@ -636,12 +685,15 @@ namespace Mars.Seem.Silviculture
                         if (dbhInCm > this.TrackedHarvesterFellingDiameterLimit)
                         {
                             // tree felled by chainsaw, no cutting by harvester in this case
+                            chainsawFallingWithTrackedHarvester = true;
                             treeChainsawTime = this.ChainsawFellAndBuckConstant + this.ChainsawFellAndBuckLinear * treeMerchantableVolumeInM3;
                             treeHarvesterTime = 0.0F;
                         }
                         else
                         {
                             // tree felled by harvester, bucked by chainsaw
+                            // Since there aren't felling only coefficients for the harvester, approximate its felling time as the fell and buck
+                            // constant plus linear time and neglect the quadratic terms.
                             treeChainsawTime = this.ChainsawBuckConstant + this.ChainsawBuckLinear * treeMerchantableVolumeInM3;
                             treeHarvesterTime = this.TrackedHarvesterFellAndBuckConstant + this.TrackedHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
                         }
@@ -653,6 +705,7 @@ namespace Mars.Seem.Silviculture
                         }
 
                         // tree is not bucked by harvester, so bark loss is only from yarding
+                        longLogHarvest.ChainsawCubicVolumePerHaWithTrackedHarvester += expansionFactorPerHa * treeMerchantableVolumeInM3;
                         longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester += expansionFactorPerHa * treeChainsawTime;
                         longLogHarvest.YardedWeightPerHaWithTrackedHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
                         longLogHarvest.TrackedHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
@@ -674,12 +727,15 @@ namespace Mars.Seem.Silviculture
                     else
                     {
                         // a chainsaw is used on this tree, so it applies towards chainsaw utilization
+                        // As with a the tracked harvester it's assumed the harvester is free to maneuver across corridors to fall trees behind
+                        // its progression.
                         longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
 
                         float treeChainsawTime; // seconds
                         float treeHarvesterTime; // seconds
                         if (dbhInCm > this.WheeledHarvesterFellingDiameterLimit)
                         {
+                            chainsawFallingWithWheeledHarvester = true;
                             treeChainsawTime = this.ChainsawFellAndBuckConstant + this.ChainsawFellAndBuckLinear * treeMerchantableVolumeInM3;
                             treeHarvesterTime = 0.0F;
                         }
@@ -695,6 +751,7 @@ namespace Mars.Seem.Silviculture
                         }
 
                         // tree is not bucked by harvester, so bark loss is only from yarding
+                        longLogHarvest.ChainsawCubicVolumePerHaWithWheeledHarvester += expansionFactorPerHa * treeMerchantableVolumeInM3;
                         longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester += expansionFactorPerHa * treeChainsawTime;
                         longLogHarvest.YardedWeightPerHaWithWheeledHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
                         longLogHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
@@ -770,8 +827,17 @@ namespace Mars.Seem.Silviculture
 
                     float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder / this.ChainsawByOperatorUtilization;
                     float chainsawByOperatorCost = chainsawByOperatorSMh * (this.FellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
-                    
-                    minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = MathF.Min(chainsawBuckCost, chainsawByOperatorCost);
+
+                    if (chainsawBuckCost < chainsawByOperatorCost)
+                    {
+                        minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = chainsawBuckCost;
+                        longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.Bucker;
+                    }
+                    else
+                    {
+                        minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = chainsawByOperatorCost;
+                        longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.Operator;
+                    }
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder > 0.0F);
                 }
 
@@ -815,8 +881,17 @@ namespace Mars.Seem.Silviculture
 
                     float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader / this.ChainsawByOperatorUtilization;
                     float chainsawByOperatorCost = chainsawByOperatorSMh * (this.FellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
-                    
-                    minimumChainsawCostWithFellerBuncherAndGrappleYoader = MathF.Min(chainsawBuckCost, chainsawByOperatorCost);
+
+                    if (chainsawBuckCost < chainsawByOperatorCost)
+                    {
+                        minimumChainsawCostWithFellerBuncherAndGrappleYoader = chainsawBuckCost;
+                        longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.Bucker;
+                    }
+                    else
+                    {
+                        minimumChainsawCostWithFellerBuncherAndGrappleYoader = chainsawByOperatorCost;
+                        longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.Operator;
+                    }
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader > 0.0F);
                 }
 
@@ -871,11 +946,33 @@ namespace Mars.Seem.Silviculture
                     }
                     longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester /= Constant.SecondsPerHour;
 
-                    float chainsawFellAndBuckUtilization = this.ChainsawFellAndBuckUtilization * MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                    float chainsawFellAndBuckCost = this.ChainsawFellAndBuckCostPerSMh * longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / chainsawFellAndBuckUtilization;
                     float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / this.ChainsawByOperatorUtilization; // SMh
                     float chainsawByOperatorCost = (this.TrackedHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
-                    minimumChainsawCostWithTrackedHarvester = MathF.Min(chainsawFellAndBuckCost, chainsawByOperatorCost);
+                    float chainsawCrewCost;
+                    float chainsawCrewUtilization;
+                    if (chainsawFallingWithTrackedHarvester)
+                    {
+                        chainsawCrewCost = this.ChainsawFellAndBuckCostPerSMh;
+                        chainsawCrewUtilization = this.ChainsawFellAndBuckUtilization;
+                    }
+                    else
+                    {
+                        chainsawCrewCost = this.ChainsawBuckCostPerSMh;
+                        chainsawCrewUtilization = this.ChainsawBuckUtilization;
+                    }
+                    chainsawCrewUtilization *= MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
+                    chainsawCrewCost *= longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / chainsawCrewUtilization;
+
+                    if (chainsawByOperatorCost < chainsawCrewCost)
+                    {
+                        minimumChainsawCostWithTrackedHarvester = chainsawByOperatorCost;
+                        longLogHarvest.ChainsawCrewWithTrackedHarvester = ChainsawCrewType.Operator;
+                    }
+                    else
+                    {
+                        minimumChainsawCostWithTrackedHarvester = chainsawCrewCost;
+                        longLogHarvest.ChainsawCrewWithTrackedHarvester = chainsawFallingWithTrackedHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
+                    }
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester > 0.0F);
                 }
 
@@ -923,11 +1020,33 @@ namespace Mars.Seem.Silviculture
                     }
                     longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester /= Constant.SecondsPerHour;
 
-                    float chainsawFellAndBuckUtilization = this.ChainsawFellAndBuckUtilization * MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                    float chainsawFellAndBuckCost = this.ChainsawFellAndBuckCostPerSMh * longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / chainsawFellAndBuckUtilization;
-                    float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / (Constant.SecondsPerHour * this.ChainsawByOperatorUtilization); // SMh
-                    float chainsawByOperatorCost = chainsawByOperatorSMh * (this.WheeledHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh);
-                    minimumChainsawCostWithWheeledHarvester = MathF.Min(chainsawFellAndBuckCost, chainsawByOperatorCost);
+                    float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / this.ChainsawByOperatorUtilization; // SMh
+                    float chainsawByOperatorCost = (this.WheeledHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
+                    float chainsawCrewCost;
+                    float chainsawCrewUtilization;
+                    if (chainsawFallingWithWheeledHarvester)
+                    {
+                        chainsawCrewCost = this.ChainsawFellAndBuckCostPerSMh;
+                        chainsawCrewUtilization = this.ChainsawFellAndBuckUtilization;
+                    }
+                    else
+                    {
+                        chainsawCrewCost = this.ChainsawBuckCostPerSMh;
+                        chainsawCrewUtilization = this.ChainsawBuckUtilization;
+                    }
+                    chainsawCrewUtilization *= MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
+                    chainsawCrewCost *= longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / chainsawCrewUtilization;
+
+                    if (chainsawByOperatorCost < chainsawCrewCost)
+                    {
+                        minimumChainsawCostWithWheeledHarvester = chainsawByOperatorCost;
+                        longLogHarvest.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.Operator;
+                    }
+                    else
+                    {
+                        minimumChainsawCostWithWheeledHarvester = chainsawCrewCost;
+                        longLogHarvest.ChainsawCrewWithWheeledHarvester = chainsawFallingWithWheeledHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
+                    }
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester > 0.0F);
                 }
 

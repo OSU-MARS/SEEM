@@ -206,11 +206,11 @@ namespace Mars.Seem.Organon
 
         public override StandDensity GetStandDensity(int periodIndex)
         {
-            OrganonStandDensity density = this.DensityByPeriod[periodIndex] ?? throw new InvalidOperationException("Stand density is null for period " + periodIndex + ". Has the stand trajectory been simulated?");
+            OrganonStandDensity organonDensityInEnlishUnits = this.DensityByPeriod[periodIndex] ?? throw new InvalidOperationException("Stand density is null for period " + periodIndex + ". Has the stand trajectory been simulated?");
             return new()
             {
-                BasalAreaPerHa = Constant.AcresPerHectare * density.BasalAreaPerAcre,
-                TreesPerHa = Constant.AcresPerHectare * density.TreesPerAcre
+                BasalAreaPerHa = Constant.AcresPerHectare * organonDensityInEnlishUnits.BasalAreaPerAcre,
+                TreesPerHa = Constant.AcresPerHectare * organonDensityInEnlishUnits.TreesPerAcre
             };
         }
 

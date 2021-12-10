@@ -8,6 +8,14 @@ namespace Mars.Seem.Silviculture
         public float ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader { get; set; } // m²/ha
         public float ChainsawBasalAreaPerHaWithTrackedHarvester { get; set; } // m²/ha
         public float ChainsawBasalAreaPerHaWithWheeledHarvester { get; set; } // m²/ha
+        public ChainsawCrewType ChainsawCrewWithFellerBuncherAndGrappleSwingYarder { get; set; }
+        public ChainsawCrewType ChainsawCrewWithFellerBuncherAndGrappleYoader { get; set; }
+        public ChainsawCrewType ChainsawCrewWithTrackedHarvester { get; set; }
+        public ChainsawCrewType ChainsawCrewWithWheeledHarvester { get; set; }
+        public float ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder { get; set; }
+        public float ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader { get; set; }
+        public float ChainsawCubicVolumePerHaWithTrackedHarvester { get; set; }
+        public float ChainsawCubicVolumePerHaWithWheeledHarvester { get; set; }
         public float ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float ChainsawPMhPerHaWithTrackedHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
@@ -50,6 +58,14 @@ namespace Mars.Seem.Silviculture
             this.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader = 0.0F;
             this.ChainsawBasalAreaPerHaWithTrackedHarvester = 0.0F;
             this.ChainsawBasalAreaPerHaWithWheeledHarvester = 0.0F;
+            this.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.None;
+            this.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.None;
+            this.ChainsawCrewWithTrackedHarvester = ChainsawCrewType.None;
+            this.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.None;
+            this.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
+            this.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader = 0.0F;
+            this.ChainsawCubicVolumePerHaWithTrackedHarvester = 0.0F;
+            this.ChainsawCubicVolumePerHaWithWheeledHarvester = 0.0F;
             this.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
             this.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader = 0.0F;
             this.ChainsawPMhPerHaWithTrackedHarvester = 0.0F;

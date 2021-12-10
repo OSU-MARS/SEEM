@@ -90,7 +90,7 @@ namespace Mars.Seem.Optimization
             this.SeedlingCost = new List<float>() { 0.50F }; // US$ per seedling, make species specific when needed
             this.SitePrepAndReplantingCostPerHectare = new List<float>() { Constant.HarvestCost.SitePrep + Constant.HarvestCost.PlantingLabor }; // US$/ha: site prep + planting labor, cost of seedlings not included
             this.ThinningHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha
-            this.ThinningPondValueMultiplier = new List<float>() { 0.90F }; // short log price penalty
+            this.ThinningPondValueMultiplier = new List<float>() { Constant.Default.ThinningPondValueMultiplier }; // short log price penalty
             this.ThinningRoadCostPerCubicMeter = new List<float>() { Constant.HarvestCost.RoadMaintenance }; // US$/m³
             this.ThinningSlashCostPerCubicMeter = new List<float>() { Constant.HarvestCost.SlashDisposal }; // US$/m³
             this.TimberAppreciationRate = new List<float>() { 0.0F }; // per year

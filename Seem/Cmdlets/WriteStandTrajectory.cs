@@ -89,9 +89,12 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (this.NoEquipmentProductivity == false)
                 {
-                    header += ",thinWheeledHarvesterPMh,thinChainsawPMhWithWheeledHarvester,thinForwarderPMh,thinForwardedWeight,thinWheeledHarvesterProductivity,thinForwarderProductivity" +
-                              ",regenFellerBuncherPMh,regenTrackedHarvesterPMh,regenWheeledHarvesterPMh,regenChainsawPMhWithFellerBuncherAndGrappleSwingYarder,regenChainsawPMhWithFellerBuncherAndGrappleYoader,regenChainsawPMhWithTrackedHarvester,regenChainsawPMhWithWheeledHarvester,regenGrappleSwingYarderPMhPerHectare,regenGrappleYoaderPMhPerHectare,regenProcessorPMhWithGrappleSwingYarder,regenProcessorPMhWithGrappleYoader,regenLoadedWeight" +
-                              ",regenFellerBuncherProductivity,regenTrackedHarvesterProductivity,regenWheeledHarvesterProductivity,regenGrappleSwingYarderProductivity,regenGrappleYoaderProductivity,regenProcessorProductivityWithGrappleSwingYarder,regenProcessorProductivityWithGrappleYoader";
+                    header += ",thinWheeledHarvesterPMh,thinWheeledHarvesterProductivity,thinChainsawCrewWithWheeledHarvester,thinChainsawCmh,thinChainsawPMhWithWheeledHarvester" +
+                              ",thinForwarderPMh,thinForwarderProductivity,thinForwardedWeight" +
+                              ",regenFellerBuncherPMh,regenFellerBuncherProductivity,regenTrackedHarvesterPMh,regenTrackedHarvesterProductivity,regenWheeledHarvesterPMh,regenWheeledHarvesterProductivity" +
+                              ",regenChainsawCrewWithFellerBuncherAndGrappleSwingYarder,regenChainsawCmhWithFellerBuncherAndGrappleSwingYarder,regenChainsawPMhWithFellerBuncherAndGrappleSwingYarder,regenChainsawCrewWithFellerBuncherAndGrappleYoader,regenChainsawCmhWithFellerBuncherAndGrappleYoader,regenChainsawPMhWithFellerBuncherAndGrappleYoader,regenChainsawCrewWithTrackedHarvester,regenChainsawCmhWithTrackedHarvester,regenChainsawPMhWithTrackedHarvester,regenChainsawCrewWithWheeledHarvester,regenChainsawCmhWithWheeledHarvester,regenChainsawPMhWithWheeledHarvester" +
+                              ",regenGrappleSwingYarderPMhPerHectare,regenGrappleSwingYarderProductivity,regenGrappleSwingYarderOverweightFirstLogsPerHectare,regenGrappleYoaderPMhPerHectare,regenGrappleYoaderProductivity,regenGrappleYoaderOverweightFirstLogsPerHectare" +
+                              ",regenProcessorPMhWithGrappleSwingYarder,regenProcessorProductivityWithGrappleSwingYarder,regenProcessorPMhWithGrappleYoader,regenProcessorProductivityWithGrappleYoader,regenLoadedWeight";
                 }
                 writer.WriteLine(header);
             }
@@ -118,7 +121,6 @@ namespace Mars.Seem.Cmdlets
                     snagsAndDownLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
                 }
 
-                StandDensity? previousStandDensity = null;
                 float totalThinNetPresentValue = 0.0F;
                 for (int period = 0; period <= endOfRotationPeriod; ++period)
                 {
@@ -148,10 +150,11 @@ namespace Mars.Seem.Cmdlets
                     if (this.NoTreeGrowth == false)
                     {
                         // get densities and volumes
+                        StandDensity? previousStandDensity = null;
                         float basalAreaIntensity = 0.0F; // fraction
                         if (period > 0)
                         {
-                            Debug.Assert(previousStandDensity != null, "Already checked in previous iteration of loop.");
+                            previousStandDensity = highTrajectory.GetStandDensity(period - 1);
                             basalAreaIntensity = basalAreaThinnedPerHa / previousStandDensity.BasalAreaPerHa;
                         }
                         float thinVolumeScribner = thinVolume.GetScribnerTotal(period); // MBF/ha
@@ -161,8 +164,7 @@ namespace Mars.Seem.Cmdlets
                         float treesPerHectareDecrease = 0.0F;
                         if (period > 0)
                         {
-                            Debug.Assert(previousStandDensity != null, "Already checked in if clause above.");
-                            treesPerHectareDecrease = 1.0F - currentStandDensity.TreesPerHa / previousStandDensity.TreesPerHa;
+                            treesPerHectareDecrease = 1.0F - currentStandDensity.TreesPerHa / previousStandDensity!.TreesPerHa;
                         }
 
                         float quadraticMeanDiameterInCm = stand.GetQuadraticMeanDiameterInCentimeters();
@@ -263,30 +265,41 @@ namespace Mars.Seem.Cmdlets
                     {
                         string equipmentProductivity = "," +
                             thinFinancialValue.WheeledHarvesterPMhPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            thinFinancialValue.Productivity.WheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            thinFinancialValue.ChainsawCrewWithWheeledHarvester.ToString() + "," +
+                            thinFinancialValue.ChainsawCubicVolumePerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.ChainsawPMhPerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.ForwarderPMhPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     thinFinancialValue.ForwardedWeightPeHa.ToString("0", CultureInfo.InvariantCulture) + "," +
-                                     thinFinancialValue.Productivity.WheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.Productivity.Forwarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            thinFinancialValue.ForwardedWeightPeHa.ToString("0", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.FellerBuncherPMhPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.Productivity.FellerBuncher.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.TrackedHarvesterPMhPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.Productivity.TrackedHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.WheeledHarvesterPMhPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.Productivity.WheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder.ToString() + "," +
+                            regenFinancialValue.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.ChainsawCrewWithFellerBuncherAndGrappleYoader.ToString() + "," +
+                            regenFinancialValue.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.ChainsawCrewWithTrackedHarvester.ToString() + "," +
+                            regenFinancialValue.ChainsawCubicVolumePerHaWithTrackedHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawPMhPerHaWithTrackedHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.ChainsawCrewWithWheeledHarvester.ToString() + "," +
+                            regenFinancialValue.ChainsawCubicVolumePerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawPMhPerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.GrappleSwingYarderPMhPerHectare.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     regenFinancialValue.GrappleYoaderPMhPerHectare.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     regenFinancialValue.ProcessorPMhPerHaWithGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     regenFinancialValue.ProcessorPMhPerHaWithGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     regenFinancialValue.LoadedWeightPerHa.ToString("0", CultureInfo.InvariantCulture) + "," +
-                                     regenFinancialValue.Productivity.FellerBuncher.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     regenFinancialValue.Productivity.TrackedHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     regenFinancialValue.Productivity.WheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.Productivity.GrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.GrappleSwingYarderOverweightFirstLogsPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.GrappleYoaderPMhPerHectare.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.Productivity.GrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.GrappleYoaderOverweightFirstLogsPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.ProcessorPMhPerHaWithGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.Productivity.ProcessorWithGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                     regenFinancialValue.Productivity.ProcessorWithGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture));
+                            regenFinancialValue.ProcessorPMhPerHaWithGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            regenFinancialValue.Productivity.ProcessorWithGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.LoadedWeightPerHa.ToString("0", CultureInfo.InvariantCulture);
                         writer.Write(equipmentProductivity);
                         estimatedBytesSinceLastFileLength += equipmentProductivity.Length;

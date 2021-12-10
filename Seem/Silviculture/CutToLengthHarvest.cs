@@ -4,9 +4,9 @@ namespace Mars.Seem.Silviculture
 {
     public class CutToLengthHarvest : HarvestFinancialValue
     {
-        //public float ChainsawBasalAreaPerHaWithTrackedHarvester { get; set; } // m²/ha
         public float ChainsawBasalAreaPerHaWithWheeledHarvester { get; set; } // m²/ha
-        //public float ChainsawPMhPerHaTrackedHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public ChainsawCrewType ChainsawCrewWithWheeledHarvester { get; set; }
+        public float ChainsawCubicVolumePerHaWithWheeledHarvester { get; set; } // merchantable m³/ha
         public float ChainsawPMhPerHaWithWheeledHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
 
         public float ForwardedWeightPeHa { get; set; } // kg/ha
@@ -18,16 +18,14 @@ namespace Mars.Seem.Silviculture
         public float MinimumSystemCostPerHa { get; set; } // US$/ha
         public HarvestEquipmentProductivity Productivity { get; private init; }
 
-        //public float TrackedHarvesterCostPerHa { get; set; } // US$/ha
-        //public float TrackedHarvesterPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float WheeledHarvesterCostPerHa { get; set; } // US$/ha
         public float WheeledHarvesterPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
 
         public CutToLengthHarvest()
         {
-            //this.ChainsawBasalAreaPerHaWithTrackedHarvester = 0.0F;
             this.ChainsawBasalAreaPerHaWithWheeledHarvester = 0.0F;
-            //this.ChainsawPMhPerHaTrackedHarvester = 0.0F;
+            this.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.None;
+            this.ChainsawCubicVolumePerHaWithWheeledHarvester = 0.0F;
             this.ChainsawPMhPerHaWithWheeledHarvester = 0.0F;
 
             this.ForwardedWeightPeHa = 0.0F;
@@ -38,8 +36,6 @@ namespace Mars.Seem.Silviculture
             this.MinimumSystemCostPerHa = Single.NaN;
             this.Productivity = new();
             
-            //this.TrackedHarvesterCostPerHa = Single.NaN;
-            //this.TrackedHarvesterPMhPerHa = 0.0F;
             this.WheeledHarvesterCostPerHa = Single.NaN;
             this.WheeledHarvesterPMhPerHa = 0.0F;
         }
@@ -47,13 +43,11 @@ namespace Mars.Seem.Silviculture
         public class HarvestEquipmentProductivity
         {
             public float Forwarder { get; set; } // m³/PMh₀
-            //public float TrackedHarvester { get; set; } // m³/PMh₀
             public float WheeledHarvester { get; set; } // m³/PMh₀
 
             public HarvestEquipmentProductivity()
             {
                 this.Forwarder = Single.NaN;
-                //this.TrackedHarvester = Single.NaN;
                 this.WheeledHarvester = Single.NaN;
             }
         }

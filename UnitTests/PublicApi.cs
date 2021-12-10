@@ -192,11 +192,11 @@ namespace Mars.Seem.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { 0.258F };
+                Span<float> minFinancialValues = stackalloc[] { 0.135F };
                 Span<int> treesThinned = stackalloc[] { 0 };
             #else
-                Span<float> minFinancialValues = stackalloc[] { 1.317F };
-                Span<int> treesThinned = stackalloc[] { 0 };
+                Span<float> minFinancialValues = stackalloc[] { 1.105F, 1.194F };
+                Span<int> treesThinned = stackalloc[] { 2, 0 };
             #endif
             int matchingOptimaIndexFirstCircular = -1;
             int matchingOptimaIndexHero = -1;
@@ -958,7 +958,7 @@ namespace Mars.Seem.Test
                     {
                         Debugger.Break();
                     }
-                    Assert.IsTrue(thinVolumeScribner < previousStandingVolumeScribner + 0.000001F, "Thinning volume: " + thinVolumeScribner + " MBF/ha in period " + periodIndex + " but previous period's standing volume is " + previousStandingVolumeScribner + " MBF/ha."); // allow for numerical error in case where all trees are harvested
+                    Assert.IsTrue(Constant.Default.ThinningPondValueMultiplier * thinVolumeScribner < previousStandingVolumeScribner, "Thinning volume: " + thinVolumeScribner + " MBF/ha in period " + periodIndex + " but previous period's standing volume is " + previousStandingVolumeScribner + " MBF/ha."); // allow for differences between short and long log scaling
                     Assert.IsTrue(bestHarvestedVolume.Scribner2Saw[periodIndex] >= 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Scribner3Saw[periodIndex] >= 0.0F);
                     Assert.IsTrue(bestHarvestedVolume.Scribner4Saw[periodIndex] >= 0.0F);

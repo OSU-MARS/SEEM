@@ -125,6 +125,7 @@ namespace Mars.Seem
             public const int RotationLengths = 9;
             public const int SolutionPoolSize = 4;
             public const int ThinningPeriod = 3;
+            public const float ThinningPondValueMultiplier = 0.90F;
             public const int TimeStepInYears = 5;
             public const float WesternHemlockSiteIndexInM = 29.1F; // from Malcolm Knapp Research Forest spacing trial plot 21
         }
