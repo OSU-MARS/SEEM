@@ -411,6 +411,8 @@ namespace Mars.Seem.Optimization
             }
             this.DiscountRate.Add(discountRate);
 
+            harvestSystems.AddOnWinchCableLengthInM = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.AddOnWinchCableLength]);
+            harvestSystems.AnchorCostPerSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.AnchorCostPerSMh]);
             harvestSystems.ChainsawBuckConstant = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ChainsawBuckConstant]);
             harvestSystems.ChainsawBuckCostPerSMh = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ChainsawBuckCostPerSMh]);
             harvestSystems.ChainsawBuckLinear = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.ChainsawBuckLinear]);
@@ -689,6 +691,8 @@ namespace Mars.Seem.Optimization
 
         private class XlsxColumnIndices
         {
+            public int AddOnWinchCableLength { get; set; }
+            public int AnchorCostPerSMh { get; set; }
             public int ChainsawBuckConstant { get; set; }
             public int ChainsawBuckCostPerSMh { get; set; }
             public int ChainsawBuckLinear { get; set; }
@@ -828,6 +832,12 @@ namespace Mars.Seem.Optimization
             {
                 switch (columnHeader)
                 {
+                    case "addOnWinchCableLength":
+                        this.AddOnWinchCableLength = columnIndex;
+                        break;
+                    case "anchorSMh":
+                        this.AnchorCostPerSMh = columnIndex;
+                        break;
                     case "chainsawBuckConstant":
                         this.ChainsawBuckConstant = columnIndex;
                         break;
@@ -1168,6 +1178,8 @@ namespace Mars.Seem.Optimization
 
             public void Reset()
             {
+                this.AddOnWinchCableLength = -1;
+                this.AnchorCostPerSMh = -1;
                 this.ChainsawBuckConstant = -1;
                 this.ChainsawBuckLinear = -1;
                 this.ChainsawBuckCostPerSMh = -1;
@@ -1297,6 +1309,14 @@ namespace Mars.Seem.Optimization
 
             public void VerifyAllColumnsFound()
             {
+                if (this.AddOnWinchCableLength < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.AddOnWinchCableLength), "Column for wheeled harvesters' and forwarders' add on winches' cable length not found.");
+                }
+                if (this.AnchorCostPerSMh < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.AnchorCostPerSMh), "Anchor machine cost column not found.");
+                }
                 if (this.ChainsawBuckConstant < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ChainsawBuckConstant), "Column for chainsaw bucking time intercept not found.");

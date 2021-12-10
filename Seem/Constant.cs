@@ -123,6 +123,7 @@ namespace Mars.Seem
             public const string PercentageFormat = "0.0#";
             public const string ProbabilityFormat = "0.00##";
             public const int RotationLengths = 9;
+            public const float SlopeForTetheringInPercent = 45.0F;
             public const int SolutionPoolSize = 4;
             public const int ThinningPeriod = 3;
             public const float ThinningPondValueMultiplier = 0.90F;
@@ -216,6 +217,7 @@ namespace Mars.Seem
             //public const float SdiPerAcre = 1000.0F; // Reineke SDI in English units
             public const float SiteIndexInFeet = 200.0F; // sanity upper bound
             public const float SiteIndexInM = 61.0F; // sanity upper bound
+            public const float TetheredCorridorLengthInM = 590.0F; // Summit Attachments & Machinery winch assist, 25.4 mm cable
         }
 
         public static class Minimum

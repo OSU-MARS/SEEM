@@ -323,6 +323,10 @@ namespace Mars.Seem.Test
 
             // regeneration harvest system
             HarvestSystems harvestSystems = financialScenarios.HarvestSystems[0];
+            Assert.IsTrue((harvestSystems.AddOnWinchCableLengthInM < 351.0F) &&
+                          (harvestSystems.AddOnWinchCableLengthInM > 349.0F));
+            Assert.IsTrue((harvestSystems.AnchorCostPerSMh < 75.0F) &&
+                          (harvestSystems.AnchorCostPerSMh > 70.0F));
             Assert.IsTrue((harvestSystems.ChainsawBuckConstant < 100.0F) &&
                           (harvestSystems.ChainsawBuckConstant > 20.0F));
             Assert.IsTrue((harvestSystems.ChainsawBuckCostPerSMh < 125.0F) &&

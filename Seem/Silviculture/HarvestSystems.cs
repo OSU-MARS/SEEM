@@ -10,6 +10,9 @@ namespace Mars.Seem.Silviculture
     {
         public static HarvestSystems Default { get; private set; }
 
+        public float AddOnWinchCableLengthInM { get; set; } // m
+        public float AnchorCostPerSMh { get; set; } // US$/SMh
+
         public float ChainsawBuckConstant { get; set; } // seconds
         public float ChainsawBuckCostPerSMh { get; set; } // US$/SMh
         public float ChainsawBuckLinear { get; set; } // seconds/m³
@@ -120,6 +123,9 @@ namespace Mars.Seem.Silviculture
         // if needed, forwarder weight and engine power can be modeled to check for slope reducing loaded speeds
         public HarvestSystems()
         {
+            this.AddOnWinchCableLengthInM = 380.0F; // Herzog Synchrowinch, 14.5 mm cable
+            this.AnchorCostPerSMh = 71.50F; // US$/SMh
+
             // chainsaw use cases
             this.ChainsawBuckConstant = 51.0F; // seconds
             this.ChainsawBuckCostPerSMh = 80.0F; // US$/SMh
@@ -144,7 +150,7 @@ namespace Mars.Seem.Silviculture
             this.CutToLengthRoundtripHaulSMh = 3.92F; // SMh
 
             // tracked feller-buncher, either hot saw or directional felling head
-            this.FellerBuncherCostPerSMh = 263.00F; // US$/SMh
+            this.FellerBuncherCostPerSMh = 192.00F; // US$/SMh
             this.FellerBuncherFellingConstant = 18.0F; // seconds
             this.FellerBuncherFellingLinear = 4.7F; // seconds/m³
             this.FellerBuncherSlopeLinear = 0.0115F; // multiplier
@@ -217,7 +223,7 @@ namespace Mars.Seem.Silviculture
             this.TrackedHarvesterQuadraticThreshold2 = 6.0F; // m³
             this.TrackedHarvesterSlopeLinear = 0.0115F; // multiplier
             this.TrackedHarvesterSlopeThresholdInPercent = 30.0F;
-            this.TrackedHarvesterCostPerSMh = 264.00F; // US$/SMh
+            this.TrackedHarvesterCostPerSMh = 193.00F; // US$/SMh
             this.TrackedHarvesterUtilization = 0.77F; // fraction
 
             // eight wheel harvesters
@@ -245,9 +251,10 @@ namespace Mars.Seem.Silviculture
         {
             if ((stand.AreaInHa <= 0.0F) ||
                 (stand.CorridorLengthInM <= 0.0F) ||
+                (stand.CorridorLengthInMTethered < 0.0F) ||
+                (stand.CorridorLengthInMTethered > Constant.Maximum.TetheredCorridorLengthInM) ||
+                (stand.CorridorLengthInMUntethered < 0.0F) ||
                 (stand.ForwardingDistanceOnRoad < 0.0F) || 
-                (stand.ForwardingDistanceTethered < 0.0F) ||
-                (stand.ForwardingDistanceUntethered < 0.0F) ||
                 (stand.SlopeInPercent < 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(stand));
@@ -260,6 +267,16 @@ namespace Mars.Seem.Silviculture
                 (ctlHarvest.WheeledHarvesterPMhPerHa != 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(ctlHarvest));
+            }
+
+            int anchorMachines = 0;
+            float forwarderAndMaybeAnchorCostPerSMh = this.ForwarderCostPerSMh;
+            float wheeledHarvesterAndMaybeAnchorCostPerSMh = this.WheeledHarvesterCostPerSMh;
+            if ((stand.SlopeInPercent > Constant.Default.SlopeForTetheringInPercent) && (stand.CorridorLengthInMTethered > this.AddOnWinchCableLengthInM))
+            {
+                forwarderAndMaybeAnchorCostPerSMh += this.AnchorCostPerSMh;
+                wheeledHarvesterAndMaybeAnchorCostPerSMh += this.AnchorCostPerSMh;
+                anchorMachines = 2;
             }
 
             bool chainsawFallingWithWheeledHarvester = false;
@@ -378,7 +395,7 @@ namespace Mars.Seem.Silviculture
                 ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester /= Constant.SecondsPerHour;
 
                 float chainsawByOperatorSMh = ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester / this.ChainsawByOperatorUtilization; // SMh
-                float chainsawByOperatorCost = (this.WheeledHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
+                float chainsawByOperatorCost = (wheeledHarvesterAndMaybeAnchorCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
                 float chainsawCrewCost;
                 float chainsawCrewUtilization;
                 if (chainsawFallingWithWheeledHarvester)
@@ -409,7 +426,7 @@ namespace Mars.Seem.Silviculture
             }
 
             float wheeledHarvesterSMhPerHectare = ctlHarvest.WheeledHarvesterPMhPerHa / this.WheeledHarvesterUtilization;
-            ctlHarvest.WheeledHarvesterCostPerHa = this.WheeledHarvesterCostPerSMh * wheeledHarvesterSMhPerHectare;
+            ctlHarvest.WheeledHarvesterCostPerHa = wheeledHarvesterAndMaybeAnchorCostPerSMh * wheeledHarvesterSMhPerHectare;
 
             // find payload available for slope from traction
             float forwarderPayloadInKg = MathF.Min(this.ForwarderMaximumPayloadInKg, this.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * stand.SlopeInPercent))) - this.ForwarderEmptyWeight);
@@ -470,11 +487,12 @@ namespace Mars.Seem.Silviculture
                 ctlHarvest.ForwarderPMhPerHa += forwarderPMhPerSpecies;
             }
 
-            ctlHarvest.ForwarderCostPerHa = this.ForwarderCostPerSMh * ctlHarvest.ForwarderPMhPerHa / this.ForwarderUtilization;
+            ctlHarvest.ForwarderCostPerHa = forwarderAndMaybeAnchorCostPerSMh * ctlHarvest.ForwarderPMhPerHa / this.ForwarderUtilization;
 
             if (ctlHarvest.CubicVolumePerHa > 0.0F)
             {
-                float machineMoveInAndOutPerHa = 2.0F * 3.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + harvester + forwarder
+                int machinesToMoveInAndOut = 3 + anchorMachines; // bulldozer + harvester + forwarder + anchors
+                float machineMoveInAndOutPerHa = 2.0F * machinesToMoveInAndOut * this.MachineMoveInOrOut / stand.AreaInHa; // 2 = move in + move out
                 float haulRoundtripsPerHectare = ctlHarvest.ForwardedWeightPeHa / this.CutToLengthHaulPayloadInKg;
                 float haulCostPerHectare = this.CutToLengthRoundtripHaulSMh * haulRoundtripsPerHectare * this.CutToLengthHaulPerSMh;
                 ctlHarvest.MinimumSystemCostPerHa = ctlHarvest.WheeledHarvesterCostPerHa + minimumChainsawCostWithWheeledHarvester + ctlHarvest.ForwarderCostPerHa + haulCostPerHectare + machineMoveInAndOutPerHa;
@@ -505,16 +523,16 @@ namespace Mars.Seem.Silviculture
             float driveEmptyRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min, driving empty on road
             // nonspatial approximation (level zero): both tethered and untethered distances decrease in turns after the first
             // TODO: assume tethered distance decreases to zero before untethered distance decreases?
-            float driveEmptyUntethered = turnsPerCorridor * stand.ForwardingDistanceUntethered / this.ForwarderSpeedInStandUnloadedUntethered; // min
+            float driveEmptyUntethered = turnsPerCorridor * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandUnloadedUntethered; // min
             // tethering time is treated as a delay
-            float driveEmptyTethered = turnsPerCorridor * stand.ForwardingDistanceTethered / this.ForwarderSpeedInStandUnloadedTethered; // min
+            float driveEmptyTethered = turnsPerCorridor * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandUnloadedTethered; // min
             float loading = completeLoadsInCorridor * MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
                             MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)); // min
             float driveWhileLoading = completeLoadsInCorridor * MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(forwarderMaxMerchM3 / merchM3perM)) +
                                       MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3 / merchM3perM)); // min
-            float driveLoadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.ForwardingDistanceTethered / this.ForwarderSpeedInStandLoadedTethered; // min
+            float driveLoadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandLoadedTethered; // min
             // untethering time is treated as a delay
-            float driveUnloadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.ForwardingDistanceUntethered / this.ForwarderSpeedInStandLoadedUntethered; // min
+            float driveUnloadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandLoadedUntethered; // min
             float driveLoadedRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min
             float unloadLinear = sortsLoaded switch
             {
@@ -554,6 +572,24 @@ namespace Mars.Seem.Silviculture
                 (longLogHarvest.WheeledHarvesterPMhPerHa != 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(longLogHarvest));
+            }
+
+            int fellerBuncherOrTrackedHarvesterAnchorMachine = 0;
+            int wheeledHarvesterAnchorMachine = 0;
+            float fellerBuncherCostPerSMh = this.FellerBuncherCostPerSMh;
+            float trackedHarvesterCostPerSMh = this.TrackedHarvesterCostPerSMh;
+            float wheeledHarvesterCostPerSMh = this.WheeledHarvesterCostPerSMh; // add on winch
+            if (stand.SlopeInPercent > Constant.Default.SlopeForTetheringInPercent)
+            {
+                fellerBuncherCostPerSMh += this.AnchorCostPerSMh;
+                trackedHarvesterCostPerSMh += this.AnchorCostPerSMh;
+                fellerBuncherOrTrackedHarvesterAnchorMachine = 1;
+
+                if (stand.CorridorLengthInM > this.AddOnWinchCableLengthInM)
+                {
+                    wheeledHarvesterCostPerSMh += this.AnchorCostPerSMh;
+                    wheeledHarvesterAnchorMachine = 1;
+                }
             }
 
             bool chainsawFallingWithTrackedHarvester = false;
@@ -811,7 +847,7 @@ namespace Mars.Seem.Silviculture
                 }
                 longLogHarvest.FellerBuncherPMhPerHa /= Constant.SecondsPerHour;
                 longLogHarvest.Productivity.FellerBuncher = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.FellerBuncherPMhPerHa;
-                float fellerBuncherCostPerHectare = this.FellerBuncherCostPerSMh * longLogHarvest.FellerBuncherPMhPerHa / this.FellerBuncherUtilization;
+                float fellerBuncherCostPerHectare = fellerBuncherCostPerSMh * longLogHarvest.FellerBuncherPMhPerHa / this.FellerBuncherUtilization;
 
                 float minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = 0.0F;
                 if (longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder > 0.0F)
@@ -826,7 +862,7 @@ namespace Mars.Seem.Silviculture
                     float chainsawBuckCost = this.ChainsawBuckCostPerSMh * longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder / chainsawBuckUtilization;
 
                     float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder / this.ChainsawByOperatorUtilization;
-                    float chainsawByOperatorCost = chainsawByOperatorSMh * (this.FellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
+                    float chainsawByOperatorCost = chainsawByOperatorSMh * (fellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
 
                     if (chainsawBuckCost < chainsawByOperatorCost)
                     {
@@ -860,7 +896,8 @@ namespace Mars.Seem.Silviculture
                 float grappleSwingYarderCostPerHectareWithFellerBuncher = this.GrappleSwingYarderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
                 float processorCostPerHectareWithGrappleSwingYarder = this.ProcessorCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
                 float loaderCostPerHectareWithFellerBuncherAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
-                float machineMoveInAndOutPerHectareWithFellerBuncher = 2.0F * 6.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + feller-buncher + anchor + yarder + processor + loader
+                int machinesToMoveInAndOutWithFellerBuncher = 5 + fellerBuncherOrTrackedHarvesterAnchorMachine; // bulldozer + feller-buncher [+ anchor] + yarder + processor + loader
+                float machineMoveInAndOutPerHectareWithFellerBuncher = 2.0F * machinesToMoveInAndOutWithFellerBuncher * this.MachineMoveInOrOut / stand.AreaInHa;
                 longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa = fellerBuncherCostPerHectare + minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder + 
                     grappleSwingYarderCostPerHectareWithFellerBuncher + processorCostPerHectareWithGrappleSwingYarder + loaderCostPerHectareWithFellerBuncherAndGrappleSwingYarder + 
                     haulCostPerHectare + machineMoveInAndOutPerHectareWithFellerBuncher;
@@ -880,7 +917,7 @@ namespace Mars.Seem.Silviculture
                     float chainsawBuckCost = this.ChainsawBuckCostPerSMh * chainsawBuckSMh;
 
                     float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader / this.ChainsawByOperatorUtilization;
-                    float chainsawByOperatorCost = chainsawByOperatorSMh * (this.FellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
+                    float chainsawByOperatorCost = chainsawByOperatorSMh * (fellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
 
                     if (chainsawBuckCost < chainsawByOperatorCost)
                     {
@@ -935,7 +972,7 @@ namespace Mars.Seem.Silviculture
                 longLogHarvest.TrackedHarvesterPMhPerHa /= Constant.SecondsPerHour;
                 longLogHarvest.Productivity.TrackedHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.TrackedHarvesterPMhPerHa;
 
-                float trackedHarvesterCostPerHectare = this.TrackedHarvesterCostPerSMh * longLogHarvest.TrackedHarvesterPMhPerHa / this.TrackedHarvesterUtilization;
+                float trackedHarvesterCostPerHectare = trackedHarvesterCostPerSMh * longLogHarvest.TrackedHarvesterPMhPerHa / this.TrackedHarvesterUtilization;
 
                 float minimumChainsawCostWithTrackedHarvester = 0.0F;
                 if (longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester > 0.0F)
@@ -947,7 +984,7 @@ namespace Mars.Seem.Silviculture
                     longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester /= Constant.SecondsPerHour;
 
                     float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / this.ChainsawByOperatorUtilization; // SMh
-                    float chainsawByOperatorCost = (this.TrackedHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
+                    float chainsawByOperatorCost = (trackedHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
                     float chainsawCrewCost;
                     float chainsawCrewUtilization;
                     if (chainsawFallingWithTrackedHarvester)
@@ -985,7 +1022,8 @@ namespace Mars.Seem.Silviculture
                 float limitingSMhWithTrackedHarvesterAndGrappleSwingYarder = MathF.Max(grappleSwingYarderSMhPerHectare, loaderSMhPerHectare);
                 float swingYarderCostPerHectareWithTrackedHarvester = this.GrappleSwingYarderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleSwingYarder;
                 float loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleSwingYarder;
-                float machineMoveInAndOutPerHectareWithTrackedHarvester = 2.0F * 5.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + harvester + anchor + yarder + loader
+                int machinesToMoveInAndOutWithTrackedHarvester = 4 + fellerBuncherOrTrackedHarvesterAnchorMachine; // bulldozer + harvester [+ anchor] + yarder + loader
+                float machineMoveInAndOutPerHectareWithTrackedHarvester = 2.0F * machinesToMoveInAndOutWithTrackedHarvester * this.MachineMoveInOrOut / stand.AreaInHa;
                 longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa = trackedHarvesterCostPerHectare + minimumChainsawCostWithTrackedHarvester + 
                     swingYarderCostPerHectareWithTrackedHarvester + loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder +
                     haulCostPerHectareWithTrackedHarvester + machineMoveInAndOutPerHectareWithTrackedHarvester;
@@ -1009,7 +1047,7 @@ namespace Mars.Seem.Silviculture
                 longLogHarvest.Productivity.WheeledHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.WheeledHarvesterPMhPerHa;
 
                 float wheeledHarvesterSMh = longLogHarvest.WheeledHarvesterPMhPerHa / this.WheeledHarvesterUtilization;
-                float wheeledHarvesterCostPerHectare = this.WheeledHarvesterCostPerSMh * wheeledHarvesterSMh;
+                float wheeledHarvesterCostPerHectare = wheeledHarvesterCostPerSMh * wheeledHarvesterSMh;
 
                 float minimumChainsawCostWithWheeledHarvester = 0.0F;
                 if (longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester > 0.0F)
@@ -1021,7 +1059,7 @@ namespace Mars.Seem.Silviculture
                     longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester /= Constant.SecondsPerHour;
 
                     float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / this.ChainsawByOperatorUtilization; // SMh
-                    float chainsawByOperatorCost = (this.WheeledHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
+                    float chainsawByOperatorCost = (wheeledHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
                     float chainsawCrewCost;
                     float chainsawCrewUtilization;
                     if (chainsawFallingWithWheeledHarvester)
@@ -1056,7 +1094,8 @@ namespace Mars.Seem.Silviculture
                 float limitingSMhWithWheeledHarvesterAndGrappleSwingYarder = MathF.Max(grappleSwingYarderSMhPerHectare, loaderSMhPerHectare);
                 float swingYarderCostPerHectareWithWheeledHarvester = this.GrappleSwingYarderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleSwingYarder;
                 float loaderCostPerHectareWithWheeledHarvesterAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleSwingYarder;
-                float machineMoveInAndOutPerHectareWithWheeledHarvester = 2.0F * 4.0F * this.MachineMoveInOrOut / stand.AreaInHa; // bulldozer + wheeled harvester + yarder + loader
+                int machinesToMoveInAndOutWithWheeledHarvester = 4 + wheeledHarvesterAnchorMachine; // bulldozer + harvester [+ anchor] + yarder + loader
+                float machineMoveInAndOutPerHectareWithWheeledHarvester = 2.0F * machinesToMoveInAndOutWithWheeledHarvester * this.MachineMoveInOrOut / stand.AreaInHa;
                 longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = wheeledHarvesterCostPerHectare + minimumChainsawCostWithWheeledHarvester + 
                     swingYarderCostPerHectareWithWheeledHarvester + loaderCostPerHectareWithWheeledHarvesterAndGrappleSwingYarder +
                     haulCostPerHectareWithWheeledHarvester + machineMoveInAndOutPerHectareWithWheeledHarvester;
@@ -1088,6 +1127,14 @@ namespace Mars.Seem.Silviculture
 
         public void VerifyPropertyValues()
         {
+            if ((this.AddOnWinchCableLengthInM < 250.0F) || (this.AddOnWinchCableLengthInM > 350.0F))
+            {
+                throw new NotSupportedException("Add on winch cable length is not in the range [250.0, 350.0] m.");
+            }
+            if ((this.AnchorCostPerSMh < 50.0F) || (this.AnchorCostPerSMh > 200.0F))
+            {
+                throw new NotSupportedException("Cost of tether anchor machine is not in the range US$ [50.0, 200.0]/SMh.");
+            }
             if ((this.ChainsawBuckConstant < 0.0F) || (this.ChainsawBuckConstant > 90.0F))
             {
                 throw new NotSupportedException("Intercept of chainsaw bucking time is not in the range [0.0, 90.0] seconds.");

@@ -9,8 +9,8 @@ namespace Mars.Seem.Tree
     {
         public float AreaInHa { get; set; }
         public float CorridorLengthInM { get; set; }
-        public float ForwardingDistanceTethered { get; private set; } // m, mean
-        public float ForwardingDistanceUntethered { get; private set; } // m, mean
+        public float CorridorLengthInMTethered { get; private set; } // m, mean
+        public float CorridorLengthInMUntethered { get; private set; } // m, mean
         public float ForwardingDistanceOnRoad { get; set; } // m, mean distance from corridor to log unload point
         public string? Name { get; set; }
         public float? PlantingDensityInTreesPerHectare { get; set; }
@@ -34,7 +34,7 @@ namespace Mars.Seem.Tree
         {
             this.AreaInHa = other.AreaInHa;
             // this.CorridorLength, ForwardingDistanceInStandTethered, and ForwardingDistanceInStandUntethered
-            this.SetCorridorLength(other.ForwardingDistanceTethered, other.ForwardingDistanceUntethered);
+            this.SetCorridorLength(other.CorridorLengthInMTethered, other.CorridorLengthInMUntethered);
             this.ForwardingDistanceOnRoad = other.ForwardingDistanceOnRoad;
             this.Name = other.Name;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
@@ -231,8 +231,8 @@ namespace Mars.Seem.Tree
         public void SetCorridorLength(float forwardingDistanceInStandTethered, float forwardingDistanceInStandUntethered)
         {
             this.CorridorLengthInM = forwardingDistanceInStandTethered + forwardingDistanceInStandUntethered;
-            this.ForwardingDistanceTethered = forwardingDistanceInStandTethered;
-            this.ForwardingDistanceUntethered = forwardingDistanceInStandUntethered;
+            this.CorridorLengthInMTethered = forwardingDistanceInStandTethered;
+            this.CorridorLengthInMUntethered = forwardingDistanceInStandUntethered;
         }
     }
 }

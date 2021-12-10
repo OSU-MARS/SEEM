@@ -192,8 +192,8 @@ namespace Mars.Seem.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { 0.135F };
-                Span<int> treesThinned = stackalloc[] { 0 };
+                Span<float> minFinancialValues = stackalloc[] { -0.011F, 0.135F };
+                Span<int> treesThinned = stackalloc[] { 2, 0 };
             #else
                 Span<float> minFinancialValues = stackalloc[] { 1.105F, 1.194F };
                 Span<int> treesThinned = stackalloc[] { 2, 0 };
