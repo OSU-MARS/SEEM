@@ -175,8 +175,8 @@ namespace Mars.Seem.Cmdlets
                         // write tree growth
                         string treeGrowth = "," + 
                             currentStandDensity.TreesPerHa.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                            quadraticMeanDiameterInCm.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                            topHeightInM.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            quadraticMeanDiameterInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                            topHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture) + "," +
                             currentStandDensity.BasalAreaPerHa.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                             reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + "," +
                             standingVolume.GetCubicTotal(period).ToString("0.000", CultureInfo.InvariantCulture) + "," +  // m³/ha
@@ -317,7 +317,7 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
-                    this.WriteWarning("Write-StandTrajectory: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    this.WriteWarning("Write-StandTrajectory: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
                     break;
                 }
             }

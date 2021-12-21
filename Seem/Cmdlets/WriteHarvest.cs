@@ -82,7 +82,7 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
-                    this.WriteWarning("Write-Harvest: Maximum file size of " + this.LimitGB.ToString("0.00") + " GB reached.");
+                    this.WriteWarning("Write-Harvest: Maximum file size of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB reached.");
                     break;
                 }
             }

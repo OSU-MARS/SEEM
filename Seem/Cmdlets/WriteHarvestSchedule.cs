@@ -147,11 +147,11 @@ namespace Mars.Seem.Cmdlets
                         {
                             float firstThinDbhInCm = dbhConversionFactor * highTreesBeforeFirstThin.Dbh[uncompactedTreeIndex];
                             float firstThinHeightInM = heightConversionFactor * highTreesBeforeFirstThin.Height[uncompactedTreeIndex];
-                            highFirstThinDbhInCm = firstThinDbhInCm.ToString("0.00", CultureInfo.InvariantCulture);
-                            highFirstThinHeightInM = firstThinHeightInM.ToString("0.00", CultureInfo.InvariantCulture);
-                            highFirstThinCrownRatio = highTreesBeforeFirstThin.CrownRatio[uncompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
-                            highFirstThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeFirstThin.LiveExpansionFactor[uncompactedTreeIndex]).ToString("0.000", CultureInfo.InvariantCulture);
-                            highFirstThinCubicM3 = thinVolumeTable.GetCubicVolume(firstThinDbhInCm, firstThinHeightInM).ToString("0.00", CultureInfo.InvariantCulture);
+                            highFirstThinDbhInCm = firstThinDbhInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture);
+                            highFirstThinHeightInM = firstThinHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
+                            highFirstThinCrownRatio = highTreesBeforeFirstThin.CrownRatio[uncompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
+                            highFirstThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeFirstThin.LiveExpansionFactor[uncompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
+                            highFirstThinCubicM3 = thinVolumeTable.GetCubicVolumeOfMerchantableWood(firstThinDbhInCm, firstThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                         }
 
                         string? highSecondThinDbhInCm = null;
@@ -167,11 +167,11 @@ namespace Mars.Seem.Cmdlets
 
                             float secondThinDbhInCm = dbhConversionFactor * highTreesBeforeSecondThin.Dbh[uncompactedTreeIndex];
                             float secondThinHeightInM = heightConversionFactor * highTreesBeforeSecondThin.Height[uncompactedTreeIndex];
-                            highSecondThinDbhInCm = secondThinDbhInCm.ToString("0.00", CultureInfo.InvariantCulture);
-                            highSecondThinHeightInM = secondThinHeightInM.ToString("0.00", CultureInfo.InvariantCulture);
-                            highSecondThinCrownRatio = highTreesBeforeSecondThin.CrownRatio[secondThinCompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
-                            highSecondThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeSecondThin.LiveExpansionFactor[secondThinCompactedTreeIndex]).ToString("0.000", CultureInfo.InvariantCulture);
-                            highSecondThinCubicM3 = thinVolumeTable.GetCubicVolume(secondThinDbhInCm, secondThinHeightInM).ToString("0.00", CultureInfo.InvariantCulture);
+                            highSecondThinDbhInCm = secondThinDbhInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture);
+                            highSecondThinHeightInM = secondThinHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
+                            highSecondThinCrownRatio = highTreesBeforeSecondThin.CrownRatio[secondThinCompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
+                            highSecondThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeSecondThin.LiveExpansionFactor[secondThinCompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
+                            highSecondThinCubicM3 = thinVolumeTable.GetCubicVolumeOfMerchantableWood(secondThinDbhInCm, secondThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                             ++secondThinCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 
@@ -188,11 +188,11 @@ namespace Mars.Seem.Cmdlets
 
                             float thirdThinDbhInCm = dbhConversionFactor * highTreesBeforeThirdThin.Dbh[uncompactedTreeIndex];
                             float thirdThinHeightInM = heightConversionFactor * highTreesBeforeThirdThin.Height[uncompactedTreeIndex];
-                            highThirdThinDbhInCm = thirdThinDbhInCm.ToString("0.00", CultureInfo.InvariantCulture);
-                            highThirdThinHeightInM = thirdThinHeightInM.ToString("0.00", CultureInfo.InvariantCulture);
-                            highThirdThinCrownRatio = highTreesBeforeThirdThin.CrownRatio[thirdThinCompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
-                            highThirdThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeThirdThin.LiveExpansionFactor[thirdThinCompactedTreeIndex]).ToString("0.000", CultureInfo.InvariantCulture);
-                            highThirdThinCubicM3 = thinVolumeTable.GetCubicVolume(thirdThinDbhInCm, thirdThinHeightInM).ToString("0.00", CultureInfo.InvariantCulture);
+                            highThirdThinDbhInCm = thirdThinDbhInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture);
+                            highThirdThinHeightInM = thirdThinHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
+                            highThirdThinCrownRatio = highTreesBeforeThirdThin.CrownRatio[thirdThinCompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
+                            highThirdThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeThirdThin.LiveExpansionFactor[thirdThinCompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
+                            highThirdThinCubicM3 = thinVolumeTable.GetCubicVolumeOfMerchantableWood(thirdThinDbhInCm, thirdThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                             ++thirdThinCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 
@@ -208,11 +208,11 @@ namespace Mars.Seem.Cmdlets
 
                             float regenDbhInCm = dbhConversionFactor * highTreesAtRegen.Dbh[uncompactedTreeIndex];
                             float regenHeightInM = heightConversionFactor * highTreesAtRegen.Height[uncompactedTreeIndex];
-                            highRegenDbhInCm = regenDbhInCm.ToString("0.00", CultureInfo.InvariantCulture);
-                            highRegenHeightInM = regenHeightInM.ToString("0.00", CultureInfo.InvariantCulture);
-                            highRegenCrownRatio = highTreesAtRegen.CrownRatio[regenCompactedTreeIndex].ToString("0.000", CultureInfo.InvariantCulture);
-                            highRegenExpansionFactorPerHa = (areaConversionFactor * highTreesAtRegen.LiveExpansionFactor[regenCompactedTreeIndex]).ToString("0.000", CultureInfo.InvariantCulture);
-                            highRegenCubicM3 = thinVolumeTable.GetCubicVolume(regenDbhInCm, regenHeightInM).ToString("0.00", CultureInfo.InvariantCulture);
+                            highRegenDbhInCm = regenDbhInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture);
+                            highRegenHeightInM = regenHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
+                            highRegenCrownRatio = highTreesAtRegen.CrownRatio[regenCompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
+                            highRegenExpansionFactorPerHa = (areaConversionFactor * highTreesAtRegen.LiveExpansionFactor[regenCompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
+                            highRegenCubicM3 = thinVolumeTable.GetCubicVolumeOfMerchantableWood(regenDbhInCm, regenHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                             ++regenCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 
@@ -269,7 +269,7 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
-                    this.WriteWarning("Write-HarvestSchedule: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    this.WriteWarning("Write-HarvestSchedule: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
                     break;
                 }
 

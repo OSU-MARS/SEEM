@@ -27,7 +27,6 @@ namespace Mars.Seem
         public const int NoThinPeriod = -1;
         // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128, 8 for VEX 256
         public const int OrganonHeightStrata = 40;
-        public const float Pi = 3.14159265F;
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
         public const float ReinekeExponent = 1.605F;
@@ -118,8 +117,15 @@ namespace Mars.Seem
 
         public static class Default
         {
+            public const string CubicVolumeFormat = "0.0#";
+            public const string CrownRatioFormat = "0.0##";
+            public const string DiameterInCmFormat = "0.0#";
             public const float DouglasFirSiteIndexInM = 39.6F; // from Malcolm Knapp Research Forest spacing trials, Douglas-fir site class 1 (~130 feet)
+            public const string ExpansionFactorFormat = "0.0##";
+            public const string FileSizeLimitFormat = "0.00";
             public const int FileWriteBufferSizeInBytes = 64 * 1024; // .NET FileWriter() defaults to 4 kB
+            public const string HeightInMFormat = "0.0#";
+            public const string LogVolumeFormat = "0.0##";
             public const string PercentageFormat = "0.0#";
             public const string ProbabilityFormat = "0.00##";
             public const int RotationLengths = 9;

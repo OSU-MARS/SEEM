@@ -341,28 +341,5 @@ namespace Mars.Seem.Test
         //        OrganonTest.Verify(ExpectedTreeChanges.NoDiameterOrHeightGrowth, stand, variant);
         //    }
         //}
-
-        [TestMethod]
-        public void WesternHemlockApi()
-        {
-            this.TestContext!.WriteLine("siteIndex, age, topHeight");
-            for (float siteIndexInMeters = 10.0F; siteIndexInMeters < 60.1F; siteIndexInMeters += 10.0F)
-            {
-                WesternHemlock.SiteConstants tsheSite = new(Constant.FeetPerMeter * siteIndexInMeters);
-                float previousTopHeight = -1.0F;
-                for (float ageInYears = 0.0F; ageInYears < 100.1F; ++ageInYears)
-                {
-                    WesternHemlock.SITECV_F(tsheSite, ageInYears, out float topHeightInMeters);
-                    this.TestContext.WriteLine("{0},{1},{2}", siteIndexInMeters, ageInYears, topHeightInMeters);
-
-                    Assert.IsTrue(topHeightInMeters >= 0.0F);
-                    // could add check that SI at age 50 is close to specified value
-                    Assert.IsTrue(topHeightInMeters > previousTopHeight);
-                    Assert.IsTrue(topHeightInMeters < 100.0F);
-
-                    previousTopHeight = topHeightInMeters;
-                }
-            }
-        }
     }
 }

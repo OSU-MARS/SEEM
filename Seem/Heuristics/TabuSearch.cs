@@ -341,7 +341,7 @@ namespace Mars.Seem.Heuristics
                                 if (highestNonTabuMovesByFinancialValue.Count <= this.EscapeDistance)
                                 {
                                     highestNonTabuMovesByFinancialValue.Add(candidateFinancialValue, new OneOptMove(treeIndex, thinningPeriod));
-                                    minimumNonTabuObjectiveFunction = Math.Min(minimumNonTabuObjectiveFunction, candidateFinancialValue);
+                                    minimumNonTabuObjectiveFunction = MathF.Min(minimumNonTabuObjectiveFunction, candidateFinancialValue);
                                 }
                                 else if (candidateFinancialValue > minimumNonTabuObjectiveFunction)
                                 {

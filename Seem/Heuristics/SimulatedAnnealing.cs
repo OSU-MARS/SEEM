@@ -236,7 +236,7 @@ namespace Mars.Seem.Heuristics
                     {
                         // while it's unlikely alpha would be close enough to 1 and reheat intervals short enough to drive the acceptance probability
                         // above one, it is possible
-                        meanAcceptanceProbability = Math.Min(meanAcceptanceProbability + this.ReheatBy, 1.0F);
+                        meanAcceptanceProbability = MathF.Min(meanAcceptanceProbability + this.ReheatBy, 1.0F);
                         logMeanAcceptanceProbability = MathV.Ln(meanAcceptanceProbability);
                         iterationsSinceReheatOrFinancialValueIncreased = 0;
                     }

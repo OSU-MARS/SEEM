@@ -247,18 +247,8 @@ namespace Mars.Seem.Silviculture
             this.WheeledHarvesterUtilization = 0.77F; // fraction
         }
 
-        public void GetCutToLengthHarvestCost(Stand stand, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, SortedList<FiaCode, TreeSpeciesMerchantableVolume> harvestVolumeBySpecies, int harvestPeriod, CutToLengthHarvest ctlHarvest)
+        public void GetCutToLengthHarvestCost(StandTrajectory trajectory, int harvestPeriod, bool isThin, CutToLengthHarvest ctlHarvest)
         {
-            if ((stand.AreaInHa <= 0.0F) ||
-                (stand.CorridorLengthInM <= 0.0F) ||
-                (stand.CorridorLengthInMTethered < 0.0F) ||
-                (stand.CorridorLengthInMTethered > Constant.Maximum.TetheredCorridorLengthInM) ||
-                (stand.CorridorLengthInMUntethered < 0.0F) ||
-                (stand.ForwardingDistanceOnRoad < 0.0F) || 
-                (stand.SlopeInPercent < 0.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(stand));
-            }
             if ((ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester != 0.0F) ||
                 (ctlHarvest.ForwardedWeightPeHa != 0.0F) ||
                 (ctlHarvest.ForwarderPMhPerHa != 0.0F) ||
@@ -267,6 +257,18 @@ namespace Mars.Seem.Silviculture
                 (ctlHarvest.WheeledHarvesterPMhPerHa != 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(ctlHarvest));
+            }
+            Stand? stand = trajectory.StandByPeriod[harvestPeriod - (isThin ? 1 : 0)];
+            if ((stand == null) ||
+                (stand.AreaInHa <= 0.0F) ||
+                (stand.CorridorLengthInM <= 0.0F) ||
+                (stand.CorridorLengthInMTethered < 0.0F) ||
+                (stand.CorridorLengthInMTethered > Constant.Maximum.TetheredCorridorLengthInM) ||
+                (stand.CorridorLengthInMUntethered < 0.0F) ||
+                (stand.ForwardingDistanceOnRoad < 0.0F) ||
+                (stand.SlopeInPercent < 0.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(trajectory));
             }
 
             int anchorMachines = 0;
@@ -279,19 +281,28 @@ namespace Mars.Seem.Silviculture
                 anchorMachines = 2;
             }
 
+            ScaledVolume scaledVolume = isThin ? trajectory.TreeVolume.Thinning : trajectory.TreeVolume.RegenerationHarvest;
+            // BC Firmwood scaling considers trim to be merchantable cubic volume (Fonseca 2005 §2.2.2.2) so, for now, merchantableFractionOfLogLength = 1
+            // float preferredLogLength = scaledVolume.PreferredLogLengthInMeters;
+            // float preferredTrimLength = scaledVolume.GetPreferredTrim();
+            // float merchantableFractionOfLogLength = preferredLogLength / (preferredLogLength + preferredTrimLength); // assumes cylindrical logs or cylindrical ones with equal amounts of trim at both ends
+
             bool chainsawFallingWithWheeledHarvester = false;
             bool previousOversizeTreeBehindHarvester = true;
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 float diameterToCentimetersMultiplier = 1.0F;
+                float heightToMetersMultiplier = 1.0F;
                 float hectareExpansionFactorMultiplier = 1.0F;
                 if (treesOfSpecies.Units == Units.English)
                 {
                     diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
+                    heightToMetersMultiplier = Constant.MetersPerFoot;
                     hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
                 }
-                IndividualTreeSelection individualTreeSelection = individualTreeSelectionBySpecies[treesOfSpecies.Species];
+                IndividualTreeSelection individualTreeSelection = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
+                TreeSpeciesVolumeTable volumeTable = scaledVolume.VolumeBySpecies[treesOfSpecies.Species];
 
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                 {
@@ -305,8 +316,9 @@ namespace Mars.Seem.Silviculture
                     // Could factor constant and linear terms out of loop (true for all machines, both CTL and long log) but it doesn't
                     // appear important to do so.
                     float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                    float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
                     float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    float treeMerchantableVolumeInM3 = treesOfSpecies.MerchantableCubicVolumePerStem[compactedTreeIndex];
+                    float treeMerchantableVolumeInM3 = volumeTable.GetCubicVolumeOfWood(dbhInCm, heightInM, out float unscaledNeiloidVolumeInM3);
                     Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
                     ctlHarvest.MerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
 
@@ -324,7 +336,7 @@ namespace Mars.Seem.Silviculture
                         }
 
                         float woodAndRemainingBarkVolumePerStem = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAfterHarvester);
-                        ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStem * treeSpeciesProperties.StemDensityAfterHarvester;
+                        ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStem * treeSpeciesProperties.StemDensityAfterHarvester; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
                         ctlHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                     }
                     else
@@ -367,10 +379,10 @@ namespace Mars.Seem.Silviculture
                             treeChainsawTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
                         }
 
-                        float woodAndBarkVolumePerStem = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFraction); // no bark loss from going through feed rollers
+                        float woodAndBarkVolumePerStem = (treeMerchantableVolumeInM3 + unscaledNeiloidVolumeInM3) / (1.0F - treeSpeciesProperties.BarkFraction); // no bark loss from going through feed rollers
                         ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester += expansionFactorPerHa * treeChainsawTime;
                         ctlHarvest.ChainsawCubicVolumePerHaWithWheeledHarvester += expansionFactorPerHa * treeMerchantableVolumeInM3;
-                        ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndBarkVolumePerStem * treeSpeciesProperties.StemDensity;
+                        ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndBarkVolumePerStem * treeSpeciesProperties.StemDensity; // / merchantableFractionOfLogLength; // 1 in BC Firmwood 
                         ctlHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
                         previousOversizeTreeBehindHarvester = !previousOversizeTreeBehindHarvester;
                     }
@@ -437,10 +449,12 @@ namespace Mars.Seem.Silviculture
 
             // TODO: full bark retention on trees bucked by chainsaw (for now it's assumed all trees are bucked by a harvester)
             // TODO: support cross-species loading
+            // TODO: merchantable fraction of actual log length instead of assuming all logs are of preferred length
+            SortedList<FiaCode, TreeSpeciesMerchantableVolume> harvestVolumeBySpecies = isThin ? trajectory.ThinningVolumeBySpecies : trajectory.StandingVolumeBySpecies;
             foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in harvestVolumeBySpecies.Values)
             {
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[harvestVolumeForSpecies.Species];
-                float forwarderMaximumMerchantableM3 = forwarderPayloadInKg / (treeSpeciesProperties.StemDensityAfterHarvester * (1.0F + treeSpeciesProperties.BarkFractionAfterHarvester)); // merchantable m³ = kg / kg/m³ * 1 / merchantable m³/m³
+                float forwarderMaximumMerchantableM3 = forwarderPayloadInKg / (treeSpeciesProperties.StemDensityAfterHarvester * (1.0F + treeSpeciesProperties.BarkFractionAfterHarvester)); // * merchantableFractionOfLogLength; // merchantable m³ = kg / kg/m³ * 1 / merchantable m³/m³ [* merchantable m/m = 1 in BC Firmwood]
 
                 float cubic4Saw = harvestVolumeForSpecies.Cubic4Saw[harvestPeriod];
                 float logs4Saw = harvestVolumeForSpecies.Logs4Saw[harvestPeriod];
@@ -594,6 +608,8 @@ namespace Mars.Seem.Silviculture
 
             bool chainsawFallingWithTrackedHarvester = false;
             bool chainsawFallingWithWheeledHarvester = false;
+            // float preferredLogLengthWithTrimInM = scaledVolume.PreferredLogLengthInMeters + scaledVolume.GetPreferredTrim(); // for checking first log weight
+            // float merchantableFractionOfLogLength = scaledVolume.PreferredLogLengthInMeters / preferredLogLengthWithTrimInM; // 1 in BC Firmwood
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 float diameterToCentimetersMultiplier = 1.0F;
@@ -605,12 +621,15 @@ namespace Mars.Seem.Silviculture
                     heightToMetersMultiplier = Constant.MetersPerFoot;
                     hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
                 }
+                TreeSpeciesVolumeTable volumeTable = scaledVolume.VolumeBySpecies[treesOfSpecies.Species];
 
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                 {
+                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                    float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
                     float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    float treeMerchantableVolumeInM3 = treesOfSpecies.MerchantableCubicVolumePerStem[compactedTreeIndex];
+                    float treeMerchantableVolumeInM3 = volumeTable.GetCubicVolumeOfWood(dbhInCm, heightInM, out float unscaledNeiloidVolume);
                     Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
                     longLogHarvest.MerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
 
@@ -624,7 +643,7 @@ namespace Mars.Seem.Silviculture
                     // yarding weights occur. In lieu of more specific data, yarding weight limits are checked when half the yarding bark
                     // loss has occurred and this same weight is used in finding the total yarded weight for calculating the total number
                     // of yarding turns.
-                    // TODO: include weight of crown not broken off during felling (and swinging)
+                    // TODO: include weight of remaining crown after branch breaking during felling and swinging
                     float woodAndRemainingBarkVolumePerStemAfterFelling = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAtMidspanWithoutHarvester);
                     float yardedWeightPerStemWithFellerBuncher = woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
                     longLogHarvest.YardedWeightPerHaWithFellerBuncher += expansionFactorPerHa * yardedWeightPerStemWithFellerBuncher; // before bark loss since 
@@ -638,12 +657,8 @@ namespace Mars.Seem.Silviculture
                     //   3) The tree's first log is calculated from a Smalian estimate diameter outside bark. A more complete correct
                     //      would look up the tree's first log's merchantable volume from the volume table and adjust for the bark
                     //      fraction.
-                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
-                    float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
-                    float conicalTaper = dbhInCm / (heightInM - Constant.DbhHeightInM); // cm/m
-                    float firstLogTopDiameterOutsideBarkInCm = dbhInCm - conicalTaper * (Constant.Bucking.DefaultLongLogLengthInM - Constant.DbhHeightInM + Constant.Bucking.DefaultStumpHeightInM);
-                    float firstLogBottomDiameterOutsideBarkInCm = dbhInCm + conicalTaper * (Constant.DbhHeightInM - Constant.Bucking.DefaultStumpHeightInM);
-                    float approximateFirstLogWeightWithMidCorridorBarkLoss = 0.25F * MathF.PI * 0.0001F * 0.5F * (firstLogTopDiameterOutsideBarkInCm * firstLogTopDiameterOutsideBarkInCm + firstLogBottomDiameterOutsideBarkInCm * firstLogBottomDiameterOutsideBarkInCm) * scaledVolume.PreferredLogLengthInMeters * treeSpeciesProperties.StemDensity;
+                    float firstLogVolumeInM3 = volumeTable.GetCubicVolumeOfWoodInFirstLog(dbhInCm, heightInM) + unscaledNeiloidVolume;
+                    float firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss = firstLogVolumeInM3 * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
 
                     bool treeBuckedManuallyWithGrappleSwingYarder = false;
                     if (yardedWeightPerStemWithFellerBuncher > this.GrappleSwingYarderMaxPayload)
@@ -659,7 +674,7 @@ namespace Mars.Seem.Silviculture
                         treeBuckedManuallyWithGrappleSwingYarder = true;
 
                         longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
-                        if (approximateFirstLogWeightWithMidCorridorBarkLoss > this.GrappleSwingYarderMaxPayload)
+                        if (firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss > this.GrappleSwingYarderMaxPayload)
                         {
                             // for now, logs produced by feller-buncher plus chainsaw aren't distinguished from their somewhat lighter
                             // equivalent with less bark after being bucked by a harvester
@@ -681,7 +696,7 @@ namespace Mars.Seem.Silviculture
                         treeBuckedManuallyWithGrappleYoader = true;
 
                         longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
-                        if (approximateFirstLogWeightWithMidCorridorBarkLoss > this.GrappleYoaderMaxPayload)
+                        if (firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss > this.GrappleYoaderMaxPayload)
                         {
                             // for now, logs produced by feller-buncher plus chainsaw aren't distinguished from their somewhat lighter
                             // equivalent with less bark after being bucked by a harvester
@@ -831,7 +846,7 @@ namespace Mars.Seem.Silviculture
                     // loader productivity is specified so no loader calculations
 
                     // haul weight
-                    float woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAfterYardingAndProcessing);
+                    float woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing = (treeMerchantableVolumeInM3 + unscaledNeiloidVolume) / (1.0F - treeSpeciesProperties.BarkFractionAfterYardingAndProcessing); // / merchantableFractionOfLogLength; // 1 in BC Firmwood
                     longLogHarvest.LoadedWeightPerHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing * treeSpeciesProperties.StemDensityAfterYardingAndProcessing;
                 }
             }

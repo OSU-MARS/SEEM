@@ -25,73 +25,70 @@ namespace Mars.Seem.Tree
         // Diameter outside bark at heights of 30 cm to 1.37 m from
         // Maguire DA, Hann DW. 1990. Bark Thickness and Bark Volume in Southwestern Oregon Douglas-Fir. Western Journal of Applied
         //   Forestry 5(1):5–8. https://doi.org/10.1093/wjaf/5.1.5
-        // Curtis RO, Arney JD. 1977. Estimating D.B.H. from stump diameters in second-growth Douglas-fir. Research Note PNW-297, US
-        //   Forest Service. https://www.fs.fed.us/pnw/olympia/silv/publications/opt/167_CurtisArney1977.pdf
+        // with extrapolation allowed to lower heights.
         public static float GetDiameterOutsideBark(float dbhInCm, float heightInM, float heightToCrownBaseInM, float evaluationHeightInM)
         {
+            // actual data limit of the paper is 109 cm but, since regression is well behaved, allow use with somewhat larger stems
+            if ((dbhInCm < 0.0F) || (dbhInCm > 120.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds the regression limit of Maguire and Hann 1990.");
+            }
             if ((heightInM < 0.0F) || (heightInM > 75.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString("0.0") + " m is either negative or exceeds regression limit of 75.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either negative or exceeds regression limit of 75.0 m.");
             }
-            if ((evaluationHeightInM < 0.25F * Constant.MetersPerFoot) || (evaluationHeightInM > Constant.DbhHeightInM))
+            // fitting limit of the paper is 30 cm but, based on discussion with Maguire and greater stability of the Walters and Hann regression form
+            // used compared to the Kozak 2004 form, allow lower heights
+            if ((evaluationHeightInM < 0.1F * Constant.MetersPerFoot) || (evaluationHeightInM > Constant.DbhHeightInM))
             {
-                // If needed, support for estimating diameter outside bark above breast height can be implemented by using Poudel et al.
-                // 2018's diameter inside bark regressions and adding bark thickness from Maguire and Hann 1990.
-                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString("0.00") + " m is less than the regression limit of 0.25 feet or exceeds breast height (" + Constant.DbhHeightInM + ").");
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString(Constant.Default.HeightInMFormat) + " m is less than the regression limit of 0.25 feet or exceeds breast height (" + Constant.DbhHeightInM + ").");
             }
 
             // for now, no effort is made to resolve discontinuities between Curtis and Arney 1977 and Maguire and Hann 1990
             float dbhInInches = Constant.InchesPerCentimeter * dbhInCm;
             float evaluationHeightInFeet = Constant.FeetPerMeter * evaluationHeightInM;
-            float diameterOutsideBark;
-            if (evaluationHeightInM < Constant.MetersPerFoot)
-            {
-                // Curtis and Arney's dataset includes one stem of 28 inches DBH (71 cm), the rest are 24 inches (61 cm) and smaller
-                if ((dbhInCm < 0.0F) || (dbhInCm > 71.0F))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString("0.0") + " cm is either negative or exceeds the regression limit of Curtis and Arney 1977.");
-                }
 
-                // solution of Curtis and Arney 1977, equation 1 (valid for heights of 0.25-2 feet), for stump diameter outside of bark
-                // using Cardano's method for the roots of third order polynomials
-                // (Curtis and Arney assign polynomial coefficients a-d to increasing powers, a reversal of the common order.)
-                float a = 0.12327F - 0.027392F * evaluationHeightInFeet - dbhInInches; // convert dbh = a + b dob + c dob^2 + d dob^3 to d dob^3 + c dob^2 + b dob + a - dbh = 0 for finding roots
-                float b = 0.64885F + 0.27258F * evaluationHeightInFeet - 0.113191F * evaluationHeightInFeet * evaluationHeightInFeet + 0.025339F * evaluationHeightInFeet * evaluationHeightInFeet * evaluationHeightInFeet - 0.00217612F * evaluationHeightInFeet * evaluationHeightInFeet * evaluationHeightInFeet * evaluationHeightInFeet;
-                float c = 0.0025583F - 0.0011370F * evaluationHeightInFeet + 0.00012634F * evaluationHeightInFeet * evaluationHeightInFeet;
-                float d = -0.000066158F + 0.000014702F * evaluationHeightInFeet;
+            // Maguire and Hann 1990, equations 2 and 3, fitted for heights of 1.0-4.5 feet
+            float diameterOutsideBarkAt1Foot = 1.10767F * MathF.Exp(0.0710044F * (heightInM - heightToCrownBaseInM) / heightInM) * dbhInInches;
+            float outsideRatioDbhTo1Foot = dbhInInches / diameterOutsideBarkAt1Foot;
+            float outsideRatio = MathF.Pow(1.0F / 3.5F * (4.5F - MathF.Pow(outsideRatioDbhTo1Foot, 2.0F / 3.0F) - evaluationHeightInFeet * (1.0F - MathF.Pow(outsideRatioDbhTo1Foot, 2.0F / 3.0F))), 1.5F);
+            float diameterOutsideBark = Constant.CentimetersPerInch * (outsideRatio * diameterOutsideBarkAt1Foot);
 
-                float r = (9.0F * d * c * b - 27.0F * d*d * a - 2.0F * c*c*c) / (54.0F * d*d*d);
-                float q = (3.0F * d * b - c*c) / (9.0F * d*d);
-                Complex s = Complex.Pow(r + Complex.Sqrt(q*q*q + r*r), 1.0F / 3.0F);
-                Complex t = Complex.Pow(r - Complex.Sqrt(q * q * q + r * r), 1.0F / 3.0F);
-                // Complex root1 = s + t - c / (3.0F * d);
-                // Complex root2 = -0.5 * (s + t) - c / (3.0F * d) + new Complex(0.0, 0.5 * Math.Sqrt(3.0)) * (s - t);
-                Complex root3 = -0.5 * (s + t) - c / (3.0F * d) - new Complex(0.0, 0.5 * Math.Sqrt(3.0)) * (s - t);
-                if (Math.Abs(root3.Imaginary) < 0.000001)
-                {
-                    // At small diameters polynomial roots 1 and 2 are a complex conjugate pair and the third root is real and positive.
-                    diameterOutsideBark = Constant.CentimetersPerInch * (float)root3.Real;
-                }
-                else
-                {
-                    // At diameters above a meter or so, roots 1 and 3 become a complex conjugate pair. Root 2 becomes real but is negative.
-                    throw new ArgumentOutOfRangeException(nameof(dbhInCm), "DBH of " + dbhInCm + " cm is beyond the regression fitting range of Curtis and Arney 1977.");
-                }
-            }
-            else
-            {
-                // actual data limit of the paper is 109 cm but, since regression is well behaved, allow use with somewhat larger stems
-                if ((dbhInCm < 0.0F) || (dbhInCm > 120.0F))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString("0.0") + " cm is either negative or exceeds the regression limit of Maguire and Hann 1990.");
-                }
+            // alternate implementation from Curtis and Arney 1977
+            // Curtis RO, Arney JD. 1977. Estimating D.B.H. from stump diameters in second-growth Douglas-fir. Research Note PNW-297, US
+            //   Forest Service. https://www.fs.fed.us/pnw/olympia/silv/publications/opt/167_CurtisArney1977.pdf
+            // Curtis and Arney's dataset includes one stem of 28 inches DBH (71 cm), the rest are 24 inches (61 cm) and smaller
+            // if ((dbhInCm < 0.0F) || (dbhInCm > 71.0F))
+            // {
+            //     throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds the regression limit of Curtis and Arney 1977.");
+            // }
 
-                // Maguire and Hann 1990, equations 2 and 3, valid for heights of 1.0-4.5 feet
-                float diameterOutsideBarkAt1Foot = 1.10767F * MathF.Exp(0.0710044F * (heightInM - heightToCrownBaseInM) / heightInM) * dbhInInches;
-                float outsideRatioDbhTo1Foot = dbhInInches / diameterOutsideBarkAt1Foot;
-                float outsideRatio = MathF.Pow(1.0F / 3.5F * (4.5F - MathF.Pow(outsideRatioDbhTo1Foot, 2.0F / 3.0F) - evaluationHeightInFeet * (1.0F - MathF.Pow(outsideRatioDbhTo1Foot, 2.0F / 3.0F))), 1.5F);
-                diameterOutsideBark = Constant.CentimetersPerInch * (outsideRatio * diameterOutsideBarkAt1Foot);
-            }
+            // solution of Curtis and Arney 1977, equation 1 (valid for heights of 0.25-2 feet), for stump diameter outside of bark
+            // using Cardano's method for the roots of third order polynomials
+            // (Curtis and Arney assign polynomial coefficients a-d to increasing powers, a reversal of the common order.)
+            // float a = 0.12327F - 0.027392F * evaluationHeightInFeet - dbhInInches; // convert dbh = a + b dob + c dob^2 + d dob^3 to d dob^3 + c dob^2 + b dob + a - dbh = 0 for finding roots
+            // float b = 0.64885F + 0.27258F * evaluationHeightInFeet - 0.113191F * evaluationHeightInFeet * evaluationHeightInFeet + 0.025339F * evaluationHeightInFeet * evaluationHeightInFeet * evaluationHeightInFeet - 0.00217612F * evaluationHeightInFeet * evaluationHeightInFeet * evaluationHeightInFeet * evaluationHeightInFeet;
+            // float c = 0.0025583F - 0.0011370F * evaluationHeightInFeet + 0.00012634F * evaluationHeightInFeet * evaluationHeightInFeet;
+            // float d = -0.000066158F + 0.000014702F * evaluationHeightInFeet;
+
+            // float r = (9.0F * d * c * b - 27.0F * d*d * a - 2.0F * c*c*c) / (54.0F * d*d*d);
+            // float q = (3.0F * d * b - c*c) / (9.0F * d*d);
+            // Complex s = Complex.Pow(r + Complex.Sqrt(q*q*q + r*r), 1.0F / 3.0F);
+            // Complex t = Complex.Pow(r - Complex.Sqrt(q * q * q + r * r), 1.0F / 3.0F);
+            // Complex root1 = s + t - c / (3.0F * d);
+            // Complex root2 = -0.5 * (s + t) - c / (3.0F * d) + new Complex(0.0, 0.5 * Math.Sqrt(3.0)) * (s - t);
+            // Complex root3 = -0.5 * (s + t) - c / (3.0F * d) - new Complex(0.0, 0.5 * Math.Sqrt(3.0)) * (s - t);
+            // if (Math.Abs(root3.Imaginary) < 0.000001)
+            // {
+            //     // At small diameters polynomial roots 1 and 2 are a complex conjugate pair and the third root is real and positive.
+            //     diameterOutsideBark = Constant.CentimetersPerInch * (float)root3.Real;
+            // }
+            // else
+            // {
+            //     // At diameters above a meter or so, roots 1 and 3 become a complex conjugate pair. Root 2 becomes real but is negative.
+            //     throw new ArgumentOutOfRangeException(nameof(dbhInCm), "DBH of " + dbhInCm + " cm is beyond the regression fitting range of Curtis and Arney 1977.");
+            // }
+
             return diameterOutsideBark;
         }
 
@@ -101,15 +98,15 @@ namespace Mars.Seem.Tree
         {
             if ((dbhInCm < 0.0F) || (dbhInCm > 135.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString("0.0") + " cm is either negative or exceeds regression limit of 135.0 cm.");
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds regression limit of 135.0 cm.");
             }
             if ((heightInM < 0.0F) || (heightInM > 75.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString("0.0") + " m is either negative or exceeds regression limit of 75.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either negative or exceeds regression limit of 75.0 m.");
             }
             if ((evaluationHeightInM < Constant.MetersPerFoot) || (evaluationHeightInM > heightInM))
             {
-                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString("0.00") + " m is less than the regression limit of 1.0 feet or exceeds tree height of " + heightInM.ToString("0.00") + " m.");
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString(Constant.Default.HeightInMFormat) + " m is less than the regression limit of 1.0 feet or exceeds tree height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m.");
             }
 
             float dbhInInches = Constant.InchesPerCentimeter * dbhInCm;
@@ -157,10 +154,12 @@ namespace Mars.Seem.Tree
             return doubleBarkThicknessInCm;
         }
 
-        internal static float GetNeiloidHeight(float dbhInCm, float _)
+        internal static float GetNeiloidHeight(float dbhInCm, float heightInM)
         {
-            // approximation from plotting Poudel et al. 2018 dib curves in R
-            return Constant.DbhHeightInM + 0.01F * 5.0F * (dbhInCm - 20.0F);
+            // approximation from plotting families of Poudel et al. 2018 dib curves in R and fitting the neiloid inflection point
+            float heightDiameterRatio = heightInM / (0.01F * dbhInCm);
+            float neiloidHeightInM = -0.7F + 1.0F / (0.02F * heightDiameterRatio) + 0.01F * (0.8F + 0.045F * heightDiameterRatio) * dbhInCm;
+            return MathF.Max(neiloidHeightInM, Constant.Bucking.DefaultStumpHeightInM);
         }
 
         /// <summary>

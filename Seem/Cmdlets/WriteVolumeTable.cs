@@ -27,7 +27,7 @@ namespace Mars.Seem.Cmdlets
             // header
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine("logLength,species,height,DBH,heightDiameterRatio,logs,logs2S,logs3S,logs4S,cubic2S,cubic3S,cubic4S,cubic,scribner2S,scribner3S,scribner4S,scribner,fellingDiameter15,fellingDiameter30,maxFeedRollerDiameter");
+                writer.WriteLine("logLength,species,height,DBH,heightDiameterRatio,logs,logs2S,logs3S,logs4S,cubic2S,cubic3S,cubic4S,cubic,scribner2S,scribner3S,scribner4S,scribner,fellingDiameter15,fellingDiameter30,maxFeedRollerDiameter,neiloidHeight,neiloidCubic");
             }
 
             this.WriteScaledVolume(writer, this.TreeVolume.RegenerationHarvest);
@@ -47,10 +47,21 @@ namespace Mars.Seem.Cmdlets
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             foreach (FiaCode species in scaledVolume.VolumeBySpecies.Keys)
             {
-                if (species != FiaCode.PseudotsugaMenziesii)
+                Func<float, float, float, float, float> getDiameterOutsideBark = species switch
                 {
-                    throw new NotSupportedException("Felling diameter estimation not implemented for " + species + ".");
-                }
+                    FiaCode.PseudotsugaMenziesii => DouglasFir.GetDiameterOutsideBark,
+                    FiaCode.TsugaHeterophylla => (float dbhInCm, float heightInM, float _, float evaluationHeightInM) =>
+                    {
+                        return WesternHemlock.GetDiameterOutsideBark(dbhInCm, heightInM, evaluationHeightInM);
+                    },
+                    _ => throw new NotSupportedException("Unhandled species " + species + ".")
+                };
+                Func<float, float, float> getNeiloidHeight = species switch
+                {
+                    FiaCode.PseudotsugaMenziesii => DouglasFir.GetNeiloidHeight,
+                    FiaCode.TsugaHeterophylla => WesternHemlock.GetNeiloidHeight,
+                    _ => throw new NotSupportedException("Unhandled species " + species + ".")
+                };
 
                 string speciesPrefix = String.Concat(logLengthAsString, ",", FiaCodeExtensions.ToFourLetterCode(species));
                 TreeSpeciesVolumeTable volumeTable = scaledVolume.VolumeBySpecies[species];
@@ -60,59 +71,10 @@ namespace Mars.Seem.Cmdlets
                     // Height:diameter ratio could potentially be used as a modifier, with higher ratio trees having shorter crowns.
                     float heightInM = volumeTable.GetHeight(heightIndex);
                     float heightToCrownBaseInM = (1.0F - 0.4F) * heightInM;
-                    string speciesAndHeightPrefix = speciesPrefix + "," + heightInM.ToString(CultureInfo.InvariantCulture);
+                    string speciesAndHeightPrefix = speciesPrefix + "," + heightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
                     for (int dbhIndex = 0; dbhIndex < volumeTable.DiameterClasses; ++dbhIndex)
                     {
                         float dbhInCm = volumeTable.GetDiameter(dbhIndex);
-
-                        // diameter and bark regressions behaved incorrectly on trees too small to be merchantable as sawtimber below
-                        // breast height
-                        // These trees are threfore excluded from checking of felling cut diameter and diameter at minimum feed roller height.
-                        // Feed roller diameter estimation is also incorrect for trees with unusually low height-diameter ratios. So these
-                        // trees are, for now, also excluded.
-                        float fellingDiameter15 = dbhInCm;
-                        if ((dbhInCm > 0.0F) && (heightInM > PoudelRegressions.MinimumKozakHeightInM))
-                        {
-                            // Since
-                            //   1) Maguire and Hann 1990's lower height limit for predicting diameter outside bark is one foot
-                            //   2) The accurate fitting range of Curtis and Arney 1977 doesn't extend to DBHes large enough to be useful
-                            //      in sizing processor heads.
-                            // estimate felling diameter at 15 cm from Kozak 2004 form with Poudel et al. 2018's diameter inside bark
-                            // coefficients and add bark thickness at one foot from Maguire and Hann 1990.
-                            // Constant.Bucking.StumpHeight <= PoudelRegressions.MinimumKozakHeightInM is asserted above
-                            float candidateFellingDiameter15 = PoudelRegressions.GetDouglasFirDiameterInsideBark(dbhInCm, heightInM, 0.15F) + DouglasFir.GetDoubleBarkThickness(dbhInCm, heightInM, heightToCrownBaseInM, Constant.MetersPerFoot);
-                            Debug.Assert((candidateFellingDiameter15 > dbhInCm) || (dbhInCm < Constant.Bucking.MinimumScalingDiameter4Saw) || (heightInM < Constant.Bucking.MinimumLogLength4SawInM));
-                            if (candidateFellingDiameter15 > dbhInCm)
-                            {
-                                fellingDiameter15 = candidateFellingDiameter15;
-                            }
-                            //fellingDiameter15 = DouglasFir.GetDiameterOutsideBark(dbhInCm, heightInM, heightToCrownBaseInM, 0.5F * Constant.MetersPerFoot);
-                            //Debug.Assert(fellingDiameter15 > dbhInCm);
-                        }
-                        float fellingDiameter30 = dbhInCm;
-                        if ((dbhInCm > 0.0F) && (heightInM > Constant.DbhHeightInM))
-                        {
-                            // Constant.Bucking.StumpHeight <= PoudelRegressions.MinimumKozakHeightInM is asserted above
-                            // float candidateFellingDiameter30 = PoudelRegressions.GetDouglasFirDiameterInsideBark(dbhInCm, heightInM, Constant.MetersPerFoot) + DouglasFir.GetDoubleBarkThickness(dbhInCm, heightInM, heightToCrownBaseInM, Constant.MetersPerFoot);
-                            // Debug.Assert((candidateFellingDiameter30 > dbhInCm) || (dbhInCm < Constant.Bucking.MinimumScalingDiameter4Saw) || (heightInM < Constant.Bucking.MinimumLogLength4Saw));
-                            //if (candidateFellingDiameter30 > dbhInCm)
-                            //{
-                            //    fellingDiameter30 = candidateFellingDiameter30;
-                            //}
-                            fellingDiameter30 = DouglasFir.GetDiameterOutsideBark(dbhInCm, heightInM, heightToCrownBaseInM, Constant.MetersPerFoot);
-                            // don't check fellingDiameter15 > fellingDiameter30 because regressions aren't necessarily consistent
-                            Debug.Assert(fellingDiameter30 > dbhInCm);
-                        }
-                        float maxFeedRollerDiameter = dbhInCm;
-                        if ((dbhInCm > 0.0F) && (heightInM > Constant.DbhHeightInM))
-                        {
-                            // minimumFeedRollerHeight <= PoudelRegressions.MinimumKozakHeightInM is asserted above
-                            // maxFeedRollerDiameter = PoudelRegressions.GetDouglasFirDiameterInsideBark(dbhInCm, heightInM, minimumFeedRollerHeight) + DouglasFir.GetDoubleBarkThickness(dbhInCm, heightInM, heightToCrownBaseInM, minimumFeedRollerHeight);
-                            // Debug.Assert((maxFeedRollerDiameter > dbhInCm) && ((maxFeedRollerDiameter < fellingDiameter30) || (dbhInCm < Constant.Bucking.MinimumScalingDiameter4Saw) || (heightInM < Constant.Bucking.MinimumLogLength4Saw) || (heightDiameterRatio < 25.0F)));
-                            // minimumFeedRollerHeight <= Constant.DbhHeightInM is asserted above
-                            maxFeedRollerDiameter = DouglasFir.GetDiameterOutsideBark(dbhInCm, heightInM, heightToCrownBaseInM, minimumFeedRollerHeight);
-                            Debug.Assert((fellingDiameter30 >= maxFeedRollerDiameter) && (maxFeedRollerDiameter > dbhInCm));
-                        }
 
                         float heightDiameterRatio = heightInM / (0.01F * dbhInCm);
                         int logs2saw = volumeTable.Logs2Saw[dbhIndex, heightIndex];
@@ -127,24 +89,49 @@ namespace Mars.Seem.Cmdlets
                         float scribner3saw = volumeTable.Scribner3Saw[dbhIndex, heightIndex];
                         float scribner4saw = volumeTable.Scribner4Saw[dbhIndex, heightIndex];
                         float scribnerTotal = scribner2saw + scribner3saw + scribner4saw;
+
+                        // below breast height, diameter and bark regressions behaved incorrectly on trees too small to be merchantable as sawtimber
+                        // These trees are therefore excluded from checking of felling cut diameter and diameter at minimum feed roller height.
+                        // Feed roller diameter estimation is also incorrect for trees with unusually low height-diameter ratios. So these
+                        // trees are, for now, also excluded.
+                        float fellingDiameterAt15cm = dbhInCm;
+                        float fellingDiameterAt30cm = dbhInCm;
+                        float maxFeedRollerDiameterInCm = dbhInCm;
+                        float neiloidHeightInM = 0.0F;
+                        if ((dbhInCm > 0.0F) && (heightInM > Constant.DbhHeightInM))
+                        {
+                            fellingDiameterAt15cm = getDiameterOutsideBark(dbhInCm, heightInM, heightToCrownBaseInM, 0.5F * Constant.MetersPerFoot);
+                            fellingDiameterAt30cm = getDiameterOutsideBark(dbhInCm, heightInM, heightToCrownBaseInM, Constant.MetersPerFoot);
+                            maxFeedRollerDiameterInCm = getDiameterOutsideBark(dbhInCm, heightInM, heightToCrownBaseInM, minimumFeedRollerHeight);
+                            neiloidHeightInM = getNeiloidHeight(dbhInCm, heightInM);
+
+                            // don't check fellingDiameter15 > fellingDiameter30 because regressions aren't necessarily consistent
+                            Debug.Assert(fellingDiameterAt15cm > dbhInCm);
+                            Debug.Assert(fellingDiameterAt30cm > dbhInCm);
+                            Debug.Assert((fellingDiameterAt30cm >= maxFeedRollerDiameterInCm) && (maxFeedRollerDiameterInCm > dbhInCm));
+                        }
+                        float unscaledNeiloidVolumeInM3 = volumeTable.UnscaledNeiloidCubic[dbhIndex, heightIndex];
+
                         string line = speciesAndHeightPrefix + "," +
-                            dbhInCm.ToString(CultureInfo.InvariantCulture) + "," +
+                            dbhInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
                             heightDiameterRatio.ToString(CultureInfo.InvariantCulture) + "," +
                             logs.ToString(CultureInfo.InvariantCulture) + "," +
                             logs2saw.ToString(CultureInfo.InvariantCulture) + "," +
                             logs3saw.ToString(CultureInfo.InvariantCulture) + "," +
                             logs4saw.ToString(CultureInfo.InvariantCulture) + "," +
-                            cubic2saw.ToString(CultureInfo.InvariantCulture) + "," +
-                            cubic3saw.ToString(CultureInfo.InvariantCulture) + "," +
-                            cubic4saw.ToString(CultureInfo.InvariantCulture) + "," +
+                            cubic2saw.ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture) + "," +
+                            cubic3saw.ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture) + "," +
+                            cubic4saw.ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture) + "," +
                             cubicTotal.ToString(CultureInfo.InvariantCulture) + "," +
                             scribner2saw.ToString(CultureInfo.InvariantCulture) + "," +
                             scribner3saw.ToString(CultureInfo.InvariantCulture) + "," +
                             scribner4saw.ToString(CultureInfo.InvariantCulture) + "," +
                             scribnerTotal.ToString(CultureInfo.InvariantCulture) + "," +
-                            fellingDiameter15.ToString(CultureInfo.InvariantCulture) + "," +
-                            fellingDiameter30.ToString(CultureInfo.InvariantCulture) + "," +
-                            maxFeedRollerDiameter.ToString(CultureInfo.InvariantCulture);
+                            fellingDiameterAt15cm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                            fellingDiameterAt30cm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                            maxFeedRollerDiameterInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                            neiloidHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture) + "," +
+                            unscaledNeiloidVolumeInM3.ToString(Constant.Default.LogVolumeFormat, CultureInfo.InvariantCulture);
                         writer.WriteLine(line);
                         estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                     }
@@ -158,7 +145,7 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
-                    this.WriteWarning("Write-VolumeTable: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    this.WriteWarning("Write-VolumeTable: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
                     break;
                 }
             }

@@ -322,7 +322,7 @@ namespace Mars.Seem.Optimization
             if (ctlHarvest.CubicVolumePerHa > 0.0F)
             {
                 // volume was harvested so thinning costs are incurred
-                harvestSystems.GetCutToLengthHarvestCost(previousStand, trajectory.TreeSelectionBySpecies, trajectory.ThinningVolumeBySpecies, thinningPeriod, ctlHarvest);
+                harvestSystems.GetCutToLengthHarvestCost(trajectory, thinningPeriod, isThin: true, ctlHarvest);
 
                 float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
                 ctlHarvest.TaskCostPerHa += thinningHarvestTaskCostPerCubicMeter * ctlHarvest.CubicVolumePerHa + this.ThinningHarvestCostPerHectare[financialIndex];

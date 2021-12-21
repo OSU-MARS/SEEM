@@ -156,7 +156,7 @@ namespace Mars.Seem.Silviculture
                 }
                 if (treesWithLargest.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
                 {
-                    throw new NotSupportedException("Could not select tree " + treesWithLargest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesWithLargest.LiveExpansionFactor[compactedTreeIndex].ToString("0.00") + ".");
+                    throw new NotSupportedException("Could not select tree " + treesWithLargest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesWithLargest.LiveExpansionFactor[compactedTreeIndex].ToString(Constant.Default.ExpansionFactorFormat) + ".");
                 }
                 trajectory.SetTreeSelection(maximumSpecies, uncompactedTreeIndex, this.Period);
 
@@ -205,7 +205,7 @@ namespace Mars.Seem.Silviculture
                 }
                 if (treesWithSmallest.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
                 {
-                    throw new NotSupportedException("Could not select tree " + treesWithSmallest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesWithSmallest.LiveExpansionFactor[compactedTreeIndex].ToString("0.00") + ".");
+                    throw new NotSupportedException("Could not select tree " + treesWithSmallest.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesWithSmallest.LiveExpansionFactor[compactedTreeIndex].ToString(Constant.Default.ExpansionFactorFormat) + ".");
                 }
                 trajectory.SetTreeSelection(minimumSpecies, uncompactedTreeIndex, this.Period);
 
@@ -268,7 +268,7 @@ namespace Mars.Seem.Silviculture
                         }
                         if (treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
                         {
-                            throw new NotSupportedException("Could not select tree " + treesOfSpecies.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesOfSpecies.LiveExpansionFactor[compactedTreeIndex].ToString("0.00") + ".");
+                            throw new NotSupportedException("Could not select tree " + treesOfSpecies.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesOfSpecies.LiveExpansionFactor[compactedTreeIndex].ToString(Constant.Default.ExpansionFactorFormat) + ".");
                         }
                         trajectory.SetTreeSelection(speciesDbhSortOrder.Key, uncompactedTreeIndex, this.Period);
 

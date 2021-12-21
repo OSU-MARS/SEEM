@@ -62,9 +62,9 @@ namespace Mars.Seem.Cmdlets
                             float diameterClass = snagsAndLogs.GetDiameter(diameterClassIndex);
 
                             string line = linePrefixForPeriodAndSpecies + "," +
-                                diameterClass.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                snagsPerHectare.ToString("0.00", CultureInfo.InvariantCulture) + "," +
-                                logsPerHectare.ToString("0.00", CultureInfo.InvariantCulture);
+                                diameterClass.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                                snagsPerHectare.ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture) + "," +
+                                logsPerHectare.ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
                             writer.WriteLine(line);
                             estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                         }
@@ -79,7 +79,7 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
-                    this.WriteWarning("Write-SnagsAndLogs: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    this.WriteWarning("Write-SnagsAndLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
                     break;
                 }
             }

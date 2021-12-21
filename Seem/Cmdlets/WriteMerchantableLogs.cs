@@ -184,8 +184,8 @@ namespace Mars.Seem.Cmdlets
                             string linePrefixForTree = linePrefixForStandAgeAndSpecies + "," +
                                                        treesOfSpecies.Plot[compactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
                                                        treesOfSpecies.Tag[compactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                                       dbhInCm.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                                       heightInM.ToString("0.0", CultureInfo.InvariantCulture) + "," +
+                                                       dbhInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                                                       heightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture) + "," +
                                                        expansionFactorPerHa.ToString(CultureInfo.InvariantCulture);
 
                             int regenDiameterClass = regenVolume.ToDiameterIndex(dbhInCm);
@@ -215,7 +215,7 @@ namespace Mars.Seem.Cmdlets
                                         thinGrade = "2S";
                                     }
                                 }
-                                float thinTopDiameter = thinningVolume.LogTopDiameter[regenDiameterClass, regenHeightClass, logIndex];
+                                float thinTopDiameter = thinningVolume.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
 
                                 string? regenGrade = null;
                                 string? regenLogVolume = null;
@@ -242,11 +242,11 @@ namespace Mars.Seem.Cmdlets
                                             }
                                         }
 
-                                        regenLogVolume = regenLogVolumeAsFloat.ToString("0.000", CultureInfo.InvariantCulture);
+                                        regenLogVolume = regenLogVolumeAsFloat.ToString(Constant.Default.LogVolumeFormat, CultureInfo.InvariantCulture);
 
-                                        float topDiameter = regenVolume.LogTopDiameter[regenDiameterClass, regenHeightClass, logIndex];
-                                        Debug.Assert(topDiameter > 0.0F);
-                                        regenTopDiameter = topDiameter.ToString("0.0", CultureInfo.InvariantCulture);
+                                        float topDiameterInCm = regenVolume.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
+                                        Debug.Assert(topDiameterInCm > 0.0F);
+                                        regenTopDiameter = topDiameterInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture);
                                     }
                                     else if (thinLogVolume < this.MinimumLogVolume)
                                     {
@@ -286,8 +286,8 @@ namespace Mars.Seem.Cmdlets
                                     string line = linePrefixForTree + "," +
                                         logIndex.ToString(CultureInfo.InvariantCulture) + "," +
                                         thinGrade + "," +
-                                        thinTopDiameter.ToString("0.0", CultureInfo.InvariantCulture) + "," +
-                                        thinLogVolume.ToString("0.000", CultureInfo.InvariantCulture) + "," +
+                                        thinTopDiameter.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                                        thinLogVolume.ToString(Constant.Default.LogVolumeFormat, CultureInfo.InvariantCulture) + "," +
                                         regenGrade + "," +
                                         regenTopDiameter + "," +
                                         regenLogVolume;
@@ -303,7 +303,7 @@ namespace Mars.Seem.Cmdlets
                         // write histogram to file
                         // for now, assume histogram bin sizes have granularity no finer than 0.01 m³. More digits can be added to the volume
                         // format if needed.
-                        string logVolumeFormat = "0.00";
+                        string logVolumeFormat = "0.00"; // Constant.Default.DiameterInCmFormat
 
                         int maxVolumeClass = Math.Max(regenHistogram.Count, thinHistogram.Count);
                         for (int volumeIndex = 0; volumeIndex < maxVolumeClass; ++volumeIndex)
@@ -332,7 +332,7 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                 {
-                    this.WriteWarning("Write-MechantableLogs: File size limit of " + this.LimitGB.ToString("0.00") + " GB exceeded.");
+                    this.WriteWarning("Write-MechantableLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
                     break;
                 }
             }

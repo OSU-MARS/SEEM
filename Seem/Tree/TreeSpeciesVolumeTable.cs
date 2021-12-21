@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Mars.Seem.Extensions;
+using System;
 using System.Diagnostics;
 
 namespace Mars.Seem.Tree
@@ -168,9 +169,9 @@ namespace Mars.Seem.Tree
             /*50*/ {  0,   12,  23,  35,  47,  58,  70,  82,  94, 105, 117, 129, 140, 152, 164, 175, 187, 199, 211, 222, 234, 246, 257, 269, 281, 292, 304, 316, 328, 339, 351, 363, 374, 386, 398, 409, 421, 433, 445, 456, 468 }
             };
 
-        public float[,] Cubic2Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, m³/tree
-        public float[,] Cubic3Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, m³/tree
-        public float[,] Cubic4Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, m³/tree
+        public float[,] Cubic2Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, merchantable m³/tree
+        public float[,] Cubic3Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, merchantable m³/tree
+        public float[,] Cubic4Saw { get; private init; } // BC Firmwood cubic volume by DBH and height class, merchantable m³/tree
 
         public float DiameterClassSizeInCentimeters { get; private init; }
         public float HeightClassSizeInMeters { get; private init; }
@@ -179,8 +180,8 @@ namespace Mars.Seem.Tree
         public int[,] Logs3Saw { get; private init; }
         public int[,] Logs4Saw { get; private init; }
 
-        public float[,,] LogCubic { get; private init; }
-        public float[,,] LogTopDiameter { get; private init; }
+        public float[,,] LogCubic { get; private init; } // merchantable m³
+        public float[,,] LogTopDiameterInCentimeters { get; private init; }
 
         public float MaximumDiameterInCentimeters { get; private init; }
         public float MaximumHeightInMeters { get; private init; }
@@ -189,6 +190,8 @@ namespace Mars.Seem.Tree
         public float[,] Scribner2Saw { get; private init; } // Scriber board foot volume by DBH and height class, MBF/tree
         public float[,] Scribner3Saw { get; private init; } // Scriber board foot volume by DBH and height class, MBF/tree
         public float[,] Scribner4Saw { get; private init; } // Scriber board foot volume by DBH and height class, MBF/tree
+
+        public float[,] UnscaledNeiloidCubic { get; private init; } // merchantable m³
 
         public TreeSpeciesVolumeTable(TreeSpeciesVolumeTableParameters parameters)
         {
@@ -212,7 +215,7 @@ namespace Mars.Seem.Tree
 
             int diameterClasses = (int)(this.MaximumDiameterInCentimeters / this.DiameterClassSizeInCentimeters) + 1;
             int heightClasses = (int)(this.MaximumHeightInMeters / this.HeightClassSizeInMeters) + 1;
-            float defaultScribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLengthInM ? Constant.Bucking.ScribnerTrimLongLogInM : Constant.Bucking.ScribnerTrimShortLogInM;
+            float defaultScribnerTrim = parameters.GetPreferredTrim();
             float preferredLogLengthWithTrim = parameters.PreferredLogLengthInMeters + defaultScribnerTrim;
             this.MaximumLogs = (int)((parameters.MaximumHeightInMeters + 0.5F * preferredLogLengthWithTrim) / preferredLogLengthWithTrim);
 
@@ -223,10 +226,11 @@ namespace Mars.Seem.Tree
             this.Logs3Saw = new int[diameterClasses, heightClasses];
             this.Logs4Saw = new int[diameterClasses, heightClasses];
             this.LogCubic = new float[diameterClasses, heightClasses, this.MaximumLogs];
-            this.LogTopDiameter = new float[diameterClasses, heightClasses, this.MaximumLogs];
+            this.LogTopDiameterInCentimeters = new float[diameterClasses, heightClasses, this.MaximumLogs];
             this.Scribner2Saw = new float[diameterClasses, heightClasses];
             this.Scribner3Saw = new float[diameterClasses, heightClasses];
             this.Scribner4Saw = new float[diameterClasses, heightClasses];
+            this.UnscaledNeiloidCubic = new float[diameterClasses, heightClasses];
 
             // fill cubic and Scribner volume tables
             // start at index 1 since trees in zero diameter class have zero merchantable volume
@@ -256,7 +260,7 @@ namespace Mars.Seem.Tree
                     // For now, assume assume all trees are felled by bar saws. If needed, the bottom of the first log can be raised
                     // in final harvests to account for feller-bunchers using hot saws (~6 cm kerf).
                     // TODO: what do scalers actually do, particularly on larger logs?
-                    float neiloidHeight = parameters.GetNeiloidHeight(dbhInCm, heightInM);
+                    float neiloidHeightInM = parameters.GetNeiloidHeight(dbhInCm, heightInM);
                     float previousLogLengthWithTrim;
                     int logIndex = 0;
                     int logs2S = 0;
@@ -270,7 +274,7 @@ namespace Mars.Seem.Tree
                             break; // no merchantable log: done with tree
                         }
 
-                        float logMaximumTopHeight = Math.Min(heightInM, logBottomHeight + preferredLogLengthWithTrim);
+                        float logMaximumTopHeight = MathF.Min(heightInM, logBottomHeight + preferredLogLengthWithTrim);
                         float logMinimumTopDib = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logMaximumTopHeight);
                         float logTopHeight = logMaximumTopHeight;
                         float logTopDib = logMinimumTopDib;
@@ -299,8 +303,8 @@ namespace Mars.Seem.Tree
                         }
                         Debug.Assert(logTopDib > 0.0F);
 
-                        float logLength = logTopHeight - logBottomHeight;
-                        Debug.Assert(logLength >= Constant.Bucking.MinimumLogLength4SawInM - 0.0001F);
+                        float logLengthIncludingTrim = logTopHeight - logBottomHeight;
+                        Debug.Assert(logLengthIncludingTrim >= Constant.Bucking.MinimumLogLength4SawInM - 0.0001F);
                         // BC Firmwood cubic and Scribner.C long log volume
                         // Fonseca, M. 2005. The Measurement of Roundwood: Methodologies and Conversion Ratios. United Nations Economic 
                         //   Commission for Europe Trade and Timber Branch. Cromwell Press, Trowbridge. https://www.cabi.org/bookshop/book/9780851990798/
@@ -308,31 +312,54 @@ namespace Mars.Seem.Tree
                         // section 2.3.2: Scribner long log
                         // Logs are assumed perfectly round, equivalent to assuming Poudel 2018 taper provides log rules' mean diameter.
                         // get BC firmwood volume
-                        float bcFirmwoodBottomDiameter;
-                        if (logBottomHeight > neiloidHeight)
+                        // TODO: figure out how to handle trees with broken tops where their taper should be calculated using the height
+                        // before the top broke
+                        float bcFirmwoodBottomDiameter = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logBottomHeight);
+                        float neiloidVolumeInM3 = -1.0F;
+                        if (logBottomHeight < neiloidHeightInM)
                         {
-                            // bottom of log is above base neiloid
-                            bcFirmwoodBottomDiameter = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logBottomHeight);
+                            // bottom of log enters neiloid section at base of tree
+                            // Caliper above neiloid and project per Fonseca section 2.2.2.1.6. It may be the case the top of the log is below the
+                            // tree's neiloid height, in which case projection should perhaps theoretically be done from a point above the top of the
+                            // log, but this presumably isn't done in practice.
+                            float bcFirmwoodCaliperHeight = MathF.Min(neiloidHeightInM, logTopHeight - 0.5F); // top of log may be below neiloid height, so ensure caliper height is a reasonable distance below the top of the log
+                            float bcFirmwoodCaliperDib = parameters.GetDiameterInsideBark(dbhInCm, heightInM, bcFirmwoodCaliperHeight);
+                            float bcFirmwoodProjectionTaper = (bcFirmwoodCaliperDib - logTopDib) / (logTopHeight - bcFirmwoodCaliperHeight); // taper in cm diameter/m of log length
+                            float bcFirmwoodProjectedDiameter = bcFirmwoodCaliperDib + bcFirmwoodProjectionTaper * (bcFirmwoodCaliperHeight - logBottomHeight);
+                            if (bcFirmwoodProjectedDiameter < bcFirmwoodBottomDiameter)
+                            {
+                                // log is partly taken from the neiloid volume of the trunk, so calculate total neiloid frustum volume so code below
+                                // can estimate the neiloid volume excluded by scaling
+                                // The excluded volume is mostly usable stemwood, so is a component of mill overrun, and is also weight of wood which
+                                // must be transported.
+                                neiloidVolumeInM3 = 0.0001F * MathF.PI * 0.25F *
+                                    (1.0F / 3.0F * (logTopDib * logTopDib + logTopDib * bcFirmwoodCaliperDib + bcFirmwoodCaliperDib * bcFirmwoodCaliperDib) * (logTopHeight - bcFirmwoodCaliperHeight) + // Smalian part above neiloid
+                                     0.25F * (bcFirmwoodCaliperDib * bcFirmwoodCaliperDib +
+                                              MathV.Pow(bcFirmwoodCaliperDib * bcFirmwoodCaliperDib * bcFirmwoodBottomDiameter * bcFirmwoodBottomDiameter * bcFirmwoodBottomDiameter * bcFirmwoodBottomDiameter, 1.0F / 3.0F) +
+                                              MathV.Pow(bcFirmwoodCaliperDib * bcFirmwoodCaliperDib * bcFirmwoodCaliperDib * bcFirmwoodCaliperDib * bcFirmwoodBottomDiameter * bcFirmwoodBottomDiameter, 1.0F / 3.0F) +
+                                              bcFirmwoodBottomDiameter * bcFirmwoodBottomDiameter) * (bcFirmwoodCaliperHeight - logBottomHeight));
+                                // change bottom scaling diameter to projected diameter
+                                bcFirmwoodBottomDiameter = bcFirmwoodProjectedDiameter;
+                            }
+                            // else reject bottom diameter projection if it's unrealistic
+                            // If a tree has a particularly low height-diameter ratio it may also be that the top of the log and the caliper
+                            // point are in or near the conical part of the stem, in which case the taper projection overestimates the bottom
+                            // diameter. In code, this happens as an artifact of unrealistically low height-diameter ratio trees being included
+                            // in volume tables. With an actual tree it would typically indicate measurement error, either incorrect values for
+                            // DBH or height, measurement of DBH over a gall, or possibly more unusual cases.
                         }
-                        else
-                        {
-                            // caliper above neiloid and project per Fonseca section 2.2.2.1.6
-                            float bcFirmwoodLogBottomHeight = Math.Min(neiloidHeight, logTopHeight - 0.5F); // avoid math errors on very low height-diameter ratio trees
-                            float bcFirmwoodCaliperDibAboveNeiloid = parameters.GetDiameterInsideBark(dbhInCm, heightInM, bcFirmwoodLogBottomHeight);
-                            float bcFirmwoodProjectionTaper = (bcFirmwoodCaliperDibAboveNeiloid - logTopDib) / (logTopHeight - bcFirmwoodLogBottomHeight); // taper in diameter
-                            bcFirmwoodBottomDiameter = bcFirmwoodCaliperDibAboveNeiloid + bcFirmwoodProjectionTaper * (bcFirmwoodLogBottomHeight - logBottomHeight);
-                            Debug.Assert(bcFirmwoodBottomDiameter > bcFirmwoodCaliperDibAboveNeiloid);
-                            Debug.Assert(bcFirmwoodBottomDiameter < (1.0F + 0.01F * dbhInCm / heightInM * dbhInCm / heightInM) * parameters.GetDiameterInsideBark(dbhInCm, heightInM, logBottomHeight)); // allow substantial overshoot on low height-diameter ratio trees
-                        }
-                        float bcFirmwoodBottomRadius = MathF.Round(0.5F * bcFirmwoodBottomDiameter); // rounded cm = diameter in rads
-                        float bcFirmwoodTopRadius = MathF.Round(0.5F * logTopDib); // rounded cm = diameter in rads
+                        float bcFirmwoodBottomRadius = MathF.Round(0.5F * bcFirmwoodBottomDiameter); // radius in rounded cm = diameter in rads
+                        float bcFirmwoodTopRadius = MathF.Round(0.5F * logTopDib); // radius in rounded cm = diameter in rads
                         float logCubicVolume = -1.0F;
                         float logScribnerVolume = -1.0F;
                         if (bcFirmwoodBottomRadius > 1.5F * bcFirmwoodTopRadius)
                         {
-                            float logSegments = MathF.Round(logLength / Constant.Bucking.BCFirmwoodLogTaperSegmentLengthInM);
+                            float logSegments = MathF.Round(logLengthIncludingTrim / Constant.Bucking.BCFirmwoodLogTaperSegmentLengthInM);
                             if (logSegments >= 2.0F)
                             {
+                                // high taper logs are recommended to be split into mill-preferred lengths and scaled separately
+                                // For now, split such logs into two segments, favoring placing the shorter segment towards the base of the stem to
+                                // (hopefully) better capture neiloid taper.
                                 float bcFirmwoodTaperHeight = logBottomHeight + MathF.Floor(0.5F * logSegments + 0.01F) * Constant.Bucking.BCFirmwoodLogTaperSegmentLengthInM;
                                 if (bcFirmwoodTaperHeight < logTopHeight)
                                 {
@@ -343,8 +370,8 @@ namespace Mars.Seem.Tree
 
                                     float bcFirmwoodLengthBelowTaper = MathF.Round(bcFirmwoodTaperHeight - logBottomHeight, 1, MidpointRounding.AwayFromZero);
                                     float bcFirmwoodLengthAboveTaper = MathF.Round(logTopHeight - bcFirmwoodTaperHeight, 1, MidpointRounding.AwayFromZero);
-                                    float logLowerCubicVolume = MathF.Round(0.5F * 0.0001F * Constant.Pi * (bcFirmwoodTaperRadius * bcFirmwoodTaperRadius + bcFirmwoodBottomRadius * bcFirmwoodBottomRadius) * bcFirmwoodLengthBelowTaper, 3);
-                                    float logUpperCubicVolume = MathF.Round(0.5F * 0.0001F * Constant.Pi * (bcFirmwoodTaperRadius * bcFirmwoodTaperRadius + bcFirmwoodTopRadius * bcFirmwoodTopRadius) * bcFirmwoodLengthAboveTaper, 3);
+                                    float logLowerCubicVolume = MathF.Round(0.5F * 0.0001F * MathF.PI * (bcFirmwoodTaperRadius * bcFirmwoodTaperRadius + bcFirmwoodBottomRadius * bcFirmwoodBottomRadius) * bcFirmwoodLengthBelowTaper, 3);
+                                    float logUpperCubicVolume = MathF.Round(0.5F * 0.0001F * MathF.PI * (bcFirmwoodTaperRadius * bcFirmwoodTaperRadius + bcFirmwoodTopRadius * bcFirmwoodTopRadius) * bcFirmwoodLengthAboveTaper, 3);
                                     logCubicVolume = logLowerCubicVolume + logUpperCubicVolume;
 
                                     if (parameters.ScribnerFromLumberRecovery)
@@ -359,8 +386,8 @@ namespace Mars.Seem.Tree
                         }
                         if (logCubicVolume < 0.0F)
                         {
-                            float bcFirmwoodLength = MathF.Round(logLength, 1, MidpointRounding.AwayFromZero);
-                            logCubicVolume = MathF.Round(0.5F * 0.0001F * Constant.Pi * (bcFirmwoodTopRadius * bcFirmwoodTopRadius + bcFirmwoodBottomRadius * bcFirmwoodBottomRadius) * bcFirmwoodLength, 3); // 0.0001 * cm² * m = m³
+                            float bcFirmwoodLength = MathF.Round(logLengthIncludingTrim, 1, MidpointRounding.AwayFromZero); // BC Firmwood considers trim merchantable, Fonseca 2005 §2.2.2.2
+                            logCubicVolume = MathF.Round(0.5F * 0.0001F * MathF.PI * (bcFirmwoodTopRadius * bcFirmwoodTopRadius + bcFirmwoodBottomRadius * bcFirmwoodBottomRadius) * bcFirmwoodLength, 3); // 0.0001 * cm² * m = m³
 
                             if (parameters.ScribnerFromLumberRecovery)
                             {
@@ -373,14 +400,14 @@ namespace Mars.Seem.Tree
                         if (parameters.ScribnerFromLumberRecovery == false)
                         {
                             int scribnerDiameterInInches = (int)MathF.Floor(Constant.InchesPerCentimeter * logTopDib);
-                            int scribnerLengthInFeet = (int)MathF.Floor(Constant.FeetPerMeter * logLength);
+                            int scribnerLengthInFeet = (int)MathF.Floor(Constant.FeetPerMeter * logLengthIncludingTrim);
                             logScribnerVolume = 10.0F * TreeSpeciesVolumeTable.ScribnerCLongLog[scribnerDiameterInInches, scribnerLengthInFeet];
                         }
 
                         Debug.Assert(logCubicVolume > 0.0F);
                         Debug.Assert(logScribnerVolume > 0.0F);
                         if ((logTopDib >= Constant.Bucking.MinimumScalingDiameter2Saw) &&
-                            (logLength >= Constant.Bucking.MinimumLogLength2SawInM) &&
+                            (logLengthIncludingTrim >= Constant.Bucking.MinimumLogLength2SawInM) &&
                             (logScribnerVolume >= Constant.Bucking.MinimumLogScribner2Saw))
                         {
                             // 2S
@@ -389,7 +416,7 @@ namespace Mars.Seem.Tree
                             ++logs2S;
                         }
                         else if ((logTopDib >= Constant.Bucking.MinimumScalingDiameter3Saw) &&
-                                 (logLength >= Constant.Bucking.MinimumLogLength3SawInM) &&
+                                 (logLengthIncludingTrim >= Constant.Bucking.MinimumLogLength3SawInM) &&
                                  (logScribnerVolume >= Constant.Bucking.MinimumLogScribner3Saw))
                         {
                             // 3S
@@ -409,11 +436,23 @@ namespace Mars.Seem.Tree
                         // else log not merchantable
 
                         this.LogCubic[dbhIndex, heightIndex, logIndex] = logCubicVolume;
-                        this.LogTopDiameter[dbhIndex, heightIndex, logIndex] = logTopDib;
+                        this.LogTopDiameterInCentimeters[dbhIndex, heightIndex, logIndex] = logTopDib;
                         ++logIndex;
 
+                        if (neiloidVolumeInM3 > 0.0F)
+                        {
+                            // allow the unscaled neiloid volume to be negative so cases where scaling overestimates a log's actual volume are apparent
+                            // Negative neloids occur as an artifact of BC Firmwood's diameter and length rounding or as an artifact of trees with
+                            // unrealistically low height diameter ratios being included in volume tables but also appear in slender hemlocks due to
+                            // limitations of the Kozak 2004 taper equation form and Poudel et al. 2018's fitting. The assertion checks for extreme
+                            // cases which might indicate a code defect.
+                            float unscaledNeiloidVolume = neiloidVolumeInM3 - logCubicVolume;
+                            this.UnscaledNeiloidCubic[dbhIndex, heightIndex] += unscaledNeiloidVolume; // unlikely, possible to have multiple logs from neiloid portion of stem
+                            Debug.Assert(unscaledNeiloidVolume > -0.3F * logCubicVolume);
+                        }
+
                         float scribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLengthInM ? Constant.Bucking.ScribnerTrimLongLogInM : Constant.Bucking.ScribnerTrimShortLogInM;
-                        previousLogLengthWithTrim = logLength + scribnerTrim;
+                        previousLogLengthWithTrim = logLengthIncludingTrim + scribnerTrim;
                     }
 
                     this.Logs2Saw[dbhIndex, heightIndex] = logs2S;
@@ -433,6 +472,28 @@ namespace Mars.Seem.Tree
             get { return this.Cubic2Saw.GetLength(1); }
         }
 
+        public float GetCubicVolumeOfMerchantableWood(float dbhInCm, float heightInM)
+        {
+            int diameterClass = this.ToDiameterIndex(dbhInCm);
+            int heightClass = this.ToHeightIndex(heightInM);
+            return this.Cubic2Saw[diameterClass, heightClass] + this.Cubic3Saw[diameterClass, heightClass] + this.Cubic4Saw[diameterClass, heightClass];
+        }
+
+        public float GetCubicVolumeOfWood(float dbhInCm, float heightInM, out float unscaledNeiloidVolume)
+        {
+            int diameterClass = this.ToDiameterIndex(dbhInCm);
+            int heightClass = this.ToHeightIndex(heightInM);
+            unscaledNeiloidVolume = this.UnscaledNeiloidCubic[diameterClass, heightClass];
+            return this.Cubic2Saw[diameterClass, heightClass] + this.Cubic3Saw[diameterClass, heightClass] + this.Cubic4Saw[diameterClass, heightClass];
+        }
+
+        public float GetCubicVolumeOfWoodInFirstLog(float dbhInCm, float heightInM)
+        {
+            int diameterClass = this.ToDiameterIndex(dbhInCm);
+            int heightClass = this.ToHeightIndex(heightInM);
+            return this.LogCubic[diameterClass, heightClass, 0];
+        }
+
         public float GetDiameter(int dbhIndex)
         {
             return this.DiameterClassSizeInCentimeters * dbhIndex;
@@ -441,13 +502,6 @@ namespace Mars.Seem.Tree
         public float GetHeight(int heightIndex)
         {
             return this.HeightClassSizeInMeters * heightIndex;
-        }
-
-        public float GetCubicVolume(float dbhInCm, float heightInM)
-        {
-            int diameterClass = this.ToDiameterIndex(dbhInCm);
-            int heightClass = this.ToHeightIndex(heightInM);
-            return this.Cubic2Saw[diameterClass, heightClass] + this.Cubic3Saw[diameterClass, heightClass] + this.Cubic4Saw[diameterClass, heightClass];
         }
 
         public int ToDiameterIndex(float dbhInCentimeters)

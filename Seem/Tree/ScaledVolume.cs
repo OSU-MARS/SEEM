@@ -4,13 +4,17 @@ using System.Diagnostics;
 
 namespace Mars.Seem.Tree
 {
-    public class ScaledVolume
+    public class ScaledVolume : PreferredLogLength
     {
-        public float PreferredLogLengthInMeters { get; private init; }
         public SortedList<FiaCode, TreeSpeciesVolumeTable> VolumeBySpecies { get; private init; }
 
         public ScaledVolume(TreeSpeciesVolumeTableParameters psmeParameters, TreeSpeciesVolumeTableParameters tsheParameters)
         {
+            if (psmeParameters.PreferredLogLengthInMeters != tsheParameters.PreferredLogLengthInMeters)
+            {
+                throw new NotSupportedException();
+            }
+
             this.PreferredLogLengthInMeters = psmeParameters.PreferredLogLengthInMeters;
             this.VolumeBySpecies = new SortedList<FiaCode, TreeSpeciesVolumeTable>
             {
@@ -49,11 +53,11 @@ namespace Mars.Seem.Tree
                 // compare greater than or equals to avoid overstep in bilinear interpolation
                 if (dbhInCm >= volumeTable.MaximumDiameterInCentimeters)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString("0.0") + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.0") + " cm in harvest period " + harvestPeriod + ".");
+                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString(Constant.Default.HeightInMFormat) + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString(Constant.Default.DiameterInCmFormat) + " cm in harvest period " + harvestPeriod + ".");
                 }
                 if (heightInMeters >= volumeTable.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString("0.0") + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.0") + " m in harvest period " + harvestPeriod + ".");
+                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString(Constant.Default.HeightInMFormat) + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString(Constant.Default.HeightInMFormat) + " m in harvest period " + harvestPeriod + ".");
                 }
 
                 // bilinear interpolation setup
@@ -81,8 +85,6 @@ namespace Mars.Seem.Tree
                                          dbhFraction * ((1.0F - heightFraction) * volumeTable.Cubic4Saw[dbhIndex + 1, heightIndex] +
                                                         heightFraction * volumeTable.Cubic4Saw[dbhIndex + 1, heightIndex + 1]);
                 harvestVolume.Cubic4Saw += expansionFactorPerHa * cubic4sawForTree;
-
-                treesOfSpecies.MerchantableCubicVolumePerStem[compactedTreeIndex] = cubic2sawForTree + cubic3sawForTree + cubic4sawForTree;
 
                 // bilinear interpolation for number of logs
                 float logs2sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * volumeTable.Logs2Saw[dbhIndex, heightIndex] +
@@ -149,11 +151,11 @@ namespace Mars.Seem.Tree
                 // compare greater than or equals to avoid overstep in bilinear interpolation
                 if (dbhInCm >= volumeTable.MaximumDiameterInCentimeters)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString("0.00") + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString("0.00") + " cm.");
+                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm exceeds the species' volume table capacity of " + volumeTable.MaximumDiameterInCentimeters.ToString(Constant.Default.DiameterInCmFormat) + " cm.");
                 }
                 if (heightInMeters >= volumeTable.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString("0.00") + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString("0.00") + " m.");
+                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString(Constant.Default.HeightInMFormat) + " m exceeds the species' volume table capacity of " + volumeTable.MaximumHeightInMeters.ToString(Constant.Default.HeightInMFormat) + " m.");
                 }
 
                 // bilinear interpolation setup
@@ -181,8 +183,6 @@ namespace Mars.Seem.Tree
                                          dbhFraction * ((1.0F - heightFraction) * volumeTable.Cubic4Saw[dbhIndex + 1, heightIndex] +
                                                         heightFraction * volumeTable.Cubic4Saw[dbhIndex + 1, heightIndex + 1]);
                 standingVolume.Cubic4Saw += expansionFactorPerHa * cubic4sawForTree;
-
-                treesOfSpecies.MerchantableCubicVolumePerStem[compactedTreeIndex] = cubic2sawForTree + cubic3sawForTree + cubic4sawForTree;
 
                 // bilinear interpolation for number of logs
                 float logs2sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * volumeTable.Logs2Saw[dbhIndex, heightIndex] +

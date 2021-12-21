@@ -40,6 +40,27 @@ namespace Mars.Seem.Tree
                 yardingBarkLoss: 0.15F); // dragging abrasion loss over full corridor (if needed, this could be reparameterized to a function of corridor length)
         }
 
+        public static float GetDiameterOutsideBark(float dbhInCm, float heightInM, float evaluationHeightInM)
+        {
+            // call to PoudelRegressions checks evaluationHeightInM < heightInM
+            if ((evaluationHeightInM < 0.1F) || (evaluationHeightInM > Constant.DbhHeightInM))
+            {
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM));
+            }
+
+            // for now, a quick approximation assuming bark thickness decreases linearly with height
+            // Could also use taper equations in
+            //   Flewelling JW, Raynes LM. 1993. Variable-shape stem-profile predictions for western hemlock. Part I. Predictions from DBH and total
+            //     height. Canadian Journal of Forestry 23:520-536. https://doi.org/10.1139/x93-070
+            // Meyer (1946) k values of 0.910-0.931 from Table 4 of
+            //   Kozak AK, Yang RC. 1981. Equations for Estimating Bark Volume and Thickness of Commercial Trees in British Columbia. The Forestry
+            //     Chronicle 57(3):112-115. https://doi.org/10.5558/tfc57112-3
+            // Meyer's equation is simply bark thickness B at DBH = 0.5 DBH (1 - k) => double bark thickness DBT = (1 - k) DBH
+            float diameterInsideBark = PoudelRegressions.GetWesternHemlockDiameterInsideBark(dbhInCm, heightInM, evaluationHeightInM);
+            float doubleBarkThicknessAtDbh = dbhInCm - PoudelRegressions.GetWesternHemlockDiameterInsideBark(dbhInCm, heightInM, Constant.DbhHeightInM);
+            return diameterInsideBark + doubleBarkThicknessAtDbh * (heightInM - evaluationHeightInM)/ (heightInM - Constant.DbhHeightInM);
+        }
+
         /// <summary>
         /// Calculate western hemlock growth effective age and potential height growth using Flewelling's model for dominant individuals.
         /// </summary>
@@ -58,35 +79,35 @@ namespace Mars.Seem.Tree
             // SITEF_SI   calculates an approximate psi for a given site
             // Note: Flewelling's curves are metric.
             // Site Index is not adjusted for stump height.
-            float HTM = Constant.MetersPerFoot * treeHeight;
+            float heightInM = Constant.MetersPerFoot * treeHeight;
 
             // find growth effective age within precision of 0.01 years
-            float HTOP;
-            float AGE = 1.0F;
+            float topHeightInM;
+            float ageInYears = 1.0F;
             float growthEffectiveAge;
             for (int index = 0; index < 4; ++index)
             {
                 do
                 {
-                    AGE += 100.0F / MathV.Exp10(index);
-                    if (AGE > 500.0F)
+                    ageInYears += 100.0F / MathV.Exp10(index);
+                    if (ageInYears > 500.0F)
                     {
                         growthEffectiveAge = 500.0F;
-                        WesternHemlock.SITECV_F(site, growthEffectiveAge, out float XHTOP1);
-                        WesternHemlock.SITECV_F(site, growthEffectiveAge + timeStepInYears, out float XHTOP2);
+                        float XHTOP1 = WesternHemlock.GetTopHeight(site, growthEffectiveAge);
+                        float XHTOP2 = WesternHemlock.GetTopHeight(site, growthEffectiveAge + timeStepInYears);
                         potentialHeightGrowth = Constant.FeetPerMeter * (XHTOP2 - XHTOP1);
                         return growthEffectiveAge;
                     }
-                    WesternHemlock.SITECV_F(site, AGE, out HTOP);
+                    topHeightInM = WesternHemlock.GetTopHeight(site, ageInYears);
                 }
-                while (HTOP < HTM);
-                AGE -= 100.0F / MathV.Exp10(index);
+                while (topHeightInM < heightInM);
+                ageInYears -= 100.0F / MathV.Exp10(index);
             }
-            growthEffectiveAge = AGE;
+            growthEffectiveAge = ageInYears;
 
             // Compute top height and potential height growth
-            WesternHemlock.SITECV_F(site, growthEffectiveAge + timeStepInYears, out HTOP);
-            float potentialTopHeightInFeet = Constant.FeetPerMeter * HTOP;
+            topHeightInM = WesternHemlock.GetTopHeight(site, growthEffectiveAge + timeStepInYears);
+            float potentialTopHeightInFeet = Constant.FeetPerMeter * topHeightInM;
             potentialHeightGrowth = potentialTopHeightInFeet - treeHeight;
 
             return growthEffectiveAge;
@@ -108,40 +129,38 @@ namespace Mars.Seem.Tree
 
         internal static float GetNeiloidHeight(float dbhInCm, float heightInM)
         {
-            // approximation from plotting Poudel et al. 2018 dib curves in R
+            // approximation from plotting families of Poudel et al. 2018 dib curves in R and fitting the neiloid inflection point
             // Poudel et al's fitting is problematic as diameter inside bark becomes non-monotonic with height for slender trees, predicting
-            // logs with bottom diameters inside bark which are smaller than their top diameters. As a workaround, lower the neiloid height on
-            // slender trees.
+            // logs with bottom diameters inside bark which are smaller than their top diameters or, in first logs, smaller than DBH. The
+            // neiloid height regressions are constructed to avoid decreasing basal diameters.
             float heightDiameterRatio = heightInM / (0.01F * dbhInCm);
-            float heightDiameterWorkaroundThreshold = 200.0F * (1.0F - 0.005F * dbhInCm);
-            if (heightDiameterRatio <= heightDiameterWorkaroundThreshold)
-            {
-                return Constant.DbhHeightInM + 0.01F * 7.0F * (dbhInCm - 20.0F);
-            }
-
-            return Constant.DbhHeightInM + 0.01F * 7.0F * (1.0F + 0.05F * (heightDiameterRatio - heightDiameterWorkaroundThreshold)) * (dbhInCm - 40.0F);
+            float neiloidHeightInM = 0.4F - 1.0F / (0.035F * heightDiameterRatio) + 0.01F * (3.25F + 0.025F * heightDiameterRatio) * dbhInCm;
+            return MathF.Max(neiloidHeightInM, Constant.Bucking.DefaultStumpHeightInM);
         }
 
         /// <summary>
         /// Estimate top height for site index and tree age.
         /// </summary>
         /// <param name="SI">site index (meters) for breast height age of 50 years</param>
-        /// <param name="AGE">breast height age (years)</param>
-        /// <param name="HTOP">site height (meters) for given site index and age</param>
+        /// <param name="breastHeightAgeInYears">breast height age (years)</param>
+        /// <param name="topHeight">site height (meters) for given site index and age</param>
         /// <remarks>PSI is the pivoted (translated) site index from SITEF_SI.</remarks>
-        public static void SITECV_F(SiteConstants site, float AGE, out float HTOP)
+        private static float GetTopHeight(SiteConstants site, float breastHeightAgeInYears)
         {
             // apply height-age equation
-            float X = AGE - 1.0F;
+            float X = breastHeightAgeInYears - 1.0F;
+            float topHeight;
             if (X < site.Xk)
             {
-                HTOP = site.H1 + site.PPSI * X + (1.0F - site.B1) * site.PPSI * site.Xk / (site.C + 1.0F) * (MathF.Pow((site.Xk - X) / site.Xk, site.C + 1.0F) - 1.0F);
+                topHeight = site.H1 + site.PPSI * X + (1.0F - site.B1) * site.PPSI * site.Xk / (site.C + 1.0F) * (MathF.Pow((site.Xk - X) / site.Xk, site.C + 1.0F) - 1.0F);
             }
             else
             {
                 float Z = X - site.Xk;
-                HTOP = site.Yk + site.Alpha * (1.0F - MathV.Exp(-site.Beta * Z));
+                topHeight = site.Yk + site.Alpha * (1.0F - MathV.Exp(-site.Beta * Z));
             }
+
+            return topHeight;
         }
 
         public class SiteConstants
@@ -155,9 +174,9 @@ namespace Mars.Seem.Tree
             public float Xk { get; private init; }
             public float Yk { get; private init; }
 
-            public SiteConstants(float siteIndexFromGroundEnglish)
+            public SiteConstants(float siteIndexFromInFeet) // site index from ground, not breast height
             {
-                float siteIndexMetric = Constant.MetersPerFoot * siteIndexFromGroundEnglish;
+                float siteIndexInM = Constant.MetersPerFoot * siteIndexFromInFeet;
 
                 // Purpose:  Calculates an approximate psi for a given site index
                 // Ref 'Model Fitting: top height increment', Feb 2, 1994.
@@ -167,9 +186,9 @@ namespace Mars.Seem.Tree
                 // si input r*4    site index (top height at BH age 50)
                 // psi output r*4    site productivity parameter.
                 float SI_PIV = 32.25953F;
-                float X = (siteIndexMetric - SI_PIV) / 10.0F;
+                float X = (siteIndexInM - SI_PIV) / 10.0F;
                 float PSI;
-                if (siteIndexMetric <= SI_PIV)
+                if (siteIndexInM <= SI_PIV)
                 {
                     PSI = 0.75F + X * (0.299720F + X * (0.116875F + X * (0.074866F + X * (0.032348F + X * (0.006984F + X * 0.000339F)))));
                 }

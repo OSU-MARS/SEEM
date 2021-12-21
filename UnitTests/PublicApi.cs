@@ -192,10 +192,10 @@ namespace Mars.Seem.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { -0.011F, 0.135F };
-                Span<int> treesThinned = stackalloc[] { 2, 0 };
+                Span<float> minFinancialValues = stackalloc[] { 0.114F };
+                Span<int> treesThinned = stackalloc[] { 0 };
             #else
-                Span<float> minFinancialValues = stackalloc[] { 1.105F, 1.194F };
+                Span<float> minFinancialValues = stackalloc[] { 1.090F, 1.169F };
                 Span<int> treesThinned = stackalloc[] { 2, 0 };
             #endif
             int matchingOptimaIndexFirstCircular = -1;
@@ -471,7 +471,7 @@ namespace Mars.Seem.Test
                 MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 27.91F, 31.04F, 33.89F, 36.50F, 38.89F, 41.10F, 43.13F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.52F, 151.90F, 250.67F, 359.32F, 462.21F, 551.95F, 631.44F, 701.23F, 762.89F, 819.21F },
+                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 363.45F, 468.31F, 558.84F, 638.64F, 709.21F, 771.96F, 828.47F },
                 MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 46.63F, 61.66F, 74.19F, 87.95F, 102.12F, 114.95F, 126.89F },
                 MinimumHarvestCubicM3PerHa = new float[lastPeriod + 1], // no thinning -> all zero
                 MinimumHarvestMbfPerHa = new float[lastPeriod + 1] // no thinning -> all zero
@@ -496,13 +496,11 @@ namespace Mars.Seem.Test
                 MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.58F, 38.05F, 40.33F, 42.43F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.52F, 151.90F, 250.67F, 224.77F, 321.04F, 415.20F, 504.92F, 590.05F, 669.74F, 742.48F },
+                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 511.58F, 597.88F, 677.49F, 750.30F },
                 MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 67.30F, 83.50F, 99.00F, 112.93F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 105.72F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
                 MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }
             };
-
-
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
                 Stand? unthinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
@@ -533,9 +531,9 @@ namespace Mars.Seem.Test
                 MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.88F, 42.02F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.52F, 151.90F, 250.67F, 224.77F, 321.04F, 415.20F, 415.50F, 500.32F, 581.43F, 658.27F },
+                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 589.38F, 666.28F },
                 MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 85.56F, 99.86F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 105.72F, 0.0F, 0.0F, 80.57F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.42F, 0.0F, 0.0F, 0.0F },
                 MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 0.0F, 0.0F }
             };
             float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146900F, 212987F, 167906F, 226196F, 283469F, 278099F, 329517F, 377780F, 422620F }; // kg/ha
@@ -584,12 +582,11 @@ namespace Mars.Seem.Test
                 MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.41F, 41.52F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.52F, 151.90F, 250.67F, 224.77F, 321.04F, 415.20F, 415.50F, 500.32F, 477.04F, 552.26F },
+                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 483.19F, 559.39F },
                 MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 69.92F, 83.92F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 105.72F, 0.0F, 0.0F, 80.57F, 0.0F, 97.75F, 0.0F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.42F, 0.0F, 98.60F, 0.0F },
                 MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 15.17F, 0.0F }
             };
-
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
                 Stand? unthinnedStand = threeThinTrajectory.StandByPeriod[periodIndex];
@@ -708,12 +705,11 @@ namespace Mars.Seem.Test
                 MinimumTopHeightInM = new float[] { 28.32F, 30.80F, 33.52F, 36.11F, 38.50F },
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 356.30F, 356.13F, 468.00F, 565.71F, 651.97F },
+                MinimumStandingCubicM3PerHa = new float[] { 360.59F, 361.88F, 473.05F, 571.58F, 660.29F },
                 MinimumStandingMbfPerHa = new float[] { 50.62F, 50.97F, 66.41F, 80.67F, 95.59F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 103.05F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 104.27F, 0.0F, 0.0F, 0.0F },
                 MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
             };
- 		
             PublicApi.Verify(thinnedTrajectory, immediateThinExpected, configuration.Variant.TimeStepInYears);
             PublicApi.Verify(thinnedTrajectory, immediateThinExpected);
             Assert.IsTrue(thinnedTrajectory.GetFirstThinAge() == 35);
@@ -976,7 +972,7 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= 0.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) < heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1) + 0.000001F); // numerical error
+                    Assert.IsTrue(Constant.Default.ThinningPondValueMultiplier * heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) < heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1)); // allow for differences between short and long log scaling
 
                     Assert.IsTrue(currentCubicThinningVolume >= 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume <= previousCurrentCubicStandingVolume);
@@ -1022,14 +1018,14 @@ namespace Mars.Seem.Test
                 if (periodIndex == 0)
                 {
                     // zero merchantable on Nelder 1 at age 20 with Poudel 2018 net volume
-                    Assert.IsTrue(bestCubicStandingVolume >= 0.0F);
+                    Assert.IsTrue(bestCubicStandingVolume >= 0.0F, "Standing volume is " + bestCubicStandingVolume + " m³.");
                     Assert.IsTrue(bestTrajectory.GetTotalStandingScribnerVolume(periodIndex) >= 0.0F);
                     Assert.IsTrue(currentCubicStandingVolume >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex) >= 0.0F);
                 }
                 else
                 {
-                    Assert.IsTrue(bestCubicStandingVolume > 0.0F);
+                    Assert.IsTrue(bestCubicStandingVolume > 0.0F, "Standing volume is " + bestCubicStandingVolume + " m³.");
                     Assert.IsTrue(bestTrajectory.GetTotalStandingScribnerVolume(periodIndex) > 0.0F);
                     Assert.IsTrue(currentCubicStandingVolume > 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex) > 0.0F);
