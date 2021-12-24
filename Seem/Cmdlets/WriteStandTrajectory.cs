@@ -90,7 +90,7 @@ namespace Mars.Seem.Cmdlets
                 if (this.NoEquipmentProductivity == false)
                 {
                     header += ",thinWheeledHarvesterPMh,thinWheeledHarvesterProductivity,thinChainsawCrewWithWheeledHarvester,thinChainsawCmh,thinChainsawPMhWithWheeledHarvester" +
-                              ",thinForwarderPMh,thinForwarderProductivity,thinForwardedWeight" +
+                              ",thinForwardingMethod,thinForwarderPMh,thinForwarderProductivity,thinForwardedWeight" +
                               ",regenFellerBuncherPMh,regenFellerBuncherProductivity,regenTrackedHarvesterPMh,regenTrackedHarvesterProductivity,regenWheeledHarvesterPMh,regenWheeledHarvesterProductivity" +
                               ",regenChainsawCrewWithFellerBuncherAndGrappleSwingYarder,regenChainsawCmhWithFellerBuncherAndGrappleSwingYarder,regenChainsawPMhWithFellerBuncherAndGrappleSwingYarder,regenChainsawCrewWithFellerBuncherAndGrappleYoader,regenChainsawCmhWithFellerBuncherAndGrappleYoader,regenChainsawPMhWithFellerBuncherAndGrappleYoader,regenChainsawCrewWithTrackedHarvester,regenChainsawCmhWithTrackedHarvester,regenChainsawPMhWithTrackedHarvester,regenChainsawCrewWithWheeledHarvester,regenChainsawCmhWithWheeledHarvester,regenChainsawPMhWithWheeledHarvester" +
                               ",regenGrappleSwingYarderPMhPerHectare,regenGrappleSwingYarderProductivity,regenGrappleSwingYarderOverweightFirstLogsPerHectare,regenGrappleYoaderPMhPerHectare,regenGrappleYoaderProductivity,regenGrappleYoaderOverweightFirstLogsPerHectare" +
@@ -269,6 +269,7 @@ namespace Mars.Seem.Cmdlets
                             thinFinancialValue.ChainsawCrewWithWheeledHarvester.ToString() + "," +
                             thinFinancialValue.ChainsawCubicVolumePerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.ChainsawPMhPerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
+                            thinFinancialValue.Productivity.ForwardingMethod.ToString() + "," +
                             thinFinancialValue.ForwarderPMhPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.Productivity.Forwarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.ForwardedWeightPeHa.ToString("0", CultureInfo.InvariantCulture) + "," +

@@ -43,11 +43,13 @@ namespace Mars.Seem.Silviculture
         public class HarvestEquipmentProductivity
         {
             public float Forwarder { get; set; } // m³/PMh₀
+            public ForwarderLoadingMethod ForwardingMethod { get; set; }
             public float WheeledHarvester { get; set; } // m³/PMh₀
 
             public HarvestEquipmentProductivity()
             {
                 this.Forwarder = Single.NaN;
+                this.ForwardingMethod = ForwarderLoadingMethod.None;
                 this.WheeledHarvester = Single.NaN;
             }
         }

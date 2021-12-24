@@ -465,25 +465,42 @@ namespace Mars.Seem.Silviculture
                 float speciesMerchM3PerHa = cubic2Saw + cubic3Saw + cubic4Saw; // m³/ha
                 int sortsPresent = (cubic2Saw > 0.0F ? 1 : 0) + (cubic3Saw > 0.0F ? 1 : 0) + (cubic4Saw > 0.0F ? 1 : 0);
 
-                float productivityAllSortsCombined = this.GetForwardingProductivity(stand, speciesMerchM3PerHa, logs2Saw + logs3Saw + logs4Saw, forwarderMaximumMerchantableM3, sortsPresent);
-                ctlHarvest.Productivity.Forwarder = productivityAllSortsCombined;
-
-                float productivity2S = this.GetForwardingProductivity(stand, cubic2Saw, logs2Saw, forwarderMaximumMerchantableM3, 1);
-                float productivity3S = this.GetForwardingProductivity(stand, cubic3Saw, logs3Saw, forwarderMaximumMerchantableM3, 1);
-                float productivity4S = this.GetForwardingProductivity(stand, cubic4Saw, logs4Saw, forwarderMaximumMerchantableM3, 1);
-                float productivityAllSortsSeparate = (cubic2Saw * productivity2S + cubic3Saw * productivity3S + cubic4Saw * productivity4S) / speciesMerchM3PerHa;
-                if (productivityAllSortsSeparate > productivityAllSortsCombined)
+                if (sortsPresent > 0)
                 {
-                    ctlHarvest.Productivity.Forwarder = productivityAllSortsSeparate;
-                }
+                    // logs are forwarded for at least one sort; find default productivity
+                    ForwarderTurn turnAllSortsCombined = this.GetForwarderTurn(stand, speciesMerchM3PerHa, logs2Saw + logs3Saw + logs4Saw, forwarderMaximumMerchantableM3, sortsPresent);
+                    ctlHarvest.Productivity.Forwarder = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnAllSortsCombined.Time; // m³/PMh₀
+                    ctlHarvest.Productivity.ForwardingMethod = ForwarderLoadingMethod.AllSortsCombined;
 
-                if ((cubic2Saw > 0.0F) && (cubic4Saw > 0.0F))
-                {
-                    float productivity2S4S = this.GetForwardingProductivity(stand, cubic2Saw + cubic4Saw, logs2Saw + logs4Saw, forwarderMaximumMerchantableM3, 2);
-                    float productivity2S4SCombined = ((cubic2Saw + cubic3Saw) * productivity2S4S + cubic4Saw * productivity4S) / speciesMerchM3PerHa;
-                    if (productivity2S4SCombined > productivityAllSortsSeparate)
+                    if (sortsPresent > 1)
                     {
-                        ctlHarvest.Productivity.Forwarder = ctlHarvest.Productivity.Forwarder;
+                        // if multiple sorts are present they can be forwarded separately rather than jointly
+                        // Four possible combinations: 2S+3S, 2S+4S, 3S+4S, 2S+3S+4S, typically all three or 2S+4S. Turn times are calculated
+                        // for each sort and then added to find the total forwarding time per corridor as this approach is robust against sorts
+                        // with low volumes. Calculating a volume weighted mean of productivities is not appropriate here as the forwarder must
+                        // presumably still travel the full length of the corridor to pick up all logs in low volume sorts.
+                        ForwarderTurn turn2S = this.GetForwarderTurn(stand, cubic2Saw, logs2Saw, forwarderMaximumMerchantableM3, 1);
+                        ForwarderTurn turn3S = this.GetForwarderTurn(stand, cubic3Saw, logs3Saw, forwarderMaximumMerchantableM3, 1);
+                        ForwarderTurn turn4S = this.GetForwarderTurn(stand, cubic4Saw, logs4Saw, forwarderMaximumMerchantableM3, 1);
+                        float turnTimeAllSortsSeparate = turn2S.Time + turn3S.Time + turn4S.Time;
+                        if (turnTimeAllSortsSeparate < turnAllSortsCombined.Time)
+                        {
+                            ctlHarvest.Productivity.Forwarder = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnTimeAllSortsSeparate;
+                            ctlHarvest.Productivity.ForwardingMethod = ForwarderLoadingMethod.AllSortsSeparate;
+                        }
+
+                        if (sortsPresent == 3)
+                        {
+                            // combining 2S and 4S and loading them separately from 3S is only meaningful if all three sorts exist
+                            // This is an intermediate complexity option and is.
+                            ForwarderTurn turn2S4S = this.GetForwarderTurn(stand, cubic2Saw + cubic4Saw, logs2Saw + logs4Saw, forwarderMaximumMerchantableM3, 2);
+                            float turnTime2S4SCombined = turn2S4S.Time + turn3S.Time;
+                            if ((turnTime2S4SCombined < turnAllSortsCombined.Time) && (turnTime2S4SCombined < turnTimeAllSortsSeparate))
+                            {
+                                ctlHarvest.Productivity.Forwarder = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnTime2S4SCombined;
+                                ctlHarvest.Productivity.ForwardingMethod = ForwarderLoadingMethod.TwoFourSCombined;
+                            }
+                        }
                     }
                 }
 
@@ -517,13 +534,13 @@ namespace Mars.Seem.Silviculture
             }
         }
 
-        private float GetForwardingProductivity(Stand stand, float merchM3PerHa, float logsPerHa, float forwarderMaxMerchM3, int sortsLoaded)
+        private ForwarderTurn GetForwarderTurn(Stand stand, float merchM3PerHa, float logsPerHa, float forwarderMaxMerchM3, int sortsLoaded)
         {
             Debug.Assert((forwarderMaxMerchM3 > 0.0F) && (sortsLoaded > 0) && (sortsLoaded < 4));
             if (merchM3PerHa <= 0.0F)
             {
                 Debug.Assert((merchM3PerHa == 0.0F) && (logsPerHa == 0.0F));
-                return 0.0F;
+                return new();
             }
 
             float merchM3perM = merchM3PerHa * this.CorridorWidth / Constant.SquareMetersPerHectare; //  merchantable m³ logs/m of corridor = m³/ha * (m²/m corridor) / m²/ha
@@ -532,14 +549,23 @@ namespace Mars.Seem.Silviculture
             float turnsPerCorridor = volumePerCorridor / forwarderMaxMerchM3;
             float completeLoadsInCorridor = MathF.Floor(turnsPerCorridor);
             float fractionalLoadsInCorridor = turnsPerCorridor - completeLoadsInCorridor;
+            float traversalsOfCorridor = turnsPerCorridor > 1.0F ? turnsPerCorridor : 1.0F; // forwarder must descend to the bottom of the corridor at least once
             float forwardingDistanceOnRoad = stand.ForwardingDistanceOnRoad + (sortsLoaded - 1) * Constant.HarvestCost.ForwardingDistanceOnRoadPerSortInM;
 
+            // outbound part of turn: assumed to be descending from road
             float driveEmptyRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min, driving empty on road
             // nonspatial approximation (level zero): both tethered and untethered distances decrease in turns after the first
             // TODO: assume tethered distance decreases to zero before untethered distance decreases?
-            float driveEmptyUntethered = turnsPerCorridor * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandUnloadedUntethered; // min
+            float driveEmptyUntethered = traversalsOfCorridor * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandUnloadedUntethered; // min
             // tethering time is treated as a delay
-            float driveEmptyTethered = turnsPerCorridor * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandUnloadedTethered; // min
+            float driveEmptyTethered = traversalsOfCorridor * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandUnloadedTethered; // min
+            float descent = driveEmptyUntethered + driveEmptyTethered;
+
+            // inbound part of turn: assumed to be ascending towards road
+            // Forwarder loading method selection will query for productivity at quite low log densities, resulting in the forwarder loading all the
+            // way back to the top of the corridor. Since the form of the regressions doesn't guarantee the combination of loading and driving while
+            // loading is greater than the time needed to drive the forwarder back to the top of the corridor, check for this condition and impose
+            // a minimum ascent time.
             float loading = completeLoadsInCorridor * MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
                             MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)); // min
             float driveWhileLoading = completeLoadsInCorridor * MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(forwarderMaxMerchM3 / merchM3perM)) +
@@ -547,7 +573,14 @@ namespace Mars.Seem.Silviculture
             float driveLoadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandLoadedTethered; // min
             // untethering time is treated as a delay
             float driveUnloadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandLoadedUntethered; // min
+
+            float minimumAscentTime = traversalsOfCorridor * (stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandLoadedTethered + stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandLoadedUntethered);
+            float ascent = MathF.Max(loading + driveWhileLoading + driveLoadedTethered + driveUnloadedTethered, minimumAscentTime);
+
             float driveLoadedRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min
+
+            // unloading
+            // TODO: make unload complexity multiplier a function of the diversity of sorts present rather than simply richness
             float unloadLinear = sortsLoaded switch
             {
                 1 => this.ForwarderUnloadLinearOneSort,
@@ -557,9 +590,8 @@ namespace Mars.Seem.Silviculture
             };
             float unloading = unloadLinear * (completeLoadsInCorridor * MathF.Exp(this.ForwarderUnloadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderUnloadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
                                               MathF.Exp(this.ForwarderUnloadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderUnloadMeanLogVolume * MathF.Log(meanLogMerchM3)));
-            float turnTime = driveEmptyRoad + driveEmptyUntethered + driveEmptyTethered + loading + driveWhileLoading + driveLoadedTethered + driveUnloadedTethered + driveLoadedRoad + unloading; // min
-            float productivity = Constant.MinutesPerHour * volumePerCorridor / turnTime; // m³/PMh₀
-            return productivity;
+            float turnTime = driveEmptyRoad + descent + ascent + driveLoadedRoad + unloading; // min
+            return new(turnTime, volumePerCorridor);
         }
 
         public void GetLongLogHarvestCosts(Stand stand, ScaledVolume scaledVolume, LongLogHarvest longLogHarvest)
@@ -1504,6 +1536,18 @@ namespace Mars.Seem.Silviculture
             if ((this.WheeledHarvesterUtilization < 0.1F) || (this.WheeledHarvesterUtilization > 1.0F))
             {
                 throw new NotSupportedException("Wheeled harvester utilization is not in the range [0.1, 1.0].");
+            }
+        }
+
+        private struct ForwarderTurn
+        {
+            public float Time { get; init; } // minutes
+            public float Volume { get; init; } // merchantable m³
+
+            public ForwarderTurn(float timeInMinutes, float volumeInM3)
+            {
+                this.Time = timeInMinutes;
+                this.Volume = volumeInM3;
             }
         }
     }

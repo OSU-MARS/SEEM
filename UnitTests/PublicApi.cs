@@ -195,7 +195,7 @@ namespace Mars.Seem.Test
                 Span<float> minFinancialValues = stackalloc[] { 0.114F };
                 Span<int> treesThinned = stackalloc[] { 0 };
             #else
-                Span<float> minFinancialValues = stackalloc[] { 1.090F, 1.169F };
+                Span<float> minFinancialValues = stackalloc[] { 1.075F, 1.169F };
                 Span<int> treesThinned = stackalloc[] { 2, 0 };
             #endif
             int matchingOptimaIndexFirstCircular = -1;
