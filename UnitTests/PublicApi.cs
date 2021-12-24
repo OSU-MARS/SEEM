@@ -1025,6 +1025,10 @@ namespace Mars.Seem.Test
                 }
                 else
                 {
+                    if (bestCubicStandingVolume == 0.0F)
+                    {
+                        Debugger.Break(); // trap for investigation to confirm heuristic (usually the genetic algorithm) is thinning all trees
+                    }
                     Assert.IsTrue(bestCubicStandingVolume > 0.0F, "Standing volume is " + bestCubicStandingVolume + " m³.");
                     Assert.IsTrue(bestTrajectory.GetTotalStandingScribnerVolume(periodIndex) > 0.0F);
                     Assert.IsTrue(currentCubicStandingVolume > 0.0F);

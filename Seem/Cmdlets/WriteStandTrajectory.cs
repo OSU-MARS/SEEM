@@ -89,10 +89,13 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (this.NoEquipmentProductivity == false)
                 {
-                    header += ",thinWheeledHarvesterPMh,thinWheeledHarvesterProductivity,thinChainsawCrewWithWheeledHarvester,thinChainsawCmh,thinChainsawPMhWithWheeledHarvester" +
+                    header += ",thinWheeledHarvesterPMh,thinWheeledHarvesterProductivity,thinChainsawCrewWithWheeledHarvester,thinChainsawCrewUtilizationWithWheeledHarvester,thinChainsawCmh,thinChainsawPMhWithWheeledHarvester" +
                               ",thinForwardingMethod,thinForwarderPMh,thinForwarderProductivity,thinForwardedWeight" +
                               ",regenFellerBuncherPMh,regenFellerBuncherProductivity,regenTrackedHarvesterPMh,regenTrackedHarvesterProductivity,regenWheeledHarvesterPMh,regenWheeledHarvesterProductivity" +
-                              ",regenChainsawCrewWithFellerBuncherAndGrappleSwingYarder,regenChainsawCmhWithFellerBuncherAndGrappleSwingYarder,regenChainsawPMhWithFellerBuncherAndGrappleSwingYarder,regenChainsawCrewWithFellerBuncherAndGrappleYoader,regenChainsawCmhWithFellerBuncherAndGrappleYoader,regenChainsawPMhWithFellerBuncherAndGrappleYoader,regenChainsawCrewWithTrackedHarvester,regenChainsawCmhWithTrackedHarvester,regenChainsawPMhWithTrackedHarvester,regenChainsawCrewWithWheeledHarvester,regenChainsawCmhWithWheeledHarvester,regenChainsawPMhWithWheeledHarvester" +
+                              ",regenChainsawCrewWithFellerBuncherAndGrappleSwingYarder,regenChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder,regenChainsawCmhWithFellerBuncherAndGrappleSwingYarder,regenChainsawPMhWithFellerBuncherAndGrappleSwingYarder" +
+                              ",regenChainsawCrewWithFellerBuncherAndGrappleYoader,regenChainsawUtilizationWithFellerBuncherAndGrappleYoader,regenChainsawCmhWithFellerBuncherAndGrappleYoader,regenChainsawPMhWithFellerBuncherAndGrappleYoader" +
+                              ",regenChainsawCrewWithTrackedHarvester,regenChainsawUtilizationWithTrackedHarvester,regenChainsawCmhWithTrackedHarvester,regenChainsawPMhWithTrackedHarvester" +
+                              ",regenChainsawCrewWithWheeledHarvester,regenChainsawUtilizationWithWheeledHarvester,regenChainsawCmhWithWheeledHarvester,regenChainsawPMhWithWheeledHarvester" +
                               ",regenGrappleSwingYarderPMhPerHectare,regenGrappleSwingYarderProductivity,regenGrappleSwingYarderOverweightFirstLogsPerHectare,regenGrappleYoaderPMhPerHectare,regenGrappleYoaderProductivity,regenGrappleYoaderOverweightFirstLogsPerHectare" +
                               ",regenProcessorPMhWithGrappleSwingYarder,regenProcessorProductivityWithGrappleSwingYarder,regenProcessorPMhWithGrappleYoader,regenProcessorProductivityWithGrappleYoader,regenLoadedWeight";
                 }
@@ -267,6 +270,7 @@ namespace Mars.Seem.Cmdlets
                             thinFinancialValue.WheeledHarvesterPMhPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.Productivity.WheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.ChainsawCrewWithWheeledHarvester.ToString() + "," +
+                            thinFinancialValue.Productivity.ChainsawUtilizationWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.ChainsawCubicVolumePerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.ChainsawPMhPerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             thinFinancialValue.Productivity.ForwardingMethod.ToString() + "," +
@@ -280,15 +284,19 @@ namespace Mars.Seem.Cmdlets
                             regenFinancialValue.WheeledHarvesterPMhPerHa.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.Productivity.WheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder.ToString() + "," +
+                            regenFinancialValue.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawCrewWithFellerBuncherAndGrappleYoader.ToString() + "," +
+                            regenFinancialValue.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawCrewWithTrackedHarvester.ToString() + "," +
+                            regenFinancialValue.Productivity.ChainsawUtilizationWithTrackedHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawCubicVolumePerHaWithTrackedHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawPMhPerHaWithTrackedHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawCrewWithWheeledHarvester.ToString() + "," +
+                            regenFinancialValue.Productivity.ChainsawUtilizationWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawCubicVolumePerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.ChainsawPMhPerHaWithWheeledHarvester.ToString("0.00", CultureInfo.InvariantCulture) + "," +
                             regenFinancialValue.GrappleSwingYarderPMhPerHectare.ToString("0.00", CultureInfo.InvariantCulture) + "," +

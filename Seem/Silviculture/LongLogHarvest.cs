@@ -12,6 +12,7 @@ namespace Mars.Seem.Silviculture
         public ChainsawCrewType ChainsawCrewWithFellerBuncherAndGrappleYoader { get; set; }
         public ChainsawCrewType ChainsawCrewWithTrackedHarvester { get; set; }
         public ChainsawCrewType ChainsawCrewWithWheeledHarvester { get; set; }
+
         public float ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder { get; set; }
         public float ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader { get; set; }
         public float ChainsawCubicVolumePerHaWithTrackedHarvester { get; set; }
@@ -62,6 +63,7 @@ namespace Mars.Seem.Silviculture
             this.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.None;
             this.ChainsawCrewWithTrackedHarvester = ChainsawCrewType.None;
             this.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.None;
+
             this.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
             this.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader = 0.0F;
             this.ChainsawCubicVolumePerHaWithTrackedHarvester = 0.0F;
@@ -132,7 +134,11 @@ namespace Mars.Seem.Silviculture
 
         public class HarvestEquipmentProductivity
         {
-            // TODO: chainsaw
+            public float ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder { get; set; }
+            public float ChainsawUtilizationWithFellerBuncherAndGrappleYoader { get; set; }
+            public float ChainsawUtilizationWithTrackedHarvester { get; set; }
+            public float ChainsawUtilizationWithWheeledHarvester { get; set; }
+
             public float FellerBuncher { get; set; } // m³/PMh₀
             public float GrappleSwingYarder { get; set; } // m³/PMh₀
             public float GrappleYoader { get; set; } // m³/PMh₀
@@ -144,6 +150,11 @@ namespace Mars.Seem.Silviculture
 
             public HarvestEquipmentProductivity()
             {
+                this.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder = 0.0F;
+                this.ChainsawUtilizationWithFellerBuncherAndGrappleYoader = 0.0F;
+                this.ChainsawUtilizationWithTrackedHarvester = 0.0F;
+                this.ChainsawUtilizationWithWheeledHarvester = 0.0F;
+
                 this.FellerBuncher = Single.NaN;
                 this.GrappleSwingYarder = Single.NaN;
                 this.GrappleYoader = Single.NaN;

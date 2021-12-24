@@ -427,11 +427,13 @@ namespace Mars.Seem.Silviculture
                 {
                     minimumChainsawCostWithWheeledHarvester = chainsawByOperatorCost;
                     ctlHarvest.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.Operator;
+                    ctlHarvest.Productivity.ChainsawUtilizationWithWheeledHarvester = this.ChainsawByOperatorUtilization;
                 }
                 else
                 {
                     minimumChainsawCostWithWheeledHarvester = chainsawCrewCost;
                     ctlHarvest.ChainsawCrewWithWheeledHarvester = chainsawFallingWithWheeledHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
+                    ctlHarvest.Productivity.ChainsawUtilizationWithWheeledHarvester = chainsawCrewUtilization;
                 }
 
                 Debug.Assert(ctlHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester > 0.0F);
@@ -915,11 +917,13 @@ namespace Mars.Seem.Silviculture
                     {
                         minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = chainsawBuckCost;
                         longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.Bucker;
+                        longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder = chainsawBuckUtilization;
                     }
                     else
                     {
                         minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = chainsawByOperatorCost;
                         longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.Operator;
+                        longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder = this.ChainsawByOperatorUtilization;
                     }
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder > 0.0F);
                 }
@@ -970,11 +974,13 @@ namespace Mars.Seem.Silviculture
                     {
                         minimumChainsawCostWithFellerBuncherAndGrappleYoader = chainsawBuckCost;
                         longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.Bucker;
+                        longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader = chainsawBuckUtilization;
                     }
                     else
                     {
                         minimumChainsawCostWithFellerBuncherAndGrappleYoader = chainsawByOperatorCost;
                         longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.Operator;
+                        longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader = this.ChainsawByOperatorUtilization;
                     }
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader > 0.0F);
                 }
@@ -1047,15 +1053,17 @@ namespace Mars.Seem.Silviculture
                     chainsawCrewUtilization *= MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
                     chainsawCrewCost *= longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / chainsawCrewUtilization;
 
-                    if (chainsawByOperatorCost < chainsawCrewCost)
-                    {
-                        minimumChainsawCostWithTrackedHarvester = chainsawByOperatorCost;
-                        longLogHarvest.ChainsawCrewWithTrackedHarvester = ChainsawCrewType.Operator;
-                    }
-                    else
+                    if (chainsawCrewCost < chainsawByOperatorCost)
                     {
                         minimumChainsawCostWithTrackedHarvester = chainsawCrewCost;
                         longLogHarvest.ChainsawCrewWithTrackedHarvester = chainsawFallingWithTrackedHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
+                        longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester = chainsawCrewUtilization;
+                    }
+                    else
+                    {
+                        minimumChainsawCostWithTrackedHarvester = chainsawByOperatorCost;
+                        longLogHarvest.ChainsawCrewWithTrackedHarvester = ChainsawCrewType.Operator;
+                        longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester = this.ChainsawByOperatorUtilization;
                     }
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester > 0.0F);
                 }
@@ -1122,16 +1130,19 @@ namespace Mars.Seem.Silviculture
                     chainsawCrewUtilization *= MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
                     chainsawCrewCost *= longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / chainsawCrewUtilization;
 
-                    if (chainsawByOperatorCost < chainsawCrewCost)
-                    {
-                        minimumChainsawCostWithWheeledHarvester = chainsawByOperatorCost;
-                        longLogHarvest.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.Operator;
-                    }
-                    else
+                    if (chainsawCrewCost < chainsawByOperatorCost)
                     {
                         minimumChainsawCostWithWheeledHarvester = chainsawCrewCost;
                         longLogHarvest.ChainsawCrewWithWheeledHarvester = chainsawFallingWithWheeledHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
+                        longLogHarvest.Productivity.ChainsawUtilizationWithWheeledHarvester = chainsawCrewUtilization;
                     }
+                    else
+                    {
+                        minimumChainsawCostWithWheeledHarvester = chainsawByOperatorCost;
+                        longLogHarvest.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.Operator;
+                        longLogHarvest.Productivity.ChainsawUtilizationWithWheeledHarvester = this.ChainsawByOperatorUtilization;
+                    }
+
                     Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester > 0.0F);
                 }
 
