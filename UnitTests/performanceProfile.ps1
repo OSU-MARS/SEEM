@@ -3,8 +3,8 @@
 # However, it's necessary to from the unit tests directory so .NET fusion finds DocumentFormat.OpenXml.dll and other dependencies. This means
 # the unit tests should be built before profiling.
 Set-Location -Path ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64"))
-#$buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Debug\\net5.0"))
-$buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Release\\net5.0"))
+#$buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Debug\\net6.0"))
+$buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Release\\net6.0"))
 Import-Module -Name ([System.IO.Path]::Combine($buildDirectory, "Seem.dll"));
 
 # CPU

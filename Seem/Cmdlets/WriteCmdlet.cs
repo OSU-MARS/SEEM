@@ -13,7 +13,7 @@ namespace Mars.Seem.Cmdlets
         // all characters written are in the base UTF8 character set and therefore contribute one byte each to the file size. If this is
         // incorrect it's mostly likely incorrect only for the stand name and the resulting underprediction is assumed to be small enough
         // to be acceptable.
-        protected const int StreamLengthSynchronizationInterval = 10 * 1000 * 1000; // 10 MB, as of .NET 5 checking every 1.0 MB is undesirably expensive
+        protected const int StreamLengthSynchronizationInterval = 10 * 1000 * 1000; // 10 MB, as of .NET 5.0 checking every 1.0 MB is undesirably expensive
 
         private bool openedExistingFile;
 

@@ -788,7 +788,7 @@ namespace Mars.Seem.Test
                     runtime += heroCounters.Duration;
                 }
             }
-            this.TestContext!.WriteLine(runtime.TotalSeconds.ToString());
+            this.TestContext!.WriteLine(runtime.TotalSeconds.ToString() + "s for " + (runs - 1) + " Organon NWO runs with " + treeRecordCount + " Douglas-firs.");
         }
 
         private static void TryAppendAcceptedFinancialValue(List<float> objectives, Heuristic heuristic, int moveIndex)
@@ -1029,7 +1029,7 @@ namespace Mars.Seem.Test
                     {
                         Debugger.Break(); // trap for investigation to confirm heuristic (usually the genetic algorithm) is thinning all trees
                     }
-                    Assert.IsTrue(bestCubicStandingVolume > 0.0F, "Standing volume is " + bestCubicStandingVolume + " m³.");
+                    Assert.IsTrue(bestCubicStandingVolume >= 0.0F, "Standing volume is " + bestCubicStandingVolume + " m³.");
                     Assert.IsTrue(bestTrajectory.GetTotalStandingScribnerVolume(periodIndex) > 0.0F);
                     Assert.IsTrue(currentCubicStandingVolume > 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex) > 0.0F);
