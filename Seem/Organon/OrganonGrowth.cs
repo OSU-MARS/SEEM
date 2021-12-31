@@ -493,7 +493,7 @@ namespace Mars.Seem.Organon
 
             // mainline case for all other species and Organon variants
             // TODO: could previous predicted height or pre-growth height be used?
-            configuration.Variant.GetHeightPredictionCoefficients(species, out float B0, out float B1, out float B2);
+            OrganonHeightCoefficients height = configuration.Variant.GetOrCreateHeightCoefficients(species);
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 if (trees.LiveExpansionFactor[treeIndex] <= 0.0F)
@@ -503,19 +503,21 @@ namespace Mars.Seem.Organon
                 }
 
                 float endDbhInInches = trees.Dbh[treeIndex];
-                float endPredictedHeight = 4.5F + MathV.Exp(B0 + B1 * MathV.Pow(endDbhInInches, B2));
+                float endPredictedHeight = 4.5F + MathV.Exp(height.B0 + height.B1 * MathV.Pow(endDbhInInches, height.B2));
                 endPredictedHeight = 4.5F + calibrationMultiplier * (endPredictedHeight - 4.5F);
 
                 float startDbhInInches = endDbhInInches - trees.DbhGrowth[treeIndex];
-                float startPredictedHeight = 4.5F + MathV.Exp(B0 + B1 * MathV.Pow(startDbhInInches, B2));
+                float startPredictedHeight = 4.5F + MathV.Exp(height.B0 + height.B1 * MathV.Pow(startDbhInInches, height.B2));
                 startPredictedHeight = 4.5F + calibrationMultiplier * (startPredictedHeight - 4.5F);
 
-                float predictedHeight = (endPredictedHeight / startPredictedHeight) * trees.Height[treeIndex];
-                trees.HeightGrowth[treeIndex] = predictedHeight - trees.Height[treeIndex];
+                float currentHeight = trees.Height[treeIndex];
+                float predictedHeight = (endPredictedHeight / startPredictedHeight) * currentHeight;
+                float heightGrowth = predictedHeight - currentHeight;
+                trees.Height[treeIndex] = predictedHeight;
+                trees.HeightGrowth[treeIndex] = heightGrowth;
 
-                Debug.Assert(trees.HeightGrowth[treeIndex] >= 0.0F);
-                Debug.Assert(trees.HeightGrowth[treeIndex] < Constant.Maximum.HeightIncrementInFeet);
-                trees.Height[treeIndex] += trees.HeightGrowth[treeIndex];
+                Debug.Assert(heightGrowth >= 0.0F);
+                Debug.Assert(heightGrowth < Constant.Maximum.HeightIncrementInFeet);
             }
         }
 
@@ -643,7 +645,7 @@ namespace Mars.Seem.Organon
             }
 
             // ROUTINE TO CALCULATE MISSING CROWN RATIOS
-            variant.GetHeightPredictionCoefficients(treesOfSpecies.Species, out float B0, out float B1, out float B2);
+            OrganonHeightCoefficients height = variant.GetOrCreateHeightCoefficients(treesOfSpecies.Species);
             for (int treeIndex = treesOfSpecies.Count - ingrowthCount; treeIndex < treesOfSpecies.Count; ++treeIndex)
             {
                 float heightInFeet = treesOfSpecies.Height[treeIndex];
@@ -653,7 +655,7 @@ namespace Mars.Seem.Organon
                 }
 
                 float dbhInInches = treesOfSpecies.Dbh[treeIndex];
-                float predictedHeight = 4.5F + MathV.Exp(B0 + B1 * MathV.Pow(dbhInInches, B2));
+                float predictedHeight = 4.5F + MathV.Exp(height.B0 + height.B1 * MathV.Pow(dbhInInches, height.B2));
                 treesOfSpecies.Height[treeIndex] = 4.5F + calibrationBySpecies[treesOfSpecies.Species].Height * (predictedHeight - 4.5F);
             }
 
@@ -661,8 +663,6 @@ namespace Mars.Seem.Organon
             {
                 throw new ArgumentOutOfRangeException(nameof(stand));
             }
-            float siteIndexFromDbh = stand.SiteIndexInFeet - 4.5F;
-            float hemlockSiteIndexFromDbh = stand.HemlockSiteIndexInFeet - 4.5F;
 
             float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(variant, stand);
             OrganonStandDensity standDensity = new(variant, stand);
@@ -678,7 +678,7 @@ namespace Mars.Seem.Organon
                 float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                 float heightInFeet = treesOfSpecies.Height[treeIndex];
                 float crownCompetitionFactorLarger = standDensity.GetCrownCompetitionFactorLarger(dbhInInches);
-                float heightToCrownBase = variant.GetHeightToCrownBase(species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, standDensity.BasalAreaPerAcre, siteIndexFromDbh, hemlockSiteIndexFromDbh, oldGrowthIndicator);
+                float heightToCrownBase = variant.GetHeightToCrownBase(stand, species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, standDensity.BasalAreaPerAcre, oldGrowthIndicator);
                 if (heightToCrownBase < 0.0F)
                 {
                     heightToCrownBase = 0.0F;

@@ -173,13 +173,13 @@ namespace Mars.Seem.Test
 
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
-                    variant.GetHeightPredictionCoefficients(treesOfSpecies.Species, out float B0, out float B1, out float B2);
+                    OrganonHeightCoefficients height = variant.GetOrCreateHeightCoefficients(treesOfSpecies.Species);
                     for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                     {
                         // predicted heights
                         float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                         float heightInFeet = treesOfSpecies.Height[treeIndex];
-                        float predictedHeightInFeet = 4.5F + MathV.Exp(B0 + B1 * MathV.Pow(dbhInInches, B2));
+                        float predictedHeightInFeet = 4.5F + MathV.Exp(height.B0 + height.B1 * MathV.Pow(dbhInInches, height.B2));
                         Assert.IsTrue(predictedHeightInFeet >= 0.0F);
                         // TODO: make upper limit of height species specific
                         Assert.IsTrue(predictedHeightInFeet < TestConstant.Maximum.HeightInFeet);

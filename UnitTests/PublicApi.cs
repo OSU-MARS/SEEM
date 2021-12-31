@@ -192,8 +192,8 @@ namespace Mars.Seem.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { 0.114F };
-                Span<int> treesThinned = stackalloc[] { 0 };
+                Span<float> minFinancialValues = stackalloc[] { -0.36F, 0.114F };
+                Span<int> treesThinned = stackalloc[] { 5, 0 };
             #else
                 Span<float> minFinancialValues = stackalloc[] { 1.075F, 1.169F };
                 Span<int> treesThinned = stackalloc[] { 2, 0 };
@@ -1025,14 +1025,12 @@ namespace Mars.Seem.Test
                 }
                 else
                 {
-                    if (bestCubicStandingVolume == 0.0F)
-                    {
-                        Debugger.Break(); // trap for investigation to confirm heuristic (usually the genetic algorithm) is thinning all trees
-                    }
-                    Assert.IsTrue(bestCubicStandingVolume >= 0.0F, "Standing volume is " + bestCubicStandingVolume + " m³.");
-                    Assert.IsTrue(bestTrajectory.GetTotalStandingScribnerVolume(periodIndex) > 0.0F);
-                    Assert.IsTrue(currentCubicStandingVolume > 0.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex) > 0.0F);
+                    Assert.IsTrue(bestCubicStandingVolume >= 0.0F, "Standing cubic volume from best trajectory is " + bestCubicStandingVolume + " m³.");
+                    Assert.IsTrue(currentCubicStandingVolume >= 0.0F, "Standing cubic volume from current trajectory is " + currentCubicStandingVolume + " m³.");
+                    float bestScribnerStandingVolume = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex);
+                    float currentScribnerStandingVolume = heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex);
+                    Assert.IsTrue(bestScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + bestScribnerStandingVolume + " MBF.");
+                    Assert.IsTrue(currentScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + currentScribnerStandingVolume + " MBF.");
 
                     if (periodIndex != firstThinningPeriod)
                     {

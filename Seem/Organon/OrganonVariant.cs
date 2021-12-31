@@ -1,6 +1,7 @@
 ﻿using Mars.Seem.Extensions;
 using Mars.Seem.Tree;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -9,63 +10,507 @@ namespace Mars.Seem.Organon
 {
     public abstract class OrganonVariant
     {
+        private readonly SortedList<FiaCode, OrganonCrownCoefficients> crownCoefficients;
+        private readonly SortedList<FiaCode, OrganonHeightCoefficients> heightCoefficients;
+
         public float OldTreeAgeThreshold { get; private init; }
         public int TimeStepInYears { get; private init; }
         public TreeModel TreeModel { get; private init; }
 
         protected OrganonVariant(TreeModel treeModel, float oldTreeAgeThreshold)
         {
+            this.crownCoefficients = new();
+            this.heightCoefficients = new();
             this.OldTreeAgeThreshold = oldTreeAgeThreshold;
             this.TimeStepInYears = treeModel == TreeModel.OrganonRap ? 1 : 5;
             this.TreeModel = treeModel;
         }
 
-        public virtual void AddCrownCompetitionByHeight(Trees trees, float[] crownCompetitionByHeight)
+        // VEX 128 with quads of strata: 3.0x speedup from scalar
+        public unsafe void AddCrownCompetitionByHeight(Trees trees, float[] crownCompetitionByHeight)
         {
-            FiaCode species = trees.Species;
-            for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
+            OrganonCrownCoefficients crown = this.GetOrCreateCrownCoefficients(trees.Species);
+            fixed (float* pinnedCrownCompetitionByHeight = &crownCompetitionByHeight[0])
             {
-                float expansionFactor = trees.LiveExpansionFactor[treeIndex];
-                if (expansionFactor <= 0.0F)
+                for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
                 {
-                    continue;
-                }
-
-                float dbhInInches = trees.Dbh[treeIndex];
-                float heightInFeet = trees.Height[treeIndex];
-                float crownRatio = trees.CrownRatio[treeIndex];
-                float crownLengthInFeet = crownRatio * heightInFeet;
-                float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
-                float maxCrownWidth = this.GetMaximumCrownWidth(species, dbhInInches, heightInFeet);
-                float largestCrownWidth = this.GetLargestCrownWidth(species, maxCrownWidth, crownRatio, dbhInInches, heightInFeet);
-                float heightToLargestCrownWidth = this.GetHeightToLargestCrownWidth(species, heightInFeet, crownRatio);
-
-                float XHLCW = heightToLargestCrownWidth;
-                float XLCW = largestCrownWidth;
-                if (heightToCrownBaseInFeet > heightToLargestCrownWidth)
-                {
-                    XHLCW = heightToCrownBaseInFeet;
-                    XLCW = this.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, XHLCW);
-                }
-
-                float strataThickness = crownCompetitionByHeight[^1] / Constant.OrganonHeightStrata;
-                for (int strataIndex = crownCompetitionByHeight.Length - 2; strataIndex >= 0; --strataIndex)
-                {
-                    float strataHeight = strataThickness * (strataIndex + 1);
-                    float crownWidth = 0.0F;
-                    if (strataHeight <= XHLCW)
+                    float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+                    if (expansionFactor <= 0.0F)
                     {
-                        crownWidth = XLCW;
+                        continue;
                     }
-                    else if ((strataHeight > XHLCW) && (strataHeight < heightInFeet))
+
+                    float dbhInInches = trees.Dbh[treeIndex];
+                    float heightInFeet = trees.Height[treeIndex];
+                    float crownRatio = trees.CrownRatio[treeIndex];
+                    float crownLengthInFeet = crownRatio * heightInFeet;
+
+                    // maximum crown width
+                    // Subset of code in GetMaximumCrownWidth().
+                    Debug.Assert(heightInFeet >= 4.5F);
+                    float dbhForMaxCrownWidth = MathF.Min(dbhInInches, crown.DbhLimitForMaxCrownWidth);
+                    float maxCrownWidth;
+                    if (crown.McwK == 1.0F)
                     {
-                        crownWidth = this.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, strataHeight);
+                        // exponent is 1 for all species besides red alder in RAP variant, so no need to call MathV.Exp() and Pow()
+                        maxCrownWidth = crown.McwB0 + crown.McwB1 * dbhForMaxCrownWidth + crown.McwB2 * dbhForMaxCrownWidth * dbhForMaxCrownWidth;
                     }
-                    float crownCompetitionFactor = Constant.CrownCompetionConstantEnglish * expansionFactor * crownWidth * crownWidth;
-                    crownCompetitionByHeight[strataIndex] += crownCompetitionFactor;
+                    else
+                    {
+                        maxCrownWidth = crown.McwB0 + crown.McwB1 * MathV.Pow(dbhForMaxCrownWidth, crown.McwK) + crown.McwB2 * dbhForMaxCrownWidth * dbhForMaxCrownWidth;
+                    }
+
+                    // height to crown base and largest crown width
+                    float largestCrownWidth = crown.LcwB0 * maxCrownWidth * MathV.Pow(crownRatio, crown.LcwB1 + crown.LcwB2 * crownLengthInFeet + crown.LcwB3 * dbhInInches / heightInFeet);
+                    float heightToLargestCrownWidth;
+                    if (crown.HlcwB2 == 0.0F)
+                    {
+                        // exponent is 1 for all species besides red alder in RAP variant, so no need to call MathV.Exp() and Pow()
+                        heightToLargestCrownWidth = heightInFeet - (1.0F - crown.HlcwB1) * crownLengthInFeet;
+                    }
+                    else
+                    {
+                        heightToLargestCrownWidth = heightInFeet - (1.0F - crown.HlcwB1 * MathV.Exp(MathF.Pow(crown.HlcwB2 * (1.0F - heightInFeet / 140.0F), 3))) * crownLengthInFeet;
+                    }
+                    float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
+                    float cwB3heightDiameterRatio = crown.CWb3 * MathF.Min(heightInFeet / dbhInInches, crown.CWMaxHeightDiameterRatio);
+                    if (heightToCrownBaseInFeet > heightToLargestCrownWidth)
+                    {
+                        float relativePosition = (heightInFeet - heightToCrownBaseInFeet) / (heightInFeet - heightToLargestCrownWidth);
+                        largestCrownWidth *= MathV.Pow(relativePosition, crown.CWb1 + crown.CWb2 * MathF.Sqrt(relativePosition) + cwB3heightDiameterRatio);
+                        heightToLargestCrownWidth = heightToCrownBaseInFeet;
+                    }
+
+                    // crown competition factor by strata
+                    float ccfExpansionFactor = 0.001803F * expansionFactor;
+                    Vector128<float> ccfExpansionFactor128 = AvxExtensions.BroadcastScalarToVector128(ccfExpansionFactor);
+                    Vector128<float> crownCompetitionFactor = AvxExtensions.BroadcastScalarToVector128(ccfExpansionFactor * largestCrownWidth * largestCrownWidth);
+                    Vector128<float> cwB1_128 = AvxExtensions.BroadcastScalarToVector128(crown.CWb1);
+                    Vector128<float> cwB2_128 = AvxExtensions.BroadcastScalarToVector128(crown.CWb2);
+                    Vector128<float> cwB3heightDiameterRatio128 = AvxExtensions.BroadcastScalarToVector128(cwB3heightDiameterRatio);
+                    Vector128<float> heightInFeet128 = AvxExtensions.BroadcastScalarToVector128(heightInFeet);
+                    Vector128<float> heightToLargestCrownWidth128 = AvxExtensions.BroadcastScalarToVector128(heightToLargestCrownWidth);
+                    Vector128<float> largestCrownWidth128 = AvxExtensions.BroadcastScalarToVector128(largestCrownWidth);
+                    Vector128<float> strataHeightIncrement = AvxExtensions.BroadcastScalarToVector128(4.0F * crownCompetitionByHeight[^1] / Constant.OrganonHeightStrata);
+                    Vector128<float> strataHeight = Avx.Multiply(Vector128.Create(0.25F, 0.50F, 0.75F, 1.0F), strataHeightIncrement); // find CCF at top of strata as in Fortran
+                    Vector128<float> zero = Vector128<float>.Zero;
+                    for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += Constant.Simd128x4.Width)
+                    {
+                        int strataBelowTreeHeightMask = Avx.MoveMask(Avx.CompareLessThan(strataHeight, heightInFeet128));
+                        if (strataBelowTreeHeightMask == 0)
+                        {
+                            // tree contributes no crown competition factor above its height
+                            break;
+                        }
+
+                        // find crown width and lowered CCFs for any strata above height of largest crown width
+                        int strataAboveLargestCrownMask = Avx.MoveMask(Avx.CompareGreaterThan(strataHeight, heightToLargestCrownWidth128));
+                        if (strataAboveLargestCrownMask != 0)
+                        {
+                            // very slightly faster to divide than to precompute denominator reciprocal
+                            Vector128<float> relativePosition = Avx.Divide(Avx.Subtract(heightInFeet128, strataHeight), Avx.Subtract(heightInFeet128, heightToLargestCrownWidth128));
+                            Vector128<float> largestWidthMultiplier = MathV.Pow(relativePosition, Avx.Add(cwB1_128, Avx.Add(Avx.Multiply(cwB2_128, Avx.Sqrt(relativePosition)), cwB3heightDiameterRatio128)));
+                            Vector128<float> crownWidthInStrata = Avx.Multiply(largestCrownWidth128, largestWidthMultiplier);
+                            Vector128<float> crownCompetitionFactorInStrata = Avx.Multiply(ccfExpansionFactor128, Avx.Multiply(crownWidthInStrata, crownWidthInStrata));
+                            crownCompetitionFactor = Avx.Blend(crownCompetitionFactor, crownCompetitionFactorInStrata, (byte)strataAboveLargestCrownMask);
+                        }
+
+                        // zero any elements above tree height
+                        crownCompetitionFactor = Avx.Blend(zero, crownCompetitionFactor, (byte)strataBelowTreeHeightMask);
+
+                        // accumulate CCF
+                        Vector128<float> crownCompetitionByHeight128 = Avx.LoadVector128(pinnedCrownCompetitionByHeight + strataIndex);
+                        crownCompetitionByHeight128 = Avx.Add(crownCompetitionByHeight128, crownCompetitionFactor);
+                        Avx.Store(pinnedCrownCompetitionByHeight + strataIndex, crownCompetitionByHeight128);
+
+                        // move upwards to next quad of strata
+                        strataHeight = Avx.Add(strataHeight, strataHeightIncrement);
+                    }
                 }
             }
+
+            // reference scalar implementation
+            //    for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
+            //    {
+            //        float expansionFactor = trees.LiveExpansionFactor[treeIndex];
+            //        if (expansionFactor <= 0.0F)
+            //        {
+            //            continue;
+            //        }
+
+            //        float dbhInInches = trees.Dbh[treeIndex];
+            //        float heightInFeet = trees.Height[treeIndex];
+            //        float crownRatio = trees.CrownRatio[treeIndex];
+            //        float crownLengthInFeet = crownRatio * heightInFeet;
+
+            //        // maximum crown width
+            //        float dbhForMaxCrownWidth = MathF.Min(dbhInInches, dbhLimitForMaxCrownWidth);
+            //        float maxCrownWidth;
+            //        if (heightInFeet < 4.5F)
+            //        {
+            //            maxCrownWidth = heightInFeet / 4.5F * mcwB0;
+            //        }
+            //        else
+            //        {
+            //            maxCrownWidth = mcwB0 + mcwB1 * dbhForMaxCrownWidth + mcwB2 * dbhForMaxCrownWidth * dbhForMaxCrownWidth;
+            //        }
+
+            //        // height to crown base and largest crown width
+            //        float largestCrownWidth = maxCrownWidth * MathV.Pow(crownRatio, lcwB1 + lcwB2 * crownLengthInFeet + lcwB3 * dbhInInches / heightInFeet);
+            //        float heightToLargestCrownWidth = heightInFeet - (1.0F - hlcwB1) * crownLengthInFeet;
+            //        float heightToCrownBaseInFeet = heightInFeet - crownLengthInFeet;
+            //        float cwB3heightDiameterRatio = cwB3 * MathF.Min(heightInFeet / dbhInInches, cwMaxHeightDiameterRatio);
+            //        if (heightToCrownBaseInFeet > heightToLargestCrownWidth)
+            //        {
+            //            float relativePosition = (heightInFeet - heightToCrownBaseInFeet) / (heightInFeet - heightToLargestCrownWidth);
+            //            largestCrownWidth *= MathV.Pow(relativePosition, cwB1 + cwB2 * MathF.Sqrt(relativePosition) + cwB3heightDiameterRatio);
+            //            heightToLargestCrownWidth = heightToCrownBaseInFeet;
+            //        }
+
+            //        // crown competition factor by strata
+            //        float ccfExpansionFactor = 0.001803F * expansionFactor;
+            //        float crownCompetitionFactor = ccfExpansionFactor * largestCrownWidth * largestCrownWidth;
+            //        float strataThickness = crownCompetitionByHeight[^1] / Constant.HeightStrataAsFloat;
+            //        for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 1; ++strataIndex)
+            //        {
+            //            float crownWidthEvaluationHeight = strataThickness * ((float)strataIndex + 0.5F);
+            //            if (crownWidthEvaluationHeight > heightInFeet)
+            //            {
+            //                // tree contributes no crown competition factor above its height
+            //                break;
+            //            }
+
+            //            if (crownWidthEvaluationHeight > heightToLargestCrownWidth)
+            //            {
+            //                float relativePosition = (heightInFeet - crownWidthEvaluationHeight) / (heightInFeet - heightToLargestCrownWidth);
+            //                float crownWidthInStrata = largestCrownWidth * MathV.Pow(relativePosition, cwB1 + cwB2 * MathF.Sqrt(relativePosition) + cwB3heightDiameterRatio);
+            //                // crownWidth = this.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, relativeHeight);
+            //                crownCompetitionFactor = ccfExpansionFactor * crownWidthInStrata * crownWidthInStrata;
+            //            }
+            //            crownCompetitionByHeight[strataIndex] += crownCompetitionFactor;
+            //        }
+            //    }
+            //}
         }
+
+        // VEX 128 with quads of trees: 2.1x speedup from scalar
+        //public override unsafe void AddCrownCompetitionByHeight(Trees trees, float[] crownCompetitionByHeight)
+        //{
+        //    // coefficients for maximum crown width
+        //    FiaCode species = trees.Species;
+        //    Vector128<float> mcwB0;
+        //    Vector128<float> mcwB1;
+        //    Vector128<float> mcwB2;
+        //    Vector128<float> dbhLimitForMaxCrownWidth;
+        //    switch (species)
+        //    {
+        //        // Paine and Hann(1982) FRL Research Paper 46
+        //        case FiaCode.PseudotsugaMenziesii:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(4.6198F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.8426F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(-0.011311F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(81.45F);
+        //            break;
+        //        // GF Coefficients from Paine and Hann(1982) FRL Research Paper 46
+        //        case FiaCode.AbiesGrandis:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(6.1880F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.0069F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(999.99F);
+        //            break;
+        //        // Johnson(2002) Willamette Industries Report
+        //        case FiaCode.TsugaHeterophylla:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(4.3586F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.57458F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(76.70F);
+        //            break;
+        //        // Smith(1966) Proc. 6th World Forestry Conference
+        //        case FiaCode.ThujaPlicata:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(4.0F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.65F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(999.99F);
+        //            break;
+        //        // WH of Paine and Hann(1982) FRL Research Paper 46
+        //        case FiaCode.TaxusBrevifolia:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(4.5652F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.4147F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(999.99F);
+        //            break;
+        //        // Paine and Hann(1982) FRL Research Paper 46
+        //        case FiaCode.ArbutusMenziesii:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(3.4298629F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.3532302F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(999.99F);
+        //            break;
+        //        // Ek(1974) School of Natural Res., U.Wisc., Forestry Res. Notes.
+        //        case FiaCode.AcerMacrophyllum:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(4.0953F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(2.3849F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(-0.0102651F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(102.53F);
+        //            break;
+        //        // WO Coefficients from Paine and Hann (1982) FRL Research Paper 46
+        //        case FiaCode.QuercusGarryana:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(3.0785639F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.9242211F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(999.99F);
+        //            break;
+        //        // Smith(1966) Proc. 6th World Forestry Conference
+        //        case FiaCode.AlnusRubra:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(8.0F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.53F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(999.99F);
+        //            break;
+        //        // GC of Paine and Hann(1982) FRL Research Paper 46
+        //        case FiaCode.CornusNuttallii:
+        //        case FiaCode.Salix:
+        //            mcwB0 = AvxExtensions.BroadcastScalarToVector128(2.9793895F);
+        //            mcwB1 = AvxExtensions.BroadcastScalarToVector128(1.5512443F);
+        //            mcwB2 = AvxExtensions.BroadcastScalarToVector128(-0.01416129F);
+        //            dbhLimitForMaxCrownWidth = AvxExtensions.BroadcastScalarToVector128(54.77F);
+        //            break;
+        //        default:
+        //            throw Trees.CreateUnhandledSpeciesException(species);
+        //    }
+
+        //    // coefficients for height to largest crown width
+        //    Vector128<float> hlcwB1;
+        //    switch (species)
+        //    {
+        //        // Hann(1999) FS 45: 217-225
+        //        case FiaCode.PseudotsugaMenziesii:
+        //            hlcwB1 = AvxExtensions.BroadcastScalarToVector128(0.062000F);
+        //            break;
+        //        // Hann and Hanus(2001) FRL Research Contribution 34
+        //        case FiaCode.AbiesGrandis:
+        //            hlcwB1 = AvxExtensions.BroadcastScalarToVector128(0.028454F);
+        //            break;
+        //        // Marshall, Johnson, and Hann(2003) CJFR 33: 2059-2066
+        //        case FiaCode.TsugaHeterophylla:
+        //            hlcwB1 = AvxExtensions.BroadcastScalarToVector128(0.355270F);
+        //            break;
+        //        // WH of Hann and Hanus(2001) FRL Research Contribution 34
+        //        case FiaCode.ThujaPlicata:
+        //        case FiaCode.TaxusBrevifolia:
+        //            hlcwB1 = AvxExtensions.BroadcastScalarToVector128(0.209806F);
+        //            break;
+        //        // Hann and Hanus(2001) FRL Research Contribution 34
+        //        case FiaCode.ArbutusMenziesii:
+        //        case FiaCode.AcerMacrophyllum:
+        //        case FiaCode.QuercusGarryana:
+        //        case FiaCode.AlnusRubra:
+        //        case FiaCode.CornusNuttallii:
+        //        case FiaCode.Salix:
+        //            hlcwB1 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        default:
+        //            throw Trees.CreateUnhandledSpeciesException(species);
+        //    }
+
+        //    Vector128<float> lcwB1;
+        //    Vector128<float> lcwB2;
+        //    Vector128<float> lcwB3;
+        //    switch (species)
+        //    {
+        //        // Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.PseudotsugaMenziesii:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.00436324F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(0.6020020F);
+        //            break;
+        //        // Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.AbiesGrandis:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.00308402F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        // Johnson(2002) Willamette Industries Report
+        //        case FiaCode.TsugaHeterophylla:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.105590F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0035662F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        // IC of Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.ThujaPlicata:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(-0.2513890F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.006925120F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(0.985922F);
+        //            break;
+        //        // WH of Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.TaxusBrevifolia:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        // Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.ArbutusMenziesii:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.118621F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.00384872F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        // Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.AcerMacrophyllum:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(1.470180F);
+        //            break;
+        //        // Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.QuercusGarryana:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.3648110F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        // Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.AlnusRubra:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.3227140F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        // GC of Hann(1997) FRL Research Contribution 17
+        //        case FiaCode.CornusNuttallii:
+        //        case FiaCode.Salix:
+        //            lcwB1 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            lcwB3 = AvxExtensions.BroadcastScalarToVector128(1.61440F);
+        //            break;
+        //        default:
+        //            throw Trees.CreateUnhandledSpeciesException(species);
+        //    }
+
+        //    // coefficients for crown width
+        //    Vector128<float> cwB1;
+        //    Vector128<float> cwB2;
+        //    Vector128<float> cwB3;
+        //    Vector128<float> cwMaxHeightDiameterRatio = AvxExtensions.BroadcastScalarToVector128(Single.MaxValue);
+        //    switch (species)
+        //    {
+        //        // DF Coefficients from Hann(1999) FS 45: 217-225
+        //        case FiaCode.PseudotsugaMenziesii:
+        //            cwB1 = AvxExtensions.BroadcastScalarToVector128(0.929973F);
+        //            cwB2 = AvxExtensions.BroadcastScalarToVector128(-0.135212F);
+        //            cwB3 = AvxExtensions.BroadcastScalarToVector128(-0.0157579F);
+        //            cwMaxHeightDiameterRatio = AvxExtensions.BroadcastScalarToVector128(50.0F); // BUGBUG: Fortran code divides feet by inches?
+        //            break;
+        //        // GF Coefficients from Hann and Hanus(2001) FRL Research Contribution 34
+        //        case FiaCode.AbiesGrandis:
+        //            cwB1 = AvxExtensions.BroadcastScalarToVector128(0.999291F);
+        //            cwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            cwB3 = AvxExtensions.BroadcastScalarToVector128(-0.0314603F);
+        //            cwMaxHeightDiameterRatio = AvxExtensions.BroadcastScalarToVector128(31.0F); // BUGBUG: Fortran code divides feet by inches?
+        //            break;
+        //        // Marshall, Johnson, and Hann(2003) CJFR 33: 2059-2066
+        //        case FiaCode.TsugaHeterophylla:
+        //            cwB1 = AvxExtensions.BroadcastScalarToVector128(0.461782F);
+        //            cwB2 = AvxExtensions.BroadcastScalarToVector128(0.552011F);
+        //            cwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        // Hann and Hanus(2001) FRL Research Contribution 34
+        //        case FiaCode.ThujaPlicata:
+        //        case FiaCode.TaxusBrevifolia:
+        //            cwB1 = AvxExtensions.BroadcastScalarToVector128(0.629785F);
+        //            cwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            cwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        // Hann and Hanus(2001) FRL Research Contribution 34
+        //        case FiaCode.ArbutusMenziesii:
+        //        case FiaCode.AcerMacrophyllum:
+        //        case FiaCode.QuercusGarryana:
+        //        case FiaCode.AlnusRubra:
+        //        case FiaCode.CornusNuttallii:
+        //        case FiaCode.Salix:
+        //            cwB1 = AvxExtensions.BroadcastScalarToVector128(0.5F);
+        //            cwB2 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            cwB3 = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //            break;
+        //        default:
+        //            throw Trees.CreateUnhandledSpeciesException(species);
+        //    }
+
+        //    Vector128<float> zero = AvxExtensions.BroadcastScalarToVector128(0.0F);
+        //    Vector128<float> one = AvxExtensions.BroadcastScalarToVector128(1.0F);
+        //    Vector128<float> v4p5 = AvxExtensions.BroadcastScalarToVector128(4.5F);
+        //    Vector128<float> vCrownCompetitionConstantEnglish = AvxExtensions.BroadcastScalarToVector128(Constant.CrownCompetionConstantEnglish);
+        //    Vector128<float> strataThickness = AvxExtensions.BroadcastScalarToVector128(crownCompetitionByHeight[^1] / Constant.HeightStrataAsFloat);
+        //    fixed (float* dbh = &trees.Dbh[0], heights = &trees.Height[0], crownRatios = &trees.CrownRatio[0], expansionFactors = &trees.LiveExpansionFactor[0])
+        //    {
+        //        for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += Constant.Simd128x4.Width)
+        //        {
+        //            Vector128<float> dbhInInches = Avx.LoadVector128(dbh + treeIndex);
+        //            Vector128<float> heightInFeet = Avx.LoadVector128(heights + treeIndex);
+        //            // DebugV.Assert(Avx.CompareGreaterThanOrEqual(heightInFeet, v4p5)); // Fortran case for maxCrownWidth = heightInFeet / 4.5F * mcwB0; removed
+
+        //            // maximum crown width = B0 + B1 * dbh + B2 * dbh * dbh
+        //            Vector128<float> dbhForMaxCrownWidth = Avx.Min(dbhInInches, dbhLimitForMaxCrownWidth);
+        //            Vector128<float> maxCrownWidth = Avx.Add(mcwB0, Avx.Multiply(mcwB1, dbhForMaxCrownWidth));
+        //            maxCrownWidth = Avx.Add(maxCrownWidth, Avx.Multiply(mcwB2, Avx.Multiply(dbhForMaxCrownWidth, dbhForMaxCrownWidth)));
+
+        //            // height to crown base and largest crown width
+        //            Vector128<float> crownRatio = Avx.LoadVector128(crownRatios + treeIndex);
+        //            Vector128<float> crownLengthInFeet = Avx.Multiply(crownRatio, heightInFeet);
+        //            Vector128<float> crownWidthMultiplierPower = Avx.Add(lcwB1, Avx.Multiply(lcwB2, crownLengthInFeet));
+        //            crownWidthMultiplierPower = Avx.Add(crownWidthMultiplierPower, Avx.Multiply(lcwB3, Avx.Divide(dbhInInches, heightInFeet)));
+        //            Vector128<float> crownWidthMultiplier = MathV.Pow(crownRatio, crownWidthMultiplierPower);
+        //            Vector128<float> largestCrownWidth = Avx.Multiply(crownWidthMultiplier, maxCrownWidth);
+        //            Vector128<float> heightToLargestCrownWidth = Avx.Subtract(heightInFeet, Avx.Multiply(Avx.Subtract(one, hlcwB1), crownLengthInFeet));
+        //            Vector128<float> heightToCrownBaseInFeet = Avx.Subtract(heightInFeet, crownLengthInFeet);
+        //            Vector128<float> cwB3heightDiameterRatio = Avx.Multiply(cwB3, Avx.Min(Avx.Divide(heightInFeet, dbhInInches), cwMaxHeightDiameterRatio));
+        //            Vector128<float> crownBaseAboveLargestCrownWidth = Avx.CompareGreaterThan(heightToCrownBaseInFeet, heightToLargestCrownWidth);
+        //            int crownBaseAboveLargestCrownWidthMask = Avx.MoveMask(crownBaseAboveLargestCrownWidth);
+        //            if (crownBaseAboveLargestCrownWidthMask != 0)
+        //            {
+        //                Vector128<float> relativePosition = Avx.Divide(Avx.Subtract(heightInFeet, heightToCrownBaseInFeet), Avx.Subtract(heightInFeet, heightToLargestCrownWidth));
+        //                //largestCrownWidth = this.GetCrownWidth(species, heightToLargestCrownWidth, largestCrownWidth, heightInFeet, dbhInInches, heightToCrownBaseInFeet);
+        //                Vector128<float> crownWidthMultiplierAtCrownBase = MathV.Pow(relativePosition, Avx.Add(Avx.Add(cwB1, Avx.Multiply(cwB2, Avx.Sqrt(relativePosition))), cwB3heightDiameterRatio));
+        //                Vector128<float> crownWidthAtCrownBase = Avx.Multiply(crownWidthMultiplierAtCrownBase, largestCrownWidth);
+        //                largestCrownWidth = Avx.Blend(largestCrownWidth, crownWidthAtCrownBase, (byte)crownBaseAboveLargestCrownWidthMask);
+        //                heightToLargestCrownWidth = Avx.Blend(heightToLargestCrownWidth, heightToCrownBaseInFeet, (byte)crownBaseAboveLargestCrownWidthMask);
+        //            }
+
+        //            // crown competition factor by strata
+        //            Vector128<float> expansionFactor = Avx.LoadVector128(expansionFactors + treeIndex);
+        //            Vector128<float> ccfExpansionFactor = Avx.Multiply(vCrownCompetitionConstantEnglish, expansionFactor);
+        //            Vector128<float> crownCompetitionFactor = Avx.Multiply(ccfExpansionFactor, Avx.Multiply(largestCrownWidth, largestCrownWidth));
+        //            Vector128<float> crownWidthEvaluationHeight = Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(0.5F), strataThickness);
+        //            for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 1; ++strataIndex)
+        //            {
+        //                int evaluationHeightBelowTreetop = Avx.MoveMask(Avx.CompareLessThan(crownWidthEvaluationHeight, heightInFeet));
+        //                if (evaluationHeightBelowTreetop == 0)
+        //                {
+        //                    // trees contribute no crown competition factor to strata above their height
+        //                    break;
+        //                }
+
+        //                // find crown width and CCF for trees where strata is above their maximum crown width
+        //                int evaluationHeightBelowWidestCrown = Avx.MoveMask(Avx.CompareLessThan(crownWidthEvaluationHeight, heightToLargestCrownWidth));
+        //                if (evaluationHeightBelowWidestCrown != 0)
+        //                {
+        //                    Vector128<float> relativePosition = Avx.Divide(Avx.Subtract(heightInFeet, crownWidthEvaluationHeight), Avx.Subtract(heightInFeet, heightToLargestCrownWidth));
+        //                    crownWidthMultiplier = MathV.Pow(relativePosition, Avx.Add(Avx.Add(cwB1, Avx.Multiply(cwB2, Avx.Sqrt(relativePosition))), cwB3heightDiameterRatio));
+        //                    Vector128<float> crownWidthInStrata = Avx.Multiply(crownWidthMultiplier, largestCrownWidth);
+        //                    Vector128<float> crownCompetitionFactorInStrata = Avx.Multiply(ccfExpansionFactor, Avx.Multiply(crownWidthInStrata, crownWidthInStrata));
+        //                    crownCompetitionFactor = Avx.Blend(crownCompetitionFactor, crownCompetitionFactorInStrata, (byte)evaluationHeightBelowWidestCrown);
+        //                }
+
+        //                // zero out CCF for any trees shorter than this strata
+        //                // No tail zeroing needed for last quad of trees as unused tree records have zero expansion factors and zero ccfExpansionFactor.
+        //                crownCompetitionFactor = Avx.Blend(zero, crownCompetitionFactor, (byte)evaluationHeightBelowTreetop);
+
+        //                Vector128<float> strataCrownCompetionFactorSum = Avx.HorizontalAdd(crownCompetitionFactor, crownCompetitionFactor);
+        //                strataCrownCompetionFactorSum = Avx.HorizontalAdd(strataCrownCompetionFactorSum, strataCrownCompetionFactorSum);
+        //                crownCompetitionByHeight[strataIndex] += strataCrownCompetionFactorSum.ToScalar();
+
+        //                // move up to next strata
+        //                crownWidthEvaluationHeight = Avx.Add(crownWidthEvaluationHeight, strataThickness);
+        //            }
+        //        }
+        //    }
+        //}
 
         public static OrganonVariant Create(TreeModel treeModel)
         {
@@ -78,6 +523,10 @@ namespace Mars.Seem.Organon
                 _ => throw OrganonVariant.CreateUnhandledModelException(treeModel),
             };
         }
+
+        protected abstract OrganonCrownCoefficients CreateCrownCoefficients(FiaCode species);
+
+        protected abstract OrganonHeightCoefficients CreateHeightCoefficients(FiaCode species);
 
         public static NotSupportedException CreateUnhandledModelException(TreeModel treeModel)
         {
@@ -142,18 +591,6 @@ namespace Mars.Seem.Organon
             return Vector128.Create(crownCompetitionFactor0, crownCompetitionFactor1, crownCompetitionFactor2, crownCompetitionFactor3);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="species"></param>
-        /// <param name="HLCW"></param>
-        /// <param name="LCW"></param>
-        /// <param name="HT"></param>
-        /// <param name="DBH"></param>
-        /// <param name="XL"></param>
-        /// <returns>Crown width above maximum crown width (feet).</returns>
-        protected abstract float GetCrownWidth(FiaCode species, float HLCW, float LCW, float HT, float DBH, float XL);
-
         public int GetEndYear(int simulationStep)
         {
             return this.TimeStepInYears * (simulationStep + 1);
@@ -164,64 +601,105 @@ namespace Mars.Seem.Organon
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="organonStand">Stand tree is a part of.</param>
         /// <param name="species">Tree's species.</param>
-        /// <param name="HT">Tree height (feet).</param>
-        /// <param name="DBH">Tree's diameter at breast height (inches)</param>
-        /// <param name="CCFL"></param>
-        /// <param name="BA">Stand basal area.</param>
-        /// <param name="siteIndex">Site index for variant's primary species.</param>
-        /// <param name="hemlockSiteIndex">Site index for variant's secondary species.</param>
-        /// <param name="oldGrowthIndex"></param>
+        /// <param name="heightInFeet">Tree height (feet).</param>
+        /// <param name="dbhInInches">Tree's diameter at breast height (inches)</param>
+        /// <param name="CCFL">Crown competition factor from trees larger than the tree being evaluated.</param>
+        /// <param name="basalAreaPerAcre">Stand basal area.</param>
+        /// <param name="oldGrowthIndex">Mostly applied in SWO. Only used for Pacific madrone in NWO and SMC. Not used in RAP.</param>
         /// <returns>Height to crown base (feet).</returns>
-        public abstract float GetHeightToCrownBase(FiaCode species, float HT, float DBH, float CCFL, float BA, float siteIndex, float hemlockSiteIndex, float oldGrowthIndex);
+        public virtual float GetHeightToCrownBase(OrganonStand organonStand, FiaCode species, float heightInFeet, float dbhInInches, float CCFL, float basalAreaPerAcre, float oldGrowthIndex)
+        {
+            OrganonCrownCoefficients crown = this.GetOrCreateCrownCoefficients(species);
+            float siteIndexFromDbh = this.GetSiteIndex(organonStand, species) - 4.5F;
 
-        /// <summary>
-        /// Estimate height to largest crown width.
-        /// </summary>
-        /// <param name="species">Tree's species.</param>
-        /// <param name="HT">Tree's height (feet).</param>
-        /// <param name="CR">Tree's crown ratio.</param>
-        /// <param name="SCR"></param>
-        /// <returns>Height to largest crown width (feet)</returns>
-        protected abstract float GetHeightToLargestCrownWidth(FiaCode species, float HT, float CR);
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="species">Tree's species.</param>
-        /// <param name="MCW">Tree's maximum crown width (feet).</param>
-        /// <param name="CR">Tree's crown ratio.</param>
-        /// <param name="DBH">Tree's diameter at breast height (inches).</param>
-        /// <param name="HT">Tree's height (feet).</param>
-        /// <returns>Tree's largest crown width (feet).</returns>
-        protected abstract float GetLargestCrownWidth(FiaCode species, float MCW, float CR, float DBH, float HT);
+            // this line of code also appears in GrowCrown() but needs to be called on its own during tree initialization
+            float heightToCrownBase = heightInFeet / (1.0F + MathV.Exp(crown.HcbB0 + crown.HcbB1 * heightInFeet + crown.HcbB2 * CCFL + crown.HcbB3 * MathV.Ln(basalAreaPerAcre) + crown.HcbB4 * (dbhInInches / heightInFeet) + crown.HcbB5 * siteIndexFromDbh + crown.HcbB6 * oldGrowthIndex * oldGrowthIndex));
+            Debug.Assert(heightToCrownBase >= 0.0F);
+            Debug.Assert(heightToCrownBase <= heightInFeet);
+            return heightToCrownBase;
+        }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="species">Tree's species.</param>
-        /// <param name="D">Tree's diameter at breast height (inches).</param>
-        /// <param name="H">Tree's height (feet).</param>
-        /// <returns>Estimated maximum crown width.</returns>
-        public abstract float GetMaximumCrownWidth(FiaCode species, float D, float H);
+        /// <param name="dbhInInches">Tree's diameter at breast height (inches).</param>
+        /// <param name="heightInFeet">Tree's height (feet).</param>
+        /// <returns>Estimated maximum crown width (in feet, presumably).</returns>
+        public float GetMaximumCrownWidth(FiaCode species, float dbhInInches, float heightInFeet)
+        {
+            OrganonCrownCoefficients crown = this.GetOrCreateCrownCoefficients(species);
+            if (heightInFeet < 4.501F)
+            {
+                return heightInFeet / 4.5F * crown.McwB0;
+            }
 
-        protected abstract float GetMaximumHeightToCrownBase(FiaCode species, float HT, float CCFL);
+            float dbhForMaxCrownWidth = dbhInInches;
+            if (dbhInInches > crown.DbhLimitForMaxCrownWidth)
+            {
+                dbhForMaxCrownWidth = crown.DbhLimitForMaxCrownWidth;
+            }
 
-        /// <summary>
-        /// Predict height from DBH for minor (non-big six) species.
-        /// </summary>
-        /// <param name="species">Tree's species.</param>
-        /// <param name="B0"></param>
-        /// <param name="B1"></param>
-        /// <param name="B2"></param>
-        public abstract void GetHeightPredictionCoefficients(FiaCode species, out float B0, out float B1, out float B2);
+            float maxCrownWidth;
+            if (crown.McwK == 1.0F)
+            {
+                // exponent is 1 for all species besides red alder in RAP variant, so no need to call MathV.Exp() and Pow()
+                maxCrownWidth = crown.McwB0 + crown.McwB1 * dbhForMaxCrownWidth + crown.McwB2 * dbhForMaxCrownWidth * dbhForMaxCrownWidth;
+            }
+            else
+            {
+                maxCrownWidth = crown.McwB0 + crown.McwB1 * MathV.Pow(dbhForMaxCrownWidth, crown.McwK) + crown.McwB2 * dbhForMaxCrownWidth * dbhForMaxCrownWidth;
+            }
+            return maxCrownWidth;
+        }
+
+        protected OrganonCrownCoefficients GetOrCreateCrownCoefficients(FiaCode species)
+        {
+            if (this.crownCoefficients.TryGetValue(species, out OrganonCrownCoefficients? crownCoefficients) == false)
+            {
+                lock (this.crownCoefficients)
+                {
+                    if (this.crownCoefficients.TryGetValue(species, out crownCoefficients) == false)
+                    {
+                        crownCoefficients = this.CreateCrownCoefficients(species);
+                        this.crownCoefficients.Add(species, crownCoefficients);
+                    }
+                }
+            }
+            return crownCoefficients;
+        }
+
+        public OrganonHeightCoefficients GetOrCreateHeightCoefficients(FiaCode species)
+        {
+            if (this.heightCoefficients.TryGetValue(species, out OrganonHeightCoefficients? heightCoefficients) == false)
+            {
+                lock (this.heightCoefficients)
+                {
+                    if (this.heightCoefficients.TryGetValue(species, out heightCoefficients) == false)
+                    {
+                        heightCoefficients = this.CreateHeightCoefficients(species);
+                        this.heightCoefficients.Add(species, heightCoefficients);
+                    }
+                }
+            }
+            return heightCoefficients;
+        }
+
+        protected virtual float GetSiteIndex(OrganonStand stand, FiaCode species)
+        {
+            if (species == FiaCode.TsugaHeterophylla)
+            {
+                return stand.HemlockSiteIndexInFeet;
+            }
+            return stand.SiteIndexInFeet;
+        }
 
         // RAP and SWO use this default implemenation
         public virtual void GrowCrown(OrganonStand stand, Trees trees, OrganonStandDensity densityAfterGrowth, float oldGrowthIndicator, float nwoSmcCrownRatioMultiplier)
         {
-            float siteIndexFromDbh = stand.SiteIndexInFeet - 4.5F;
-            float hemlockIndexFromDbh = stand.HemlockSiteIndexInFeet - 4.5F;
-            FiaCode species = trees.Species;
+            OrganonCrownCoefficients crown = this.GetOrCreateCrownCoefficients(trees.Species);
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
                 float endDbhInInches = trees.Dbh[treeIndex];
@@ -249,8 +727,13 @@ namespace Mars.Seem.Organon
 
                 // get height to crown base at end of period
                 float endCcfl = densityAfterGrowth.GetCrownCompetitionFactorLarger(endDbhInInches);
-                float endHeightToCrownBase = this.GetHeightToCrownBase(species, endHeightInFeet, endDbhInInches, endCcfl, densityAfterGrowth.BasalAreaPerAcre, siteIndexFromDbh, hemlockIndexFromDbh, oldGrowthIndicator);
-                float endMaxHeightToCrownBase = this.GetMaximumHeightToCrownBase(species, endHeightInFeet, endCcfl);
+                float endHeightToCrownBase = this.GetHeightToCrownBase(stand, trees.Species, endHeightInFeet, endDbhInInches, endCcfl, densityAfterGrowth.BasalAreaPerAcre, oldGrowthIndicator);
+                float heightToCrownBaseRatio = crown.MhcbB0 - crown.MhcbB1 * MathV.Exp(crown.MhcbB2 * MathV.Pow(endCcfl / 100.0F, crown.MhcbB3));
+                if (heightToCrownBaseRatio > crown.HeightToCrownBaseRatioLimit)
+                {
+                    heightToCrownBaseRatio = crown.HeightToCrownBaseRatioLimit;
+                }
+                float endMaxHeightToCrownBase = heightToCrownBaseRatio * endHeightInFeet;
                 float endCrownRatio = 1.0F - endHeightToCrownBase / endHeightInFeet; // NWO overrides so NWO multiplier isn't needed here
                 endHeightToCrownBase = (1.0F - endCrownRatio) * endHeightInFeet;
 

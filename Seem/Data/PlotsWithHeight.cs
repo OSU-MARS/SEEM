@@ -323,7 +323,7 @@ namespace Mars.Seem.Data
                     float dbhInInches = organonTreesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = organonTreesOfSpecies.Height[treeIndex];
                     float crownCompetitionFactorLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
-                    float heightToCrownBase = configuration.Variant.GetHeightToCrownBase(organonTreesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, density.BasalAreaPerAcre, organonStand.SiteIndexInFeet, organonStand.HemlockSiteIndexInFeet, defaultOldIndex);
+                    float heightToCrownBase = configuration.Variant.GetHeightToCrownBase(organonStand, organonTreesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, density.BasalAreaPerAcre, defaultOldIndex);
                     float crownRatio = (heightInFeet - heightToCrownBase) / heightInFeet;
                     Debug.Assert(crownRatio >= 0.0F);
                     Debug.Assert(crownRatio <= 1.0F);
