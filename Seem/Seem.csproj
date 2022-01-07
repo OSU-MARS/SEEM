@@ -16,19 +16,20 @@
     <Description>Includes code derived from the CIPS-R 2.2.4 version of the Organon growth and yield model created by Oregon State University's Center for Intensive Planted-forest Silviculture and Management, Algorithms, and Remote Sensing.</Description>
     <AssemblyName>Seem</AssemblyName>
     <Nullable>enable</Nullable>
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	<PublishReadyToRun>true</PublishReadyToRun>
+	<PublishReadyToRunCrossgen2ExtraArgs>--instruction-set:avx</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath></OutputPath>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath></OutputPath>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

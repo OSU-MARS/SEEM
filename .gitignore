@@ -1,7 +1,10 @@
-# build results
+# user specific configuration files
+# *.csproj.user
+# *.pubxml.user
+
+# build and packaging results
 bin/
 obj/
-PerformanceResults/
 
 # Visual Studio cache/options directory
 .vs/

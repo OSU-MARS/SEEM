@@ -266,9 +266,7 @@ namespace Mars.Seem.Organon
 
             if (periodHasHarvest)
             {
-                // tree's expansion factor is set to zero when it's marked for harvest
-                // Use tree's volume at end of the the previous period.
-                // TODO: track per species volumes
+                // trees' expansion factors are set to zero when harvested so use trees' volume at end of the previous period.
                 OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
                 foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
                 {
