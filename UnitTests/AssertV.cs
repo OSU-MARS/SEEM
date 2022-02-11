@@ -15,5 +15,15 @@ namespace Mars.Seem.Test
         {
             AssertV.IsTrue(Avx.ConvertToVector128Single(comparison));
         }
+
+        public static void IsTrue(Vector256<float> comparison)
+        {
+            Assert.IsTrue(Avx.MoveMask(comparison) == Constant.Simd256x8.MaskAllTrue);
+        }
+
+        public static void IsTrue(Vector256<int> comparison)
+        {
+            AssertV.IsTrue(Avx.ConvertToVector256Single(comparison));
+        }
     }
 }

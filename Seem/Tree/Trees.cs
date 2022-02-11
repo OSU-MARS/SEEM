@@ -201,16 +201,12 @@ namespace Mars.Seem.Tree
 
         public static int GetCapacity(int treeCount)
         {
-            return Constant.Simd128x4.Width * (int)MathF.Ceiling((float)treeCount / (float)Constant.Simd128x4.Width);
+            return Constant.Simd256x8.Width * (int)MathF.Ceiling((float)treeCount / (float)Constant.Simd256x8.Width);
         }
 
         public int[] GetDbhSortOrder()
         {
-            int[] dbhSortIndices = new int[this.Count];
-            for (int treeIndex = 0; treeIndex < this.Count; ++treeIndex)
-            {
-                dbhSortIndices[treeIndex] = treeIndex;
-            }
+            int[] dbhSortIndices = ArrayExtensions.CreateSequentialIndices(this.Count);
             float[] dbhCloneWhichBecomesSorted = new float[this.Count];
             Array.Copy(this.Dbh, 0, dbhCloneWhichBecomesSorted, 0, this.Count);
             Array.Sort(dbhCloneWhichBecomesSorted, dbhSortIndices);
@@ -219,11 +215,7 @@ namespace Mars.Seem.Tree
 
         public int[] GetHeightSortOrder()
         {
-            int[] heightSortIndices = new int[this.Count];
-            for (int treeIndex = 0; treeIndex < this.Count; ++treeIndex)
-            {
-                heightSortIndices[treeIndex] = treeIndex;
-            }
+            int[] heightSortIndices = ArrayExtensions.CreateSequentialIndices(this.Count);
             float[] heightCloneWhichBecomesSorted = new float[this.Count];
             Array.Copy(this.Height, 0, heightCloneWhichBecomesSorted, 0, this.Count);
             Array.Sort(heightCloneWhichBecomesSorted, heightSortIndices);

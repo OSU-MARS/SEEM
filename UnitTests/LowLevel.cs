@@ -507,6 +507,35 @@ namespace Mars.Seem.Test
         }
 
         [TestMethod]
+        public void Native()
+        {
+            ProcessorPowerInformation powerInfo = NativeMethods.CallNtPowerInformation();
+            int highestMaxMHz = Int32.MinValue;
+            for (int thread = 0; thread < powerInfo.Threads; ++thread)
+            {
+                int currentIdleState = powerInfo.CurrentIdleState[thread];
+                int currentMHz = powerInfo.CurrentMHz[thread];
+                int maxMHz = powerInfo.MaxMHz[thread];
+                int mhzLimit = powerInfo.MHzLimit[thread];
+                int maxIdleState = powerInfo.MaxIdleState[thread];
+
+                Assert.IsTrue((currentIdleState >= 0) && (currentIdleState <= maxIdleState));
+                Assert.IsTrue((currentMHz >= 0) && (currentMHz <= maxMHz));
+                Assert.IsTrue((maxMHz >= 1.5 * 1000) && (maxMHz <= 7.5 * 1000)); // 1.5-7.5 GHz: admit 1.6 GHz laptops to 5+ GHz desktops
+                Assert.IsTrue((mhzLimit >= currentMHz) && (mhzLimit <= maxMHz));
+                Assert.IsTrue((maxIdleState >= 0) && (maxIdleState < 4));
+
+                if (highestMaxMHz < maxMHz)
+                {
+                    highestMaxMHz = maxMHz;
+                }
+            }
+
+            float referenceGHz = powerInfo.GetPerformanceFrequencyInGHz();
+            Assert.IsTrue((referenceGHz > 0.0009991F * highestMaxMHz) && (referenceGHz < 0.001001F * highestMaxMHz));
+        }
+
+        [TestMethod]
         public void RemoveZeroExpansionFactorTrees()
         {
             int treeCount = 147;

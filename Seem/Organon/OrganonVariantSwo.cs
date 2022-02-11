@@ -602,6 +602,13 @@ namespace Mars.Seem.Organon
         protected override OrganonHeightCoefficients CreateHeightCoefficients(FiaCode species)
         {
             // NEW HEIGHT/DIAMETER PARAMETERS FOR UNDAMAGED TREES.EXCEPT RC, WO, AND RA
+            // Big six species from
+            //   Hann DW, Hanus ML. 2002. Enhanced height growth rate equations for SWO trees. FRL Research Contribution 41.
+            //   https://ir.library.oregonstate.edu/concern/technical_reports/08612q05c
+            //   P1 = a1, P2 = a2, P3 = a3, 
+            //   P4 = k1, P5 = k2, P6 = k3,
+            //   P7 = a5, P8 = a0
+            // Always same values for P1, P4, P6, P7, and P8.
             return species switch
             {
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
@@ -609,7 +616,16 @@ namespace Mars.Seem.Organon
                 {
                     B0 = 7.133682298F,
                     B1 = -5.433744897F,
-                    B2 = -0.266398088F
+                    B2 = -0.266398088F,
+                    // Table 8 5.1
+                    P1 = 1.0F,
+                    P2 = -0.02457621F,
+                    P3 = -0.00407303F,
+                    P4 = 1.0F,
+                    P5 = 2.89556338F,
+                    P6 = 2.0F,
+                    P7 = 0.0F,
+                    P8 = 1.0F
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.AbiesConcolor or
@@ -617,21 +633,48 @@ namespace Mars.Seem.Organon
                 {
                     B0 = 6.75286569F,
                     B1 = -5.52614439F,
-                    B2 = -0.33012156F
+                    B2 = -0.33012156F,
+                    // Tables 8 + 9 + other BUGBUG?
+                    P1 = 1.0F,
+                    P2 = -0.14889850F,
+                    P3 = -0.00407303F,
+                    P4 = 1.0F,
+                    P5 = 7.69023575F,
+                    P6 = 2.0F,
+                    P7 = 0.0F,
+                    P8 = 1.0F
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.PinusPonderosa => new OrganonHeightCoefficients()
                 {
                     B0 = 6.27233557F,
                     B1 = -5.57306985F,
-                    B2 = -0.40384171F
+                    B2 = -0.40384171F,
+                    // Table 9 6.1
+                    P1 = 1.0F,
+                    P2 = -0.14889850F,
+                    P3 = -0.00322752F,
+                    P4 = 1.0F,
+                    P5 = 0.92071847F,
+                    P6 = 2.0F,
+                    P7 = 0.0F,
+                    P8 = 1.0F
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.PinusLambertiana => new OrganonHeightCoefficients()
                 {
                     B0 = 5.81876360F,
                     B1 = -5.31082668F,
-                    B2 = -0.47349388F
+                    B2 = -0.47349388F,
+                    // Table 9 + other BUGBUG?
+                    P1 = 1.0F,
+                    P2 = -0.14889850F,
+                    P3 = -0.00678955F,
+                    P4 = 1.0F,
+                    P5 = 0.92071847F,
+                    P6 = 2.0F,
+                    P7 = 0.0F,
+                    P8 = 1.0F
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.CalocedrusDecurrens => new OrganonHeightCoefficients()
@@ -639,6 +682,15 @@ namespace Mars.Seem.Organon
                     B0 = 10.04621768F,
                     B1 = -8.72915115F,
                     B2 = -0.14040106F,
+                    // other + other + other BUGBUG?
+                    P1 = 1.0F,
+                    P2 = -0.01453250F,
+                    P3 = -0.00637434F,
+                    P4 = 1.0F,
+                    P5 = 1.27228638F,
+                    P6 = 2.0F,
+                    P7 = 0.0F,
+                    P8 = 1.0F
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.TsugaHeterophylla => new OrganonHeightCoefficients()
@@ -646,13 +698,15 @@ namespace Mars.Seem.Organon
                     B0 = 6.58804F,
                     B1 = -5.25312496F,
                     B2 = -0.31895401F
+                    // not a big six species
                 },
                 // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
                 FiaCode.ThujaPlicata => new OrganonHeightCoefficients()
                 {
                     B0 = 6.14817441F,
                     B1 = -5.40092761F,
-                    B2 = -0.38922036F,
+                    B2 = -0.38922036F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.TaxusBrevifolia => new OrganonHeightCoefficients()
@@ -660,6 +714,7 @@ namespace Mars.Seem.Organon
                     B0 = 5.10707208F,
                     B1 = -3.28638769F,
                     B2 = -0.24016101F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.ArbutusMenziesii => new OrganonHeightCoefficients()
@@ -667,6 +722,7 @@ namespace Mars.Seem.Organon
                     B0 = 6.53558288F,
                     B1 = -4.69059053F,
                     B2 = -0.24934807F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.ChrysolepisChrysophyllaVarChrysophylla => new OrganonHeightCoefficients()
@@ -674,6 +730,7 @@ namespace Mars.Seem.Organon
                     B0 = 9.2251518F,
                     B1 = -7.65310387F,
                     B2 = -0.15480725F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.NotholithocarpusDensiflorus => new OrganonHeightCoefficients()
@@ -681,13 +738,15 @@ namespace Mars.Seem.Organon
                     B0 = 8.49655416F,
                     B1 = -6.68904033F,
                     B2 = -0.16105112F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.QuercusChrysolepis => new OrganonHeightCoefficients()
                 {
                     B0 = 9.01612971F,
                     B1 = -7.34813829F,
-                    B2 = -0.134025626F,
+                    B2 = -0.134025626F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.AcerMacrophyllum => new OrganonHeightCoefficients()
@@ -695,6 +754,7 @@ namespace Mars.Seem.Organon
                     B0 = 5.20018445F,
                     B1 = -2.86671078F,
                     B2 = -0.42255220F
+                    // not a big six species
                 },
                 // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
                 FiaCode.QuercusGarryana => new OrganonHeightCoefficients()
@@ -702,6 +762,7 @@ namespace Mars.Seem.Organon
                     B0 = 4.69753118F,
                     B1 = -3.51586969F,
                     B2 = -0.57665068F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.QuercusKelloggii => new OrganonHeightCoefficients()
@@ -709,6 +770,7 @@ namespace Mars.Seem.Organon
                     B0 = 5.04832439F,
                     B1 = -3.32715915F,
                     B2 = -0.43456034F
+                    // not a big six species
                 },
                 // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
                 FiaCode.AlnusRubra => new OrganonHeightCoefficients()
@@ -716,6 +778,7 @@ namespace Mars.Seem.Organon
                     B0 = 5.59759126F,
                     B1 = -3.19942952F,
                     B2 = -0.38783403F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.CornusNuttallii => new OrganonHeightCoefficients()
@@ -723,6 +786,7 @@ namespace Mars.Seem.Organon
                     B0 = 7.49095931F,
                     B1 = -5.40872209F,
                     B2 = -0.16874962F
+                    // not a big six species
                 },
                 // Hanus, Hann and Marshall(1999) FRL Research Contribution 27
                 FiaCode.Salix => new OrganonHeightCoefficients()
@@ -730,6 +794,7 @@ namespace Mars.Seem.Organon
                     B0 = 3.26840527F,
                     B1 = -0.95270859F,
                     B2 = -0.98015696F
+                    // not a big six species
                 },
                 _ => throw Trees.CreateUnhandledSpeciesException(species)
             };
@@ -1011,7 +1076,7 @@ namespace Mars.Seem.Organon
                 float basalAreaLarger = densityBeforeGrowth.GetBasalAreaLarger(dbhInInches);
                 float crownRatio = trees.CrownRatio[treeIndex];
                 float LNDG = B0 + B1 * MathV.Ln(dbhInInches + K1) + B2 * MathV.Pow(dbhInInches, K2) + B3 * MathV.Ln((crownRatio + 0.2F) / 1.2F) + B4 * MathV.Ln(siteIndexFromDbh) + B5 * (MathV.Pow(basalAreaLarger, K3) / MathV.Ln(dbhInInches + K4)) + B6 * MathF.Sqrt(basalAreaLarger);
-                float crownRatioAdjustment = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
+                float crownRatioAdjustment = OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 trees.DbhGrowth[treeIndex] = speciesMultiplier * MathV.Exp(LNDG) * crownRatioAdjustment;
                 Debug.Assert(trees.DbhGrowth[treeIndex] > 0.0F);
                 Debug.Assert(trees.DbhGrowth[treeIndex] < Constant.Maximum.DiameterIncrementInInches);
@@ -1020,48 +1085,8 @@ namespace Mars.Seem.Organon
 
         public override int GrowHeightBigSix(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float[] crownCompetitionByHeight)
         {
-            // Hann DW, Hanus ML. 2002. Enhanced height growth rate equations for SWO trees. FRL Research Contribution 41.
-            // https://ir.library.oregonstate.edu/concern/technical_reports/08612q05c
-            float a1 = 1.0F;
-            float a2;
-            float a3;
-            float k1 = 1.0F;
-            float k2;
-            float k3 = 2.0F;
-            float a5 = 0.0F;
-            float a0 = 1.0F;
-            switch (trees.Species)
-            {
-                case FiaCode.AbiesConcolor: // Tables 8 + 9 + other BUGBUG?
-                case FiaCode.AbiesGrandis:
-                    a2 = -0.14889850F;
-                    a3 = -0.00407303F;
-                    k2 = 7.69023575F;
-                    break;
-                case FiaCode.CalocedrusDecurrens: // other + other + other BUGBUG?
-                    a2 = -0.01453250F;
-                    a3 = -0.00637434F;
-                    k2 = 1.27228638F;
-                    break;
-                case FiaCode.PinusLambertiana: // Table 9 + other BUGBUG?
-                    a2 = -0.14889850F;
-                    a3 = -0.00678955F;
-                    k2 = 0.92071847F;
-                    break;
-                case FiaCode.PinusPonderosa: // Table 9 6.1
-                    a2 = -0.14889850F;
-                    a3 = -0.00322752F;
-                    k2 = 0.92071847F;
-                    break;
-                case FiaCode.PseudotsugaMenziesii: // Table 8 5.1
-                    a2 = -0.02457621F;
-                    a3 = -0.00407303F;
-                    k2 = 2.89556338F;
-                    break;
-                default:
-                    throw Trees.CreateUnhandledSpeciesException(trees.Species);
-            }
-
+            OrganonHeightCoefficients height = this.GetOrCreateHeightCoefficients(trees.Species);
+            // can't merge this with base class implementation due to red alder specific branch in GetGrowthEffectiveAge()
             int oldTreeRecordCount = 0;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
@@ -1071,7 +1096,7 @@ namespace Mars.Seem.Organon
                     continue;
                 }
 
-                float growthEffectiveAge = configuration.Variant.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
+                float growthEffectiveAge = this.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
                 float crownCompetitionIncrement = OrganonVariant.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
 
                 // Hann 2002 Equation 2 (p17) as reduced to Eq 5.1 (p19), 5.2 (p20), 5.3 (p20) by setting a1 = 1, k1 = 1, k3 = 2, a5 = 0
@@ -1080,16 +1105,16 @@ namespace Mars.Seem.Organon
                 //       b1            b2                 b3                       b0
                 // Note: Equation 2 has SCCH^k1, not SCCH^0.5
                 float crownRatio = trees.CrownRatio[treeIndex];
-                float FCR = -k2 * MathV.Pow(1.0F - crownRatio, k3) * MathV.Exp(a5 * MathF.Sqrt(crownCompetitionIncrement));
-                float B0 = a1 * MathV.Exp(a2 * crownCompetitionIncrement);
-                float B1 = MathV.Exp(a3 * MathV.Pow(crownCompetitionIncrement, k1));
-                float MODIFER = a0 * (B0 + (B1 - B0) * MathV.Exp(FCR));
-                float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
+                float FCR = -height.P5 * MathV.Pow(1.0F - crownRatio, height.P6) * MathV.Exp(height.P7 * MathF.Sqrt(crownCompetitionIncrement));
+                float B0 = height.P1 * MathV.Exp(height.P2 * crownCompetitionIncrement);
+                float B1 = MathV.Exp(height.P3 * MathV.Pow(crownCompetitionIncrement, height.P4));
+                float MODIFER = height.P8 * (B0 + (B1 - B0) * MathV.Exp(FCR));
+                float CRADJ = OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 float heightGrowth = potentialHeightGrowth * MODIFER * CRADJ;
                 Debug.Assert(heightGrowth >= 0.0F);
                 trees.HeightGrowth[treeIndex] = heightGrowth;
 
-                if (growthEffectiveAge > configuration.Variant.OldTreeAgeThreshold)
+                if (growthEffectiveAge > this.OldTreeAgeThreshold)
                 {
                     ++oldTreeRecordCount;
                 }
@@ -1341,7 +1366,7 @@ namespace Mars.Seem.Organon
 
                 float XPM = 1.0F / (1.0F + MathV.Exp(-PMK));
                 float survivalProbability = 1.0F - XPM;
-                survivalProbability *= OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
+                survivalProbability *= OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 Debug.Assert(survivalProbability >= 0.0F);
                 Debug.Assert(survivalProbability <= 1.0F);
 

@@ -15,6 +15,13 @@ namespace Mars.Seem.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static Vector256<float> BroadcastScalarToVector256(float value)
+        {
+            Vector128<float> value128 = AvxExtensions.BroadcastScalarToVector128(value);
+            return Vector256.Create(value128, value128);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<int> BroadcastScalarToVector128(int value)
         {
             // AVX version of Avx2.BroadcastScalarToVector128(int) (_mm_broadcastd_epi32())
@@ -22,6 +29,13 @@ namespace Mars.Seem.Extensions
             // Vector128.Create(int) without the CPU dispatch and signal to compiler that VEX can be used.
             Vector128<int> value128 = Vector128.CreateScalarUnsafe(value); // reinterpet cast without upper zeroing
             return Avx.Shuffle(value128, Constant.Simd128x4.Broadcast0toAll);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> BroadcastScalarToVector256(int value)
+        {
+            Vector128<int> value128 = AvxExtensions.BroadcastScalarToVector128(value); // reinterpet cast without upper zeroing
+            return Vector256.Create(value128, value128);
         }
     }
 }

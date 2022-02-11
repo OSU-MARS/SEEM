@@ -457,6 +457,8 @@ namespace Mars.Seem.Tree
             }
         }
 
+        public abstract int Simulate();
+
         private void UpdateEariestPeriodChanged(int currentPeriod, int newPeriod)
         {
             Debug.Assert((currentPeriod >= 0) && (currentPeriod <= this.PlanningPeriods) && (newPeriod >= 0) && (newPeriod <= this.PlanningPeriods) && (Constant.RegenerationHarvestPeriod == 0));

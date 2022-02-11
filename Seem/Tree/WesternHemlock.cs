@@ -118,12 +118,25 @@ namespace Mars.Seem.Tree
             // for now, just a vector to scalar shim for caller convenience
             // TODO: SIMD implementation
             float growthEffectiveAge0 = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, Avx.Extract(treeHeight, 0), out float potentialHeightGrowth0);
-            float growthEffectiveAge1 = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, Avx.Extract(treeHeight, 0), out float potentialHeightGrowth1);
-            float growthEffectiveAge2 = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, Avx.Extract(treeHeight, 0), out float potentialHeightGrowth2);
-            float growthEffectiveAge3 = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, Avx.Extract(treeHeight, 0), out float potentialHeightGrowth3);
+            float growthEffectiveAge1 = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, Avx.Extract(treeHeight, 1), out float potentialHeightGrowth1);
+            float growthEffectiveAge2 = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, Avx.Extract(treeHeight, 2), out float potentialHeightGrowth2);
+            float growthEffectiveAge3 = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, Avx.Extract(treeHeight, 3), out float potentialHeightGrowth3);
 
             potentialHeightGrowth = Vector128.Create(potentialHeightGrowth0, potentialHeightGrowth1, potentialHeightGrowth2, potentialHeightGrowth3);
             Vector128<float> growthEffectiveAge = Vector128.Create(growthEffectiveAge0, growthEffectiveAge1, growthEffectiveAge2, growthEffectiveAge3);
+            return growthEffectiveAge;
+        }
+
+        public static Vector256<float> GetFlewellingGrowthEffectiveAge(SiteConstants site, float timeStepInYears, Vector256<float> treeHeight, out Vector256<float> potentialHeightGrowth)
+        {
+            // for now, just a Vector256 to Vector128 fallback for caller convenience
+            Vector128<float> treeHeightLower = Avx.ExtractVector128(treeHeight, Constant.Simd256x8.ExtractLower128);
+            Vector128<float> growthEffectiveAgeLower = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, treeHeightLower, out Vector128<float> potentialHeightGrowthLower);
+            Vector128<float> treeHeightUpper = Avx.ExtractVector128(treeHeight, Constant.Simd256x8.ExtractUpper128);
+            Vector128<float> growthEffectiveAgeUpper = WesternHemlock.GetFlewellingGrowthEffectiveAge(site, timeStepInYears, treeHeightUpper, out Vector128<float> potentialHeightGrowthUpper);
+
+            potentialHeightGrowth = Vector256.Create(potentialHeightGrowthLower, potentialHeightGrowthUpper);
+            Vector256<float> growthEffectiveAge = Vector256.Create(growthEffectiveAgeLower, growthEffectiveAgeUpper);
             return growthEffectiveAge;
         }
 

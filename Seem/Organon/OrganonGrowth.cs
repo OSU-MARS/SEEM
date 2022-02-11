@@ -10,31 +10,6 @@ namespace Mars.Seem.Organon
 {
     internal class OrganonGrowth
     {
-        public static float GetCrownRatioAdjustment(float crownRatio)
-        {
-            if (crownRatio > 0.11F)
-            {
-                return 1.0F; // accurate within 0.05%
-            }
-
-            // slowdowns typically measured with fifth order polynomial approximation in Douglas-fir benchmark
-            // This appears associated with trees falling under the if statement above.
-            return 1.0F - MathV.Exp(-(25.0F * 25.0F * crownRatio * crownRatio));
-        }
-
-        public static Vector128<float> GetCrownRatioAdjustment(Vector128<float> crownRatio)
-        {
-            Vector128<float> crownRatioAdjustment = AvxExtensions.BroadcastScalarToVector128(1.0F);
-            int exponentMask = Avx.MoveMask(Avx.CompareLessThan(crownRatio, AvxExtensions.BroadcastScalarToVector128(0.11F)));
-            if (exponentMask != 0)
-            {
-                Vector128<float> power = Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(-25.0F * 25.0F), Avx.Multiply(crownRatio, crownRatio));
-                Vector128<float> exponent = MathV.MaskExp(power, exponentMask);
-                crownRatioAdjustment = Avx.Subtract(crownRatioAdjustment, exponent);
-            }
-            return crownRatioAdjustment;
-        }
-
         private static float GetDiameterFertilizationMultiplier(OrganonConfiguration configuration, OrganonTreatments treatments, FiaCode species, float siteIndexFromDbh)
         {
             // fertilization diameter effects currently supported only for non-RAP Douglas-fir

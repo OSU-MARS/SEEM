@@ -2,8 +2,6 @@
 using Mars.Seem.Tree;
 using System;
 using System.Diagnostics;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 
 namespace Mars.Seem.Organon
 {
@@ -363,25 +361,51 @@ namespace Mars.Seem.Organon
             return species switch
             {
                 // Wang and Hann(1988) FRL Research Paper 51
+                // Hann, Marshall, and Hanus(2006) FRL Research Contribution ??
                 FiaCode.PseudotsugaMenziesii => new OrganonHeightCoefficients()
                 {
                     B0 = 7.04524F,
                     B1 = -5.16836F,
                     B2 = -0.253869F,
+                    P1 = 0.655258886F,
+                    P2 = -0.006322913F,
+                    P3 = -0.039409636F,
+                    P4 = 0.5F, // sqrt()
+                    P5 = 0.597617316F,
+                    P6 = 2.0F, // square
+                    P7 = 0.631643636F,
+                    P8 = 1.010018427F
                 },
                 // Wang and Hann(1988) FRL Research Paper 51
                 FiaCode.AbiesGrandis => new OrganonHeightCoefficients()
                 {
                     B0 = 7.42808F,
                     B1 = -5.80832F,
-                    B2 = -0.240317F
+                    B2 = -0.240317F,
+                    // Ritchie and Hann(1990) FRL Research Paper 54
+                    P1 = 1.0F,
+                    P2 = -0.0328142F,
+                    P3 = -0.0127851F,
+                    P4 = 1.0F,
+                    P5 = 6.19784F,
+                    P6 = 2.0F, // square
+                    P7 = 0.0F,
+                    P8 = 1.01F
                 },
                 // Johnson(2000) Willamette Industries Report
                 FiaCode.TsugaHeterophylla => new OrganonHeightCoefficients()
                 {
                     B0 = 5.93792F,
                     B1 = -4.43822F,
-                    B2 = -0.411373F
+                    B2 = -0.411373F,
+                    P1 = 1.0F,
+                    P2 = -0.0384415F,
+                    P3 = -0.0144139F,
+                    P4 = 0.5F, // sqrt()
+                    P5 = 1.04409F,
+                    P6 = 2.0F, // square
+                    P7 = 0.0F,
+                    P8 = 1.03F
                 },
                 // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
                 FiaCode.ThujaPlicata => new OrganonHeightCoefficients()
@@ -389,6 +413,7 @@ namespace Mars.Seem.Organon
                     B0 = 6.14817441F,
                     B1 = -5.40092761F,
                     B2 = -0.38922036F
+                    // not a big six species
                 },
                 // Wang and Hann(1988) FRL Research Paper 51
                 FiaCode.TaxusBrevifolia => new OrganonHeightCoefficients()
@@ -396,6 +421,7 @@ namespace Mars.Seem.Organon
                     B0 = 9.30172F,
                     B1 = -7.50951F,
                     B2 = -0.100000F
+                    // not a big six species
                 },
                 // Wang and Hann(1988) FRL Research Paper 51
                 FiaCode.ArbutusMenziesii => new OrganonHeightCoefficients()
@@ -410,6 +436,7 @@ namespace Mars.Seem.Organon
                     B0 = 5.21462F,
                     B1 = -2.70252F,
                     B2 = -0.354756F
+                    // not a big six species
                 },
                 // Gould, Marshall, and Harrington(2008) West.J.Appl.For. 23: 26-33
                 FiaCode.QuercusGarryana => new OrganonHeightCoefficients()
@@ -417,6 +444,7 @@ namespace Mars.Seem.Organon
                     B0 = 4.69753118F,
                     B1 = -3.51586969F,
                     B2 = -0.57665068F
+                    // not a big six species
                 },
                 // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #1
                 FiaCode.AlnusRubra => new OrganonHeightCoefficients()
@@ -424,6 +452,7 @@ namespace Mars.Seem.Organon
                     B0 = 5.59759126F,
                     B1 = -3.19942952F,
                     B2 = -0.38783403F
+                    // not a big six species
                 },
                 // Wang and Hann(1988) FRL Research Paper 51
                 FiaCode.CornusNuttallii => new OrganonHeightCoefficients()
@@ -431,6 +460,7 @@ namespace Mars.Seem.Organon
                     B0 = 4.49727F,
                     B1 = -2.07667F,
                     B2 = -0.388650F
+                    // not a big six species
                 },
                 // Wang and Hann(1988) FRL Research Paper 51
                 FiaCode.Salix => new OrganonHeightCoefficients()
@@ -438,6 +468,7 @@ namespace Mars.Seem.Organon
                     B0 = 4.88361F,
                     B1 = -2.47605F,
                     B2 = -0.309050F
+                    // not a big six species
                 },
                 _ => throw Trees.CreateUnhandledSpeciesException(species)
             };
@@ -716,203 +747,11 @@ namespace Mars.Seem.Organon
 
                 float crownRatio = trees.CrownRatio[treeIndex];
                 float LNDG = B0 + B1 * MathV.Ln(dbhInInches + K1) + B2 * dbhK2 + B3 * MathV.Ln((crownRatio + 0.2F) / 1.2F) + B4 * MathV.Ln(siteIndexFromDbh) + B5 * (basalAreaLargerK3 / MathV.Ln(dbhInInches + K4)) + B6 * MathF.Sqrt(basalAreaLarger);
-                float crownRatioAdjustment = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
+                float crownRatioAdjustment = OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 trees.DbhGrowth[treeIndex] = speciesMultiplier * MathV.Exp(LNDG) * crownRatioAdjustment;
                 Debug.Assert(trees.DbhGrowth[treeIndex] > 0.0F);
                 Debug.Assert(trees.DbhGrowth[treeIndex] < Constant.Maximum.DiameterIncrementInInches);
             }
-        }
-
-        // scalar reference source
-        //public override int GrowHeightBigSix(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float[] crownCompetitionByHeight)
-        //{
-        //    float P1 = 1.0F;
-        //    float P2;
-        //    float P3;
-        //    // float P4 = 0.5F; // sqrt()
-        //    float P5;
-        //    float P7 = 0.0F;
-        //    float P8;
-        //    switch (trees.Species)
-        //    {
-        //        // Hann, Marshall, and Hanus(2006) FRL Research Contribution ??
-        //        case FiaCode.PseudotsugaMenziesii:
-        //            P1 = 0.655258886F;
-        //            P2 = -0.006322913F;
-        //            P3 = -0.039409636F;
-        //            P5 = 0.597617316F;
-        //            P7 = 0.631643636F;
-        //            P8 = 1.010018427F;
-        //            break;
-        //        // Ritchie and Hann(1990) FRL Research Paper 54
-        //        case FiaCode.AbiesGrandis:
-        //            P2 = -0.0328142F;
-        //            P3 = -0.0127851F;
-        //            // P4 = 1.0F;
-        //            P5 = 6.19784F;
-        //            P8 = 1.01F;
-        //            break;
-        //        // Johnson(2002) Willamette Industries Report
-        //        case FiaCode.TsugaHeterophylla:
-        //            P2 = -0.0384415F;
-        //            P3 = -0.0144139F;
-        //            P5 = 1.04409F;
-        //            P8 = 1.03F;
-        //            break;
-        //        default:
-        //            throw Trees.CreateUnhandledSpeciesException(trees.Species);
-        //    }
-
-        //    int oldTreeRecordCount = 0;
-        //    DouglasFir.SiteConstants psmeSite = trees.Species == FiaCode.TsugaHeterophylla ? null : new DouglasFir.SiteConstants(stand.SiteIndex); // also used for grand fir
-        //    WesternHemlock.SiteConstants tsheSite = trees.Species == FiaCode.TsugaHeterophylla ? new WesternHemlock.SiteConstants(stand.HemlockSiteIndex) : null;
-        //    for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
-        //    {
-        //        if (trees.LiveExpansionFactor[treeIndex] <= 0.0F)
-        //        {
-        //            trees.HeightGrowth[treeIndex] = 0.0F;
-        //            continue;
-        //        }
-
-        //        // inline version of GetGrowthEffectiveAge()
-        //        float height = trees.Height[treeIndex];
-        //        float growthEffectiveAge;
-        //        float potentialHeightGrowth;
-        //        if (trees.Species == FiaCode.TsugaHeterophylla)
-        //        {
-        //            growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite, this.TimeStepInYears, height, out potentialHeightGrowth);
-        //        }
-        //        else
-        //        {
-        //            growthEffectiveAge = DouglasFir.GetBrucePsmeAbgrGrowthEffectiveAge(psmeSite, this.TimeStepInYears, height, out potentialHeightGrowth);
-        //        }
-        //        float crownCompetitionIncrement = this.GetCrownCompetitionFactorByHeight(height, crownCompetitionByHeight);
-        //        float sqrtCrownCompetitionIncrement = MathF.Sqrt(crownCompetitionIncrement);
-        //        float crownCompetitionIncrementToP4 = sqrtCrownCompetitionIncrement;
-        //        if (trees.Species == FiaCode.AbiesGrandis)
-        //        {
-        //            crownCompetitionIncrementToP4 = crownCompetitionIncrement;
-        //        }
-
-        //        float crownRatio = trees.CrownRatio[treeIndex];
-        //        float proportionBelowCrown = 1.0F - crownRatio;
-        //        float B0 = P1 * MathV.Exp(P2 * crownCompetitionIncrement);
-        //        float B1 = MathV.Exp(P3 * crownCompetitionIncrementToP4); // exp(P3 * sqrt(CCI)) for PSME and THSE, exp(P3 * CCI) for ABGR
-        //        float FCR = -P5 * proportionBelowCrown * proportionBelowCrown * MathV.Exp(P7 * sqrtCrownCompetitionIncrement); // P7 is 0.0 for ABGR and TSHE -> exp() = 1.0
-        //        float MODIFER = P8 * (B0 + (B1 - B0) * MathF.Exp(FCR));
-        //        float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
-        //        float heightGrowth = potentialHeightGrowth * MODIFER * CRADJ;
-        //        Debug.Assert(heightGrowth > 0.0F);
-        //        trees.HeightGrowth[treeIndex] = heightGrowth;
-
-        //        if (growthEffectiveAge > configuration.Variant.OldTreeAgeThreshold)
-        //        {
-        //            ++oldTreeRecordCount;
-        //        }
-        //    }
-        //    return oldTreeRecordCount;
-        //}
-
-        public unsafe override int GrowHeightBigSix(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float[] crownCompetitionByHeight)
-        {
-            Vector128<float> P1 = AvxExtensions.BroadcastScalarToVector128(1.0F);
-            Vector128<float> P2;
-            Vector128<float> P3;
-            // float P4 = 0.5F; // sqrt()
-            Vector128<float> minusP5;
-            Vector128<float> P7 = Vector128<float>.Zero;
-            Vector128<float> P8;
-            switch (trees.Species)
-            {
-                // Hann, Marshall, and Hanus(2006) FRL Research Contribution ??
-                case FiaCode.PseudotsugaMenziesii:
-                    P1 = AvxExtensions.BroadcastScalarToVector128(0.655258886F);
-                    P2 = AvxExtensions.BroadcastScalarToVector128(-0.006322913F);
-                    P3 = AvxExtensions.BroadcastScalarToVector128(-0.039409636F);
-                    minusP5 = AvxExtensions.BroadcastScalarToVector128(-0.597617316F);
-                    P7 = AvxExtensions.BroadcastScalarToVector128(0.631643636F);
-                    P8 = AvxExtensions.BroadcastScalarToVector128(1.010018427F);
-                    break;
-                // Ritchie and Hann(1990) FRL Research Paper 54
-                case FiaCode.AbiesGrandis:
-                    P2 = AvxExtensions.BroadcastScalarToVector128(-0.0328142F);
-                    P3 = AvxExtensions.BroadcastScalarToVector128(-0.0127851F);
-                    // P4 = 1.0F;
-                    minusP5 = AvxExtensions.BroadcastScalarToVector128(-6.19784F);
-                    P8 = AvxExtensions.BroadcastScalarToVector128(1.01F);
-                    break;
-                // Johnson(2002) Willamette Industries Report
-                case FiaCode.TsugaHeterophylla:
-                    P2 = AvxExtensions.BroadcastScalarToVector128(-0.0384415F);
-                    P3 = AvxExtensions.BroadcastScalarToVector128(-0.0144139F);
-                    minusP5 = AvxExtensions.BroadcastScalarToVector128(-1.04409F);
-                    P8 = AvxExtensions.BroadcastScalarToVector128(1.03F);
-                    break;
-                default:
-                    throw Trees.CreateUnhandledSpeciesException(trees.Species);
-            }
-
-            DouglasFir.SiteConstants? psmeSite = null;
-            WesternHemlock.SiteConstants? tsheSite = null;
-            if (trees.Species == FiaCode.TsugaHeterophylla)
-            {
-                tsheSite = new WesternHemlock.SiteConstants(stand.HemlockSiteIndexInFeet);
-            }
-            else
-            {
-                psmeSite =  new DouglasFir.SiteConstants(stand.SiteIndexInFeet); // also used for grand fir
-            }
-            Vector128<float> zero = Vector128<float>.Zero;
-            Vector128<float> one = AvxExtensions.BroadcastScalarToVector128(1.0F);
-
-            Vector128<int> oldTreeRecordCount = Vector128<int>.Zero;
-            fixed (float* crownRatios = &trees.CrownRatio[0], expansionFactors = &trees.LiveExpansionFactor[0], heights = &trees.Height[0], heightGrowths = &trees.HeightGrowth[0])
-            {
-                for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += Constant.Simd128x4.Width)
-                {
-                    // inline version of GetGrowthEffectiveAge()
-                    Vector128<float> height = Avx.LoadVector128(heights + treeIndex);
-                    Vector128<float> growthEffectiveAge;
-                    Vector128<float> potentialHeightGrowth;
-                    if (trees.Species == FiaCode.TsugaHeterophylla)
-                    {
-                        growthEffectiveAge = WesternHemlock.GetFlewellingGrowthEffectiveAge(tsheSite!, this.TimeStepInYears, height, out potentialHeightGrowth);
-                    }
-                    else
-                    {
-                        growthEffectiveAge = DouglasFir.GetPsmeAbgrGrowthEffectiveAge(psmeSite!, this.TimeStepInYears, height, out potentialHeightGrowth);
-                    }
-                    Vector128<float> crownCompetitionFactor = OrganonVariant.GetCrownCompetitionFactorByHeight(height, crownCompetitionByHeight);
-                    Vector128<float> sqrtCrownCompetitionFactor = Avx.Sqrt(crownCompetitionFactor);
-                    Vector128<float> crownCompetitionIncrementToP4 = sqrtCrownCompetitionFactor;
-                    if (trees.Species == FiaCode.AbiesGrandis)
-                    {
-                        crownCompetitionIncrementToP4 = crownCompetitionFactor;
-                    }
-
-                    Vector128<float> crownRatio = Avx.LoadVector128(crownRatios + treeIndex);
-                    Vector128<float> proportionBelowCrown = Avx.Subtract(one, crownRatio);
-                    Vector128<float> B0 = Avx.Multiply(P1, MathV.Exp(Avx.Multiply(P2, crownCompetitionFactor)));
-                    Vector128<float> B1 = MathV.Exp(Avx.Multiply(P3, crownCompetitionIncrementToP4)); // exp(P3 * sqrt(CCI)) for PSME and THSE, exp(P3 * CCI) for ABGR
-                    Vector128<float> FCR = Avx.Multiply(Avx.Multiply(minusP5, Avx.Multiply(proportionBelowCrown, proportionBelowCrown)), MathV.Exp(Avx.Multiply(P7, sqrtCrownCompetitionFactor))); // P7 is 0.0 for ABGR and TSHE -> exp() = 1.0
-                    Vector128<float> modifier = Avx.Multiply(P8, Avx.Add(B0, Avx.Multiply(Avx.Subtract(B1, B0), MathV.MaskExp(FCR, 0))));
-                    Vector128<float> crownRatioAdjustment = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
-                    Vector128<float> heightGrowth = Avx.Multiply(potentialHeightGrowth, Avx.Multiply(modifier, crownRatioAdjustment));
-
-                    Vector128<float> expansionFactor = Avx.LoadVector128(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
-                    heightGrowth = Avx.BlendVariable(heightGrowth, zero, Avx.CompareLessThanOrEqual(expansionFactor, zero));
-                    DebugV.Assert(Avx.CompareGreaterThanOrEqual(heightGrowth, zero));
-                    Avx.Store(heightGrowths + treeIndex, heightGrowth);
-
-                    // if growth effective age > old tree age is true, then 0xffff ffff = -1 is returned from the comparison
-                    // Reinterpreting as Vector128<int> and subtracting therefore adds one to the old tree record counts where old trees occur.
-                    oldTreeRecordCount = Avx.Subtract(oldTreeRecordCount, Avx.CompareGreaterThan(growthEffectiveAge, AvxExtensions.BroadcastScalarToVector128(configuration.Variant.OldTreeAgeThreshold)).AsInt32());
-                }
-            }
-
-            oldTreeRecordCount = Avx.HorizontalAdd(oldTreeRecordCount, oldTreeRecordCount);
-            oldTreeRecordCount = Avx.HorizontalAdd(oldTreeRecordCount, oldTreeRecordCount);
-            return oldTreeRecordCount.ToScalar();
         }
 
         public override void ReduceExpansionFactors(OrganonStand stand, OrganonStandDensity densityBeforeGrowth, Trees trees, float fertilizationExponent)
@@ -1059,7 +898,7 @@ namespace Mars.Seem.Organon
                 }
 
                 float survivalProbability = 1.0F - 1.0F / (1.0F + MathV.Exp(-mortalityK));
-                survivalProbability *= OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
+                survivalProbability *= OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 Debug.Assert(survivalProbability >= 0.0F);
                 Debug.Assert(survivalProbability <= 1.0F);
 

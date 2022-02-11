@@ -290,7 +290,7 @@ namespace Mars.Seem.Organon
             }
         }
 
-        public int Simulate()
+        public override int Simulate()
         {
             if ((this.StandByPeriod.Length < 1) || (this.StandByPeriod[0] == null))
             {

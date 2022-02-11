@@ -279,24 +279,48 @@ namespace Mars.Seem.Test
         [TestMethod]
         public void Simd()
         {
-            Vector128<float> broadcastFloat = AvxExtensions.BroadcastScalarToVector128(Constant.ForestersEnglish);
-            Vector128<int> broadcastInt = AvxExtensions.BroadcastScalarToVector128(1);
+            // 128 bit
+            Vector128<float> broadcastFloat128 = AvxExtensions.BroadcastScalarToVector128(Constant.ForestersEnglish);
+            Vector128<int> broadcastInt128 = AvxExtensions.BroadcastScalarToVector128(1);
 
-            AssertV.IsTrue(Avx.CompareEqual(broadcastFloat, Vector128.Create(Constant.ForestersEnglish)));
-            AssertV.IsTrue(Avx.CompareEqual(broadcastInt, Vector128.Create(1)));
+            AssertV.IsTrue(Avx.CompareEqual(broadcastFloat128, Vector128.Create(Constant.ForestersEnglish)));
+            AssertV.IsTrue(Avx.CompareEqual(broadcastInt128, Vector128.Create(1)));
 
-            Vector128<int> index = Vector128.Create(0, 1, 2, 3);
-            Vector128<int> shuffle1 = Avx.Shuffle(index, Constant.Simd128x4.ShuffleRotateLower1);
-            Vector128<int> shuffle2 = Avx.Shuffle(index, Constant.Simd128x4.ShuffleRotateLower2);
-            Vector128<int> shuffle3 = Avx.Shuffle(index, Constant.Simd128x4.ShuffleRotateLower3);
+            Vector128<int> index128 = Vector128.Create(0, 1, 2, 3);
+            Vector128<int> shuffle128_1 = Avx.Shuffle(index128, Constant.Simd128x4.ShuffleRotateLower1);
+            Vector128<int> shuffle128_2 = Avx.Shuffle(index128, Constant.Simd128x4.ShuffleRotateLower2);
+            Vector128<int> shuffle128_3 = Avx.Shuffle(index128, Constant.Simd128x4.ShuffleRotateLower3);
 
-            AssertV.IsTrue(Avx.CompareEqual(shuffle1, Vector128.Create(1, 2, 3, 0)));
-            AssertV.IsTrue(Avx.CompareEqual(shuffle2, Vector128.Create(2, 3, 0, 1)));
-            AssertV.IsTrue(Avx.CompareEqual(shuffle3, Vector128.Create(3, 0, 1, 2)));
+            AssertV.IsTrue(Avx.CompareEqual(shuffle128_1, Vector128.Create(1, 2, 3, 0)));
+            AssertV.IsTrue(Avx.CompareEqual(shuffle128_2, Vector128.Create(2, 3, 0, 1)));
+            AssertV.IsTrue(Avx.CompareEqual(shuffle128_3, Vector128.Create(3, 0, 1, 2)));
 
-            Assert.IsTrue(shuffle1.ToScalar() == 1);
-            Assert.IsTrue(shuffle2.ToScalar() == 2);
-            Assert.IsTrue(shuffle3.ToScalar() == 3);
+            Assert.IsTrue(shuffle128_1.ToScalar() == 1);
+            Assert.IsTrue(shuffle128_2.ToScalar() == 2);
+            Assert.IsTrue(shuffle128_3.ToScalar() == 3);
+
+            if (Avx2.IsSupported)
+            {
+                // 256 bit
+                Vector256<float> broadcastFloat256 = AvxExtensions.BroadcastScalarToVector256(Constant.ForestersEnglish);
+                Vector256<int> broadcastInt256 = AvxExtensions.BroadcastScalarToVector256(1);
+
+                AssertV.IsTrue(Avx.CompareEqual(broadcastFloat256, Vector256.Create(Constant.ForestersEnglish)));
+                AssertV.IsTrue(Avx2.CompareEqual(broadcastInt256, Vector256.Create(1)));
+
+                Vector256<int> index256 = Vector256.Create(0, 1, 2, 3, 0, 1, 2, 3);
+                Vector256<int> shuffle256_1 = Avx2.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower1);
+                Vector256<int> shuffle256_2 = Avx2.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower2);
+                Vector256<int> shuffle256_3 = Avx2.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower3);
+
+                AssertV.IsTrue(Avx2.CompareEqual(shuffle256_1, Vector256.Create(1, 2, 3, 0, 1, 2, 3, 0)));
+                AssertV.IsTrue(Avx2.CompareEqual(shuffle256_2, Vector256.Create(2, 3, 0, 1, 2, 3, 0, 1)));
+                AssertV.IsTrue(Avx2.CompareEqual(shuffle256_3, Vector256.Create(3, 0, 1, 2, 3, 0, 1, 2)));
+
+                Assert.IsTrue(shuffle256_1.ToScalar() == 1);
+                Assert.IsTrue(shuffle256_2.ToScalar() == 2);
+                Assert.IsTrue(shuffle256_3.ToScalar() == 3);
+            }
         }
 
         [TestMethod]

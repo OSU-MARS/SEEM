@@ -325,6 +325,14 @@ namespace Mars.Seem
             public const int Width = 4;
         }
 
+        public static class Simd256x8
+        {
+            public const int ExtractLower128 = 0;
+            public const int ExtractUpper128 = 1;
+            public const int MaskAllTrue = 0xff;
+            public const int Width = 8;
+        }
+
         public static class TabuDefault
         {
             public const float EscapeAfter = 1000.0F * 1000.0F; // off by default, nominal on value: 0.06F

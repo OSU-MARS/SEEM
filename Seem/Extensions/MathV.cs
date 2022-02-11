@@ -34,17 +34,23 @@ namespace Mars.Seem.Extensions
         private const float One = 1.0F;
         private const int OneAsInt = 0x3f800000; // 0x3f800000 = 1.0F
 
-        // can't use Avx2.BroadcastScalarToVector128() to broadcast epi32s on Sandy Bridge (4th gen)
-        // Therefore, hoist shifts for SIMD128 assembly and accept increased coefficient load bandwidth.
+        // memory accesses for Avx2.BroadcastScalarToVector128() are awkward
+        // Therefore, hoist shifts for SIMD 128 and 256 bit assembly and accept increased coefficient load bandwidth.
         private static readonly Vector128<int> FloatExponentMask128;
+        private static readonly Vector256<int> FloatExponentMask256;
         private static readonly Vector128<int> FloatMantissaMask128;
+        private static readonly Vector256<int> FloatMantissaMask256;
         private static readonly Vector128<int> FloatMantissaZero128;
+        private static readonly Vector256<int> FloatMantissaZero256;
 
         static MathV()
         {
-            MathV.FloatExponentMask128 = Vector128.Create(MathV.FloatExponentMask);
-            MathV.FloatMantissaMask128 = Vector128.Create(MathV.FloatMantissaMask);
-            MathV.FloatMantissaZero128 = Vector128.Create(MathV.FloatMantissaZero);
+            MathV.FloatExponentMask128 = AvxExtensions.BroadcastScalarToVector128(MathV.FloatExponentMask);
+            MathV.FloatExponentMask256 = AvxExtensions.BroadcastScalarToVector256(MathV.FloatExponentMask);
+            MathV.FloatMantissaMask128 = AvxExtensions.BroadcastScalarToVector128(MathV.FloatMantissaMask);
+            MathV.FloatMantissaMask256 = AvxExtensions.BroadcastScalarToVector256(MathV.FloatMantissaMask);
+            MathV.FloatMantissaZero128 = AvxExtensions.BroadcastScalarToVector128(MathV.FloatMantissaZero);
+            MathV.FloatMantissaZero256 = AvxExtensions.BroadcastScalarToVector256(MathV.FloatMantissaZero);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -57,6 +63,12 @@ namespace Mars.Seem.Extensions
         public unsafe static Vector128<float> Exp(Vector128<float> power)
         {
             return MathV.Exp2(Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(MathV.ExpToExp2), power));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static Vector256<float> Exp(Vector256<float> power)
+        {
+            return MathV.Exp2(Avx.Multiply(AvxExtensions.BroadcastScalarToVector256(MathV.ExpToExp2), power));
         }
 
         /// <summary>
@@ -121,6 +133,42 @@ namespace Mars.Seem.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static Vector256<float> Exp2(Vector256<float> power)
+        {
+            Debug.Assert(Avx.MoveMask(Avx.And(Avx.CompareGreaterThan(power, AvxExtensions.BroadcastScalarToVector256(MathV.FloatMaximumPower)), Avx.CompareOrdered(power, power))) == 0);
+
+            byte zeroMask = (byte)Avx.MoveMask(Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector256(-MathV.FloatMaximumPower)));
+            Vector256<float> integerPart = Avx.RoundToNearestInteger(power);
+            Vector256<float> integerExponent = Avx2.ShiftLeftLogical(Avx2.Add(Avx.ConvertToVector256Int32(integerPart), MathV.FloatMantissaZero256), MathV.FloatMantissaBits).AsSingle();
+
+            // evaluate polynomial
+            Vector256<float> beta1 = AvxExtensions.BroadcastScalarToVector256(MathV.Exp2Beta1);
+            Vector256<float> beta2 = AvxExtensions.BroadcastScalarToVector256(MathV.Exp2Beta2);
+            Vector256<float> beta3 = AvxExtensions.BroadcastScalarToVector256(MathV.Exp2Beta3);
+            Vector256<float> beta4 = AvxExtensions.BroadcastScalarToVector256(MathV.Exp2Beta4);
+
+            Vector256<float> x = Avx.Subtract(power, integerPart); // fractional part
+            Vector256<float> fractionalExponent = AvxExtensions.BroadcastScalarToVector256(MathV.One);
+            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta1, x));
+            Vector256<float> x2 = Avx.Multiply(x, x);
+            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta2, x2));
+            Vector256<float> x3 = Avx.Multiply(x2, x);
+            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta3, x3));
+            Vector256<float> x4 = Avx.Multiply(x3, x);
+            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta4, x4));
+
+            // form exponent
+            Vector256<float> exponent = Avx.Multiply(integerExponent, fractionalExponent);
+
+            // suppress exponent overflows by truncating values less than 2^-127 to zero
+            if (zeroMask != 0)
+            {
+                exponent = Avx.Blend(exponent, Vector256<float>.Zero, zeroMask);
+            }
+            return exponent;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Exp10(float power)
         {
             return MathV.Exp2(MathV.Exp10ToExp2 * power);
@@ -130,6 +178,12 @@ namespace Mars.Seem.Extensions
         public unsafe static Vector128<float> Exp10(Vector128<float> power)
         {
             return MathV.Exp2(Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(MathV.Exp10ToExp2), power));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static Vector256<float> Exp10(Vector256<float> power)
+        {
+            return MathV.Exp2(Avx.Multiply(AvxExtensions.BroadcastScalarToVector256(MathV.Exp10ToExp2), power));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -152,6 +206,12 @@ namespace Mars.Seem.Extensions
         public unsafe static Vector128<float> Ln(Vector128<float> value)
         {
             return Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(MathV.Log2ToNaturalLog), MathV.Log2(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static Vector256<float> Ln(Vector256<float> value)
+        {
+            return Avx.Multiply(AvxExtensions.BroadcastScalarToVector256(MathV.Log2ToNaturalLog), MathV.Log2(value));
         }
 
         /// <summary>
@@ -210,6 +270,40 @@ namespace Mars.Seem.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static Vector256<float> Log2(Vector256<float> value)
+        {
+            // split value into exponent and mantissa parts
+            Vector256<float> one = AvxExtensions.BroadcastScalarToVector256(MathV.One);
+
+            Vector256<int> integerValue = value.AsInt32();
+            Vector256<float> exponent = Avx.ConvertToVector256Single(Avx2.Subtract(Avx2.ShiftRightLogical(Avx2.And(integerValue, MathV.FloatExponentMask256),
+                                                                                                          MathV.FloatMantissaBits),
+                                                                                   MathV.FloatMantissaZero256));
+            Vector256<float> mantissa = Avx.Or(Avx2.And(integerValue, MathV.FloatMantissaMask256).AsSingle(), one);
+
+            // evaluate mantissa polynomial
+            Vector256<float> beta1 = AvxExtensions.BroadcastScalarToVector256(MathV.Log2Beta1);
+            Vector256<float> beta2 = AvxExtensions.BroadcastScalarToVector256(MathV.Log2Beta2);
+            Vector256<float> beta3 = AvxExtensions.BroadcastScalarToVector256(MathV.Log2Beta3);
+            Vector256<float> beta4 = AvxExtensions.BroadcastScalarToVector256(MathV.Log2Beta4);
+            Vector256<float> beta5 = AvxExtensions.BroadcastScalarToVector256(MathV.Log2Beta5);
+
+            Vector256<float> x = Avx.Subtract(mantissa, one);
+            Vector256<float> polynomial = Avx.Multiply(beta1, x);
+            Vector256<float> x2 = Avx.Multiply(x, x);
+            polynomial = Avx.Add(polynomial, Avx.Multiply(beta2, x2));
+            Vector256<float> x3 = Avx.Multiply(x2, x);
+            polynomial = Avx.Add(polynomial, Avx.Multiply(beta3, x3));
+            Vector256<float> x4 = Avx.Multiply(x3, x);
+            polynomial = Avx.Add(polynomial, Avx.Multiply(beta4, x4));
+            Vector256<float> x5 = Avx.Multiply(x4, x);
+            polynomial = Avx.Add(polynomial, Avx.Multiply(beta5, x5));
+
+            // form logarithm
+            return Avx.Add(exponent, polynomial);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Log10(float value)
         {
             return MathV.Log2ToLog10 * MathV.Log2(value);
@@ -222,10 +316,28 @@ namespace Mars.Seem.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<float> MaskExp(Vector128<float> power, int exponentMask)
+        public unsafe static Vector256<float> Log10(Vector256<float> value)
         {
-            Vector128<float> restrictedPower = Avx.Blend(power, AvxExtensions.BroadcastScalarToVector128(1.0F), (byte)exponentMask);
-            Vector128<float> exponent = Avx.Blend(MathV.Exp(restrictedPower), Vector128<float>.Zero, (byte)exponentMask);
+            return Avx.Multiply(AvxExtensions.BroadcastScalarToVector256(MathV.Log2ToLog10), MathV.Log2(value));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> MaskExp(Vector128<float> power, byte exponentMask)
+        {
+            // if corresponding bit in mask is set then 1.0 is used instead of power in restrictedPower to avoid math errors
+            // Uses lower 4 bits of mask.
+            Vector128<float> restrictedPower = Avx.Blend(power, AvxExtensions.BroadcastScalarToVector128(1.0F), exponentMask);
+            // if corresponding bit in mask is set then 0.0 is returned
+            Vector128<float> exponent = Avx.Blend(MathV.Exp(restrictedPower), Vector128<float>.Zero, exponentMask);
+            return exponent;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> MaskExp(Vector256<float> power, byte exponentMask)
+        {
+            // uses lower 8 bits of mask
+            Vector256<float> restrictedPower = Avx.Blend(power, AvxExtensions.BroadcastScalarToVector256(1.0F), exponentMask);
+            Vector256<float> exponent = Avx.Blend(MathV.Exp(restrictedPower), Vector256<float>.Zero, exponentMask);
             return exponent;
         }
 
@@ -255,6 +367,12 @@ namespace Mars.Seem.Extensions
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<float> Pow(Vector128<float> x, Vector128<float> y)
+        {
+            return MathV.Exp2(Avx.Multiply(MathV.Log2(x), y));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<float> Pow(Vector256<float> x, Vector256<float> y)
         {
             return MathV.Exp2(Avx.Multiply(MathV.Log2(x), y));
         }

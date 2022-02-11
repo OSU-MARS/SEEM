@@ -249,21 +249,48 @@ namespace Mars.Seem.Organon
                 {
                     B0 = 6.75650139F,
                     B1 = -4.6252377F,
-                    B2 = -0.23208200F
+                    B2 = -0.23208200F,
+                    // Hann, Bluhm, and Hibbs Red Alder Plantation Analysis
+                    P1 = 0.809837005F,
+                    P2 = -0.0134163653F,
+                    P3 = -0.0609398629F,
+                    P4 = 0.5F,
+                    P5 = 1.0F,
+                    P6 = 2.0F,
+                    P7 = 0.1469442410F,
+                    P8 = 1.0476380753F
                 },
                 // Hanus, Marshall, and Hann(1999) FRL Research Contribution 25
                 FiaCode.PseudotsugaMenziesii => new OrganonHeightCoefficients()
                 {
                     B0 = 7.262195456F,
                     B1 = -5.899759104F,
-                    B2 = -0.287207389F
+                    B2 = -0.287207389F,
+                    // Hann, Marshall, and Hanus (2006) FRL Research Contribution ??
+                    P1 = 0.655258886F,
+                    P2 = -0.006322913F,
+                    P3 = -0.039409636F,
+                    P4 = 0.5F,
+                    P5 = 0.597617316F,
+                    P6 = 2.0F,
+                    P7 = 0.631643636F,
+                    P8 = 1.010018427F
                 },
-                // Hanus, Marshall, and Hann(1999) FRL Research Contribution 25
+                // Hanus, Marshall, and Hann (1999) FRL Research Contribution 25
                 FiaCode.TsugaHeterophylla => new OrganonHeightCoefficients()
                 {
                     B0 = 6.555344622F,
                     B1 = -5.137174162F,
-                    B2 = -0.364550800F
+                    B2 = -0.364550800F,
+                    // Johnson (2002) Willamette Industries Report
+                    P1 = 1.0F,
+                    P2 = -0.0384415F,
+                    P3 = -0.0144139F,
+                    P4 = 0.5F,
+                    P5 = 1.04409F,
+                    P6 = 2.0F,
+                    P7 = 0.0F,
+                    P8 = 1.03F
                 },
                 // Hann and Hanus(2002) OSU Department of Forest Management Internal Report #2
                 FiaCode.ThujaPlicata => new OrganonHeightCoefficients()
@@ -271,6 +298,7 @@ namespace Mars.Seem.Organon
                     B0 = 6.14817441F,
                     B1 = -5.40092761F,
                     B2 = -0.38922036F
+                    // not a big six species for RAP
                 },
                 // Wang and Hann(1988) FRL Research Paper 51
                 FiaCode.AcerMacrophyllum => new OrganonHeightCoefficients()
@@ -278,6 +306,7 @@ namespace Mars.Seem.Organon
                     B0 = 5.21462F,
                     B1 = -2.70252F,
                     B2 = -0.354756F
+                    // not a big six species
                 },
                 // Wang and Hann(1988) FRL Research Paper 51
                 FiaCode.CornusNuttallii => new OrganonHeightCoefficients()
@@ -285,6 +314,7 @@ namespace Mars.Seem.Organon
                     B0 = 4.49727F,
                     B1 = -2.07667F,
                     B2 = -0.388650F
+                    // not a big six species
                 },
                 // Wang and Hann(1988) FRL Research Paper 51
                 FiaCode.Salix => new OrganonHeightCoefficients()
@@ -292,6 +322,7 @@ namespace Mars.Seem.Organon
                     B0 = 4.88361F,
                     B1 = -2.47605F,
                     B2 = -0.309050F
+                    // not a big six species
                 },
                 _ => throw Trees.CreateUnhandledSpeciesException(species)
             };
@@ -476,7 +507,7 @@ namespace Mars.Seem.Organon
                 float basalAreaLarger = densityBeforeGrowth.GetBasalAreaLarger(dbhInInches);
                 float crownRatio = trees.CrownRatio[treeIndex];
                 float LNDG = B0 + B1 * MathV.Ln(dbhInInches + K1) + B2 * MathV.Pow(dbhInInches, K2) + B3 * MathV.Ln((crownRatio + 0.2F) / 1.2F) + B4 * MathV.Ln(siteIndexFromDbh) + B5 * (MathV.Pow(basalAreaLarger, K3) / MathV.Ln(dbhInInches + K4)) + B6 * MathF.Sqrt(basalAreaLarger);
-                float crownRatioAdjustment = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
+                float crownRatioAdjustment = OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 trees.DbhGrowth[treeIndex] = speciesMultiplier * MathV.Exp(LNDG) * crownRatioAdjustment;
                 Debug.Assert(trees.DbhGrowth[treeIndex] > 0.0F);
                 Debug.Assert(trees.DbhGrowth[treeIndex] < Constant.Maximum.DiameterIncrementInInches);
@@ -486,53 +517,8 @@ namespace Mars.Seem.Organon
         public override int GrowHeightBigSix(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float[] crownCompetitionByHeight)
         {
             // WEIGHTED CENTRAL PAI PROCEDURE PARAMETERS FOR RED ALDER
-            float P1;
-            float P2;
-            float P3;
-            float P4;
-            float P5;
-            float P6;
-            float P7;
-            float P8;
-            switch (trees.Species)
-            {
-                // Hann, Bluhm, and Hibbs Red Alder Plantation Analysis
-                case FiaCode.AlnusRubra:
-                    P1 = 0.809837005F;
-                    P2 = -0.0134163653F;
-                    P3 = -0.0609398629F;
-                    P4 = 0.5F;
-                    P5 = 1.0F;
-                    P6 = 2.0F;
-                    P7 = 0.1469442410F;
-                    P8 = 1.0476380753F;
-                    break;
-                // Hann, Marshall, and Hanus(2006) FRL Research Contribution ??
-                case FiaCode.PseudotsugaMenziesii:
-                    P1 = 0.655258886F;
-                    P2 = -0.006322913F;
-                    P3 = -0.039409636F;
-                    P4 = 0.5F;
-                    P5 = 0.597617316F;
-                    P6 = 2.0F;
-                    P7 = 0.631643636F;
-                    P8 = 1.010018427F;
-                    break;
-                // Johnson(2002) Willamette Industries Report
-                case FiaCode.TsugaHeterophylla:
-                    P1 = 1.0F;
-                    P2 = -0.0384415F;
-                    P3 = -0.0144139F;
-                    P4 = 0.5F;
-                    P5 = 1.04409F;
-                    P6 = 2.0F;
-                    P7 = 0.0F;
-                    P8 = 1.03F;
-                    break;
-                default:
-                    throw Trees.CreateUnhandledSpeciesException(trees.Species);
-            }
-
+            OrganonHeightCoefficients height = this.GetOrCreateHeightCoefficients(trees.Species);
+            // can't merge this with base class implementation due to red alder specific branch in GetGrowthEffectiveAge()
             int oldTreeRecordCount = 0;
             for (int treeIndex = 0; treeIndex < trees.Count; ++treeIndex)
             {
@@ -542,20 +528,20 @@ namespace Mars.Seem.Organon
                     continue;
                 }
 
-                float growthEffectiveAge = configuration.Variant.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
-                float crownCompetitionIncrement = OrganonVariant.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
+                float growthEffectiveAge = this.GetGrowthEffectiveAge(configuration, stand, trees, treeIndex, out float potentialHeightGrowth);
+                float crownCompetitionFactor = OrganonVariant.GetCrownCompetitionFactorByHeight(trees.Height[treeIndex], crownCompetitionByHeight);
 
                 float crownRatio = trees.CrownRatio[treeIndex];
-                float FCR = -P5 * MathV.Pow(1.0F - crownRatio, P6) * MathV.Exp(P7 * MathF.Sqrt(crownCompetitionIncrement));
-                float B0 = P1 * MathV.Exp(P2 * crownCompetitionIncrement);
-                float B1 = MathV.Exp(P3 * MathV.Pow(crownCompetitionIncrement, P4));
-                float MODIFER = P8 * (B0 + (B1 - B0) * MathV.Exp(FCR));
-                float CRADJ = OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
+                float FCR = -height.P5 * MathV.Pow(1.0F - crownRatio, height.P6) * MathV.Exp(height.P7 * MathF.Sqrt(crownCompetitionFactor));
+                float B0 = height.P1 * MathV.Exp(height.P2 * crownCompetitionFactor);
+                float B1 = MathV.Exp(height.P3 * MathV.Pow(crownCompetitionFactor, height.P4));
+                float MODIFER = height.P8 * (B0 + (B1 - B0) * MathV.Exp(FCR));
+                float CRADJ = OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 float heightGrowth = potentialHeightGrowth * MODIFER * CRADJ;
                 Debug.Assert(heightGrowth > 0.0F);
                 trees.HeightGrowth[treeIndex] = heightGrowth;
 
-                if (growthEffectiveAge > configuration.Variant.OldTreeAgeThreshold)
+                if (growthEffectiveAge > this.OldTreeAgeThreshold)
                 {
                     ++oldTreeRecordCount;
                 }
@@ -658,7 +644,7 @@ namespace Mars.Seem.Organon
 
                 float XPM = 1.0F / (1.0F + MathV.Exp(-PMK));
                 float survivalProbability = POW == 1.0 ? 1.0F - XPM : MathV.Pow(1.0F - XPM, POW); // RAP is the only variant using unfertlized POW != 1
-                survivalProbability *= OrganonGrowth.GetCrownRatioAdjustment(crownRatio);
+                survivalProbability *= OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 Debug.Assert(survivalProbability >= 0.0F);
                 Debug.Assert(survivalProbability <= 1.0F);
 

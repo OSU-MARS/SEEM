@@ -192,7 +192,7 @@ namespace Mars.Seem.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { -0.36F, 0.114F };
+                Span<float> minFinancialValues = stackalloc[] { -0.036F, 0.114F };
                 Span<int> treesThinned = stackalloc[] { 5, 0 };
             #else
                 Span<float> minFinancialValues = stackalloc[] { 1.075F, 1.169F };
@@ -1035,7 +1035,7 @@ namespace Mars.Seem.Test
                     if (periodIndex != firstThinningPeriod)
                     {
                         // for now, assume monotonic increase in standing volumes except in harvest periods
-                        Assert.IsTrue(bestCubicStandingVolume > previousBestCubicStandingVolume);
+                        Assert.IsTrue(bestCubicStandingVolume > previousBestCubicStandingVolume, "Standing volume did not increase monotonically (current: " + bestCubicStandingVolume + ", previous: " + previousBestCubicStandingVolume + ").");
                         Assert.IsTrue(bestTrajectory.GetTotalStandingScribnerVolume(periodIndex) > bestTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1));
                         Assert.IsTrue(currentCubicStandingVolume > previousCurrentCubicStandingVolume);
                         Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex) > heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1));
