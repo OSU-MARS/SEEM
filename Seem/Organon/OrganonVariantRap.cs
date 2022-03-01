@@ -539,6 +539,7 @@ namespace Mars.Seem.Organon
                 float CRADJ = OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                 float heightGrowth = potentialHeightGrowth * MODIFER * CRADJ;
                 Debug.Assert(heightGrowth > 0.0F);
+                Debug.Assert(heightGrowth < Constant.Maximum.HeightIncrementInFeet);
                 trees.HeightGrowth[treeIndex] = heightGrowth;
 
                 if (growthEffectiveAge > this.OldTreeAgeThreshold)

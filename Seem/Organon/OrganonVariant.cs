@@ -751,6 +751,8 @@ namespace Mars.Seem.Organon
                 Vector128<float> power = Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(-25.0F * 25.0F), Avx.Multiply(crownRatio, crownRatio));
                 Vector128<float> exponent = MathV.MaskExp(power, (byte)exponentMask);
                 crownRatioAdjustment = Avx.Subtract(crownRatioAdjustment, exponent);
+                DebugV.Assert(Avx.CompareGreaterThanOrEqual(crownRatioAdjustment, Vector128<float>.Zero));
+                DebugV.Assert(Avx.CompareLessThanOrEqual(crownRatioAdjustment, AvxExtensions.BroadcastScalarToVector128(1.0F)));
             }
             return crownRatioAdjustment;
         }
@@ -1119,6 +1121,7 @@ namespace Mars.Seem.Organon
                     Vector128<float> expansionFactor = Avx.LoadVector128(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
                     heightGrowth = Avx.BlendVariable(heightGrowth, zero, Avx.CompareLessThanOrEqual(expansionFactor, zero));
                     DebugV.Assert(Avx.CompareGreaterThanOrEqual(heightGrowth, zero));
+                    DebugV.Assert(Avx.CompareLessThanOrEqual(heightGrowth, AvxExtensions.BroadcastScalarToVector128(Constant.Maximum.HeightIncrementInFeet)));
                     Avx.Store(heightGrowths + treeIndex, heightGrowth);
 
                     // if growth effective age > old tree age is true, then 0xffff ffff = -1 is returned from the comparison
@@ -1200,6 +1203,7 @@ namespace Mars.Seem.Organon
                     Vector256<float> expansionFactor = Avx.LoadVector256(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
                     heightGrowth = Avx.BlendVariable(heightGrowth, zero, Avx.CompareLessThanOrEqual(expansionFactor, zero));
                     DebugV.Assert(Avx.CompareGreaterThanOrEqual(heightGrowth, zero));
+                    DebugV.Assert(Avx.CompareLessThanOrEqual(heightGrowth, AvxExtensions.BroadcastScalarToVector256(Constant.Maximum.HeightIncrementInFeet)));
                     Avx.Store(heightGrowths + treeIndex, heightGrowth);
 
                     // if growth effective age > old tree age is true, then 0xffff ffff = -1 is returned from the comparison

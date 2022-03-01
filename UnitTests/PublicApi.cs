@@ -471,7 +471,7 @@ namespace Mars.Seem.Test
                 MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 27.91F, 31.04F, 33.89F, 36.50F, 38.89F, 41.10F, 43.13F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 363.45F, 468.31F, 558.84F, 638.64F, 709.21F, 771.96F, 828.47F },
+                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 363.45F, 468.31F, 558.84F, 638.64F, 709.21F, 771.96F, 828.46F },
                 MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 46.63F, 61.66F, 74.19F, 87.95F, 102.12F, 114.95F, 126.89F },
                 MinimumHarvestCubicM3PerHa = new float[lastPeriod + 1], // no thinning -> all zero
                 MinimumHarvestMbfPerHa = new float[lastPeriod + 1] // no thinning -> all zero
@@ -533,7 +533,7 @@ namespace Mars.Seem.Test
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
                 MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 589.38F, 666.28F },
                 MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 85.56F, 99.86F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.42F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 0.0F, 0.0F },
                 MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 0.0F, 0.0F }
             };
             float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146900F, 212987F, 167906F, 226196F, 283469F, 278099F, 329517F, 377780F, 422620F }; // kg/ha
@@ -584,7 +584,7 @@ namespace Mars.Seem.Test
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
                 MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 483.19F, 559.39F },
                 MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 69.92F, 83.92F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.42F, 0.0F, 98.60F, 0.0F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 98.60F, 0.0F },
                 MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 15.17F, 0.0F }
             };
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
@@ -706,7 +706,7 @@ namespace Mars.Seem.Test
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
                 MinimumStandingCubicM3PerHa = new float[] { 360.59F, 361.88F, 473.05F, 571.58F, 660.29F },
-                MinimumStandingMbfPerHa = new float[] { 50.62F, 50.97F, 66.41F, 80.67F, 95.59F },
+                MinimumStandingMbfPerHa = new float[] { 50.62F, 50.97F, 66.41F, 80.67F, 95.58F },
                 MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 104.27F, 0.0F, 0.0F, 0.0F },
                 MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
             };

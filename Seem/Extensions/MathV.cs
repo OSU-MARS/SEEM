@@ -9,19 +9,17 @@ namespace Mars.Seem.Extensions
     public class MathV
     {
         private const float Exp10ToExp2 = 3.321928094887362F; // log2(10)
-        private const float Exp2Beta1 = 0.6931176823F;
-        private const float Exp2Beta2 = 0.2402214511F;
-        private const float Exp2Beta3 = 0.0559562089F;
-        private const float Exp2Beta4 = 0.0096779180F;
-        private const float ExpToExp2 = 1.442695040888963F; // log2(e)
+        private const float ExpToExp2 = 1.442695040888963F; // log2(e) for converting base 2 IEEE 754 exponent manipulation to base e
 
-        public const float ExpToZeroThreshold = -16.2F; // truncate exponents less than 1E-7 to zero
+        private const float ExpC1 = 0.007972914726F;
+        private const float ExpC2 = 0.1385283768F;
+        private const float ExpC3 = 2.885390043F;
 
+        private const float FloatExp2MaximumPower = 127.0F; // range limiting decompositions using 8 bit signed exponent
         private const int FloatExponentMask = 0x7F800000;
         private const int FloatMantissaBits = 23;
         private const int FloatMantissaZero = 127;
         private const int FloatMantissaMask = 0x007FFFFF;
-        private const float FloatMaximumPower = 127.0F;
 
         private const float Log2Beta1 = 1.441814292091611F;
         private const float Log2Beta2 = -0.708440969761796F;
@@ -60,13 +58,13 @@ namespace Mars.Seem.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static Vector128<float> Exp(Vector128<float> power)
+        public static Vector128<float> Exp(Vector128<float> power)
         {
             return MathV.Exp2(Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(MathV.ExpToExp2), power));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static Vector256<float> Exp(Vector256<float> power)
+        public static Vector256<float> Exp(Vector256<float> power)
         {
             return MathV.Exp2(Avx.Multiply(AvxExtensions.BroadcastScalarToVector256(MathV.ExpToExp2), power));
         }
@@ -80,51 +78,49 @@ namespace Mars.Seem.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Exp2(float power)
         {
-            if (MathF.Abs(power) > MathV.FloatMaximumPower)
+            if (power <= -MathV.FloatExp2MaximumPower)
+            {
+                return 0.0F; // truncate values less than 5.877472e-39 down to zero
+            }
+            if (power > MathV.FloatExp2MaximumPower)
             {
                 throw new ArgumentOutOfRangeException(nameof(power));
             }
 
-            // R for polynomial generation
-            // exponent2 = data.frame(x = seq(-0.536, 0.536, by = 0.001))
-            // exponent2$exp = 2 ^ (exponent2$x)
-            // exponentFit = lm(exp ~x + I(x ^ 2) + I(x ^ 3) + I(x ^ 4) + I(x ^ 5), data = exponent2)
-            float integerPart = MathF.Round(power);
-            float x = power - integerPart; // fractional part
-            float integerExponent = BitConverter.Int32BitsToSingle(((int)integerPart + MathV.FloatMantissaZero) << MathV.FloatMantissaBits);
-            float fractionalExponent = MathV.One + MathV.Exp2Beta1 * x + MathV.Exp2Beta2 * x * x + MathV.Exp2Beta3 * x * x * x + MathV.Exp2Beta4 * x * x * x * x;
-            return integerExponent * fractionalExponent;
+            // fast_exp() by @jenkas in https://stackoverflow.com/questions/479705/reinterpret-cast-in-c-sharp
+            // ExpC4 is corrected in this code as @jenkas used a value of log2(e) that's low by 0.013 ppm.
+            int integerPower = (int)power;
+            float fractionalPower = power - integerPower;
+            float fractionSquared = fractionalPower * fractionalPower;
+            float a = fractionalPower + MathV.ExpC1 * fractionSquared * fractionalPower;
+            float b = MathV.ExpC3 + MathV.ExpC2 * fractionSquared;
+            float fractionalInterpolant = (b + a) / (b - a);
+            int exponentAsInt = BitConverter.SingleToInt32Bits(fractionalInterpolant) + (integerPower << 23); // res + 2^(intPart)
+            float exponent = BitConverter.Int32BitsToSingle(exponentAsInt);
+            return exponent;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static Vector128<float> Exp2(Vector128<float> power)
         {
-            Debug.Assert(Avx.MoveMask(Avx.And(Avx.CompareGreaterThan(power, AvxExtensions.BroadcastScalarToVector128(MathV.FloatMaximumPower)), Avx.CompareOrdered(power, power))) == 0);
+            Debug.Assert(Avx.MoveMask(Avx.And(Avx.CompareGreaterThan(power, AvxExtensions.BroadcastScalarToVector128(MathV.FloatExp2MaximumPower)), Avx.CompareOrdered(power, power))) == 0);
 
-            byte zeroMask = (byte)Avx.MoveMask(Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector128(-MathV.FloatMaximumPower)));
-            Vector128<float> integerPart = Avx.RoundToNearestInteger(power);
-            Vector128<float> integerExponent = Avx.ShiftLeftLogical(Avx.Add(Avx.ConvertToVector128Int32(integerPart), MathV.FloatMantissaZero128), MathV.FloatMantissaBits).AsSingle();
+            Vector128<float> integerPowerAsFloat = Avx.RoundToZero(power);
+            Vector128<float> fractionalPower = Avx.Subtract(power, integerPowerAsFloat);
+            Vector128<float> fractionSquared = Avx.Multiply(fractionalPower, fractionalPower);
 
-            // evaluate polynomial
-            Vector128<float> beta1 = AvxExtensions.BroadcastScalarToVector128(MathV.Exp2Beta1);
-            Vector128<float> beta2 = AvxExtensions.BroadcastScalarToVector128(MathV.Exp2Beta2);
-            Vector128<float> beta3 = AvxExtensions.BroadcastScalarToVector128(MathV.Exp2Beta3);
-            Vector128<float> beta4 = AvxExtensions.BroadcastScalarToVector128(MathV.Exp2Beta4);
+            Vector128<float> c1 = AvxExtensions.BroadcastScalarToVector128(MathV.ExpC1);
+            Vector128<float> a = Avx.Add(fractionalPower, Avx.Multiply(c1, Avx.Multiply(fractionSquared, fractionalPower)));
+            Vector128<float> c2 = AvxExtensions.BroadcastScalarToVector128(MathV.ExpC2);
+            Vector128<float> c3 = AvxExtensions.BroadcastScalarToVector128(MathV.ExpC3);
+            Vector128<float> b = Avx.Add(c3, Avx.Multiply(c2, fractionSquared));
+            Vector128<float> fractionalInterpolant = Avx.Divide(Avx.Add(b, a), Avx.Subtract(b, a));
 
-            Vector128<float> x = Avx.Subtract(power, integerPart); // fractional part
-            Vector128<float> fractionalExponent = AvxExtensions.BroadcastScalarToVector128(MathV.One);
-            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta1, x));
-            Vector128<float> x2 = Avx.Multiply(x, x);
-            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta2, x2));
-            Vector128<float> x3 = Avx.Multiply(x2, x);
-            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta3, x3));
-            Vector128<float> x4 = Avx.Multiply(x3, x);
-            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta4, x4));
+            Vector128<int> integerPower = Avx.ConvertToVector128Int32(integerPowerAsFloat); // res = 2^intPart
+            Vector128<int> integerExponent = Avx.ShiftLeftLogical(integerPower, 23);
+            Vector128<float> exponent = Avx.Add(integerExponent, fractionalInterpolant.AsInt32()).AsSingle();
 
-            // form exponent
-            Vector128<float> exponent = Avx.Multiply(integerExponent, fractionalExponent);
-
-            // suppress exponent overflows by truncating values less than 2^-127 to zero
+            byte zeroMask = (byte)Avx.MoveMask(Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector128(-MathV.FloatExp2MaximumPower)));
             if (zeroMask != 0)
             {
                 exponent = Avx.Blend(exponent, Vector128<float>.Zero, zeroMask);
@@ -135,32 +131,24 @@ namespace Mars.Seem.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static Vector256<float> Exp2(Vector256<float> power)
         {
-            Debug.Assert(Avx.MoveMask(Avx.And(Avx.CompareGreaterThan(power, AvxExtensions.BroadcastScalarToVector256(MathV.FloatMaximumPower)), Avx.CompareOrdered(power, power))) == 0);
+            Debug.Assert(Avx.MoveMask(Avx.And(Avx.CompareGreaterThan(power, AvxExtensions.BroadcastScalarToVector256(MathV.FloatExp2MaximumPower)), Avx.CompareOrdered(power, power))) == 0);
 
-            byte zeroMask = (byte)Avx.MoveMask(Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector256(-MathV.FloatMaximumPower)));
-            Vector256<float> integerPart = Avx.RoundToNearestInteger(power);
-            Vector256<float> integerExponent = Avx2.ShiftLeftLogical(Avx2.Add(Avx.ConvertToVector256Int32(integerPart), MathV.FloatMantissaZero256), MathV.FloatMantissaBits).AsSingle();
+            Vector256<float> integerPowerAsFloat = Avx.RoundToZero(power);
+            Vector256<float> fractionalPower = Avx.Subtract(power, integerPowerAsFloat);
+            Vector256<float> fractionSquared = Avx.Multiply(fractionalPower, fractionalPower);
 
-            // evaluate polynomial
-            Vector256<float> beta1 = AvxExtensions.BroadcastScalarToVector256(MathV.Exp2Beta1);
-            Vector256<float> beta2 = AvxExtensions.BroadcastScalarToVector256(MathV.Exp2Beta2);
-            Vector256<float> beta3 = AvxExtensions.BroadcastScalarToVector256(MathV.Exp2Beta3);
-            Vector256<float> beta4 = AvxExtensions.BroadcastScalarToVector256(MathV.Exp2Beta4);
+            Vector256<float> c1 = AvxExtensions.BroadcastScalarToVector256(MathV.ExpC1);
+            Vector256<float> a = Avx.Add(fractionalPower, Avx.Multiply(c1, Avx.Multiply(fractionSquared, fractionalPower)));
+            Vector256<float> c2 = AvxExtensions.BroadcastScalarToVector256(MathV.ExpC2);
+            Vector256<float> c3 = AvxExtensions.BroadcastScalarToVector256(MathV.ExpC3);
+            Vector256<float> b = Avx.Add(c3, Avx.Multiply(c2, fractionSquared));
+            Vector256<float> fractionalInterpolant = Avx.Divide(Avx.Add(b, a), Avx.Subtract(b, a));
 
-            Vector256<float> x = Avx.Subtract(power, integerPart); // fractional part
-            Vector256<float> fractionalExponent = AvxExtensions.BroadcastScalarToVector256(MathV.One);
-            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta1, x));
-            Vector256<float> x2 = Avx.Multiply(x, x);
-            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta2, x2));
-            Vector256<float> x3 = Avx.Multiply(x2, x);
-            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta3, x3));
-            Vector256<float> x4 = Avx.Multiply(x3, x);
-            fractionalExponent = Avx.Add(fractionalExponent, Avx.Multiply(beta4, x4));
+            Vector256<int> integerPower = Avx.ConvertToVector256Int32(integerPowerAsFloat); // res = 2^intPart
+            Vector256<int> integerExponent = Avx2.ShiftLeftLogical(integerPower, 23);
+            Vector256<float> exponent = Avx2.Add(integerExponent, fractionalInterpolant.AsInt32()).AsSingle();
 
-            // form exponent
-            Vector256<float> exponent = Avx.Multiply(integerExponent, fractionalExponent);
-
-            // suppress exponent overflows by truncating values less than 2^-127 to zero
+            byte zeroMask = (byte)Avx.MoveMask(Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector256(-MathV.FloatExp2MaximumPower)));
             if (zeroMask != 0)
             {
                 exponent = Avx.Blend(exponent, Vector256<float>.Zero, zeroMask);
@@ -184,16 +172,6 @@ namespace Mars.Seem.Extensions
         public unsafe static Vector256<float> Exp10(Vector256<float> power)
         {
             return MathV.Exp2(Avx.Multiply(AvxExtensions.BroadcastScalarToVector256(MathV.Exp10ToExp2), power));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ExpWithTruncationToZero(float power)
-        {
-            if (power < MathV.ExpToZeroThreshold)
-            {
-                return 0.0F;
-            }
-            return MathV.Exp(power);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

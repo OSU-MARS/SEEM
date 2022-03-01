@@ -65,50 +65,84 @@ namespace Mars.Seem.Test
         [TestMethod]
         public void Exp()
         {
-            float accuracy = 4E-6F; // error of up to 4E-6 expected for 4th order polynomial
-            float precision = 5E-7F; // numerical error
+            const float accuracyExp = 1E-7F;
+            const float precisionExp = 3.6E-7F; // numerical error, including truncation at large negative powers
+            const float accuracyExp2 = 3.2E-7F; // higher errors possible for 4th order polynomial
+            const float precisionExp2 = 4.5E-6F; // numerical error, including truncation
 
-            //                              0       1      2      3      4      5      6       7      8     9     10    11    12     13    14    15    16    17    18    19
-            float[] values = new float[] { -10.0F, -5.0F, -4.0F, -3.0F, -2.0F, -1.5F, -1.33F, -1.0F, -0.5F, 0.0F, 0.5F, 1.0F, 1.33F, 1.5F, 2.0F, 2.5F, 3.0F, 4.0F, 5.0F, 10.0F };
-            for (int index = 0; index < values.Length; ++index)
+            const float exp10maxPower = 38.5318F; // upper bound of 10^power from log10(Single.MaxValue = 3.4e38
+
+            //                              0        1        2        3        4        5        6        7        8        9        10    
+            float[] powers = new float[] { -152.3F, -127.1F, -88.05F, -87.99F, -36.83F, -10.45F, -6.694F, -5.883F, -5.223F, -4.776F, -4.234F,
+                                           -3.766F, -2.294F, -1.605F, -1.330F, -1.012F, -0.567F, -0.500F, -0.333F, -0.298F, -0.116F,  0.0F,    
+                                            0.176F,  0.333F,  0.474F,  0.500F,  0.753F,  1.318F,  1.333F,  1.605F,  1.856F,  2.0F,    2.566F,
+                                            2.789F,  3.888F,  4.000F,  4.779F,  5.128F, 10.0F,   12.6F,   28.3F,   48.9F,   69.6F,   87.3F };
+            for (int index = 0; index < powers.Length; ++index)
             {
-                float value = values[index];
-                float exp = MathV.Exp(value);
-                float exp10 = MathV.Exp10(value);
-                float exp2 = MathV.Exp2(value);
+                float power = powers[index];
+                float exp = MathV.Exp(power);
+                float exp2 = MathV.Exp2(power);
 
-                double expError = 1.0 - exp / Math.Exp(value);
-                double exp10Error = 1.0 - exp10 / Math.Pow(10.0, value);
-                double exp2Error = 1.0 - exp2 / Math.Pow(2.0, value);
+                double expectedExp = Math.Exp(power);
+                double expError = exp > 1E-7 * precisionExp ? 1.0 - exp / expectedExp : expectedExp;
+                double toleranceExp = accuracyExp * Math.Abs(expectedExp) + precisionExp;
 
-                double tolerance = accuracy * Math.Abs(value) + precision;
-                Assert.IsTrue(Math.Abs(expError) < tolerance);
-                Assert.IsTrue(Math.Abs(exp10Error) < tolerance);
-                Assert.IsTrue(Math.Abs(exp2Error) < tolerance);
+                double expectedExp2 = Math.Pow(2.0, power);
+                double exp2Error = exp > 1E-7 * precisionExp2 ? 1.0 - exp2 / expectedExp2 : expectedExp2;
+                double toleranceExp2 = accuracyExp2 * Math.Abs(expectedExp2) + precisionExp2;
+
+                Assert.IsTrue((exp >= 0.0F) && Math.Abs(expError) < toleranceExp);
+                Assert.IsTrue((exp2 >= 0.0F) && Math.Abs(exp2Error) < toleranceExp2);
+
+                if (power <= exp10maxPower)
+                {
+                    float exp10 = MathV.Exp10(power);
+                    double expectedExp10 = Math.Pow(10.0, power);
+
+                    double exp10Error = exp > 1E-7 * precisionExp2 ? 1.0 - exp10 / expectedExp10 : expectedExp10;
+                    double toleranceExp10 = accuracyExp2 * Math.Abs(expectedExp10) + precisionExp2;
+                    Assert.IsTrue((exp10 >= 0.0F) && Math.Abs(exp10Error) < toleranceExp10);
+                }
             }
 
-            for (int quadIndex = 0; quadIndex < values.Length; quadIndex += 4)
+            for (int quadIndex = 0; quadIndex < powers.Length; quadIndex += 4)
             {
-                Vector128<float> value = Vector128.Create(values[quadIndex], values[quadIndex + 1], values[quadIndex + 2], values[quadIndex + 3]);
-                Vector128<float> exp = MathV.Exp(value);
-                Vector128<float> exp10 = MathV.Exp10(value);
-                Vector128<float> exp2 = MathV.Exp2(value);
+                float power0 = powers[quadIndex];
+                float power1 = powers[quadIndex + 1];
+                float power2 = powers[quadIndex + 2];
+                float power3 = powers[quadIndex + 3];
+                bool exp10inRange = (power0 <= exp10maxPower) && (power1 <= exp10maxPower) && (power2 <= exp10maxPower) && (power3 <= exp10maxPower);
+
+                Vector128<float> value = Vector128.Create(power0, power1, power2, power3);
+                Vector128<float> exp_m128 = MathV.Exp(value);
+                Vector128<float> exp2_m128 = MathV.Exp2(value);
+                Vector128<float> exp10_m128 = exp10inRange ? MathV.Exp10(value) : Vector128<float>.Zero;
 
                 for (int scalarIndex = 0; scalarIndex < 4; ++scalarIndex)
                 {
-                    float scalarValue = value.GetElement(scalarIndex);
-                    float scalarExp = exp.GetElement(scalarIndex);
-                    float scalarExp10 = exp10.GetElement(scalarIndex);
-                    float scalarExp2 = exp2.GetElement(scalarIndex);
+                    float power = value.GetElement(scalarIndex);
+                    float exp = exp_m128.GetElement(scalarIndex);
+                    float exp2 = exp2_m128.GetElement(scalarIndex);
+                    float exp10 = exp10_m128.GetElement(scalarIndex);
 
-                    double expError = 1.0 - scalarExp / Math.Exp(scalarValue);
-                    double exp10Error = 1.0 - scalarExp10 / Math.Pow(10.0, scalarValue);
-                    double exp2Error = 1.0 - scalarExp2 / Math.Pow(2.0, scalarValue);
+                    double expectedExp = Math.Exp(power);
+                    double expError = exp > 1E-7 * precisionExp ? 1.0 - exp / expectedExp : expectedExp;
+                    double toleranceExp = accuracyExp * Math.Abs(expectedExp) + precisionExp;
 
-                    double tolerance = accuracy * Math.Abs(scalarValue) + precision;
-                    Assert.IsTrue(Math.Abs(expError) < tolerance);
-                    Assert.IsTrue(Math.Abs(exp10Error) < tolerance);
-                    Assert.IsTrue(Math.Abs(exp2Error) < tolerance);
+                    double expectedExp2 = Math.Pow(2.0, power);
+                    double exp2Error = exp > 1E-7 * precisionExp2 ? 1.0 - exp2 / expectedExp2 : expectedExp2;
+                    double toleranceExp2 = accuracyExp2 * Math.Abs(expectedExp2) + precisionExp2;
+
+                    Assert.IsTrue((exp >= 0.0F) && Math.Abs(expError) < toleranceExp);
+                    Assert.IsTrue((exp2 >= 0.0F) && Math.Abs(exp2Error) < toleranceExp2);
+
+                    if (exp10inRange)
+                    {
+                        double expectedExp10 = Math.Pow(10.0, power);
+                        double exp10Error = exp > 1E-7 * precisionExp2 ? 1.0 - exp10 / expectedExp10 : expectedExp10;
+                        double toleranceExp10 = accuracyExp2 * Math.Abs(expectedExp10) + precisionExp2;
+                        Assert.IsTrue((exp10 >= 0.0F) && Math.Abs(exp10Error) < toleranceExp10);
+                    }
                 }
             }
         }

@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "Organon": {
+    "PowerShell 7": {
       "commandName": "Executable",
       "executablePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "commandLineArgs": "\"%USERPROFILE%\\source\\repos\\Seem\\UnitTests\\performanceProfile.ps1\""

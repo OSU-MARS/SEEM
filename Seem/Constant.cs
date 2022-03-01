@@ -16,6 +16,7 @@ namespace Mars.Seem
         public const float CubicFeetPerCubicMeter = 35.3147F;
         public const float CubicMetersPerCubicFoot = 0.0283168F;
         public const float DbhHeightInM = 1.37F; // cm
+        public const float ExpToZeroPower = -16.2F; // truncate thinning effects of less than 1E-7 to zero
         public const float FeetPerMeter = 3.28084F;
         public const float ForestersEnglish = 0.005454154F;
         public const float HectaresPerAcre = 0.404685F;

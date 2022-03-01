@@ -12,13 +12,15 @@
     <Copyright>Copyright © 2019-2022 Oregon State University</Copyright>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Platforms>x64</Platforms>
-    <LangVersion>9.0</LangVersion>
     <Description>Includes code derived from the CIPS-R 2.2.4 version of the Organon growth and yield model created by Oregon State University's Center for Intensive Planted-forest Silviculture and Management, Algorithms, and Remote Sensing.</Description>
     <AssemblyName>Seem</AssemblyName>
     <Nullable>enable</Nullable>
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<PublishReadyToRun>true</PublishReadyToRun>
-	<PublishReadyToRunCrossgen2ExtraArgs>--instruction-set:avx</PublishReadyToRunCrossgen2ExtraArgs>
+	<!-- i5-8265U 128 bit SIMD: publishing to AVX likely reduces throughput by ~4%, including AVX2 reduces it by ~23% 
+	              256 bit SIMD: publishing to AVX2 may increase throughput by ~2% from unpublished (~5% from 128 bit unpublished), FMA has no apparent effect
+	     two dashes before -instruction-set when uncommented -->
+	<!-- <PublishReadyToRunCrossgen2ExtraArgs>-instruction-set:avx,avx2,fma</PublishReadyToRunCrossgen2ExtraArgs> -->
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

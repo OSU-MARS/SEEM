@@ -5,7 +5,7 @@
 Set-Location -Path ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64"))
 #$buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Debug\\net6.0"))
 $buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\\repos\\Seem\\UnitTests\\bin\\x64\\Release\\net6.0"))
-# package Seem.dll from Visual Studio developer command line to obtain using
+# package Seem.dll from %ProjectDir% in the Visual Studio developer command prompt to obtain using
 #   dotnet publish -r win-x64 --no-self-contained /p:Configuration=Release /p:Platform=win-x64 -v:n
 # As of Visual Studio 2022 17.0.4, publishing from within Visual Studio does not yield a crossgen2 assembly.
 $buildDirectory = ([System.IO.Path]::Combine($env:USERPROFILE, "source\repos\SEEM\Seem\bin\win-x64\Release\net6.0\win-x64\publish"))

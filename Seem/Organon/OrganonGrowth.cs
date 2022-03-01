@@ -78,7 +78,7 @@ namespace Mars.Seem.Organon
             }
 
             float prem = treatments.GetPrem(configuration.Variant, a9, out int yearsSinceMostRecentThin);
-            if ((prem == 0.0F) || (a9 * yearsSinceMostRecentThin < MathV.ExpToZeroThreshold))
+            if ((prem == 0.0F) || (a9 * yearsSinceMostRecentThin < Constant.ExpToZeroPower))
             {
                 // diameter growth multiplier is unity when
                 //   1) prem is zero because the stand hasn't been thinned.
@@ -162,7 +162,7 @@ namespace Mars.Seem.Organon
             }
 
             float prem = treatments.GetPrem(configuration.Variant, b11 / b10, out int yearsSinceMostRecentThin);
-            if ((prem == 0.0F) || (b11 * yearsSinceMostRecentThin < MathV.ExpToZeroThreshold))
+            if ((prem == 0.0F) || (b11 * yearsSinceMostRecentThin < Constant.ExpToZeroPower))
             {
                 // diameter growth multiplier is unity when
                 //   1) prem is zero because the stand hasn't been thinned.

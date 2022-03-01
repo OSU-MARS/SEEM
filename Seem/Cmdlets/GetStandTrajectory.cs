@@ -155,7 +155,7 @@ namespace Mars.Seem.Cmdlets
                 benchmarks.Add(benchmark);
             }
 
-            this.WriteProgress(new ProgressRecord(0, "Get-StandTrajectory", "Benchmarking complete.")
+            this.WriteProgress(new ProgressRecord(0, "Get-StandTrajectory", ((int)this.Simd).ToString() + " bit SIMD benchmarking complete.")
             {
                 PercentComplete = 100,
                 SecondsRemaining = 0
