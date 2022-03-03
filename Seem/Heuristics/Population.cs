@@ -240,9 +240,7 @@ namespace Mars.Seem.Heuristics
                     int secondSelection = secondParentSelectionForSpecies[treeIndex];
                     if (isCrossed)
                     {
-                        int buffer = firstSelection;
-                        firstSelection = secondSelection;
-                        secondSelection = buffer;
+                        (secondSelection, firstSelection) = (firstSelection, secondSelection);
                     }
 
                     firstChildSelectionForSpecies[treeIndex] = firstSelection;

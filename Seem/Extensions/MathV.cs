@@ -43,12 +43,12 @@ namespace Mars.Seem.Extensions
 
         static MathV()
         {
-            MathV.FloatExponentMask128 = AvxExtensions.BroadcastScalarToVector128(MathV.FloatExponentMask);
-            MathV.FloatExponentMask256 = AvxExtensions.BroadcastScalarToVector256(MathV.FloatExponentMask);
-            MathV.FloatMantissaMask128 = AvxExtensions.BroadcastScalarToVector128(MathV.FloatMantissaMask);
-            MathV.FloatMantissaMask256 = AvxExtensions.BroadcastScalarToVector256(MathV.FloatMantissaMask);
-            MathV.FloatMantissaZero128 = AvxExtensions.BroadcastScalarToVector128(MathV.FloatMantissaZero);
-            MathV.FloatMantissaZero256 = AvxExtensions.BroadcastScalarToVector256(MathV.FloatMantissaZero);
+            MathV.FloatExponentMask128 = AvxExtensions.Set128(MathV.FloatExponentMask);
+            MathV.FloatExponentMask256 = AvxExtensions.Set256(MathV.FloatExponentMask);
+            MathV.FloatMantissaMask128 = AvxExtensions.Set128(MathV.FloatMantissaMask);
+            MathV.FloatMantissaMask256 = AvxExtensions.Set256(MathV.FloatMantissaMask);
+            MathV.FloatMantissaZero128 = AvxExtensions.Set128(MathV.FloatMantissaZero);
+            MathV.FloatMantissaZero256 = AvxExtensions.Set256(MathV.FloatMantissaZero);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

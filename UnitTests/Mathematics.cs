@@ -315,7 +315,7 @@ namespace Mars.Seem.Test
         {
             // 128 bit
             Vector128<float> broadcastFloat128 = AvxExtensions.BroadcastScalarToVector128(Constant.ForestersEnglish);
-            Vector128<int> broadcastInt128 = AvxExtensions.BroadcastScalarToVector128(1);
+            Vector128<int> broadcastInt128 = AvxExtensions.Set128(1);
 
             AssertV.IsTrue(Avx.CompareEqual(broadcastFloat128, Vector128.Create(Constant.ForestersEnglish)));
             AssertV.IsTrue(Avx.CompareEqual(broadcastInt128, Vector128.Create(1)));
@@ -337,7 +337,7 @@ namespace Mars.Seem.Test
             {
                 // 256 bit
                 Vector256<float> broadcastFloat256 = AvxExtensions.BroadcastScalarToVector256(Constant.ForestersEnglish);
-                Vector256<int> broadcastInt256 = AvxExtensions.BroadcastScalarToVector256(1);
+                Vector256<int> broadcastInt256 = AvxExtensions.Set256(1);
 
                 AssertV.IsTrue(Avx.CompareEqual(broadcastFloat256, Vector256.Create(Constant.ForestersEnglish)));
                 AssertV.IsTrue(Avx2.CompareEqual(broadcastInt256, Vector256.Create(1)));

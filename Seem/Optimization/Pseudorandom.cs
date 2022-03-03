@@ -97,9 +97,7 @@ namespace Mars.Seem.Optimization
             for (int destinationIndex = array.Length; destinationIndex > 1; /* decrement in body */)
             {
                 int sourceIndex = this.pseudorandom.Next(destinationIndex--);
-                int buffer = array[destinationIndex];
-                array[destinationIndex] = array[sourceIndex];
-                array[sourceIndex] = buffer;
+                (array[sourceIndex], array[destinationIndex]) = (array[destinationIndex], array[sourceIndex]);
             }
         }
 
@@ -111,9 +109,7 @@ namespace Mars.Seem.Optimization
             for (int destinationIndex = breakpoint; destinationIndex > 1; /* decrement in body */)
             {
                 int sourceIndex = this.pseudorandom.Next(destinationIndex--);
-                int buffer = array[destinationIndex];
-                array[destinationIndex] = array[sourceIndex];
-                array[sourceIndex] = buffer;
+                (array[sourceIndex], array[destinationIndex]) = (array[destinationIndex], array[sourceIndex]);
             }
 
             // Fisher-Yates on second part
@@ -121,10 +117,7 @@ namespace Mars.Seem.Optimization
             {
                 int sourceIndex = this.pseudorandom.Next(destinationIndexWithinPart--) + breakpoint;
                 int destinationIndex = destinationIndexWithinPart + breakpoint; // calculate after decrement
-
-                int buffer = array[destinationIndex];
-                array[destinationIndex] = array[sourceIndex];
-                array[sourceIndex] = buffer;
+                (array[sourceIndex], array[destinationIndex]) = (array[destinationIndex], array[sourceIndex]);
             }
         }
     }

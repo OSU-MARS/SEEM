@@ -328,8 +328,9 @@ namespace Mars.Seem
 
         public static class Simd256x8
         {
-            public const int ExtractLower128 = 0;
-            public const int ExtractUpper128 = 1;
+            public const byte InsertUpper128 = 1;
+            public const byte ExtractLower128 = 0;
+            public const byte ExtractUpper128 = 1;
             public const int MaskAllTrue = 0xff;
             public const int Width = 8;
         }

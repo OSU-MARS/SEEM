@@ -9,22 +9,19 @@ namespace Mars.Seem.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static Vector128<float> BroadcastScalarToVector128(float value)
         {
-            // could implement this with Avx.BroadcastScalarToVector128(&value) (_mm256_broadcast_ps) but vbroadcastf128 makes a memory thunk
-            Vector128<float> value128 = Vector128.CreateScalarUnsafe(value);
-            return Avx.Shuffle(value128, value128, Constant.Simd128x4.Broadcast0toAll);
+            return Avx.BroadcastScalarToVector128(&value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static Vector256<float> BroadcastScalarToVector256(float value)
         {
-            Vector128<float> value128 = AvxExtensions.BroadcastScalarToVector128(value);
-            return Vector256.Create(value128, value128);
+            return Avx.BroadcastScalarToVector256(&value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<int> BroadcastScalarToVector128(int value)
+        public static Vector128<int> Set128(int value)
         {
-            // AVX version of Avx2.BroadcastScalarToVector128(int) (_mm_broadcastd_epi32())
+            // AVX version of Avx2.BroadcastScalarToVector128(&value)
             // Same code as https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Runtime/Intrinsics/Vector128.cs
             // Vector128.Create(int) without the CPU dispatch and signal to compiler that VEX can be used.
             Vector128<int> value128 = Vector128.CreateScalarUnsafe(value); // reinterpet cast without upper zeroing
@@ -32,10 +29,11 @@ namespace Mars.Seem.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<int> BroadcastScalarToVector256(int value)
+        public static Vector256<int> Set256(int value)
         {
-            Vector128<int> value128 = AvxExtensions.BroadcastScalarToVector128(value); // reinterpet cast without upper zeroing
-            return Vector256.Create(value128, value128);
+            // AVX version of Avx2.BroadcastScalarToVector256(&value)
+            Vector128<int> value128 = AvxExtensions.Set128(value); // reinterpet cast without upper zeroing
+            return Avx.InsertVector128(value128.ToVector256Unsafe(), value128, Constant.Simd256x8.InsertUpper128);
         }
     }
 }

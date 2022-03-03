@@ -429,7 +429,6 @@ namespace Mars.Seem.Organon
                     Vector128<float> largestCrownWidth128 = AvxExtensions.BroadcastScalarToVector128(largestCrownWidth);
                     Vector128<float> strataHeightIncrement = AvxExtensions.BroadcastScalarToVector128(4.0F * crownCompetitionByHeight[^1] / Constant.OrganonHeightStrata);
                     Vector128<float> strataHeight = Avx.Multiply(Vector128.Create(0.25F, 0.50F, 0.75F, 1.0F), strataHeightIncrement); // find CCF at top of strata as in Fortran
-                    Vector128<float> zero = Vector128<float>.Zero;
                     for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += Constant.Simd128x4.Width)
                     {
                         int strataBelowTreeHeightMask = Avx.MoveMask(Avx.CompareLessThan(strataHeight, heightInFeet128));
@@ -452,7 +451,7 @@ namespace Mars.Seem.Organon
                         }
 
                         // zero any elements above tree height
-                        crownCompetitionFactor = Avx.Blend(zero, crownCompetitionFactor, (byte)strataBelowTreeHeightMask);
+                        crownCompetitionFactor = Avx.Blend(Vector128<float>.Zero, crownCompetitionFactor, (byte)strataBelowTreeHeightMask);
 
                         // accumulate CCF
                         Vector128<float> crownCompetitionByHeight128 = Avx.LoadVector128(pinnedCrownCompetitionByHeight + strataIndex);
@@ -595,7 +594,6 @@ namespace Mars.Seem.Organon
                     Vector256<float> largestCrownWidth256 = AvxExtensions.BroadcastScalarToVector256(largestCrownWidth);
                     Vector256<float> strataHeightIncrement = AvxExtensions.BroadcastScalarToVector256(8.0F * crownCompetitionByHeight[^1] / Constant.OrganonHeightStrata);
                     Vector256<float> strataHeight = Avx.Multiply(Vector256.Create(0.125F, 0.250F, 0.375F, 0.500F, 0.625F, 0.750F, 0.875F, 1.00F), strataHeightIncrement); // find CCF at top of strata as in Fortran
-                    Vector256<float> zero = Vector256<float>.Zero;
                     for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += Constant.Simd256x8.Width)
                     {
                         int strataBelowTreeHeightMask = Avx.MoveMask(Avx.CompareLessThan(strataHeight, heightInFeet256));
@@ -618,7 +616,7 @@ namespace Mars.Seem.Organon
                         }
 
                         // zero any elements above tree height
-                        crownCompetitionFactor = Avx.Blend(zero, crownCompetitionFactor, (byte)strataBelowTreeHeightMask);
+                        crownCompetitionFactor = Avx.Blend(Vector256<float>.Zero, crownCompetitionFactor, (byte)strataBelowTreeHeightMask);
 
                         // accumulate CCF
                         Vector256<float> crownCompetitionByHeight256 = Avx.LoadVector256(pinnedCrownCompetitionByHeight + strataIndex);
@@ -679,8 +677,8 @@ namespace Mars.Seem.Organon
             Debug.Assert(crownCompetitionByHeight[^1] > 4.5F);
             Vector128<float> strataIndexAsFloat = Avx.Multiply(AvxExtensions.BroadcastScalarToVector128((float)Constant.OrganonHeightStrata / crownCompetitionByHeight[^1]), height);
             Vector128<int> strataIndex = Avx.ConvertToVector128Int32WithTruncation(strataIndexAsFloat);
-            DebugV.Assert(Avx.CompareGreaterThan(strataIndex, AvxExtensions.BroadcastScalarToVector128(-1))); // no integer >=
-            DebugV.Assert(Avx.CompareLessThan(strataIndex, AvxExtensions.BroadcastScalarToVector128(2 * Constant.OrganonHeightStrata))); // factor of 2 empirically fitted to tests, likely fragile
+            DebugV.Assert(Avx.CompareGreaterThan(strataIndex, AvxExtensions.Set128(-1))); // no integer >=
+            DebugV.Assert(Avx.CompareLessThan(strataIndex, AvxExtensions.Set128(2 * Constant.OrganonHeightStrata))); // factor of 2 empirically fitted to tests, likely fragile
 
             // AVX implementation of Avx2.GatherVector128(&crownCompetitionByHeight[0], strataIndex, 1)
             float crownCompetitionFactor0 = 0.0F;
@@ -720,8 +718,8 @@ namespace Mars.Seem.Organon
             Debug.Assert(crownCompetitionByHeight[^1] > 4.5F);
             Vector256<float> strataIndexAsFloat = Avx.Multiply(AvxExtensions.BroadcastScalarToVector256((float)Constant.OrganonHeightStrata / crownCompetitionByHeight[^1]), height);
             Vector256<int> strataIndex = Avx.ConvertToVector256Int32WithTruncation(strataIndexAsFloat);
-            DebugV.Assert(Avx2.CompareGreaterThan(strataIndex, AvxExtensions.BroadcastScalarToVector256(-1))); // no integer >=
-            DebugV.Assert(Avx2.CompareGreaterThan(AvxExtensions.BroadcastScalarToVector256(2 * Constant.OrganonHeightStrata), strataIndex)); // factor of 2 empirically fitted to tests, likely fragile
+            DebugV.Assert(Avx2.CompareGreaterThan(strataIndex, AvxExtensions.Set256(-1))); // no integer >=
+            DebugV.Assert(Avx2.CompareGreaterThan(AvxExtensions.Set256(2 * Constant.OrganonHeightStrata), strataIndex)); // factor of 2 empirically fitted to tests, likely fragile
 
             fixed (float* crownCompetition = crownCompetitionByHeight)
             {
@@ -1079,7 +1077,6 @@ namespace Mars.Seem.Organon
             Vector128<float> P8 = AvxExtensions.BroadcastScalarToVector128(heightCoefficients.P8);
             Vector128<float> oldTreeAgeThreshold = AvxExtensions.BroadcastScalarToVector128(configuration.Variant.OldTreeAgeThreshold);
             Vector128<float> one = AvxExtensions.BroadcastScalarToVector128(1.0F);
-            Vector128<float> zero = Vector128<float>.Zero;
 
             Vector128<int> oldTreeRecordCount = Vector128<int>.Zero;
             fixed (float* crownRatios = &trees.CrownRatio[0], expansionFactors = &trees.LiveExpansionFactor[0], heights = &trees.Height[0], heightGrowths = &trees.HeightGrowth[0])
@@ -1119,6 +1116,7 @@ namespace Mars.Seem.Organon
                     Vector128<float> crownRatioAdjustment = OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                     Vector128<float> heightGrowth = Avx.Multiply(potentialHeightGrowth, Avx.Multiply(modifier, crownRatioAdjustment));
                     Vector128<float> expansionFactor = Avx.LoadVector128(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
+                    Vector128<float> zero = Vector128<float>.Zero;
                     heightGrowth = Avx.BlendVariable(heightGrowth, zero, Avx.CompareLessThanOrEqual(expansionFactor, zero));
                     DebugV.Assert(Avx.CompareGreaterThanOrEqual(heightGrowth, zero));
                     DebugV.Assert(Avx.CompareLessThanOrEqual(heightGrowth, AvxExtensions.BroadcastScalarToVector128(Constant.Maximum.HeightIncrementInFeet)));
@@ -1161,7 +1159,6 @@ namespace Mars.Seem.Organon
             Vector256<float> P8 = AvxExtensions.BroadcastScalarToVector256(heightCoefficients.P8);
             Vector256<float> oldTreeAgeThreshold = AvxExtensions.BroadcastScalarToVector256(configuration.Variant.OldTreeAgeThreshold);
             Vector256<float> one = AvxExtensions.BroadcastScalarToVector256(1.0F);
-            Vector256<float> zero = Vector256<float>.Zero;
 
             Vector256<int> oldTreeRecordCount = Vector256<int>.Zero;
             fixed (float* crownRatios = &trees.CrownRatio[0], expansionFactors = &trees.LiveExpansionFactor[0], heights = &trees.Height[0], heightGrowths = &trees.HeightGrowth[0])
@@ -1201,6 +1198,7 @@ namespace Mars.Seem.Organon
                     Vector256<float> crownRatioAdjustment = OrganonVariant.GetCrownRatioAdjustment(crownRatio);
                     Vector256<float> heightGrowth = Avx.Multiply(potentialHeightGrowth, Avx.Multiply(modifier, crownRatioAdjustment));
                     Vector256<float> expansionFactor = Avx.LoadVector256(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
+                    Vector256<float> zero = Vector256<float>.Zero;
                     heightGrowth = Avx.BlendVariable(heightGrowth, zero, Avx.CompareLessThanOrEqual(expansionFactor, zero));
                     DebugV.Assert(Avx.CompareGreaterThanOrEqual(heightGrowth, zero));
                     DebugV.Assert(Avx.CompareLessThanOrEqual(heightGrowth, AvxExtensions.BroadcastScalarToVector256(Constant.Maximum.HeightIncrementInFeet)));
