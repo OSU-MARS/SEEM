@@ -54,7 +54,7 @@ namespace Mars.Seem.Organon
             }
             OrganonStandDensity? standDensity = trajectory.DensityByPeriod[periodJustBeginning - 1];
             Debug.Assert(standDensity != null);
-            this.basalAreaByPeriod[periodJustBeginning - 1] = standDensity.BasalAreaPerAcre;
+            this.basalAreaByPeriod[periodJustBeginning - 1] = Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * standDensity.BasalAreaPerHa;
             this.BasalAreaThinnedByPeriod[periodJustBeginning] = 0.0F;
 
             this.currentSimulationPeriod = periodJustBeginning;

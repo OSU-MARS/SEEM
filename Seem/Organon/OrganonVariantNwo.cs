@@ -512,7 +512,8 @@ namespace Mars.Seem.Organon
 
                 // get height to crown base at end of period
                 float endCcfl = densityAfterGrowth.GetCrownCompetitionFactorLarger(endDbhInInches);
-                float endHeightToCrownBase = endHeightInFeet / (1.0F + MathV.Exp(crown.HcbB0 + crown.HcbB1 * endHeightInFeet + crown.HcbB2 * endCcfl + crown.HcbB3 * MathV.Ln(densityAfterGrowth.BasalAreaPerAcre) + crown.HcbB4 * (endDbhInInches / endHeightInFeet) + crown.HcbB5 * siteIndexFromDbh + crown.HcbB6 * oldGrowthIndicator * oldGrowthIndicator));
+                float basalAreaPerAcre = Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * densityAfterGrowth.BasalAreaPerHa;
+                float endHeightToCrownBase = endHeightInFeet / (1.0F + MathV.Exp(crown.HcbB0 + crown.HcbB1 * endHeightInFeet + crown.HcbB2 * endCcfl + crown.HcbB3 * MathV.Ln(basalAreaPerAcre) + crown.HcbB4 * (endDbhInInches / endHeightInFeet) + crown.HcbB5 * siteIndexFromDbh + crown.HcbB6 * oldGrowthIndicator * oldGrowthIndicator));
 
                 float crownCompetitionFraction = endCcfl / 100.0F;
                 if (crown.MhcbB3 != 1.0F)

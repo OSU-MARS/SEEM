@@ -4,13 +4,8 @@ using System.Diagnostics;
 
 namespace Mars.Seem.Organon
 {
-    public class OrganonStandDensity
+    public class OrganonStandDensity : StandDensity
     {
-        /// <summary>
-        /// Basal area in square feet per acre.
-        /// </summary>
-        public float BasalAreaPerAcre { get; set; }
-
         public float CrownCompetitionFactor { get; set; }
 
         /// <summary>
@@ -32,17 +27,14 @@ namespace Mars.Seem.Organon
         /// </summary>
         public float[] SmallTreeCrownCompetition { get; private init; }
 
-        public float TreesPerAcre { get; set; }
-
         public OrganonStandDensity(OrganonStandDensity other)
+            : base(other)
         {
-            this.BasalAreaPerAcre = other.BasalAreaPerAcre;
             this.CrownCompetitionFactor = other.CrownCompetitionFactor;
             this.LargeTreeBasalAreaLarger = new float[other.LargeTreeBasalAreaLarger.Length];
             this.LargeTreeCrownCompetition = new float[other.LargeTreeCrownCompetition.Length];
             this.SmallTreeBasalAreaLarger = new float[other.SmallTreeBasalAreaLarger.Length];
             this.SmallTreeCrownCompetition = new float[other.SmallTreeCrownCompetition.Length];
-            this.TreesPerAcre = other.TreesPerAcre;
 
             Array.Copy(other.LargeTreeBasalAreaLarger, 0, this.LargeTreeBasalAreaLarger, 0, other.LargeTreeBasalAreaLarger.Length);
             Array.Copy(other.LargeTreeCrownCompetition, 0, this.LargeTreeCrownCompetition, 0, other.LargeTreeCrownCompetition.Length);
@@ -54,14 +46,15 @@ namespace Mars.Seem.Organon
         /// Trees of DBH larger than 100 inches are treated as if their diameter was 100 inches.
         /// </remarks>
         public OrganonStandDensity(OrganonVariant variant, OrganonStand stand)
+            : base() // for now, don't pass stand to base to avoid a double loop over stand's trees
         {
-            this.BasalAreaPerAcre = 0.0F;
+            Debug.Assert(stand.GetUnits() == Units.English);
+
             this.CrownCompetitionFactor = 0.0F;
             this.LargeTreeBasalAreaLarger = new float[100 - 50 + 1];
             this.LargeTreeCrownCompetition = new float[100 - 50 + 1];
             this.SmallTreeBasalAreaLarger = new float[10 * 50 + 1];
             this.SmallTreeCrownCompetition = new float[10 * 50 + 1];
-            this.TreesPerAcre = 0.0F;
 
             // find each tree's diameter class and add its CCF to its diameter class and all smaller diameter classes
             // Trees less than 50 inches DBH are considered small and tracked by tenth inch diameter classes. Trees up to 100 inches DBH use one inch
@@ -69,6 +62,7 @@ namespace Mars.Seem.Organon
             // 1) Accumulate each tree's BA and CCF in its diameter class.
             // 2) Add the running BA and CCF sums of all larger diameter classes to all smaller ones.
             // (The Fortran version of this used a single pass and therefore ran in O(Nn) time.)
+            float treesPerAcre = 0.0F;
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
@@ -78,7 +72,7 @@ namespace Mars.Seem.Organon
                     {
                         continue;
                     }
-                    this.TreesPerAcre += expansionFactor;
+                    treesPerAcre += expansionFactor;
 
                     float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = treesOfSpecies.Height[treeIndex];
@@ -109,35 +103,39 @@ namespace Mars.Seem.Organon
                 }
             }
 
+            float totalBasalAreaPerAcre = 0.0F;
             for (int largeDiameterClassIndex = this.LargeTreeBasalAreaLarger.Length - 1; largeDiameterClassIndex >= 0; --largeDiameterClassIndex)
             {
-                this.LargeTreeBasalAreaLarger[largeDiameterClassIndex] += this.BasalAreaPerAcre;
+                this.LargeTreeBasalAreaLarger[largeDiameterClassIndex] += totalBasalAreaPerAcre;
                 this.LargeTreeCrownCompetition[largeDiameterClassIndex] += this.CrownCompetitionFactor;
 
-                this.BasalAreaPerAcre = this.LargeTreeBasalAreaLarger[largeDiameterClassIndex];
+                totalBasalAreaPerAcre = this.LargeTreeBasalAreaLarger[largeDiameterClassIndex];
                 this.CrownCompetitionFactor = this.LargeTreeCrownCompetition[largeDiameterClassIndex];
             }
             for (int smallDiameterClassIndex = this.SmallTreeBasalAreaLarger.Length - 1; smallDiameterClassIndex >= 0; --smallDiameterClassIndex)
             {
-                this.SmallTreeBasalAreaLarger[smallDiameterClassIndex] += this.BasalAreaPerAcre;
+                this.SmallTreeBasalAreaLarger[smallDiameterClassIndex] += totalBasalAreaPerAcre;
                 this.SmallTreeCrownCompetition[smallDiameterClassIndex] += this.CrownCompetitionFactor;
 
-                this.BasalAreaPerAcre = this.SmallTreeBasalAreaLarger[smallDiameterClassIndex];
+                totalBasalAreaPerAcre = this.SmallTreeBasalAreaLarger[smallDiameterClassIndex];
                 this.CrownCompetitionFactor = this.SmallTreeCrownCompetition[smallDiameterClassIndex];
             }
+
+            this.BasalAreaPerHa = Constant.AcresPerHectare * Constant.SquareMetersPerSquareFoot * totalBasalAreaPerAcre;
+            this.TreesPerHa = Constant.AcresPerHectare * treesPerAcre;
         }
 
         public void CopyFrom(OrganonStandDensity other)
         {
             Debug.Assert(Object.ReferenceEquals(this, other) == false);
 
-            this.BasalAreaPerAcre = other.BasalAreaPerAcre;
+            this.BasalAreaPerHa = other.BasalAreaPerHa;
             this.CrownCompetitionFactor = other.CrownCompetitionFactor;
             Array.Copy(other.LargeTreeBasalAreaLarger, 0, this.LargeTreeBasalAreaLarger, 0, other.LargeTreeBasalAreaLarger.Length);
             Array.Copy(other.LargeTreeCrownCompetition, 0, this.LargeTreeCrownCompetition, 0, other.LargeTreeCrownCompetition.Length);
             Array.Copy(other.SmallTreeBasalAreaLarger, 0, this.SmallTreeBasalAreaLarger, 0, other.SmallTreeBasalAreaLarger.Length);
             Array.Copy(other.SmallTreeCrownCompetition, 0, this.SmallTreeCrownCompetition, 0, other.SmallTreeCrownCompetition.Length);
-            this.TreesPerAcre = other.TreesPerAcre;
+            this.TreesPerHa = other.TreesPerHa;
         }
 
         public float GetBasalAreaLarger(float dbhInInches)

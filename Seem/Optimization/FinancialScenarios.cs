@@ -105,6 +105,43 @@ namespace Mars.Seem.Optimization
             get { return this.DiscountRate.Count; }
         }
 
+        public FinancialScenarios Filter(string name)
+        {
+            for (int financialIndex = 0; financialIndex < this.Count; ++financialIndex)
+            {
+                if (String.Equals(this.Name[financialIndex], name, StringComparison.Ordinal))
+                {
+                    FinancialScenarios match = new();
+                    match.DiscountRate[0] = this.DiscountRate[financialIndex];
+                    match.DouglasFir2SawPondValuePerMbf[0] = this.DouglasFir2SawPondValuePerMbf[financialIndex];
+                    match.DouglasFir3SawPondValuePerMbf[0] = this.DouglasFir3SawPondValuePerMbf[financialIndex];
+                    match.DouglasFir4SawPondValuePerMbf[0] = this.DouglasFir4SawPondValuePerMbf[financialIndex];
+                    match.HarvestSystems[0] = this.HarvestSystems[financialIndex];
+                    match.HarvestTaxPerMbf[0] = this.HarvestTaxPerMbf[financialIndex];
+                    match.Name[0] = this.Name[financialIndex];
+                    match.PropertyTaxAndManagementPerHectareYear[0] = this.PropertyTaxAndManagementPerHectareYear[financialIndex];
+                    match.RegenerationHarvestCostPerHectare[0] = this.RegenerationHarvestCostPerHectare[financialIndex];
+                    match.RegenerationRoadCostPerCubicMeter[0] = this.RegenerationRoadCostPerCubicMeter[financialIndex];
+                    match.RegenerationSlashCostPerCubicMeter[0] = this.RegenerationSlashCostPerCubicMeter[financialIndex];
+                    match.ReleaseSprayCostPerHectare[0] = this.ReleaseSprayCostPerHectare[financialIndex];
+                    match.SeedlingCost[0] = this.SeedlingCost[financialIndex];
+                    match.SitePrepAndReplantingCostPerHectare[0] = this.SitePrepAndReplantingCostPerHectare[financialIndex];
+                    match.ThinningHarvestCostPerHectare[0] = this.ThinningHarvestCostPerHectare[financialIndex];
+                    match.ThinningPondValueMultiplier[0] = this.ThinningPondValueMultiplier[financialIndex];
+                    match.ThinningRoadCostPerCubicMeter[0] = this.ThinningRoadCostPerCubicMeter[financialIndex];
+                    match.ThinningSlashCostPerCubicMeter[0] = this.ThinningSlashCostPerCubicMeter[financialIndex];
+                    match.TimberAppreciationRate[0] = this.TimberAppreciationRate[financialIndex];
+                    match.WesternRedcedarCamprunPondValuePerMbf[0] = this.WesternRedcedarCamprunPondValuePerMbf[financialIndex];
+                    match.WhiteWood2SawPondValuePerMbf[0] = this.WhiteWood2SawPondValuePerMbf[financialIndex];
+                    match.WhiteWood3SawPondValuePerMbf[0] = this.WhiteWood3SawPondValuePerMbf[financialIndex];
+                    match.WhiteWood4SawPondValuePerMbf[0] = this.WhiteWood4SawPondValuePerMbf[financialIndex];
+                    return match;
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(name));
+        }
+
         public float GetAppreciationFactor(int financialIndex, int years)
         {
             float discountRate = this.DiscountRate[financialIndex];
@@ -242,7 +279,15 @@ namespace Mars.Seem.Optimization
             }
             else
             {
-                longLogHarvest.NetPresentValuePerHa = 0.0F; // presumably, all trees died or were removed in earlier harvests
+                // all trees are too small to have merchantable volume, were removed in earlier harvests, or are dead
+                longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa = 0.0F;
+                longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa = 0.0F;
+                longLogHarvest.MinimumSystemCostPerHa = 0.0F;
+                longLogHarvest.NetPresentValuePerHa = 0.0F;
+                longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa = 0.0F;
+                longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa = 0.0F;
+                longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = 0.0F;
+                longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = 0.0F;
             }
 
             return longLogHarvest;

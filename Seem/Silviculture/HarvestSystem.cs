@@ -2,6 +2,7 @@
 {
     public enum HarvestSystem
     {
+        None,
         FellerBuncherGrappleSwingYarderProcessorLoader,
         FellerBuncherGrappleYoaderProcessorLoader,
         TrackedHarvesterGrappleSwingYarderLoader,

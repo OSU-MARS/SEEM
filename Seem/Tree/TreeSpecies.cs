@@ -11,6 +11,7 @@ namespace Mars.Seem.Tree
             TreeSpecies.Properties = new()
             {
                 { FiaCode.PseudotsugaMenziesii, DouglasFir.Properties },
+                { FiaCode.ThujaPlicata, WesternRedcedar.Properties },
                 { FiaCode.TsugaHeterophylla, WesternHemlock.Properties }
             };
         }

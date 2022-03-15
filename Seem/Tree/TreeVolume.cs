@@ -1,4 +1,6 @@
-﻿namespace Mars.Seem.Tree
+﻿using System;
+
+namespace Mars.Seem.Tree
 {
     public class TreeVolume
     {
@@ -21,13 +23,21 @@
 
         public TreeVolume(TreeSpeciesVolumeTableRange finalHarvestTableRange, TreeSpeciesVolumeTableRange thinningTableRange)
         {
-            TreeSpeciesVolumeTableParameters psmeFinalHarvestParameters = new(finalHarvestTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight);
-            TreeSpeciesVolumeTableParameters tsheFinalHarvestParameters = new(finalHarvestTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight);
-            this.RegenerationHarvest = new ScaledVolume(psmeFinalHarvestParameters, tsheFinalHarvestParameters);
+            TreeSpeciesVolumeTableParameters[] finalHarvestParameters = new TreeSpeciesVolumeTableParameters[]
+            {
+                new(FiaCode.PseudotsugaMenziesii, finalHarvestTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight),
+                new(FiaCode.ThujaPlicata, finalHarvestTableRange, WesternRedcedar.GetDiameterInsideBark, WesternRedcedar.GetNeiloidHeight),
+                new(FiaCode.TsugaHeterophylla, finalHarvestTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight)
+            };
+            this.RegenerationHarvest = new ScaledVolume(finalHarvestParameters);
 
-            TreeSpeciesVolumeTableParameters psmeThinningParameters = new(thinningTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight);
-            TreeSpeciesVolumeTableParameters thseThinningParameters = new(thinningTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight);
-            this.Thinning = new ScaledVolume(psmeThinningParameters, thseThinningParameters);
+            TreeSpeciesVolumeTableParameters[] thinningParameters = new TreeSpeciesVolumeTableParameters[]
+            {
+                new(FiaCode.PseudotsugaMenziesii, thinningTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight),
+                new(FiaCode.ThujaPlicata, thinningTableRange, WesternRedcedar.GetDiameterInsideBark, WesternRedcedar.GetNeiloidHeight),
+                new(FiaCode.TsugaHeterophylla, thinningTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight)
+            };
+            this.Thinning = new ScaledVolume(thinningParameters);
         }
     }
 }

@@ -136,9 +136,9 @@ namespace Mars.Seem.Silviculture
             // thin from above
             OrganonStandDensity? densityAtEndOfPreviousPeriod = trajectory.DensityByPeriod[this.Period - 1];
             Debug.Assert(densityAtEndOfPreviousPeriod != null);
-            float targetBasalArea = 0.01F * this.FromAbovePercentage * densityAtEndOfPreviousPeriod.BasalAreaPerAcre;
+            float targetBasalAreaEnglish = 0.01F * this.FromAbovePercentage * Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * densityAtEndOfPreviousPeriod.BasalAreaPerHa;
             float basalAreaRemovedFromAbove = 0.0F;
-            while (basalAreaRemovedFromAbove < targetBasalArea)
+            while (basalAreaRemovedFromAbove < targetBasalAreaEnglish)
             {
                 Trees treesWithLargest = standAtEndOfPreviousPeriod.TreesBySpecies[maximumSpecies];
                 int thinIndex = thinFromAboveIndexBySpecies[maximumSpecies] - 1;
@@ -188,9 +188,9 @@ namespace Mars.Seem.Silviculture
             }
 
             // thin from below
-            targetBasalArea = 0.01F * this.FromBelowPercentage * densityAtEndOfPreviousPeriod.BasalAreaPerAcre;
+            targetBasalAreaEnglish = 0.01F * this.FromBelowPercentage * Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * densityAtEndOfPreviousPeriod.BasalAreaPerHa;
             float basalAreaRemovedFromBelow = 0.0F;
-            while (basalAreaRemovedFromBelow < targetBasalArea)
+            while (basalAreaRemovedFromBelow < targetBasalAreaEnglish)
             {
                 Trees treesWithSmallest = standAtEndOfPreviousPeriod.TreesBySpecies[minimumSpecies];
                 int thinIndex = thinFromBelowIndexBySpecies[minimumSpecies];

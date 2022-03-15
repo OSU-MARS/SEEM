@@ -24,9 +24,9 @@ namespace Mars.Seem.Test
                 for (int simulationStep = 0; simulationStep < TestConstant.Default.SimulationCyclesToRun; ++simulationStep)
                 {
                     OrganonStandDensity densityStartOfStep = new(variant, stand);
-                    Assert.IsTrue(densityStartOfStep.BasalAreaPerAcre > 0.0F);
+                    Assert.IsTrue(densityStartOfStep.BasalAreaPerHa > 0.0F);
                     Assert.IsTrue(densityStartOfStep.CrownCompetitionFactor > 0.0F);
-                    Assert.IsTrue(densityStartOfStep.TreesPerAcre > 0.0F);
+                    Assert.IsTrue(densityStartOfStep.TreesPerHa > 0.0F);
 
                     float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(variant, stand);
                     OrganonTest.Verify(crownCompetitionByHeight, variant);
@@ -38,9 +38,9 @@ namespace Mars.Seem.Test
                     }
 
                     OrganonStandDensity densityEndOfStep = new(variant, stand);
-                    Assert.IsTrue(densityEndOfStep.BasalAreaPerAcre > 0.0F);
+                    Assert.IsTrue(densityEndOfStep.BasalAreaPerHa > 0.0F);
                     Assert.IsTrue(densityEndOfStep.CrownCompetitionFactor > 0.0F);
-                    Assert.IsTrue(densityEndOfStep.TreesPerAcre > 0.0F);
+                    Assert.IsTrue(densityEndOfStep.TreesPerHa > 0.0F);
 
                     #pragma warning disable IDE0059 // Unnecessary assignment of a value
                     crownCompetitionByHeight = OrganonGrowth.GrowCrown(variant, stand, densityEndOfStep, calibrationBySpecies);
@@ -92,7 +92,7 @@ namespace Mars.Seem.Test
                 {
                     float basalAreaLarger = densityForLookup.GetBasalAreaLarger(dbhInInches);
                     Assert.IsTrue(basalAreaLarger >= 0.0F);
-                    Assert.IsTrue(basalAreaLarger <= densityForLookup.BasalAreaPerAcre);
+                    Assert.IsTrue(basalAreaLarger <= Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * densityForLookup.BasalAreaPerHa);
                     float crownCompetitionLarger = densityForLookup.GetCrownCompetitionFactorLarger(dbhInInches);
                     Assert.IsTrue(crownCompetitionLarger >= 0.0F);
                     Assert.IsTrue(crownCompetitionLarger <= densityForLookup.CrownCompetitionFactor);
@@ -284,7 +284,7 @@ namespace Mars.Seem.Test
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
                 OrganonStandDensity standDensity = new(variant, stand);
 
-                this.TestContext!.WriteLine("{0},{1} ft²/ac,{2} trees per acre,{3} crown competition factor", variant, standDensity.BasalAreaPerAcre, standDensity.TreesPerAcre, standDensity.CrownCompetitionFactor);
+                this.TestContext!.WriteLine("{0},{1} m²/ha,{2} trees per hectare,{3} crown competition factor", variant, standDensity.BasalAreaPerHa, standDensity.TreesPerHa, standDensity.CrownCompetitionFactor);
                 this.TestContext.WriteLine("index,large tree BA larger,large tree CCF larger");
                 for (int largeTreeCompetitionIndex = 0; largeTreeCompetitionIndex < standDensity.LargeTreeBasalAreaLarger.Length; ++largeTreeCompetitionIndex)
                 {

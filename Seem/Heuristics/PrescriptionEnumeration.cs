@@ -152,7 +152,7 @@ namespace Mars.Seem.Heuristics
                     }
                     OrganonStandDensity? standDensityAtEndOfPreviousPeriod = this.CurrentTrajectory.DensityByPeriod[thinPrescription.Period - 1];
                     Debug.Assert(standDensityAtEndOfPreviousPeriod != null);
-                    float basalAreaPerAcreBeforeThin = standDensityAtEndOfPreviousPeriod.BasalAreaPerAcre;
+                    float basalAreaPerAcreBeforeThin = Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * standDensityAtEndOfPreviousPeriod.BasalAreaPerHa;
                     if (maximumPercentage >= basalAreaPerAcreBeforeThin)
                     {
                         throw new InvalidOperationException(nameof(this.HeuristicParameters.MaximumIntensity));

@@ -653,7 +653,7 @@ namespace Mars.Seem.Organon
                 float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                 float heightInFeet = treesOfSpecies.Height[treeIndex];
                 float crownCompetitionFactorLarger = standDensity.GetCrownCompetitionFactorLarger(dbhInInches);
-                float heightToCrownBase = variant.GetHeightToCrownBase(stand, species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, standDensity.BasalAreaPerAcre, oldGrowthIndicator);
+                float heightToCrownBase = variant.GetHeightToCrownBase(stand, species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, standDensity, oldGrowthIndicator);
                 if (heightToCrownBase < 0.0F)
                 {
                     heightToCrownBase = 0.0F;

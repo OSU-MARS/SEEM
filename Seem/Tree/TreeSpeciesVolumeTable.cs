@@ -301,7 +301,12 @@ namespace Mars.Seem.Tree
                                 logTopDib = logCandidateTopDib;
                             }
                         }
-                        Debug.Assert(logTopDib > 0.0F);
+                        // since log tops are always above DBH logTopDib < dbhInCm should hold for typically shaped trees
+                        // However, western hemlock, western redcedar, and likely other taper equations do not always conform to this
+                        // numerically.
+                        //   THPL: < 1.01 DBH
+                        //   TSHE: < 1.30 DBH on trees with unrealistically high (>200) height-diameter ratios
+                        Debug.Assert((logTopDib > 0.0F) && (logTopDib < 1.3F * dbhInCm));
 
                         float logLengthIncludingTrim = logTopHeight - logBottomHeight;
                         Debug.Assert(logLengthIncludingTrim >= Constant.Bucking.MinimumLogLength4SawInM - 0.0001F);
@@ -404,8 +409,7 @@ namespace Mars.Seem.Tree
                             logScribnerVolume = 10.0F * TreeSpeciesVolumeTable.ScribnerCLongLog[scribnerDiameterInInches, scribnerLengthInFeet];
                         }
 
-                        Debug.Assert(logCubicVolume > 0.0F);
-                        Debug.Assert(logScribnerVolume > 0.0F);
+                        Debug.Assert((logCubicVolume > 0.0F) && (logScribnerVolume > 0.0F));
                         if ((logTopDib >= Constant.Bucking.MinimumScalingDiameter2Saw) &&
                             (logLengthIncludingTrim >= Constant.Bucking.MinimumLogLength2SawInM) &&
                             (logScribnerVolume >= Constant.Bucking.MinimumLogScribner2Saw))
@@ -427,8 +431,7 @@ namespace Mars.Seem.Tree
                         else if (logScribnerVolume >= Constant.Bucking.MinimumLogScribner4Saw)
                         {
                             // 4S
-                            Debug.Assert(logTopDib >= Constant.Bucking.MinimumLogLength4SawInM);
-                            Debug.Assert(logTopDib >= Constant.Bucking.MinimumScalingDiameter4Saw);
+                            Debug.Assert((logTopDib >= Constant.Bucking.MinimumLogLength4SawInM) && (logTopDib >= Constant.Bucking.MinimumScalingDiameter4Saw));
                             this.Cubic4Saw[dbhIndex, heightIndex] += logCubicVolume;
                             this.Scribner4Saw[dbhIndex, heightIndex] += logScribnerVolume;
                             ++logs4S;

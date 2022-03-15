@@ -36,6 +36,8 @@ namespace Mars.Seem
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
         public const float RoundTowardsZeroTolerance = 0.001F;
         public const float SecondsPerHour = 3600.0F;
+        public const float SquareMetersPerSquareFoot = 0.09290304F;
+        public const float SquareFeetPerSquareMeter = 10.7639104167097F;
         public const float SquareMetersPerHectare = 10000.0F;
 
         public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new(new List<FiaCode>()
@@ -209,6 +211,7 @@ namespace Mars.Seem
         {
             public static class TreeCondition
             {
+                public const int Harvested = 1;
                 public const int Dead = 2;
             }
         }

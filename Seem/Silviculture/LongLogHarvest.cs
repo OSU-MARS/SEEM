@@ -104,6 +104,10 @@ namespace Mars.Seem.Silviculture
 
         public HarvestSystem GetMinimumCostHarvestSystem()
         {
+            if (this.MinimumSystemCostPerHa == 0.0F)
+            {
+                return HarvestSystem.None;
+            }
             if (this.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa == this.MinimumSystemCostPerHa)
             {
                 return HarvestSystem.FellerBuncherGrappleSwingYarderProcessorLoader;

@@ -15,6 +15,8 @@ namespace Mars.Seem.Silviculture
         public SnagDownLogTable(StandTrajectory standTrajectory, float maximumDiameterInCm, float diameterClassSizeInCm)
             : base(standTrajectory.PlanningPeriods, maximumDiameterInCm, diameterClassSizeInCm)
         {
+            Debug.Assert(standTrajectory.PeriodLengthInYears > 0);
+
             this.SnagsPerHectareBySpeciesAndDiameterClass = new();
             this.SnagQmdInCentimetersByPeriod = new float[this.Periods];
             this.SnagsPerHectareByPeriod = new float[this.Periods];

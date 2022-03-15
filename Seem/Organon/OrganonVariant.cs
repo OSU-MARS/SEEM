@@ -783,18 +783,18 @@ namespace Mars.Seem.Organon
         /// <param name="heightInFeet">Tree height (feet).</param>
         /// <param name="dbhInInches">Tree's diameter at breast height (inches)</param>
         /// <param name="CCFL">Crown competition factor from trees larger than the tree being evaluated.</param>
-        /// <param name="basalAreaPerAcre">Stand basal area.</param>
+        /// <param name="basalAreaPerHa">Stand basal area.</param>
         /// <param name="oldGrowthIndex">Mostly applied in SWO. Only used for Pacific madrone in NWO and SMC. Not used in RAP.</param>
         /// <returns>Height to crown base (feet).</returns>
-        public virtual float GetHeightToCrownBase(OrganonStand organonStand, FiaCode species, float heightInFeet, float dbhInInches, float CCFL, float basalAreaPerAcre, float oldGrowthIndex)
+        public virtual float GetHeightToCrownBase(OrganonStand organonStand, FiaCode species, float heightInFeet, float dbhInInches, float CCFL, StandDensity standDensity, float oldGrowthIndex)
         {
             OrganonCrownCoefficients crown = this.GetOrCreateCrownCoefficients(species);
             float siteIndexFromDbh = this.GetSiteIndex(organonStand, species) - 4.5F;
 
             // this line of code also appears in GrowCrown() but needs to be called on its own during tree initialization
+            float basalAreaPerAcre = Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * standDensity.BasalAreaPerHa;
             float heightToCrownBase = heightInFeet / (1.0F + MathV.Exp(crown.HcbB0 + crown.HcbB1 * heightInFeet + crown.HcbB2 * CCFL + crown.HcbB3 * MathV.Ln(basalAreaPerAcre) + crown.HcbB4 * (dbhInInches / heightInFeet) + crown.HcbB5 * siteIndexFromDbh + crown.HcbB6 * oldGrowthIndex * oldGrowthIndex));
-            Debug.Assert(heightToCrownBase >= 0.0F);
-            Debug.Assert(heightToCrownBase <= heightInFeet);
+            Debug.Assert((heightInFeet > 0) && (heightToCrownBase >= 0.0F) && (heightToCrownBase <= heightInFeet));
             return heightToCrownBase;
         }
 
@@ -904,7 +904,7 @@ namespace Mars.Seem.Organon
 
                 // get height to crown base at end of period
                 float endCcfl = densityAfterGrowth.GetCrownCompetitionFactorLarger(endDbhInInches);
-                float endHeightToCrownBase = this.GetHeightToCrownBase(stand, trees.Species, endHeightInFeet, endDbhInInches, endCcfl, densityAfterGrowth.BasalAreaPerAcre, oldGrowthIndicator);
+                float endHeightToCrownBase = this.GetHeightToCrownBase(stand, trees.Species, endHeightInFeet, endDbhInInches, endCcfl, densityAfterGrowth, oldGrowthIndicator);
                 float heightToCrownBaseRatio = crown.MhcbB0 - crown.MhcbB1 * MathV.Exp(crown.MhcbB2 * MathV.Pow(endCcfl / 100.0F, crown.MhcbB3));
                 if (heightToCrownBaseRatio > crown.HeightToCrownBaseRatioLimit)
                 {

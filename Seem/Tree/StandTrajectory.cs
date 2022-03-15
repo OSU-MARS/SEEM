@@ -228,7 +228,7 @@ namespace Mars.Seem.Tree
 
         public abstract float GetBasalAreaThinnedPerHa(int periodIndex);
 
-        public int GetEndOfPeriodAge(int period)
+        public virtual int GetEndOfPeriodAge(int period)
         {
             Debug.Assert((period >= 0) && (period < this.PlanningPeriods));
             Debug.Assert((this.PeriodZeroAgeInYears >= 0) && (this.PeriodLengthInYears > 0));
@@ -301,7 +301,7 @@ namespace Mars.Seem.Tree
 
         public abstract StandDensity GetStandDensity(int periodIndex);
 
-        public int GetStartOfPeriodAge(int period)
+        public virtual int GetStartOfPeriodAge(int period)
         {
             Debug.Assert((period >= 0) && (period < this.PlanningPeriods));
             Debug.Assert((this.PeriodZeroAgeInYears >= 0) && (this.PeriodLengthInYears > 0));
@@ -486,25 +486,44 @@ namespace Mars.Seem.Tree
         }
     }
 
-    public abstract class StandTrajectory<TStand, TTreatments> : StandTrajectory 
-        where TStand : Stand 
-        where TTreatments : Treatments
+    public abstract class StandTrajectory<TStand, TStandDensity, TTreatments> : StandTrajectory 
+        where TStand : Stand
+        where TStandDensity : StandDensity
+        where TTreatments : Treatments, new()
     {
         private readonly TStand?[] standByPeriod;
         private readonly TTreatments treatments;
 
-        protected StandTrajectory(TreeVolume treeVolume, int lastPlanningPeriod, float plantingDensityInTreesPerHectare, TTreatments treatments) :
-            base(treeVolume, lastPlanningPeriod, plantingDensityInTreesPerHectare)
+        public TStandDensity?[] DensityByPeriod { get; private init; }
+
+        protected StandTrajectory(Stand stand, TreeVolume treeVolume, int lastPlanningPeriod) :
+            base(treeVolume, lastPlanningPeriod, stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand), "Stand's planting density is not specified.")) // base does range checks
         {
             this.standByPeriod = new TStand[this.PlanningPeriods];
-            this.treatments = treatments;
+            this.treatments = new();
+
+            int maximumPlanningPeriodIndex = lastPlanningPeriod + 1;
+            this.DensityByPeriod = new TStandDensity[maximumPlanningPeriodIndex];
+
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
+            {
+                FiaCode species = treesOfSpecies.Species;
+                this.TreeSelectionBySpecies.Add(species, new IndividualTreeSelection(treesOfSpecies.Capacity)
+                {
+                    Count = treesOfSpecies.Count
+                });
+                this.StandingVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
+                this.ThinningVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
+            }
         }
 
-        protected StandTrajectory(StandTrajectory<TStand, TTreatments> other)
+        protected StandTrajectory(StandTrajectory<TStand, TStandDensity, TTreatments> other)
             : base(other)
         {
             this.standByPeriod = new TStand[other.PlanningPeriods];
             this.treatments = (TTreatments)other.Treatments.Clone();
+
+            this.DensityByPeriod = new TStandDensity[other.PlanningPeriods];
 
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
@@ -514,6 +533,8 @@ namespace Mars.Seem.Tree
                     this.standByPeriod[periodIndex] = (TStand)otherStand.Clone();
                 }
             }
+
+            // base clones this.StandingVolumeBySpecies and ThinningVolumeBySpecies
         }
 
         public override TStand?[] StandByPeriod 
@@ -545,6 +566,11 @@ namespace Mars.Seem.Tree
             return Constant.NoThinPeriod;
         }
 
+        public override TStandDensity GetStandDensity(int periodIndex)
+        {
+            return this.DensityByPeriod[periodIndex] ?? throw new InvalidOperationException("Stand density is null for period " + periodIndex + ". Has the stand trajectory been simulated?");
+        }
+
         protected override int GetThinPeriod(int thinIndex)
         {
             List<int> thinningPeriods = new(this.Treatments.Harvests.Count);
@@ -560,6 +586,56 @@ namespace Mars.Seem.Tree
 
             thinningPeriods.Sort();
             return thinningPeriods[thinIndex];
+        }
+
+        public override void RecalculateStandingVolumeIfNeeded(int periodIndex)
+        {
+            TStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
+            {
+                if (standingVolumeForSpecies.IsCalculated(periodIndex) == false)
+                {
+                    standingVolumeForSpecies.CalculateStandingVolume(stand, periodIndex, this.TreeVolume);
+                }
+            }
+        }
+
+        public override void RecalculateThinningVolumeIfNeeded(int periodIndex)
+        {
+            bool periodHasHarvest = false;
+            foreach (Harvest harvest in this.Treatments.Harvests)
+            {
+                if (harvest.Period == periodIndex)
+                {
+                    periodHasHarvest = true;
+                }
+            }
+
+            if (periodHasHarvest)
+            {
+                // trees' expansion factors are set to zero when harvested so use trees' volume at end of the previous period.
+                TStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
+                foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+                {
+                    if (thinVolumeForSpecies.IsCalculated(periodIndex) == false)
+                    {
+                        thinVolumeForSpecies.CalculateThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeVolume);
+                    }
+                }
+
+                // check for OrganonTreatments.BasalAreaThinnedByPeriod currently disabled
+                // this check can fire spuriously in thinning from below when multiple trees too small to have merchantable volume are removed
+                // could make more specific by checking if harvest removes at least one tree.
+                //Debug.Assert((this.Treatments.BasalAreaThinnedByPeriod[periodIndex] > Constant.Bucking.MinimumBasalArea4SawEnglish && this.GetTotalScribnerVolumeThinned(periodIndex) > 0.0F) ||
+                //              this.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
+            }
+            else
+            {
+                foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+                {
+                    thinVolumeForSpecies.ClearVolume(periodIndex);
+                }
+            }
         }
     }
 }

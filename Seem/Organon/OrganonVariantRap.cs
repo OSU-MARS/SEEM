@@ -354,8 +354,9 @@ namespace Mars.Seem.Organon
             return growthEffectiveAge;
         }
 
-        public override float GetHeightToCrownBase(OrganonStand stand, FiaCode species, float heightInFeet, float dbhInInches, float CCFL, float basalAreaPerAcre, float oldGrowthIndex)
+        public override float GetHeightToCrownBase(OrganonStand stand, FiaCode species, float heightInFeet, float dbhInInches, float CCFL, StandDensity standDensity, float oldGrowthIndex)
         {
+            float basalAreaPerAcre = Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * standDensity.BasalAreaPerHa;
             OrganonCrownCoefficients crown = this.GetOrCreateCrownCoefficients(species);
             if (species == FiaCode.AlnusRubra)
             {

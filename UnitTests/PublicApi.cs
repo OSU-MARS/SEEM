@@ -105,7 +105,7 @@ namespace Mars.Seem.Test
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             RunParameters landExpectationValueIts = new(new List<int>() { 9 }, configuration)
@@ -192,7 +192,7 @@ namespace Mars.Seem.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { -0.036F, 0.114F };
+                Span<float> minFinancialValues = stackalloc[] { -0.0351F, 0.114F };
                 Span<int> treesThinned = stackalloc[] { 5, 0 };
             #else
                 Span<float> minFinancialValues = stackalloc[] { 1.075F, 1.169F };
@@ -244,7 +244,7 @@ namespace Mars.Seem.Test
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             // heuristics optimizing for LEV
@@ -412,7 +412,7 @@ namespace Mars.Seem.Test
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
@@ -675,7 +675,7 @@ namespace Mars.Seem.Test
 
             PlotsWithHeight plot14 = PublicApi.GetPlot14();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = plot14.ToOrganonStand(configuration, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue);
+            OrganonStand stand = plot14.ToOrganonStand(configuration, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
 
             OrganonStandTrajectory thinnedTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
@@ -759,7 +759,7 @@ namespace Mars.Seem.Test
             List<float> discountRates = new() {  Constant.Financial.DefaultAnnualDiscountRate };
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecordCount);
+            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecordCount, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             RunParameters landExpectationValue = new(new List<int>() { 9 }, configuration)
@@ -920,7 +920,9 @@ namespace Mars.Seem.Test
             CutToLengthHarvest bestThinNpv = new();
             CutToLengthHarvest currentThinNpv = new();
             float previousBestCubicStandingVolume = Single.NaN;
+            float previousBestScribnerStandingVolume = Single.NaN;
             float previousCurrentCubicStandingVolume = Single.NaN;
+            float previousCurrentScribnerStandingVolume = Single.NaN;
             for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
             {
                 float bestCubicStandingVolume = bestStandingVolume.GetCubicTotal(periodIndex);
@@ -1015,35 +1017,30 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(currentThinNpv.PondValue4SawPerHa == 0.0F);
                 }
 
-                if (periodIndex == 0)
-                {
-                    // zero merchantable on Nelder 1 at age 20 with Poudel 2018 net volume
-                    Assert.IsTrue(bestCubicStandingVolume >= 0.0F, "Standing volume is " + bestCubicStandingVolume + " m³.");
-                    Assert.IsTrue(bestTrajectory.GetTotalStandingScribnerVolume(periodIndex) >= 0.0F);
-                    Assert.IsTrue(currentCubicStandingVolume >= 0.0F);
-                    Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex) >= 0.0F);
-                }
-                else
-                {
-                    Assert.IsTrue(bestCubicStandingVolume >= 0.0F, "Standing cubic volume from best trajectory is " + bestCubicStandingVolume + " m³.");
-                    Assert.IsTrue(currentCubicStandingVolume >= 0.0F, "Standing cubic volume from current trajectory is " + currentCubicStandingVolume + " m³.");
-                    float bestScribnerStandingVolume = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex);
-                    float currentScribnerStandingVolume = heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex);
-                    Assert.IsTrue(bestScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + bestScribnerStandingVolume + " MBF.");
-                    Assert.IsTrue(currentScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + currentScribnerStandingVolume + " MBF.");
+                float bestScribnerStandingVolume = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex);
+                float currentScribnerStandingVolume = heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex);
+                // zero merchantable on Nelder 1 at age 20 with Poudel 2018 net volume
+                Assert.IsTrue(bestCubicStandingVolume >= 0.0F, "Standing cubic volume from best trajectory is " + bestCubicStandingVolume + " m³.");
+                Assert.IsTrue(currentCubicStandingVolume >= 0.0F, "Standing cubic volume from current trajectory is " + currentCubicStandingVolume + " m³.");
+                Assert.IsTrue(bestScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + bestScribnerStandingVolume + " MBF.");
+                Assert.IsTrue(currentScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + currentScribnerStandingVolume + " MBF.");
 
+                if (periodIndex > 0)
+                {
+                    // for now, assume monotonic increase in standing volumes except in harvest periods
                     if (periodIndex != firstThinningPeriod)
                     {
-                        // for now, assume monotonic increase in standing volumes except in harvest periods
-                        Assert.IsTrue(bestCubicStandingVolume > previousBestCubicStandingVolume, "Standing volume did not increase monotonically (current: " + bestCubicStandingVolume + ", previous: " + previousBestCubicStandingVolume + ").");
-                        Assert.IsTrue(bestTrajectory.GetTotalStandingScribnerVolume(periodIndex) > bestTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1));
-                        Assert.IsTrue(currentCubicStandingVolume > previousCurrentCubicStandingVolume);
-                        Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex) > heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1));
+                        Assert.IsTrue(bestCubicStandingVolume >= previousBestCubicStandingVolume, "Standing cubic volume did not increase monotonically (current: " + bestCubicStandingVolume + ", previous: " + previousBestCubicStandingVolume + ").");
+                        Assert.IsTrue(bestScribnerStandingVolume >= previousBestScribnerStandingVolume, "Standing Scribner volume did not increase monotonically (current: " + bestScribnerStandingVolume + ", previous: " + previousBestScribnerStandingVolume + ").");
+                        Assert.IsTrue(currentCubicStandingVolume >= previousCurrentCubicStandingVolume);
+                        Assert.IsTrue(currentScribnerStandingVolume >= previousCurrentScribnerStandingVolume);
                     }
                 }
 
                 previousBestCubicStandingVolume = bestCubicStandingVolume;
+                previousBestScribnerStandingVolume = bestScribnerStandingVolume;
                 previousCurrentCubicStandingVolume = currentCubicStandingVolume;
+                previousCurrentScribnerStandingVolume = currentScribnerStandingVolume;
             }
 
             // check moves
@@ -1119,7 +1116,7 @@ namespace Mars.Seem.Test
                     AssertNullable.IsNotNull(standDensityBeforeThin);
 
                     Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] > 0.0F);
-                    Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] < standDensityBeforeThin.BasalAreaPerAcre); // assume <50% thin by volume
+                    Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] < Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * standDensityBeforeThin.BasalAreaPerHa); // assume <50% thin by volume
                     Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
                     Assert.IsTrue(thinnedTrajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
                 }
@@ -1184,8 +1181,8 @@ namespace Mars.Seem.Test
             {
                 OrganonStandDensity? standDensity = trajectory.DensityByPeriod[periodIndex];
                 AssertNullable.IsNotNull(standDensity);
-                Assert.IsTrue(standDensity.BasalAreaPerAcre > 0.0F);
-                Assert.IsTrue(standDensity.BasalAreaPerAcre <= TestConstant.Maximum.TreeBasalAreaLarger);
+                Assert.IsTrue(standDensity.BasalAreaPerHa > 0.0F);
+                Assert.IsTrue(standDensity.BasalAreaPerHa <= Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * TestConstant.Maximum.TreeBasalAreaLarger);
 
                 trajectory.RecalculateThinningVolumeIfNeeded(periodIndex);
                 trajectory.RecalculateStandingVolumeIfNeeded(periodIndex);
@@ -1276,26 +1273,25 @@ namespace Mars.Seem.Test
 
             OrganonStandDensity? standDensity = trajectory.DensityByPeriod[0];
             AssertNullable.IsNotNull(standDensity);
-            float initialTreesPerHectare = Constant.AcresPerHectare * standDensity.TreesPerAcre;
-            float initialStemsPerHectare = initialTreesPerHectare + snagsAndDownLogs.LogsPerHectareByPeriod[0] + snagsAndDownLogs.SnagsPerHectareByPeriod[0];
+            float initialStemsPerHectare = standDensity.TreesPerHa + snagsAndDownLogs.LogsPerHectareByPeriod[0] + snagsAndDownLogs.SnagsPerHectareByPeriod[0];
             for (int period = 0; period < snagsAndDownLogs.Periods; ++period)
             {
                 standDensity = trajectory.DensityByPeriod[period];
                 AssertNullable.IsNotNull(standDensity);
 
                 float logsPerHectare = snagsAndDownLogs.LogsPerHectareByPeriod[period];
-                float snagPerHectare = snagsAndDownLogs.SnagsPerHectareByPeriod[period];
-                float treesPerHectare = Constant.AcresPerHectare * standDensity.TreesPerAcre;
-                float stemsPerHectare = treesPerHectare + snagPerHectare + logsPerHectare;
+                float snagsPerHectare = snagsAndDownLogs.SnagsPerHectareByPeriod[period];
+                float treesPerHectare = standDensity.TreesPerHa;
+                float stemsPerHectare = treesPerHectare + snagsPerHectare + logsPerHectare;
 
                 Assert.IsTrue(snagsAndDownLogs.LogQmdInCentimetersByPeriod[period] >= 0.0F);
                 Assert.IsTrue(logsPerHectare >= 0.0F);
 
                 Assert.IsTrue(snagsAndDownLogs.SnagQmdInCentimetersByPeriod[period] >= 0.0F);
-                Assert.IsTrue(snagPerHectare >= 0.0F);
+                Assert.IsTrue(snagsPerHectare >= 0.0F);
 
                 // for now, assume no ingrowth
-                Assert.IsTrue(initialStemsPerHectare >= stemsPerHectare);
+                Assert.IsTrue(initialStemsPerHectare >= stemsPerHectare, stemsPerHectare + " stems per hectare in period " + period + " is an increase from the initial value of " + initialStemsPerHectare + ".");
             }
         }
 

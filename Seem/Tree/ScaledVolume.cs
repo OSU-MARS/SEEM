@@ -8,19 +8,24 @@ namespace Mars.Seem.Tree
     {
         public SortedList<FiaCode, TreeSpeciesVolumeTable> VolumeBySpecies { get; private init; }
 
-        public ScaledVolume(TreeSpeciesVolumeTableParameters psmeParameters, TreeSpeciesVolumeTableParameters tsheParameters)
+        public ScaledVolume(Span<TreeSpeciesVolumeTableParameters> parameters)
         {
-            if (psmeParameters.PreferredLogLengthInMeters != tsheParameters.PreferredLogLengthInMeters)
+            this.VolumeBySpecies = new SortedList<FiaCode, TreeSpeciesVolumeTable>(parameters.Length);
+
+            float previousPreferredLogLength = Single.NaN;
+            for (int index = 0; index < parameters.Length; ++index)
             {
-                throw new NotSupportedException();
+                TreeSpeciesVolumeTableParameters parametersForSpecies = parameters[index];
+                this.VolumeBySpecies.Add(parametersForSpecies.Species, new TreeSpeciesVolumeTable(parametersForSpecies));
+
+                if ((Single.IsNaN(previousPreferredLogLength) == false) && (previousPreferredLogLength != parametersForSpecies.PreferredLogLengthInMeters))
+                {
+                    throw new NotSupportedException("Preferred log length mismatch.");
+                }
+                previousPreferredLogLength = parametersForSpecies.PreferredLogLengthInMeters;
             }
 
-            this.PreferredLogLengthInMeters = psmeParameters.PreferredLogLengthInMeters;
-            this.VolumeBySpecies = new SortedList<FiaCode, TreeSpeciesVolumeTable>
-            {
-                { FiaCode.PseudotsugaMenziesii, new TreeSpeciesVolumeTable(psmeParameters) },
-                { FiaCode.TsugaHeterophylla, new TreeSpeciesVolumeTable(tsheParameters) }
-            };
+            this.PreferredLogLengthInMeters = previousPreferredLogLength;
         }
 
         public TreeSpeciesMerchantableVolumeForPeriod GetHarvestedVolume(Trees treesOfSpecies, IndividualTreeSelection individualTreeSelection, int harvestPeriod)
