@@ -873,7 +873,7 @@ namespace Mars.Seem.Organon
             return stand.SiteIndexInFeet;
         }
 
-        // RAP and SWO use this default implemenation
+        // RAP and SWO use this default implementation
         public virtual void GrowCrown(OrganonStand stand, Trees trees, OrganonStandDensity densityAfterGrowth, float oldGrowthIndicator, float nwoSmcCrownRatioMultiplier)
         {
             OrganonCrownCoefficients crown = this.GetOrCreateCrownCoefficients(trees.Species);

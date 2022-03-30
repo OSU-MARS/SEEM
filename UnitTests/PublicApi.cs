@@ -50,7 +50,7 @@ namespace Mars.Seem.Test
                 RotationIndex = Constant.HeuristicDefault.CoordinateIndex
             };
             results.AddEvaluatedPosition(coordinate);
-            
+
             return results;
         }
 
@@ -99,9 +99,9 @@ namespace Mars.Seem.Test
         {
             int thinningPeriod = 4;
             int treeRecords = 100;
-            #if DEBUG
-                treeRecords = 48;
-            #endif
+#if DEBUG
+            treeRecords = 48;
+#endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
@@ -191,13 +191,13 @@ namespace Mars.Seem.Test
             // Therefore, check for convergence to a whitelist of known solutions. Since the number of trees varies between debug and
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
-            #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { -0.0351F, 0.114F };
-                Span<int> treesThinned = stackalloc[] { 5, 0 };
-            #else
+#if DEBUG
+            Span<float> minFinancialValues = stackalloc[] { -0.0351F, 0.114F };
+            Span<int> treesThinned = stackalloc[] { 5, 0 };
+#else
                 Span<float> minFinancialValues = stackalloc[] { 1.075F, 1.169F };
                 Span<int> treesThinned = stackalloc[] { 2, 0 };
-            #endif
+#endif
             int matchingOptimaIndexFirstCircular = -1;
             int matchingOptimaIndexHero = -1;
             int matchingOptimaIndexPrescription = -1;
@@ -225,7 +225,7 @@ namespace Mars.Seem.Test
                     maxMinFinancialValueIndex = localOptimaIndex;
                 }
             }
-            Assert.IsTrue((matchingOptimaIndexFirstCircular >= 0) && (treesThinnedByFirstCircular == treesThinned[matchingOptimaIndexFirstCircular]), 
+            Assert.IsTrue((matchingOptimaIndexFirstCircular >= 0) && (treesThinnedByFirstCircular == treesThinned[matchingOptimaIndexFirstCircular]),
                           "First circular financial value " + highestFirstCircularFinancialValue + " with " + treesThinnedByFirstCircular + " trees thinned.");
             Assert.IsTrue((matchingOptimaIndexHero >= 0) && (treesThinnedByHero == treesThinned[matchingOptimaIndexHero]),
                           "Hero financial value " + highestHeroFinancialValue + " with " + treesThinnedByHero + " trees thinned.");
@@ -238,9 +238,9 @@ namespace Mars.Seem.Test
         {
             int thinningPeriod = 4;
             int treeRecords = 75;
-            #if DEBUG
-                treeRecords = 25;
-            #endif
+#if DEBUG
+            treeRecords = 25;
+#endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
@@ -670,31 +670,70 @@ namespace Mars.Seem.Test
         [TestMethod]
         public void Plot14ImmediateThin()
         {
+            float fromAbovePercentage = 0.0F;
+            float proportionalPercentage = 30.0F;
+            float fromBelowPercentage = 0.0F;
             int thinPeriod = 1;
             int lastPeriod = 4;
 
             PlotsWithHeight plot14 = PublicApi.GetPlot14();
-            OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = plot14.ToOrganonStand(configuration, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
-            stand.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
 
-            OrganonStandTrajectory thinnedTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
-            thinnedTrajectory.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
+            // NWO (northwest Oregon variant)
+            OrganonConfiguration configurationNwo = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
+            OrganonStand standNwo = plot14.ToOrganonStand(configurationNwo, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
+            standNwo.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
+
+            OrganonStandTrajectory thinnedTrajectoryNwo = new(standNwo, configurationNwo, TreeVolume.Default, lastPeriod);
+            thinnedTrajectoryNwo.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
             {
-                FromAbovePercentage = 0.0F,
-                ProportionalPercentage = 30.0F,
-                FromBelowPercentage = 0.0F
+                FromAbovePercentage = fromAbovePercentage,
+                ProportionalPercentage = proportionalPercentage,
+                FromBelowPercentage = fromBelowPercentage
             });
-            AssertNullable.IsNotNull(thinnedTrajectory.StandByPeriod[0]);
-            Assert.IsTrue(thinnedTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == 222);
-            long immediateThinTimeSteps = thinnedTrajectory.Simulate();
-            Assert.IsTrue(immediateThinTimeSteps == lastPeriod);
+            AssertNullable.IsNotNull(thinnedTrajectoryNwo.StandByPeriod[0]);
+            Assert.IsTrue(thinnedTrajectoryNwo.StandByPeriod[0]!.GetTreeRecordCount() == 222);
+            long immediateThinTimeStepsNwo = thinnedTrajectoryNwo.Simulate();
+            Assert.IsTrue(immediateThinTimeStepsNwo == lastPeriod);
+
+            // SMC (Stand Management Cooperative variant)
+            OrganonConfiguration configurationSmc = OrganonTest.CreateOrganonConfiguration(new OrganonVariantSmc());
+            OrganonStand standSmc = plot14.ToOrganonStand(configurationSmc, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
+            standSmc.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
+
+            OrganonStandTrajectory thinnedTrajectorySmc = new(standSmc, configurationSmc, TreeVolume.Default, lastPeriod);
+            thinnedTrajectorySmc.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
+            {
+                FromAbovePercentage = fromAbovePercentage,
+                ProportionalPercentage = proportionalPercentage,
+                FromBelowPercentage = fromBelowPercentage
+            });
+            AssertNullable.IsNotNull(thinnedTrajectorySmc.StandByPeriod[0]);
+            Assert.IsTrue(thinnedTrajectorySmc.StandByPeriod[0]!.GetTreeRecordCount() == 222);
+            long immediateThinTimeStepsSmc = thinnedTrajectorySmc.Simulate();
+            Assert.IsTrue(immediateThinTimeStepsSmc == lastPeriod);
+
+            // SWO (southwest Oregon Variant)
+            OrganonConfiguration configurationSwo = OrganonTest.CreateOrganonConfiguration(new OrganonVariantSwo());
+            OrganonStand standSwo = plot14.ToOrganonStand(configurationSwo, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
+            standSwo.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
+
+            OrganonStandTrajectory thinnedTrajectorySwo = new(standSwo, configurationSwo, TreeVolume.Default, lastPeriod);
+            thinnedTrajectorySwo.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
+            {
+                FromAbovePercentage = fromAbovePercentage,
+                ProportionalPercentage = proportionalPercentage,
+                FromBelowPercentage = fromBelowPercentage
+            });
+            AssertNullable.IsNotNull(thinnedTrajectorySwo.StandByPeriod[0]);
+            Assert.IsTrue(thinnedTrajectorySwo.StandByPeriod[0]!.GetTreeRecordCount() == 222);
+            long immediateThinTimeStepsSwo = thinnedTrajectorySwo.Simulate();
+            Assert.IsTrue(immediateThinTimeStepsSwo == lastPeriod);
 
             // verify thinned trajectory
-            // find/replace regular expressions: function call \w+\.\w+\[\d+\]\.\w+\(\)\s+(\d+.\d{1,2})\d*\s+float\r?\n
+            // find/replace regular expressions: function call \s+\w+\.\w+\[\d+\]\.\w+\(\)\s+(\d+.\d{1,2})\d*\s+float\r?\n
             //                                                 \s+\w+\.\w+\(\d+\)\s+(\d+.\d{1,2})\d*\s+float\r?\n
             //                                   array element \[\d+\]\s+(\d+.\d{1,3})\d*\s+float\r?\n -> $1F, 
-            ExpectedStandTrajectory immediateThinExpected = new()
+            ExpectedStandTrajectory immediateThinExpectedNwo = new()
             {
                 FirstThinPeriod = thinPeriod,
                 MinimumTreesSelected = 65,
@@ -710,14 +749,81 @@ namespace Mars.Seem.Test
                 MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 104.27F, 0.0F, 0.0F, 0.0F },
                 MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
             };
-            PublicApi.Verify(thinnedTrajectory, immediateThinExpected, configuration.Variant.TimeStepInYears);
-            PublicApi.Verify(thinnedTrajectory, immediateThinExpected);
-            Assert.IsTrue(thinnedTrajectory.GetFirstThinAge() == 35);
-            Assert.IsTrue(thinnedTrajectory.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
+            PublicApi.Verify(thinnedTrajectoryNwo, immediateThinExpectedNwo, configurationNwo.Variant.TimeStepInYears);
+            PublicApi.Verify(thinnedTrajectoryNwo, immediateThinExpectedNwo);
+            Assert.IsTrue(thinnedTrajectoryNwo.GetFirstThinAge() == 35);
+            Assert.IsTrue(thinnedTrajectoryNwo.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
+
+            ExpectedStandTrajectory immediateThinExpectedSmc = new()
+            {
+                FirstThinPeriod = thinPeriod,
+                MinimumTreesSelected = 65,
+                MaximumTreesSelected = 70,
+                //                             0       1       2       3       4     
+                MinimumQmdInCm = new float[] { 23.33F, 26.88F, 29.85F, 32.33F, 34.59F },
+                //                                  0       1       2       3       4     
+                MinimumTopHeightInM = new float[] { 28.32F, 30.87F, 33.68F, 36.31F, 38.74F },
+                // Poudel 2018 + Scribner long log net MBF/ha
+                // bilinear interpolation: 1 cm diameter classes, 1 m height classes
+                MinimumStandingCubicM3PerHa = new float[] { 360.59F, 377.43F, 505.03F, 623.25F, 726.62F },
+                MinimumStandingMbfPerHa = new float[] { 50.62F, 53.23F, 71.35F, 88.32F, 108.13F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 104.27F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
+            };
+
+            PublicApi.Verify(thinnedTrajectorySmc, immediateThinExpectedSmc, configurationSmc.Variant.TimeStepInYears);
+            PublicApi.Verify(thinnedTrajectorySmc, immediateThinExpectedSmc);
+            Assert.IsTrue(thinnedTrajectorySmc.GetFirstThinAge() == 35);
+            Assert.IsTrue(thinnedTrajectorySmc.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
+
+            ExpectedStandTrajectory immediateThinExpectedSwo = new()
+            {
+                FirstThinPeriod = thinPeriod,
+                MinimumTreesSelected = 65,
+                MaximumTreesSelected = 70,
+                //                             0       1       2       3       4     
+                MinimumQmdInCm = new float[] { 23.33F, 26.81F, 29.94F, 32.73F, 35.30F },
+                //                                  0       1       2       3       4     
+                MinimumTopHeightInM = new float[] { 28.32F, 31.28F, 34.57F, 37.77F, 40.81F },
+                // Poudel 2018 + Scribner long log net MBF/ha
+                // bilinear interpolation: 1 cm diameter classes, 1 m height classes
+                MinimumStandingCubicM3PerHa = new float[] { 360.59F, 378.39F, 511.55F, 641.53F, 770.84F },
+                MinimumStandingMbfPerHa = new float[] { 50.62F, 53.94F, 73.25F, 94.52F, 120.26F },
+                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 104.27F, 0.0F, 0.0F, 0.0F },
+                MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
+            };
+            
+            PublicApi.Verify(thinnedTrajectorySwo, immediateThinExpectedSwo, configurationSwo.Variant.TimeStepInYears);
+            PublicApi.Verify(thinnedTrajectorySwo, immediateThinExpectedSwo);
+            Assert.IsTrue(thinnedTrajectorySwo.GetFirstThinAge() == 35);
+            Assert.IsTrue(thinnedTrajectorySwo.StandByPeriod[^1]!.GetTreeRecordCount() == 156);
+
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.B1 == standSmc.DouglasFirSiteConstants.B1);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.B2 == standSmc.DouglasFirSiteConstants.B2);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.X1 == standSmc.DouglasFirSiteConstants.X1);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.X2 == standSmc.DouglasFirSiteConstants.X2);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.X2toB2 == standSmc.DouglasFirSiteConstants.X2toB2);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.X3 == standSmc.DouglasFirSiteConstants.X3);
+            Assert.IsTrue(standNwo.HemlockSiteIndexInFeet == standSmc.HemlockSiteIndexInFeet);
+            Assert.IsTrue(standNwo.SiteIndexInFeet == standSmc.SiteIndexInFeet);
+
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.B1 == standSwo.DouglasFirSiteConstants.B1);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.B2 == standSwo.DouglasFirSiteConstants.B2);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.X1 == standSwo.DouglasFirSiteConstants.X1);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.X2 == standSwo.DouglasFirSiteConstants.X2);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.X2toB2 == standSwo.DouglasFirSiteConstants.X2toB2);
+            Assert.IsTrue(standNwo.DouglasFirSiteConstants.X3 == standSwo.DouglasFirSiteConstants.X3);
+            Assert.IsTrue(standNwo.HemlockSiteIndexInFeet == standSwo.HemlockSiteIndexInFeet);
+            Assert.IsTrue(standNwo.SiteIndexInFeet == standSwo.SiteIndexInFeet);
 
             // verify snag and log calculations
-            SnagDownLogTable snagsAndLogs = new(thinnedTrajectory, Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
-            PublicApi.Verify(snagsAndLogs, thinnedTrajectory);
+            SnagDownLogTable snagsAndLogsNwo = new(thinnedTrajectoryNwo, Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
+            SnagDownLogTable snagsAndLogsSmc = new(thinnedTrajectorySmc, Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
+            SnagDownLogTable snagsAndLogsSwo = new(thinnedTrajectorySwo, Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
+
+            PublicApi.Verify(snagsAndLogsNwo, thinnedTrajectoryNwo);
+            PublicApi.Verify(snagsAndLogsSmc, thinnedTrajectorySmc);
+            PublicApi.Verify(snagsAndLogsSwo, thinnedTrajectorySwo);
         }
 
         [TestMethod]

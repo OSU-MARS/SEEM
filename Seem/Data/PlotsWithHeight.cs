@@ -313,19 +313,15 @@ namespace Mars.Seem.Data
             }
 
             // estimate crown ratio
-            if (configuration.Variant.TreeModel == TreeModel.OrganonSwo)
-            {
-                // TODO: if needed, add support for old index for NWO and SMC Pacific madrone
-                throw new NotImplementedException("Old tree index not computed.");
-            }
-
             organonStand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
             //organonStand.SetSdiMax(configuration);
 
-            float defaultOldIndex = 0.0F;
             OrganonStandDensity density = new(configuration.Variant, organonStand);
-            foreach (Trees organonTreesOfSpecies in organonStand.TreesBySpecies.Values)
+            float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(configuration.Variant, organonStand);
+            for (int speciesIndex = 0; speciesIndex < organonStand.TreesBySpecies.Count; ++speciesIndex)
             {
+                Trees organonTreesOfSpecies = organonStand.TreesBySpecies.Values[speciesIndex];
+
                 // initialize crown ratio from Organon variant
                 Debug.Assert(organonTreesOfSpecies.Units == Units.English);
                 for (int treeIndex = 0; treeIndex < organonTreesOfSpecies.Count; ++treeIndex)
@@ -333,7 +329,7 @@ namespace Mars.Seem.Data
                     float dbhInInches = organonTreesOfSpecies.Dbh[treeIndex];
                     float heightInFeet = organonTreesOfSpecies.Height[treeIndex];
                     float crownCompetitionFactorLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
-                    float heightToCrownBase = configuration.Variant.GetHeightToCrownBase(organonStand, organonTreesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, density, defaultOldIndex);
+                    float heightToCrownBase = configuration.Variant.GetHeightToCrownBase(organonStand, organonTreesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, density, oldGrowthIndicator);
                     float crownRatio = (heightInFeet - heightToCrownBase) / heightInFeet;
                     Debug.Assert((crownRatio >= 0.0F) && (crownRatio <= 1.0F));
 
