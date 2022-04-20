@@ -237,11 +237,10 @@ namespace Mars.Seem.Tree
             for (int dbhIndex = 1; dbhIndex < diameterClasses; ++dbhIndex)
             {
                 float dbhInCm = this.GetDiameter(dbhIndex);
-                if (dbhInCm < Constant.Bucking.MinimumScalingDiameter4Saw)
+                if (dbhInCm < parameters.MinimumScalingDiameter4Saw)
                 {
                     // tree cannot produce a merchantable log
                     // Except in special case of a minimum log length of DBH or less, which isn't supported.
-                    Debug.Assert(Constant.Bucking.MinimumLogLength4SawInM >= 1.3F);
                     continue;
                 }
 
@@ -249,7 +248,7 @@ namespace Mars.Seem.Tree
                 for (int heightIndex = 1; heightIndex < heightClasses; ++heightIndex)
                 {
                     float heightInM = this.GetHeight(heightIndex);
-                    if (heightInM < Constant.Bucking.MinimumLogLength4SawInM + Constant.Bucking.DefaultStumpHeightInM)
+                    if (heightInM < parameters.MinimumLogLength4SawInM + Constant.Bucking.DefaultStumpHeightInM)
                     {
                         // tree cannot produce a merchantable log
                         // This also avoids breakdown in Kozak 2004 form taper equations, which require trees be at least 1.3 m tall.
@@ -266,9 +265,9 @@ namespace Mars.Seem.Tree
                     int logs2S = 0;
                     int logs3S = 0;
                     int logs4S = 0;
-                    for (float logBottomHeight = Constant.Bucking.DefaultStumpHeightInM; logBottomHeight < heightInM - Constant.Bucking.MinimumLogLength4SawInM; logBottomHeight += previousLogLengthWithTrim + Constant.Bucking.BarSawKerf)
+                    for (float logBottomHeight = Constant.Bucking.DefaultStumpHeightInM; logBottomHeight < heightInM - parameters.MinimumLogLength4SawInM; logBottomHeight += previousLogLengthWithTrim + Constant.Bucking.BarSawKerf)
                     {
-                        float logMinimumTopHeight = logBottomHeight + Constant.Bucking.MinimumLogLength4SawInM;
+                        float logMinimumTopHeight = logBottomHeight + parameters.MinimumLogLength4SawInM;
                         if (logMinimumTopHeight > heightInM)
                         {
                             break; // no merchantable log: done with tree
@@ -278,10 +277,10 @@ namespace Mars.Seem.Tree
                         float logMinimumTopDib = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logMaximumTopHeight);
                         float logTopHeight = logMaximumTopHeight;
                         float logTopDib = logMinimumTopDib;
-                        if (logMinimumTopDib < Constant.Bucking.MinimumScalingDiameter4Saw)
+                        if (logMinimumTopDib < parameters.MinimumScalingDiameter4Saw)
                         {
                             float logMaximumTopDib = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logMinimumTopHeight);
-                            if (logMaximumTopDib < Constant.Bucking.MinimumScalingDiameter4Saw)
+                            if (logMaximumTopDib < parameters.MinimumScalingDiameter4Saw)
                             {
                                 break; // log undersize: done with tree
                             }
@@ -293,7 +292,7 @@ namespace Mars.Seem.Tree
                             for (float logCandidateTopHeight = logMinimumTopHeight; logCandidateTopHeight < logMaximumTopHeight; logCandidateTopHeight += Constant.Bucking.EvaluationHeightStepInM)
                             {
                                 float logCandidateTopDib = parameters.GetDiameterInsideBark(dbhInCm, heightInM, logCandidateTopHeight);
-                                if (logCandidateTopDib < Constant.Bucking.MinimumScalingDiameter4Saw)
+                                if (logCandidateTopDib < parameters.MinimumScalingDiameter4Saw)
                                 {
                                     break;
                                 }
@@ -309,7 +308,7 @@ namespace Mars.Seem.Tree
                         Debug.Assert((logTopDib > 0.0F) && (logTopDib < 1.3F * dbhInCm));
 
                         float logLengthIncludingTrim = logTopHeight - logBottomHeight;
-                        Debug.Assert(logLengthIncludingTrim >= Constant.Bucking.MinimumLogLength4SawInM - 0.0001F);
+                        Debug.Assert(logLengthIncludingTrim >= parameters.MinimumLogLength4SawInM - 0.0001F);
                         // BC Firmwood cubic and Scribner.C long log volume
                         // Fonseca, M. 2005. The Measurement of Roundwood: Methodologies and Conversion Ratios. United Nations Economic 
                         //   Commission for Europe Trade and Timber Branch. Cromwell Press, Trowbridge. https://www.cabi.org/bookshop/book/9780851990798/
@@ -410,28 +409,28 @@ namespace Mars.Seem.Tree
                         }
 
                         Debug.Assert((logCubicVolume > 0.0F) && (logScribnerVolume > 0.0F));
-                        if ((logTopDib >= Constant.Bucking.MinimumScalingDiameter2Saw) &&
-                            (logLengthIncludingTrim >= Constant.Bucking.MinimumLogLength2SawInM) &&
-                            (logScribnerVolume >= Constant.Bucking.MinimumLogScribner2Saw))
+                        if ((logTopDib >= parameters.MinimumScalingDiameter2Saw) &&
+                            (logLengthIncludingTrim >= parameters.MinimumLogLength2SawInM) &&
+                            (logScribnerVolume >= parameters.MinimumLogScribner2Saw))
                         {
                             // 2S
                             this.Cubic2Saw[dbhIndex, heightIndex] += logCubicVolume;
                             this.Scribner2Saw[dbhIndex, heightIndex] += logScribnerVolume;
                             ++logs2S;
                         }
-                        else if ((logTopDib >= Constant.Bucking.MinimumScalingDiameter3Saw) &&
-                                 (logLengthIncludingTrim >= Constant.Bucking.MinimumLogLength3SawInM) &&
-                                 (logScribnerVolume >= Constant.Bucking.MinimumLogScribner3Saw))
+                        else if ((logTopDib >= parameters.MinimumScalingDiameter3Saw) &&
+                                 (logLengthIncludingTrim >= parameters.MinimumLogLength3SawInM) &&
+                                 (logScribnerVolume >= parameters.MinimumLogScribner3Saw))
                         {
                             // 3S
                             this.Cubic3Saw[dbhIndex, heightIndex] += logCubicVolume;
                             this.Scribner3Saw[dbhIndex, heightIndex] += logScribnerVolume;
                             ++logs3S;
                         }
-                        else if (logScribnerVolume >= Constant.Bucking.MinimumLogScribner4Saw)
+                        else if (logScribnerVolume >= parameters.MinimumLogScribner4Saw)
                         {
                             // 4S
-                            Debug.Assert((logTopDib >= Constant.Bucking.MinimumLogLength4SawInM) && (logTopDib >= Constant.Bucking.MinimumScalingDiameter4Saw));
+                            Debug.Assert((logTopDib >= parameters.MinimumLogLength4SawInM) && (logTopDib >= parameters.MinimumScalingDiameter4Saw));
                             this.Cubic4Saw[dbhIndex, heightIndex] += logCubicVolume;
                             this.Scribner4Saw[dbhIndex, heightIndex] += logScribnerVolume;
                             ++logs4S;

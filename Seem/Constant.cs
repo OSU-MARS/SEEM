@@ -102,16 +102,6 @@ namespace Mars.Seem
             public const float DiameterClassSizeInCentimeters = 1.0F;
             public const float EvaluationHeightStepInM = 0.5F; // m
             public const float HeightClassSizeInMeters = 1.0F; // m
-            public const float MinimumBasalArea4SawEnglish = 0.14F; // ft²/acre, 5 inch DBH + a bit for bark
-            public const float MinimumLogLength2SawInM = Constant.MetersPerFoot * 12.0F; // m
-            public const float MinimumLogLength3SawInM = Constant.MetersPerFoot * 12.0F; // m
-            public const float MinimumLogLength4SawInM = Constant.MetersPerFoot * 8.0F; // m, typically specified as 12 feet but often 8 foot in practice
-            public const float MinimumScalingDiameter2Saw = Constant.CentimetersPerInch * 12.0F; // cm
-            public const float MinimumScalingDiameter3Saw = Constant.CentimetersPerInch * 6.0F; // cm
-            public const float MinimumScalingDiameter4Saw = Constant.CentimetersPerInch * 5.0F; // cm
-            public const float MinimumLogScribner2Saw = 60.0F; // board feet
-            public const float MinimumLogScribner3Saw = 50.0F; // board feet
-            public const float MinimumLogScribner4Saw = 10.0F; // board feet
             public const float ProcessingHeadFeedRollerHeightInM = 0.70F; // m
             public const float ScribnerShortLogLengthInM = Constant.MetersPerFoot * 20.0F; // m
             public const float ScribnerTrimLongLogInM = Constant.MetersPerFoot * 1.0F - 0.0001F; // m with 100 μm margin for numerical precision
