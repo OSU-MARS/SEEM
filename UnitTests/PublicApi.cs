@@ -99,9 +99,9 @@ namespace Mars.Seem.Test
         {
             int thinningPeriod = 4;
             int treeRecords = 100;
-#if DEBUG
-            treeRecords = 48;
-#endif
+            #if DEBUG
+                treeRecords = 48;
+            #endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
@@ -191,13 +191,13 @@ namespace Mars.Seem.Test
             // Therefore, check for convergence to a whitelist of known solutions. Since the number of trees varies between debug and
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
-#if DEBUG
-            Span<float> minFinancialValues = stackalloc[] { -0.0351F, 0.114F };
-            Span<int> treesThinned = stackalloc[] { 5, 0 };
-#else
+            #if DEBUG
+                Span<float> minFinancialValues = stackalloc[] { -0.0351F, 0.120F };
+                Span<int> treesThinned = stackalloc[] { 5, 0 };
+            #else
                 Span<float> minFinancialValues = stackalloc[] { 1.075F, 1.169F };
                 Span<int> treesThinned = stackalloc[] { 2, 0 };
-#endif
+            #endif
             int matchingOptimaIndexFirstCircular = -1;
             int matchingOptimaIndexHero = -1;
             int matchingOptimaIndexPrescription = -1;
@@ -238,9 +238,9 @@ namespace Mars.Seem.Test
         {
             int thinningPeriod = 4;
             int treeRecords = 75;
-#if DEBUG
-            treeRecords = 25;
-#endif
+            #if DEBUG
+                treeRecords = 25;
+            #endif
 
             PlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
@@ -466,7 +466,7 @@ namespace Mars.Seem.Test
             ExpectedStandTrajectory unthinnedExpected = new()
             {
                 //                             0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 27.94F, 31.01F, 33.97F, 36.86F, 39.73F, 42.58F, 45.42F }, // cm
+                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 27.93F, 31.01F, 33.96F, 36.86F, 39.72F, 42.57F, 45.41F }, // cm
                 //                                  0       1       2       3       4       5       6       7       8       9
                 MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 27.91F, 31.04F, 33.89F, 36.50F, 38.89F, 41.10F, 43.13F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
@@ -491,7 +491,7 @@ namespace Mars.Seem.Test
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 400,
                 //                             0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.33F, 44.29F, 47.05F, 49.65F }, // cm
+                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.33F, 44.28F, 47.04F, 49.65F }, // cm
                 //                                  0       1       2       3       4       5       6       7       8       9
                 MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.58F, 38.05F, 40.33F, 42.43F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
@@ -577,7 +577,7 @@ namespace Mars.Seem.Test
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 485,
                 //                             0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 51.89F, 55.17F }, // cm
+                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 51.89F, 55.16F }, // cm
                 //                                  0       1       2       3       4       5       6       7       8       9
                 MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.41F, 41.52F }, // m
                 // Poudel 2018 + Scribner long log net MBF/ha
@@ -1309,10 +1309,10 @@ namespace Mars.Seem.Test
                 int treeRecords = stand.GetTreeRecordCount();
 
                 Assert.IsTrue((stand.Name != null) && (trajectory.Name != null) && stand.Name.StartsWith(trajectory.Name));
-                Assert.IsTrue(qmdInCm > expectedTrajectory.MinimumQmdInCm[periodIndex]);
-                Assert.IsTrue(qmdInCm < PublicApi.QmdTolerance * expectedTrajectory.MinimumQmdInCm[periodIndex]);
-                Assert.IsTrue(topHeight > expectedTrajectory.MinimumTopHeightInM[periodIndex]);
-                Assert.IsTrue(topHeight < PublicApi.TopHeightTolerance * expectedTrajectory.MinimumTopHeightInM[periodIndex]);
+                Assert.IsTrue(qmdInCm > expectedTrajectory.MinimumQmdInCm[periodIndex], periodIndex + ": QMD " + qmdInCm + " is greater than " + expectedTrajectory.MinimumQmdInCm[periodIndex] + " cm.");
+                Assert.IsTrue(qmdInCm < PublicApi.QmdTolerance * expectedTrajectory.MinimumQmdInCm[periodIndex], periodIndex + ": QMD " + qmdInCm + " is less than " + PublicApi.QmdTolerance * expectedTrajectory.MinimumQmdInCm[periodIndex] + " cm.");
+                Assert.IsTrue(topHeight > expectedTrajectory.MinimumTopHeightInM[periodIndex], periodIndex + ": Top height " + topHeight + ".");
+                Assert.IsTrue(topHeight < PublicApi.TopHeightTolerance * expectedTrajectory.MinimumTopHeightInM[periodIndex], periodIndex + ": Top height " + topHeight + ".");
                 Assert.IsTrue(treeRecords > 0);
                 Assert.IsTrue(treeRecords < 666);
 

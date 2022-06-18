@@ -72,12 +72,13 @@ namespace Mars.Seem.Cmdlets
             this.BenchmarkPolling = TimeSpan.FromSeconds(1.0);
             this.BenchmarkWarmup = TimeSpan.FromSeconds(10.0);
             this.Financial = FinancialScenarios.Default;
-            this.Name = null;
-            this.RotationLengths = new() { 15 }; // 75 years of simulation with Organon's 5 year timestep
             this.FirstThinAbove = 0.0F; // %
             this.FirstThinBelow = 0.0F; // %
             this.FirstThinProportional = 0.0F; // %
             this.FirstThinPeriod = Constant.NoThinPeriod; // no stand entry
+            this.Name = null;
+            this.RotationLengths = new() { 15 }; // 75 years of simulation with Organon's 5 year timestep
+            this.Simd = Simd.Width128;
             this.TreeVolume = TreeVolume.Default;
         }
 
@@ -118,9 +119,9 @@ namespace Mars.Seem.Cmdlets
                 GrowthModelBenchmark benchmark = new(threads)
                 {
                     PollingInterval = this.BenchmarkPolling,
-                    Simd = this.Simd
+                    Simd = this.Simd,
+                    Start = DateTime.UtcNow
                 };
-                benchmark.Start = DateTime.UtcNow;
 
                 Task runs = Task.Run(() =>
                 {

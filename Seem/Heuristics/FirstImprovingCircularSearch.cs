@@ -149,8 +149,10 @@ namespace Mars.Seem.Heuristics
                 this.AcceptedFinancialValue = Single.MinValue;
                 this.CandidateTrajectory = new(trajectory);
                 this.MovesSinceLastImprovement = 0;
-                this.PerfCounters = new();
-                this.PerfCounters.TreesRandomizedInConstruction = treesRandomizedInConstruction;
+                this.PerfCounters = new()
+                {
+                    TreesRandomizedInConstruction = treesRandomizedInConstruction
+                };
                 this.ThinningPeriods = trajectory.Treatments.GetHarvestPeriods();
                 this.TreeIndex = 0;
                 this.UncompactedPeriodIndices = trajectory.GetHarvestPeriodIndices(this.ThinningPeriods);
