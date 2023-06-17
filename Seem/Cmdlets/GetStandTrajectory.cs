@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management.Automation;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -82,6 +83,7 @@ namespace Mars.Seem.Cmdlets
             this.TreeVolume = TreeVolume.Default;
         }
 
+        [SupportedOSPlatform("windows")]
         private List<GrowthModelBenchmark> BenchmarkStandTimesteps(StandTrajectory unsimulatedTrajectory)
         {
             if ((this.BenchmarkDuration < TimeSpan.FromSeconds(1.0)) || (this.BenchmarkDuration > TimeSpan.FromMinutes(10.0)))
@@ -164,6 +166,7 @@ namespace Mars.Seem.Cmdlets
             return benchmarks;
         }
 
+        [SupportedOSPlatform("windows")]
         protected override void ProcessRecord()
         {
             // argument checking and longest rotation length

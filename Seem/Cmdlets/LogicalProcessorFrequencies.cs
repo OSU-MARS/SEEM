@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace Mars.Seem.Cmdlets
 {
@@ -8,6 +9,7 @@ namespace Mars.Seem.Cmdlets
         private bool isDisposed;
         private readonly PerformanceCounter[] frequencyCounters;
 
+        [SupportedOSPlatform("windows")]
         public LogicalProcessorFrequencies()
         {
             int threads = Environment.ProcessorCount;
@@ -42,6 +44,7 @@ namespace Mars.Seem.Cmdlets
             }
         }
 
+        [SupportedOSPlatform("windows")]
         public float[] NextValue()
         {
             float[] values = new float[this.frequencyCounters.Length];

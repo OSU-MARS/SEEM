@@ -1550,7 +1550,7 @@ namespace Mars.Seem.Silviculture
             }
         }
 
-        private struct ForwarderTurn
+        private readonly struct ForwarderTurn
         {
             public float Time { get; init; } // minutes
             public float Volume { get; init; } // merchantable m³

@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace Mars.Seem.Heuristics
 {
-    public class PrescriptionCoordinateAscent: PrescriptionHeuristic
+    public class PrescriptionCoordinateAscent : PrescriptionHeuristic
     {
         public bool Gradient { get; set; }
         public bool IsStochastic { get; set; }
@@ -69,10 +69,7 @@ namespace Mars.Seem.Heuristics
                 acceptedFinancialValue = candidateFinancialValue;
                 this.CopyTreeGrowthToBestTrajectory(moveState.Coordinate, this.CurrentTrajectory);
 
-                if (this.lastNImprovingMovesLog != null)
-                {
-                    this.lastNImprovingMovesLog.TryAddMove(moveState.Coordinate, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
-                }
+                this.lastNImprovingMovesLog?.TryAddMove(moveState.Coordinate, perfCounters.MovesAccepted + perfCounters.MovesRejected, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
 
                 this.FinancialValue.TryAddMove(moveState.Coordinate, acceptedFinancialValue, candidateFinancialValue);
                 ++perfCounters.MovesAccepted;
@@ -86,10 +83,7 @@ namespace Mars.Seem.Heuristics
                 ++perfCounters.MovesRejected;
             }
 
-            if (this.allMoveLog != null)
-            {
-                this.allMoveLog.TryAddMove(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
-            }
+            this.allMoveLog?.TryAddMove(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
 
             if (harvests.Count > 0)
             {

@@ -1,6 +1,5 @@
 ﻿using Mars.Seem.Organon;
 using Mars.Seem.Silviculture;
-using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -106,10 +105,7 @@ namespace Mars.Seem.Heuristics
                         }
                         this.BestTrajectoryByRotationAndScenario[rotationIndex, financialIndex] = acceptedTrajectory;
 
-                        if (this.lastNImprovingMovesLog != null)
-                        {
-                            this.lastNImprovingMovesLog.TryAddMove(currentCoordinate, this.prescriptionsEnumerated, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
-                        }
+                        this.lastNImprovingMovesLog?.TryAddMove(currentCoordinate, this.prescriptionsEnumerated, firstThinPrescription, secondThinPrescription, thirdThinPrescription);
 
                         this.FinancialValue.TryAddMove(currentCoordinate, candidateFinancialValue, candidateFinancialValue); // candidate value is accepted
                         ++perfCounters.MovesAccepted;
@@ -125,10 +121,7 @@ namespace Mars.Seem.Heuristics
                 }
             }
 
-            if (this.allMoveLog != null)
-            {
-                this.allMoveLog.TryAddMove(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
-            }
+            this.allMoveLog?.TryAddMove(firstThinPrescription, secondThinPrescription, thirdThinPrescription);
             ++this.prescriptionsEnumerated;
         }
 

@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Mars.Seem.Tree
 {
-    public struct TreeSpeciesProperties
+    public readonly struct TreeSpeciesProperties
     {
         public float BarkDensity { get; private init; } // kg/m³, green
         public float BarkFraction { get; private init; } // fraction of total stem volume
