@@ -7,11 +7,14 @@ namespace Mars.Seem.Tree
 {
     public class Stand
     {
+        public float AccessDistanceInM { get; set; }
+        public float AccessSlopeInPercent { get; set; }
         public float AreaInHa { get; set; }
         public float CorridorLengthInM { get; set; }
         public float CorridorLengthInMTethered { get; private set; } // m, mean
         public float CorridorLengthInMUntethered { get; private set; } // m, mean
         public float ForwardingDistanceOnRoad { get; set; } // m, mean distance from corridor to log unload point
+        public float MeanYardingDistanceFactor { get; set; }
         public string? Name { get; set; }
         public float? PlantingDensityInTreesPerHectare { get; set; }
         public float SlopeInPercent { get; set; }
@@ -20,10 +23,13 @@ namespace Mars.Seem.Tree
 
         public Stand()
         {
+            this.AccessDistanceInM = Constant.HarvestCost.DefaultAccessDistanceInM;
+            this.AccessSlopeInPercent = Constant.HarvestCost.DefaultAccessSlopeInPercent;
             // this.CorridorLength, ForwardingDistanceInStandTethered, and ForwardingDistanceInStandUntethered
             this.SetCorridorLength(Constant.HarvestCost.DefaultForwardingDistanceInStandTethered, Constant.HarvestCost.DefaultForwardingDistanceInStandUntethered);
             this.AreaInHa = Constant.HarvestCost.DefaultHarvestUnitSizeInHa;
             this.ForwardingDistanceOnRoad = Constant.HarvestCost.DefaultForwardingDistanceOnRoad;
+            this.MeanYardingDistanceFactor = Constant.HarvestCost.MeanYardingDistanceFactor;
             this.Name = null;
             this.PlantingDensityInTreesPerHectare = null;
             this.SlopeInPercent = Constant.HarvestCost.DefaultSlopeInPercent;
@@ -32,10 +38,13 @@ namespace Mars.Seem.Tree
 
         public Stand(Stand other)
         {
+            this.AccessDistanceInM = other.AccessDistanceInM;
+            this.AccessSlopeInPercent = other.AccessSlopeInPercent;
             this.AreaInHa = other.AreaInHa;
             // this.CorridorLength, ForwardingDistanceInStandTethered, and ForwardingDistanceInStandUntethered
             this.SetCorridorLength(other.CorridorLengthInMTethered, other.CorridorLengthInMUntethered);
             this.ForwardingDistanceOnRoad = other.ForwardingDistanceOnRoad;
+            this.MeanYardingDistanceFactor = other.MeanYardingDistanceFactor;
             this.Name = other.Name;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
             this.SlopeInPercent = other.SlopeInPercent;
@@ -230,6 +239,15 @@ namespace Mars.Seem.Tree
 
         public void SetCorridorLength(float forwardingDistanceInStandTethered, float forwardingDistanceInStandUntethered)
         {
+            if (forwardingDistanceInStandTethered < 0.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(forwardingDistanceInStandUntethered));
+            }
+            if (forwardingDistanceInStandUntethered < 0.0F)
+            {
+                throw new ArgumentOutOfRangeException(nameof(forwardingDistanceInStandUntethered));
+            }
+
             this.CorridorLengthInM = forwardingDistanceInStandTethered + forwardingDistanceInStandUntethered;
             this.CorridorLengthInMTethered = forwardingDistanceInStandTethered;
             this.CorridorLengthInMUntethered = forwardingDistanceInStandUntethered;

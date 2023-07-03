@@ -13,12 +13,19 @@ namespace Mars.Seem.Cmdlets
     [Cmdlet(VerbsCommon.Get, "StandsFromPlots")]
     public class GetStandsFromPlots : Cmdlet
     {
+        [Parameter(HelpMessage = "Distance from stand to nearest road in meters.")]
+        [ValidateRange(0.0F, 10.0F * 1000.0F)]
+        public float AccessDistance { get; set; }
+        [Parameter(HelpMessage = "Slope of access from stand to nearest road in percent. Unused if AccessDistance is zero.")]
+        [ValidateRange(0.0F, 200.0F)]
+        public float AccessSlope { get; set; }
+
         [Parameter(HelpMessage = "Stand age in years, if even aged.")]
         [ValidateRange(0, 10000)]
         public int[] Ages { get; set; } // PowerShell 7 can't translate from an int[] declared in PowerShell to IList<int>
 
         [Parameter(Mandatory = true, HelpMessage = "Stand area in hectares.")]
-        [ValidateRange(0, 1000)]
+        [ValidateRange(0.0F, 1000.0F)]
         public float Area { get; set; }
 
         [Parameter]
@@ -72,6 +79,9 @@ namespace Mars.Seem.Cmdlets
         [ValidateRange(1, Int32.MaxValue)]
         public int Trees { get; set; }
 
+        [Parameter(HelpMessage = "Mean yarding distance as a fraction of corridor length (0.5 for parallel yarding, 0.67 for radial yarding).")]
+        [ValidateRange(0.0F, 1.0F)]
+        public float YardingFactor { get; set; }
         [Parameter(Mandatory = true)]
         [ValidateNotNullOrEmpty]
         public string? Xlsx { get; set; }
@@ -82,6 +92,8 @@ namespace Mars.Seem.Cmdlets
 
         public GetStandsFromPlots()
         {
+            this.AccessDistance = Constant.HarvestCost.DefaultAccessDistanceInM;
+            this.AccessSlope = Constant.HarvestCost.DefaultAccessSlopeInPercent;
             this.Ages = Array.Empty<int>();
             this.Area = Constant.HarvestCost.DefaultHarvestUnitSizeInHa;
             this.ExcludeSpecies = Array.Empty<string>();
@@ -97,6 +109,7 @@ namespace Mars.Seem.Cmdlets
             this.SlopeInPercent = Constant.HarvestCost.DefaultSlopeInPercent;
             this.SiteIndexInM = Constant.Default.DouglasFirSiteIndexInM; 
             this.Trees = Int32.MaxValue;
+            this.YardingFactor = Constant.HarvestCost.MeanYardingDistanceFactor;
             this.Xlsx = null;
             this.XlsxSheet = "1";
         }
@@ -105,6 +118,8 @@ namespace Mars.Seem.Cmdlets
         {
             OrganonStand stand = plot.ToOrganonStand(configuration, age, this.SiteIndexInM, this.HemlockSiteIndexInM, this.Trees, this.Imputation);
 
+            stand.AccessDistanceInM = this.AccessDistance;
+            stand.AccessSlopeInPercent = this.AccessSlope;
             stand.AreaInHa = this.Area;
             stand.SetCorridorLength(this.ForwardingTethered, this.ForwardingUntethered);
             stand.ForwardingDistanceOnRoad = this.ForwardingRoad;

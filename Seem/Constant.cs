@@ -169,12 +169,15 @@ namespace Mars.Seem
             public const float AssessedValue = 1.26F * 1128.57F; // US$/ha-year, average of northwestern Oregon counties adjusted up to site class 1
             public const float BrushControl = 45.0F; // US$/ha
             public const float ChainsawBasalAreaPerHaForFullUtilization = 30.0F; // m²/ha
+            public const float DefaultAccessDistanceInM = 0.0F; // m, assume stand is adjacent to or encompasses at least one road
+            public const float DefaultAccessSlopeInPercent = 0.0F;
             public const float DefaultForwardingDistanceInStandTethered = 310.0F; // m
             public const float DefaultForwardingDistanceInStandUntethered = 10.0F; // m
             public const float DefaultForwardingDistanceOnRoad = 30.0F; // m
             public const float DefaultHarvestUnitSizeInHa = 15.0F;
             public const float DefaultSlopeInPercent = 65.0F;
             public const float ForwardingDistanceOnRoadPerSortInM = 10.0F; // m
+            public const float MeanYardingDistanceFactor = 0.5F; // fraction of corridor length, 0.5 = parallel yearding
             public const float PlantingLabor = 383.0F; // US$/ha
             public const float PropertyTaxRate = 0.01F * 1.61F; // fraction of assessed value = 0.01 * percent of assessed value, average of northwestern Oregon counties
             public const float ReleaseSpray = 100.0F + 175.0F; // US$/ha, labor + herbicide cost

@@ -260,12 +260,15 @@ namespace Mars.Seem.Silviculture
             }
             Stand? stand = trajectory.StandByPeriod[harvestPeriod - (isThin ? 1 : 0)];
             if ((stand == null) ||
+                (stand.AccessDistanceInM < 0.0F) ||
+                (stand.AccessSlopeInPercent < 0.0F) ||
                 (stand.AreaInHa <= 0.0F) ||
                 (stand.CorridorLengthInM <= 0.0F) ||
                 (stand.CorridorLengthInMTethered < 0.0F) ||
                 (stand.CorridorLengthInMTethered > Constant.Maximum.TetheredCorridorLengthInM) ||
                 (stand.CorridorLengthInMUntethered < 0.0F) ||
                 (stand.ForwardingDistanceOnRoad < 0.0F) ||
+                (stand.MeanYardingDistanceFactor <= 0.0F) ||
                 (stand.SlopeInPercent < 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(trajectory));
@@ -443,10 +446,19 @@ namespace Mars.Seem.Silviculture
             ctlHarvest.WheeledHarvesterCostPerHa = wheeledHarvesterAndMaybeAnchorCostPerSMh * wheeledHarvesterSMhPerHectare;
 
             // find payload available for slope from traction
-            float forwarderPayloadInKg = MathF.Min(this.ForwarderMaximumPayloadInKg, this.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * stand.SlopeInPercent))) - this.ForwarderEmptyWeight);
+            float forwarderPayloadInKg = this.GetForwarderPayloadInKg(stand.SlopeInPercent);
             if (forwarderPayloadInKg <= 0.0F)
             {
                 throw new NotSupportedException("Stand slope of " + stand.SlopeInPercent + "% is too steep for forwarding.");
+            }
+            if (stand.AccessDistanceInM > 0.0F)
+            {
+                float accessPayloadInKg = this.GetForwarderPayloadInKg(stand.AccessSlopeInPercent);
+                forwarderPayloadInKg = MathF.Min(forwarderPayloadInKg, accessPayloadInKg);
+                if (forwarderPayloadInKg <= 0.0F)
+                {
+                    throw new NotSupportedException("Stand access slope of " + stand.AccessSlopeInPercent + "% is too steep for forwarding.");
+                }
             }
 
             // TODO: full bark retention on trees bucked by chainsaw (for now it's assumed all trees are bucked by a harvester)
@@ -536,6 +548,11 @@ namespace Mars.Seem.Silviculture
             }
         }
 
+        private float GetForwarderPayloadInKg(float slopeInPercent)
+        {
+            return MathF.Min(this.ForwarderMaximumPayloadInKg, this.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * slopeInPercent))) - this.ForwarderEmptyWeight);
+        }
+
         private ForwarderTurn GetForwarderTurn(Stand stand, float merchM3PerHa, float logsPerHa, float forwarderMaxMerchM3, int sortsLoaded)
         {
             Debug.Assert((forwarderMaxMerchM3 > 0.0F) && (sortsLoaded > 0) && (sortsLoaded < 4));
@@ -545,6 +562,9 @@ namespace Mars.Seem.Silviculture
                 return new();
             }
 
+            bool isTetheredAccess = stand.AccessSlopeInPercent > Constant.Default.SlopeForTetheringInPercent;
+            float accessSpeedLoaded = isTetheredAccess ? this.ForwarderSpeedInStandLoadedTethered : this.ForwarderSpeedInStandLoadedUntethered;
+            float accessSpeedUnloaded = isTetheredAccess ? this.ForwarderSpeedInStandUnloadedTethered : this.ForwarderSpeedInStandUnloadedUntethered;
             float merchM3perM = merchM3PerHa * this.CorridorWidth / Constant.SquareMetersPerHectare; //  merchantable m³ logs/m of corridor = m³/ha * (m²/m corridor) / m²/ha
             float meanLogMerchM3 = merchM3PerHa / logsPerHa; // merchantable m³/log = m³/ha / logs/ha
             float volumePerCorridor = stand.CorridorLengthInM * merchM3perM; // merchantable m³/corridor
@@ -555,13 +575,14 @@ namespace Mars.Seem.Silviculture
             float forwardingDistanceOnRoad = stand.ForwardingDistanceOnRoad + (sortsLoaded - 1) * Constant.HarvestCost.ForwardingDistanceOnRoadPerSortInM;
 
             // outbound part of turn: assumed to be descending from road
-            float driveEmptyRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min, driving empty on road
+            float driveEmptyRoad = completeLoadsInCorridor * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min, driving empty on road
+            float driveEmptyAccess = completeLoadsInCorridor * stand.AccessDistanceInM / accessSpeedUnloaded; // min, driving empty overland to get to stand
             // nonspatial approximation (level zero): both tethered and untethered distances decrease in turns after the first
             // TODO: assume tethered distance decreases to zero before untethered distance decreases?
             float driveEmptyUntethered = traversalsOfCorridor * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandUnloadedUntethered; // min
             // tethering time is treated as a delay
             float driveEmptyTethered = traversalsOfCorridor * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandUnloadedTethered; // min
-            float descent = driveEmptyUntethered + driveEmptyTethered;
+            float descent = driveEmptyAccess + driveEmptyUntethered + driveEmptyTethered;
 
             // inbound part of turn: assumed to be ascending towards road
             // Forwarder loading method selection will query for productivity at quite low log densities, resulting in the forwarder loading all the
@@ -574,10 +595,11 @@ namespace Mars.Seem.Silviculture
                                       MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3 / merchM3perM)); // min
             float driveLoadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandLoadedTethered; // min
             // untethering time is treated as a delay
-            float driveUnloadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandLoadedUntethered; // min
+            float driveLoadedUnethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandLoadedUntethered; // min
+            float driveLoadedAccess = stand.AccessDistanceInM / accessSpeedLoaded;
 
             float minimumAscentTime = traversalsOfCorridor * (stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandLoadedTethered + stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandLoadedUntethered);
-            float ascent = MathF.Max(loading + driveWhileLoading + driveLoadedTethered + driveUnloadedTethered, minimumAscentTime);
+            float ascent = MathF.Max(loading + driveWhileLoading + driveLoadedTethered + driveLoadedUnethered, minimumAscentTime) + driveLoadedAccess;
 
             float driveLoadedRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min
 
@@ -598,7 +620,12 @@ namespace Mars.Seem.Silviculture
 
         public void GetLongLogHarvestCosts(Stand stand, ScaledVolume scaledVolume, LongLogHarvest longLogHarvest)
         {
-            if ((stand.AreaInHa <= 0.0F) || (stand.CorridorLengthInM <= 0.0F) || (stand.SlopeInPercent < 0.0F))
+            if ((stand.AccessDistanceInM < 0.0F) ||
+                (stand.AccessSlopeInPercent < 0.0F) ||
+                (stand.AreaInHa <= 0.0F) || 
+                (stand.CorridorLengthInM <= 0.0F) || 
+                (stand.MeanYardingDistanceFactor <= 0.0F) ||
+                (stand.SlopeInPercent < 0.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(stand));
             }
@@ -886,7 +913,7 @@ namespace Mars.Seem.Silviculture
             }
 
             // feller-buncher + chainsaw + yarder-processor-loader system costs
-            float meanGrappleYardingTurnTime = this.GrappleYardingConstant + this.GrappleYardingLinear * 0.5F * stand.CorridorLengthInM; // parallel yarding
+            float meanGrappleYardingTurnTime = this.GrappleYardingConstant + this.GrappleYardingLinear * (stand.MeanYardingDistanceFactor * stand.CorridorLengthInM + stand.AccessDistanceInM);
             float loaderSMhPerHectare = longLogHarvest.LoadedWeightPerHa / (this.LoaderUtilization * this.LoaderProductivity);
             // TODO: full corridor and processing bark loss
             {

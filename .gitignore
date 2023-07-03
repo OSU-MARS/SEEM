@@ -2,9 +2,10 @@
 # *.csproj.user
 # *.pubxml.user
 
-# build and packaging results
+# build, packaging, and test results
 bin/
 obj/
+TestResults/
 
 # Visual Studio cache/options directory
 .vs/
