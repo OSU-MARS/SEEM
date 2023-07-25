@@ -5,6 +5,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 
+[assembly: SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time", Justification = "https://github.com/dotnet/roslyn-analyzers/issues/6802", Scope = "member", Target = "~M:Mars.Seem.Extensions.NativeMethods.CallNtPowerInformation(System.Int32,System.IntPtr,System.UInt32,Mars.Seem.Extensions.NativeMethods.PROCESSOR_POWER_INFORMATION[],System.UInt32)~System.UInt32")]
 [assembly: SuppressMessage("Style", "IDE0220:Add explicit cast", Justification = "https://github.com/dotnet/roslyn/issues/63470", Scope = "member", Target = "~M:Mars.Seem.Optimization.OptimizationObjectiveDistribution.GetMaximumMoveIndex~System.Int32")]
 [assembly: SuppressMessage("Style", "IDE0220:Add explicit cast", Justification = "https://github.com/dotnet/roslyn/issues/63470", Scope = "member", Target = "~M:Mars.Seem.Optimization.OptimizationObjectiveDistribution.GetFinancialStatisticsForMove(System.Int32)~Mars.Seem.Optimization.DistributionStatistics")]
 [assembly: SuppressMessage("Style", "IDE0074:Use compound assignment", Justification = "readability", Scope = "member", Target = "~M:Mars.Seem.Heuristics.PrescriptionEnumeration.EvaluateThinningPrescriptions(Mars.Seem.Silviculture.StandTrajectoryCoordinate,Mars.Seem.Silviculture.ThinByPrescription,Mars.Seem.Silviculture.ThinByPrescription,Mars.Seem.Silviculture.ThinByPrescription,Mars.Seem.Silviculture.PrescriptionPerformanceCounters)")]

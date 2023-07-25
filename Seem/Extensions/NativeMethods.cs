@@ -47,4 +47,26 @@ namespace Mars.Seem.Extensions
             public uint CurrentIdleState;
         }
     }
+
+    // https://github.com/dotnet/roslyn-analyzers/issues/6802
+    //internal static partial class NativeMethodsNet7
+    //{
+    //    [LibraryImport("powrprof.dll", SetLastError = true)]
+    //    private static partial UInt32 CallNtPowerInformation(Int32 InformationLevel,
+    //                                                         IntPtr lpInputBuffer,
+    //                                                         UInt32 nInputBufferSize,
+    //                                                         [MarshalAs(UnmanagedType.LPStruct, SizeParamIndex = 4)] PROCESSOR_POWER_INFORMATION[] lpOutputBuffer,
+    //                                                         UInt32 nOutputBufferSize);
+
+    //    [StructLayout(LayoutKind.Sequential)]
+    //    public struct PROCESSOR_POWER_INFORMATION
+    //    {
+    //        public uint Number;
+    //        public uint MaxMhz;
+    //        public uint CurrentMhz;
+    //        public uint MhzLimit;
+    //        public uint MaxIdleState;
+    //        public uint CurrentIdleState;
+    //    }
+    //}
 }
