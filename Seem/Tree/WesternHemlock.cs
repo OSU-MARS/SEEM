@@ -143,6 +143,7 @@ namespace Mars.Seem.Tree
         internal static float GetNeiloidHeight(float dbhInCm, float heightInM)
         {
             // approximation from plotting families of Poudel et al. 2018 dib curves in R and fitting the neiloid inflection point
+            // from linear regressions in PoudelRegressions.R
             // Poudel et al's fitting is problematic as diameter inside bark becomes non-monotonic with height for slender trees, predicting
             // logs with bottom diameters inside bark which are smaller than their top diameters or, in first logs, smaller than DBH. The
             // neiloid height regressions are constructed to avoid decreasing basal diameters.

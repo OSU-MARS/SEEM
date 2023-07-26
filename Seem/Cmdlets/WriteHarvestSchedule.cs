@@ -212,7 +212,7 @@ namespace Mars.Seem.Cmdlets
                             highRegenHeightInM = regenHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
                             highRegenCrownRatio = highTreesAtRegen.CrownRatio[regenCompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
                             highRegenExpansionFactorPerHa = (areaConversionFactor * highTreesAtRegen.LiveExpansionFactor[regenCompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
-                            highRegenCubicM3 = thinVolumeTable.GetCubicVolumeOfMerchantableWood(regenDbhInCm, regenHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
+                            highRegenCubicM3 = regenVolumeTable.GetCubicVolumeOfMerchantableWood(regenDbhInCm, regenHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                             ++regenCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Mars.Seem.Tree
+﻿namespace Mars.Seem.Tree
 {
     public class TreeVolume
     {
@@ -26,16 +24,18 @@ namespace Mars.Seem.Tree
             TreeSpeciesVolumeTableParameters[] finalHarvestParameters = new TreeSpeciesVolumeTableParameters[]
             {
                 new(FiaCode.PseudotsugaMenziesii, finalHarvestTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight),
+                new(FiaCode.AlnusRubra, finalHarvestTableRange, RedAlder.GetDiameterInsideBark, RedAlder.GetNeiloidHeight),
+                new(FiaCode.TsugaHeterophylla, finalHarvestTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight),
                 new(FiaCode.ThujaPlicata, finalHarvestTableRange, WesternRedcedar.GetDiameterInsideBark, WesternRedcedar.GetNeiloidHeight),
-                new(FiaCode.TsugaHeterophylla, finalHarvestTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight)
             };
             this.RegenerationHarvest = new ScaledVolume(finalHarvestParameters);
 
             TreeSpeciesVolumeTableParameters[] thinningParameters = new TreeSpeciesVolumeTableParameters[]
             {
                 new(FiaCode.PseudotsugaMenziesii, thinningTableRange, PoudelRegressions.GetDouglasFirDiameterInsideBark, DouglasFir.GetNeiloidHeight),
-                new(FiaCode.ThujaPlicata, thinningTableRange, WesternRedcedar.GetDiameterInsideBark, WesternRedcedar.GetNeiloidHeight),
-                new(FiaCode.TsugaHeterophylla, thinningTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight)
+                new(FiaCode.AlnusRubra, thinningTableRange, RedAlder.GetDiameterInsideBark, RedAlder.GetNeiloidHeight),
+                new(FiaCode.TsugaHeterophylla, thinningTableRange, PoudelRegressions.GetWesternHemlockDiameterInsideBark, WesternHemlock.GetNeiloidHeight),
+                new(FiaCode.ThujaPlicata, thinningTableRange, WesternRedcedar.GetDiameterInsideBark, WesternRedcedar.GetNeiloidHeight)
             };
             this.Thinning = new ScaledVolume(thinningParameters);
         }

@@ -1,5 +1,9 @@
-﻿using Mars.Seem.Extensions;
+﻿using DocumentFormat.OpenXml.Office2010.Word.Drawing;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using DocumentFormat.OpenXml.Wordprocessing;
+using Mars.Seem.Extensions;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Mars.Seem.Tree
 {
@@ -13,6 +17,29 @@ namespace Mars.Seem.Tree
         public static float ConiferToRedAlderSiteIndex(float SITE_1)
         {
             return 9.73F + 0.64516F * SITE_1;
+        }
+
+        /// <summary>
+        /// Hibbs D, Bluhm A, Garber S. 2007. Stem Taper and Volume of Managed Red Alder. Western Journal of Applied Forestry 22(1): 61–66. https://doi.org/10.1093/wjaf/22.1.61
+        /// </summary>
+        public static float GetDiameterInsideBark(float dbhInCm, float heightInM, float evaluationHeightInM)
+        {
+            float dbhInInches = Constant.InchesPerCentimeter * dbhInCm;
+            float heightInFeet = Constant.FeetPerMeter * heightInM;
+            float relativeHeight = evaluationHeightInM / heightInM; // Z
+            float X = (1.0F - MathF.Sqrt(relativeHeight)) / (1.0F - MathF.Sqrt(4.5F / heightInFeet));
+            float diameterInsideBarkInInches = 0.8995F * MathV.Pow(dbhInInches, 1.0205F) * MathV.Pow(X, 0.2631F * (1.364409F * MathV.Pow(dbhInInches, 1.0F / 3.0F) * MathV.Exp(-18.8990F * relativeHeight) + MathV.Exp(4.2549F * MathV.Pow(dbhInInches / heightInFeet, 0.6221F) * relativeHeight)));
+            float diameterInsideBarkInCm = Constant.CentimetersPerInch * diameterInsideBarkInInches;
+            return diameterInsideBarkInCm;
+        }
+
+        internal static float GetNeiloidHeight(float dbhInCm, float heightInM)
+        {
+            // approximation from plotting families of Hibbs et al. 2007 dib curves in R and fitting the neiloid inflection point
+            // from linear regressions in RedAlder.R
+            float heightDiameterRatio = heightInM / (0.01F * dbhInCm);
+            float neiloidHeightInM = -0.22F + 1.0F / (0.025F * heightDiameterRatio) + 0.01F * (0.1F + 0.084F * heightDiameterRatio) * dbhInCm;
+            return MathF.Max(neiloidHeightInM, Constant.Bucking.DefaultStumpHeightInM);
         }
 
         public static float GetGrowthEffectiveAge(float H, float SI)

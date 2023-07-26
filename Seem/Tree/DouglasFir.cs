@@ -156,6 +156,7 @@ namespace Mars.Seem.Tree
         internal static float GetNeiloidHeight(float dbhInCm, float heightInM)
         {
             // approximation from plotting families of Poudel et al. 2018 dib curves in R and fitting the neiloid inflection point
+            // from linear regressions in PoudelRegressions.R
             float heightDiameterRatio = heightInM / (0.01F * dbhInCm);
             float neiloidHeightInM = -0.7F + 1.0F / (0.02F * heightDiameterRatio) + 0.01F * (0.8F + 0.045F * heightDiameterRatio) * dbhInCm;
             return MathF.Max(neiloidHeightInM, Constant.Bucking.DefaultStumpHeightInM);

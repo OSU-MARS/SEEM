@@ -21,32 +21,33 @@ thplDib %>% group_by(heightDiameterRatio) %>% summarize(dbh = max(dbh), .groups 
 
 ggplot() +
   geom_hline(yintercept = c(0.15, 1.3, 7.62 + 0.15, 12.4986 + 0.15), color = "grey70", linetype = "longdash") +
-  geom_path(aes(x = 0.70 * seq(5, 159), y = pmax(-0.7 + 1/(0.02*30) + 0.01 * (0.8 + 0.075*30) * seq(5, 159), 0.15)), color = "grey70", linetype = "longdash") +
+  geom_path(aes(x = 0.70 * seq(5, 159), y = pmax(-0.7 + 1/(0.02*30) + 0.01 * (0.8 + 0.075*30) * seq(5, 159), 0.15)), color = "grey70", linetype = "longdash") + # neiloid line
   geom_path(aes(x = dibThpl, y = evaluationHeight, color = dbh, group = 100 * dbh + heightDiameterRatio), thplDib %>% filter(dbh > 4, heightDiameterRatio == 30)) +
   coord_cartesian(xlim = c(0, 160), ylim = c(0, 25)) +
   labs(x = NULL, y = "height, m", color = "DBH, cm") +
   theme(legend.position = "none") +
 ggplot() +
   geom_hline(yintercept = c(0.15, 1.3, 7.62 + 0.15, 12.4986 + 0.15), color = "grey70", linetype = "longdash") +
-  geom_path(aes(x = 0.75 * seq(5, 99), y = pmax(-0.6 + 1/(0.02*50) + 0.01 * (0.8 + 0.065*50) * seq(5, 99), 0.15)), color = "grey70", linetype = "longdash") +
+  geom_path(aes(x = 0.75 * seq(5, 99), y = pmax(-0.6 + 1/(0.02*50) + 0.01 * (0.8 + 0.065*50) * seq(5, 99), 0.15)), color = "grey70", linetype = "longdash") + # neiloid line
   geom_path(aes(x = dibThpl, y = evaluationHeight, color = dbh, group = 100 * dbh + heightDiameterRatio), thplDib %>% filter(dbh > 4, heightDiameterRatio == 50)) +
   coord_cartesian(xlim = c(0, 160), ylim = c(0, 25)) +
   labs(x = NULL, y = NULL, color = "DBH, cm") +
   theme(legend.position = "none") +
 ggplot() +
   geom_hline(yintercept = c(0.15, 1.3, 7.62 + 0.15, 12.4986 + 0.15), color = "grey70", linetype = "longdash") +
-  geom_path(aes(x = 0.86 * seq(5, 55), y = pmax(-0.5 + 1/(0.02*80) + 0.01 * (0.8 + 0.055*80) * seq(5, 55), 0.15)), color = "grey70", linetype = "longdash") +
+  geom_path(aes(x = 0.86 * seq(5, 55), y = pmax(-0.5 + 1/(0.02*80) + 0.01 * (0.8 + 0.055*80) * seq(5, 55), 0.15)), color = "grey70", linetype = "longdash") + # neiloid line
   geom_path(aes(x = dibThpl, y = evaluationHeight, color = dbh, group = 100 * dbh + heightDiameterRatio), thplDib %>% filter(dbh > 4, heightDiameterRatio == 80)) +
   coord_cartesian(xlim = c(0, 160), ylim = c(0, 25)) +
   labs(x = "western redcedar dib, cm", y = "height, m", color = "DBH, cm") +
   theme(legend.position = "none") +
 ggplot() +
   geom_hline(yintercept = c(0.15, 1.3, 7.62 + 0.15, 12.4986 + 0.15), color = "grey70", linetype = "longdash") +
-  geom_path(aes(x = 1.0 * seq(5, 23), y = pmax(-0.4 + 1/(0.02*150) + 0.01 * (0.8 + 0.045*150) * seq(5, 23), 0.15)), color = "grey70", linetype = "longdash") +
+  geom_path(aes(x = 1.0 * seq(5, 23), y = pmax(-0.4 + 1/(0.02*150) + 0.01 * (0.8 + 0.045*150) * seq(5, 23), 0.15)), color = "grey70", linetype = "longdash") + # neiloid line
   geom_path(aes(x = dibThpl, y = evaluationHeight, color = dbh, group = 100 * dbh + heightDiameterRatio), thplDib %>% filter(dbh > 4, heightDiameterRatio == 150)) +
   coord_cartesian(xlim = c(0, 160), ylim = c(0, 25)) +
   labs(x = "western redcedar dib, cm", y = NULL, color = "DBH, cm") +
   theme(legend.justification = c(1, 1), legend.position = c(0.98, 0.98)) +
+plot_annotation(theme = theme(plot.margin = margin())) +
 plot_layout(nrow = 2, ncol = 2, widths = c(1.1, 1), heights = c(1, 1.1))
 
 thplNeioid = tibble(heightDiameterRatio = c(30, 50, 80, 150),

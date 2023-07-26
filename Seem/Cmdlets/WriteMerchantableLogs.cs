@@ -139,11 +139,11 @@ namespace Mars.Seem.Cmdlets
                         string linePrefixForStandAgeAndSpecies = linePrefixForStandAge + "," + treesOfSpecies.Species.ToFourLetterCode();
                         IndividualTreeSelection treeSelectionForSpecies = highTrajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
 
-                        TreeSpeciesVolumeTable regenVolume = highTrajectory.TreeVolume.RegenerationHarvest.VolumeBySpecies[treesOfSpecies.Species];
-                        TreeSpeciesVolumeTable thinningVolume = highTrajectory.TreeVolume.Thinning.VolumeBySpecies[treesOfSpecies.Species];
-                        if (thinningVolume.MaximumLogs < regenVolume.MaximumLogs)
+                        TreeSpeciesVolumeTable regenVolumeTable = highTrajectory.TreeVolume.RegenerationHarvest.VolumeBySpecies[treesOfSpecies.Species];
+                        TreeSpeciesVolumeTable thinVolumeTable = highTrajectory.TreeVolume.Thinning.VolumeBySpecies[treesOfSpecies.Species];
+                        if (thinVolumeTable.MaximumLogs < regenVolumeTable.MaximumLogs)
                         {
-                            throw new NotSupportedException(thinningVolume.MaximumLogs + " logs are buckable from " + treesOfSpecies.Species + " in period " + period + ", which is more than the " + regenVolume.MaximumLogs + " logs buckable in regeneration harvest.");
+                            throw new NotSupportedException(thinVolumeTable.MaximumLogs + " logs are buckable from " + treesOfSpecies.Species + " in period " + period + ", which is more than the " + regenVolumeTable.MaximumLogs + " logs buckable in regeneration harvest.");
                         }
 
                         for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
@@ -188,19 +188,19 @@ namespace Mars.Seem.Cmdlets
                                                        heightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture) + "," +
                                                        expansionFactorPerHa.ToString(CultureInfo.InvariantCulture);
 
-                            int regenDiameterClass = regenVolume.ToDiameterIndex(dbhInCm);
-                            int regenHeightClass = regenVolume.ToHeightIndex(heightInM);
-                            int regenLogs2S = regenVolume.Logs2Saw[regenDiameterClass, regenHeightClass];
-                            int regenLogs3S = regenVolume.Logs3Saw[regenDiameterClass, regenHeightClass];
+                            int regenDiameterClass = regenVolumeTable.ToDiameterIndex(dbhInCm);
+                            int regenHeightClass = regenVolumeTable.ToHeightIndex(heightInM);
+                            int regenLogs2S = regenVolumeTable.Logs2Saw[regenDiameterClass, regenHeightClass];
+                            int regenLogs3S = regenVolumeTable.Logs3Saw[regenDiameterClass, regenHeightClass];
 
-                            int thinDiameterClass = thinningVolume.ToDiameterIndex(dbhInCm);
-                            int thinHeightClass = thinningVolume.ToHeightIndex(heightInM);
-                            int thinLogs2S = thinningVolume.Logs2Saw[thinDiameterClass, thinHeightClass];
-                            int thinLogs3S = thinningVolume.Logs3Saw[thinDiameterClass, thinHeightClass];
+                            int thinDiameterClass = thinVolumeTable.ToDiameterIndex(dbhInCm);
+                            int thinHeightClass = thinVolumeTable.ToHeightIndex(heightInM);
+                            int thinLogs2S = thinVolumeTable.Logs2Saw[thinDiameterClass, thinHeightClass];
+                            int thinLogs3S = thinVolumeTable.Logs3Saw[thinDiameterClass, thinHeightClass];
 
-                            for (int logIndex = 0; logIndex < thinningVolume.MaximumLogs; ++logIndex)
+                            for (int logIndex = 0; logIndex < thinVolumeTable.MaximumLogs; ++logIndex)
                             {
-                                float thinLogVolume = thinningVolume.LogCubic[thinDiameterClass, thinHeightClass, logIndex];
+                                float thinLogVolume = thinVolumeTable.LogCubic[thinDiameterClass, thinHeightClass, logIndex];
                                 if (thinLogVolume <= 0.0F)
                                 {
                                     continue;
@@ -215,15 +215,15 @@ namespace Mars.Seem.Cmdlets
                                         thinGrade = "2S";
                                     }
                                 }
-                                float thinTopDiameter = thinningVolume.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
+                                float thinTopDiameter = thinVolumeTable.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
 
                                 string? regenGrade = null;
                                 string? regenLogVolume = null;
                                 float regenLogVolumeAsFloat = 0.0F;
                                 string? regenTopDiameter = null;
-                                if (regenVolume.MaximumLogs > logIndex)
+                                if (regenVolumeTable.MaximumLogs > logIndex)
                                 {
-                                    regenLogVolumeAsFloat = regenVolume.LogCubic[regenDiameterClass, regenHeightClass, logIndex];
+                                    regenLogVolumeAsFloat = regenVolumeTable.LogCubic[regenDiameterClass, regenHeightClass, logIndex];
                                     if (regenLogVolumeAsFloat > 0.0F)
                                     {
                                         if ((thinLogVolume < this.MinimumLogVolume) && (regenLogVolumeAsFloat < this.MinimumLogVolume))
@@ -244,7 +244,7 @@ namespace Mars.Seem.Cmdlets
 
                                         regenLogVolume = regenLogVolumeAsFloat.ToString(Constant.Default.LogVolumeFormat, CultureInfo.InvariantCulture);
 
-                                        float topDiameterInCm = regenVolume.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
+                                        float topDiameterInCm = regenVolumeTable.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
                                         Debug.Assert(topDiameterInCm > 0.0F);
                                         regenTopDiameter = topDiameterInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture);
                                     }

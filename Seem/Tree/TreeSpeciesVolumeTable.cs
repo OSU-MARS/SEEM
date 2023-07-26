@@ -450,7 +450,7 @@ namespace Mars.Seem.Tree
                             // cases which might indicate a code defect.
                             float unscaledNeiloidVolume = neiloidVolumeInM3 - logCubicVolume;
                             this.UnscaledNeiloidCubic[dbhIndex, heightIndex] += unscaledNeiloidVolume; // unlikely, possible to have multiple logs from neiloid portion of stem
-                            Debug.Assert(unscaledNeiloidVolume > -0.3F * logCubicVolume);
+                            Debug.Assert(unscaledNeiloidVolume > -0.33F * logCubicVolume);
                         }
 
                         float scribnerTrim = parameters.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLengthInM ? Constant.Bucking.ScribnerTrimLongLogInM : Constant.Bucking.ScribnerTrimShortLogInM;

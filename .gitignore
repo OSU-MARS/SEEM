@@ -9,3 +9,4 @@ TestResults/
 
 # Visual Studio cache/options directory
 .vs/
+.Rproj.user
