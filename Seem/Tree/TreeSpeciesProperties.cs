@@ -20,11 +20,11 @@ namespace Mars.Seem.Tree
         public float WoodDensity { get; private init; } // kg/m³, green
         public float YardingBarkLoss { get; private init; } // fraction of bark
 
-        public TreeSpeciesProperties(float woodDensity, float barkFraction, float barkDensity, float processingBarkLoss, float yardingBarkLoss)
+        public TreeSpeciesProperties(float greenWoodDensity, float barkFraction, float barkDensity, float processingBarkLoss, float yardingBarkLoss)
         {
-            if ((woodDensity <= 50.0F) || (woodDensity > 1500.0F))
+            if ((greenWoodDensity <= 50.0F) || (greenWoodDensity > 1500.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(woodDensity));
+                throw new ArgumentOutOfRangeException(nameof(greenWoodDensity));
             }
             if ((barkFraction <= 0.0F) || (barkFraction >= 0.3F))
             {
@@ -47,7 +47,7 @@ namespace Mars.Seem.Tree
             this.BarkDensity = barkDensity;
             this.BarkFraction = barkFraction;
             this.ProcessingBarkLoss = processingBarkLoss;
-            this.WoodDensity = woodDensity;
+            this.WoodDensity = greenWoodDensity;
             this.YardingBarkLoss = yardingBarkLoss;
 
             // unmodified properties

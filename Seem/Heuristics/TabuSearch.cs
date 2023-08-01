@@ -201,7 +201,7 @@ namespace Mars.Seem.Heuristics
             };
         }
 
-        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
+        public override PrescriptionPerformanceCounters Run(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.EscapeAfter < 1)
             {

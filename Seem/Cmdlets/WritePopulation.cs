@@ -8,7 +8,7 @@ using System.Management.Automation;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Population")]
-    public class WritePopulation : WriteTrajectoriesCmdlet
+    public class WritePopulation : WriteSilviculturalTrajectoriesCmdlet
     {
         protected override void ProcessRecord()
         {
@@ -25,7 +25,7 @@ namespace Mars.Seem.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
+                writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",generation,highMin,highMean,highMax,highCov,highAlleles,highHeterozygosity,highIndividuals,highPolymorphism,lowMin,lowMean,lowMax,lowCov,lowAlleles,lowHeterozygosity,lowIndividuals,lowPolymorphism");
             }
 
             long estimatedBytesSinceLastFileLength = 0;
@@ -33,8 +33,8 @@ namespace Mars.Seem.Cmdlets
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int positionIndex = 0; positionIndex < this.Trajectories.CoordinatesEvaluated.Count; ++positionIndex)
             {
-                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[positionIndex];
-                StandTrajectoryArrayElement element = this.Trajectories[coordinate];
+                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[positionIndex];
+                SilviculturalCoordinateExploration element = this.Trajectories[coordinate];
                 string linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
                 PopulationStatistics highStatistics = ((GeneticAlgorithm)element.Pool.High.Heuristic!).PopulationStatistics;
                 PopulationStatistics lowStatistics = ((GeneticAlgorithm)element.Pool.Low.Heuristic!).PopulationStatistics;

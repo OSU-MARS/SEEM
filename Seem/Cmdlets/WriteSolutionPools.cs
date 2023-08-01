@@ -9,7 +9,7 @@ using System.Management.Automation;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "SolutionPools")]
-    public class WriteSolutionPools : WriteTrajectoriesCmdlet
+    public class WriteSolutionPools : WriteSilviculturalTrajectoriesCmdlet
     {
         protected override void ProcessRecord()
         {
@@ -19,7 +19,7 @@ namespace Mars.Seem.Cmdlets
             int poolCapacity = 0;
             if (this.Trajectories.CoordinatesEvaluated.Count > 0)
             {
-                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[0];
+                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[0];
                 poolCapacity = this.Trajectories[coordinate].Pool.PoolCapacity;
             }
 
@@ -37,7 +37,7 @@ namespace Mars.Seem.Cmdlets
                     distanceHeader[solutionIndex] = "distance" + solutionIndex.ToString(CultureInfo.InvariantCulture);
                 }
 
-                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",pooled,accepted,rejected," + 
+                writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",pooled,accepted,rejected," + 
                                  String.Join(',', financialHeader) + "," +
                                  String.Join(',', distanceHeader));
             }
@@ -50,7 +50,7 @@ namespace Mars.Seem.Cmdlets
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int resultIndex = 0; resultIndex < this.Trajectories!.CoordinatesEvaluated.Count; ++resultIndex)
             {
-                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
+                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
                 SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
                 if (prescriptions.PoolCapacity != poolCapacity)
                 {

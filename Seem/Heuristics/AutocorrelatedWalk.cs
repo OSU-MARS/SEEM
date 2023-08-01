@@ -20,7 +20,7 @@ namespace Mars.Seem.Heuristics
             return "AutocorrelatedWalk";
         }
 
-        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
+        public override PrescriptionPerformanceCounters Run(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.Iterations < 1)
             {

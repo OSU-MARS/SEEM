@@ -1,25 +1,25 @@
 ﻿using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Mars.Seem.Organon
 {
     public class OrganonStand : Stand
     {
+        // TODO: ratiionalize age and breast height age
         // time since last stand replacing disturbance
         public int AgeInYears { get; set; }
-
         // time since oldest cohort of trees in the stand reached breast height (4.5 feet) (DOUG?)
         public int BreastHeightAgeInYears { get; set; }
 
         public DouglasFir.SiteConstants DouglasFirSiteConstants { get; private set; }
 
-        // also used for ponderosa (SWO) and western redcedar (NWO)
+        // also used for ponderosa (SWO) and western redcedar (NWO) - really secondary or tertiary species site idex
         public float HemlockSiteIndexInFeet { get; init; }
 
-        // number of plots tree data is from
-        // If data is for entire stand use one plot.
-        public float NumberOfPlots { get; set; }
+        // override for age and breast height age
+        public bool IsEvenAge { get; set; }
 
         // legacy SDImax components present in Organon Fortran but superseded by estimation of SDI from site index per FRL Research Contribution 40
         // natural logarithm of quadratic mean diameter associated with a given SDImax
@@ -31,7 +31,7 @@ namespace Mars.Seem.Organon
         // Also controls SDI max. See FRL Research Contribution 40 (Hann et al. 2003).
         public float SiteIndexInFeet { get; private set; }
 
-        public float RedAlderSiteIndexInfeet { get; private set; }
+        public float RedAlderSiteIndexInFeet { get; private set; }
         public float RedAlderGrowthEffectiveAge { get; set; }
 
         public OrganonWarnings Warnings { get; private init; }
@@ -51,12 +51,10 @@ namespace Mars.Seem.Organon
 
             this.AgeInYears = ageInYears;
             this.BreastHeightAgeInYears = ageInYears;
-            this.DouglasFirSiteConstants = new DouglasFir.SiteConstants(primarySiteIndexInFeet);
             this.DouglasFirSiteConstants = new(primarySiteIndexInFeet);
             this.HemlockSiteIndexInFeet = variant.ToHemlockSiteIndex(primarySiteIndexInFeet);
-            this.NumberOfPlots = 1;
             this.PlantingDensityInTreesPerHectare = 0.0F;
-            this.RedAlderSiteIndexInfeet = -1.0F;
+            this.RedAlderSiteIndexInFeet = -1.0F;
             this.RedAlderGrowthEffectiveAge = -1.0F;
             this.SiteIndexInFeet = primarySiteIndexInFeet;
             this.TreeHeightWarningBySpecies = new();
@@ -71,8 +69,7 @@ namespace Mars.Seem.Organon
             this.DouglasFirSiteConstants = other.DouglasFirSiteConstants; // currently immutable, so shallow copy for now
             this.HemlockSiteIndexInFeet = other.HemlockSiteIndexInFeet;
             this.Name = other.Name;
-            this.NumberOfPlots = other.NumberOfPlots;
-            this.RedAlderSiteIndexInfeet = other.RedAlderSiteIndexInfeet;
+            this.RedAlderSiteIndexInFeet = other.RedAlderSiteIndexInFeet;
             this.RedAlderGrowthEffectiveAge = other.RedAlderGrowthEffectiveAge;
             //this.SdiMaxLnQmd = other.SdiMaxLnQmd;
             //this.SdiMaxReciprocalExponent = other.SdiMaxReciprocalExponent;
@@ -102,6 +99,65 @@ namespace Mars.Seem.Organon
             }
         }
 
+        public void SetHeightToCrownBase(OrganonVariant organonVariant)
+        {
+            OrganonStandDensity density = new(organonVariant, this);
+            float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(organonVariant, this);
+            for (int speciesIndex = 0; speciesIndex < this.TreesBySpecies.Count; ++speciesIndex)
+            {
+                Trees organonTreesOfSpecies = this.TreesBySpecies.Values[speciesIndex];
+                Debug.Assert(organonTreesOfSpecies.Units == Units.English);
+
+                // initialize crown ratio from Organon variant
+                Debug.Assert(organonTreesOfSpecies.Units == Units.English);
+                for (int treeIndex = 0; treeIndex < organonTreesOfSpecies.Count; ++treeIndex)
+                {
+                    float dbhInInches = organonTreesOfSpecies.Dbh[treeIndex];
+                    float heightInFeet = organonTreesOfSpecies.Height[treeIndex];
+                    float crownCompetitionFactorLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
+                    float heightToCrownBase = organonVariant.GetHeightToCrownBase(this, organonTreesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, density, oldGrowthIndicator);
+                    float crownRatio = (heightInFeet - heightToCrownBase) / heightInFeet;
+                    Debug.Assert((crownRatio >= 0.0F) && (crownRatio <= 1.0F));
+
+                    organonTreesOfSpecies.CrownRatio[treeIndex] = crownRatio;
+                }
+
+                // alternatively, initialize crown ratio from FVS-PN dubbing
+                // https://www.fs.fed.us/fmsc/ftp/fvs/docs/overviews/FVSpn_Overview.pdf, section 4.3.1
+                // https://sourceforge.net/p/open-fvs/code/HEAD/tree/trunk/pn/crown.f#l67
+                // for live > 1.0 inch DBH
+                //   estimated crown ratio = d0 + d1 * 100.0 * SDI / SDImax
+                //   PSME d0 = 5.666442, d1 = -0.025199
+                //if ((this.TreesBySpecies.Count != 1) || (organonTreesOfSpecies.Species != FiaCode.PseudotsugaMenziesii))
+                //{
+                //    throw new NotImplementedException();
+                //}
+
+                // FVS-PN crown ratio dubbing for Douglas-fir
+                // Resulted in 0.28% less volume than Organon NWO on Malcolm Knapp Nelder 1 at stand age 70.
+                // float qmd = stand.GetQuadraticMeanDiameter();
+                // float reinekeSdi = density.TreesPerAcre * MathF.Pow(0.1F * qmd, 1.605F);
+                // float reinekeSdiMax = MathF.Exp((stand.A1 - Constant.NaturalLogOf10) / stand.A2);
+                // float meanCrownRatioFvs = 5.666442F - 0.025199F * 100.0F * reinekeSdi / reinekeSdiMax;
+                // Debug.Assert(meanCrownRatioFvs >= 0.0F);
+                // Debug.Assert(meanCrownRatioFvs <= 10.0F); // FVS uses a 0 to 10 range, so 10 = 100% crown ratio
+                // float weibullA = 0.0F;
+                // float weibullB = -0.012061F + 1.119712F * meanCrownRatioFvs;
+                // float weibullC = 3.2126F;
+                // int[] dbhOrder = treesOfSpecies.GetDbhSortOrder();
+
+                // for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+                // {
+                //     float dbhFraction = (float)dbhOrder[treeIndex] / (float)treesOfSpecies.Count;
+                //     float fvsCrownRatio = weibullA + weibullB * MathV.Pow(-1.0F * MathV.Ln(1.0F - dbhFraction), 1.0F / weibullC);
+                //     Debug.Assert(fvsCrownRatio >= 0.0F);
+                //     Debug.Assert(fvsCrownRatio <= 10.0F);
+
+                //     treesOfSpecies.CrownRatio[treeIndex] = 0.1F * fvsCrownRatio;
+                // }
+            }
+        }
+
         public void SetRedAlderSiteIndexAndGrowthEffectiveAge()
         {
             // find red alder site index and growth effective age
@@ -120,12 +176,12 @@ namespace Mars.Seem.Organon
                 }
             }
 
-            this.RedAlderSiteIndexInfeet = RedAlder.ConiferToRedAlderSiteIndex(this.SiteIndexInFeet);
-            this.RedAlderGrowthEffectiveAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndexInfeet);
+            this.RedAlderSiteIndexInFeet = RedAlder.ConiferToRedAlderSiteIndex(this.SiteIndexInFeet);
+            this.RedAlderGrowthEffectiveAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndexInFeet);
             if (this.RedAlderGrowthEffectiveAge <= 0.0F)
             {
                 this.RedAlderGrowthEffectiveAge = Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears;
-                this.RedAlderSiteIndexInfeet = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, this.RedAlderGrowthEffectiveAge);
+                this.RedAlderSiteIndexInFeet = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, this.RedAlderGrowthEffectiveAge);
             }
             else if (this.RedAlderGrowthEffectiveAge > Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears)
             {

@@ -16,6 +16,31 @@ namespace Mars.Seem.Extensions
             {
                 return twoOrFourLetterCode switch
                 {
+                    // common name abbreviations
+                    //"BC" => FiaCode.PopulusTrichocarpa,
+                    "BM" => FiaCode.AcerMacrophyllum,
+                    //"CA" => FiaCode.FrangulaPurshiana,
+                    //"CH" => FiaCode.Prunus,
+                    "DF" => FiaCode.PseudotsugaMenziesii,
+                    "GC" => FiaCode.ChrysolepisChrysophyllaVarChrysophylla,
+                    "GF" => FiaCode.AbiesGrandis,
+                    "IC" => FiaCode.CalocedrusDecurrens,
+                    //"LP" => FiaCode.PinusContorta,
+                    //"OA" => FiaCode.FraxinusLatifolia,
+                    //"OM" => FiaCode.UmbelulariaCalifornica,
+                    //"PC" => FiaCode.ChamaecyparisLawsoniana,
+                    "PD" => FiaCode.CornusNuttallii,
+                    "PM" => FiaCode.ArbutusMenziesii,
+                    "PY" => FiaCode.TaxusBrevifolia,
+                    "RA" => FiaCode.AlnusRubra,
+                    "RC" => FiaCode.ThujaPlicata,
+                    "SS" => FiaCode.PiceaSitchensis,
+                    "TO" => FiaCode.NotholithocarpusDensiflorus,
+                    "WF" => FiaCode.AbiesConcolor,
+                    "WH" => FiaCode.TsugaHeterophylla,
+                    "WI" => FiaCode.Salix,
+                    "WO" => FiaCode.QuercusGarryana,
+                    // reversed common name abbreviations (used in British Columbia)
                     "CW" => FiaCode.ThujaPlicata,
                     "DR" => FiaCode.AlnusRubra,
                     "FD" => FiaCode.PseudotsugaMenziesii,

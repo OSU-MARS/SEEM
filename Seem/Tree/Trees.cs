@@ -1,6 +1,7 @@
 ﻿using Mars.Seem.Extensions;
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Mars.Seem.Tree
 {
@@ -74,7 +75,7 @@ namespace Mars.Seem.Tree
         /// <summary>
         /// Whether diameters, heights, and densities are in English or metric units.
         /// </summary>
-        public Units Units { get; private init; }
+        public Units Units { get; private set; }
 
         public Trees(FiaCode species, int minimumSize, Units units)
         {
@@ -146,12 +147,17 @@ namespace Mars.Seem.Tree
 
         public void Add(int plot, int tag, float dbh, float height, float crownRatio, float liveExpansionFactor)
         {
+            // allow NaN and negative DBHes as they may later be imputed
             Debug.Assert(Single.IsNaN(dbh) || ((dbh >= 0.0F) && (dbh < 500.0F)));
             Debug.Assert(Single.IsNaN(height) || ((height >= 0.0F) && (height < 380.0F)));
-            Debug.Assert(crownRatio >= 0.0F);
-            Debug.Assert(crownRatio <= 1.0F);
-            Debug.Assert(liveExpansionFactor >= 0.0F);
-            Debug.Assert(liveExpansionFactor <= Constant.Maximum.ExpansionFactorPerAcre);
+            if (Single.IsNaN(crownRatio) || (crownRatio < 0.0F) || (crownRatio > 1.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(crownRatio));
+            }
+            if (Single.IsNaN(liveExpansionFactor) || (liveExpansionFactor < 0.0F) || (liveExpansionFactor > Constant.Maximum.ExpansionFactorPerAcre))
+            {
+                throw new ArgumentOutOfRangeException(nameof(liveExpansionFactor));
+            }
 
             if (this.Capacity == this.Count)
             {
@@ -273,6 +279,48 @@ namespace Mars.Seem.Tree
                 // this.MerchantableCubicVolumePerStem[treeIndex] = Single.NaN;
                 // this.Tag[treeIndex] = 0; // potential desirable not to zero as a aid to debugging
             }
+        }
+
+        public void SetUnits(Units newUnits)
+        {
+            if (this.Units == newUnits)
+            {
+                return; // nothing to do
+            }
+
+            // CrownRatio, Plot, Species, Tag, and UncompactedIndex are independent of measurement units
+            if ((this.Units == Units.English) && (newUnits == Units.Metric))
+            {
+                // convert from English to metric
+                for (int treeIndex = 0; treeIndex < this.Count; ++treeIndex)
+                {
+                    this.Dbh[treeIndex] *= Constant.CentimetersPerInch;
+                    this.DbhGrowth[treeIndex] *= Constant.CentimetersPerInch;
+                    this.DeadExpansionFactor[treeIndex] *= Constant.AcresPerHectare;
+                    this.Height[treeIndex] *= Constant.MetersPerFoot;
+                    this.HeightGrowth[treeIndex] *= Constant.MetersPerFoot;
+                    this.LiveExpansionFactor[treeIndex] *= Constant.AcresPerHectare;
+                }
+            }
+            else if ((this.Units == Units.Metric) && (newUnits == Units.English))
+            {
+                // convert from metric to English
+                for (int treeIndex = 0; treeIndex < this.Count; ++treeIndex)
+                {
+                    this.Dbh[treeIndex] *= Constant.InchesPerCentimeter;
+                    this.DbhGrowth[treeIndex] *= Constant.InchesPerCentimeter;
+                    this.DeadExpansionFactor[treeIndex] *= Constant.HectaresPerAcre;
+                    this.Height[treeIndex] *= Constant.FeetPerMeter;
+                    this.HeightGrowth[treeIndex] *= Constant.FeetPerMeter;
+                    this.LiveExpansionFactor[treeIndex] *= Constant.HectaresPerAcre;
+                }
+            }
+            else
+            {
+                throw new NotSupportedException("Unhandled units conversion from " + this.Units + " to " + newUnits + ".");
+            }
+
+            this.Units = newUnits;
         }
 
         public void SortByDbh()

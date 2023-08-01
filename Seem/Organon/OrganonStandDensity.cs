@@ -9,21 +9,21 @@ namespace Mars.Seem.Organon
         public float CrownCompetitionFactor { get; set; }
 
         /// <summary>
-        /// Basal area competition range vector of length 51 for trees 50-100 inches DBH. (BALL)
+        /// Basal area competition range vector of length 51 for trees 50-100 inches DBH (BALL), indexed by DBH in inches.
         /// </summary>
         public float[] LargeTreeBasalAreaLarger { get; private init; }
         /// <summary>
-        /// Crown competition factor range vector of length 51 for trees 50-100 inches DBH. (CCFLL)
+        /// Crown competition factor range vector of length 51 for trees 50-100 inches DBH (CCFLL), indexed by DBH in inches.
         /// </summary>
         public float[] LargeTreeCrownCompetition { get; private init; }
 
         /// <summary>
-        /// Basal area competition range vector of length 501 indexed by DBH in tenths of an inch. (BAL)
+        /// Basal area competition range vector of length 501 indexed by DBH in tenths of an inch (BAL).
         /// </summary>
         public float[] SmallTreeBasalAreaLarger { get; private init; }
 
         /// <summary>
-        /// Crown competition factor range vector of length 501 indexed by DBH in tenths of an inch. (CCFL)
+        /// Crown competition factor range vector of length 501 indexed by DBH in tenths of an inch (CCFL).
         /// </summary>
         public float[] SmallTreeCrownCompetition { get; private init; }
 
@@ -48,7 +48,10 @@ namespace Mars.Seem.Organon
         public OrganonStandDensity(OrganonVariant variant, OrganonStand stand)
             : base() // for now, don't pass stand to base to avoid a double loop over stand's trees
         {
-            Debug.Assert(stand.GetUnits() == Units.English);
+            if (stand.GetUnits() != Units.English)
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand), "Stand does not have English units.");
+            }
 
             this.CrownCompetitionFactor = 0.0F;
             this.LargeTreeBasalAreaLarger = new float[100 - 50 + 1];

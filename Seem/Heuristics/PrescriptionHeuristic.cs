@@ -33,7 +33,7 @@ namespace Mars.Seem.Heuristics
             }
         }
 
-        protected abstract void EvaluateThinningPrescriptions(StandTrajectoryCoordinate coordinate, StandTrajectories trajectories, PrescriptionPerformanceCounters perfCounters);
+        protected abstract void EvaluateThinningPrescriptions(SilviculturalCoordinate coordinate, SilviculturalSpace trajectories, PrescriptionPerformanceCounters perfCounters);
 
         public override HeuristicMoveLog? GetMoveLog()
         {
@@ -49,7 +49,7 @@ namespace Mars.Seem.Heuristics
             }
         }
 
-        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
+        public override PrescriptionPerformanceCounters Run(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.HeuristicParameters.MinimumConstructionGreediness != Constant.Grasp.FullyGreedyConstructionForMaximization)
             {
@@ -114,7 +114,7 @@ namespace Mars.Seem.Heuristics
             // Prescriptions and tree selection are overwritten in prescription enumeration, leaving only the minor benefit of reusing a few
             // timesteps. However, since construction is fully greedy, new coordinate descents can begin from the copied solution without
             // modifying it.
-            StandTrajectoryCoordinate constructionSourcePosition = coordinate;
+            SilviculturalCoordinate constructionSourcePosition = coordinate;
             if (coordinate.RotationIndex == Constant.AllRotationPosition)
             {
                 // for now, choose a initial position to search from within all rotations and all financial scenarios here

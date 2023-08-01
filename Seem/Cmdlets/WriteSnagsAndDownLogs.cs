@@ -10,7 +10,7 @@ using System.Management.Automation;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "SnagsAndDownLogs")]
-    public class WriteSnagsAndDownLogs : WriteStandTrajectory
+    public class WriteSnagsAndDownLogs : WriteSilviculturalTrajectories
     {
         [Parameter(HelpMessage = "Omits diameter classes without any snags or dead logs. In most cases this substantially reduces output file size.")]
         public SwitchParameter SkipZero { get; set; }
@@ -25,7 +25,7 @@ namespace Mars.Seem.Cmdlets
             bool resultsSpecified = this.Trajectories != null;
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",standAge,species,diameter class,snags,logs");
+                writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",standAge,species,diameter class,snags,logs");
             }
 
             // rows for periods

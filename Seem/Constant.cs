@@ -91,21 +91,18 @@ namespace Mars.Seem
         {
             public const float BarSawKerf = 0.007F; // m
             public const float BCFirmwoodLogTaperSegmentLengthInM = Constant.MetersPerFoot * 8.0F; // m
+            public const float DefaultForwarderLogLengthInM = Constant.MetersPerFoot * 24.0F; // m
             public const float DefaultLongLogLengthInM = Constant.MetersPerFoot * 40.0F; // m
-            public const float DefaultMaximumFinalHarvestDiameterInCentimeters = 115.0F;
-            public const float DefaultMaximumFinalHarvestHeightInMeters = 70.0F;
-            public const float DefaultMaximumThinningDiameterInCentimeters = 115.0F; // default maximum diameter for thinning volume table
-            public const float DefaultMaximumThinningHeightInMeters = 65.0F;
-            public const float DefaultShortLogLengthInM = Constant.MetersPerFoot * 24.0F; // m
             public const float DefaultStumpHeightInM = 0.15F; // m
             public const float DefectAndBreakageReduction = 0.955F; // 100 - 4.5%
-            public const float DiameterClassSizeInCentimeters = 1.0F;
             public const float EvaluationHeightStepInM = 0.5F; // m
-            public const float HeightClassSizeInMeters = 1.0F; // m
             public const float ProcessingHeadFeedRollerHeightInM = 0.70F; // m
             public const float ScribnerShortLogLengthInM = Constant.MetersPerFoot * 20.0F; // m
             public const float ScribnerTrimLongLogInM = Constant.MetersPerFoot * 1.0F - 0.0001F; // m with 100 μm margin for numerical precision
             public const float ScribnerTrimShortLogInM = Constant.MetersPerFoot * 0.5F - 0.0001F; // m with 100 μm margin for numerical precision
+            public const float VolumeTableDiameterClassSizeInCentimeters = 1.0F;
+            public const float VolumeTableHeightClassSizeInMeters = 1.0F; // m
+            public const float VolumeTableMaximumDiameterToLogInCentimeters = 250.0F;
         }
 
         public static class Default
@@ -120,13 +117,13 @@ namespace Mars.Seem
             public const string HeightInMFormat = "0.0#";
             public const string LogVolumeFormat = "0.0##";
             public const string PercentageFormat = "0.0#";
+            public const int PlotID = 0;
             public const string ProbabilityFormat = "0.00##";
             public const int RotationLengths = 9;
             public const float SlopeForTetheringInPercent = 45.0F;
             public const int SolutionPoolSize = 4;
             public const int ThinningPeriod = 3;
             public const float ThinningPondValueMultiplier = 0.90F;
-            public const int TimeStepInYears = 5;
             public const float WesternHemlockSiteIndexInM = 29.1F; // from Malcolm Knapp Research Forest spacing trial plot 21
         }
 
@@ -215,7 +212,7 @@ namespace Mars.Seem
             public const float DiameterIncrementInInches = 4.5F;
             public const float ExpansionFactorPerAcre = 1000.0F; // for 1/1000 ac seedling plots
             public const float ExpansionFactorPerHa = 2500.0F;
-            public const float HeightIncrementInFeet = 20.0F;
+            public const float HeightIncrementInFeet = 21.0F;
             public const float PlantingDensityInTreesPerHectare = 40000.0F; // sanity upper bound, 0.5 m spacing
             //public const float SdiPerAcre = 1000.0F; // Reineke SDI in English units
             public const float SiteIndexInFeet = 200.0F; // sanity upper bound

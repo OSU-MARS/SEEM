@@ -14,15 +14,12 @@ using System.Threading.Tasks;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommon.Get, "StandTrajectory")]
-    public class GetStandTrajectory : Cmdlet
+    public class GetStandTrajectory : GetTrajectoryCmdlet
     {
         [Parameter]
         public SwitchParameter Benchmark { get; set; }
         [Parameter]
         public TimeSpan BenchmarkDuration { get; set; }
-        [Parameter]
-        [ValidateRange(1, 128)]
-        public int BenchmarkMaxThreads { get; set; }
         [Parameter]
         public TimeSpan BenchmarkPolling { get; set; }
         [Parameter]
@@ -54,22 +51,14 @@ namespace Mars.Seem.Cmdlets
         [ValidateRange(0, 100)]
         public List<int> RotationLengths { get; set; }
 
-        [Parameter]
-        public Simd Simd { get; set; }
-
         [Parameter(Mandatory = true)]
         [ValidateNotNull]
         public OrganonStand? Stand { get; set; }
-
-        [Parameter]
-        [ValidateNotNull]
-        public TreeVolume TreeVolume { get; set; }
 
         public GetStandTrajectory()
         {
             this.Benchmark = false;
             this.BenchmarkDuration = TimeSpan.FromMinutes(1.0); // long enough to average out processor turbo
-            this.BenchmarkMaxThreads = Environment.ProcessorCount;
             this.BenchmarkPolling = TimeSpan.FromSeconds(1.0);
             this.BenchmarkWarmup = TimeSpan.FromSeconds(10.0);
             this.Financial = FinancialScenarios.Default;
@@ -79,7 +68,6 @@ namespace Mars.Seem.Cmdlets
             this.FirstThinPeriod = Constant.NoThinPeriod; // no stand entry
             this.Name = null;
             this.RotationLengths = new() { 15 }; // 75 years of simulation with Organon's 5 year timestep
-            this.Simd = Simd.Width128;
             this.TreeVolume = TreeVolume.Default;
         }
 
@@ -103,13 +91,13 @@ namespace Mars.Seem.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.Simd), "256 bit wide SIMD is not supported on processors without AVX2 instructions.");
             }
 
-            int benchmarkCount = (int)MathF.Log2(this.BenchmarkMaxThreads) + 1;
+            int benchmarkCount = (int)MathF.Log2(this.Threads) + 1;
             int benchmarkDurationInSeconds = (int)(this.BenchmarkDuration + this.BenchmarkWarmup).TotalSeconds;
             ParallelOptions parallelOptions = new();
 
             List<GrowthModelBenchmark> benchmarks = new();
             using LogicalProcessorFrequencies processorFrequencies = new();                
-            for (int threads = 1; threads <= this.BenchmarkMaxThreads; threads *= 2)
+            for (int threads = 1; threads <= this.Threads; threads *= 2)
             {
                 this.WriteProgress(new ProgressRecord(0, "Get-StandTrajectory", "Starting benchmark with " + threads + " thread" + (threads > 1 ? "s" : String.Empty) + "...")
                 {
@@ -236,7 +224,7 @@ namespace Mars.Seem.Cmdlets
                 perfCounters.Duration += stopwatch.Elapsed;
 
                 // assign stand trajectory to coordinates
-                StandTrajectories trajectories = new(new List<int>() { this.FirstThinPeriod }, this.RotationLengths, this.Financial);
+                SilviculturalSpace trajectories = new(new List<int>() { this.FirstThinPeriod }, this.RotationLengths, this.Financial);
                 for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
                 {
                     int endOfRotationPeriod = this.RotationLengths[rotationIndex];
@@ -244,7 +232,7 @@ namespace Mars.Seem.Cmdlets
                     for (int financialIndex = 0; financialIndex < this.Financial.Count; ++financialIndex)
                     {
                         // must be new each time to uniquely populate results.CombinationsEvaluated through AddEvaluatedPosition()
-                        StandTrajectoryCoordinate currentCoordinate = new()
+                        SilviculturalCoordinate currentCoordinate = new()
                         {
                             FinancialIndex = financialIndex,
                             RotationIndex = rotationIndex

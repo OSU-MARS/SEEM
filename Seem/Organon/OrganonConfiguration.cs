@@ -18,8 +18,6 @@ namespace Mars.Seem.Organon
         public bool CalibrateHeight { get; set; }
         // enables genetic growth modifiers
         public bool Genetics { get; set; }
-        // hint for error checking age ranges
-        public bool IsEvenAge { get; set; }
         // enables Swiss needle cast (Nothophaeocryptopus gaeumanii) growth modifiers, applies only to NWO and SMC variants
         public bool SwissNeedleCast { get; set; }
 
@@ -48,11 +46,6 @@ namespace Mars.Seem.Organon
         public OrganonConfiguration(OrganonVariant variant)
         {
             this.Variant = variant;
-            if (this.Variant.TreeModel == TreeModel.OrganonRap)
-            {
-                // only even age red alder plantations more than 10 years old are supported
-                this.IsEvenAge = true;
-            }
         }
 
         public void CopyFrom(OrganonConfiguration other)
@@ -65,7 +58,6 @@ namespace Mars.Seem.Organon
             this.CalibrateDiameter = other.CalibrateDiameter;
             this.CalibrateHeight = other.CalibrateHeight;
             this.Genetics = other.Genetics;
-            this.IsEvenAge = other.IsEvenAge;
             this.SwissNeedleCast = other.SwissNeedleCast;
 
             //this.DefaultMaximumSdi = other.DefaultMaximumSdi;

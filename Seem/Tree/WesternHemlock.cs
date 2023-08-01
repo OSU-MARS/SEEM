@@ -33,7 +33,7 @@ namespace Mars.Seem.Tree
         {
             // Miles PD, Smith BW. 2009. Specific gravity and other properties of wood and bark for 156 tree species found in North
             //   America (No. NRS-RN-38). Northern Research Station, US Forest Service. https://doi.org/10.2737/NRS-RN-38
-            WesternHemlock.Properties = new TreeSpeciesProperties(woodDensity: 657.0F, // kg/m³
+            WesternHemlock.Properties = new TreeSpeciesProperties(greenWoodDensity: 657.0F, // kg/m³
                 barkFraction: 0.158F,
                 barkDensity: 1009.0F, // kg/m³
                 processingBarkLoss: 0.30F, // loss with spiked feed rollers

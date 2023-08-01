@@ -517,6 +517,13 @@ namespace Mars.Seem.Organon
 
         public override int GrowHeightBigSix(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float[] crownCompetitionByHeight)
         {
+            if (stand.IsEvenAge != true)
+            {
+                // placement here is hacky but can't really be improved on until OrganonGrowth.Grow() is moved to OrganonVariant.Grow()
+                // This check can be bypassed if a RAP model has only minor species, which appears functionally unimportant.
+                throw new ArgumentOutOfRangeException(nameof(stand), "RAP variant supports only even age stands.");
+            }
+
             // WEIGHTED CENTRAL PAI PROCEDURE PARAMETERS FOR RED ALDER
             OrganonHeightCoefficients height = this.GetOrCreateHeightCoefficients(trees.Species);
             // can't merge this with base class implementation due to red alder specific branch in GetGrowthEffectiveAge()

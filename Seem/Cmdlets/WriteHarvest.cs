@@ -10,7 +10,7 @@ using System.Text;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Harvest")]
-    public class WriteHarvest : WriteTrajectoriesCmdlet
+    public class WriteHarvest : WriteSilviculturalTrajectoriesCmdlet
     {
         protected override void ProcessRecord()
         {
@@ -28,7 +28,7 @@ namespace Mars.Seem.Cmdlets
                 // harvest volume headers
                 for (int coordinateIndex = 0; coordinateIndex < this.Trajectories.CoordinatesEvaluated.Count; ++coordinateIndex)
                 {
-                    StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
+                    SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
                     StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory;
                     if (trajectory == null)
                     {
@@ -41,7 +41,7 @@ namespace Mars.Seem.Cmdlets
                 // standing volume headers
                 for (int resultIndex = 0; resultIndex < this.Trajectories.CoordinatesEvaluated.Count; ++resultIndex)
                 {
-                    StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
+                    SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
                     StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked in previous loop
                     line.Append("," + trajectory.Name + "standing");
                 }
@@ -57,14 +57,14 @@ namespace Mars.Seem.Cmdlets
                 line.Clear();
                 line.Append(periodIndex);
 
-                foreach (StandTrajectoryCoordinate coordinate in this.Trajectories.CoordinatesEvaluated)
+                foreach (SilviculturalCoordinate coordinate in this.Trajectories.CoordinatesEvaluated)
                 {
                     StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked loops above
                     float harvestVolumeScibner = trajectory.GetTotalScribnerVolumeThinned(periodIndex);
                     line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
                 }
 
-                foreach (StandTrajectoryCoordinate coordinate in this.Trajectories.CoordinatesEvaluated)
+                foreach (SilviculturalCoordinate coordinate in this.Trajectories.CoordinatesEvaluated)
                 {
                     StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked loops above
                     float standingVolumeScribner = trajectory.GetTotalStandingScribnerVolume(periodIndex);

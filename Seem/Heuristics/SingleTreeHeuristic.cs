@@ -13,7 +13,7 @@ namespace Mars.Seem.Heuristics
             this.MoveLog = new SingleTreeMoveLog(runParameters.MoveCapacity);
         }
 
-        protected override float EvaluateInitialSelection(StandTrajectoryCoordinate coordinate, int moveCapacity, PrescriptionPerformanceCounters perfCounters)
+        protected override float EvaluateInitialSelection(SilviculturalCoordinate coordinate, int moveCapacity, PrescriptionPerformanceCounters perfCounters)
         {
             float initialFinancialValue = base.EvaluateInitialSelection(coordinate, moveCapacity, perfCounters);
             

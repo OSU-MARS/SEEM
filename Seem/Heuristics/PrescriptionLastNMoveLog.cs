@@ -96,7 +96,7 @@ namespace Mars.Seem.Heuristics
                    prefix + "Thin3above," + prefix + "Thin3proportional," + prefix + "Thin3below";
         }
 
-        public override string GetCsvValues(StandTrajectoryCoordinate coordinate, int moveNumber)
+        public override string GetCsvValues(SilviculturalCoordinate coordinate, int moveNumber)
         {
             // apply defaulting
             // If this move log instance is specific to a single rotation and financial scenario then the provided position is ignored.
@@ -137,7 +137,7 @@ namespace Mars.Seem.Heuristics
             return ",,,,,,,,";
         }
 
-        public override int GetMoveNumberWithDefaulting(StandTrajectoryCoordinate coordinate, int moveIndex)
+        public override int GetMoveNumberWithDefaulting(SilviculturalCoordinate coordinate, int moveIndex)
         {
             if (this.moveNumberByRotationAndRate.Length == 1)
             {
@@ -146,7 +146,7 @@ namespace Mars.Seem.Heuristics
             return this.moveNumberByRotationAndRate[coordinate.RotationIndex, coordinate.FinancialIndex][moveIndex];
         }
 
-        public bool TryAddMove(StandTrajectoryCoordinate coordinate, int moveNumber, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
+        public bool TryAddMove(SilviculturalCoordinate coordinate, int moveNumber, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription)
         {
             int rotationIndex = coordinate.RotationIndex;
             int financialIndex = coordinate.FinancialIndex;

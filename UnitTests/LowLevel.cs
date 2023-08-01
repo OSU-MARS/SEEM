@@ -277,6 +277,9 @@ namespace Mars.Seem.Test
             Assert.IsTrue(financialScenarios.HarvestTaxPerMbf.Count == expectedCount);
             Assert.IsTrue(financialScenarios.Name.Count == expectedCount);
             Assert.IsTrue(financialScenarios.PropertyTaxAndManagementPerHectareYear.Count == expectedCount);
+            Assert.IsTrue(financialScenarios.RedAlder2SawPondValuePerMbf.Count == expectedCount);
+            Assert.IsTrue(financialScenarios.RedAlder3SawPondValuePerMbf.Count == expectedCount);
+            Assert.IsTrue(financialScenarios.RedAlder4SawPondValuePerMbf.Count == expectedCount);
             Assert.IsTrue(financialScenarios.RegenerationHarvestCostPerHectare.Count == expectedCount);
             Assert.IsTrue(financialScenarios.ReleaseSprayCostPerHectare.Count == expectedCount);
             Assert.IsTrue(financialScenarios.SeedlingCost.Count == expectedCount);
@@ -304,6 +307,12 @@ namespace Mars.Seem.Test
                               (String.IsNullOrWhiteSpace(financialScenarios.Name[financialIndex]) == false));
                 Assert.IsTrue((financialScenarios.PropertyTaxAndManagementPerHectareYear[financialIndex] < 75.0F) &&
                               (financialScenarios.PropertyTaxAndManagementPerHectareYear[financialIndex] > 30.0F));
+                Assert.IsTrue((financialScenarios.RedAlder2SawPondValuePerMbf[financialIndex] < 782.0F) &&
+                              (financialScenarios.RedAlder2SawPondValuePerMbf[financialIndex] > financialScenarios.RedAlder3SawPondValuePerMbf[financialIndex]));
+                Assert.IsTrue((financialScenarios.RedAlder3SawPondValuePerMbf[financialIndex] <= financialScenarios.RedAlder2SawPondValuePerMbf[financialIndex]) &&
+                              (financialScenarios.RedAlder3SawPondValuePerMbf[financialIndex] > financialScenarios.RedAlder4SawPondValuePerMbf[financialIndex]));
+                Assert.IsTrue((financialScenarios.RedAlder4SawPondValuePerMbf[financialIndex] <= financialScenarios.RedAlder3SawPondValuePerMbf[financialIndex]) &&
+                              (financialScenarios.RedAlder4SawPondValuePerMbf[financialIndex] > 419.0F));
                 Assert.IsTrue((financialScenarios.RegenerationHarvestCostPerHectare[financialIndex] < 800.0F) &&
                               (financialScenarios.RegenerationHarvestCostPerHectare[financialIndex] > 400.0F));
                 Assert.IsTrue((financialScenarios.ReleaseSprayCostPerHectare[financialIndex] < 500.0F) &&

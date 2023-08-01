@@ -12,7 +12,7 @@ using System.Text;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "Objective")]
-    public class WriteObjective : WriteTrajectoriesCmdlet
+    public class WriteObjective : WriteSilviculturalTrajectoriesCmdlet
     {
         [Parameter(HelpMessage = "Number of iterations between CSV file lines. Default is 1, which logs objective function values for every move.")]
         [ValidateRange(1, Int32.MaxValue)]
@@ -40,13 +40,13 @@ namespace Mars.Seem.Cmdlets
             // for now, perform no reduction when Object.ReferenceEquals(lowSolution, highSolution) is true
             if (this.ShouldWriteHeader())
             {
-                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[0];
+                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[0];
                 SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
                 if ((prescriptions.High.Heuristic == null) || (prescriptions.Low.Heuristic == null))
                 {
                     throw new NotSupportedException("Cannot generate csv header because first result is missing a high or low heuristic.");
                 }
-                StringBuilder line = new(this.GetCsvHeaderForCoordinate() + ",move,count");
+                StringBuilder line = new(this.GetCsvHeaderForSilviculturalCoordinate() + ",move,count");
 
                 string lowMoveLogHeader = "lowMoveLog";
                 HeuristicMoveLog? lowMoveLog = prescriptions.Low.Heuristic.GetMoveLog();
@@ -71,11 +71,11 @@ namespace Mars.Seem.Cmdlets
             }
 
             // sort each discount rate's runs by decreasing objective function value  
-            List<List<(float, StandTrajectoryCoordinate)>> solutionsByFinancialIndexAndValue = new();
+            List<List<(float, SilviculturalCoordinate)>> solutionsByFinancialIndexAndValue = new();
             for (int positionIndex = 0; positionIndex < this.Trajectories.CoordinatesEvaluated.Count; ++positionIndex)
             {
-                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[positionIndex];
-                StandTrajectoryArrayElement element = this.Trajectories[coordinate];
+                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[positionIndex];
+                SilviculturalCoordinateExploration element = this.Trajectories[coordinate];
                 OptimizationObjectiveDistribution distribution = element.Distribution;
                 int maxFinancialIndex = coordinate.FinancialIndex;
                 while (maxFinancialIndex >= solutionsByFinancialIndexAndValue.Count)
@@ -83,26 +83,26 @@ namespace Mars.Seem.Cmdlets
                     solutionsByFinancialIndexAndValue.Add(new());
                 }
 
-                List<(float, StandTrajectoryCoordinate)> runsForDiscountRate = solutionsByFinancialIndexAndValue[maxFinancialIndex];
+                List<(float, SilviculturalCoordinate)> runsForDiscountRate = solutionsByFinancialIndexAndValue[maxFinancialIndex];
                 runsForDiscountRate.Add((element.Pool.High.FinancialValue, coordinate));
             }
             for (int financialIndex = 0; financialIndex < solutionsByFinancialIndexAndValue.Count; ++financialIndex)
             {
-                List<(float Objective, StandTrajectoryCoordinate)> runsForDiscountRate = solutionsByFinancialIndexAndValue[financialIndex];
+                List<(float Objective, SilviculturalCoordinate)> runsForDiscountRate = solutionsByFinancialIndexAndValue[financialIndex];
                 runsForDiscountRate.Sort((run1, run2) => run2.Objective.CompareTo(run1.Objective)); // sort descending
             }
 
             // list runs in declining order of objective function value for logging
             // Runs are listed in groups with each discount rate having the ability to be represented within each group. This controls for reduction in
             // land expectation values with increasing discount rate, enabling preferentiall logging of the move histories for the most desirable runs.
-            List<StandTrajectoryCoordinate> prioritizedCoordinates = new();
+            List<SilviculturalCoordinate> prioritizedCoordinates = new();
             int[] resultIndicesByFinancialScenario = new int[solutionsByFinancialIndexAndValue.Count];
             for (bool atLeastOneRunAddedByInnerLoop = true; atLeastOneRunAddedByInnerLoop; )
             {
                 atLeastOneRunAddedByInnerLoop = false;
                 for (int financialIndex = 0; financialIndex < solutionsByFinancialIndexAndValue.Count; ++financialIndex)
                 {
-                    List<(float Objective, StandTrajectoryCoordinate Coordinate)> runsForScenario = solutionsByFinancialIndexAndValue[financialIndex];
+                    List<(float Objective, SilviculturalCoordinate Coordinate)> runsForScenario = solutionsByFinancialIndexAndValue[financialIndex];
                     int resultIndexForScenario = resultIndicesByFinancialScenario[financialIndex];
                     if (resultIndexForScenario < runsForScenario.Count)
                     {
@@ -120,8 +120,8 @@ namespace Mars.Seem.Cmdlets
             for (int coordinateIndex = 0; coordinateIndex < prioritizedCoordinates.Count; ++coordinateIndex)
             {
                 // since high and low solutions are from the same position, they use the same heuristic parameters
-                StandTrajectoryCoordinate coordinate = prioritizedCoordinates[coordinateIndex];
-                StandTrajectoryArrayElement element = this.Trajectories[coordinate];
+                SilviculturalCoordinate coordinate = prioritizedCoordinates[coordinateIndex];
+                SilviculturalCoordinateExploration element = this.Trajectories[coordinate];
                 string linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
                 Heuristic highHeuristic = element.Pool.High.Heuristic!; // checked for null in GetHeuristicAndPositionCsvValues()
                 Heuristic lowHeuristic = element.Pool.Low.Heuristic ?? throw new InvalidOperationException("Evaluated coordinate " + coordinateIndex + " does not have a low heuristic.");

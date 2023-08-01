@@ -7,11 +7,12 @@ using System.Management.Automation;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Optimization;
 using Mars.Seem.Extensions;
+using System.Diagnostics;
 
 namespace Mars.Seem.Cmdlets
 {
-    [Cmdlet(VerbsCommon.Get, "StandsFromPlots")]
-    public class GetStandsFromPlots : Cmdlet
+    [Cmdlet(VerbsCommon.Get, "StandsFromPermanentPlots")]
+    public class GetStandsFromPermanentPlots : GetStandCmdlet
     {
         [Parameter(HelpMessage = "Distance from stand to nearest road in meters.")]
         [ValidateRange(0.0F, 10.0F * 1000.0F)]
@@ -51,13 +52,10 @@ namespace Mars.Seem.Cmdlets
         [Parameter]
         [ValidateRange(1.37F, Constant.Maximum.SiteIndexInM)]
         public float HemlockSiteIndexInM { get; set; }
-        [Parameter]
+        [Parameter(HelpMessage = "Method for imputing missing DBHes or heights.")]
         public ImputationMethod Imputation { get; set; }
         [Parameter]
         public SwitchParameter IncludeSpacingAndReplicateInTag { get; set; }
-
-        [Parameter]
-        public TreeModel Model { get; set; }
 
         [Parameter(HelpMessage = "Replanting density after regeneration harvest in seedlings per hectare.")]
         [ValidateRange(1.0F, Constant.Maximum.PlantingDensityInTreesPerHectare)]
@@ -82,15 +80,8 @@ namespace Mars.Seem.Cmdlets
         [Parameter(HelpMessage = "Mean yarding distance as a fraction of corridor length (0.5 for parallel yarding, 0.67 for radial yarding).")]
         [ValidateRange(0.0F, 1.0F)]
         public float YardingFactor { get; set; }
-        [Parameter(Mandatory = true)]
-        [ValidateNotNullOrEmpty]
-        public string? Xlsx { get; set; }
 
-        [Parameter]
-        [ValidateNotNullOrEmpty]
-        public string XlsxSheet { get; set; }
-
-        public GetStandsFromPlots()
+        public GetStandsFromPermanentPlots()
         {
             this.AccessDistance = Constant.HarvestCost.DefaultAccessDistanceInM;
             this.AccessSlope = Constant.HarvestCost.DefaultAccessSlopeInPercent;
@@ -105,16 +96,13 @@ namespace Mars.Seem.Cmdlets
             this.HemlockSiteIndexInM = Constant.Default.WesternHemlockSiteIndexInM;
             this.Imputation = ImputationMethod.None;
             this.IncludeSpacingAndReplicateInTag = false;
-            this.Model = TreeModel.OrganonNwo;
             this.SlopeInPercent = Constant.HarvestCost.DefaultSlopeInPercent;
             this.SiteIndexInM = Constant.Default.DouglasFirSiteIndexInM; 
             this.Trees = Int32.MaxValue;
             this.YardingFactor = Constant.HarvestCost.MeanYardingDistanceFactor;
-            this.Xlsx = null;
-            this.XlsxSheet = "1";
         }
 
-        private Stand CreateStand(PlotsWithHeight plot, OrganonConfiguration configuration, int age)
+        private Stand CreateStand(PermanentPlotsWithHeight plot, OrganonConfiguration configuration, int age)
         {
             OrganonStand stand = plot.ToOrganonStand(configuration, age, this.SiteIndexInM, this.HemlockSiteIndexInM, this.Trees, this.Imputation);
 
@@ -134,13 +122,15 @@ namespace Mars.Seem.Cmdlets
 
         protected override void ProcessRecord()
         {
+            Debug.Assert(String.IsNullOrWhiteSpace(this.Xlsx) == false);
+
             // read plot data
-            PlotsWithHeight plot;
+            PermanentPlotsWithHeight plot;
             if (this.ExpansionFactorPerHa != null)
             {
                 if (this.ExpansionFactorPerHa.Length == 1)
                 {
-                    plot = new PlotsWithHeight(this.Plots!, this.ExpansionFactorPerHa[0]);
+                    plot = new PermanentPlotsWithHeight(this.Plots!, this.ExpansionFactorPerHa[0]);
                 }
                 else
                 {
@@ -155,7 +145,7 @@ namespace Mars.Seem.Cmdlets
                         expansionFactorByAge.Add(this.Ages[ageIndex], this.ExpansionFactorPerHa[ageIndex]);
                     }
 
-                    plot = new PlotsWithHeight(this.Plots!, this.ExpansionFactorPerHa[0])
+                    plot = new PermanentPlotsWithHeight(this.Plots!, this.ExpansionFactorPerHa[0])
                     {
                         ExpansionFactorPerHaByAge = expansionFactorByAge
                     };
@@ -163,7 +153,7 @@ namespace Mars.Seem.Cmdlets
             }
             else
             {
-                plot = new PlotsWithHeight(this.Plots!);
+                plot = new PermanentPlotsWithHeight(this.Plots!);
             }
 
             if (this.ExcludeSpecies.Length > 0)
@@ -175,7 +165,7 @@ namespace Mars.Seem.Cmdlets
                 }
             }
             plot.IncludeSpacingAndReplicateInTag = this.IncludeSpacingAndReplicateInTag;
-            plot.Read(this.Xlsx!, this.XlsxSheet);
+            plot.Read(this.Xlsx, this.TreesSheet);
 
             IList<int> ages = this.Ages;
             if (ages.Count == 0)
@@ -212,8 +202,8 @@ namespace Mars.Seem.Cmdlets
             int planningPeriods = ages.Count - 1;
             float landExpectationValue = this.Financial.GetLandExpectationValue(trajectory, Constant.HeuristicDefault.CoordinateIndex, planningPeriods);
 
-            StandTrajectories trajectories = new(new List<int>() { Constant.NoThinPeriod }, new List<int>() { planningPeriods }, this.Financial);
-            StandTrajectoryCoordinate currentCoordinate = new();
+            SilviculturalSpace trajectories = new(new List<int>() { Constant.NoThinPeriod }, new List<int>() { planningPeriods }, this.Financial);
+            SilviculturalCoordinate currentCoordinate = new();
             trajectories.AssimilateIntoCoordinate(trajectory, landExpectationValue, currentCoordinate, new PrescriptionPerformanceCounters());
             trajectories.AddEvaluatedPosition(currentCoordinate);
             this.WriteObject(trajectories);

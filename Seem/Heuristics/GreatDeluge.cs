@@ -38,7 +38,7 @@ namespace Mars.Seem.Heuristics
             return "Deluge";
         }
 
-        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
+        public override PrescriptionPerformanceCounters Run(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.ChangeToExchangeAfter < 0)
             {

@@ -20,7 +20,7 @@ namespace Mars.Seem.Heuristics
             return prefix + "TreeEvaluated";
         }
 
-        public override string GetCsvValues(StandTrajectoryCoordinate coordinate, int moveNumber)
+        public override string GetCsvValues(SilviculturalCoordinate coordinate, int moveNumber)
         {
             return this.TreeIDByMove[moveNumber].ToString(CultureInfo.InvariantCulture);
         }

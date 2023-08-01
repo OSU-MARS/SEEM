@@ -357,7 +357,7 @@ namespace Mars.Seem.Heuristics
         //    return moveAccepted;
         //}
 
-        protected override void EvaluateThinningPrescriptions(StandTrajectoryCoordinate coordinate, StandTrajectories trajectories, PrescriptionPerformanceCounters perfCounters)
+        protected override void EvaluateThinningPrescriptions(SilviculturalCoordinate coordinate, SilviculturalSpace trajectories, PrescriptionPerformanceCounters perfCounters)
         {
             // initialize search position from whatever values are already set on the current trajectory
             // This allows prescriptions to flow between positions in sweeps using GRASP, potentially reducing search effort.
@@ -755,7 +755,7 @@ namespace Mars.Seem.Heuristics
             private int recentlyVisitedPositionUpdateIndex;
 
             public float[] CandidateIntensities { get; private init; }
-            public StandTrajectoryCoordinate Coordinate { get; private init; }
+            public SilviculturalCoordinate Coordinate { get; private init; }
             public int[] Dimensions { get; private init; }
             public int FinancialIndex { get; init; }
             public float[] MaximumIntensities { get; private init; }
@@ -766,7 +766,7 @@ namespace Mars.Seem.Heuristics
             public float[] ThinningIntensities { get; set; }
             public int Thinnings { get; init; }
 
-            public MoveState(StandTrajectoryCoordinate coordinate, int thinnings, int dimensionsPerHarvest)
+            public MoveState(SilviculturalCoordinate coordinate, int thinnings, int dimensionsPerHarvest)
             {
                 int dimensions = dimensionsPerHarvest * thinnings;
 

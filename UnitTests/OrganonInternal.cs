@@ -129,7 +129,7 @@ namespace Mars.Seem.Test
         public void GrowthModifiersApi()
         {
             this.TestContext!.WriteLine("tree age, diameter genetic factor, height genetic factor, diameter growth modifier, height growth modifier");
-            for (float treeAgeInYears = 0.0F; treeAgeInYears <= 50.0F; treeAgeInYears += Constant.Default.TimeStepInYears)
+            for (float treeAgeInYears = 0.0F; treeAgeInYears <= 50.0F; treeAgeInYears += TestConstant.OrganonTimeStepInYears)
             {
                 for (float diameterGeneticFactor = 0.0F; diameterGeneticFactor <= 25.0F; diameterGeneticFactor += 5.0F)
                 {

@@ -50,15 +50,14 @@ namespace Mars.Seem.Tree
             // Poudel K, Temesgen H, Gray AN. 2018. Estimating upper stem diameters and volume of Douglas-fir and Western hemlock
             //   trees in the Pacific northwest. Forest Ecosystems 5:16. https://doi.org/10.1186/s40663-018-0134-2
             // Table 4: M4 (Kozak 2004) form
-            // regression's fitted diameter range: 1.8-114 cm
+            // Regression's fitted diameter range: 1.8-114 cm
             //                     height range: 2.4-64 m
-            // allow extrapolation beyond fit range in lieu of a better predictor but block height-diameter ratios so high b3 becomes
-            // negative and table generation fails
+            // Allow extrapolation beyond fit range in lieu of a better predictor.
             if ((dbhInCm < 0.0F) || (dbhInCm > 135.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds regression limit of 135.0 cm.");
             }
-            if ((heightInM < PoudelRegressions.MinimumKozakHeightInM) || (heightInM > 75.0F))
+            if ((heightInM < PoudelRegressions.MinimumKozakHeightInM) || (heightInM > 80.0F))
             {
                 throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 75.0 m.");
             }

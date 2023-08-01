@@ -252,5 +252,13 @@ namespace Mars.Seem.Tree
             this.CorridorLengthInMTethered = forwardingDistanceInStandTethered;
             this.CorridorLengthInMUntethered = forwardingDistanceInStandUntethered;
         }
+
+        public void SetUnits(Units newUnits)
+        {
+            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
+            {
+                treesOfSpecies.SetUnits(newUnits);
+            }
+        }
     }
 }

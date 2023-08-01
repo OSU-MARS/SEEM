@@ -595,7 +595,7 @@ namespace Mars.Seem.Tree
             {
                 if (standingVolumeForSpecies.IsCalculated(periodIndex) == false)
                 {
-                    standingVolumeForSpecies.CalculateStandingVolume(stand, periodIndex, this.TreeVolume);
+                    standingVolumeForSpecies.CalculateMerchantableStandingVolume(stand, periodIndex, this.TreeVolume);
                 }
             }
         }
@@ -619,7 +619,7 @@ namespace Mars.Seem.Tree
                 {
                     if (thinVolumeForSpecies.IsCalculated(periodIndex) == false)
                     {
-                        thinVolumeForSpecies.CalculateThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeVolume);
+                        thinVolumeForSpecies.CalculateMerchantableThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeVolume);
                     }
                 }
 

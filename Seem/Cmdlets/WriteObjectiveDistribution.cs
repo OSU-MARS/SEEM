@@ -10,7 +10,7 @@ using System.Management.Automation;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "ObjectiveDistribution")]
-    public class WriteObjectiveDistribution : WriteTrajectoriesCmdlet
+    public class WriteObjectiveDistribution : WriteSilviculturalTrajectoriesCmdlet
     {
         protected override void ProcessRecord()
         {
@@ -27,7 +27,7 @@ namespace Mars.Seem.Cmdlets
 
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",solution,objective,movesAccepted,movesRejected,runtime,timesteps,treesRandomized");
+                writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",solution,objective,movesAccepted,movesRejected,runtime,timesteps,treesRandomized");
             }
 
             long estimatedBytesSinceLastFileLength = 0;
@@ -35,8 +35,8 @@ namespace Mars.Seem.Cmdlets
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int coordinateIndex = 0; coordinateIndex < this.Trajectories.CoordinatesEvaluated.Count; ++coordinateIndex)
             {
-                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
-                StandTrajectoryArrayElement element = this.Trajectories[coordinate];
+                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
+                SilviculturalCoordinateExploration element = this.Trajectories[coordinate];
                 StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix);
 
                 OptimizationObjectiveDistribution distribution = element.Distribution;

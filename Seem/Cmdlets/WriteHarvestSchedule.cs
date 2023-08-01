@@ -10,7 +10,7 @@ using System.Management.Automation;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommunications.Write, "HarvestSchedule")]
-    public class WriteHarvestSchedule : WriteTrajectoriesCmdlet
+    public class WriteHarvestSchedule : WriteSilviculturalTrajectoriesCmdlet
     {
         [Parameter(HelpMessage = "Suppress repeated logging of a stand trajectory if it occurs across multiple financial scenarios. This can reduce file sizes substantially when optimiation prefers one stand trajectory across multiple financial scenarios.")]
         public SwitchParameter SuppressIdentical { get; set; }
@@ -29,7 +29,7 @@ namespace Mars.Seem.Cmdlets
             using StreamWriter writer = this.GetWriter();
             if (this.ShouldWriteHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForCoordinate() + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
+                writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
             }
 
             // write data
@@ -40,16 +40,16 @@ namespace Mars.Seem.Cmdlets
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
             for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
             {
-                StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix, out int endOfRotationPeriod, out int financialIndex);
+                StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix, out int endOfRotationPeriodIndex, out int financialIndex);
                 if (this.SuppressIdentical)
                 {
                     // skip writing trajectory if it's already been written for this rotation length
                     // Tree DBH, height, expansion factor, and volume vary with timing of regeneration harvest so stand trajectories spanning
                     // multiple rotation lengths must be written once for each rotation length.
-                    if (knownTrajectoriesByEndOfRotationPeriod.TryGetValue(endOfRotationPeriod, out HashSet<StandTrajectory>? knownTrajectoriesForRotation) == false)
+                    if (knownTrajectoriesByEndOfRotationPeriod.TryGetValue(endOfRotationPeriodIndex, out HashSet<StandTrajectory>? knownTrajectoriesForRotation) == false)
                     {
                         knownTrajectoriesForRotation = new();
-                        knownTrajectoriesByEndOfRotationPeriod.Add(endOfRotationPeriod, knownTrajectoriesForRotation);
+                        knownTrajectoriesByEndOfRotationPeriod.Add(endOfRotationPeriodIndex, knownTrajectoriesForRotation);
                     }
                     if (knownTrajectoriesForRotation.Contains(highTrajectory)) // reference equality for now
                     {
@@ -58,7 +58,7 @@ namespace Mars.Seem.Cmdlets
                     knownTrajectoriesForRotation.Add(highTrajectory);
                 }
 
-                StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
+                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
                 Stand? highStandBeforeFirstThin = null;
                 int firstThinPeriod = this.Trajectories.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
                 if (firstThinPeriod != Constant.NoThinPeriod)
@@ -92,7 +92,7 @@ namespace Mars.Seem.Cmdlets
                     }
                 }
 
-                Stand? highStandAtEnd = highTrajectory.StandByPeriod[endOfRotationPeriod];
+                Stand? highStandAtEnd = highTrajectory.StandByPeriod[endOfRotationPeriodIndex];
                 if (highStandAtEnd == null)
                 {
                     throw new ParameterOutOfRangeException(nameof(this.Trajectories), "High trajectory in run has not been fully simulated as stand is null at end of rotation. Did the heuristic perform at least one move?");
@@ -125,8 +125,8 @@ namespace Mars.Seem.Cmdlets
                         uncompactedTreeCount = highTreesBeforeFirstThin.Count;
                     }
 
-                    TreeSpeciesVolumeTable regenVolumeTable = highTrajectory.TreeVolume.RegenerationHarvest.VolumeBySpecies[highTreeSelectionForSpecies.Key];
-                    TreeSpeciesVolumeTable thinVolumeTable = highTrajectory.TreeVolume.Thinning.VolumeBySpecies[highTreeSelectionForSpecies.Key];
+                    highTrajectory.TreeVolume.TryGetForwarderVolumeTable(highTreeSelectionForSpecies.Key, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable);
+                    highTrajectory.TreeVolume.TryGetLongLogVolumeTable(highTreeSelectionForSpecies.Key, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable);
 
                     // uncompactedTreeIndex: tree index in periods before thinned trees are removed
                     // compactedTreeIndex: index of retained trees in periods after thinning
@@ -151,7 +151,7 @@ namespace Mars.Seem.Cmdlets
                             highFirstThinHeightInM = firstThinHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
                             highFirstThinCrownRatio = highTreesBeforeFirstThin.CrownRatio[uncompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
                             highFirstThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeFirstThin.LiveExpansionFactor[uncompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
-                            highFirstThinCubicM3 = thinVolumeTable.GetCubicVolumeOfMerchantableWood(firstThinDbhInCm, firstThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
+                            highFirstThinCubicM3 = forwarderVolumeTable?.GetCubicVolumeOfMerchantableWood(firstThinDbhInCm, firstThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                         }
 
                         string? highSecondThinDbhInCm = null;
@@ -171,7 +171,7 @@ namespace Mars.Seem.Cmdlets
                             highSecondThinHeightInM = secondThinHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
                             highSecondThinCrownRatio = highTreesBeforeSecondThin.CrownRatio[secondThinCompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
                             highSecondThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeSecondThin.LiveExpansionFactor[secondThinCompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
-                            highSecondThinCubicM3 = thinVolumeTable.GetCubicVolumeOfMerchantableWood(secondThinDbhInCm, secondThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
+                            highSecondThinCubicM3 = forwarderVolumeTable?.GetCubicVolumeOfMerchantableWood(secondThinDbhInCm, secondThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                             ++secondThinCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 
@@ -192,7 +192,7 @@ namespace Mars.Seem.Cmdlets
                             highThirdThinHeightInM = thirdThinHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
                             highThirdThinCrownRatio = highTreesBeforeThirdThin.CrownRatio[thirdThinCompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
                             highThirdThinExpansionFactorPerHa = (areaConversionFactor * highTreesBeforeThirdThin.LiveExpansionFactor[thirdThinCompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
-                            highThirdThinCubicM3 = thinVolumeTable.GetCubicVolumeOfMerchantableWood(thirdThinDbhInCm, thirdThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
+                            highThirdThinCubicM3 = forwarderVolumeTable?.GetCubicVolumeOfMerchantableWood(thirdThinDbhInCm, thirdThinHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                             ++thirdThinCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 
@@ -212,7 +212,7 @@ namespace Mars.Seem.Cmdlets
                             highRegenHeightInM = regenHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
                             highRegenCrownRatio = highTreesAtRegen.CrownRatio[regenCompactedTreeIndex].ToString(Constant.Default.CrownRatioFormat, CultureInfo.InvariantCulture);
                             highRegenExpansionFactorPerHa = (areaConversionFactor * highTreesAtRegen.LiveExpansionFactor[regenCompactedTreeIndex]).ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
-                            highRegenCubicM3 = regenVolumeTable.GetCubicVolumeOfMerchantableWood(regenDbhInCm, regenHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
+                            highRegenCubicM3 = longLogVolumeTable?.GetCubicVolumeOfMerchantableWood(regenDbhInCm, regenHeightInM).ToString(Constant.Default.CubicVolumeFormat, CultureInfo.InvariantCulture);
                             ++regenCompactedTreeIndex; // only need to increment on retained trees, OK to increment here as not referenced below
                         }
 

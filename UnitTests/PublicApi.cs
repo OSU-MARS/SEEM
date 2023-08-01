@@ -40,7 +40,7 @@ namespace Mars.Seem.Test
             List<int> planningPeriods = new() { rotationLength };
             HeuristicStandTrajectories<HeuristicParameters> results = new(parameterCombinations, firstThinPeriods, noThin, noThin, planningPeriods, financialScenarios, TestConstant.SolutionPoolSize);
 
-            StandTrajectoryCoordinate coordinate = new()
+            SilviculturalCoordinate coordinate = new()
             {
                 FinancialIndex = Constant.HeuristicDefault.CoordinateIndex,
                 FirstThinPeriodIndex = 0,
@@ -54,18 +54,18 @@ namespace Mars.Seem.Test
             return results;
         }
 
-        private static PlotsWithHeight GetNelder()
+        private static PermanentPlotsWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp Nelder 1.xlsx");
-            PlotsWithHeight plot = new(new List<int>() { 1 }, defaultExpansionFactorPerHa: 1.327F);
+            PermanentPlotsWithHeight plot = new(new List<int>() { 1 }, defaultExpansionFactorPerHa: 1.327F);
             plot.Read(plotFilePath, "1");
             return plot;
         }
 
-        private static PlotsWithHeight GetPlot14()
+        private static PermanentPlotsWithHeight GetPlot14()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp plots 14-18+34 Ministry.xlsx");
-            PlotsWithHeight plot = new(new List<int>() { 14 }, defaultExpansionFactorPerHa: 4.48F);
+            PermanentPlotsWithHeight plot = new(new List<int>() { 14 }, defaultExpansionFactorPerHa: 4.48F);
             plot.Read(plotFilePath, "0.2 ha");
             return plot;
         }
@@ -103,7 +103,7 @@ namespace Mars.Seem.Test
                 treeRecords = 48;
             #endif
 
-            PlotsWithHeight nelder = PublicApi.GetNelder();
+            PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = new(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
@@ -123,7 +123,7 @@ namespace Mars.Seem.Test
                 //IsStochastic = true,
                 MaximumIterations = 10 * treeRecords
             };
-            StandTrajectoryCoordinate singleThinCoordinate = new();
+            SilviculturalCoordinate singleThinCoordinate = new();
             PrescriptionPerformanceCounters firstImprovingCounters = firstCircular.Run(singleThinCoordinate, results);
             results.AssimilateIntoCoordinate(firstCircular, singleThinCoordinate, firstImprovingCounters);
 
@@ -161,13 +161,17 @@ namespace Mars.Seem.Test
             this.Verify(prescriptionAscent, prescriptionAscentCounters);
             PublicApi.Verify(results, singleThinCoordinate);
 
-            IndividualTreeSelection firstCircularTreeSelection = firstCircular.GetBestTrajectory(singleThinCoordinate).TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
-            IndividualTreeSelection heroTreeSelection = hero.GetBestTrajectory(singleThinCoordinate).TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
-            IndividualTreeSelection prescriptionTreeSelection = prescriptionAscent.GetBestTrajectory(singleThinCoordinate).TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            // count number of trees selected for thinning
+            OrganonStandTrajectory firstCircularTrajectory = firstCircular.GetBestTrajectory(singleThinCoordinate);
+            IndividualTreeSelection firstCircularTreeSelection = firstCircularTrajectory.TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            OrganonStandTrajectory heroTrajectory = hero.GetBestTrajectory(singleThinCoordinate);
+            IndividualTreeSelection heroTreeSelection = heroTrajectory.TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
+            OrganonStandTrajectory prescriptionTrajectory = prescriptionAscent.GetBestTrajectory(singleThinCoordinate);
+            IndividualTreeSelection prescriptionTreeSelection = prescriptionTrajectory.TreeSelectionBySpecies[FiaCode.PseudotsugaMenziesii];
             int treesThinnedByFirstCircular = 0;
             int treesThinnedByHero = 0;
             int treesThinnedByPrescription = 0;
-            for (int treeIndex = 0; treeIndex < heroTreeSelection.Count; ++treeIndex)
+            for (int treeIndex = 0; treeIndex < firstCircularTreeSelection.Count; ++treeIndex)
             {
                 if (firstCircularTreeSelection[treeIndex] != Constant.RegenerationHarvestPeriod)
                 {
@@ -186,6 +190,24 @@ namespace Mars.Seem.Test
             float highestFirstCircularFinancialValue = firstCircular.FinancialValue.GetHighestValue();
             float highestHeroFinancialValue = hero.FinancialValue.GetHighestValue();
             float highestPrescriptionFinancialValue = prescriptionAscent.FinancialValue.GetHighestValue();
+
+            if (treesThinnedByFirstCircular == 0)
+            {
+                CutToLengthHarvest firstCircularThinValue = landExpectationValueIts.Financial.GetNetPresentThinningValue(firstCircularTrajectory, financialIndex: 0, thinningPeriod);
+                LongLogHarvest firstCircularRegenValue = landExpectationValueIts.Financial.GetNetPresentRegenerationHarvestValue(firstCircularTrajectory, financialIndex: 0, landExpectationValueIts.MaximizeForPlanningPeriod);
+                float reforestationValue = landExpectationValueIts.Financial.GetNetPresentReforestationValue(financialIndex: 0, firstCircularTrajectory.PlantingDensityInTreesPerHectare);
+                TreeSpeciesMerchantableVolume firstCircularStandingVolume = firstCircularTrajectory.StandingVolumeBySpecies[FiaCode.PseudotsugaMenziesii];
+
+                // check NPV components if converged to optimal (unthinned) solution
+                Assert.IsTrue(firstCircularThinValue.NetPresentValuePerHa == 0.0F);
+                Assert.IsTrue(firstCircularRegenValue.NetPresentValuePerHa > 540.33F);
+                Assert.IsTrue(reforestationValue < -452.33F);
+
+                // sanity check volumes if converged to optimal (unthinned) solution
+                Assert.IsTrue(firstCircularStandingVolume.Scribner2Saw[landExpectationValueIts.MaximizeForPlanningPeriod] >= 38.252F);
+                Assert.IsTrue(firstCircularStandingVolume.Scribner3Saw[landExpectationValueIts.MaximizeForPlanningPeriod] >= 2.493F);
+                Assert.IsTrue(firstCircularStandingVolume.Scribner4Saw[landExpectationValueIts.MaximizeForPlanningPeriod] >= 2.01F);
+            }
 
             // location of financial value maxima varies as harvest cost calculations evolve and timber values change
             // Therefore, check for convergence to a whitelist of known solutions. Since the number of trees varies between debug and
@@ -242,7 +264,7 @@ namespace Mars.Seem.Test
                 treeRecords = 25;
             #endif
 
-            PlotsWithHeight nelder = PublicApi.GetNelder();
+            PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
@@ -254,7 +276,7 @@ namespace Mars.Seem.Test
             };
             runForLandExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             HeuristicStandTrajectories<HeuristicParameters> levResults = PublicApi.CreateResults(new(), thinningPeriod, runForLandExpectationValue.MaximizeForPlanningPeriod);
-            StandTrajectoryCoordinate levCoordinate = levResults.CoordinatesEvaluated[0];
+            SilviculturalCoordinate levCoordinate = levResults.CoordinatesEvaluated[0];
             OptimizationObjectiveDistribution levDistribution = levResults[levCoordinate].Distribution;
             PrescriptionPerformanceCounters totalCounters = new();
 
@@ -337,7 +359,7 @@ namespace Mars.Seem.Test
             runForVolume.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
 
             HeuristicStandTrajectories<HeuristicParameters> volumeResults = PublicApi.CreateResults(new(), thinningPeriod, runForLandExpectationValue.MaximizeForPlanningPeriod);
-            StandTrajectoryCoordinate volumeCoordinate = volumeResults.CoordinatesEvaluated[0];
+            SilviculturalCoordinate volumeCoordinate = volumeResults.CoordinatesEvaluated[0];
             AutocorrelatedWalk autocorrelated = new(stand, volumeResults.ParameterCombinations[0], runForVolume)
             {
                 Iterations = 4
@@ -410,7 +432,7 @@ namespace Mars.Seem.Test
             int expectedUnthinnedTreeRecordCount = 661;
             int lastPeriod = 9;
 
-            PlotsWithHeight nelder = PublicApi.GetNelder();
+            PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
@@ -442,7 +464,7 @@ namespace Mars.Seem.Test
             OrganonStandTrajectory twoThinTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
             twoThinTrajectory.Treatments.Harvests.Add(firstThinPrescription);
             twoThinTrajectory.Treatments.Harvests.Add(secondThinPrescription);
-            AssertNullable.IsNotNull(twoThinTrajectory.StandByPeriod[0]);
+            Assert.IsNotNull(twoThinTrajectory.StandByPeriod[0]);
             Assert.IsTrue(twoThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             int twoThinTimeSteps = twoThinTrajectory.Simulate(); // resimulate as cross check on unthinned trajectory
             Assert.IsTrue(twoThinTimeSteps == lastPeriod);
@@ -455,7 +477,7 @@ namespace Mars.Seem.Test
                 ProportionalPercentage = 10.0F,
                 FromBelowPercentage = 10.0F
             });
-            AssertNullable.IsNotNull(threeThinTrajectory.StandByPeriod[0]);
+            Assert.IsNotNull(threeThinTrajectory.StandByPeriod[0]);
             Assert.IsTrue(threeThinTrajectory.StandByPeriod[0]!.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             int threeThinTimeSteps = threeThinTrajectory.Simulate();
             Assert.IsTrue(threeThinTimeSteps == lastPeriod - thirdThinPeriod + 1);
@@ -478,7 +500,7 @@ namespace Mars.Seem.Test
             };
             foreach (Stand? unthinnedStand in unthinnedTrajectory.StandByPeriod)
             {
-                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsNotNull(unthinnedStand);
                 Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             }
 
@@ -504,14 +526,14 @@ namespace Mars.Seem.Test
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
                 Stand? unthinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsNotNull(unthinnedStand);
                 Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             }
             int expectedFirstThinTreeRecordCount = 328; // must be updated if prescription changes
             for (int periodIndex = firstThinPeriod; periodIndex < oneThinTrajectory.PlanningPeriods; ++periodIndex)
             {
                 Stand? thinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsNotNull(thinnedStand);
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
             }
 
@@ -541,20 +563,20 @@ namespace Mars.Seem.Test
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
                 Stand? unthinnedStand = twoThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsNotNull(unthinnedStand);
                 Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             }
             for (int periodIndex = firstThinPeriod; periodIndex < secondThinPeriod; ++periodIndex)
             {
                 Stand? thinnedStand = twoThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsNotNull(thinnedStand);
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
             }
             int expectedSecondThinTreeRecordCount = 263; // must be updated if prescription changes
             for (int periodIndex = secondThinPeriod; periodIndex < twoThinTrajectory.PlanningPeriods; ++periodIndex)
             {
                 Stand? thinnedStand = twoThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsNotNull(thinnedStand);
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedSecondThinTreeRecordCount);
             }
 
@@ -590,26 +612,26 @@ namespace Mars.Seem.Test
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
                 Stand? unthinnedStand = threeThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(unthinnedStand);
+                Assert.IsNotNull(unthinnedStand);
                 Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             }
             for (int periodIndex = firstThinPeriod; periodIndex < secondThinPeriod; ++periodIndex)
             {
                 Stand? thinnedStand = threeThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsNotNull(thinnedStand);
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
             }
             for (int periodIndex = secondThinPeriod; periodIndex < thirdThinPeriod; ++periodIndex)
             {
                 Stand? thinnedStand = threeThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsNotNull(thinnedStand);
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedSecondThinTreeRecordCount);
             }
             int expectedThirdThinTreeRecordCount = 180; // must be updated if prescription changes
             for (int periodIndex = thirdThinPeriod; periodIndex < threeThinTrajectory.PlanningPeriods; ++periodIndex)
             {
                 Stand? thinnedStand = threeThinTrajectory.StandByPeriod[periodIndex];
-                AssertNullable.IsNotNull(thinnedStand);
+                Assert.IsNotNull(thinnedStand);
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedThirdThinTreeRecordCount);
             }
 
@@ -643,7 +665,7 @@ namespace Mars.Seem.Test
 
                 // run Organon growth simulation
                 stand = OrganonTest.CreateDefaultStand(configuration);
-                if (configuration.IsEvenAge)
+                if (stand.IsEvenAge)
                 {
                     // stand error if less than one year to grow to breast height
                     stand.AgeInYears = stand.BreastHeightAgeInYears + 2;
@@ -676,7 +698,7 @@ namespace Mars.Seem.Test
             int thinPeriod = 1;
             int lastPeriod = 4;
 
-            PlotsWithHeight plot14 = PublicApi.GetPlot14();
+            PermanentPlotsWithHeight plot14 = PublicApi.GetPlot14();
 
             // NWO (northwest Oregon variant)
             OrganonConfiguration configurationNwo = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
@@ -690,7 +712,7 @@ namespace Mars.Seem.Test
                 ProportionalPercentage = proportionalPercentage,
                 FromBelowPercentage = fromBelowPercentage
             });
-            AssertNullable.IsNotNull(thinnedTrajectoryNwo.StandByPeriod[0]);
+            Assert.IsNotNull(thinnedTrajectoryNwo.StandByPeriod[0]);
             Assert.IsTrue(thinnedTrajectoryNwo.StandByPeriod[0]!.GetTreeRecordCount() == 222);
             long immediateThinTimeStepsNwo = thinnedTrajectoryNwo.Simulate();
             Assert.IsTrue(immediateThinTimeStepsNwo == lastPeriod);
@@ -707,7 +729,7 @@ namespace Mars.Seem.Test
                 ProportionalPercentage = proportionalPercentage,
                 FromBelowPercentage = fromBelowPercentage
             });
-            AssertNullable.IsNotNull(thinnedTrajectorySmc.StandByPeriod[0]);
+            Assert.IsNotNull(thinnedTrajectorySmc.StandByPeriod[0]);
             Assert.IsTrue(thinnedTrajectorySmc.StandByPeriod[0]!.GetTreeRecordCount() == 222);
             long immediateThinTimeStepsSmc = thinnedTrajectorySmc.Simulate();
             Assert.IsTrue(immediateThinTimeStepsSmc == lastPeriod);
@@ -724,7 +746,7 @@ namespace Mars.Seem.Test
                 ProportionalPercentage = proportionalPercentage,
                 FromBelowPercentage = fromBelowPercentage
             });
-            AssertNullable.IsNotNull(thinnedTrajectorySwo.StandByPeriod[0]);
+            Assert.IsNotNull(thinnedTrajectorySwo.StandByPeriod[0]);
             Assert.IsTrue(thinnedTrajectorySwo.StandByPeriod[0]!.GetTreeRecordCount() == 222);
             long immediateThinTimeStepsSwo = thinnedTrajectorySwo.Simulate();
             Assert.IsTrue(immediateThinTimeStepsSwo == lastPeriod);
@@ -817,9 +839,9 @@ namespace Mars.Seem.Test
             Assert.IsTrue(standNwo.SiteIndexInFeet == standSwo.SiteIndexInFeet);
 
             // verify snag and log calculations
-            SnagDownLogTable snagsAndLogsNwo = new(thinnedTrajectoryNwo, Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
-            SnagDownLogTable snagsAndLogsSmc = new(thinnedTrajectorySmc, Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
-            SnagDownLogTable snagsAndLogsSwo = new(thinnedTrajectorySwo, Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters, Constant.Bucking.DiameterClassSizeInCentimeters);
+            SnagDownLogTable snagsAndLogsNwo = new(thinnedTrajectoryNwo, Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters, Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters);
+            SnagDownLogTable snagsAndLogsSmc = new(thinnedTrajectorySmc, Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters, Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters);
+            SnagDownLogTable snagsAndLogsSwo = new(thinnedTrajectorySwo, Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters, Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters);
 
             PublicApi.Verify(snagsAndLogsNwo, thinnedTrajectoryNwo);
             PublicApi.Verify(snagsAndLogsSmc, thinnedTrajectorySmc);
@@ -863,7 +885,7 @@ namespace Mars.Seem.Test
             #endif
 
             List<float> discountRates = new() {  Constant.Financial.DefaultAnnualDiscountRate };
-            PlotsWithHeight nelder = PublicApi.GetNelder();
+            PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecordCount, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
@@ -874,7 +896,7 @@ namespace Mars.Seem.Test
             };
             landExpectationValue.Treatments.Harvests.Add(new ThinByIndividualTreeSelection(thinningPeriod));
             HeuristicStandTrajectories<HeuristicParameters> results = PublicApi.CreateResults(new(), thinningPeriod, landExpectationValue.MaximizeForPlanningPeriod);
-            StandTrajectoryCoordinate defaultCoordinate = new();
+            SilviculturalCoordinate defaultCoordinate = new();
 
             TimeSpan runtime = TimeSpan.Zero;
             for (int run = 0; run < runs; ++run)
@@ -899,7 +921,7 @@ namespace Mars.Seem.Test
 
         private static void TryAppendAcceptedFinancialValue(List<float> objectives, Heuristic heuristic, int moveIndex)
         {
-            StandTrajectoryCoordinate defaultCoordinate = new();
+            SilviculturalCoordinate defaultCoordinate = new();
             IList<float> acceptedMoveFinancialValues = heuristic.FinancialValue.GetAcceptedValuesWithDefaulting(defaultCoordinate);
             if (acceptedMoveFinancialValues.Count > moveIndex)
             {
@@ -941,7 +963,7 @@ namespace Mars.Seem.Test
         private void Verify<TParameters>(Heuristic<TParameters> heuristic, PrescriptionPerformanceCounters perfCounters) where TParameters : HeuristicParameters
         {
             // check objective functions
-            StandTrajectoryCoordinate defaultCoordinate = new();
+            SilviculturalCoordinate defaultCoordinate = new();
             OrganonStandTrajectory bestTrajectory = heuristic.GetBestTrajectory(defaultCoordinate);
             Assert.IsTrue(bestTrajectory.PlantingDensityInTreesPerHectare == heuristic.CurrentTrajectory.PlantingDensityInTreesPerHectare);
             Assert.IsTrue(bestTrajectory.PlantingDensityInTreesPerHectare >= TestConstant.NelderReplantingDensityInTreesPerHectare);
@@ -1219,7 +1241,7 @@ namespace Mars.Seem.Test
                     ((expectedTrajectory.ThirdThinPeriod != Constant.NoThinPeriod) && (periodIndex == expectedTrajectory.ThirdThinPeriod)))
                 {
                     OrganonStandDensity? standDensityBeforeThin = thinnedTrajectory.DensityByPeriod[periodIndex - 1];
-                    AssertNullable.IsNotNull(standDensityBeforeThin);
+                    Assert.IsNotNull(standDensityBeforeThin);
 
                     Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] > 0.0F);
                     Assert.IsTrue(thinnedTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] < Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * standDensityBeforeThin.BasalAreaPerHa); // assume <50% thin by volume
@@ -1286,7 +1308,7 @@ namespace Mars.Seem.Test
             for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
             {
                 OrganonStandDensity? standDensity = trajectory.DensityByPeriod[periodIndex];
-                AssertNullable.IsNotNull(standDensity);
+                Assert.IsNotNull(standDensity);
                 Assert.IsTrue(standDensity.BasalAreaPerHa > 0.0F);
                 Assert.IsTrue(standDensity.BasalAreaPerHa <= Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * TestConstant.Maximum.TreeBasalAreaLarger);
 
@@ -1320,9 +1342,9 @@ namespace Mars.Seem.Test
             }
         }
 
-        private static SilviculturalPrescriptionPool Verify(StandTrajectories trajectories, StandTrajectoryCoordinate coordinate)
+        private static SilviculturalPrescriptionPool Verify(SilviculturalSpace trajectories, SilviculturalCoordinate coordinate)
         {
-            Assert.IsTrue(trajectories.TryGetSelfOrFindNearestNeighbor(coordinate, out SilviculturalPrescriptionPool? eliteSolutions, out StandTrajectoryCoordinate? eliteSolutionsPosition));
+            Assert.IsTrue(trajectories.TryGetSelfOrFindNearestNeighbor(coordinate, out SilviculturalPrescriptionPool? eliteSolutions, out SilviculturalCoordinate? eliteSolutionsPosition));
             Assert.IsTrue(eliteSolutions!.High != null);
             Assert.IsTrue(eliteSolutions.Low.Trajectory != null);
             Assert.IsTrue(eliteSolutions.SolutionsInPool == Math.Min(eliteSolutions.SolutionsAccepted, TestConstant.SolutionPoolSize));
@@ -1358,11 +1380,9 @@ namespace Mars.Seem.Test
 
         private static void Verify(SnagDownLogTable snagsAndDownLogs, OrganonStandTrajectory trajectory)
         {
-            Assert.IsTrue((snagsAndDownLogs.DiameterClasses == (int)Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters + 1) || 
-                          (snagsAndDownLogs.DiameterClasses == (int)Constant.Bucking.DefaultMaximumThinningDiameterInCentimeters + 1));
-            Assert.IsTrue(snagsAndDownLogs.DiameterClassSizeInCentimeters == Constant.Bucking.DiameterClassSizeInCentimeters);
-            Assert.IsTrue((snagsAndDownLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultMaximumFinalHarvestDiameterInCentimeters) ||
-                          (snagsAndDownLogs.MaximumDiameterInCentimeters == Constant.Bucking.DefaultMaximumThinningHeightInMeters));
+            Assert.IsTrue(snagsAndDownLogs.DiameterClasses == (int)Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters + 1);
+            Assert.IsTrue(snagsAndDownLogs.DiameterClassSizeInCentimeters == Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters);
+            Assert.IsTrue(snagsAndDownLogs.MaximumDiameterInCentimeters == Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters);
             Assert.IsTrue(snagsAndDownLogs.Periods == trajectory.PlanningPeriods);
 
             Assert.IsTrue(snagsAndDownLogs.LogQmdInCentimetersByPeriod.Length == snagsAndDownLogs.Periods);
@@ -1378,12 +1398,12 @@ namespace Mars.Seem.Test
             Assert.IsTrue(snagsAndDownLogs.SnagsPerHectareBySpeciesAndDiameterClass[FiaCode.PseudotsugaMenziesii].GetLength(1) == snagsAndDownLogs.DiameterClasses);
 
             OrganonStandDensity? standDensity = trajectory.DensityByPeriod[0];
-            AssertNullable.IsNotNull(standDensity);
+            Assert.IsNotNull(standDensity);
             float initialStemsPerHectare = standDensity.TreesPerHa + snagsAndDownLogs.LogsPerHectareByPeriod[0] + snagsAndDownLogs.SnagsPerHectareByPeriod[0];
             for (int period = 0; period < snagsAndDownLogs.Periods; ++period)
             {
                 standDensity = trajectory.DensityByPeriod[period];
-                AssertNullable.IsNotNull(standDensity);
+                Assert.IsNotNull(standDensity);
 
                 float logsPerHectare = snagsAndDownLogs.LogsPerHectareByPeriod[period];
                 float snagsPerHectare = snagsAndDownLogs.SnagsPerHectareByPeriod[period];

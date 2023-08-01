@@ -28,7 +28,7 @@ namespace Mars.Seem.Optimization
             this.MoveCapacity = moveCapacity;
         }
 
-        public IList<float> GetAcceptedValuesWithDefaulting(StandTrajectoryCoordinate coordinate)
+        public IList<float> GetAcceptedValuesWithDefaulting(SilviculturalCoordinate coordinate)
         {
             return this.GetAcceptedValuesWithDefaulting(coordinate.RotationIndex, coordinate.FinancialIndex);
         }
@@ -42,7 +42,7 @@ namespace Mars.Seem.Optimization
             return this.acceptedValueByRotationAndScenario[rotationIndex, financialIndex];
         }
 
-        public IList<float> GetCandidateValuesWithDefaulting(StandTrajectoryCoordinate coordinate)
+        public IList<float> GetCandidateValuesWithDefaulting(SilviculturalCoordinate coordinate)
         {
             return this.GetCandidateValuesWithDefaulting(coordinate.RotationIndex, coordinate.FinancialIndex);
         }
@@ -62,7 +62,7 @@ namespace Mars.Seem.Optimization
             this.candidateValueByRotationAndScenario[Constant.HeuristicDefault.CoordinateIndex, Constant.HeuristicDefault.CoordinateIndex].Capacity = capacity;
         }
 
-        public bool TryAddMove(StandTrajectoryCoordinate coordinate, float acceptedValue, float candidateValue)
+        public bool TryAddMove(SilviculturalCoordinate coordinate, float acceptedValue, float candidateValue)
         {
             int rotationIndex = coordinate.RotationIndex;
             int financialIndex = coordinate.FinancialIndex;

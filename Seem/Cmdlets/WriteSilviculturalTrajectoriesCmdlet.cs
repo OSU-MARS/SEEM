@@ -9,21 +9,22 @@ using System.Management.Automation;
 
 namespace Mars.Seem.Cmdlets
 {
-    public class WriteTrajectoriesCmdlet : WriteCmdlet
+    public class WriteSilviculturalTrajectoriesCmdlet : WriteCmdlet
     {
         [Parameter(HelpMessage = "Include columns with heuristic parameter values (for heuristics with parameters) in output file.")]
         public SwitchParameter HeuristicParameters { get; set; }
 
-        [Parameter]
+        [Parameter(Mandatory = true)]
         [ValidateNotNull]
-        public StandTrajectories? Trajectories { get; set; }
+        public SilviculturalSpace? Trajectories { get; set; }
 
-        public WriteTrajectoriesCmdlet()
+        public WriteSilviculturalTrajectoriesCmdlet()
         {
             this.HeuristicParameters = false;
+            this.Trajectories = null;
         }
 
-        protected string GetCsvHeaderForCoordinate()
+        protected string GetCsvHeaderForSilviculturalCoordinate()
         {
             string? maybeHeuristicParametersWithTrailingComma = null;
             if (this.HeuristicParameters && (this.Trajectories is HeuristicStandTrajectories heuristicTrajectories))
@@ -37,8 +38,8 @@ namespace Mars.Seem.Cmdlets
             return "stand," + maybeHeuristicParametersWithTrailingComma + "thin1,thin2,thin3,rotation,financialScenario";
         }
 
-        [MemberNotNull(nameof(WriteTrajectoriesCmdlet.Trajectories))]
-        protected string GetCsvPrefixForCoordinate(StandTrajectoryCoordinate coordinate)
+        [MemberNotNull(nameof(WriteSilviculturalTrajectoriesCmdlet.Trajectories))]
+        protected string GetCsvPrefixForCoordinate(SilviculturalCoordinate coordinate)
         {
             Debug.Assert(this.Trajectories != null);
             StandTrajectory? highTrajectory = this.Trajectories[coordinate].Pool.High.Trajectory;
@@ -72,11 +73,11 @@ namespace Mars.Seem.Cmdlets
                    financialScenario;
         }
 
-        [MemberNotNull(nameof(WriteTrajectoriesCmdlet.Trajectories))]
+        [MemberNotNull(nameof(WriteSilviculturalTrajectoriesCmdlet.Trajectories))]
         protected StandTrajectory GetHighTrajectoryAndPositionPrefix(int evaluatedCoordinateIndex, out string linePrefix)
         {
             Debug.Assert(this.Trajectories != null);
-            StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
+            SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
             linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
 
             SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
@@ -89,12 +90,12 @@ namespace Mars.Seem.Cmdlets
             return highTrajectory;
         }
 
-        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(int evaluatedCoordinateIndex, out string linePrefix, out int endOfRotationPeriod, out int financialIndex)
+        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(int evaluatedCoordinateIndex, out string linePrefix, out int endOfRotationPeriodIndex, out int financialIndex)
         {
             StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(evaluatedCoordinateIndex, out linePrefix);
 
-            StandTrajectoryCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
-            endOfRotationPeriod = this.Trajectories.RotationLengths[coordinate.RotationIndex];
+            SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
+            endOfRotationPeriodIndex = this.Trajectories.RotationLengths[coordinate.RotationIndex];
             financialIndex = coordinate.FinancialIndex;
 
             return highTrajectory;
@@ -106,7 +107,7 @@ namespace Mars.Seem.Cmdlets
             return this.Trajectories.CoordinatesEvaluated.Count;
         }
 
-        [MemberNotNull(nameof(WriteTrajectoriesCmdlet.Trajectories))]
+        [MemberNotNull(nameof(WriteSilviculturalTrajectoriesCmdlet.Trajectories))]
         protected void ValidateParameters()
         {
             if (this.Trajectories == null)

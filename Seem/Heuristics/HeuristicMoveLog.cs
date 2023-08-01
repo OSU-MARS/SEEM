@@ -12,9 +12,9 @@ namespace Mars.Seem.Heuristics
         }
 
         public abstract string GetCsvHeader(string prefix);
-        public abstract string GetCsvValues(StandTrajectoryCoordinate coordinate, int moveNumber);
+        public abstract string GetCsvValues(SilviculturalCoordinate coordinate, int moveNumber);
 
-        public virtual int GetMoveNumberWithDefaulting(StandTrajectoryCoordinate coordinate, int moveIndex)
+        public virtual int GetMoveNumberWithDefaulting(SilviculturalCoordinate coordinate, int moveIndex)
         {
             return moveIndex;
         }

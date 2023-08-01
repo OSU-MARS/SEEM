@@ -16,7 +16,7 @@ namespace Mars.Seem.Heuristics
             // this.prescriptionsEnumerated is (re)set in EvaluateThinningPrescriptions()
         }
 
-        protected override void EvaluateThinningPrescriptions(StandTrajectoryCoordinate coordinate, StandTrajectories trajectories, PrescriptionPerformanceCounters perfCounters)
+        protected override void EvaluateThinningPrescriptions(SilviculturalCoordinate coordinate, SilviculturalSpace trajectories, PrescriptionPerformanceCounters perfCounters)
         {
             this.prescriptionsEnumerated = 0;
 
@@ -71,14 +71,14 @@ namespace Mars.Seem.Heuristics
             }
         }
 
-        protected void EvaluateThinningPrescriptions(StandTrajectoryCoordinate coordinate, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription, PrescriptionPerformanceCounters perfCounters)
+        protected void EvaluateThinningPrescriptions(SilviculturalCoordinate coordinate, ThinByPrescription? firstThinPrescription, ThinByPrescription? secondThinPrescription, ThinByPrescription? thirdThinPrescription, PrescriptionPerformanceCounters perfCounters)
         {
             // for now, assume execution with fixed thinning times and rotation lengths, meaning tree selections do not need to be moved between periods
             // this.CurrentTrajectory.DeselectAllTrees();
             perfCounters.GrowthModelTimesteps += this.CurrentTrajectory.Simulate();
 
             OrganonStandTrajectory? acceptedTrajectory = null; // lazily instantiated clone of current trajectory
-            StandTrajectoryCoordinate currentCoordinate = new(coordinate);
+            SilviculturalCoordinate currentCoordinate = new(coordinate);
             for (int rotationIndex = 0; rotationIndex < this.RunParameters.RotationLengths.Count; ++rotationIndex)
             {
                 int endOfRotationPeriod = this.RunParameters.RotationLengths[rotationIndex];
@@ -99,10 +99,7 @@ namespace Mars.Seem.Heuristics
                         // Clone the current trajectory only once to minimize memory consumption and, in some cases, reduce data file size. For
                         // example, if this is the first tree selection generated it will be accepted across all combinations of rotation length
                         // and financial scenario.
-                        if (acceptedTrajectory == null)
-                        {
-                            acceptedTrajectory = this.CurrentTrajectory.Clone();
-                        }
+                        acceptedTrajectory ??= this.CurrentTrajectory.Clone();
                         this.BestTrajectoryByRotationAndScenario[rotationIndex, financialIndex] = acceptedTrajectory;
 
                         this.lastNImprovingMovesLog?.TryAddMove(currentCoordinate, this.prescriptionsEnumerated, firstThinPrescription, secondThinPrescription, thirdThinPrescription);

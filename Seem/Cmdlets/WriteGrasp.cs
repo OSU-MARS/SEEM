@@ -29,7 +29,7 @@ namespace Mars.Seem.Cmdlets
             }
 
             // rows for bin counts
-            StandTrajectoryCoordinate coordinate = this.Results.CoordinatesEvaluated[0];
+            SilviculturalCoordinate coordinate = this.Results.CoordinatesEvaluated[0];
             SilviculturalPrescriptionPool prescriptions = this.Results[coordinate].Pool;
 
             StandTrajectory? highTrajectory = prescriptions.High.Trajectory;

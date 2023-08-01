@@ -66,7 +66,7 @@ namespace Mars.Seem.Optimization
             this.PerfCountersBySolution.Add(perfCounters);
         }
 
-        public void Add(Heuristic heuristic, StandTrajectoryCoordinate coordinate, PrescriptionPerformanceCounters perfCounters)
+        public void Add(Heuristic heuristic, SilviculturalCoordinate coordinate, PrescriptionPerformanceCounters perfCounters)
         {
             this.Add(heuristic.FinancialValue.GetHighestValueWithDefaulting(coordinate), perfCounters);
 

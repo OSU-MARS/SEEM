@@ -47,7 +47,7 @@ namespace Mars.Seem.Heuristics
             this.RunParameters = runParameters;
         }
 
-        protected void CopyTreeGrowthToBestTrajectory(StandTrajectoryCoordinate coordinate, OrganonStandTrajectory trajectory)
+        protected void CopyTreeGrowthToBestTrajectory(SilviculturalCoordinate coordinate, OrganonStandTrajectory trajectory)
         {
             if (this.TryGetBestTrajectory(coordinate, out OrganonStandTrajectory? bestTrajectory) == false)
             {
@@ -59,7 +59,7 @@ namespace Mars.Seem.Heuristics
             }
         }
 
-        public OrganonStandTrajectory GetBestTrajectory(StandTrajectoryCoordinate coordinate)
+        public OrganonStandTrajectory GetBestTrajectory(SilviculturalCoordinate coordinate)
         {
             if (this.TryGetBestTrajectory(coordinate, out OrganonStandTrajectory? bestTrajectory) == false)
             {
@@ -110,9 +110,9 @@ namespace Mars.Seem.Heuristics
         }
 
         public abstract HeuristicParameters GetParameters();
-        public abstract PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories);
+        public abstract PrescriptionPerformanceCounters Run(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories);
 
-        protected bool TryGetBestTrajectory(StandTrajectoryCoordinate coordinate, [NotNullWhen(true)] out OrganonStandTrajectory? bestTrajectory)
+        protected bool TryGetBestTrajectory(SilviculturalCoordinate coordinate, [NotNullWhen(true)] out OrganonStandTrajectory? bestTrajectory)
         {
             bestTrajectory = this.BestTrajectoryByRotationAndScenario[coordinate.RotationIndex, coordinate.FinancialIndex];
             return bestTrajectory != null;
@@ -231,11 +231,11 @@ namespace Mars.Seem.Heuristics
             return treeSelectionsRandomized;
         }
 
-        protected int ConstructTreeSelection(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
+        protected int ConstructTreeSelection(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             // attempt to find an existing solution with the same set of thinning timings
             // If found, the existing solution's discount rate and number of planning periods may differ.
-            if (trajectories.TryGetSelfOrFindNearestNeighbor(coordinate, out SilviculturalPrescriptionPool? existingSolutions, out StandTrajectoryCoordinate? positionOfExistingSolutions))
+            if (trajectories.TryGetSelfOrFindNearestNeighbor(coordinate, out SilviculturalPrescriptionPool? existingSolutions, out SilviculturalCoordinate? positionOfExistingSolutions))
             {
                 IndividualTreeSelectionBySpecies eliteTreeSelection = existingSolutions.GetRandomEliteTreeSelection(); // throws if pool is empty
                 this.CurrentTrajectory.CopyTreeSelectionFrom(eliteTreeSelection);
@@ -306,7 +306,7 @@ namespace Mars.Seem.Heuristics
             return this.ConstructTreeSelection(this.ConstructionGreediness);
         }
 
-        protected virtual float EvaluateInitialSelection(StandTrajectoryCoordinate coordinate, int moveCapacity, PrescriptionPerformanceCounters perfCounters)
+        protected virtual float EvaluateInitialSelection(SilviculturalCoordinate coordinate, int moveCapacity, PrescriptionPerformanceCounters perfCounters)
         {
             this.FinancialValue.SetMoveCapacity(moveCapacity);
 

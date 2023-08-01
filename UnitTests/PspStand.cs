@@ -152,10 +152,7 @@ namespace Mars.Seem.Test
             // populate Organon version of stand
             // Currently, PSP stands are assumed to have IsEvenAge = false, which causes Organon to require a stand age of
             // zero years be passed.
-            TestStand stand = new(configuration.Variant, 0, siteIndex)
-            {
-                NumberOfPlots = this.plotCount
-            };
+            TestStand stand = new(configuration.Variant, 0, siteIndex);
             foreach (KeyValuePair<FiaCode, int> speciesCount in this.CountTreesBySpecies())
             {
                 // skip any unsupported species as they should be remapped in following loops

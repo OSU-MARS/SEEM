@@ -20,6 +20,9 @@ namespace Mars.Seem.Optimization
         public IList<float> HarvestTaxPerMbf { get; private init; }
         public IList<string> Name { get; private init; }
         public IList<float> PropertyTaxAndManagementPerHectareYear { get; private init; }
+        public IList<float> RedAlder2SawPondValuePerMbf { get; private init; }
+        public IList<float> RedAlder3SawPondValuePerMbf { get; private init; }
+        public IList<float> RedAlder4SawPondValuePerMbf { get; private init; }
         public IList<float> RegenerationHarvestCostPerHectare { get; private init; }
         public IList<float> RegenerationRoadCostPerCubicMeter { get; private init; }
         public IList<float> RegenerationSlashCostPerCubicMeter { get; private init; }
@@ -45,7 +48,7 @@ namespace Mars.Seem.Optimization
         public FinancialScenarios()
         {
             // Pond values from coast region mean values in Washington Department of Natural Resources log price reports, October 2011-June 2021
-            //   adjusted by US Bureau of Labor Statistics seasonally unadjusted monthly PPI.
+            //   adjusted by US Bureau of Labor Statistics seasonally unadjusted monthly PPI to 2020 dollars.
             //
             // Harvesting cost follows from the harvest system's productivity in US$/merchantable m³.
             // Examples are
@@ -83,6 +86,9 @@ namespace Mars.Seem.Optimization
             this.HarvestTaxPerMbf = new List<float>() { Constant.Financial.OregonForestProductsHarvestTax };
             this.Name = new List<string>() { "default" };
             this.PropertyTaxAndManagementPerHectareYear = new List<float>() { Constant.HarvestCost.PropertyTaxRate * Constant.HarvestCost.AssessedValue + Constant.HarvestCost.AdmininistrationCost }; // US$/ha-year
+            this.RedAlder2SawPondValuePerMbf = new List<float>() { 721 }; // US$/MBF 2S
+            this.RedAlder3SawPondValuePerMbf = new List<float>() { 680 }; // US$/MBF 3S
+            this.RedAlder4SawPondValuePerMbf = new List<float>() { 420 }; // US$/MBF 4S
             this.RegenerationHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha
             this.RegenerationRoadCostPerCubicMeter = new List<float>() { Constant.HarvestCost.RoadMaintenance }; // US$/m³
             this.RegenerationSlashCostPerCubicMeter = new List<float>() { Constant.HarvestCost.SlashDisposal + Constant.HarvestCost.YarderLandingSlashDisposal }; // US$/m³
@@ -120,6 +126,9 @@ namespace Mars.Seem.Optimization
                     match.HarvestTaxPerMbf[0] = this.HarvestTaxPerMbf[financialIndex];
                     match.Name[0] = this.Name[financialIndex];
                     match.PropertyTaxAndManagementPerHectareYear[0] = this.PropertyTaxAndManagementPerHectareYear[financialIndex];
+                    match.RedAlder2SawPondValuePerMbf[0] = this.RedAlder2SawPondValuePerMbf[financialIndex];
+                    match.RedAlder3SawPondValuePerMbf[0] = this.RedAlder3SawPondValuePerMbf[financialIndex];
+                    match.RedAlder4SawPondValuePerMbf[0] = this.RedAlder4SawPondValuePerMbf[financialIndex];
                     match.RegenerationHarvestCostPerHectare[0] = this.RegenerationHarvestCostPerHectare[financialIndex];
                     match.RegenerationRoadCostPerCubicMeter[0] = this.RegenerationRoadCostPerCubicMeter[financialIndex];
                     match.RegenerationSlashCostPerCubicMeter[0] = this.RegenerationSlashCostPerCubicMeter[financialIndex];
@@ -230,6 +239,11 @@ namespace Mars.Seem.Optimization
                 float pondValue4Saw;
                 switch (standingVolumeForSpecies.Species)
                 {
+                    case FiaCode.AlnusRubra:
+                        pondValue2Saw = this.RedAlder2SawPondValuePerMbf[financialIndex];
+                        pondValue3Saw = this.RedAlder3SawPondValuePerMbf[financialIndex];
+                        pondValue4Saw = this.RedAlder4SawPondValuePerMbf[financialIndex];
+                        break;
                     case FiaCode.PseudotsugaMenziesii:
                         pondValue2Saw = this.DouglasFir2SawPondValuePerMbf[financialIndex];
                         pondValue3Saw = this.DouglasFir3SawPondValuePerMbf[financialIndex];
@@ -240,13 +254,42 @@ namespace Mars.Seem.Optimization
                         pondValue3Saw = pondValue2Saw;
                         pondValue4Saw = pondValue2Saw;
                         break;
+                    // whitewood
                     case FiaCode.TsugaHeterophylla:
-                    case FiaCode.AbiesGrandis: // also Abies amabalis and A. procera, westside
-                    case FiaCode.PiceaSitchensis: // also Picea engelmanii
+                    case FiaCode.AbiesGrandis:
+                    case FiaCode.PiceaSitchensis:
                         pondValue2Saw = this.WhiteWood2SawPondValuePerMbf[financialIndex];
                         pondValue3Saw = this.WhiteWood3SawPondValuePerMbf[financialIndex];
                         pondValue4Saw = this.WhiteWood4SawPondValuePerMbf[financialIndex];
                         break;
+                    // merchantable species not supported by Organon
+                    // case FiaCode.AbiesAmabalis:
+                    // case FiaCode.AbiesProcera:
+                    // case FiaCode.ChamaecyparisLawsoniana:
+                    // case FiaCode.PiceaEnglemannii:
+                    // case FiaCode.PiceaSitchensis:
+                    // case FiaCode.PopulusTrichocarpa:
+                    // case FiaCode.UmbellulariaCalifornica:
+                    // merchantable species not supported by volume scaling
+                    // case FiaCode.AbiesConcolor:
+                    // case FiaCode.AcerMacrophyllum:
+                    // case FiaCode.CalocedrusDecurrens:
+                    // case FiaCode.PinusLambertiana:
+                    // case FiaCode.PinusPonderosa:
+                    // nonmerchantable species currently treated as nonmerchantable
+                    // case FiaCode.ArbutusMenziesii:
+                    // case FiaCode.ChrysolepisChrysophyllaVarChrysophylla:
+                    // case FiaCode.CornusNuttallii:
+                    // case FiaCode.NotholithocarpusDensiflorus:
+                    // case FiaCode.QuercusChrysolepis:
+                    // case FiaCode.QuercusGarryana:
+                    // case FiaCode.QuercusKelloggii:
+                    // case FiaCode.Salix:
+                    // case FiaCode.TaxusBrevifolia:
+                    //     pondValue2Saw = 0.0F;
+                    //     pondValue3Saw = 0.0F;
+                    //     pondValue4Saw = 0.0F;
+                    //     break;
                     default:
                         throw new NotSupportedException("Unhandled species " + standingVolumeForSpecies.Species + ".");
                 }
@@ -266,7 +309,7 @@ namespace Mars.Seem.Optimization
             if (longLogHarvest.CubicVolumePerHa > 0.0F)
             {
                 HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
-                harvestSystems.GetLongLogHarvestCosts(endOfRotationStand, trajectory.TreeVolume.RegenerationHarvest, longLogHarvest);
+                harvestSystems.GetLongLogHarvestCosts(endOfRotationStand, trajectory.TreeVolume, longLogHarvest);
 
                 float regenHarvestTaskCostPerCubicMeter = this.RegenerationSlashCostPerCubicMeter[financialIndex] + this.RegenerationRoadCostPerCubicMeter[financialIndex];
                 longLogHarvest.TaskCostPerHa = regenHarvestTaskCostPerCubicMeter * longLogHarvest.CubicVolumePerHa + this.RegenerationHarvestCostPerHectare[financialIndex];
@@ -329,6 +372,11 @@ namespace Mars.Seem.Optimization
                 float pondValue4Saw;
                 switch (harvestVolumeForSpecies.Species)
                 {
+                    case FiaCode.AlnusRubra:
+                        pondValue2Saw = this.RedAlder2SawPondValuePerMbf[financialIndex];
+                        pondValue3Saw = this.RedAlder3SawPondValuePerMbf[financialIndex];
+                        pondValue4Saw = this.RedAlder4SawPondValuePerMbf[financialIndex];
+                        break;
                     case FiaCode.PseudotsugaMenziesii:
                         pondValue2Saw = this.DouglasFir2SawPondValuePerMbf[financialIndex];
                         pondValue3Saw = this.DouglasFir3SawPondValuePerMbf[financialIndex];
@@ -339,7 +387,9 @@ namespace Mars.Seem.Optimization
                         pondValue3Saw = pondValue2Saw;
                         pondValue4Saw = pondValue2Saw;
                         break;
+                    // white whood
                     case FiaCode.TsugaHeterophylla:
+                    case FiaCode.AbiesConcolor:
                     case FiaCode.AbiesGrandis:
                     case FiaCode.PiceaSitchensis:
                         pondValue2Saw = this.WhiteWood2SawPondValuePerMbf[financialIndex];
@@ -429,6 +479,9 @@ namespace Mars.Seem.Optimization
                 this.HarvestTaxPerMbf.Clear();
                 this.Name.Clear();
                 this.PropertyTaxAndManagementPerHectareYear.Clear();
+                this.RedAlder2SawPondValuePerMbf.Clear();
+                this.RedAlder3SawPondValuePerMbf.Clear();
+                this.RedAlder4SawPondValuePerMbf.Clear();
                 this.RegenerationHarvestCostPerHectare.Clear();
                 this.ReleaseSprayCostPerHectare.Clear();
                 this.SeedlingCost.Clear();
@@ -602,6 +655,27 @@ namespace Mars.Seem.Optimization
             }
             this.DouglasFir4SawPondValuePerMbf.Add(psme4Spond);
 
+            float alru2Spond = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.Alru2SPond]);
+            if ((alru2Spond < 100.0F) || (alru2Spond > 1000.0F))
+            {
+                throw new NotSupportedException("Red alder 2S pond value is not in the range US$ [100.0, 1000.0]/MBF.");
+            }
+            this.RedAlder2SawPondValuePerMbf.Add(alru2Spond);
+
+            float alru3Spond = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.Alru3SPond]);
+            if ((alru3Spond < 100.0F) || (alru3Spond > 1000.0F))
+            {
+                throw new NotSupportedException("Red alder 3S pond value is not in the range US$ [100.0, 1000.0]/MBF.");
+            }
+            this.RedAlder3SawPondValuePerMbf.Add(alru3Spond);
+
+            float alru4Spond = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.Alru4SPond]);
+            if ((alru4Spond < 100.0F) || (alru4Spond > 1000.0F))
+            {
+                throw new NotSupportedException("Red alder 4S pond value is not in the range US$ [100.0, 1000.0]/MBF.");
+            }
+            this.RedAlder4SawPondValuePerMbf.Add(alru4Spond);
+
             float regenHarvestPerHectare = Single.Parse(rowAsStrings[FinancialScenarios.XlsxColumns.RegenPerHa]);
             if ((regenHarvestPerHectare <= 0.0F) || (regenHarvestPerHectare > 1000.0F))
             {
@@ -738,6 +812,11 @@ namespace Mars.Seem.Optimization
         {
             public int AddOnWinchCableLength { get; set; }
             public int AnchorCostPerSMh { get; set; }
+
+            public int Alru2SPond { get; set; }
+            public int Alru3SPond { get; set; }
+            public int Alru4SPond { get; set; }
+
             public int ChainsawBuckConstant { get; set; }
             public int ChainsawBuckCostPerSMh { get; set; }
             public int ChainsawBuckLinear { get; set; }
@@ -882,6 +961,15 @@ namespace Mars.Seem.Optimization
                         break;
                     case "anchorSMh":
                         this.AnchorCostPerSMh = columnIndex;
+                        break;
+                    case "alru2Spond":
+                        this.Alru2SPond = columnIndex;
+                        break;
+                    case "alru3Spond":
+                        this.Alru3SPond = columnIndex;
+                        break;
+                    case "alru4Spond":
+                        this.Alru4SPond = columnIndex;
                         break;
                     case "chainsawBuckConstant":
                         this.ChainsawBuckConstant = columnIndex;
@@ -1225,6 +1313,11 @@ namespace Mars.Seem.Optimization
             {
                 this.AddOnWinchCableLength = -1;
                 this.AnchorCostPerSMh = -1;
+
+                this.Alru2SPond = -1;
+                this.Alru3SPond = -1;
+                this.Alru4SPond = -1;
+
                 this.ChainsawBuckConstant = -1;
                 this.ChainsawBuckLinear = -1;
                 this.ChainsawBuckCostPerSMh = -1;
@@ -1362,6 +1455,20 @@ namespace Mars.Seem.Optimization
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.AnchorCostPerSMh), "Anchor machine cost column not found.");
                 }
+
+                if (this.Alru2SPond < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.Alru2SPond), "Red alder 2S column not found.");
+                }
+                if (this.Alru3SPond < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.Alru3SPond), "Red alder 3S column not found.");
+                }
+                if (this.Alru4SPond < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(this.Alru4SPond), "Red alder 4S column not found.");
+                }
+
                 if (this.ChainsawBuckConstant < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(this.ChainsawBuckConstant), "Column for chainsaw bucking time intercept not found.");

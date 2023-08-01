@@ -284,12 +284,10 @@ namespace Mars.Seem.Silviculture
                 anchorMachines = 2;
             }
 
-            ScaledVolume scaledVolume = isThin ? trajectory.TreeVolume.Thinning : trajectory.TreeVolume.RegenerationHarvest;
             // BC Firmwood scaling considers trim to be merchantable cubic volume (Fonseca 2005 §2.2.2.2) so, for now, merchantableFractionOfLogLength = 1
             // float preferredLogLength = scaledVolume.PreferredLogLengthInMeters;
             // float preferredTrimLength = scaledVolume.GetPreferredTrim();
             // float merchantableFractionOfLogLength = preferredLogLength / (preferredLogLength + preferredTrimLength); // assumes cylindrical logs or cylindrical ones with equal amounts of trim at both ends
-
             bool chainsawFallingWithWheeledHarvester = false;
             bool previousOversizeTreeBehindHarvester = true;
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
@@ -305,7 +303,12 @@ namespace Mars.Seem.Silviculture
                 }
                 IndividualTreeSelection individualTreeSelection = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
-                TreeSpeciesVolumeTable volumeTable = scaledVolume.VolumeBySpecies[treesOfSpecies.Species];
+                if (trajectory.TreeVolume.TryGetForwarderVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? forwardedVolumeTable) == false)
+                {
+                    // for now, assume all non-merchantable trees are left in place in stand
+                    // TODO: include felling and handling costs for cut and leave
+                    continue;
+                }
 
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                 {
@@ -319,9 +322,14 @@ namespace Mars.Seem.Silviculture
                     // Could factor constant and linear terms out of loop (true for all machines, both CTL and long log) but it doesn't
                     // appear important to do so.
                     float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                    if (dbhInCm > forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters)
+                    {
+                        throw new NotSupportedException("Large reserve " + treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + " is selected for harvest.");
+                    }
+
                     float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
                     float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    float treeMerchantableVolumeInM3 = volumeTable.GetCubicVolumeOfWood(dbhInCm, heightInM, out float unscaledNeiloidVolumeInM3);
+                    float treeMerchantableVolumeInM3 = forwardedVolumeTable.GetCubicVolumeOfMerchantableWood(dbhInCm, heightInM, out float unscaledNeiloidVolumeInM3);
                     Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
                     ctlHarvest.MerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
 
@@ -618,7 +626,7 @@ namespace Mars.Seem.Silviculture
             return new(turnTime, volumePerCorridor);
         }
 
-        public void GetLongLogHarvestCosts(Stand stand, ScaledVolume scaledVolume, LongLogHarvest longLogHarvest)
+        public void GetLongLogHarvestCosts(Stand stand, TreeVolume treeVolume, LongLogHarvest longLogHarvest)
         {
             if ((stand.AccessDistanceInM < 0.0F) ||
                 (stand.AccessSlopeInPercent < 0.0F) ||
@@ -682,15 +690,25 @@ namespace Mars.Seem.Silviculture
                     heightToMetersMultiplier = Constant.MetersPerFoot;
                     hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
                 }
-                TreeSpeciesVolumeTable volumeTable = scaledVolume.VolumeBySpecies[treesOfSpecies.Species];
+                if (treeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable) == false)
+                {
+                    // for now, assume all non-merchantable trees are left in place in stand
+                    // TODO: include felling and handling costs for cut and leave
+                    continue;
+                }
 
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                 {
                     float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                    if (dbhInCm > longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
+                    {
+                        continue; // large trees are considered unharvestable reserves
+                    }
+
                     float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
                     float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    float treeMerchantableVolumeInM3 = volumeTable.GetCubicVolumeOfWood(dbhInCm, heightInM, out float unscaledNeiloidVolume);
+                    float treeMerchantableVolumeInM3 = longLogVolumeTable.GetCubicVolumeOfMerchantableWood(dbhInCm, heightInM, out float unscaledNeiloidVolume);
                     Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
                     longLogHarvest.MerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
 
@@ -718,7 +736,7 @@ namespace Mars.Seem.Silviculture
                     //   3) The tree's first log is calculated from a Smalian estimate diameter outside bark. A more complete correct
                     //      would look up the tree's first log's merchantable volume from the volume table and adjust for the bark
                     //      fraction.
-                    float firstLogVolumeInM3 = volumeTable.GetCubicVolumeOfWoodInFirstLog(dbhInCm, heightInM) + unscaledNeiloidVolume;
+                    float firstLogVolumeInM3 = longLogVolumeTable.GetCubicVolumeOfMerchantableWoodInFirstLog(dbhInCm, heightInM) + unscaledNeiloidVolume;
                     float firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss = firstLogVolumeInM3 * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
 
                     bool treeBuckedManuallyWithGrappleSwingYarder = false;
@@ -917,12 +935,20 @@ namespace Mars.Seem.Silviculture
             float loaderSMhPerHectare = longLogHarvest.LoadedWeightPerHa / (this.LoaderUtilization * this.LoaderProductivity);
             // TODO: full corridor and processing bark loss
             {
-                if (stand.SlopeInPercent > this.FellerBuncherSlopeThresholdInPercent)
+                if (longLogHarvest.FellerBuncherPMhPerHa > 0.0F)
                 {
-                    longLogHarvest.FellerBuncherPMhPerHa *= 1.0F + this.FellerBuncherSlopeLinear * (stand.SlopeInPercent - this.FellerBuncherSlopeThresholdInPercent);
+                    if (stand.SlopeInPercent > this.FellerBuncherSlopeThresholdInPercent)
+                    {
+                        longLogHarvest.FellerBuncherPMhPerHa *= 1.0F + this.FellerBuncherSlopeLinear * (stand.SlopeInPercent - this.FellerBuncherSlopeThresholdInPercent);
+                    }
+                    longLogHarvest.FellerBuncherPMhPerHa /= Constant.SecondsPerHour;
+                    longLogHarvest.Productivity.FellerBuncher = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.FellerBuncherPMhPerHa;
+                    Debug.Assert((longLogHarvest.Productivity.FellerBuncher >= 0.0F) && (longLogHarvest.Productivity.FellerBuncher < 5000.0F));
                 }
-                longLogHarvest.FellerBuncherPMhPerHa /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.FellerBuncher = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.FellerBuncherPMhPerHa;
+                else
+                {
+                    Debug.Assert(Single.IsNaN(longLogHarvest.Productivity.FellerBuncher));
+                }
                 float fellerBuncherCostPerHectare = fellerBuncherCostPerSMh * longLogHarvest.FellerBuncherPMhPerHa / this.FellerBuncherUtilization;
 
                 float minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = 0.0F;
@@ -952,7 +978,8 @@ namespace Mars.Seem.Silviculture
                         longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.Operator;
                         longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder = this.ChainsawByOperatorUtilization;
                     }
-                    Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder > 0.0F);
+                    Debug.Assert((longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder > 0.0F) && (longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder < 10000.0F) &&
+                                 (longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder >= 0.0F) && (longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder <= 1.0F));
                 }
 
                 float grappleSwingYarderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
@@ -963,6 +990,9 @@ namespace Mars.Seem.Silviculture
                 longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder /= Constant.SecondsPerHour;
                 longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder;
                 float processorSMhPerHectareWithGrappleSwingYarder = longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder / this.ProcessorUtilization;
+
+                Debug.Assert((longLogHarvest.Productivity.GrappleSwingYarder >= 0.0F) && (longLogHarvest.Productivity.GrappleSwingYarder < 1000.0F) &&
+                             (longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder >= 0.0F) && (longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder < 1000.0F));
 
                 // TODO: chainsaw productivity
                 // loader productivity is specified so doesn't need to be output
@@ -1009,7 +1039,8 @@ namespace Mars.Seem.Silviculture
                         longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.Operator;
                         longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader = this.ChainsawByOperatorUtilization;
                     }
-                    Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader > 0.0F);
+                    Debug.Assert((longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader > 0.0F) && (longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader < 10000.0F) &&
+                                 (longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader >= 0.0F) && (longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader <= 1.0F));
                 }
 
                 float grappleYoaderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
@@ -1020,6 +1051,9 @@ namespace Mars.Seem.Silviculture
                 longLogHarvest.ProcessorPMhPerHaWithGrappleYoader /= Constant.SecondsPerHour;
                 longLogHarvest.Productivity.ProcessorWithGrappleYoader = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleYoader;
                 float processorSMhPerHectareWithGrappleYoader = longLogHarvest.ProcessorPMhPerHaWithGrappleYoader / this.ProcessorUtilization;
+
+                Debug.Assert((longLogHarvest.Productivity.GrappleYoader >= 0.0F) && (longLogHarvest.Productivity.GrappleYoader < 1000.0F) &&
+                             (longLogHarvest.Productivity.ProcessorWithGrappleYoader >= 0.0F) && (longLogHarvest.Productivity.ProcessorWithGrappleYoader < 1000.0F));
 
                 float limitingSMhWithFellerBuncherAndGrappleYoader = MathE.Max(grappleYoaderSMhPerHectare, processorSMhPerHectareWithGrappleYoader, loaderSMhPerHectare);
                 float grappleYoaderCostPerHectareWithFellerBuncher = this.GrappleYoaderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleYoader;
@@ -1045,12 +1079,20 @@ namespace Mars.Seem.Silviculture
             {
                 // tracked harvester
                 // For now, assume uniform slope across stand.
-                if (stand.SlopeInPercent > this.TrackedHarvesterSlopeThresholdInPercent)
+                if (longLogHarvest.TrackedHarvesterPMhPerHa > 0.0F)
                 {
-                    longLogHarvest.TrackedHarvesterPMhPerHa *= 1.0F + this.TrackedHarvesterSlopeLinear * (stand.SlopeInPercent - this.TrackedHarvesterSlopeThresholdInPercent);
+                    if (stand.SlopeInPercent > this.TrackedHarvesterSlopeThresholdInPercent)
+                    {
+                        longLogHarvest.TrackedHarvesterPMhPerHa *= 1.0F + this.TrackedHarvesterSlopeLinear * (stand.SlopeInPercent - this.TrackedHarvesterSlopeThresholdInPercent);
+                    }
+                    longLogHarvest.TrackedHarvesterPMhPerHa /= Constant.SecondsPerHour;
+                    longLogHarvest.Productivity.TrackedHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.TrackedHarvesterPMhPerHa;
+                    Debug.Assert((longLogHarvest.Productivity.TrackedHarvester >= 0.0F) && (longLogHarvest.Productivity.TrackedHarvester < 1000.0F));
                 }
-                longLogHarvest.TrackedHarvesterPMhPerHa /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.TrackedHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.TrackedHarvesterPMhPerHa;
+                else
+                {
+                    Debug.Assert(Single.IsNaN(longLogHarvest.Productivity.TrackedHarvester));
+                }
 
                 float trackedHarvesterCostPerHectare = trackedHarvesterCostPerSMh * longLogHarvest.TrackedHarvesterPMhPerHa / this.TrackedHarvesterUtilization;
 
@@ -1092,7 +1134,8 @@ namespace Mars.Seem.Silviculture
                         longLogHarvest.ChainsawCrewWithTrackedHarvester = ChainsawCrewType.Operator;
                         longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester = this.ChainsawByOperatorUtilization;
                     }
-                    Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester > 0.0F);
+                    Debug.Assert((longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester > 0.0F) && (longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester < 10000.0F) &&
+                                 (longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester >= 0.0F) && (longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester <= 1.0F));
                 }
 
                 float grappleSwingYarderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
@@ -1121,12 +1164,20 @@ namespace Mars.Seem.Silviculture
                     haulCostPerHectareWithTrackedHarvester + machineMoveInAndOutPerHectareWithTrackedHarvester;
 
                 // wheeled harvester
-                if (stand.SlopeInPercent > this.WheeledHarvesterSlopeThresholdInPercent)
+                if (longLogHarvest.WheeledHarvesterPMhPerHa > 0.0F)
                 {
-                    longLogHarvest.WheeledHarvesterPMhPerHa *= 1.0F + this.WheeledHarvesterSlopeLinear * (stand.SlopeInPercent - this.WheeledHarvesterSlopeThresholdInPercent);
+                    if (stand.SlopeInPercent > this.WheeledHarvesterSlopeThresholdInPercent)
+                    {
+                        longLogHarvest.WheeledHarvesterPMhPerHa *= 1.0F + this.WheeledHarvesterSlopeLinear * (stand.SlopeInPercent - this.WheeledHarvesterSlopeThresholdInPercent);
+                    }
+                    longLogHarvest.WheeledHarvesterPMhPerHa /= Constant.SecondsPerHour;
+                    longLogHarvest.Productivity.WheeledHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.WheeledHarvesterPMhPerHa;
+                    Debug.Assert((longLogHarvest.Productivity.WheeledHarvester >= 0.0F) && (longLogHarvest.Productivity.WheeledHarvester < 1000.0F));
                 }
-                longLogHarvest.WheeledHarvesterPMhPerHa /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.WheeledHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.WheeledHarvesterPMhPerHa;
+                else
+                {
+                    Debug.Assert(Single.IsNaN(longLogHarvest.Productivity.WheeledHarvester));
+                }
 
                 float wheeledHarvesterSMh = longLogHarvest.WheeledHarvesterPMhPerHa / this.WheeledHarvesterUtilization;
                 float wheeledHarvesterCostPerHectare = wheeledHarvesterCostPerSMh * wheeledHarvesterSMh;
@@ -1193,16 +1244,15 @@ namespace Mars.Seem.Silviculture
                     haulCostPerHectareWithWheeledHarvester + machineMoveInAndOutPerHectareWithWheeledHarvester;
 
                 // if all trees are especially large harvester costs per hectare can be zero as only chainsaw felling and bucking is performed
-                Debug.Assert((trackedHarvesterCostPerHectare >= 0.0F) && (minimumChainsawCostWithTrackedHarvester >= 0.0F) && (haulCostPerHectareWithTrackedHarvester >= 0.0F) && (machineMoveInAndOutPerHectareWithTrackedHarvester > 0.0F) &&
-                             (limitingSMhWithTrackedHarvesterAndGrappleSwingYarder >= 0.0F) && (swingYarderCostPerHectareWithTrackedHarvester >= 0.0F) && (loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder >= 0.0F) &&
-                             (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa >= 0.0F) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa < 200.0F * 1000.0F) &&
-                             (limitingSMhWithTrackedHarvesterAndGrappleYoader >= 0.0F) && (grappleYoaderCostPerHectareWithTrackedHarvester >= 0.0F) && (loaderCostPerHectareWithTrackedHarvesterAndGrappleYoader >= 0.0F) &&
-                             (Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa >= 0.0F) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa < 200.0F * 1000.0F) &&
-                             (wheeledHarvesterCostPerHectare >= 0.0F) && (minimumChainsawCostWithWheeledHarvester >= 0.0F) && (haulCostPerHectareWithWheeledHarvester >= 0.0F) && (machineMoveInAndOutPerHectareWithWheeledHarvester > 0.0F) &&
-                             (limitingSMhWithWheeledHarvesterAndGrappleSwingYarder >= 0.0F) && (grappleYoaderCostPerHectareWithWheeledHarvester >= 0.0F) && (loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader >= 0.0F) &&
-                             (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa >= 0.0F) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa < 125.0F * 1000.0F) &&
-                             (limitingSMhWithWheeledHarvesterAndGrappleYoader >= 0.0F) && 
-                             (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa < 125.0F * 1000.0F));
+                Debug.Assert((trackedHarvesterCostPerHectare >= 0.0F) && (minimumChainsawCostWithTrackedHarvester >= 0.0F) && (haulCostPerHectareWithTrackedHarvester >= 0.0F) && (machineMoveInAndOutPerHectareWithTrackedHarvester > 0.0F));
+                Debug.Assert((limitingSMhWithTrackedHarvesterAndGrappleSwingYarder >= 0.0F) && (swingYarderCostPerHectareWithTrackedHarvester >= 0.0F) && (loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder >= 0.0F));
+                Debug.Assert((Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa >= 0.0F) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa < 200.0F * 1000.0F));
+                Debug.Assert((limitingSMhWithTrackedHarvesterAndGrappleYoader >= 0.0F) && (grappleYoaderCostPerHectareWithTrackedHarvester >= 0.0F) && (loaderCostPerHectareWithTrackedHarvesterAndGrappleYoader >= 0.0F));
+                Debug.Assert((Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa >= 0.0F) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa < 200.0F * 1000.0F));
+                Debug.Assert((wheeledHarvesterCostPerHectare >= 0.0F) && (minimumChainsawCostWithWheeledHarvester >= 0.0F) && (haulCostPerHectareWithWheeledHarvester >= 0.0F) && (machineMoveInAndOutPerHectareWithWheeledHarvester > 0.0F));
+                Debug.Assert((limitingSMhWithWheeledHarvesterAndGrappleSwingYarder >= 0.0F) && (grappleYoaderCostPerHectareWithWheeledHarvester >= 0.0F) && (loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader >= 0.0F));
+                Debug.Assert((Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa >= 0.0F) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa < 200.0F * 1000.0F));
+                Debug.Assert((limitingSMhWithWheeledHarvesterAndGrappleYoader >= 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa < 200.0F * 1000.0F));
             }
 
             longLogHarvest.MinimumSystemCostPerHa = MathE.Min(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa, longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa,

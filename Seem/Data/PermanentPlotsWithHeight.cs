@@ -10,10 +10,9 @@ using System.Xml;
 
 namespace Mars.Seem.Data
 {
-    public class PlotsWithHeight
+    public class PermanentPlotsWithHeight : TreeReader
     {
-        private readonly TreeHeader csvHeader;
-        private readonly float defaultCrownRatio;
+        private readonly PlotTreeHeader csvHeader;
         private readonly float defaultExpansionFactorPerHa;
         private readonly IList<int> plotIDs;
         private readonly SortedList<int, Stand> standByAge;
@@ -22,7 +21,7 @@ namespace Mars.Seem.Data
         public SortedList<int, float> ExpansionFactorPerHaByAge { get; init; }
         public bool IncludeSpacingAndReplicateInTag { get; set; }
 
-        public PlotsWithHeight(IList<int> plotIDs)
+        public PermanentPlotsWithHeight(IList<int> plotIDs)
         {
             if (plotIDs.Count < 1)
             {
@@ -30,7 +29,6 @@ namespace Mars.Seem.Data
             }
 
             this.csvHeader = new();
-            this.defaultCrownRatio = 0.5F;
             this.defaultExpansionFactorPerHa = -1.0F;
             this.plotIDs = plotIDs;
             this.standByAge = new SortedList<int, Stand>();
@@ -40,7 +38,7 @@ namespace Mars.Seem.Data
             this.IncludeSpacingAndReplicateInTag = false;
         }
 
-        public PlotsWithHeight(IList<int> plotIDs, float defaultExpansionFactorPerHa)
+        public PermanentPlotsWithHeight(IList<int> plotIDs, float defaultExpansionFactorPerHa)
             : this(plotIDs)
         {
             if ((defaultExpansionFactorPerHa <= 0.0F) || (defaultExpansionFactorPerHa > Constant.Maximum.ExpansionFactorPerHa))
@@ -77,7 +75,8 @@ namespace Mars.Seem.Data
                 return;
             }
 
-            if (rowAsStrings[this.csvHeader.Tree] == null)
+            string tagAsString = rowAsStrings[this.csvHeader.Tree];
+            if (String.IsNullOrEmpty(tagAsString))
             {
                 return; // assume end of data in file
             }
@@ -133,13 +132,13 @@ namespace Mars.Seem.Data
 
             if (plotAtAge.TreesBySpecies.TryGetValue(species, out Trees? treesOfSpecies) == false)
             {
-                treesOfSpecies = new Trees(species, 1, Units.Metric);
+                treesOfSpecies = new(species, minimumSize: 1, Units.Metric);
                 plotAtAge.TreesBySpecies.Add(species, treesOfSpecies);
             }
 
-            // parse remianing data
+            // parse remaining data
             // for now, assume data is clean so that tag numbers are unique within each (sub)plot
-            int tag = Int32.Parse(rowAsStrings[this.csvHeader.Tree]);
+            int tag = Int32.Parse(tagAsString);
             if (this.IncludeSpacingAndReplicateInTag)
             {
                 if ((tag < 0) || (tag > 999))
@@ -187,7 +186,7 @@ namespace Mars.Seem.Data
             }
 
             // add trees with placeholder crown ratio
-            treesOfSpecies.Add(plot, tag, dbhInCm, heightInM, this.defaultCrownRatio, expansionFactorPerHa);
+            treesOfSpecies.Add(plot, tag, dbhInCm, heightInM, this.DefaultCrownRatio, expansionFactorPerHa);
         }
 
         public void Read(string xlsxFilePath, string worksheetName)
@@ -300,7 +299,7 @@ namespace Mars.Seem.Data
                     }
 
                     float liveExpansionFactorPerAcre = Constant.HectaresPerAcre * plotTreesOfSpecies.LiveExpansionFactor[treeIndex];
-                    standTreesOfSpecies.Add(plot, tag, dbhInInches, heightInFeet, defaultCrownRatio, liveExpansionFactorPerAcre);
+                    standTreesOfSpecies.Add(plot, tag, dbhInInches, heightInFeet, this.DefaultCrownRatio, liveExpansionFactorPerAcre);
                     if (++treesCopied >= maximumTreesToCopy)
                     {
                         break; // break inner for loop
@@ -312,64 +311,9 @@ namespace Mars.Seem.Data
                 }
             }
 
-            // estimate crown ratio
             organonStand.SetRedAlderSiteIndexAndGrowthEffectiveAge();
             //organonStand.SetSdiMax(configuration);
-
-            OrganonStandDensity density = new(configuration.Variant, organonStand);
-            float oldGrowthIndicator = OrganonMortality.GetOldGrowthIndicator(configuration.Variant, organonStand);
-            for (int speciesIndex = 0; speciesIndex < organonStand.TreesBySpecies.Count; ++speciesIndex)
-            {
-                Trees organonTreesOfSpecies = organonStand.TreesBySpecies.Values[speciesIndex];
-
-                // initialize crown ratio from Organon variant
-                Debug.Assert(organonTreesOfSpecies.Units == Units.English);
-                for (int treeIndex = 0; treeIndex < organonTreesOfSpecies.Count; ++treeIndex)
-                {
-                    float dbhInInches = organonTreesOfSpecies.Dbh[treeIndex];
-                    float heightInFeet = organonTreesOfSpecies.Height[treeIndex];
-                    float crownCompetitionFactorLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
-                    float heightToCrownBase = configuration.Variant.GetHeightToCrownBase(organonStand, organonTreesOfSpecies.Species, heightInFeet, dbhInInches, crownCompetitionFactorLarger, density, oldGrowthIndicator);
-                    float crownRatio = (heightInFeet - heightToCrownBase) / heightInFeet;
-                    Debug.Assert((crownRatio >= 0.0F) && (crownRatio <= 1.0F));
-
-                    organonTreesOfSpecies.CrownRatio[treeIndex] = crownRatio;
-                }
-
-                // alternatively, initialize crown ratio from FVS-PN dubbing
-                // https://www.fs.fed.us/fmsc/ftp/fvs/docs/overviews/FVSpn_Overview.pdf, section 4.3.1
-                // https://sourceforge.net/p/open-fvs/code/HEAD/tree/trunk/pn/crown.f#l67
-                // for live > 1.0 inch DBH
-                //   estimated crown ratio = d0 + d1 * 100.0 * SDI / SDImax
-                //   PSME d0 = 5.666442, d1 = -0.025199
-                //if ((organonStand.TreesBySpecies.Count != 1) || (organonTreesOfSpecies.Species != FiaCode.PseudotsugaMenziesii))
-                //{
-                //    throw new NotImplementedException();
-                //}
-
-                // FVS-PN crown ratio dubbing for Douglas-fir
-                // Resulted in 0.28% less volume than Organon NWO on Malcolm Knapp Nelder 1 at stand age 70.
-                // float qmd = stand.GetQuadraticMeanDiameter();
-                // float reinekeSdi = density.TreesPerAcre * MathF.Pow(0.1F * qmd, 1.605F);
-                // float reinekeSdiMax = MathF.Exp((stand.A1 - Constant.NaturalLogOf10) / stand.A2);
-                // float meanCrownRatioFvs = 5.666442F - 0.025199F * 100.0F * reinekeSdi / reinekeSdiMax;
-                // Debug.Assert(meanCrownRatioFvs >= 0.0F);
-                // Debug.Assert(meanCrownRatioFvs <= 10.0F); // FVS uses a 0 to 10 range, so 10 = 100% crown ratio
-                // float weibullA = 0.0F;
-                // float weibullB = -0.012061F + 1.119712F * meanCrownRatioFvs;
-                // float weibullC = 3.2126F;
-                // int[] dbhOrder = treesOfSpecies.GetDbhSortOrder();
-
-                // for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
-                // {
-                //     float dbhFraction = (float)dbhOrder[treeIndex] / (float)treesOfSpecies.Count;
-                //     float fvsCrownRatio = weibullA + weibullB * MathV.Pow(-1.0F * MathV.Ln(1.0F - dbhFraction), 1.0F / weibullC);
-                //     Debug.Assert(fvsCrownRatio >= 0.0F);
-                //     Debug.Assert(fvsCrownRatio <= 10.0F);
-
-                //     treesOfSpecies.CrownRatio[treeIndex] = 0.1F * fvsCrownRatio;
-                // }
-            }
+            organonStand.SetHeightToCrownBase(configuration.Variant);
 
             // used for checking sensitivity to data order
             // Ordering not currently advantageous, so disabled for now.
@@ -572,7 +516,7 @@ namespace Mars.Seem.Data
             }
         }
 
-        private class TreeHeader
+        private class PlotTreeHeader
         {
             public int Age { get; set; }
             public int Dbh { get; set; }
@@ -585,7 +529,7 @@ namespace Mars.Seem.Data
             public int Tree { get; set; }
             public int TreeCondition { get; set; }
 
-            public TreeHeader()
+            public PlotTreeHeader()
             {
                 this.Age = -1;
                 this.Dbh = -1;
@@ -690,7 +634,7 @@ namespace Mars.Seem.Data
                 }
                 if (this.Tree < 0)
                 {
-                    throw new XmlException("Tree number column not found.");
+                    throw new XmlException("Tree number (tag ID) column not found.");
                 }
                 if (this.Age < 0)
                 {

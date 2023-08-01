@@ -7,17 +7,17 @@ namespace Mars.Seem.Tree
     {
         private readonly bool[] isCalculated;
 
-        // net log volumes by grade after defect and breakage reduction in m³/ha.
+        // net merchantable log volume by grade after defect and breakage reduction in m³/ha
         public float[] Cubic2Saw { get; private init; }
         public float[] Cubic3Saw { get; private init; }
         public float[] Cubic4Saw { get; private init; }
 
-        // log density by grade after defect and breakage removal, logs/ha
+        // net density of merchantable logs by grade after defect and breakage removal, logs/ha
         public float[] Logs2Saw { get; private init; }
         public float[] Logs3Saw { get; private init; }
         public float[] Logs4Saw { get; private init; }
 
-        // net log volumes by grade after defect and breakage reduction in Scribner MBF/ha.
+        // net merchantable log volumes by grade after defect and breakage reduction in Scribner MBF/ha
         public float[] Scribner2Saw { get; private init; }
         public float[] Scribner3Saw { get; private init; }
         public float[] Scribner4Saw { get; private init; }
@@ -46,29 +46,43 @@ namespace Mars.Seem.Tree
             this.CopyFrom(other);
         }
 
-        public void CalculateStandingVolume(Stand stand, int periodIndex, TreeVolume treeVolume)
+        public void CalculateMerchantableStandingVolume(Stand stand, int periodIndex, TreeVolume treeVolume)
         {
             Trees treesOfSpecies = stand.TreesBySpecies[this.Species];
-            TreeSpeciesMerchantableVolumeForPeriod standingVolume = treeVolume.RegenerationHarvest.GetStandingVolume(treesOfSpecies);
+            TreeSpeciesMerchantableVolumeForPeriod standingMerchVolume;
+            if (treeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable))
+            {
+                standingMerchVolume = longLogVolumeTable.GetStandingVolume(treesOfSpecies);
+                standingMerchVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
 
-            standingVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
-            this.SetVolume(standingVolume, periodIndex);
+                this.SetMerchantableVolume(standingMerchVolume, periodIndex);
 
-            Debug.Assert((standingVolume.Cubic2Saw >= 0.0F) && (standingVolume.Cubic3Saw >= 0.0F) && (standingVolume.Cubic4Saw >= 0.0F));
-            Debug.Assert((standingVolume.Scribner2Saw >= 0.0F) && (standingVolume.Scribner3Saw >= 0.0F) && (standingVolume.Scribner4Saw >= 0.0F));
+                Debug.Assert((standingMerchVolume.Cubic2Saw >= 0.0F) && (standingMerchVolume.Cubic3Saw >= 0.0F) && (standingMerchVolume.Cubic4Saw >= 0.0F));
+                Debug.Assert((standingMerchVolume.Scribner2Saw >= 0.0F) && (standingMerchVolume.Scribner3Saw >= 0.0F) && (standingMerchVolume.Scribner4Saw >= 0.0F));
+            }
+            else
+            {
+                this.ZeroMerchantableVolume(periodIndex); // should be zero since species merchantability doesn't change at runtime, but just in case
+            }
         }
 
-        public void CalculateThinningVolume(Stand previousStand, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, int periodIndex, TreeVolume treeVolume)
+        public void CalculateMerchantableThinningVolume(Stand previousStand, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, int periodIndex, TreeVolume treeVolume)
         {
             Trees previousTreesOfSpecies = previousStand.TreesBySpecies[this.Species];
             IndividualTreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-            TreeSpeciesMerchantableVolumeForPeriod thinningVolume = treeVolume.Thinning.GetHarvestedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex);
+            if (treeVolume.TryGetForwarderVolumeTable(previousTreesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? forwardedVolumeTable))
+            {
+                TreeSpeciesMerchantableVolumeForPeriod thinnedMerchVolume = forwardedVolumeTable.GetHarvestedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex);
+                thinnedMerchVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
+                this.SetMerchantableVolume(thinnedMerchVolume, periodIndex);
 
-            thinningVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
-            this.SetVolume(thinningVolume, periodIndex);
-
-            Debug.Assert((thinningVolume.Cubic2Saw >= 0.0F) && (thinningVolume.Cubic3Saw >= 0.0F) && (thinningVolume.Cubic4Saw >= 0.0F));
-            Debug.Assert((thinningVolume.Scribner2Saw >= 0.0F) && (thinningVolume.Scribner3Saw >= 0.0F) && (thinningVolume.Scribner4Saw >= 0.0F));
+                Debug.Assert((thinnedMerchVolume.Cubic2Saw >= 0.0F) && (thinnedMerchVolume.Cubic3Saw >= 0.0F) && (thinnedMerchVolume.Cubic4Saw >= 0.0F));
+                Debug.Assert((thinnedMerchVolume.Scribner2Saw >= 0.0F) && (thinnedMerchVolume.Scribner3Saw >= 0.0F) && (thinnedMerchVolume.Scribner4Saw >= 0.0F));
+            }
+            else
+            {
+                this.ZeroMerchantableVolume(periodIndex); // should be zero since species merchantability doesn't change at runtime, but just in case
+            }
         }
 
         public void ClearVolume(int periodIndex)
@@ -149,7 +163,7 @@ namespace Mars.Seem.Tree
             this.Scribner4Saw[periodIndex] = Single.NaN;
         }
 
-        private void SetVolume(TreeSpeciesMerchantableVolumeForPeriod volume, int periodIndex)
+        private void SetMerchantableVolume(TreeSpeciesMerchantableVolumeForPeriod volume, int periodIndex)
         {
             this.Cubic2Saw[periodIndex] = volume.Cubic2Saw;
             this.Cubic3Saw[periodIndex] = volume.Cubic3Saw;
@@ -162,6 +176,23 @@ namespace Mars.Seem.Tree
             this.Scribner2Saw[periodIndex] = volume.Scribner2Saw;
             this.Scribner3Saw[periodIndex] = volume.Scribner3Saw;
             this.Scribner4Saw[periodIndex] = volume.Scribner4Saw;
+
+            this.isCalculated[periodIndex] = true;
+        }
+
+        private void ZeroMerchantableVolume(int periodIndex)
+        {
+            this.Cubic2Saw[periodIndex] = 0.0F;
+            this.Cubic3Saw[periodIndex] = 0.0F;
+            this.Cubic4Saw[periodIndex] = 0.0F;
+
+            this.Logs2Saw[periodIndex] = 0.0F;
+            this.Logs3Saw[periodIndex] = 0.0F;
+            this.Logs4Saw[periodIndex] = 0.0F;
+
+            this.Scribner2Saw[periodIndex] = 0.0F;
+            this.Scribner3Saw[periodIndex] = 0.0F;
+            this.Scribner4Saw[periodIndex] = 0.0F;
 
             this.isCalculated[periodIndex] = true;
         }

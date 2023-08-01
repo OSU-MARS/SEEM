@@ -30,7 +30,7 @@ namespace Mars.Seem.Optimization
             return this.HighestFinancialValueByRotationAndScenario[rotationIndex, financialIndex];
         }
 
-        public float GetHighestValueWithDefaulting(StandTrajectoryCoordinate coordinate)
+        public float GetHighestValueWithDefaulting(SilviculturalCoordinate coordinate)
         {
             return this.GetHighestValueWithDefaulting(coordinate.RotationIndex, coordinate.FinancialIndex);
         }

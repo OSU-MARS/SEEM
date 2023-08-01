@@ -2,7 +2,7 @@
 
 namespace Mars.Seem.Silviculture
 {
-    public class StandTrajectoryCoordinate : IEquatable<StandTrajectoryCoordinate>
+    public class SilviculturalCoordinate : IEquatable<SilviculturalCoordinate>
     {
         public int FinancialIndex { get; set; }
         public int FirstThinPeriodIndex { get; init; }
@@ -11,7 +11,7 @@ namespace Mars.Seem.Silviculture
         public int SecondThinPeriodIndex { get; init; }
         public int ThirdThinPeriodIndex { get; init; }
 
-        public StandTrajectoryCoordinate()
+        public SilviculturalCoordinate()
         {
             this.FinancialIndex = Constant.HeuristicDefault.CoordinateIndex;
             this.FirstThinPeriodIndex = Constant.HeuristicDefault.CoordinateIndex;
@@ -21,7 +21,7 @@ namespace Mars.Seem.Silviculture
             this.RotationIndex = Constant.HeuristicDefault.CoordinateIndex;
         }
 
-        public StandTrajectoryCoordinate(StandTrajectoryCoordinate other)
+        public SilviculturalCoordinate(SilviculturalCoordinate other)
         {
             this.FinancialIndex = other.FinancialIndex;
             this.FirstThinPeriodIndex = other.FirstThinPeriodIndex;
@@ -31,12 +31,12 @@ namespace Mars.Seem.Silviculture
             this.RotationIndex = other.RotationIndex;
         }
 
-        public static bool operator ==(StandTrajectoryCoordinate coordinate1, StandTrajectoryCoordinate coordinate2)
+        public static bool operator ==(SilviculturalCoordinate coordinate1, SilviculturalCoordinate coordinate2)
         {
             return coordinate1.Equals(coordinate2);
         }
 
-        public static bool operator !=(StandTrajectoryCoordinate coordinate1, StandTrajectoryCoordinate coordinate2)
+        public static bool operator !=(SilviculturalCoordinate coordinate1, SilviculturalCoordinate coordinate2)
         {
             return coordinate1.Equals(coordinate2) == false;
         }
@@ -46,7 +46,7 @@ namespace Mars.Seem.Silviculture
             return HashCode.Combine(this.FinancialIndex, this.RotationIndex, this.FirstThinPeriodIndex, this.SecondThinPeriodIndex, this.ThirdThinPeriodIndex, this.ParameterIndex);
         }
 
-        public bool Equals(StandTrajectoryCoordinate? other)
+        public bool Equals(SilviculturalCoordinate? other)
         {
             if (other is null)
             {
@@ -62,7 +62,7 @@ namespace Mars.Seem.Silviculture
 
         public override bool Equals(object? obj)
         {
-            if (obj is StandTrajectoryCoordinate other)
+            if (obj is SilviculturalCoordinate other)
             {
                 return this.Equals(other);
             }

@@ -12,6 +12,7 @@ namespace Mars.Seem.Test
         public const float InchesPerCm = 0.393701F;
         public const float MetersPerInch = 0.0254F;
         public const float NelderReplantingDensityInTreesPerHectare = 1034.757F;
+        public const int OrganonTimeStepInYears = 5;
         public const float Plot14ReplantingDensityInTreesPerHectare = 1277.740F;
         public const int SolutionPoolSize = 2; // set lower than Constant.DefaultSolutionPoolSize to increase coverage of replacement of solutions in pools
         public const float SquareMetersPerSquareFoot = 0.092903F;

@@ -5,7 +5,6 @@ using Mars.Seem.Optimization;
 using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -401,19 +400,6 @@ namespace Mars.Seem.Test
                 }
             };
 
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-            TreeVolume treeVolume = new(new TreeSpeciesVolumeTableRange(), 
-                                        new TreeSpeciesVolumeTableRange()
-                                        {
-                                            MaximumDiameterInCentimeters = Constant.Bucking.DefaultMaximumThinningDiameterInCentimeters,
-                                            MaximumHeightInMeters = Constant.Bucking.DefaultMaximumThinningHeightInMeters,
-                                            PreferredLogLengthInMeters = Constant.Bucking.DefaultShortLogLengthInM
-                                        });
-            stopwatch.Stop();
-            TimeSpan timberValueTabulationTime = stopwatch.Elapsed;
-            this.TestContext!.WriteLine("tabulation: {0:s\\.fff}s for {1:0.0} cm diameter classes and {2:0.0} m height classes", timberValueTabulationTime, Constant.Bucking.DiameterClassSizeInCentimeters, Constant.Bucking.HeightClassSizeInMeters);
-
             // rounding to nearest indices in volume table
             // 1 cm diameter classes, 0.5 m height classes
             //float volumeHighSideTolerance = 1.01F;
@@ -435,6 +421,8 @@ namespace Mars.Seem.Test
             // 10 cm diameter classes, 5 m height classes
             //float volumeLowSideTolerance = 0.95F;
             //float volumeHighSideTolerance = 1.25F;
+
+            TreeVolume treeVolume = TreeVolume.Default;
             foreach (ExpectedTreeVolume tree in trees)
             {
                 float dbhInCentimeters = tree.DbhInCm;
@@ -444,29 +432,33 @@ namespace Mars.Seem.Test
                 Trees psmeMetric = new(FiaCode.PseudotsugaMenziesii, 1, Units.Metric);
                 psmeMetric.Add(1, 1, dbhInCentimeters, heightInMeters, 0.5F, tree.ExpansionFactorPerHa);
 
-                TreeSpeciesMerchantableVolumeForPeriod regenEnglish = treeVolume.RegenerationHarvest.GetStandingVolume(psmeEnglish);
-                float regenCubicEnglish = regenEnglish.Cubic2Saw + regenEnglish.Cubic3Saw + regenEnglish.Cubic4Saw;
-                float regenScribnerEnglish = regenEnglish.Scribner2Saw + regenEnglish.Scribner3Saw + regenEnglish.Scribner4Saw;
+                Assert.IsTrue(treeVolume.TryGetLongLogVolumeTable(FiaCode.PseudotsugaMenziesii, out TreeSpeciesMerchantableVolumeTable? psmeLongLogVolumeTable));
+                Assert.IsTrue(psmeLongLogVolumeTable != null);
+                TreeSpeciesMerchantableVolumeForPeriod standingEnglish = psmeLongLogVolumeTable.GetStandingVolume(psmeEnglish);
+                float standingCubicEnglish = standingEnglish.Cubic2Saw + standingEnglish.Cubic3Saw + standingEnglish.Cubic4Saw;
+                float standingScribnerEnglish = standingEnglish.Scribner2Saw + standingEnglish.Scribner3Saw + standingEnglish.Scribner4Saw;
 
-                TreeSpeciesMerchantableVolumeForPeriod regenMetric = treeVolume.RegenerationHarvest.GetStandingVolume(psmeMetric);
-                float regenCubicMetric = regenMetric.Cubic2Saw + regenMetric.Cubic3Saw + regenMetric.Cubic4Saw;
-                float regenScribnerMetric = regenMetric.Scribner2Saw + regenMetric.Scribner3Saw + regenMetric.Scribner4Saw;
+                TreeSpeciesMerchantableVolumeForPeriod standingMetric = psmeLongLogVolumeTable.GetStandingVolume(psmeMetric);
+                float standingCubicMetric = standingMetric.Cubic2Saw + standingMetric.Cubic3Saw + standingMetric.Cubic4Saw;
+                float standingScribnerMetric = standingMetric.Scribner2Saw + standingMetric.Scribner3Saw + standingMetric.Scribner4Saw;
 
-                TreeSpeciesMerchantableVolumeForPeriod thinEnglish = treeVolume.Thinning.GetStandingVolume(psmeEnglish);
+                Assert.IsTrue(treeVolume.TryGetForwarderVolumeTable(FiaCode.PseudotsugaMenziesii, out TreeSpeciesMerchantableVolumeTable? psmeForwarderVolumeTable));
+                Assert.IsTrue(psmeForwarderVolumeTable != null);
+                TreeSpeciesMerchantableVolumeForPeriod thinEnglish = psmeForwarderVolumeTable.GetStandingVolume(psmeEnglish);
                 float thinCubicEnglish = thinEnglish.Cubic2Saw + thinEnglish.Cubic3Saw + thinEnglish.Cubic4Saw;
                 float thinScribnerEnglish = thinEnglish.Scribner2Saw + thinEnglish.Scribner3Saw + thinEnglish.Scribner4Saw;
 
-                TreeSpeciesMerchantableVolumeForPeriod thinMetric = treeVolume.Thinning.GetStandingVolume(psmeMetric);
+                TreeSpeciesMerchantableVolumeForPeriod thinMetric = psmeForwarderVolumeTable.GetStandingVolume(psmeMetric);
                 float thinCubicMetric = thinMetric.Cubic2Saw + thinMetric.Cubic3Saw + thinMetric.Cubic4Saw;
                 float thinScribnerMetric = thinMetric.Scribner2Saw + thinMetric.Scribner3Saw + thinMetric.Scribner4Saw;
 
-                Assert.IsTrue(Math.Abs(regenCubicEnglish - regenCubicMetric) < 0.000003F * regenCubicMetric);
-                Assert.IsTrue(Math.Abs(regenScribnerEnglish - regenScribnerMetric) < 0.000004F * regenScribnerMetric);
+                Assert.IsTrue(Math.Abs(standingCubicEnglish - standingCubicMetric) < 0.000003F * standingCubicMetric);
+                Assert.IsTrue(Math.Abs(standingScribnerEnglish - standingScribnerMetric) < 0.000004F * standingScribnerMetric);
                 Assert.IsTrue(Math.Abs(thinCubicEnglish - thinCubicMetric) < 0.000004F * thinCubicMetric);
                 Assert.IsTrue(Math.Abs(thinScribnerEnglish - thinScribnerMetric) < 0.000004F * thinScribnerMetric);
 
-                regenCubicMetric /= tree.ExpansionFactorPerHa;
-                regenScribnerMetric /= tree.ExpansionFactorPerHa;
+                standingCubicMetric /= tree.ExpansionFactorPerHa;
+                standingScribnerMetric /= tree.ExpansionFactorPerHa;
                 thinCubicMetric /= tree.ExpansionFactorPerHa;
                 thinScribnerMetric /= tree.ExpansionFactorPerHa;
 
@@ -475,25 +467,25 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(thinCubicMetric < volumeHighSideTolerance * tree.MinimumThinVolumeCubic);
                 Assert.IsTrue(thinScribnerMetric < volumeHighSideTolerance * tree.MinimumThinVolumeMbf);
 
-                Assert.IsTrue(regenCubicMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeCubic);
-                Assert.IsTrue(regenScribnerMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeMbf);
-                Assert.IsTrue(regenCubicMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeCubic);
-                Assert.IsTrue(regenScribnerMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeMbf);
+                Assert.IsTrue(standingCubicMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeCubic);
+                Assert.IsTrue(standingScribnerMetric >= volumeLowSideTolerance * tree.MinimumRegenVolumeMbf);
+                Assert.IsTrue(standingCubicMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeCubic);
+                Assert.IsTrue(standingScribnerMetric < volumeHighSideTolerance * tree.MinimumRegenVolumeMbf);
 
                 // ratios must be greater than zero in principle but scaling and CVTS regression error allow crossover
                 float poudelTotalCubic = PoudelRegressions.GetCubicVolume(psmeMetric, 0);
                 poudelTotalCubic /= tree.ExpansionFactorPerHa;
-                Assert.IsTrue(regenCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
+                Assert.IsTrue(standingCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
                 Assert.IsTrue(thinCubicMetric / poudelTotalCubic > tree.MinimumMerchantableStemVolumeFraction);
-                Assert.IsTrue(regenCubicMetric / poudelTotalCubic < 1.0F);
+                Assert.IsTrue(standingCubicMetric / poudelTotalCubic < 1.0F);
                 Assert.IsTrue(thinCubicMetric / poudelTotalCubic < 1.0F);
 
                 // log ratios
-                this.TestContext.WriteLine("tree: {0:0.0} cm DBH, {1:0.0} m tall", tree.DbhInCm, tree.HeightInM);
+                this.TestContext!.WriteLine("tree: {0:0.0} cm DBH, {1:0.0} m tall", tree.DbhInCm, tree.HeightInM);
                 this.TestContext.WriteLine("thin cubic: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", thinCubicMetric, tree.MinimumThinVolumeCubic, thinCubicMetric / tree.MinimumThinVolumeCubic);
-                this.TestContext.WriteLine("regen cubic: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", regenCubicMetric, tree.MinimumRegenVolumeCubic, regenCubicMetric / tree.MinimumRegenVolumeCubic);
+                this.TestContext.WriteLine("regen cubic: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", standingCubicMetric, tree.MinimumRegenVolumeCubic, standingCubicMetric / tree.MinimumRegenVolumeCubic);
                 this.TestContext.WriteLine("thin Scribner: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", thinScribnerMetric, tree.MinimumThinVolumeMbf, thinScribnerMetric / tree.MinimumThinVolumeMbf);
-                this.TestContext.WriteLine("regen Scribner: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", regenScribnerMetric, tree.MinimumRegenVolumeMbf, regenScribnerMetric / tree.MinimumRegenVolumeMbf);
+                this.TestContext.WriteLine("regen Scribner: {0:0.00}, minimum {1:0.00}, ratio {2:0.000}", standingScribnerMetric, tree.MinimumRegenVolumeMbf, standingScribnerMetric / tree.MinimumRegenVolumeMbf);
             }
         }
 

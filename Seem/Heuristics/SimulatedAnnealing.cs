@@ -44,7 +44,7 @@ namespace Mars.Seem.Heuristics
             return "SimulatedAnnealing";
         }
 
-        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
+        public override PrescriptionPerformanceCounters Run(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if ((this.Alpha <= 0.0) || (this.Alpha >= 1.0))
             {

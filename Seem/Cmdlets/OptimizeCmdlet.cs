@@ -102,7 +102,7 @@ namespace Mars.Seem.Cmdlets
 
         protected abstract Heuristic<TParameters> CreateHeuristic(TParameters heuristicParameters, RunParameters runParameters);
 
-        private RunParameters CreateRunParameters(StandTrajectoryCoordinate coordinate, OrganonConfiguration organonConfiguration)
+        private RunParameters CreateRunParameters(SilviculturalCoordinate coordinate, OrganonConfiguration organonConfiguration)
         {
             RunParameters runParameters = new(this.RotationLengths, organonConfiguration)
             {
@@ -171,7 +171,7 @@ namespace Mars.Seem.Cmdlets
         // for now, assume runtime complexity is linear with the number of periods requiring thinning optimization
         // This is simplified, but it's more accurate than assuming all runs have equal cost regardless of the number of timesteps required and is
         // a reasonable approximation for hero, Monte Carlo heuristics, prescription enumeration, and genetic algorithms.
-        protected static int EstimateRuntimeCost(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories<TParameters> results)
+        protected static int EstimateRuntimeCost(SilviculturalCoordinate coordinate, HeuristicStandTrajectories<TParameters> results)
         {
             int periodWeight = 0; // no thins so only a single trajectory need be simulated; assume cost is negligible as no optimization occurs
             int firstThinPeriod = results.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
@@ -209,7 +209,7 @@ namespace Mars.Seem.Cmdlets
         // ideally this would be virtual but, as of C# 9.0, the nature of C# generics requires GetDefaultParameterCombinations() to be separate
         protected abstract IList<TParameters> GetParameterCombinations();
 
-        private string GetStatusDescription(IList<TParameters> parameterCombinations, StandTrajectoryCoordinate currentPosition)
+        private string GetStatusDescription(IList<TParameters> parameterCombinations, SilviculturalCoordinate currentPosition)
         {
             string mostRecentEvaluationDescription = String.Empty;
             if (parameterCombinations.Count > 1)
@@ -289,7 +289,7 @@ namespace Mars.Seem.Cmdlets
             int totalRuntimeCost = 0;
 
             int treeCount = this.Stand!.GetTreeRecordCount();
-            List<StandTrajectoryCoordinate> combinationsToEvaluate = new();
+            List<SilviculturalCoordinate> combinationsToEvaluate = new();
             IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
             HeuristicStandTrajectories<TParameters> results = new(parameterCombinationsForHeuristic, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.RotationLengths, this.Financial, this.SolutionPoolSize);
             for (int parameterIndex = 0; parameterIndex < parameterCombinationsForHeuristic.Count; ++parameterIndex)
@@ -343,7 +343,7 @@ namespace Mars.Seem.Cmdlets
 
                             if (this.HeuristicEvaluatesAcrossRotationsAndScenarios)
                             {
-                                StandTrajectoryCoordinate coordinate = new()
+                                SilviculturalCoordinate coordinate = new()
                                 {
                                     FinancialIndex = Constant.AllFinancialScenariosPosition,
                                     FirstThinPeriodIndex = firstThinIndex,
@@ -372,7 +372,7 @@ namespace Mars.Seem.Cmdlets
                                     {
                                         // distributions are unique per combination of run tuple (discount rate, thins 1, 2, 3, and rotation)
                                         // and heuristic parameters but solution pools are shared across heuristic parameters
-                                        StandTrajectoryCoordinate coordinate = new()
+                                        SilviculturalCoordinate coordinate = new()
                                         {
                                             FinancialIndex = financialIndex,
                                             FirstThinPeriodIndex = firstThinIndex,
@@ -412,7 +412,7 @@ namespace Mars.Seem.Cmdlets
                             }
 
                             int combinationIndex = runNumber / this.BestOf;
-                            StandTrajectoryCoordinate coordinate = combinationsToEvaluate[combinationIndex];
+                            SilviculturalCoordinate coordinate = combinationsToEvaluate[combinationIndex];
                             try
                             {
                                 TParameters heuristicParameters = parameterCombinationsForHeuristic[coordinate.ParameterIndex];
@@ -441,7 +441,7 @@ namespace Mars.Seem.Cmdlets
                                             for (int financialIndex = 0; financialIndex < this.Financial.Count; ++financialIndex)
                                             {
                                                 // must be new each time to uniquely populate results.CombinationsEvaluated through AddEvaluatedPosition()
-                                                StandTrajectoryCoordinate evaluatedPosition = new(coordinate)
+                                                SilviculturalCoordinate evaluatedPosition = new(coordinate)
                                                 {
                                                     FinancialIndex = financialIndex,
                                                     RotationIndex = rotationIndex
@@ -523,7 +523,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     int currentRun = Math.Min(runsCompleted + 1, totalRuns);
                     int currentPositionIndex = Math.Min(currentRun / this.BestOf, combinationsToEvaluate.Count - 1);
-                    StandTrajectoryCoordinate mostRecentCombination = combinationsToEvaluate[currentPositionIndex];
+                    SilviculturalCoordinate mostRecentCombination = combinationsToEvaluate[currentPositionIndex];
 
                     string mostRecentEvaluationDescription = "run " + currentRun + "/" + totalRuns + this.GetStatusDescription(parameterCombinationsForHeuristic, mostRecentCombination);
                     double fractionComplete = (double)runtimeCostCompleted / (double)totalRuntimeCost;
@@ -556,7 +556,7 @@ namespace Mars.Seem.Cmdlets
 
             if (results.CoordinatesEvaluated.Count == 1)
             {
-                StandTrajectoryCoordinate firstPosition = results.CoordinatesEvaluated[0];
+                SilviculturalCoordinate firstPosition = results.CoordinatesEvaluated[0];
                 this.WriteSingleDistributionSummary(results[firstPosition], totalPerfCounters, stopwatch.Elapsed);
             }
             else if (results.CoordinatesEvaluated.Count > 1)
@@ -585,7 +585,7 @@ namespace Mars.Seem.Cmdlets
                               100.0F * solutionsAccepted / (solutionsAccepted + solutionsRejected));
         }
 
-        private void WriteSingleDistributionSummary(StandTrajectoryArrayElement element, PrescriptionPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
+        private void WriteSingleDistributionSummary(SilviculturalCoordinateExploration element, PrescriptionPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
         {
             Heuristic? highHeuristic = element.Pool.High.Heuristic;
             if (highHeuristic == null)

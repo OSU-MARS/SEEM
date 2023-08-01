@@ -14,8 +14,8 @@ namespace Mars.Seem.Organon
         private readonly SortedList<FiaCode, OrganonHeightCoefficients> heightCoefficients;
 
         public float OldTreeAgeThreshold { get; private init; }
-        public int TimeStepInYears { get; private init; }
         public Simd Simd { get; init; }
+        public int TimeStepInYears { get; private init; }
         public TreeModel TreeModel { get; private init; }
 
         protected OrganonVariant(TreeModel treeModel, float oldTreeAgeThreshold)

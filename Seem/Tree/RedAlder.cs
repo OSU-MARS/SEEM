@@ -1,14 +1,23 @@
-﻿using DocumentFormat.OpenXml.Office2010.Word.Drawing;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
-using DocumentFormat.OpenXml.Wordprocessing;
-using Mars.Seem.Extensions;
+﻿using Mars.Seem.Extensions;
 using System;
-using System.Runtime.CompilerServices;
 
 namespace Mars.Seem.Tree
 {
     internal class RedAlder
     {
+        public static TreeSpeciesProperties Properties { get; private set; }
+
+        static RedAlder()
+        {
+            // Miles PD, Smith BW. 2009. Specific gravity and other properties of wood and bark for 156 tree species found in North
+            //   America (No. NRS-RN-38). Northern Research Station, US Forest Service. https://doi.org/10.2737/NRS-RN-38
+            RedAlder.Properties = new TreeSpeciesProperties(greenWoodDensity: 737.0F, // kg/m³
+                barkFraction: 0.12F,
+                barkDensity: 977.0F, // kg/m³
+                processingBarkLoss: 0.20F, // loss with spiked feed rollers
+                yardingBarkLoss: 0.10F); // dragging abrasion loss over full corridor (if needed, this could be reparameterized to a function of corridor length)
+        }
+
         /// <summary>
         /// Estimate red alder site index from conifer site index
         /// </summary>

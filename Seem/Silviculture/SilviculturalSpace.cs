@@ -9,14 +9,14 @@ using System.Diagnostics.CodeAnalysis;
 namespace Mars.Seem.Silviculture
 {
     // provide a non-template base class to allow PowerShell cmdlets to accept results from any heuristic as a parameter
-    public class StandTrajectories
+    public class SilviculturalSpace
     {
         // indices are: parameter combination, first thin, second thin, third thin, rotation length, financial scenario
         // Nullability in multidimensional arrays does not appear supported as of Visual Studio 16.10.1. See remarks in constructor.
-        private readonly StandTrajectoryArrayElement[][][][][][] elements;
+        private readonly SilviculturalCoordinateExploration[][][][][][] elements;
         private readonly int parameterCombinationCount;
 
-        public IList<StandTrajectoryCoordinate> CoordinatesEvaluated { get; private init; }
+        public IList<SilviculturalCoordinate> CoordinatesEvaluated { get; private init; }
 
         public FinancialScenarios FinancialScenarios { get; private init; }
         public IList<int> FirstThinPeriods { get; private init; }
@@ -24,18 +24,18 @@ namespace Mars.Seem.Silviculture
         public IList<int> SecondThinPeriods { get; private init; }
         public IList<int> ThirdThinPeriods { get; private init; }
 
-        public StandTrajectories(IList<int> firstThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios)
+        public SilviculturalSpace(IList<int> firstThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios)
             : this(1, firstThinPeriods, new List<int>() { Constant.NoThinPeriod }, new List<int>() { Constant.NoThinPeriod }, rotationLengths, financialScenarios, Constant.Default.SolutionPoolSize)
         {
             // forwards
         }
 
-        public StandTrajectories(int parameterCombinationCount, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios, int individualPoolSize)
+        public SilviculturalSpace(int parameterCombinationCount, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios, int individualPoolSize)
         {
-            this.elements = new StandTrajectoryArrayElement[parameterCombinationCount][][][][][];
+            this.elements = new SilviculturalCoordinateExploration[parameterCombinationCount][][][][][];
             this.parameterCombinationCount = parameterCombinationCount;
 
-            this.CoordinatesEvaluated = new List<StandTrajectoryCoordinate>();
+            this.CoordinatesEvaluated = new List<SilviculturalCoordinate>();
             this.FinancialScenarios = financialScenarios;
             this.FirstThinPeriods = firstThinPeriods;
             this.RotationLengths = rotationLengths;
@@ -51,12 +51,12 @@ namespace Mars.Seem.Silviculture
             // detecting storage of results to nonsensical locations or other indexing issues.
             for (int parameterIndex = 0; parameterIndex < parameterCombinationCount; ++parameterIndex)
             {
-                StandTrajectoryArrayElement[][][][][] parameterCombinationElements = new StandTrajectoryArrayElement[this.FirstThinPeriods.Count][][][][];
+                SilviculturalCoordinateExploration[][][][][] parameterCombinationElements = new SilviculturalCoordinateExploration[this.FirstThinPeriods.Count][][][][];
                 this.elements[parameterIndex] = parameterCombinationElements;
 
                 for (int firstThinIndex = 0; firstThinIndex < this.FirstThinPeriods.Count; ++firstThinIndex)
                 {
-                    StandTrajectoryArrayElement[][][][] firstThinElements = new StandTrajectoryArrayElement[this.SecondThinPeriods.Count][][][];
+                    SilviculturalCoordinateExploration[][][][] firstThinElements = new SilviculturalCoordinateExploration[this.SecondThinPeriods.Count][][][];
                     parameterCombinationElements[firstThinIndex] = firstThinElements;
 
                     int firstThinPeriod = this.FirstThinPeriods[firstThinIndex];
@@ -65,7 +65,7 @@ namespace Mars.Seem.Silviculture
                         int secondThinPeriod = this.SecondThinPeriods[secondThinIndex];
                         if ((secondThinPeriod == Constant.NoThinPeriod) || (secondThinPeriod > firstThinPeriod))
                         {
-                            StandTrajectoryArrayElement[][][] secondThinElements = new StandTrajectoryArrayElement[this.ThirdThinPeriods.Count][][];
+                            SilviculturalCoordinateExploration[][][] secondThinElements = new SilviculturalCoordinateExploration[this.ThirdThinPeriods.Count][][];
                             firstThinElements[secondThinIndex] = secondThinElements;
 
                             int lastOfFirstOrSecondThinPeriod = Math.Max(firstThinPeriod, secondThinPeriod);
@@ -74,7 +74,7 @@ namespace Mars.Seem.Silviculture
                                 int thirdThinPeriod = this.ThirdThinPeriods[thirdThinIndex];
                                 if ((thirdThinPeriod == Constant.NoThinPeriod) || (thirdThinPeriod > secondThinPeriod))
                                 {
-                                    StandTrajectoryArrayElement[][] thirdThinElements = new StandTrajectoryArrayElement[this.RotationLengths.Count][];
+                                    SilviculturalCoordinateExploration[][] thirdThinElements = new SilviculturalCoordinateExploration[this.RotationLengths.Count][];
                                     secondThinElements[thirdThinIndex] = thirdThinElements;
 
                                     int lastOfFirstSecondOrThirdThinPeriod = Math.Max(lastOfFirstOrSecondThinPeriod, thirdThinPeriod);
@@ -83,12 +83,12 @@ namespace Mars.Seem.Silviculture
                                         int endOfRotationPeriodPeriod = this.RotationLengths[rotationIndex];
                                         if (endOfRotationPeriodPeriod > lastOfFirstSecondOrThirdThinPeriod)
                                         {
-                                            StandTrajectoryArrayElement[] rotationLengthElements = new StandTrajectoryArrayElement[this.FinancialScenarios.Count];
+                                            SilviculturalCoordinateExploration[] rotationLengthElements = new SilviculturalCoordinateExploration[this.FinancialScenarios.Count];
                                             thirdThinElements[rotationIndex] = rotationLengthElements;
 
                                             for (int financialIndex = 0; financialIndex < this.FinancialScenarios.Count; ++financialIndex)
                                             {
-                                                rotationLengthElements[financialIndex] = new StandTrajectoryArrayElement(individualPoolSize);
+                                                rotationLengthElements[financialIndex] = new SilviculturalCoordinateExploration(individualPoolSize);
                                             }
                                         }
                                     }
@@ -100,28 +100,28 @@ namespace Mars.Seem.Silviculture
             }
         }
 
-        public StandTrajectoryArrayElement this[StandTrajectoryCoordinate coordinate]
+        public SilviculturalCoordinateExploration this[SilviculturalCoordinate coordinate]
         {
             get { return this[coordinate.ParameterIndex, coordinate.FirstThinPeriodIndex, coordinate.SecondThinPeriodIndex, coordinate.ThirdThinPeriodIndex, coordinate.RotationIndex, coordinate.FinancialIndex]; }
         }
 
-        private StandTrajectoryArrayElement this[int parameterIndex, int firstThinPeriodIndex, int secondThinPeriodIndex, int thirdThinPeriodIndex, int rotationIndex, int financialIndex]
+        private SilviculturalCoordinateExploration this[int parameterIndex, int firstThinPeriodIndex, int secondThinPeriodIndex, int thirdThinPeriodIndex, int rotationIndex, int financialIndex]
         {
             get
             {
                 Debug.Assert((parameterIndex >= 0) && (firstThinPeriodIndex >= 0) && (secondThinPeriodIndex >= 0) && (thirdThinPeriodIndex >= 0) && (rotationIndex >= 0) && (financialIndex >= 0));
 
-                StandTrajectoryArrayElement[][][][][] parameterElements = this.elements[parameterIndex];
+                SilviculturalCoordinateExploration[][][][][] parameterElements = this.elements[parameterIndex];
                 Debug.Assert(parameterElements != null, "Invalid parameter index " + parameterIndex + ".");
-                StandTrajectoryArrayElement[][][][] firstThinElements = parameterElements[firstThinPeriodIndex];
+                SilviculturalCoordinateExploration[][][][] firstThinElements = parameterElements[firstThinPeriodIndex];
                 Debug.Assert(firstThinElements != null, "Invalid first thin index " + firstThinPeriodIndex + ".");
-                StandTrajectoryArrayElement[][][] secondThinElements = firstThinElements[secondThinPeriodIndex];
+                SilviculturalCoordinateExploration[][][] secondThinElements = firstThinElements[secondThinPeriodIndex];
                 Debug.Assert(secondThinElements != null, "Invalid second thin index " + secondThinPeriodIndex + ".");
-                StandTrajectoryArrayElement[][] thirdThinElements = secondThinElements[thirdThinPeriodIndex];
+                SilviculturalCoordinateExploration[][] thirdThinElements = secondThinElements[thirdThinPeriodIndex];
                 Debug.Assert(thirdThinElements != null, "Invalid third thin index " + thirdThinPeriodIndex + ".");
-                StandTrajectoryArrayElement[] rotationLengthElements = thirdThinElements[rotationIndex];
+                SilviculturalCoordinateExploration[] rotationLengthElements = thirdThinElements[rotationIndex];
                 Debug.Assert(rotationLengthElements != null, "Invalid rotation index " + rotationIndex + ".");
-                StandTrajectoryArrayElement element = rotationLengthElements[financialIndex];
+                SilviculturalCoordinateExploration element = rotationLengthElements[financialIndex];
                 Debug.Assert(element != null);
                 return element;
             }
@@ -129,22 +129,22 @@ namespace Mars.Seem.Silviculture
             {
                 Debug.Assert((parameterIndex >= 0) && (firstThinPeriodIndex >= 0) && (secondThinPeriodIndex >= 0) && (thirdThinPeriodIndex >= 0) && (rotationIndex >= 0) && (financialIndex >= 0));
 
-                StandTrajectoryArrayElement[][][][][] parameterElements = this.elements[parameterIndex];
+                SilviculturalCoordinateExploration[][][][][] parameterElements = this.elements[parameterIndex];
                 Debug.Assert(parameterElements != null, "Invalid parameter index " + parameterIndex + ".");
-                StandTrajectoryArrayElement[][][][] firstThinElements = parameterElements[firstThinPeriodIndex];
+                SilviculturalCoordinateExploration[][][][] firstThinElements = parameterElements[firstThinPeriodIndex];
                 Debug.Assert(firstThinElements != null, "Invalid first thin index " + firstThinPeriodIndex + ".");
-                StandTrajectoryArrayElement[][][] secondThinElements = firstThinElements[secondThinPeriodIndex];
+                SilviculturalCoordinateExploration[][][] secondThinElements = firstThinElements[secondThinPeriodIndex];
                 Debug.Assert(secondThinElements != null, "Invalid second thin index " + secondThinPeriodIndex + ".");
-                StandTrajectoryArrayElement[][] thirdThinElements = secondThinElements[thirdThinPeriodIndex];
+                SilviculturalCoordinateExploration[][] thirdThinElements = secondThinElements[thirdThinPeriodIndex];
                 Debug.Assert(thirdThinElements != null, "Invalid third thin index " + thirdThinPeriodIndex + ".");
-                StandTrajectoryArrayElement[] rotationLengthElements = thirdThinElements[rotationIndex];
+                SilviculturalCoordinateExploration[] rotationLengthElements = thirdThinElements[rotationIndex];
                 Debug.Assert(rotationLengthElements != null, "Invalid rotation index " + rotationIndex + ".");
                 rotationLengthElements[financialIndex] = value; 
             }
         }
 
         // preferred to adding to PositionsEvaluated directly for argument checking
-        public void AddEvaluatedPosition(StandTrajectoryCoordinate coordinate)
+        public void AddEvaluatedPosition(SilviculturalCoordinate coordinate)
         {
             if ((coordinate.ParameterIndex < 0) || (coordinate.ParameterIndex >= this.parameterCombinationCount) ||
                 (coordinate.FirstThinPeriodIndex < 0) || (coordinate.FirstThinPeriodIndex >= this.FirstThinPeriods.Count) ||
@@ -160,11 +160,11 @@ namespace Mars.Seem.Silviculture
             this.CoordinatesEvaluated.Add(coordinate);
         }
 
-        public void AssimilateIntoCoordinate(StandTrajectory trajectory, float financialValue, StandTrajectoryCoordinate coordinate, PrescriptionPerformanceCounters perfCounters)
+        public void AssimilateIntoCoordinate(StandTrajectory trajectory, float financialValue, SilviculturalCoordinate coordinate, PrescriptionPerformanceCounters perfCounters)
         {
             this.VerifyStandEntries(trajectory, coordinate);
 
-            StandTrajectoryArrayElement element = this[coordinate];
+            SilviculturalCoordinateExploration element = this[coordinate];
             element.Distribution.Add(financialValue, perfCounters);
 
             // additions to pools which haven't filled yet aren't informative to GRASP's reactive choice of α as there's no selection
@@ -184,28 +184,28 @@ namespace Mars.Seem.Silviculture
 
             for (int parameterIndex = 0; parameterIndex < this.parameterCombinationCount; ++parameterIndex)
             {
-                StandTrajectoryArrayElement[][][][][] parameterCombinationElements = this.elements[parameterIndex];
+                SilviculturalCoordinateExploration[][][][][] parameterCombinationElements = this.elements[parameterIndex];
                 for (int firstThinIndex = 0; firstThinIndex < parameterCombinationElements.Length; ++firstThinIndex)
                 {
-                    StandTrajectoryArrayElement[][][][] firstThinElements = parameterCombinationElements[firstThinIndex];
+                    SilviculturalCoordinateExploration[][][][] firstThinElements = parameterCombinationElements[firstThinIndex];
                     for (int secondThinIndex = 0; secondThinIndex < firstThinElements.Length; ++secondThinIndex)
                     {
-                        StandTrajectoryArrayElement[][][] secondThinElements = firstThinElements[secondThinIndex];
+                        SilviculturalCoordinateExploration[][][] secondThinElements = firstThinElements[secondThinIndex];
                         if (secondThinElements != null)
                         {
                             for (int thirdThinIndex = 0; thirdThinIndex < secondThinElements.Length; ++thirdThinIndex)
                             {
-                                StandTrajectoryArrayElement[][] thirdThinElements = secondThinElements[thirdThinIndex];
+                                SilviculturalCoordinateExploration[][] thirdThinElements = secondThinElements[thirdThinIndex];
                                 if (thirdThinElements != null)
                                 {
                                     for (int rotationIndex = 0; rotationIndex < thirdThinElements.Length; ++rotationIndex)
                                     {
-                                        StandTrajectoryArrayElement[] rotationLengthElements = thirdThinElements[rotationIndex];
+                                        SilviculturalCoordinateExploration[] rotationLengthElements = thirdThinElements[rotationIndex];
                                         if (rotationLengthElements != null)
                                         {
                                             for (int financialIndex = 0; financialIndex < rotationLengthElements.Length; ++financialIndex)
                                             {
-                                                StandTrajectoryArrayElement element = rotationLengthElements[financialIndex];
+                                                SilviculturalCoordinateExploration element = rotationLengthElements[financialIndex];
                                                 solutionsAccepted += element.Pool.SolutionsAccepted;
                                                 solutionsCached += element.Pool.SolutionsInPool;
                                                 solutionsRejected += element.Pool.SolutionsRejected;
@@ -224,12 +224,12 @@ namespace Mars.Seem.Silviculture
         // Looking across parameters would confound heuristic parameter tuning runs by allowing later parameter sets to access solutions obtained
         // by earlier runs. It's assumed parameter set evaluations should always be independent of each other and, therefore, searches are
         // restricted to be within thins, rotation lengths, and financial scenarios.
-        public bool TryGetSelfOrFindNearestNeighbor(StandTrajectoryCoordinate coordinate, [NotNullWhen(true)] out SilviculturalPrescriptionPool? neighborOrSelf, [NotNullWhen(true)] out StandTrajectoryCoordinate? neighborOrSelfPosition)
+        public bool TryGetSelfOrFindNearestNeighbor(SilviculturalCoordinate coordinate, [NotNullWhen(true)] out SilviculturalPrescriptionPool? neighborOrSelf, [NotNullWhen(true)] out SilviculturalCoordinate? neighborOrSelfPosition)
         {
             neighborOrSelf = null;
             neighborOrSelfPosition = null;
 
-            StandTrajectoryArrayElement[][][][][] parameterElements = this.elements[coordinate.ParameterIndex];
+            SilviculturalCoordinateExploration[][][][][] parameterElements = this.elements[coordinate.ParameterIndex];
             Debug.Assert(parameterElements != null);
 
             // for now, only search within the same number of thinnings
@@ -238,13 +238,13 @@ namespace Mars.Seem.Silviculture
                 // no thins
                 Debug.Assert(this.SecondThinPeriods[coordinate.SecondThinPeriodIndex] == Constant.NoThinPeriod);
                 Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
-                StandTrajectoryArrayElement[][][][] firstThinElements = parameterElements[coordinate.FirstThinPeriodIndex];
+                SilviculturalCoordinateExploration[][][][] firstThinElements = parameterElements[coordinate.FirstThinPeriodIndex];
                 Debug.Assert(firstThinElements != null);
-                StandTrajectoryArrayElement[][][] secondThinElements = firstThinElements[coordinate.SecondThinPeriodIndex];
+                SilviculturalCoordinateExploration[][][] secondThinElements = firstThinElements[coordinate.SecondThinPeriodIndex];
                 Debug.Assert(secondThinElements != null);
-                StandTrajectoryArrayElement[][] thirdThinElements = secondThinElements[coordinate.ThirdThinPeriodIndex];
+                SilviculturalCoordinateExploration[][] thirdThinElements = secondThinElements[coordinate.ThirdThinPeriodIndex];
 
-                if (StandTrajectories.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinElements, coordinate, out neighborOrSelf, out neighborOrSelfPosition))
+                if (SilviculturalSpace.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinElements, coordinate, out neighborOrSelf, out neighborOrSelfPosition))
                 {
                     return true;
                 }
@@ -252,7 +252,7 @@ namespace Mars.Seem.Silviculture
             else if (this.SecondThinPeriods[coordinate.SecondThinPeriodIndex] == Constant.NoThinPeriod)
             {
                 // one thin
-                BreadthFirstEnumerator<StandTrajectoryArrayElement[][][][]> thinEnumerator = new(parameterElements, coordinate.FirstThinPeriodIndex);
+                BreadthFirstEnumerator<SilviculturalCoordinateExploration[][][][]> thinEnumerator = new(parameterElements, coordinate.FirstThinPeriodIndex);
                 while (thinEnumerator.MoveNext())
                 {
                     // for now, exclude positions with different numbers of thins from neighborhood
@@ -263,10 +263,10 @@ namespace Mars.Seem.Silviculture
                     Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
 
                     // position also has one thin, so search among rotation lengths and financial scenarios
-                    StandTrajectoryArrayElement[][][] secondThinElements = thinEnumerator.Current[coordinate.SecondThinPeriodIndex];
+                    SilviculturalCoordinateExploration[][][] secondThinElements = thinEnumerator.Current[coordinate.SecondThinPeriodIndex];
                     Debug.Assert(secondThinElements != null);
-                    StandTrajectoryArrayElement[][] thirdThinElements = secondThinElements[coordinate.ThirdThinPeriodIndex];
-                    if (StandTrajectories.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinElements, coordinate, out neighborOrSelf, out neighborOrSelfPosition))
+                    SilviculturalCoordinateExploration[][] thirdThinElements = secondThinElements[coordinate.ThirdThinPeriodIndex];
+                    if (SilviculturalSpace.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinElements, coordinate, out neighborOrSelf, out neighborOrSelfPosition))
                     {
                         return true;
                     }
@@ -275,7 +275,7 @@ namespace Mars.Seem.Silviculture
             else if (this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoThinPeriod)
             {
                 // two thins
-                BreadthFirstEnumerator2D<StandTrajectoryArrayElement[][][]> thinEnumerator = new(parameterElements, coordinate.FirstThinPeriodIndex, coordinate.SecondThinPeriodIndex);
+                BreadthFirstEnumerator2D<SilviculturalCoordinateExploration[][][]> thinEnumerator = new(parameterElements, coordinate.FirstThinPeriodIndex, coordinate.SecondThinPeriodIndex);
                 while (thinEnumerator.MoveNext())
                 {
                     // for now, exclude positions with different numbers of thins from neighborhood
@@ -287,8 +287,8 @@ namespace Mars.Seem.Silviculture
                     Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
 
                     // position also has two thins, so search among rotation lengths and financial scenarios
-                    StandTrajectoryArrayElement[][] thirdThinElements = thinEnumerator.Current[coordinate.ThirdThinPeriodIndex];
-                    if (StandTrajectories.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinElements, coordinate, out neighborOrSelf, out neighborOrSelfPosition))
+                    SilviculturalCoordinateExploration[][] thirdThinElements = thinEnumerator.Current[coordinate.ThirdThinPeriodIndex];
+                    if (SilviculturalSpace.TryGetSelfOrFindNeighborWithMatchingThinnings(thirdThinElements, coordinate, out neighborOrSelf, out neighborOrSelfPosition))
                     {
                         return true;
                     }
@@ -297,7 +297,7 @@ namespace Mars.Seem.Silviculture
             else
             {
                 // three thins
-                BreadthFirstEnumerator3D<StandTrajectoryArrayElement[][]> thinEnumerator = new(parameterElements, coordinate.FirstThinPeriodIndex, coordinate.SecondThinPeriodIndex, coordinate.ThirdThinPeriodIndex);
+                BreadthFirstEnumerator3D<SilviculturalCoordinateExploration[][]> thinEnumerator = new(parameterElements, coordinate.FirstThinPeriodIndex, coordinate.SecondThinPeriodIndex, coordinate.ThirdThinPeriodIndex);
                 while (thinEnumerator.MoveNext())
                 {
                     // for now, exclude positions with different numbers of thins from neighborhood
@@ -309,7 +309,7 @@ namespace Mars.Seem.Silviculture
                     }
 
                     // position also has three thins, so search among rotation lengths and financial scenarios
-                    if (StandTrajectories.TryGetSelfOrFindNeighborWithMatchingThinnings(thinEnumerator.Current, coordinate, out neighborOrSelf, out neighborOrSelfPosition))
+                    if (SilviculturalSpace.TryGetSelfOrFindNeighborWithMatchingThinnings(thinEnumerator.Current, coordinate, out neighborOrSelf, out neighborOrSelfPosition))
                     {
                         return true;
                     }
@@ -319,7 +319,7 @@ namespace Mars.Seem.Silviculture
             return false;
         }
 
-        private static bool TryGetSelfOrFindNeighborWithMatchingThinnings(StandTrajectoryArrayElement[][] thirdThinElements, StandTrajectoryCoordinate coordinate, [NotNullWhen(true)] out SilviculturalPrescriptionPool? neighborOrSelf, [NotNullWhen(true)] out StandTrajectoryCoordinate? neighborOrSelfPosition)
+        private static bool TryGetSelfOrFindNeighborWithMatchingThinnings(SilviculturalCoordinateExploration[][] thirdThinElements, SilviculturalCoordinate coordinate, [NotNullWhen(true)] out SilviculturalPrescriptionPool? neighborOrSelf, [NotNullWhen(true)] out SilviculturalCoordinate? neighborOrSelfPosition)
         {
             neighborOrSelf = null;
             neighborOrSelfPosition = null;
@@ -328,7 +328,7 @@ namespace Mars.Seem.Silviculture
 
             // for now, assume solutions at different rotation lengths are closer to each other than solutions at different financial indices
             // This is likely true for discount rate sweeps. It's likely false for financial uncertainty sweeps.
-            BreadthFirstEnumerator2D<StandTrajectoryArrayElement> rotationAndFinancialEnumerator = new(thirdThinElements, coordinate.RotationIndex, coordinate.FinancialIndex, BreadthFirstEnumerator2D.XFirst);
+            BreadthFirstEnumerator2D<SilviculturalCoordinateExploration> rotationAndFinancialEnumerator = new(thirdThinElements, coordinate.RotationIndex, coordinate.FinancialIndex, BreadthFirstEnumerator2D.XFirst);
             while (rotationAndFinancialEnumerator.MoveNext())
             {
                 neighborOrSelf = rotationAndFinancialEnumerator.Current.Pool;
@@ -346,7 +346,7 @@ namespace Mars.Seem.Silviculture
             return false;
         }
 
-        public void VerifyStandEntries(StandTrajectory trajectory, StandTrajectoryCoordinate coordinate)
+        public void VerifyStandEntries(StandTrajectory trajectory, SilviculturalCoordinate coordinate)
         {
             // check heuristic's stand entries match the position it's being assigned to
             // If coordinate has negative period indices then it's incompletely initialized by the caller and an exception is expected.

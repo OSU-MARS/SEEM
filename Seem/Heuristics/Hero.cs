@@ -28,7 +28,7 @@ namespace Mars.Seem.Heuristics
             return "Hero";
         }
 
-        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
+        public override PrescriptionPerformanceCounters Run(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.MaximumIterations < 1)
             {

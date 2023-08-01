@@ -2,12 +2,12 @@
 
 namespace Mars.Seem.Silviculture
 {
-    public class StandTrajectoryArrayElement
+    public class SilviculturalCoordinateExploration
     {
         public OptimizationObjectiveDistribution Distribution { get; set; }
         public SilviculturalPrescriptionPool Pool { get; set; }
 
-        public StandTrajectoryArrayElement(int poolCapacity)
+        public SilviculturalCoordinateExploration(int poolCapacity)
         {
             this.Distribution = new OptimizationObjectiveDistribution();
             this.Pool = new SilviculturalPrescriptionPool(poolCapacity);

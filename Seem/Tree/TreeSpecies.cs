@@ -10,6 +10,7 @@ namespace Mars.Seem.Tree
         {
             TreeSpecies.Properties = new()
             {
+                { FiaCode.AlnusRubra, RedAlder.Properties },
                 { FiaCode.PseudotsugaMenziesii, DouglasFir.Properties },
                 { FiaCode.ThujaPlicata, WesternRedcedar.Properties },
                 { FiaCode.TsugaHeterophylla, WesternHemlock.Properties }

@@ -19,7 +19,7 @@ namespace Mars.Seem.Heuristics
             this.MaximumIterations = Constant.HeuristicDefault.FirstCircularIterationMultiplier * stand.GetTreeRecordCount();
         }
 
-        private bool EvaluateMove(MoveDirection moveDirection, MoveState moveState, StandTrajectoryCoordinate coordinate)
+        private bool EvaluateMove(MoveDirection moveDirection, MoveState moveState, SilviculturalCoordinate coordinate)
         {
             int currentThinningPeriodIndex = moveState.UncompactedPeriodIndices[moveState.TreeIndex];
             int candidateThinningPeriodIndex = currentThinningPeriodIndex + (moveDirection == MoveDirection.Decrease ? -1 : 1);
@@ -64,7 +64,7 @@ namespace Mars.Seem.Heuristics
             return "FirstCircular";
         }
 
-        public override PrescriptionPerformanceCounters Run(StandTrajectoryCoordinate coordinate, HeuristicStandTrajectories trajectories)
+        public override PrescriptionPerformanceCounters Run(SilviculturalCoordinate coordinate, HeuristicStandTrajectories trajectories)
         {
             if (this.MaximumIterations < 1)
             {
