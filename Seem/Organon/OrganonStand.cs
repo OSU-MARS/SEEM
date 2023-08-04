@@ -7,19 +7,15 @@ namespace Mars.Seem.Organon
 {
     public class OrganonStand : Stand
     {
-        // TODO: ratiionalize age and breast height age
-        // time since last stand replacing disturbance
+        // nominal age of dominiant cohort established after last replacing disturbance
+        // In mixed age stands, prevailing approximate age of dominant and co-dominatn trees. In even age stands, time from germination,
+        // from planting, or possible since harvest (often these are within 1-2 years of each other).
         public int AgeInYears { get; set; }
-        // time since oldest cohort of trees in the stand reached breast height (4.5 feet) (DOUG?)
-        public int BreastHeightAgeInYears { get; set; }
 
         public DouglasFir.SiteConstants DouglasFirSiteConstants { get; private set; }
 
         // also used for ponderosa (SWO) and western redcedar (NWO) - really secondary or tertiary species site idex
         public float HemlockSiteIndexInFeet { get; init; }
-
-        // override for age and breast height age
-        public bool IsEvenAge { get; set; }
 
         // legacy SDImax components present in Organon Fortran but superseded by estimation of SDI from site index per FRL Research Contribution 40
         // natural logarithm of quadratic mean diameter associated with a given SDImax
@@ -50,7 +46,6 @@ namespace Mars.Seem.Organon
             }
 
             this.AgeInYears = ageInYears;
-            this.BreastHeightAgeInYears = ageInYears;
             this.DouglasFirSiteConstants = new(primarySiteIndexInFeet);
             this.HemlockSiteIndexInFeet = variant.ToHemlockSiteIndex(primarySiteIndexInFeet);
             this.PlantingDensityInTreesPerHectare = 0.0F;
@@ -65,7 +60,6 @@ namespace Mars.Seem.Organon
             : base(other)
         {
             this.AgeInYears = other.AgeInYears;
-            this.BreastHeightAgeInYears = other.BreastHeightAgeInYears;
             this.DouglasFirSiteConstants = other.DouglasFirSiteConstants; // currently immutable, so shallow copy for now
             this.HemlockSiteIndexInFeet = other.HemlockSiteIndexInFeet;
             this.Name = other.Name;

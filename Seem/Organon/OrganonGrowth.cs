@@ -3,8 +3,6 @@ using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 
 namespace Mars.Seem.Organon
 {
@@ -216,36 +214,10 @@ namespace Mars.Seem.Organon
             float[] crownCompetitionByHeight = OrganonStandDensity.GetCrownCompetitionByHeight(configuration.Variant, stand);
             OrganonGrowth.Grow(configuration, treatments, stand, densityBeforeGrowth, calibrationBySpecies, ref crownCompetitionByHeight, out OrganonStandDensity _, out int oldTreeRecordCount);
 
-            if (stand.IsEvenAge == false)
-            {
-                stand.AgeInYears = 0;
-                stand.BreastHeightAgeInYears = 0;
-            }
             float oldTreePercentage = 100.0F * (float)oldTreeRecordCount / (float)(bigSixTreeSpeciesCount - BNXT);
             if (oldTreePercentage > 50.0F)
             {
                 stand.Warnings.TreesOld = true;
-            }
-            if (configuration.Variant.TreeModel == TreeModel.OrganonSwo)
-            {
-                if (stand.IsEvenAge && (stand.BreastHeightAgeInYears > 500.0F))
-                {
-                    stand.Warnings.TreesOld = true;
-                }
-            }
-            else if ((configuration.Variant.TreeModel == TreeModel.OrganonNwo) || (configuration.Variant.TreeModel == TreeModel.OrganonSmc))
-            {
-                if (stand.IsEvenAge && (stand.BreastHeightAgeInYears > 120.0F))
-                {
-                    stand.Warnings.TreesOld = true;
-                }
-            }
-            else
-            {
-                if (stand.IsEvenAge && (stand.AgeInYears > 30.0F))
-                {
-                    stand.Warnings.TreesOld = true;
-                }
             }
         }
 
@@ -366,7 +338,6 @@ namespace Mars.Seem.Organon
 
             // update stand age and period variables
             stand.AgeInYears += configuration.Variant.TimeStepInYears;
-            stand.BreastHeightAgeInYears += configuration.Variant.TimeStepInYears;
             stand.RedAlderGrowthEffectiveAge += configuration.Variant.TimeStepInYears;
 
             // reduce calibration ratios
@@ -696,24 +667,9 @@ namespace Mars.Seem.Organon
                 throw new ArgumentOutOfRangeException(nameof(stand), "Hemlock site index (conifer site index for red alder) is implausibly small or implausibly large.");
             }
 
-            if (stand.IsEvenAge)
+            if (stand.AgeInYears < 0)
             {
-                if (stand.BreastHeightAgeInYears < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(stand.BreastHeightAgeInYears), nameof(stand.BreastHeightAgeInYears) + " must be zero or greater when " + nameof(stand.IsEvenAge) + " is set.");
-                }
-                if ((stand.AgeInYears - stand.BreastHeightAgeInYears) < 1)
-                {
-                    // (DOUG? can stand.AgeInYears ever be less than stand.BreastHeightAgeInYears?)
-                    throw new ArgumentException(nameof(stand.AgeInYears) + " must be greater than " + nameof(stand.BreastHeightAgeInYears) + " when " + nameof(stand.IsEvenAge) + " is set.");
-                }
-            }
-            else
-            {
-                if (stand.BreastHeightAgeInYears != 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(stand.BreastHeightAgeInYears), nameof(stand.BreastHeightAgeInYears) + " must be zero or less when " + nameof(stand.IsEvenAge) + " is not set.");
-                }
+                throw new ArgumentOutOfRangeException(nameof(stand.AgeInYears), nameof(stand.AgeInYears) + " must be zero or greater.");
             }
 
             for (int fertilizationindex = 0; fertilizationindex < treatments.PoundsOfNitrogenPerAcreByPeriod.Count; ++fertilizationindex)
@@ -755,10 +711,6 @@ namespace Mars.Seem.Organon
 
             if (configuration.Genetics)
             {
-                if (!stand.IsEvenAge)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.Genetics), nameof(configuration.Genetics) + " is supported only when " + nameof(stand.IsEvenAge) + " is set.");
-                }
                 if ((configuration.GWDG < 0.0F) || (configuration.GWDG > 20.0F))
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration), "GWDG is negative or greater than 20.");
@@ -777,10 +729,6 @@ namespace Mars.Seem.Organon
                 if ((configuration.Variant.TreeModel == TreeModel.OrganonSwo) || (configuration.Variant.TreeModel == TreeModel.OrganonRap))
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration.Variant), "Swiss needle cast is not supported by the SWO and RAP variants.");
-                }
-                if (stand.IsEvenAge == false)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(stand.IsEvenAge), "Swiss needle cast is not supported for uneven age stands.");
                 }
                 if ((configuration.FR < 0.85F) || (configuration.FR > 7.0F))
                 {
@@ -1100,12 +1048,12 @@ namespace Mars.Seem.Organon
                     break;
             }
 
-            if (stand.IsEvenAge && (configuration.Variant.TreeModel != TreeModel.OrganonSmc))
+            if (configuration.Variant.TreeModel != TreeModel.OrganonSmc)
             {
-                stand.Warnings.TreesYoung = stand.BreastHeightAgeInYears < 10;
+                stand.Warnings.TreesYoung = stand.AgeInYears < 10;
             }
 
-            float requiredWellKnownSpeciesBasalAreaFraction = configuration.Variant.TreeModel switch
+            float requiredBigSixSpeciesBasalAreaFraction = configuration.Variant.TreeModel switch
             {
                 TreeModel.OrganonNwo => 0.5F,
                 TreeModel.OrganonRap => 0.8F,
@@ -1113,7 +1061,7 @@ namespace Mars.Seem.Organon
                 TreeModel.OrganonSwo => 0.2F,
                 _ => throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel),
             };
-            if ((standBigSixBasalArea + standHardwoodBasalArea) < (requiredWellKnownSpeciesBasalAreaFraction * standBasalArea))
+            if ((standBigSixBasalArea + standHardwoodBasalArea) < (requiredBigSixSpeciesBasalAreaFraction * standBasalArea))
             {
                 stand.Warnings.OtherSpeciesBasalAreaTooHigh = true;
             }
@@ -1153,47 +1101,19 @@ namespace Mars.Seem.Organon
             {
                 stand.Warnings.TreesOld = true;
             }
-            int multiAgeThresholdInYears = configuration.Variant.TreeModel switch
-            {
-                TreeModel.OrganonNwo or
-                TreeModel.OrganonSmc => 120,
-                TreeModel.OrganonRap => 30,
-                TreeModel.OrganonSwo => 500,
-                _ => throw new NotSupportedException("Unhandled variant " + configuration.Variant.TreeModel + ".")
-            };
-            if (stand.IsEvenAge && (stand.AgeInYears > multiAgeThresholdInYears))
-            {
-                stand.Warnings.TreesOld = true;
-            }
-
-            // BUGBUG: this is overcomplicated, should just check against maximum stand age using time step from OrganonVapabilities
-            int standAgeBudgetAvailableAtNextTimeStep;
-            if (stand.IsEvenAge)
-            {
-                standAgeBudgetAvailableAtNextTimeStep = configuration.Variant.TreeModel switch
-                {
-                    TreeModel.OrganonSwo => 500 - stand.AgeInYears - 5,
-                    TreeModel.OrganonNwo or 
-                    TreeModel.OrganonSmc => 120 - stand.AgeInYears - 5,
-                    TreeModel.OrganonRap => 30 - stand.AgeInYears - 1,
-                    _ => throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel),
-                };
-            }
             else
             {
-                standAgeBudgetAvailableAtNextTimeStep = configuration.Variant.TreeModel switch
+                int multiAgeThresholdInYears = configuration.Variant.TreeModel switch
                 {
-                    TreeModel.OrganonSwo => 500 - (periodIndex + 1) * 5,
                     TreeModel.OrganonNwo or
-                    TreeModel.OrganonSmc => 120 - (periodIndex + 1) * 5,
-                    TreeModel.OrganonRap => 30 - (periodIndex + 1) * 1,
-                    _ => throw OrganonVariant.CreateUnhandledModelException(configuration.Variant.TreeModel),
+                    TreeModel.OrganonSmc => 120,
+                    TreeModel.OrganonRap => 30,
+                    TreeModel.OrganonSwo => 500,
+                    _ => throw new NotSupportedException("Unhandled variant " + configuration.Variant.TreeModel + ".")
                 };
-            }
+                int standAgeAtNextTimestep = stand.AgeInYears + configuration.Variant.TimeStepInYears;
 
-            if (standAgeBudgetAvailableAtNextTimeStep < 0)
-            {
-                stand.Warnings.TreesOld = true;
+                stand.Warnings.TreesOld |= standAgeAtNextTimestep > multiAgeThresholdInYears;
             }
 
             float B1 = -0.04484724F;

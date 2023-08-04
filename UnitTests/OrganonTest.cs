@@ -40,7 +40,6 @@ namespace Mars.Seem.Test
                     stand.Add(new TreeRecord(plot: 1, tag: 17, FiaCode.Salix, 0.1F, 0.5F, 2.0F));
                     break;
                 case TreeModel.OrganonRap:
-                    stand.IsEvenAge = true;
                     stand.Add(new TreeRecord(plot: 1, tag: 1, FiaCode.AlnusRubra, 0.1F, 0.3F, 30.0F));
                     stand.Add(new TreeRecord(plot: 1, tag: 2, FiaCode.AlnusRubra, 0.2F, 0.4F, 40.0F));
                     stand.Add(new TreeRecord(plot: 1, tag: 3, FiaCode.AlnusRubra, 0.3F, 0.5F, 30.0F));
@@ -103,11 +102,6 @@ namespace Mars.Seem.Test
             TreeLifeAndDeath treeGrowth = new();
 
             SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
-            if (stand.IsEvenAge)
-            {
-                // stand error if less than one year to grow to breast height
-                stand.AgeInYears = stand.BreastHeightAgeInYears + 2;
-            }
 
             TestStandDensity density = new(stand, variant);
             using StreamWriter densityWriter = density.WriteToCsv(baseFileName + " density.csv", variant, startYear);
@@ -149,10 +143,7 @@ namespace Mars.Seem.Test
 
         protected static void Verify(ExpectedTreeChanges expectedGrowth, OrganonWarnings expectedWarnings, TestStand stand, OrganonVariant variant)
         {
-            Assert.IsTrue(stand.AgeInYears >= 0);
-            Assert.IsTrue(stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears);
-            Assert.IsTrue(stand.BreastHeightAgeInYears >= 0);
-            Assert.IsTrue(stand.BreastHeightAgeInYears <= TestConstant.Maximum.StandAgeInYears);
+            Assert.IsTrue((stand.AgeInYears >= 0) && (stand.AgeInYears <= TestConstant.Maximum.StandAgeInYears));
             Assert.IsTrue(stand.TreesBySpecies.Count > 0);
             Assert.IsTrue(stand.GetTreeRecordCount() > 0);
 

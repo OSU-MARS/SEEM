@@ -129,14 +129,14 @@ namespace Mars.Seem.Test
         public void GrowthModifiersApi()
         {
             this.TestContext!.WriteLine("tree age, diameter genetic factor, height genetic factor, diameter growth modifier, height growth modifier");
-            for (float treeAgeInYears = 0.0F; treeAgeInYears <= 50.0F; treeAgeInYears += TestConstant.OrganonTimeStepInYears)
+            for (float standAgeInYears = 0.0F; standAgeInYears <= 50.0F; standAgeInYears += TestConstant.OrganonTimeStepInYears)
             {
                 for (float diameterGeneticFactor = 0.0F; diameterGeneticFactor <= 25.0F; diameterGeneticFactor += 5.0F)
                 {
                     for (float heightGeneticFactor = 0.0F; heightGeneticFactor <= 25.0F; heightGeneticFactor += 5.0F)
                     {
-                        OrganonGrowthModifiers.GetGeneticModifiers(treeAgeInYears, diameterGeneticFactor, heightGeneticFactor, out float diameterGrowthModifier, out float heightGrowthModifier);
-                        this.TestContext.WriteLine("{0},{1},{2},{3},{4}", treeAgeInYears, diameterGeneticFactor, heightGeneticFactor, diameterGrowthModifier, heightGrowthModifier);
+                        OrganonGrowthModifiers.GetGeneticModifiers(standAgeInYears, diameterGeneticFactor, heightGeneticFactor, out float diameterGrowthModifier, out float heightGrowthModifier);
+                        this.TestContext.WriteLine("{0},{1},{2},{3},{4}", standAgeInYears, diameterGeneticFactor, heightGeneticFactor, diameterGrowthModifier, heightGrowthModifier);
                         Assert.IsTrue(diameterGrowthModifier >= 1.0F);
                         Assert.IsTrue(diameterGrowthModifier < 2.0F);
                         Assert.IsTrue(heightGrowthModifier >= 1.0F);

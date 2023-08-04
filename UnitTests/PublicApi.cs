@@ -665,11 +665,6 @@ namespace Mars.Seem.Test
 
                 // run Organon growth simulation
                 stand = OrganonTest.CreateDefaultStand(configuration);
-                if (stand.IsEvenAge)
-                {
-                    // stand error if less than one year to grow to breast height
-                    stand.AgeInYears = stand.BreastHeightAgeInYears + 2;
-                }
                 stand.SetQuantiles();
                 stand.WriteTreesAsCsv(this.TestContext!, variant, 0, false);
 
