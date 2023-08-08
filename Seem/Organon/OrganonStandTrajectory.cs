@@ -144,14 +144,14 @@ namespace Mars.Seem.Organon
             //    this.StandByPeriod[periodIndex] = null;
             //}
 
-            Debug.Assert(IDictionaryExtensions.KeysIdentical(this.StandingVolumeBySpecies, other.StandingVolumeBySpecies) &&
-                         IDictionaryExtensions.KeysIdentical(this.ThinningVolumeBySpecies, other.ThinningVolumeBySpecies));
-            foreach (KeyValuePair<FiaCode, TreeSpeciesMerchantableVolume> otherStandingVolumeForSpecies in other.StandingVolumeBySpecies)
+            Debug.Assert(IDictionaryExtensions.KeysIdentical(this.LongLogVolumeBySpecies, other.LongLogVolumeBySpecies) &&
+                         IDictionaryExtensions.KeysIdentical(this.ForwardedVolumeBySpecies, other.ForwardedVolumeBySpecies));
+            foreach (KeyValuePair<FiaCode, TreeSpeciesMerchantableVolume> otherStandingVolumeForSpecies in other.LongLogVolumeBySpecies)
             {
                 FiaCode treeSpecies = otherStandingVolumeForSpecies.Key;
-                TreeSpeciesMerchantableVolume thisStandingVolumeForSpecies = this.StandingVolumeBySpecies[treeSpecies];
-                TreeSpeciesMerchantableVolume otherThinningVolumeForSpecies = other.ThinningVolumeBySpecies[treeSpecies];
-                TreeSpeciesMerchantableVolume thisThinningVolumeForSpecies = this.ThinningVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume thisStandingVolumeForSpecies = this.LongLogVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume otherThinningVolumeForSpecies = other.ForwardedVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume thisThinningVolumeForSpecies = this.ForwardedVolumeBySpecies[treeSpecies];
 
                 thisStandingVolumeForSpecies.CopyFrom(otherStandingVolumeForSpecies.Value);
                 thisThinningVolumeForSpecies.CopyFrom(otherThinningVolumeForSpecies);

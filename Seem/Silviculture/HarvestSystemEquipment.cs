@@ -1,6 +1,6 @@
 ﻿namespace Mars.Seem.Silviculture
 {
-    public enum HarvestSystem
+    public enum HarvestSystemEquipment
     {
         None,
         FellerBuncherGrappleSwingYarderProcessorLoader,

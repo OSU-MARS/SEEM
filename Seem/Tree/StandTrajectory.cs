@@ -17,8 +17,8 @@ namespace Mars.Seem.Tree
         public int PlanningPeriods { get; private init; } // for now, synonymous with rotation length
         public float PlantingDensityInTreesPerHectare { get; private init; } // trees per hectare
 
-        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> StandingVolumeBySpecies { get; private init; }
-        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> ThinningVolumeBySpecies { get; private init; }
+        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> LongLogVolumeBySpecies { get; private init; }
+        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> ForwardedVolumeBySpecies { get; private init; }
 
         // harvest periods by tree, Constant.NoHarvestPeriod indicates no harvest
         public IndividualTreeSelectionBySpecies TreeSelectionBySpecies { get; private init; }
@@ -41,8 +41,8 @@ namespace Mars.Seem.Tree
             this.PeriodZeroAgeInYears = -1;
             this.PlantingDensityInTreesPerHectare = plantingDensityInTreesPerHectare;
             this.PlanningPeriods = lastPlanningPeriod + 1;
-            this.StandingVolumeBySpecies = new();
-            this.ThinningVolumeBySpecies = new();
+            this.LongLogVolumeBySpecies = new();
+            this.ForwardedVolumeBySpecies = new();
             this.TreeSelectionBySpecies = new();
             this.TreeVolume = treeVolume;
         }
@@ -55,15 +55,15 @@ namespace Mars.Seem.Tree
             this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
             this.PlanningPeriods = other.PlanningPeriods;
-            this.StandingVolumeBySpecies = new();
-            this.ThinningVolumeBySpecies = new();
+            this.LongLogVolumeBySpecies = new();
+            this.ForwardedVolumeBySpecies = new();
             this.TreeSelectionBySpecies = new();
             this.TreeVolume = other.TreeVolume; // runtime immutable, assumed thread safe for shallow copy
 
             foreach (FiaCode treeSpecies in other.TreeSelectionBySpecies.Keys)
             {
-                this.StandingVolumeBySpecies.Add(treeSpecies, new(other.StandingVolumeBySpecies[treeSpecies]));
-                this.ThinningVolumeBySpecies.Add(treeSpecies, new(other.ThinningVolumeBySpecies[treeSpecies]));
+                this.LongLogVolumeBySpecies.Add(treeSpecies, new(other.LongLogVolumeBySpecies[treeSpecies]));
+                this.ForwardedVolumeBySpecies.Add(treeSpecies, new(other.ForwardedVolumeBySpecies[treeSpecies]));
                 this.TreeSelectionBySpecies.Add(treeSpecies, new(other.TreeSelectionBySpecies[treeSpecies]));
             }
         }
@@ -130,14 +130,14 @@ namespace Mars.Seem.Tree
                 thisSelectionForSpecies.CopyFrom(otherSelectionForSpecies.Value);
             }
 
-            Debug.Assert(IDictionaryExtensions.KeysIdentical(this.StandingVolumeBySpecies, other.StandingVolumeBySpecies) &&
-                         IDictionaryExtensions.KeysIdentical(this.ThinningVolumeBySpecies, other.ThinningVolumeBySpecies));
-            foreach (KeyValuePair<FiaCode, TreeSpeciesMerchantableVolume> otherStandingVolumeForSpecies in other.StandingVolumeBySpecies)
+            Debug.Assert(IDictionaryExtensions.KeysIdentical(this.LongLogVolumeBySpecies, other.LongLogVolumeBySpecies) &&
+                         IDictionaryExtensions.KeysIdentical(this.ForwardedVolumeBySpecies, other.ForwardedVolumeBySpecies));
+            foreach (KeyValuePair<FiaCode, TreeSpeciesMerchantableVolume> otherStandingVolumeForSpecies in other.LongLogVolumeBySpecies)
             {
                 FiaCode treeSpecies = otherStandingVolumeForSpecies.Key;
-                TreeSpeciesMerchantableVolume thisStandingVolumeForSpecies = this.StandingVolumeBySpecies[treeSpecies];
-                TreeSpeciesMerchantableVolume otherThinningVolumeForSpecies = other.ThinningVolumeBySpecies[treeSpecies];
-                TreeSpeciesMerchantableVolume thisThinningVolumeForSpecies = this.ThinningVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume thisStandingVolumeForSpecies = this.LongLogVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume otherThinningVolumeForSpecies = other.ForwardedVolumeBySpecies[treeSpecies];
+                TreeSpeciesMerchantableVolume thisThinningVolumeForSpecies = this.ForwardedVolumeBySpecies[treeSpecies];
 
                 thisStandingVolumeForSpecies.CopyFrom(otherStandingVolumeForSpecies.Value);
                 thisThinningVolumeForSpecies.CopyFrom(otherThinningVolumeForSpecies);
@@ -285,8 +285,8 @@ namespace Mars.Seem.Tree
                 this.RecalculateThinningVolumeIfNeeded(periodIndex);
             }
 
-            thinnedVolume = new StandMerchantableVolume(this.ThinningVolumeBySpecies);
-            standingVolume = new StandMerchantableVolume(this.StandingVolumeBySpecies);
+            thinnedVolume = new StandMerchantableVolume(this.ForwardedVolumeBySpecies);
+            standingVolume = new StandMerchantableVolume(this.LongLogVolumeBySpecies);
         }
 
         public int GetSecondThinAge()
@@ -333,7 +333,7 @@ namespace Mars.Seem.Tree
         public float GetTotalCubicVolumeThinned(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
             {
                 totalVolume += thinVolumeForSpecies.GetCubicTotal(periodIndex);
             }
@@ -343,7 +343,7 @@ namespace Mars.Seem.Tree
         public float GetTotalScribnerVolumeThinned(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
             {
                 totalVolume += thinVolumeForSpecies.GetScribnerTotal(periodIndex);
             }
@@ -353,7 +353,7 @@ namespace Mars.Seem.Tree
         public float GetTotalStandingCubicVolume(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
             {
                 totalVolume += standingVolumeForSpecies.GetCubicTotal(periodIndex);
             }
@@ -363,7 +363,7 @@ namespace Mars.Seem.Tree
         public float GetTotalStandingScribnerVolume(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
             {
                 totalVolume += standingVolumeForSpecies.GetScribnerTotal(periodIndex);
             }
@@ -402,11 +402,11 @@ namespace Mars.Seem.Tree
 
         public void InvalidateMerchantableVolumes(int periodIndex)
         {
-            foreach (TreeSpeciesMerchantableVolume thinningVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinningVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
             {
                 thinningVolumeForSpecies.MarkUncalculated(periodIndex);
             }
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
             {
                 standingVolumeForSpecies.MarkUncalculated(periodIndex);
             }
@@ -512,8 +512,8 @@ namespace Mars.Seem.Tree
                 {
                     Count = treesOfSpecies.Count
                 });
-                this.StandingVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
-                this.ThinningVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
+                this.LongLogVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
+                this.ForwardedVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
             }
         }
 
@@ -591,7 +591,7 @@ namespace Mars.Seem.Tree
         public override void RecalculateStandingVolumeIfNeeded(int periodIndex)
         {
             TStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.StandingVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
             {
                 if (standingVolumeForSpecies.IsCalculated(periodIndex) == false)
                 {
@@ -615,7 +615,7 @@ namespace Mars.Seem.Tree
             {
                 // trees' expansion factors are set to zero when harvested so use trees' volume at end of the previous period.
                 TStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
-                foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+                foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
                 {
                     if (thinVolumeForSpecies.IsCalculated(periodIndex) == false)
                     {
@@ -631,7 +631,7 @@ namespace Mars.Seem.Tree
             }
             else
             {
-                foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ThinningVolumeBySpecies.Values)
+                foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
                 {
                     thinVolumeForSpecies.ClearVolume(periodIndex);
                 }

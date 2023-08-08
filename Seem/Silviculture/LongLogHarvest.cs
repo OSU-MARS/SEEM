@@ -1,171 +1,290 @@
-﻿using System;
+﻿using Mars.Seem.Tree;
+using System;
+using System.Diagnostics;
 
 namespace Mars.Seem.Silviculture
 {
     public class LongLogHarvest : HarvestFinancialValue
     {
-        public float ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder { get; set; } // m²/ha
-        public float ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader { get; set; } // m²/ha
-        public float ChainsawBasalAreaPerHaWithTrackedHarvester { get; set; } // m²/ha
-        public float ChainsawBasalAreaPerHaWithWheeledHarvester { get; set; } // m²/ha
-        public ChainsawCrewType ChainsawCrewWithFellerBuncherAndGrappleSwingYarder { get; set; }
-        public ChainsawCrewType ChainsawCrewWithFellerBuncherAndGrappleYoader { get; set; }
-        public ChainsawCrewType ChainsawCrewWithTrackedHarvester { get; set; }
-        public ChainsawCrewType ChainsawCrewWithWheeledHarvester { get; set; }
+        public Fallers Fallers { get; private init; }
+        public FellerBuncherSystems FellerBuncher { get; private init; }
+        
+        public float LoaderSMhPerHectare { get; private set; } // SMh/ha
 
-        public float ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder { get; set; }
-        public float ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader { get; set; }
-        public float ChainsawCubicVolumePerHaWithTrackedHarvester { get; set; }
-        public float ChainsawCubicVolumePerHaWithWheeledHarvester { get; set; }
-        public float ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-        public float ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-        public float ChainsawPMhPerHaWithTrackedHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-        public float ChainsawPMhPerHaWithWheeledHarvester { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
+        public HarvestSystemEquipment MinimumCostHarvestSystem { get; private set; }
+        public float MinimumSystemCostPerHa { get; private set; } // US$/ha
 
-        public float FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa { get; set; } // US$/ha
-        public float FellerBuncherGrappleYoaderProcessorLoaderCostPerHa { get; set; } // US$/ha
-        public float FellerBuncherPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-        public float GrappleSwingYarderOverweightFirstLogsPerHa { get; set; } // logs/ha
-        public float GrappleSwingYarderPMhPerHectare { get; set; } // PMh₀/ha
-        public float GrappleYoaderOverweightFirstLogsPerHa { get; set; } // logs/ha
-        public float GrappleYoaderPMhPerHectare { get; set; } // PMh₀/ha
-
-        public float LoadedWeightPerHa { get; set; } // m³/ha
-        // TODO: merge into base class
-        public float MerchantableCubicVolumePerHa { get; set; } // m³/ha
-        public float MinimumSystemCostPerHa { get; set; } // US$/ha
-
-        public float ProcessorPMhPerHaWithGrappleSwingYarder { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-        public float ProcessorPMhPerHaWithGrappleYoader { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-
-        public HarvestEquipmentProductivity Productivity { get; private init; }
-
-        public float TrackedHarvesterGrappleYoaderLoaderCostPerHa { get; set; } // US$/ha
-        public float TrackedHarvesterGrappleSwingYarderLoaderCostPerHa { get; set; } // US$/ha
-        public float TrackedHarvesterPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-        public float WheeledHarvesterGrappleYoaderLoaderCostPerHa { get; set; } // US$/ha
-        public float WheeledHarvesterGrappleSwingYarderLoaderCostPerHa { get; set; } // US$/ha
-        public float WheeledHarvesterPMhPerHa { get; set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
-
-        // yarded weight with feller buncher (plus chainsaw) should be highest as bark loss is lowest
-        // yarded weight with harvesters depends on bark loss from processing by the harvester versus chainsaw bucking
-        public float YardedWeightPerHaWithFellerBuncher { get; set; } // kg/ha
-        public float YardedWeightPerHaWithTrackedHarvester { get; set; } // kg/ha
-        public float YardedWeightPerHaWithWheeledHarvester { get; set; } // kg/ha
+        public HarvesterSystem TrackedHarvester { get; private init; }
+        public HarvesterSystem WheeledHarvester { get; private init; }
+        public YardingSystem Yarder { get; private init; }
+        public YardingSystem Yoader { get; private init; }
 
         public LongLogHarvest()
         {
-            this.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
-            this.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader = 0.0F;
-            this.ChainsawBasalAreaPerHaWithTrackedHarvester = 0.0F;
-            this.ChainsawBasalAreaPerHaWithWheeledHarvester = 0.0F;
-            this.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.None;
-            this.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.None;
-            this.ChainsawCrewWithTrackedHarvester = ChainsawCrewType.None;
-            this.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.None;
+            this.Fallers = new();
+            this.FellerBuncher = new();
+            this.TrackedHarvester = new()
+            {
+                IsTracked = true
+            };
+            this.WheeledHarvester = new();
+            this.Yarder = new();
+            this.Yoader = new()
+            {
+                IsYoader = true
+            };
 
-            this.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
-            this.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader = 0.0F;
-            this.ChainsawCubicVolumePerHaWithTrackedHarvester = 0.0F;
-            this.ChainsawCubicVolumePerHaWithWheeledHarvester = 0.0F;
-            this.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder = 0.0F;
-            this.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader = 0.0F;
-            this.ChainsawPMhPerHaWithTrackedHarvester = 0.0F;
-            this.ChainsawPMhPerHaWithWheeledHarvester = 0.0F;
+            this.Clear();
+        }
 
-            this.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa = Single.NaN;
-            this.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa = Single.NaN;
-            this.FellerBuncherPMhPerHa = 0.0F;
-            this.GrappleSwingYarderOverweightFirstLogsPerHa = 0.0F;
-            this.GrappleSwingYarderPMhPerHectare = 0.0F;
-            this.GrappleYoaderOverweightFirstLogsPerHa = 0.0F;
-            this.GrappleYoaderPMhPerHectare = 0.0F;
+        private void CalculateVolumeAndPMh(Stand stand, TreeVolume treeVolume, HarvestSystems harvestSystems)
+        {
+            // float preferredLogLengthWithTrimInM = scaledVolume.PreferredLogLengthInMeters + scaledVolume.GetPreferredTrim(); // for checking first log weight
+            // float merchantableFractionOfLogLength = scaledVolume.PreferredLogLengthInMeters / preferredLogLengthWithTrimInM; // 1 in BC Firmwood
+            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
+            {
+                float diameterToCentimetersMultiplier = 1.0F;
+                float heightToMetersMultiplier = 1.0F;
+                float hectareExpansionFactorMultiplier = 1.0F;
+                if (treesOfSpecies.Units == Units.English)
+                {
+                    diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
+                    heightToMetersMultiplier = Constant.MetersPerFoot;
+                    hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
+                }
+                if (treeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable) == false)
+                {
+                    // for now, assume all non-merchantable trees are left in place in stand
+                    // TODO: include felling and handling costs for cut and leave
+                    continue;
+                }
 
-            this.LoadedWeightPerHa = 0.0F;
+                TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
+                for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
+                {
+                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                    if (dbhInCm > longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
+                    {
+                        continue; // large trees are considered unharvestable reserves
+                    }
+
+                    float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
+                    float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
+                    float treeBasalAreaInM2PerHa = expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
+                    float treeMerchantableVolumeInM3 = longLogVolumeTable.GetCubicVolumeOfMerchantableWood(dbhInCm, heightInM, out float unscaledNeiloidVolume);
+                    Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
+                    float treeMerchantableVolumeInM3PerHa = expansionFactorPerHa * treeMerchantableVolumeInM3;
+                    this.MerchantableCubicVolumePerHa += treeMerchantableVolumeInM3PerHa;
+
+                    // yarded weight
+                    // Since no yarder productivity study appears to consider bark loss it's generally unclear where in the turn reported
+                    // yarding weights occur. In lieu of more specific data, yarding weight limits are checked when half the yarding bark
+                    // loss has occurred and this same weight is used in finding the total yarded weight for calculating the total number
+                    // of yarding turns.
+                    // TODO: include weight of remaining crown after branch breaking during felling and swinging
+                    float woodAndRemainingBarkVolumePerStemAfterFelling = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAtMidspanWithoutHarvester);
+                    float treeYardedWeightWithoutHarvester = woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
+                    float treeYardedWeightInKgPerHaWithoutHarvester = expansionFactorPerHa * treeYardedWeightWithoutHarvester;
+                    float woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing = (treeMerchantableVolumeInM3 + unscaledNeiloidVolume) / (1.0F - treeSpeciesProperties.BarkFractionAfterYardingAndProcessing); // / merchantableFractionOfLogLength; // 1 in BC Firmwood
+                    float treeLoadedWeightInKgPerHaWithoutHarvester = expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing * treeSpeciesProperties.StemDensityAfterYardingAndProcessing;
+
+                    // chainsaw felling of all trees
+                    float treeChainsawFellAndBuckPMs = harvestSystems.GetChainsawFellAndBuckTime(treeMerchantableVolumeInM3);
+                    float chainsawFellAndBuckPMsPerHa = expansionFactorPerHa * treeChainsawFellAndBuckPMs;
+                    this.Fallers.AddTree(chainsawFellAndBuckPMsPerHa, treeBasalAreaInM2PerHa, treeMerchantableVolumeInM3PerHa, treeYardedWeightInKgPerHaWithoutHarvester, treeLoadedWeightInKgPerHaWithoutHarvester);
+
+                    // feller-buncher with hot saw or directional felling head
+                    // For now, assume directional felling head where needed and no diameter limit to directional felling.
+                    (float treeFellerBuncherPMs, float treeChainsawBuckPMsWithFellerBuncherAndYarder, float treeChainsawBuckPMsWithFellerBuncherAndYoader) = harvestSystems.GetFellerBuncherTime(treeMerchantableVolumeInM3, treeYardedWeightWithoutHarvester);
+                    float treeFellerBuncherPMsPerHa = expansionFactorPerHa * treeFellerBuncherPMs;
+                    if ((treeChainsawBuckPMsWithFellerBuncherAndYarder == 0.0F) && (treeChainsawBuckPMsWithFellerBuncherAndYoader == 0.0F))
+                    {
+                        this.FellerBuncher.AddTree(treeFellerBuncherPMsPerHa, treeYardedWeightInKgPerHaWithoutHarvester, treeLoadedWeightInKgPerHaWithoutHarvester);
+                    }
+                    else
+                    {
+                        // chainsaw bucking of trees felled by faller crew or a feller-buncher but too heavy to be yarded as whole stems
+                        // For now,
+                        //   1) Assume the feller-buncher has a directional felling head if trees are too large for a hot saw and that
+                        //      no trees smaller than FinancialSceanrios.MaximumMerchantableDiameterInCentimeters are too large for a
+                        //      directional felling head.
+                        //   2) Neglect effects of short log production when trees are large enough full size logs still exceed the
+                        //      yoader weight limit.
+                        //   3) The tree's first log is calculated from a Smalian estimate of diameter inside bark. A more complete correct
+                        //      would look up the tree's first log's merchantable volume from the volume table and adjust for the bark
+                        //      fraction.
+                        //   4) Assume all unscaled Neiloid volume (BC Firmwood) is in the first log. This is very likely true for long
+                        //      logs but may not hold for short logs.
+                        float treeChainsawBuckPMsPerHaWithYarder = expansionFactorPerHa * treeChainsawBuckPMsWithFellerBuncherAndYarder;
+                        float treeChainsawBuckPMsPerHaWithYoader = expansionFactorPerHa * treeChainsawBuckPMsWithFellerBuncherAndYoader;
+                        float firstLogVolumeInM3 = longLogVolumeTable.GetCubicVolumeOfMerchantableWoodInFirstLog(dbhInCm, heightInM) + unscaledNeiloidVolume;
+                        this.FellerBuncher.AddTree(treeFellerBuncherPMsPerHa, treeChainsawBuckPMsPerHaWithYarder, treeChainsawBuckPMsPerHaWithYoader, treeBasalAreaInM2PerHa, treeMerchantableVolumeInM3PerHa, treeYardedWeightInKgPerHaWithoutHarvester, treeLoadedWeightInKgPerHaWithoutHarvester);
+
+                        float firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss = firstLogVolumeInM3 * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
+                        if (firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss > harvestSystems.GrappleSwingYarderMaxPayload)
+                        {
+                            // for now, logs produced by feller-buncher plus chainsaw aren't distinguished from their somewhat lighter
+                            // equivalent with less bark after being bucked by a harvester
+                            this.Yarder.AddOverweightFirstLog(expansionFactorPerHa);
+                        }
+                        if (firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss > harvestSystems.GrappleYoaderMaxPayload)
+                        {
+                            // for now, logs produced by feller-buncher plus chainsaw aren't distinguished from their somewhat lighter
+                            // equivalent with less bark after being bucked by a harvester
+                            this.Yoader.AddOverweightFirstLog(expansionFactorPerHa);
+                        }
+                    }
+
+                    // tracked harvester
+                    (float treeTrackedHarvesterPMs, float treeChainsawPMsWithTrackedHarvester) = harvestSystems.GetTrackedHarvesterTime(dbhInCm, treeMerchantableVolumeInM3);
+                    float treeTrackedHarvesterPMsPerHa = expansionFactorPerHa * treeTrackedHarvesterPMs;
+                    float treeWoodAndRemainingBarkVolumePerStemWithHarvester = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAtMidspanAfterHarvester);
+                    float treeYardedWeightInKgPerHaWithHarvester = expansionFactorPerHa * treeWoodAndRemainingBarkVolumePerStemWithHarvester * treeSpeciesProperties.StemDensityAtMidspanAfterHarvester;
+                    if (treeChainsawPMsWithTrackedHarvester == 0.0F)
+                    {
+                        // tree felled and bucked by harvester, no chainsaw use
+                        this.TrackedHarvester.AddTree(treeTrackedHarvesterPMsPerHa, treeYardedWeightInKgPerHaWithHarvester);
+                    }
+                    else
+                    {
+                        // a chainsaw is used on harvestSystems tree, so it applies towards chainsaw utilization
+                        // For now, since long log harvests are assumed to be regeneration harvests, assume the harvester is free to maneuver
+                        // across corridors to fall all trees behind its progression across the unit. This implies the harvester is free to assist
+                        // chainsaw work by felling as many trees as it can.
+                        float treeChainsawPMsPerHa = expansionFactorPerHa * treeChainsawPMsWithTrackedHarvester;
+                        float treeYardedWeightInKgPerHa = expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
+                        this.TrackedHarvester.AddTree(treeTrackedHarvesterPMsPerHa, treeChainsawPMsPerHa, treeBasalAreaInM2PerHa, treeMerchantableVolumeInM3PerHa, treeYardedWeightInKgPerHa);
+                    }
+
+                    // wheeled harvester
+                    (float treeWheeledHarvesterPMs, float treeChainsawPMsWithWheeledHarvester) = harvestSystems.GetWheeledHarvesterTime(dbhInCm, treeMerchantableVolumeInM3, false);
+                    float treeWheeledHarvesterPMsPerHa = expansionFactorPerHa * treeWheeledHarvesterPMs;
+                    if (treeChainsawPMsWithWheeledHarvester == 0.0F)
+                    {
+                        // tree felled and bucked by harvester, no chainsaw use
+                        this.WheeledHarvester.AddTree(treeWheeledHarvesterPMsPerHa, treeYardedWeightInKgPerHaWithHarvester);
+                    }
+                    else
+                    {
+                        // a chainsaw is used on this tree, so it applies towards chainsaw utilization
+                        float treeChainsawPMsPerHa = expansionFactorPerHa * treeChainsawPMsWithWheeledHarvester;
+                        float treeYardedWeightInKgPerHa = expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
+                        this.WheeledHarvester.AddTree(treeWheeledHarvesterPMsPerHa, treeChainsawPMsPerHa, treeBasalAreaInM2PerHa, treeMerchantableVolumeInM3PerHa, treeYardedWeightInKgPerHa);
+                    }
+
+                    // processor
+                    // Include constant and linear time components regardless of whether processor needs to buck the tree as, if the tree
+                    // was bucked by chainsaw before yarding, the processor still needs to move the logs from the yarder to the loader.
+                    float treeProcessingPMsWithYarder = harvestSystems.GetProcessorTime(treeMerchantableVolumeInM3, includeQuadratic: treeChainsawBuckPMsWithFellerBuncherAndYarder == 0.0F);
+                    float treeProcessingPMsPerHaWithYarder = expansionFactorPerHa * treeProcessingPMsWithYarder;
+                    this.Yarder.AddTreeProcessing(treeProcessingPMsPerHaWithYarder);
+
+                    float treeProcessingPMsWithYoader = harvestSystems.GetProcessorTime(treeMerchantableVolumeInM3, includeQuadratic: treeChainsawBuckPMsWithFellerBuncherAndYoader == 0.0F);
+                    float treeProcessingPMsPerHaWithYoader = expansionFactorPerHa * treeProcessingPMsWithYoader;
+                    this.Yoader.AddTreeProcessing(treeProcessingPMsPerHaWithYoader);
+
+                    // loader productivity is specified so no loader calculations
+                }
+            }
+        }
+
+        public void CalculateVolumeProductivityAndCost(Stand stand, TreeVolume treeVolume, HarvestSystems harvestSystems)
+        {
+            if ((stand.AccessDistanceInM < 0.0F) ||
+                (stand.AccessSlopeInPercent < 0.0F) ||
+                (stand.AreaInHa <= 0.0F) ||
+                (stand.CorridorLengthInM <= 0.0F) ||
+                (stand.MeanYardingDistanceFactor <= 0.0F) ||
+                (stand.SlopeInPercent < 0.0F))
+            {
+                throw new ArgumentOutOfRangeException(nameof(stand));
+            }
+
+            // clear PMh, SMh, productivities, and harvest system selection, reset volume and basal accumulators
+            this.Clear();
+
+            // calculate regeneration harvest volume
+            this.CalculateVolumeAndPMh(stand, treeVolume, harvestSystems);
+
+            // modify PMh for slope, convert to hours, set falling machine and chainsaw crew productivity
+            // For now, assume uniform slope across stand.
+            this.Fallers.CalculatePMhAndProductivity(stand, harvestSystems);
+            this.FellerBuncher.CalculatePMhAndProductivity(stand, harvestSystems, this.MerchantableCubicVolumePerHa);
+            this.TrackedHarvester.CalculatePMhAndProductivity(stand, harvestSystems, this.MerchantableCubicVolumePerHa);
+            this.WheeledHarvester.CalculatePMhAndProductivity(stand, harvestSystems, this.MerchantableCubicVolumePerHa);
+
+            // yarding productivity: not affected by slope since operation from road or low angle roadside is assumed
+            // Model design question: does processing head bark removal result in more yarded weight per turn than whole tree yarding?
+            // For now, assume loss of efficiency in grappling bunched logs rather than bunched trees cancels weight advantage
+            // of using a harvester and calculate yarding as invariant of the felling system. It's also unclear if yarding trees
+            // versus logs might result in different hang up rates.
+            //Debug.Assert((this.FellerBuncher.YardedWeightPerHa >= this.TrackedHarvester.YardedWeightPerHa) && (this.FellerBuncher.YardedWeightPerHa >= 0.999 * this.WheeledHarvester.YardedWeightPerHa));
+            this.Yarder.CalculatePMhAndProductivity(stand, this.MerchantableCubicVolumePerHa, harvestSystems, this.FellerBuncher.YardedWeightPerHa);
+            this.Yoader.CalculatePMhAndProductivity(stand, this.MerchantableCubicVolumePerHa, harvestSystems, this.FellerBuncher.YardedWeightPerHa);
+
+            // loader productivity is specified: doesn't need to be calculated or output to file
+            this.LoaderSMhPerHectare = this.FellerBuncher.LoadedWeightPerHa / (harvestSystems.LoaderUtilization * harvestSystems.LoaderProductivity);
+
+            // component costs are known: calculate system costs
+            // this.Fallers.CalculateSystemCost();
+            this.FellerBuncher.CalculateSystemCost(stand, harvestSystems, this.Yarder, this.Yoader, this.LoaderSMhPerHectare);
+            this.TrackedHarvester.CalculateSystemCost(stand, harvestSystems, this.Yarder, this.Yoader, this.LoaderSMhPerHectare);
+            this.WheeledHarvester.CalculateSystemCost(stand, harvestSystems, this.Yarder, this.Yoader, this.LoaderSMhPerHectare);
+
+            this.SetMinimumCostSystem();
+        }
+
+        public new void Clear()
+        {
+            this.LoaderSMhPerHectare = Single.NaN;
             this.MerchantableCubicVolumePerHa = 0.0F;
+            this.MinimumCostHarvestSystem = HarvestSystemEquipment.None;
             this.MinimumSystemCostPerHa = Single.NaN;
 
-            this.ProcessorPMhPerHaWithGrappleSwingYarder = 0.0F;
-            this.ProcessorPMhPerHaWithGrappleYoader = 0.0F;
-
-            this.Productivity = new();
-
-            this.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa = Single.NaN;
-            this.TrackedHarvesterGrappleYoaderLoaderCostPerHa = Single.NaN;
-            this.TrackedHarvesterPMhPerHa = 0.0F;
-            this.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = Single.NaN;
-            this.WheeledHarvesterGrappleYoaderLoaderCostPerHa = Single.NaN;
-            this.WheeledHarvesterPMhPerHa = 0.0F;
-
-            this.YardedWeightPerHaWithFellerBuncher = 0.0F;
-            this.YardedWeightPerHaWithTrackedHarvester = 0.0F;
-            this.YardedWeightPerHaWithWheeledHarvester = 0.0F;
+            this.Fallers.Clear();
+            this.FellerBuncher.Clear();
+            this.TrackedHarvester.Clear();
+            this.WheeledHarvester.Clear();
+            this.Yarder.Clear();
+            this.Yoader.Clear();
         }
 
-        public HarvestSystem GetMinimumCostHarvestSystem()
+        private void SetMinimumCostSystem()
         {
-            if (this.MinimumSystemCostPerHa == 0.0F)
+            if (this.CubicVolumePerHa == 0.0F)
             {
-                return HarvestSystem.None;
-            }
-            if (this.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa == this.MinimumSystemCostPerHa)
-            {
-                return HarvestSystem.FellerBuncherGrappleSwingYarderProcessorLoader;
-            }
-            if (this.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa == this.MinimumSystemCostPerHa)
-            {
-                return HarvestSystem.FellerBuncherGrappleYoaderProcessorLoader;
-            }
-            if (this.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa == this.MinimumSystemCostPerHa)
-            {
-                return HarvestSystem.TrackedHarvesterGrappleSwingYarderLoader;
-            }
-            if (this.TrackedHarvesterGrappleYoaderLoaderCostPerHa == this.MinimumSystemCostPerHa)
-            {
-                return HarvestSystem.TrackedHarvesterGrappleYoaderLoader;
-            }
-            if (this.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa == this.MinimumSystemCostPerHa)
-            {
-                return HarvestSystem.WheeledHarvesterGrappleSwingYarderLoader;
-            }
-            if (this.WheeledHarvesterGrappleYoaderLoaderCostPerHa == this.MinimumSystemCostPerHa)
-            {
-                return HarvestSystem.WheeledHarvesterGrappleYoaderLoader;
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.None;
+                this.MinimumSystemCostPerHa = 0.0F;
+                return;
             }
 
-            throw new InvalidOperationException("Minimum harvest cost per hectare does not match any harvest system.");
-        }
+            this.MinimumCostHarvestSystem = HarvestSystemEquipment.FellerBuncherGrappleSwingYarderProcessorLoader;
+            this.MinimumSystemCostPerHa = this.FellerBuncher.Yarder.SystemCostPerHa;
 
-        public class HarvestEquipmentProductivity
-        {
-            public float ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder { get; set; }
-            public float ChainsawUtilizationWithFellerBuncherAndGrappleYoader { get; set; }
-            public float ChainsawUtilizationWithTrackedHarvester { get; set; }
-            public float ChainsawUtilizationWithWheeledHarvester { get; set; }
-
-            public float FellerBuncher { get; set; } // m³/PMh₀
-            public float GrappleSwingYarder { get; set; } // m³/PMh₀
-            public float GrappleYoader { get; set; } // m³/PMh₀
-            // log loader productivity is specified
-            public float ProcessorWithGrappleSwingYarder { get; set; } // m³/PMh₀
-            public float ProcessorWithGrappleYoader { get; set; } // m³/PMh₀
-            public float TrackedHarvester { get; set; } // m³/PMh₀
-            public float WheeledHarvester { get; set; } // m³/PMh₀
-
-            public HarvestEquipmentProductivity()
+            if (this.FellerBuncher.Yoader.SystemCostPerHa < this.MinimumSystemCostPerHa)
             {
-                this.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder = 0.0F;
-                this.ChainsawUtilizationWithFellerBuncherAndGrappleYoader = 0.0F;
-                this.ChainsawUtilizationWithTrackedHarvester = 0.0F;
-                this.ChainsawUtilizationWithWheeledHarvester = 0.0F;
-
-                this.FellerBuncher = Single.NaN;
-                this.GrappleSwingYarder = Single.NaN;
-                this.GrappleYoader = Single.NaN;
-                this.ProcessorWithGrappleSwingYarder = Single.NaN;
-                this.ProcessorWithGrappleYoader = Single.NaN;
-                this.TrackedHarvester = Single.NaN;
-                this.WheeledHarvester = Single.NaN;
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.FellerBuncherGrappleYoaderProcessorLoader;
+                this.MinimumSystemCostPerHa = this.FellerBuncher.Yoader.SystemCostPerHa;
+            }
+            if (this.TrackedHarvester.SystemCostPerHaWithYarder < this.MinimumSystemCostPerHa)
+            {
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.TrackedHarvesterGrappleSwingYarderLoader;
+                this.MinimumSystemCostPerHa = this.TrackedHarvester.SystemCostPerHaWithYarder;
+            }
+            if (this.TrackedHarvester.SystemCostPerHaWithYoader < this.MinimumSystemCostPerHa)
+            {
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.TrackedHarvesterGrappleYoaderLoader;
+                this.MinimumSystemCostPerHa = this.TrackedHarvester.SystemCostPerHaWithYoader;
+            }
+            if (this.WheeledHarvester.SystemCostPerHaWithYarder < this.MinimumSystemCostPerHa)
+            {
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.WheeledHarvesterGrappleSwingYarderLoader;
+                this.MinimumSystemCostPerHa = this.WheeledHarvester.SystemCostPerHaWithYarder;
+            }
+            if (this.WheeledHarvester.SystemCostPerHaWithYoader < this.MinimumSystemCostPerHa)
+            {
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.WheeledHarvesterGrappleYoaderLoader;
+                this.MinimumSystemCostPerHa = this.WheeledHarvester.SystemCostPerHaWithYoader;
             }
         }
     }

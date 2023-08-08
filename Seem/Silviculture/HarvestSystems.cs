@@ -1,8 +1,5 @@
-﻿using Mars.Seem.Extensions;
-using Mars.Seem.Tree;
+﻿using Mars.Seem.Tree;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace Mars.Seem.Silviculture
 {
@@ -247,1017 +244,147 @@ namespace Mars.Seem.Silviculture
             this.WheeledHarvesterUtilization = 0.77F; // fraction
         }
 
-        public void GetCutToLengthHarvestCost(StandTrajectory trajectory, int harvestPeriod, bool isThin, CutToLengthHarvest ctlHarvest)
+        private float GetChainsawBuckTime(float treeMerchantableVolumeInM3)
         {
-            if ((ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester != 0.0F) ||
-                (ctlHarvest.ForwardedWeightPeHa != 0.0F) ||
-                (ctlHarvest.ForwarderPMhPerHa != 0.0F) ||
-                (ctlHarvest.MerchantableCubicVolumePerHa != 0.0F) ||
-                (ctlHarvest.TaskCostPerHa != 0.0F) ||
-                (ctlHarvest.WheeledHarvesterPMhPerHa != 0.0F))
+            float treeChainsawTime = this.ChainsawBuckConstant + this.ChainsawBuckLinear * treeMerchantableVolumeInM3;
+            if (treeMerchantableVolumeInM3 > this.ChainsawBuckQuadraticThreshold)
             {
-                throw new ArgumentOutOfRangeException(nameof(ctlHarvest));
+                // tree is always bucked by chainsaw, so quadratic component always applies above threshold
+                float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
+                treeChainsawTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
             }
-            Stand? stand = trajectory.StandByPeriod[harvestPeriod - (isThin ? 1 : 0)];
-            if ((stand == null) ||
-                (stand.AccessDistanceInM < 0.0F) ||
-                (stand.AccessSlopeInPercent < 0.0F) ||
-                (stand.AreaInHa <= 0.0F) ||
-                (stand.CorridorLengthInM <= 0.0F) ||
-                (stand.CorridorLengthInMTethered < 0.0F) ||
-                (stand.CorridorLengthInMTethered > Constant.Maximum.TetheredCorridorLengthInM) ||
-                (stand.CorridorLengthInMUntethered < 0.0F) ||
-                (stand.ForwardingDistanceOnRoad < 0.0F) ||
-                (stand.MeanYardingDistanceFactor <= 0.0F) ||
-                (stand.SlopeInPercent < 0.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(trajectory));
-            }
-
-            int anchorMachines = 0;
-            float forwarderAndMaybeAnchorCostPerSMh = this.ForwarderCostPerSMh;
-            float wheeledHarvesterAndMaybeAnchorCostPerSMh = this.WheeledHarvesterCostPerSMh;
-            if ((stand.SlopeInPercent > Constant.Default.SlopeForTetheringInPercent) && (stand.CorridorLengthInMTethered > this.AddOnWinchCableLengthInM))
-            {
-                forwarderAndMaybeAnchorCostPerSMh += this.AnchorCostPerSMh;
-                wheeledHarvesterAndMaybeAnchorCostPerSMh += this.AnchorCostPerSMh;
-                anchorMachines = 2;
-            }
-
-            // BC Firmwood scaling considers trim to be merchantable cubic volume (Fonseca 2005 §2.2.2.2) so, for now, merchantableFractionOfLogLength = 1
-            // float preferredLogLength = scaledVolume.PreferredLogLengthInMeters;
-            // float preferredTrimLength = scaledVolume.GetPreferredTrim();
-            // float merchantableFractionOfLogLength = preferredLogLength / (preferredLogLength + preferredTrimLength); // assumes cylindrical logs or cylindrical ones with equal amounts of trim at both ends
-            bool chainsawFallingWithWheeledHarvester = false;
-            bool previousOversizeTreeBehindHarvester = true;
-            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
-            {
-                float diameterToCentimetersMultiplier = 1.0F;
-                float heightToMetersMultiplier = 1.0F;
-                float hectareExpansionFactorMultiplier = 1.0F;
-                if (treesOfSpecies.Units == Units.English)
-                {
-                    diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
-                    heightToMetersMultiplier = Constant.MetersPerFoot;
-                    hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
-                }
-                IndividualTreeSelection individualTreeSelection = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
-                TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
-                if (trajectory.TreeVolume.TryGetForwarderVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? forwardedVolumeTable) == false)
-                {
-                    // for now, assume all non-merchantable trees are left in place in stand
-                    // TODO: include felling and handling costs for cut and leave
-                    continue;
-                }
-
-                for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
-                {
-                    int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
-                    if (individualTreeSelection[uncompactedTreeIndex] != harvestPeriod)
-                    {
-                        // tree was either removed previously or was retained rather than thinned
-                        continue;
-                    }
-
-                    // Could factor constant and linear terms out of loop (true for all machines, both CTL and long log) but it doesn't
-                    // appear important to do so.
-                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
-                    if (dbhInCm > forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters)
-                    {
-                        throw new NotSupportedException("Large reserve " + treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + " is selected for harvest.");
-                    }
-
-                    float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
-                    float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    float treeMerchantableVolumeInM3 = forwardedVolumeTable.GetCubicVolumeOfMerchantableWood(dbhInCm, heightInM, out float unscaledNeiloidVolumeInM3);
-                    Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
-                    ctlHarvest.MerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
-
-                    // TODO: check tracked harvester
-
-                    // wheeled harvster
-                    if (dbhInCm <= this.WheeledHarvesterFellAndBuckDiameterLimit)
-                    {
-                        // tree felled and bucked by harvester, no chainsaw use
-                        float treeHarvesterTime = this.WheeledHarvesterFellAndBuckConstant + this.WheeledHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
-                        if (treeMerchantableVolumeInM3 > this.WheeledHarvesterQuadraticThreshold)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.WheeledHarvesterQuadraticThreshold;
-                            treeHarvesterTime += this.WheeledHarvesterFellAndBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-
-                        float woodAndRemainingBarkVolumePerStem = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAfterHarvester);
-                        ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStem * treeSpeciesProperties.StemDensityAfterHarvester; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
-                        ctlHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
-                    }
-                    else
-                    {
-                        // a chainsaw is used on this tree, so it applies towards chainsaw utilization
-                        // For now, assume all CTL harvests are thins and that the harvester operates in two scenarios occuring with equal
-                        // probability.
-                        //
-                        //   1) A tree requiring chainsaw work is encountered behind the harvester's direction of progress across the stand. In
-                        //      this case falling the tree away from the harvester does not impede the harvester in subsequent corridors and it's
-                        //      unimportant whether the harvester operator or a separate chainsaw crew bucks the tree.
-                        //   2) The tree is ahead of harvester, in which case falling it away from the harvester is unlikely to affect operations
-                        //      in the current corridor but does block subsequent corridors. In this case either the operator has to buck the 
-                        //      tree and move the logs out of the way with the harvester's processing head or leave the tree standing for falling
-                        //      once the harvester has passed, either by the operator from the next corridor or independently by a falling crew.
-                        //
-                        // Since modelling is currently nonspatial, occurence of these two cases is approximated by a toggle forcing every other
-                        // tree too large for the processing head to be manually felled. In a spatial model whether the tree needs to be manually
-                        // felled would be determined by its position with respect to the harvester and whether the cutting pattern allows it to
-                        // be felled with the processing head. In spatial modelling edge effects, such as needing to fell trees into a unit rather
-                        // than across a property line or onto smaller trees in an adjacent stand, can also be considered.
-                        ctlHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
-
-                        float treeChainsawTime; // seconds
-                        float treeHarvesterTime; // seconds
-                        if ((dbhInCm > this.WheeledHarvesterFellingDiameterLimit) || previousOversizeTreeBehindHarvester)
-                        {
-                            chainsawFallingWithWheeledHarvester = true;
-                            treeChainsawTime = this.ChainsawFellAndBuckConstant + this.ChainsawFellAndBuckLinear * treeMerchantableVolumeInM3;
-                            treeHarvesterTime = 0.0F;
-                        }
-                        else
-                        {
-                            treeChainsawTime = this.ChainsawBuckConstant + this.ChainsawBuckLinear * treeMerchantableVolumeInM3;
-                            treeHarvesterTime = this.WheeledHarvesterFellAndBuckConstant + this.WheeledHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
-                        }
-                        if (treeMerchantableVolumeInM3 > this.ChainsawBuckQuadraticThreshold)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
-                            treeChainsawTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-
-                        float woodAndBarkVolumePerStem = (treeMerchantableVolumeInM3 + unscaledNeiloidVolumeInM3) / (1.0F - treeSpeciesProperties.BarkFraction); // no bark loss from going through feed rollers
-                        ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester += expansionFactorPerHa * treeChainsawTime;
-                        ctlHarvest.ChainsawCubicVolumePerHaWithWheeledHarvester += expansionFactorPerHa * treeMerchantableVolumeInM3;
-                        ctlHarvest.ForwardedWeightPeHa += expansionFactorPerHa * woodAndBarkVolumePerStem * treeSpeciesProperties.StemDensity; // / merchantableFractionOfLogLength; // 1 in BC Firmwood 
-                        ctlHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
-                        previousOversizeTreeBehindHarvester = !previousOversizeTreeBehindHarvester;
-                    }
-                }
-            }
-
-            // for now, assume uniform slope across stand
-            if (stand.SlopeInPercent > this.WheeledHarvesterSlopeThresholdInPercent)
-            {
-                ctlHarvest.WheeledHarvesterPMhPerHa *= 1.0F + this.WheeledHarvesterSlopeLinear * (stand.SlopeInPercent - this.WheeledHarvesterSlopeThresholdInPercent);
-            }
-            ctlHarvest.WheeledHarvesterPMhPerHa /= Constant.SecondsPerHour;
-            ctlHarvest.Productivity.WheeledHarvester = ctlHarvest.MerchantableCubicVolumePerHa / ctlHarvest.WheeledHarvesterPMhPerHa;
-
-            float minimumChainsawCostWithWheeledHarvester = 0.0F;
-            if (ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester > 0.0F)
-            {
-                if (stand.SlopeInPercent > this.ChainsawSlopeThresholdInPercent)
-                {
-                    ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester *= 1.0F + this.ChainsawSlopeLinear * (stand.SlopeInPercent - this.ChainsawSlopeThresholdInPercent);
-                }
-                ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester /= Constant.SecondsPerHour;
-
-                float chainsawByOperatorSMh = ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester / this.ChainsawByOperatorUtilization; // SMh
-                float chainsawByOperatorCost = (wheeledHarvesterAndMaybeAnchorCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
-                float chainsawCrewCost;
-                float chainsawCrewUtilization;
-                if (chainsawFallingWithWheeledHarvester)
-                {
-                    chainsawCrewCost = this.ChainsawFellAndBuckCostPerSMh;
-                    chainsawCrewUtilization = this.ChainsawFellAndBuckUtilization;
-                }
-                else
-                {
-                    chainsawCrewCost = this.ChainsawBuckCostPerSMh;
-                    chainsawCrewUtilization = this.ChainsawBuckUtilization;
-                }
-                chainsawCrewUtilization *= MathF.Min(ctlHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                chainsawCrewCost *= ctlHarvest.ChainsawPMhPerHaWithWheeledHarvester / chainsawCrewUtilization;
-
-                if (chainsawByOperatorCost < chainsawCrewCost)
-                {
-                    minimumChainsawCostWithWheeledHarvester = chainsawByOperatorCost;
-                    ctlHarvest.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.Operator;
-                    ctlHarvest.Productivity.ChainsawUtilizationWithWheeledHarvester = this.ChainsawByOperatorUtilization;
-                }
-                else
-                {
-                    minimumChainsawCostWithWheeledHarvester = chainsawCrewCost;
-                    ctlHarvest.ChainsawCrewWithWheeledHarvester = chainsawFallingWithWheeledHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
-                    ctlHarvest.Productivity.ChainsawUtilizationWithWheeledHarvester = chainsawCrewUtilization;
-                }
-
-                Debug.Assert(ctlHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester > 0.0F);
-            }
-
-            float wheeledHarvesterSMhPerHectare = ctlHarvest.WheeledHarvesterPMhPerHa / this.WheeledHarvesterUtilization;
-            ctlHarvest.WheeledHarvesterCostPerHa = wheeledHarvesterAndMaybeAnchorCostPerSMh * wheeledHarvesterSMhPerHectare;
-
-            // find payload available for slope from traction
-            float forwarderPayloadInKg = this.GetForwarderPayloadInKg(stand.SlopeInPercent);
-            if (forwarderPayloadInKg <= 0.0F)
-            {
-                throw new NotSupportedException("Stand slope of " + stand.SlopeInPercent + "% is too steep for forwarding.");
-            }
-            if (stand.AccessDistanceInM > 0.0F)
-            {
-                float accessPayloadInKg = this.GetForwarderPayloadInKg(stand.AccessSlopeInPercent);
-                forwarderPayloadInKg = MathF.Min(forwarderPayloadInKg, accessPayloadInKg);
-                if (forwarderPayloadInKg <= 0.0F)
-                {
-                    throw new NotSupportedException("Stand access slope of " + stand.AccessSlopeInPercent + "% is too steep for forwarding.");
-                }
-            }
-
-            // TODO: full bark retention on trees bucked by chainsaw (for now it's assumed all trees are bucked by a harvester)
-            // TODO: support cross-species loading
-            // TODO: merchantable fraction of actual log length instead of assuming all logs are of preferred length
-            SortedList<FiaCode, TreeSpeciesMerchantableVolume> harvestVolumeBySpecies = isThin ? trajectory.ThinningVolumeBySpecies : trajectory.StandingVolumeBySpecies;
-            foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in harvestVolumeBySpecies.Values)
-            {
-                TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[harvestVolumeForSpecies.Species];
-                float forwarderMaximumMerchantableM3 = forwarderPayloadInKg / (treeSpeciesProperties.StemDensityAfterHarvester * (1.0F + treeSpeciesProperties.BarkFractionAfterHarvester)); // * merchantableFractionOfLogLength; // merchantable m³ = kg / kg/m³ * 1 / merchantable m³/m³ [* merchantable m/m = 1 in BC Firmwood]
-
-                float cubic4Saw = harvestVolumeForSpecies.Cubic4Saw[harvestPeriod];
-                float logs4Saw = harvestVolumeForSpecies.Logs4Saw[harvestPeriod];
-                float cubic3Saw = harvestVolumeForSpecies.Cubic3Saw[harvestPeriod];
-                float logs3Saw = harvestVolumeForSpecies.Logs3Saw[harvestPeriod];
-                float cubic2Saw = harvestVolumeForSpecies.Cubic2Saw[harvestPeriod];
-                float logs2Saw = harvestVolumeForSpecies.Logs2Saw[harvestPeriod];
-                float speciesMerchM3PerHa = cubic2Saw + cubic3Saw + cubic4Saw; // m³/ha
-                int sortsPresent = (cubic2Saw > 0.0F ? 1 : 0) + (cubic3Saw > 0.0F ? 1 : 0) + (cubic4Saw > 0.0F ? 1 : 0);
-
-                if (sortsPresent > 0)
-                {
-                    // logs are forwarded for at least one sort; find default productivity
-                    ForwarderTurn turnAllSortsCombined = this.GetForwarderTurn(stand, speciesMerchM3PerHa, logs2Saw + logs3Saw + logs4Saw, forwarderMaximumMerchantableM3, sortsPresent);
-                    ctlHarvest.Productivity.Forwarder = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnAllSortsCombined.Time; // m³/PMh₀
-                    ctlHarvest.Productivity.ForwardingMethod = ForwarderLoadingMethod.AllSortsCombined;
-
-                    if (sortsPresent > 1)
-                    {
-                        // if multiple sorts are present they can be forwarded separately rather than jointly
-                        // Four possible combinations: 2S+3S, 2S+4S, 3S+4S, 2S+3S+4S, typically all three or 2S+4S. Turn times are calculated
-                        // for each sort and then added to find the total forwarding time per corridor as this approach is robust against sorts
-                        // with low volumes. Calculating a volume weighted mean of productivities is not appropriate here as the forwarder must
-                        // presumably still travel the full length of the corridor to pick up all logs in low volume sorts.
-                        ForwarderTurn turn2S = this.GetForwarderTurn(stand, cubic2Saw, logs2Saw, forwarderMaximumMerchantableM3, 1);
-                        ForwarderTurn turn3S = this.GetForwarderTurn(stand, cubic3Saw, logs3Saw, forwarderMaximumMerchantableM3, 1);
-                        ForwarderTurn turn4S = this.GetForwarderTurn(stand, cubic4Saw, logs4Saw, forwarderMaximumMerchantableM3, 1);
-                        float turnTimeAllSortsSeparate = turn2S.Time + turn3S.Time + turn4S.Time;
-                        if (turnTimeAllSortsSeparate < turnAllSortsCombined.Time)
-                        {
-                            ctlHarvest.Productivity.Forwarder = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnTimeAllSortsSeparate;
-                            ctlHarvest.Productivity.ForwardingMethod = ForwarderLoadingMethod.AllSortsSeparate;
-                        }
-
-                        if (sortsPresent == 3)
-                        {
-                            // combining 2S and 4S and loading them separately from 3S is only meaningful if all three sorts exist
-                            // This is an intermediate complexity option and is.
-                            ForwarderTurn turn2S4S = this.GetForwarderTurn(stand, cubic2Saw + cubic4Saw, logs2Saw + logs4Saw, forwarderMaximumMerchantableM3, 2);
-                            float turnTime2S4SCombined = turn2S4S.Time + turn3S.Time;
-                            if ((turnTime2S4SCombined < turnAllSortsCombined.Time) && (turnTime2S4SCombined < turnTimeAllSortsSeparate))
-                            {
-                                ctlHarvest.Productivity.Forwarder = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnTime2S4SCombined;
-                                ctlHarvest.Productivity.ForwardingMethod = ForwarderLoadingMethod.TwoFourSCombined;
-                            }
-                        }
-                    }
-                }
-
-                //float forwarderProductivity = pmax((volumePerCorridor2S * forwarderProductivity2S + volumePerCorridor3S * forwarderProductivity3S + volumePerCorridor4S * forwarderProductivity4S) / (volumePerCorridor2S + volumePerCorridor3S + volumePerCorridor4S),
-                //                             (volumePerCorridor2S4S * forwarderProductivity2S4S + volumePerCorridor3S * forwarderProductivity3S) / (volumePerCorridor2S4S + volumePerCorridor3S),
-                //                             forwarderProductivity2S3S4S),
-                //float forwarderLoadingMethod = if_else(forwarderProductivity == forwarderProductivity2S3S4S,
-                //                                 "all sorts combined",
-                //                                 if_else(forwarderProductivity == forwarderProductivity2S4S,
-                //                                         "2S+4S combined, 3S separate",
-                //                                         "all sorts separate"));
-                float forwarderPMhPerSpecies = speciesMerchM3PerHa / ctlHarvest.Productivity.Forwarder;
-                // float forwarderCost = treeVolumeClass / forwarderProductivity * forwarderHourlyCost, # $/tree
-
-                ctlHarvest.ForwarderPMhPerHa += forwarderPMhPerSpecies;
-            }
-
-            ctlHarvest.ForwarderCostPerHa = forwarderAndMaybeAnchorCostPerSMh * ctlHarvest.ForwarderPMhPerHa / this.ForwarderUtilization;
-
-            if (ctlHarvest.CubicVolumePerHa > 0.0F)
-            {
-                int machinesToMoveInAndOut = 3 + anchorMachines; // bulldozer + harvester + forwarder + anchors
-                float machineMoveInAndOutPerHa = 2.0F * machinesToMoveInAndOut * this.MachineMoveInOrOut / stand.AreaInHa; // 2 = move in + move out
-                float haulRoundtripsPerHectare = ctlHarvest.ForwardedWeightPeHa / this.CutToLengthHaulPayloadInKg;
-                float haulCostPerHectare = this.CutToLengthRoundtripHaulSMh * haulRoundtripsPerHectare * this.CutToLengthHaulPerSMh;
-                ctlHarvest.MinimumSystemCostPerHa = ctlHarvest.WheeledHarvesterCostPerHa + minimumChainsawCostWithWheeledHarvester + ctlHarvest.ForwarderCostPerHa + haulCostPerHectare + machineMoveInAndOutPerHa;
-                Debug.Assert((ctlHarvest.WheeledHarvesterCostPerHa >= 0.0F) && (minimumChainsawCostWithWheeledHarvester >= 0.0F) && 
-                             (ctlHarvest.ForwarderPMhPerHa > 0.0F) && (ctlHarvest.ForwardedWeightPeHa > 0.0F) && 
-                             (haulCostPerHectare > 0.0F) && (machineMoveInAndOutPerHa > 0.0F) &&
-                             (Single.IsNaN(ctlHarvest.MinimumSystemCostPerHa) == false) && (ctlHarvest.MinimumSystemCostPerHa > 0.0F));
-            }
+            return treeChainsawTime;
         }
 
-        private float GetForwarderPayloadInKg(float slopeInPercent)
+        public float GetChainsawFellAndBuckTime(float treeMerchantableVolumeInM3)
         {
-            return MathF.Min(this.ForwarderMaximumPayloadInKg, this.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * slopeInPercent))) - this.ForwarderEmptyWeight);
+            float treeChainsawPMs = this.ChainsawFellAndBuckConstant + this.ChainsawFellAndBuckLinear * treeMerchantableVolumeInM3;
+            if (treeMerchantableVolumeInM3 > this.ChainsawBuckQuadraticThreshold)
+            {
+                float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
+                treeChainsawPMs += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
+            }
+            return treeChainsawPMs;
         }
 
-        private ForwarderTurn GetForwarderTurn(Stand stand, float merchM3PerHa, float logsPerHa, float forwarderMaxMerchM3, int sortsLoaded)
+        public (float treeFellerBuncherPMs, float treeChainsawPMsWithYarder, float treeChainsawPMsWithYoader) GetFellerBuncherTime(float treeMerchantableVolumeInM3, float treeYardedWeightInKg)
         {
-            Debug.Assert((forwarderMaxMerchM3 > 0.0F) && (sortsLoaded > 0) && (sortsLoaded < 4));
-            if (merchM3PerHa <= 0.0F)
+            float treeFellerBuncherPMs = this.FellerBuncherFellingConstant + this.FellerBuncherFellingLinear * treeMerchantableVolumeInM3;
+
+            float treeChainsawPMsWithYarder = 0.0F;  // productive machine seconds
+            if (treeYardedWeightInKg > this.GrappleSwingYarderMaxPayload)
             {
-                Debug.Assert((merchM3PerHa == 0.0F) && (logsPerHa == 0.0F));
-                return new();
+                treeChainsawPMsWithYarder = this.GetChainsawBuckTime(treeMerchantableVolumeInM3);
             }
 
-            bool isTetheredAccess = stand.AccessSlopeInPercent > Constant.Default.SlopeForTetheringInPercent;
-            float accessSpeedLoaded = isTetheredAccess ? this.ForwarderSpeedInStandLoadedTethered : this.ForwarderSpeedInStandLoadedUntethered;
-            float accessSpeedUnloaded = isTetheredAccess ? this.ForwarderSpeedInStandUnloadedTethered : this.ForwarderSpeedInStandUnloadedUntethered;
-            float merchM3perM = merchM3PerHa * this.CorridorWidth / Constant.SquareMetersPerHectare; //  merchantable m³ logs/m of corridor = m³/ha * (m²/m corridor) / m²/ha
-            float meanLogMerchM3 = merchM3PerHa / logsPerHa; // merchantable m³/log = m³/ha / logs/ha
-            float volumePerCorridor = stand.CorridorLengthInM * merchM3perM; // merchantable m³/corridor
-            float turnsPerCorridor = volumePerCorridor / forwarderMaxMerchM3;
-            float completeLoadsInCorridor = MathF.Floor(turnsPerCorridor);
-            float fractionalLoadsInCorridor = turnsPerCorridor - completeLoadsInCorridor;
-            float traversalsOfCorridor = turnsPerCorridor > 1.0F ? turnsPerCorridor : 1.0F; // forwarder must descend to the bottom of the corridor at least once
-            float forwardingDistanceOnRoad = stand.ForwardingDistanceOnRoad + (sortsLoaded - 1) * Constant.HarvestCost.ForwardingDistanceOnRoadPerSortInM;
-
-            // outbound part of turn: assumed to be descending from road
-            float driveEmptyRoad = completeLoadsInCorridor * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min, driving empty on road
-            float driveEmptyAccess = completeLoadsInCorridor * stand.AccessDistanceInM / accessSpeedUnloaded; // min, driving empty overland to get to stand
-            // nonspatial approximation (level zero): both tethered and untethered distances decrease in turns after the first
-            // TODO: assume tethered distance decreases to zero before untethered distance decreases?
-            float driveEmptyUntethered = traversalsOfCorridor * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandUnloadedUntethered; // min
-            // tethering time is treated as a delay
-            float driveEmptyTethered = traversalsOfCorridor * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandUnloadedTethered; // min
-            float descent = driveEmptyAccess + driveEmptyUntethered + driveEmptyTethered;
-
-            // inbound part of turn: assumed to be ascending towards road
-            // Forwarder loading method selection will query for productivity at quite low log densities, resulting in the forwarder loading all the
-            // way back to the top of the corridor. Since the form of the regressions doesn't guarantee the combination of loading and driving while
-            // loading is greater than the time needed to drive the forwarder back to the top of the corridor, check for this condition and impose
-            // a minimum ascent time.
-            float loading = completeLoadsInCorridor * MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
-                            MathF.Exp(-1.2460F + this.ForwarderLoadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderLoadMeanLogVolume * MathF.Log(meanLogMerchM3)); // min
-            float driveWhileLoading = completeLoadsInCorridor * MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(forwarderMaxMerchM3 / merchM3perM)) +
-                                      MathF.Exp(-2.5239F + this.ForwarderDriveWhileLoadingLogs * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3 / merchM3perM)); // min
-            float driveLoadedTethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandLoadedTethered; // min
-            // untethering time is treated as a delay
-            float driveLoadedUnethered = MathF.Max(turnsPerCorridor - 1.0F, 0.0F) * stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandLoadedUntethered; // min
-            float driveLoadedAccess = stand.AccessDistanceInM / accessSpeedLoaded;
-
-            float minimumAscentTime = traversalsOfCorridor * (stand.CorridorLengthInMTethered / this.ForwarderSpeedInStandLoadedTethered + stand.CorridorLengthInMUntethered / this.ForwarderSpeedInStandLoadedUntethered);
-            float ascent = MathF.Max(loading + driveWhileLoading + driveLoadedTethered + driveLoadedUnethered, minimumAscentTime) + driveLoadedAccess;
-
-            float driveLoadedRoad = MathF.Ceiling(turnsPerCorridor) * forwardingDistanceOnRoad / this.ForwarderSpeedOnRoad; // min
-
-            // unloading
-            // TODO: make unload complexity multiplier a function of the diversity of sorts present rather than simply richness
-            float unloadLinear = sortsLoaded switch
+            float treeChainsawPMsWithYoader = 0.0F;  // productive machine seconds
+            if (treeYardedWeightInKg > this.GrappleYoaderMaxPayload)
             {
-                1 => this.ForwarderUnloadLinearOneSort,
-                2 => this.ForwarderUnloadLinearTwoSorts,
-                3 => this.ForwarderUnloadLinearThreeSorts,
-                _ => throw new ArgumentOutOfRangeException(nameof(sortsLoaded))
-            };
-            float unloading = unloadLinear * (completeLoadsInCorridor * MathF.Exp(this.ForwarderUnloadPayload * MathF.Log(forwarderMaxMerchM3) - this.ForwarderUnloadMeanLogVolume * MathF.Log(meanLogMerchM3)) +
-                                              MathF.Exp(this.ForwarderUnloadPayload * MathF.Log(fractionalLoadsInCorridor * forwarderMaxMerchM3) - this.ForwarderUnloadMeanLogVolume * MathF.Log(meanLogMerchM3)));
-            float turnTime = driveEmptyRoad + descent + ascent + driveLoadedRoad + unloading; // min
-            return new(turnTime, volumePerCorridor);
+                if (treeChainsawPMsWithYarder > 0.0F)
+                {
+                    treeChainsawPMsWithYoader = treeChainsawPMsWithYarder; // reuse already computed value
+                }
+                else
+                {
+                    treeChainsawPMsWithYoader = this.GetChainsawBuckTime(treeMerchantableVolumeInM3);
+                }
+            }
+
+            return (treeFellerBuncherPMs, treeChainsawPMsWithYarder, treeChainsawPMsWithYoader);
         }
 
-        public void GetLongLogHarvestCosts(Stand stand, TreeVolume treeVolume, LongLogHarvest longLogHarvest)
+        public float GetProcessorTime(float treeMerchantableVolumeInM3, bool includeQuadratic)
         {
-            if ((stand.AccessDistanceInM < 0.0F) ||
-                (stand.AccessSlopeInPercent < 0.0F) ||
-                (stand.AreaInHa <= 0.0F) || 
-                (stand.CorridorLengthInM <= 0.0F) || 
-                (stand.MeanYardingDistanceFactor <= 0.0F) ||
-                (stand.SlopeInPercent < 0.0F))
+            float treeProcessingPMs = this.ProcessorBuckConstant + this.ProcessorBuckLinear * treeMerchantableVolumeInM3;
+            if (includeQuadratic)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand));
-            }
-            if ((longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder != 0.0F) ||
-                (longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader != 0.0F) ||
-                (longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester != 0.0F) ||
-                (longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester != 0.0F) ||
-                (longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder != 0.0F) ||
-                (longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader != 0.0F) ||
-                (longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester != 0.0F) ||
-                (longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester != 0.0F) ||
-                (longLogHarvest.GrappleSwingYarderPMhPerHectare != 0.0F) ||
-                (longLogHarvest.GrappleYoaderPMhPerHectare != 0.0F) ||
-                (longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder != 0.0F) ||
-                (longLogHarvest.ProcessorPMhPerHaWithGrappleYoader != 0.0F) ||
-                (longLogHarvest.MerchantableCubicVolumePerHa != 0.0F) ||
-                (longLogHarvest.LoadedWeightPerHa != 0.0F) ||
-                (longLogHarvest.TrackedHarvesterPMhPerHa != 0.0F) ||
-                (longLogHarvest.WheeledHarvesterPMhPerHa != 0.0F))
-            {
-                throw new ArgumentOutOfRangeException(nameof(longLogHarvest));
-            }
-
-            int fellerBuncherOrTrackedHarvesterAnchorMachine = 0;
-            int wheeledHarvesterAnchorMachine = 0;
-            float fellerBuncherCostPerSMh = this.FellerBuncherCostPerSMh;
-            float trackedHarvesterCostPerSMh = this.TrackedHarvesterCostPerSMh;
-            float wheeledHarvesterCostPerSMh = this.WheeledHarvesterCostPerSMh; // add on winch
-            if (stand.SlopeInPercent > Constant.Default.SlopeForTetheringInPercent)
-            {
-                fellerBuncherCostPerSMh += this.AnchorCostPerSMh;
-                trackedHarvesterCostPerSMh += this.AnchorCostPerSMh;
-                fellerBuncherOrTrackedHarvesterAnchorMachine = 1;
-
-                if (stand.CorridorLengthInM > this.AddOnWinchCableLengthInM)
+                if (treeMerchantableVolumeInM3 > this.ProcessorBuckQuadraticThreshold1)
                 {
-                    wheeledHarvesterCostPerSMh += this.AnchorCostPerSMh;
-                    wheeledHarvesterAnchorMachine = 1;
+                    float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ProcessorBuckQuadraticThreshold1;
+                    treeProcessingPMs += this.ProcessorBuckQuadratic1 * volumeBeyondThreshold * volumeBeyondThreshold;
+                }
+                if (treeMerchantableVolumeInM3 > this.ProcessorBuckQuadraticThreshold2)
+                {
+                    float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ProcessorBuckQuadraticThreshold2;
+                    treeProcessingPMs += this.ProcessorBuckQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
                 }
             }
 
-            bool chainsawFallingWithTrackedHarvester = false;
-            bool chainsawFallingWithWheeledHarvester = false;
-            // float preferredLogLengthWithTrimInM = scaledVolume.PreferredLogLengthInMeters + scaledVolume.GetPreferredTrim(); // for checking first log weight
-            // float merchantableFractionOfLogLength = scaledVolume.PreferredLogLengthInMeters / preferredLogLengthWithTrimInM; // 1 in BC Firmwood
-            foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
+            return treeProcessingPMs;
+        }
+
+        public (float treeHarvesterPMs, float treeChainsawPMs) GetTrackedHarvesterTime(float dbhInCm, float treeMerchantableVolumeInM3)
+        {
+            float treeHarvesterPMs; // productive machine seconds
+            float treeChainsawPMs = 0.0F; // productive machine seconds
+            if (dbhInCm <= this.TrackedHarvesterFellAndBuckDiameterLimit)
             {
-                float diameterToCentimetersMultiplier = 1.0F;
-                float heightToMetersMultiplier = 1.0F;
-                float hectareExpansionFactorMultiplier = 1.0F;
-                if (treesOfSpecies.Units == Units.English)
+                treeHarvesterPMs = this.TrackedHarvesterFellAndBuckConstant + this.TrackedHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
+                if (treeMerchantableVolumeInM3 > this.TrackedHarvesterQuadraticThreshold1)
                 {
-                    diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
-                    heightToMetersMultiplier = Constant.MetersPerFoot;
-                    hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
+                    float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.TrackedHarvesterQuadraticThreshold1;
+                    treeHarvesterPMs += this.TrackedHarvesterFellAndBuckQuadratic1 * volumeBeyondThreshold * volumeBeyondThreshold;
                 }
-                if (treeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable) == false)
+                if (treeMerchantableVolumeInM3 > this.TrackedHarvesterQuadraticThreshold2)
                 {
-                    // for now, assume all non-merchantable trees are left in place in stand
-                    // TODO: include felling and handling costs for cut and leave
-                    continue;
-                }
-
-                TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
-                for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
-                {
-                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
-                    if (dbhInCm > longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
-                    {
-                        continue; // large trees are considered unharvestable reserves
-                    }
-
-                    float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
-                    float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                    float treeMerchantableVolumeInM3 = longLogVolumeTable.GetCubicVolumeOfMerchantableWood(dbhInCm, heightInM, out float unscaledNeiloidVolume);
-                    Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
-                    longLogHarvest.MerchantableCubicVolumePerHa += expansionFactorPerHa * treeMerchantableVolumeInM3;
-
-                    // feller-buncher with hot saw or directional felling head
-                    // For now, assume directional felling head where needed and no diameter limit to directional felling.
-                    float treeFellerBuncherTime = this.FellerBuncherFellingConstant + this.FellerBuncherFellingLinear * treeMerchantableVolumeInM3;
-                    longLogHarvest.FellerBuncherPMhPerHa += expansionFactorPerHa * treeFellerBuncherTime;
-
-                    // yarded weight
-                    // Since no yarder productivity study appears to consider bark loss it's generally unclear where in the turn reported
-                    // yarding weights occur. In lieu of more specific data, yarding weight limits are checked when half the yarding bark
-                    // loss has occurred and this same weight is used in finding the total yarded weight for calculating the total number
-                    // of yarding turns.
-                    // TODO: include weight of remaining crown after branch breaking during felling and swinging
-                    float woodAndRemainingBarkVolumePerStemAfterFelling = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAtMidspanWithoutHarvester);
-                    float yardedWeightPerStemWithFellerBuncher = woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
-                    longLogHarvest.YardedWeightPerHaWithFellerBuncher += expansionFactorPerHa * yardedWeightPerStemWithFellerBuncher; // before bark loss since 
-
-                    // chainsaw bucking of trees felled with a feller buncher but too heavy to be yarded as whole stems
-                    // For now,
-                    //   1) Assume the feller-buncher has a directional felling head if trees are too large for a hot saw and that
-                    //      no trees are too large for a directional felling head.
-                    //   2) Neglect effects of short log production when trees are large enough full size logs still exceed the
-                    //      yoader weight limit.
-                    //   3) The tree's first log is calculated from a Smalian estimate diameter outside bark. A more complete correct
-                    //      would look up the tree's first log's merchantable volume from the volume table and adjust for the bark
-                    //      fraction.
-                    float firstLogVolumeInM3 = longLogVolumeTable.GetCubicVolumeOfMerchantableWoodInFirstLog(dbhInCm, heightInM) + unscaledNeiloidVolume;
-                    float firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss = firstLogVolumeInM3 * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
-
-                    bool treeBuckedManuallyWithGrappleSwingYarder = false;
-                    if (yardedWeightPerStemWithFellerBuncher > this.GrappleSwingYarderMaxPayload)
-                    {
-                        float treeChainsawBuckTime = this.ChainsawBuckConstant + this.ChainsawBuckLinear * treeMerchantableVolumeInM3;
-                        if (treeMerchantableVolumeInM3 > this.ChainsawBuckQuadraticThreshold)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
-                            treeChainsawBuckTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                        longLogHarvest.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleSwingYarder += expansionFactorPerHa * treeMerchantableVolumeInM3;
-                        longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder += expansionFactorPerHa * treeChainsawBuckTime;
-                        treeBuckedManuallyWithGrappleSwingYarder = true;
-
-                        longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
-                        if (firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss > this.GrappleSwingYarderMaxPayload)
-                        {
-                            // for now, logs produced by feller-buncher plus chainsaw aren't distinguished from their somewhat lighter
-                            // equivalent with less bark after being bucked by a harvester
-                            longLogHarvest.GrappleSwingYarderOverweightFirstLogsPerHa += expansionFactorPerHa;
-                        }
-                    }
-
-                    bool treeBuckedManuallyWithGrappleYoader = false;
-                    if (yardedWeightPerStemWithFellerBuncher > this.GrappleYoaderMaxPayload)
-                    {
-                        float treeChainsawBuckTime = this.ChainsawBuckConstant + this.ChainsawBuckLinear * treeMerchantableVolumeInM3;
-                        if (treeMerchantableVolumeInM3 > this.ChainsawBuckQuadraticThreshold)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
-                            treeChainsawBuckTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                        longLogHarvest.ChainsawCubicVolumePerHaWithFellerBuncherAndGrappleYoader += expansionFactorPerHa * treeMerchantableVolumeInM3;
-                        longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader += expansionFactorPerHa * treeChainsawBuckTime;
-                        treeBuckedManuallyWithGrappleYoader = true;
-
-                        longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
-                        if (firstLogWeightWithFellerBuncherAndMidCorridorBarkLoss > this.GrappleYoaderMaxPayload)
-                        {
-                            // for now, logs produced by feller-buncher plus chainsaw aren't distinguished from their somewhat lighter
-                            // equivalent with less bark after being bucked by a harvester
-                            longLogHarvest.GrappleYoaderOverweightFirstLogsPerHa += expansionFactorPerHa;
-                        }
-                    }
-
-                    // tracked harvester
-                    float woodAndRemainingBarkVolumePerStemWithHarvester = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAtMidspanAfterHarvester);
-                    if (dbhInCm <= this.TrackedHarvesterFellAndBuckDiameterLimit)
-                    {
-                        // tree felled and bucked by harvester, no chainsaw use
-                        float treeHarvesterTime = this.TrackedHarvesterFellAndBuckConstant + this.TrackedHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
-                        if (treeMerchantableVolumeInM3 > this.TrackedHarvesterQuadraticThreshold1)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.TrackedHarvesterQuadraticThreshold1;
-                            treeHarvesterTime += this.TrackedHarvesterFellAndBuckQuadratic1 * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                        if (treeMerchantableVolumeInM3 > this.TrackedHarvesterQuadraticThreshold2)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.TrackedHarvesterQuadraticThreshold2;
-                            treeHarvesterTime += this.TrackedHarvesterFellAndBuckQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                        longLogHarvest.YardedWeightPerHaWithTrackedHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemWithHarvester * treeSpeciesProperties.StemDensityAtMidspanAfterHarvester;
-                        longLogHarvest.TrackedHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
-                    }
-                    else
-                    {
-                        // a chainsaw is used on this tree, so it applies towards chainsaw utilization
-                        // For now, since long log harvests are assumed to be regeneration harvests, assume the harvester is free to maneuver
-                        // across corridors to fall all trees behind its progression across the unit. This implies the harvester is free to assist
-                        // chainsaw work by felling as many trees as it can.
-                        longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
-
-                        float treeChainsawTime; // seconds
-                        float treeHarvesterTime; // seconds
-                        if (dbhInCm > this.TrackedHarvesterFellingDiameterLimit)
-                        {
-                            // tree felled by chainsaw, no cutting by harvester in this case
-                            chainsawFallingWithTrackedHarvester = true;
-                            treeChainsawTime = this.ChainsawFellAndBuckConstant + this.ChainsawFellAndBuckLinear * treeMerchantableVolumeInM3;
-                            treeHarvesterTime = 0.0F;
-                        }
-                        else
-                        {
-                            // tree felled by harvester, bucked by chainsaw
-                            // Since there aren't felling only coefficients for the harvester, approximate its felling time as the fell and buck
-                            // constant plus linear time and neglect the quadratic terms.
-                            treeChainsawTime = this.ChainsawBuckConstant + this.ChainsawBuckLinear * treeMerchantableVolumeInM3;
-                            treeHarvesterTime = this.TrackedHarvesterFellAndBuckConstant + this.TrackedHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
-                        }
-                        if (treeMerchantableVolumeInM3 > this.ChainsawBuckQuadraticThreshold)
-                        {
-                            // tree is always bucked by chainsaw, so quadratic component always applies above threshold
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
-                            treeChainsawTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-
-                        // tree is not bucked by harvester, so bark loss is only from yarding
-                        longLogHarvest.ChainsawCubicVolumePerHaWithTrackedHarvester += expansionFactorPerHa * treeMerchantableVolumeInM3;
-                        longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester += expansionFactorPerHa * treeChainsawTime;
-                        longLogHarvest.YardedWeightPerHaWithTrackedHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
-                        longLogHarvest.TrackedHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
-                    }
-
-                    // wheeled harvester
-                    if (dbhInCm <= this.WheeledHarvesterFellAndBuckDiameterLimit)
-                    {
-                        // tree felled and bucked by harvester, no chainsaw use
-                        float treeHarvesterTime = this.WheeledHarvesterFellAndBuckConstant + this.WheeledHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
-                        if (treeMerchantableVolumeInM3 > this.WheeledHarvesterQuadraticThreshold)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.WheeledHarvesterQuadraticThreshold;
-                            treeHarvesterTime += this.WheeledHarvesterFellAndBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                        longLogHarvest.YardedWeightPerHaWithWheeledHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemWithHarvester * treeSpeciesProperties.StemDensityAtMidspanAfterHarvester;
-                        longLogHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
-                    }
-                    else
-                    {
-                        // a chainsaw is used on this tree, so it applies towards chainsaw utilization
-                        // As with a the tracked harvester it's assumed the harvester is free to maneuver across corridors to fall trees behind
-                        // its progression.
-                        longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester += expansionFactorPerHa * MathF.PI * 0.0001F * dbhInCm * dbhInCm;
-
-                        float treeChainsawTime; // seconds
-                        float treeHarvesterTime; // seconds
-                        if (dbhInCm > this.WheeledHarvesterFellingDiameterLimit)
-                        {
-                            chainsawFallingWithWheeledHarvester = true;
-                            treeChainsawTime = this.ChainsawFellAndBuckConstant + this.ChainsawFellAndBuckLinear * treeMerchantableVolumeInM3;
-                            treeHarvesterTime = 0.0F;
-                        }
-                        else
-                        {
-                            treeChainsawTime = this.ChainsawBuckConstant + this.ChainsawBuckLinear * treeMerchantableVolumeInM3;
-                            treeHarvesterTime = this.WheeledHarvesterFellAndBuckConstant + this.WheeledHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
-                        }
-                        if (treeMerchantableVolumeInM3 > this.ChainsawBuckQuadraticThreshold)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ChainsawBuckQuadraticThreshold;
-                            treeChainsawTime += this.ChainsawBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-
-                        // tree is not bucked by harvester, so bark loss is only from yarding
-                        longLogHarvest.ChainsawCubicVolumePerHaWithWheeledHarvester += expansionFactorPerHa * treeMerchantableVolumeInM3;
-                        longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester += expansionFactorPerHa * treeChainsawTime;
-                        longLogHarvest.YardedWeightPerHaWithWheeledHarvester += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterFelling * treeSpeciesProperties.StemDensityAtMidspanWithoutHarvester;
-                        longLogHarvest.WheeledHarvesterPMhPerHa += expansionFactorPerHa * treeHarvesterTime;
-                    }
-
-                    // processor
-                    // Include constant and linear time components regardless of whether processor needs to buck the tree as, if the tree
-                    // was bucked by chainsaw before yarding, the processor still needs to move the logs from the yarder to the loader.
-                    float treeProcessingTimeWithGrappleSwingYarder = this.ProcessorBuckConstant + this.ProcessorBuckLinear * treeMerchantableVolumeInM3;
-                    if (treeBuckedManuallyWithGrappleSwingYarder == false)
-                    {
-                        if (treeMerchantableVolumeInM3 > this.ProcessorBuckQuadraticThreshold1)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ProcessorBuckQuadraticThreshold1;
-                            treeProcessingTimeWithGrappleSwingYarder += this.ProcessorBuckQuadratic1 * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                        if (treeMerchantableVolumeInM3 > this.ProcessorBuckQuadraticThreshold2)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ProcessorBuckQuadraticThreshold2;
-                            treeProcessingTimeWithGrappleSwingYarder += this.ProcessorBuckQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                    }
-                    longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder += expansionFactorPerHa * treeProcessingTimeWithGrappleSwingYarder;
-
-                    float treeProcessingTimeWithGrappleYoader = this.ProcessorBuckConstant + this.ProcessorBuckLinear * treeMerchantableVolumeInM3;
-                    if (treeBuckedManuallyWithGrappleYoader == false)
-                    {
-                        if (treeMerchantableVolumeInM3 > this.ProcessorBuckQuadraticThreshold1)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ProcessorBuckQuadraticThreshold1;
-                            treeProcessingTimeWithGrappleYoader += this.ProcessorBuckQuadratic1 * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                        if (treeMerchantableVolumeInM3 > this.ProcessorBuckQuadraticThreshold2)
-                        {
-                            float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.ProcessorBuckQuadraticThreshold2;
-                            treeProcessingTimeWithGrappleYoader += this.ProcessorBuckQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
-                        }
-                    }
-                    longLogHarvest.ProcessorPMhPerHaWithGrappleYoader += expansionFactorPerHa * treeProcessingTimeWithGrappleYoader;
-
-                    // loader productivity is specified so no loader calculations
-
-                    // haul weight
-                    float woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing = (treeMerchantableVolumeInM3 + unscaledNeiloidVolume) / (1.0F - treeSpeciesProperties.BarkFractionAfterYardingAndProcessing); // / merchantableFractionOfLogLength; // 1 in BC Firmwood
-                    longLogHarvest.LoadedWeightPerHa += expansionFactorPerHa * woodAndRemainingBarkVolumePerStemAfterYardingAndProcessing * treeSpeciesProperties.StemDensityAfterYardingAndProcessing;
+                    float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.TrackedHarvesterQuadraticThreshold2;
+                    treeHarvesterPMs += this.TrackedHarvesterFellAndBuckQuadratic2 * volumeBeyondThreshold * volumeBeyondThreshold;
                 }
             }
-
-            // feller-buncher + chainsaw + yarder-processor-loader system costs
-            float meanGrappleYardingTurnTime = this.GrappleYardingConstant + this.GrappleYardingLinear * (stand.MeanYardingDistanceFactor * stand.CorridorLengthInM + stand.AccessDistanceInM);
-            float loaderSMhPerHectare = longLogHarvest.LoadedWeightPerHa / (this.LoaderUtilization * this.LoaderProductivity);
-            // TODO: full corridor and processing bark loss
+            else
             {
-                if (longLogHarvest.FellerBuncherPMhPerHa > 0.0F)
+                if (dbhInCm > this.TrackedHarvesterFellingDiameterLimit)
                 {
-                    if (stand.SlopeInPercent > this.FellerBuncherSlopeThresholdInPercent)
-                    {
-                        longLogHarvest.FellerBuncherPMhPerHa *= 1.0F + this.FellerBuncherSlopeLinear * (stand.SlopeInPercent - this.FellerBuncherSlopeThresholdInPercent);
-                    }
-                    longLogHarvest.FellerBuncherPMhPerHa /= Constant.SecondsPerHour;
-                    longLogHarvest.Productivity.FellerBuncher = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.FellerBuncherPMhPerHa;
-                    Debug.Assert((longLogHarvest.Productivity.FellerBuncher >= 0.0F) && (longLogHarvest.Productivity.FellerBuncher < 5000.0F));
+                    // tree felled and bucked by chainsaw, no cutting by harvester in this case
+                    treeHarvesterPMs = 0.0F;
+                    treeChainsawPMs = this.GetChainsawFellAndBuckTime(treeMerchantableVolumeInM3);
                 }
                 else
                 {
-                    Debug.Assert(Single.IsNaN(longLogHarvest.Productivity.FellerBuncher));
+                    // tree felled by harvester, bucked by chainsaw
+                    // Since there aren't felling only coefficients for the harvester, approximate the tree's felling time as the fell and
+                    // buck constant plus linear time and neglect the quadratic terms.
+                    treeHarvesterPMs = this.TrackedHarvesterFellAndBuckConstant + this.TrackedHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
+                    treeChainsawPMs = this.GetChainsawBuckTime(treeMerchantableVolumeInM3);
                 }
-                float fellerBuncherCostPerHectare = fellerBuncherCostPerSMh * longLogHarvest.FellerBuncherPMhPerHa / this.FellerBuncherUtilization;
-
-                float minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = 0.0F;
-                if (longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder > 0.0F)
-                {
-                    if (stand.SlopeInPercent > this.ChainsawSlopeThresholdInPercent)
-                    {
-                        longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder *= 1.0F + this.ChainsawSlopeLinear * (stand.SlopeInPercent - this.ChainsawSlopeThresholdInPercent);
-                    }
-                    longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder /= Constant.SecondsPerHour;
-
-                    float chainsawBuckUtilization = this.ChainsawBuckUtilization * MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                    float chainsawBuckCost = this.ChainsawBuckCostPerSMh * longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder / chainsawBuckUtilization;
-
-                    float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleSwingYarder / this.ChainsawByOperatorUtilization;
-                    float chainsawByOperatorCost = chainsawByOperatorSMh * (fellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
-
-                    if (chainsawBuckCost < chainsawByOperatorCost)
-                    {
-                        minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = chainsawBuckCost;
-                        longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.Bucker;
-                        longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder = chainsawBuckUtilization;
-                    }
-                    else
-                    {
-                        minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder = chainsawByOperatorCost;
-                        longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleSwingYarder = ChainsawCrewType.Operator;
-                        longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder = this.ChainsawByOperatorUtilization;
-                    }
-                    Debug.Assert((longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder > 0.0F) && (longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleSwingYarder < 10000.0F) &&
-                                 (longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder >= 0.0F) && (longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleSwingYarder <= 1.0F));
-                }
-
-                float grappleSwingYarderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
-                longLogHarvest.GrappleSwingYarderPMhPerHectare = grappleSwingYarderTurnsPerHectare * meanGrappleYardingTurnTime / Constant.SecondsPerHour;
-                longLogHarvest.Productivity.GrappleSwingYarder = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.GrappleSwingYarderPMhPerHectare;
-                float grappleSwingYarderSMhPerHectare = longLogHarvest.GrappleSwingYarderPMhPerHectare / this.GrappleSwingYarderUtilization;
-
-                longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder;
-                float processorSMhPerHectareWithGrappleSwingYarder = longLogHarvest.ProcessorPMhPerHaWithGrappleSwingYarder / this.ProcessorUtilization;
-
-                Debug.Assert((longLogHarvest.Productivity.GrappleSwingYarder >= 0.0F) && (longLogHarvest.Productivity.GrappleSwingYarder < 1000.0F) &&
-                             (longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder >= 0.0F) && (longLogHarvest.Productivity.ProcessorWithGrappleSwingYarder < 1000.0F));
-
-                // TODO: chainsaw productivity
-                // loader productivity is specified so doesn't need to be output
-
-                float haulRoundtripsPerHectare = longLogHarvest.LoadedWeightPerHa / this.LongLogHaulPayloadInKg;
-                float haulCostPerHectare = this.LongLogHaulRoundtripSMh * haulRoundtripsPerHectare * this.LongLogHaulPerSMh;
-
-                float limitingSMhWithFellerBuncherAndGrappleSwingYarder = MathE.Max(grappleSwingYarderSMhPerHectare, processorSMhPerHectareWithGrappleSwingYarder, loaderSMhPerHectare);
-                float grappleSwingYarderCostPerHectareWithFellerBuncher = this.GrappleSwingYarderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
-                float processorCostPerHectareWithGrappleSwingYarder = this.ProcessorCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
-                float loaderCostPerHectareWithFellerBuncherAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleSwingYarder;
-                int machinesToMoveInAndOutWithFellerBuncher = 5 + fellerBuncherOrTrackedHarvesterAnchorMachine; // bulldozer + feller-buncher [+ anchor] + yarder + processor + loader
-                float machineMoveInAndOutPerHectareWithFellerBuncher = 2.0F * machinesToMoveInAndOutWithFellerBuncher * this.MachineMoveInOrOut / stand.AreaInHa;
-                longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa = fellerBuncherCostPerHectare + minimumChainsawCostWithFellerBuncherAndGrappleSwingYarder + 
-                    grappleSwingYarderCostPerHectareWithFellerBuncher + processorCostPerHectareWithGrappleSwingYarder + loaderCostPerHectareWithFellerBuncherAndGrappleSwingYarder + 
-                    haulCostPerHectare + machineMoveInAndOutPerHectareWithFellerBuncher;
-
-                // grapple yoader
-                float minimumChainsawCostWithFellerBuncherAndGrappleYoader = 0.0F;
-                if (longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader > 0.0F)
-                {
-                    if (stand.SlopeInPercent > this.ChainsawSlopeThresholdInPercent)
-                    {
-                        longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader *= 1.0F + this.ChainsawSlopeLinear * (stand.SlopeInPercent - this.ChainsawSlopeThresholdInPercent);
-                    }
-                    longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader /= Constant.SecondsPerHour;
-
-                    float chainsawBuckUtilization = this.ChainsawBuckUtilization * MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                    float chainsawBuckSMh = longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader / chainsawBuckUtilization;
-                    float chainsawBuckCost = this.ChainsawBuckCostPerSMh * chainsawBuckSMh;
-
-                    float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithFellerBuncherAndGrappleYoader / this.ChainsawByOperatorUtilization;
-                    float chainsawByOperatorCost = chainsawByOperatorSMh * (fellerBuncherCostPerSMh + this.ChainsawByOperatorCostPerSMh);
-
-                    if (chainsawBuckCost < chainsawByOperatorCost)
-                    {
-                        minimumChainsawCostWithFellerBuncherAndGrappleYoader = chainsawBuckCost;
-                        longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.Bucker;
-                        longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader = chainsawBuckUtilization;
-                    }
-                    else
-                    {
-                        minimumChainsawCostWithFellerBuncherAndGrappleYoader = chainsawByOperatorCost;
-                        longLogHarvest.ChainsawCrewWithFellerBuncherAndGrappleYoader = ChainsawCrewType.Operator;
-                        longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader = this.ChainsawByOperatorUtilization;
-                    }
-                    Debug.Assert((longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader > 0.0F) && (longLogHarvest.ChainsawBasalAreaPerHaWithFellerBuncherAndGrappleYoader < 10000.0F) &&
-                                 (longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader >= 0.0F) && (longLogHarvest.Productivity.ChainsawUtilizationWithFellerBuncherAndGrappleYoader <= 1.0F));
-                }
-
-                float grappleYoaderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
-                longLogHarvest.GrappleYoaderPMhPerHectare = grappleYoaderTurnsPerHectare * meanGrappleYardingTurnTime / Constant.SecondsPerHour;
-                longLogHarvest.Productivity.GrappleYoader = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.GrappleYoaderPMhPerHectare;
-                float grappleYoaderSMhPerHectare = longLogHarvest.GrappleYoaderPMhPerHectare / this.GrappleYoaderUtilization;
-
-                longLogHarvest.ProcessorPMhPerHaWithGrappleYoader /= Constant.SecondsPerHour;
-                longLogHarvest.Productivity.ProcessorWithGrappleYoader = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.ProcessorPMhPerHaWithGrappleYoader;
-                float processorSMhPerHectareWithGrappleYoader = longLogHarvest.ProcessorPMhPerHaWithGrappleYoader / this.ProcessorUtilization;
-
-                Debug.Assert((longLogHarvest.Productivity.GrappleYoader >= 0.0F) && (longLogHarvest.Productivity.GrappleYoader < 1000.0F) &&
-                             (longLogHarvest.Productivity.ProcessorWithGrappleYoader >= 0.0F) && (longLogHarvest.Productivity.ProcessorWithGrappleYoader < 1000.0F));
-
-                float limitingSMhWithFellerBuncherAndGrappleYoader = MathE.Max(grappleYoaderSMhPerHectare, processorSMhPerHectareWithGrappleYoader, loaderSMhPerHectare);
-                float grappleYoaderCostPerHectareWithFellerBuncher = this.GrappleYoaderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleYoader;
-                float processorCostPerHectareWithGrappleYoader = this.ProcessorCostPerSMh * limitingSMhWithFellerBuncherAndGrappleYoader;
-                float loaderCostPerHectareWithFellerBuncherAndGrappleYoader = this.LoaderCostPerSMh * limitingSMhWithFellerBuncherAndGrappleYoader;
-                longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa = fellerBuncherCostPerHectare + minimumChainsawCostWithFellerBuncherAndGrappleYoader + 
-                    grappleYoaderCostPerHectareWithFellerBuncher + processorCostPerHectareWithGrappleYoader + loaderCostPerHectareWithFellerBuncherAndGrappleYoader +
-                    haulCostPerHectare + machineMoveInAndOutPerHectareWithFellerBuncher; 
-
-                // if heuristic selects all trees for thinning then there are no trees at final harvest and SMh and costs are zero
-                Debug.Assert((limitingSMhWithFellerBuncherAndGrappleSwingYarder >= 0.0F) && (Single.IsNaN(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa) == false) && (longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa >= 0.0F) && (longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa < 275.0F * 1000.0F) &&
-                             (limitingSMhWithFellerBuncherAndGrappleYoader >= 0.0F) && (Single.IsNaN(longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa) == false) && (longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa >= 0.0F) && (longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa < 260.0F * 1000.0F));
-
-                // coupled utilization not currently calculated but may be of debugging interest
-                //float swingYarderCoupledUtilization = grappleSwingYarderPMhPerHectare / limitingSMh;
-                //float yoaderCoupledUtilization = grappleYoaderPMhPerHectare / limitingSMh;
-                //float processorCoupledUtilization = processorPMhPerHectareWithGrappleSwingYarder / limitingSMh;
-                //float processorCoupledUtilization = processorPMhPerHectareWithGrappleYoader / limitingSMh;
-                //float loaderCoupledUtilization = loaderPMhPerHectare / limitingSMh;
             }
 
-            // harvester + chainsaw + yarder-processor-loader system costs
+            return (treeHarvesterPMs, treeChainsawPMs);
+        }
+
+        public (float treeHarvesterPMs, float treeChainsawPMs) GetWheeledHarvesterTime(float dbhInCm, float treeMerchantableVolumeInM3, bool previousOversizeTreeBehindHarvester)
+        {
+            float treeChainsawPMs = 0.0F; // productive machine seconds
+            float treeHarvesterPMs; // productive machine seconds
+            if (dbhInCm <= this.WheeledHarvesterFellAndBuckDiameterLimit)
             {
-                // tracked harvester
-                // For now, assume uniform slope across stand.
-                if (longLogHarvest.TrackedHarvesterPMhPerHa > 0.0F)
+                // tree felled and bucked by harvester, no chainsaw use
+                treeHarvesterPMs = this.WheeledHarvesterFellAndBuckConstant + this.WheeledHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
+                if (treeMerchantableVolumeInM3 > this.WheeledHarvesterQuadraticThreshold)
                 {
-                    if (stand.SlopeInPercent > this.TrackedHarvesterSlopeThresholdInPercent)
-                    {
-                        longLogHarvest.TrackedHarvesterPMhPerHa *= 1.0F + this.TrackedHarvesterSlopeLinear * (stand.SlopeInPercent - this.TrackedHarvesterSlopeThresholdInPercent);
-                    }
-                    longLogHarvest.TrackedHarvesterPMhPerHa /= Constant.SecondsPerHour;
-                    longLogHarvest.Productivity.TrackedHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.TrackedHarvesterPMhPerHa;
-                    Debug.Assert((longLogHarvest.Productivity.TrackedHarvester >= 0.0F) && (longLogHarvest.Productivity.TrackedHarvester < 1000.0F));
+                    float volumeBeyondThreshold = treeMerchantableVolumeInM3 - this.WheeledHarvesterQuadraticThreshold;
+                    treeHarvesterPMs += this.WheeledHarvesterFellAndBuckQuadratic * volumeBeyondThreshold * volumeBeyondThreshold;
+                }
+            }
+            else
+            {
+                if ((dbhInCm > this.WheeledHarvesterFellingDiameterLimit) || previousOversizeTreeBehindHarvester)
+                {
+                    // tree felled and bucked by chainsaw, no cutting by harvester in this case
+                    treeHarvesterPMs = 0.0F;
+                    treeChainsawPMs = this.GetChainsawFellAndBuckTime(treeMerchantableVolumeInM3);
                 }
                 else
                 {
-                    Debug.Assert(Single.IsNaN(longLogHarvest.Productivity.TrackedHarvester));
+                    // tree felled by harvester, bucked by chainsaw
+                    // Since there aren't felling only coefficients for the harvester, approximate its felling time as the fell and
+                    // buck constant plus linear time and neglect the quadratic terms.
+                    treeHarvesterPMs = this.WheeledHarvesterFellAndBuckConstant + this.WheeledHarvesterFellAndBuckLinear * treeMerchantableVolumeInM3;
+                    treeChainsawPMs = this.GetChainsawBuckTime(treeMerchantableVolumeInM3);
                 }
-
-                float trackedHarvesterCostPerHectare = trackedHarvesterCostPerSMh * longLogHarvest.TrackedHarvesterPMhPerHa / this.TrackedHarvesterUtilization;
-
-                float minimumChainsawCostWithTrackedHarvester = 0.0F;
-                if (longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester > 0.0F)
-                {
-                    if (stand.SlopeInPercent > this.ChainsawSlopeThresholdInPercent)
-                    {
-                        longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester *= 1.0F + this.ChainsawSlopeLinear * (stand.SlopeInPercent - this.ChainsawSlopeThresholdInPercent);
-                    }
-                    longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester /= Constant.SecondsPerHour;
-
-                    float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / this.ChainsawByOperatorUtilization; // SMh
-                    float chainsawByOperatorCost = (trackedHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
-                    float chainsawCrewCost;
-                    float chainsawCrewUtilization;
-                    if (chainsawFallingWithTrackedHarvester)
-                    {
-                        chainsawCrewCost = this.ChainsawFellAndBuckCostPerSMh;
-                        chainsawCrewUtilization = this.ChainsawFellAndBuckUtilization;
-                    }
-                    else
-                    {
-                        chainsawCrewCost = this.ChainsawBuckCostPerSMh;
-                        chainsawCrewUtilization = this.ChainsawBuckUtilization;
-                    }
-                    chainsawCrewUtilization *= MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                    chainsawCrewCost *= longLogHarvest.ChainsawPMhPerHaWithTrackedHarvester / chainsawCrewUtilization;
-
-                    if (chainsawCrewCost < chainsawByOperatorCost)
-                    {
-                        minimumChainsawCostWithTrackedHarvester = chainsawCrewCost;
-                        longLogHarvest.ChainsawCrewWithTrackedHarvester = chainsawFallingWithTrackedHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
-                        longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester = chainsawCrewUtilization;
-                    }
-                    else
-                    {
-                        minimumChainsawCostWithTrackedHarvester = chainsawByOperatorCost;
-                        longLogHarvest.ChainsawCrewWithTrackedHarvester = ChainsawCrewType.Operator;
-                        longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester = this.ChainsawByOperatorUtilization;
-                    }
-                    Debug.Assert((longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester > 0.0F) && (longLogHarvest.ChainsawBasalAreaPerHaWithTrackedHarvester < 10000.0F) &&
-                                 (longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester >= 0.0F) && (longLogHarvest.Productivity.ChainsawUtilizationWithTrackedHarvester <= 1.0F));
-                }
-
-                float grappleSwingYarderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleSwingYarderMeanPayload;
-                float grappleSwingYarderSMhPerHectare = grappleSwingYarderTurnsPerHectare * meanGrappleYardingTurnTime / (Constant.SecondsPerHour * this.GrappleSwingYarderUtilization);
-
-                float haulRoundtripsPerHectareWithTrackedHarvester = longLogHarvest.YardedWeightPerHaWithTrackedHarvester / this.LongLogHaulPayloadInKg;
-                float haulCostPerHectareWithTrackedHarvester = this.LongLogHaulRoundtripSMh * haulRoundtripsPerHectareWithTrackedHarvester * this.LongLogHaulPerSMh;
-
-                float limitingSMhWithTrackedHarvesterAndGrappleSwingYarder = MathF.Max(grappleSwingYarderSMhPerHectare, loaderSMhPerHectare);
-                float swingYarderCostPerHectareWithTrackedHarvester = this.GrappleSwingYarderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleSwingYarder;
-                float loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleSwingYarder;
-                int machinesToMoveInAndOutWithTrackedHarvester = 4 + fellerBuncherOrTrackedHarvesterAnchorMachine; // bulldozer + harvester [+ anchor] + yarder + loader
-                float machineMoveInAndOutPerHectareWithTrackedHarvester = 2.0F * machinesToMoveInAndOutWithTrackedHarvester * this.MachineMoveInOrOut / stand.AreaInHa;
-                longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa = trackedHarvesterCostPerHectare + minimumChainsawCostWithTrackedHarvester + 
-                    swingYarderCostPerHectareWithTrackedHarvester + loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder +
-                    haulCostPerHectareWithTrackedHarvester + machineMoveInAndOutPerHectareWithTrackedHarvester;
-
-                float grappleYoaderTurnsPerHectare = longLogHarvest.YardedWeightPerHaWithFellerBuncher / this.GrappleYoaderMeanPayload;
-                float grappleYoaderSMhPerHectare = grappleYoaderTurnsPerHectare * meanGrappleYardingTurnTime / (Constant.SecondsPerHour * this.GrappleYoaderUtilization);
-
-                float limitingSMhWithTrackedHarvesterAndGrappleYoader = MathF.Max(grappleYoaderSMhPerHectare, loaderSMhPerHectare);
-                float grappleYoaderCostPerHectareWithTrackedHarvester = this.GrappleYoaderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleYoader;
-                float loaderCostPerHectareWithTrackedHarvesterAndGrappleYoader = this.LoaderCostPerSMh * limitingSMhWithTrackedHarvesterAndGrappleYoader;
-                longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa = trackedHarvesterCostPerHectare + minimumChainsawCostWithTrackedHarvester + 
-                    grappleYoaderCostPerHectareWithTrackedHarvester + loaderCostPerHectareWithTrackedHarvesterAndGrappleYoader +
-                    haulCostPerHectareWithTrackedHarvester + machineMoveInAndOutPerHectareWithTrackedHarvester;
-
-                // wheeled harvester
-                if (longLogHarvest.WheeledHarvesterPMhPerHa > 0.0F)
-                {
-                    if (stand.SlopeInPercent > this.WheeledHarvesterSlopeThresholdInPercent)
-                    {
-                        longLogHarvest.WheeledHarvesterPMhPerHa *= 1.0F + this.WheeledHarvesterSlopeLinear * (stand.SlopeInPercent - this.WheeledHarvesterSlopeThresholdInPercent);
-                    }
-                    longLogHarvest.WheeledHarvesterPMhPerHa /= Constant.SecondsPerHour;
-                    longLogHarvest.Productivity.WheeledHarvester = longLogHarvest.MerchantableCubicVolumePerHa / longLogHarvest.WheeledHarvesterPMhPerHa;
-                    Debug.Assert((longLogHarvest.Productivity.WheeledHarvester >= 0.0F) && (longLogHarvest.Productivity.WheeledHarvester < 1000.0F));
-                }
-                else
-                {
-                    Debug.Assert(Single.IsNaN(longLogHarvest.Productivity.WheeledHarvester));
-                }
-
-                float wheeledHarvesterSMh = longLogHarvest.WheeledHarvesterPMhPerHa / this.WheeledHarvesterUtilization;
-                float wheeledHarvesterCostPerHectare = wheeledHarvesterCostPerSMh * wheeledHarvesterSMh;
-
-                float minimumChainsawCostWithWheeledHarvester = 0.0F;
-                if (longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester > 0.0F)
-                {
-                    if (stand.SlopeInPercent > this.ChainsawSlopeThresholdInPercent)
-                    {
-                        longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester *= 1.0F + this.ChainsawSlopeLinear * (stand.SlopeInPercent - this.ChainsawSlopeThresholdInPercent);
-                    }
-                    longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester /= Constant.SecondsPerHour;
-
-                    float chainsawByOperatorSMh = longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / this.ChainsawByOperatorUtilization; // SMh
-                    float chainsawByOperatorCost = (wheeledHarvesterCostPerSMh + this.ChainsawByOperatorCostPerSMh) * chainsawByOperatorSMh;
-                    float chainsawCrewCost;
-                    float chainsawCrewUtilization;
-                    if (chainsawFallingWithWheeledHarvester)
-                    {
-                        chainsawCrewCost = this.ChainsawFellAndBuckCostPerSMh;
-                        chainsawCrewUtilization = this.ChainsawFellAndBuckUtilization;
-                    }
-                    else
-                    {
-                        chainsawCrewCost = this.ChainsawBuckCostPerSMh;
-                        chainsawCrewUtilization = this.ChainsawBuckUtilization;
-                    }
-                    chainsawCrewUtilization *= MathF.Min(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester / Constant.HarvestCost.ChainsawBasalAreaPerHaForFullUtilization, 1.0F);
-                    chainsawCrewCost *= longLogHarvest.ChainsawPMhPerHaWithWheeledHarvester / chainsawCrewUtilization;
-
-                    if (chainsawCrewCost < chainsawByOperatorCost)
-                    {
-                        minimumChainsawCostWithWheeledHarvester = chainsawCrewCost;
-                        longLogHarvest.ChainsawCrewWithWheeledHarvester = chainsawFallingWithWheeledHarvester ? ChainsawCrewType.Fallers : ChainsawCrewType.Bucker;
-                        longLogHarvest.Productivity.ChainsawUtilizationWithWheeledHarvester = chainsawCrewUtilization;
-                    }
-                    else
-                    {
-                        minimumChainsawCostWithWheeledHarvester = chainsawByOperatorCost;
-                        longLogHarvest.ChainsawCrewWithWheeledHarvester = ChainsawCrewType.Operator;
-                        longLogHarvest.Productivity.ChainsawUtilizationWithWheeledHarvester = this.ChainsawByOperatorUtilization;
-                    }
-
-                    Debug.Assert(longLogHarvest.ChainsawBasalAreaPerHaWithWheeledHarvester > 0.0F);
-                }
-
-                float haulRoundtripsPerHectareWithWheeledHarvester = longLogHarvest.YardedWeightPerHaWithWheeledHarvester / this.LongLogHaulPayloadInKg;
-                float haulCostPerHectareWithWheeledHarvester = this.LongLogHaulRoundtripSMh * haulRoundtripsPerHectareWithWheeledHarvester * this.LongLogHaulPerSMh;
-
-                float limitingSMhWithWheeledHarvesterAndGrappleSwingYarder = MathF.Max(grappleSwingYarderSMhPerHectare, loaderSMhPerHectare);
-                float swingYarderCostPerHectareWithWheeledHarvester = this.GrappleSwingYarderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleSwingYarder;
-                float loaderCostPerHectareWithWheeledHarvesterAndGrappleSwingYarder = this.LoaderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleSwingYarder;
-                int machinesToMoveInAndOutWithWheeledHarvester = 4 + wheeledHarvesterAnchorMachine; // bulldozer + harvester [+ anchor] + yarder + loader
-                float machineMoveInAndOutPerHectareWithWheeledHarvester = 2.0F * machinesToMoveInAndOutWithWheeledHarvester * this.MachineMoveInOrOut / stand.AreaInHa;
-                longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = wheeledHarvesterCostPerHectare + minimumChainsawCostWithWheeledHarvester + 
-                    swingYarderCostPerHectareWithWheeledHarvester + loaderCostPerHectareWithWheeledHarvesterAndGrappleSwingYarder +
-                    haulCostPerHectareWithWheeledHarvester + machineMoveInAndOutPerHectareWithWheeledHarvester;
-
-                float limitingSMhWithWheeledHarvesterAndGrappleYoader = MathF.Max(grappleYoaderSMhPerHectare, loaderSMhPerHectare);
-                float grappleYoaderCostPerHectareWithWheeledHarvester = this.GrappleYoaderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleYoader;
-                float loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader = this.LoaderCostPerSMh * limitingSMhWithWheeledHarvesterAndGrappleYoader;
-                longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa = wheeledHarvesterCostPerHectare + minimumChainsawCostWithWheeledHarvester + 
-                    grappleYoaderCostPerHectareWithWheeledHarvester + loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader +
-                    haulCostPerHectareWithWheeledHarvester + machineMoveInAndOutPerHectareWithWheeledHarvester;
-
-                // if all trees are especially large harvester costs per hectare can be zero as only chainsaw felling and bucking is performed
-                Debug.Assert((trackedHarvesterCostPerHectare >= 0.0F) && (minimumChainsawCostWithTrackedHarvester >= 0.0F) && (haulCostPerHectareWithTrackedHarvester >= 0.0F) && (machineMoveInAndOutPerHectareWithTrackedHarvester > 0.0F));
-                Debug.Assert((limitingSMhWithTrackedHarvesterAndGrappleSwingYarder >= 0.0F) && (swingYarderCostPerHectareWithTrackedHarvester >= 0.0F) && (loaderCostPerHectareWithTrackedHarvesterAndGrappleSwingYarder >= 0.0F));
-                Debug.Assert((Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa >= 0.0F) && (longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa < 200.0F * 1000.0F));
-                Debug.Assert((limitingSMhWithTrackedHarvesterAndGrappleYoader >= 0.0F) && (grappleYoaderCostPerHectareWithTrackedHarvester >= 0.0F) && (loaderCostPerHectareWithTrackedHarvesterAndGrappleYoader >= 0.0F));
-                Debug.Assert((Single.IsNaN(longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa >= 0.0F) && (longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa < 200.0F * 1000.0F));
-                Debug.Assert((wheeledHarvesterCostPerHectare >= 0.0F) && (minimumChainsawCostWithWheeledHarvester >= 0.0F) && (haulCostPerHectareWithWheeledHarvester >= 0.0F) && (machineMoveInAndOutPerHectareWithWheeledHarvester > 0.0F));
-                Debug.Assert((limitingSMhWithWheeledHarvesterAndGrappleSwingYarder >= 0.0F) && (grappleYoaderCostPerHectareWithWheeledHarvester >= 0.0F) && (loaderCostPerHectareWithWheeledHarvesterAndGrappleYoader >= 0.0F));
-                Debug.Assert((Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa >= 0.0F) && (longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa < 200.0F * 1000.0F));
-                Debug.Assert((limitingSMhWithWheeledHarvesterAndGrappleYoader >= 0.0F) && (Single.IsNaN(longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa) == false) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa > 0.0F) && (longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa < 200.0F * 1000.0F));
             }
 
-            longLogHarvest.MinimumSystemCostPerHa = MathE.Min(longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa, longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa,
-                                                              longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa, longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa,
-                                                              longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa, longLogHarvest.WheeledHarvesterGrappleYoaderLoaderCostPerHa);
+            return (treeHarvesterPMs, treeChainsawPMs);
         }
 
         public void VerifyPropertyValues()
@@ -1624,18 +751,6 @@ namespace Mars.Seem.Silviculture
             if ((this.WheeledHarvesterUtilization < 0.1F) || (this.WheeledHarvesterUtilization > 1.0F))
             {
                 throw new NotSupportedException("Wheeled harvester utilization is not in the range [0.1, 1.0].");
-            }
-        }
-
-        private readonly struct ForwarderTurn
-        {
-            public float Time { get; init; } // minutes
-            public float Volume { get; init; } // merchantable m³
-
-            public ForwarderTurn(float timeInMinutes, float volumeInM3)
-            {
-                this.Time = timeInMinutes;
-                this.Volume = volumeInM3;
             }
         }
     }

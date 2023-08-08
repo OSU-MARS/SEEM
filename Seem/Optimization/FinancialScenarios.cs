@@ -219,7 +219,7 @@ namespace Mars.Seem.Optimization
             int harvestAgeInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
             float appreciationFactor = this.GetTimberAppreciationFactor(financialIndex, harvestAgeInYears);
             float harvestTaxPerMbf = this.HarvestTaxPerMbf[financialIndex];
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in trajectory.StandingVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in trajectory.LongLogVolumeBySpecies.Values)
             {
                 // check for nonzero cubic volume removal
                 float cubic2Saw = standingVolumeForSpecies.Cubic2Saw[endOfRotationPeriod];
@@ -309,12 +309,12 @@ namespace Mars.Seem.Optimization
             if (longLogHarvest.CubicVolumePerHa > 0.0F)
             {
                 HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
-                harvestSystems.GetLongLogHarvestCosts(endOfRotationStand, trajectory.TreeVolume, longLogHarvest);
+                longLogHarvest.CalculateVolumeProductivityAndCost(endOfRotationStand, trajectory.TreeVolume, harvestSystems);
 
                 float regenHarvestTaskCostPerCubicMeter = this.RegenerationSlashCostPerCubicMeter[financialIndex] + this.RegenerationRoadCostPerCubicMeter[financialIndex];
-                longLogHarvest.TaskCostPerHa = regenHarvestTaskCostPerCubicMeter * longLogHarvest.CubicVolumePerHa + this.RegenerationHarvestCostPerHectare[financialIndex];
+                longLogHarvest.HarvestRelatedTaskCostPerHa = regenHarvestTaskCostPerCubicMeter * longLogHarvest.CubicVolumePerHa + this.RegenerationHarvestCostPerHectare[financialIndex];
 
-                float netValuePerHectareAtHarvest = longLogHarvest.PondValue2SawPerHa + longLogHarvest.PondValue3SawPerHa + longLogHarvest.PondValue4SawPerHa - longLogHarvest.MinimumSystemCostPerHa - longLogHarvest.TaskCostPerHa;
+                float netValuePerHectareAtHarvest = longLogHarvest.PondValue2SawPerHa + longLogHarvest.PondValue3SawPerHa + longLogHarvest.PondValue4SawPerHa - longLogHarvest.MinimumSystemCostPerHa - longLogHarvest.HarvestRelatedTaskCostPerHa;
 
                 float discountRate = this.DiscountRate[financialIndex];
                 float discountFactor = this.GetDiscountFactor(financialIndex, harvestAgeInYears);
@@ -323,14 +323,7 @@ namespace Mars.Seem.Optimization
             else
             {
                 // all trees are too small to have merchantable volume, were removed in earlier harvests, or are dead
-                longLogHarvest.FellerBuncherGrappleSwingYarderProcessorLoaderCostPerHa = 0.0F;
-                longLogHarvest.FellerBuncherGrappleYoaderProcessorLoaderCostPerHa = 0.0F;
-                longLogHarvest.MinimumSystemCostPerHa = 0.0F;
-                longLogHarvest.NetPresentValuePerHa = 0.0F;
-                longLogHarvest.TrackedHarvesterGrappleSwingYarderLoaderCostPerHa = 0.0F;
-                longLogHarvest.TrackedHarvesterGrappleYoaderLoaderCostPerHa = 0.0F;
-                longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = 0.0F;
-                longLogHarvest.WheeledHarvesterGrappleSwingYarderLoaderCostPerHa = 0.0F;
+                longLogHarvest.Clear();
             }
 
             return longLogHarvest;
@@ -351,7 +344,7 @@ namespace Mars.Seem.Optimization
             float harvestTaxPerMbf = this.HarvestTaxPerMbf[financialIndex];
             int thinningAgeInYears = trajectory.GetEndOfPeriodAge(thinningPeriod);
             float thinningPondValueMultiplier = this.ThinningPondValueMultiplier[financialIndex] * this.GetTimberAppreciationFactor(financialIndex, thinningAgeInYears);
-            foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in trajectory.ThinningVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in trajectory.ForwardedVolumeBySpecies.Values)
             {
                 // check for nonzero cubic volume removal
                 float cubic2Saw = harvestVolumeForSpecies.Cubic2Saw[thinningPeriod];
@@ -413,16 +406,16 @@ namespace Mars.Seem.Optimization
 
             // get harvest cost
             // TODO: unify standing volume calculation
-            HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
             if (ctlHarvest.CubicVolumePerHa > 0.0F)
             {
                 // volume was harvested so thinning costs are incurred
-                harvestSystems.GetCutToLengthHarvestCost(trajectory, thinningPeriod, isThin: true, ctlHarvest);
+                HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
+                ctlHarvest.CalculateVolumeProductivityAndCost(trajectory, thinningPeriod, isThin: true, harvestSystems);
 
                 float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
-                ctlHarvest.TaskCostPerHa += thinningHarvestTaskCostPerCubicMeter * ctlHarvest.CubicVolumePerHa + this.ThinningHarvestCostPerHectare[financialIndex];
+                ctlHarvest.HarvestRelatedTaskCostPerHa += thinningHarvestTaskCostPerCubicMeter * ctlHarvest.CubicVolumePerHa + this.ThinningHarvestCostPerHectare[financialIndex];
 
-                float netValuePerHaAtHarvest = ctlHarvest.PondValue2SawPerHa + ctlHarvest.PondValue3SawPerHa + ctlHarvest.PondValue4SawPerHa - ctlHarvest.MinimumSystemCostPerHa - ctlHarvest.TaskCostPerHa;
+                float netValuePerHaAtHarvest = ctlHarvest.PondValue2SawPerHa + ctlHarvest.PondValue3SawPerHa + ctlHarvest.PondValue4SawPerHa - ctlHarvest.MinimumSystemCostPerHa - ctlHarvest.HarvestRelatedTaskCostPerHa;
                 float discountFactor = this.GetDiscountFactor(financialIndex, thinningAgeInYears);
                 ctlHarvest.NetPresentValuePerHa = discountFactor * netValuePerHaAtHarvest;
             }
@@ -441,9 +434,9 @@ namespace Mars.Seem.Optimization
             }
 
             LongLogHarvest regenFinancialValue = this.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, endOfRotationPeriod);
-            float reforestationNpv = this.GetNetPresentReforestationValue(financialIndex, trajectory.PlantingDensityInTreesPerHectare);
-            regenFinancialValue.NetPresentValuePerHa += reforestationNpv;
-            regenFinancialValue.TaskCostPerHa -= reforestationNpv;
+            float reforestationNetPresentValue = this.GetNetPresentReforestationValue(financialIndex, trajectory.PlantingDensityInTreesPerHectare);
+            regenFinancialValue.NetPresentValuePerHa += reforestationNetPresentValue;
+            regenFinancialValue.HarvestRelatedTaskCostPerHa -= reforestationNetPresentValue;
 
             netPresentValue += regenFinancialValue.NetPresentValuePerHa;
             return netPresentValue;
