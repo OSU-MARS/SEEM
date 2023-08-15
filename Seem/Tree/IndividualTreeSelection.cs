@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Mars.Seem.Tree
 {
@@ -11,6 +12,7 @@ namespace Mars.Seem.Tree
         {
             this.count = 0;
             this.treeSelection = new int[capacity];
+            Debug.Assert(Constant.RegenerationHarvestIfEligible == 0); // or Array.Fill(this.treeSelection, Constant.RegenerationHarvestPeriod);
         }
 
         public IndividualTreeSelection(IndividualTreeSelection other)
@@ -24,6 +26,29 @@ namespace Mars.Seem.Tree
         {
             this.count = treeSelection.Length;
             this.treeSelection = treeSelection;
+        }
+
+        public IndividualTreeSelection(Trees treesOfSpecies, float reserveDbhInCm)
+            : this(treesOfSpecies.Capacity)
+        {
+            // for now, if species isn't merchantable mark all trees as non harvestable
+            if (Single.IsNaN(reserveDbhInCm))
+            {
+                Array.Fill(this.treeSelection, Constant.NoHarvestPeriod);
+                return;
+            }
+
+            // automatically designate reserve trees by DBH
+            // TODO: support designation of smaller reserve trees and nonmerchantable (cull or defect) trees
+            (float diameterToCentimetersMultiplier, float _, float _) = treesOfSpecies.GetConversionToMetric();
+            for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
+            {
+                float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[treeIndex];
+                if (dbhInCm > reserveDbhInCm)
+                {
+                    this.treeSelection[treeIndex] = Constant.NoHarvestPeriod;
+                }
+            }
         }
 
         public int this[int index]

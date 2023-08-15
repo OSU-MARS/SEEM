@@ -61,7 +61,7 @@ namespace Mars.Seem.Cmdlets
                 SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
                 Stand? highStandBeforeFirstThin = null;
                 int firstThinPeriod = this.Trajectories.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
-                if (firstThinPeriod != Constant.NoThinPeriod)
+                if (firstThinPeriod != Constant.NoHarvestPeriod)
                 {
                     highStandBeforeFirstThin = highTrajectory.StandByPeriod[firstThinPeriod - 1];
                     if (highStandBeforeFirstThin == null)
@@ -72,7 +72,7 @@ namespace Mars.Seem.Cmdlets
 
                 Stand? highStandBeforeSecondThin = null;
                 int secondThinPeriod = this.Trajectories.SecondThinPeriods[coordinate.SecondThinPeriodIndex];
-                if (secondThinPeriod != Constant.NoThinPeriod)
+                if (secondThinPeriod != Constant.NoHarvestPeriod)
                 {
                     highStandBeforeSecondThin = highTrajectory.StandByPeriod[secondThinPeriod - 1];
                     if (highStandBeforeSecondThin == null)
@@ -83,7 +83,7 @@ namespace Mars.Seem.Cmdlets
 
                 Stand? highStandBeforeThirdThin = null;
                 int thirdThinPeriod = this.Trajectories.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex];
-                if (thirdThinPeriod != Constant.NoThinPeriod)
+                if (thirdThinPeriod != Constant.NoHarvestPeriod)
                 {
                     highStandBeforeThirdThin = highTrajectory.StandByPeriod[thirdThinPeriod - 1];
                     if (highStandBeforeThirdThin == null)
@@ -201,7 +201,7 @@ namespace Mars.Seem.Cmdlets
                         string? highRegenCrownRatio = null;
                         string? highRegenExpansionFactorPerHa = null;
                         string? highRegenCubicM3 = null;
-                        bool isTreeThinned = highTreeSelection[uncompactedTreeIndex] != Constant.RegenerationHarvestPeriod;
+                        bool isTreeThinned = highTreeSelection[uncompactedTreeIndex] != Constant.RegenerationHarvestIfEligible;
                         if (isTreeThinned == false)
                         {
                             Debug.Assert((highTreesBeforeFirstThin == null) || (highTreesAtRegen.Tag[regenCompactedTreeIndex] == highTreesBeforeFirstThin.Tag[uncompactedTreeIndex]));

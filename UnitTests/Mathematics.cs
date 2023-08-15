@@ -302,14 +302,6 @@ namespace Mars.Seem.Test
         }
 
         [TestMethod]
-        public void Reforestation()
-        {
-            float reforestationNpv = FinancialScenarios.Default.GetNetPresentReforestationValue(Constant.HeuristicDefault.CoordinateIndex, Constant.AcresPerHectare * 380.0F);
-            Assert.IsTrue(reforestationNpv > -444.72F);
-            Assert.IsTrue(reforestationNpv < -0.999 * 444.72F);
-        }
-
-        [TestMethod]
         public void Simd()
         {
             // 128 bit
@@ -434,21 +426,21 @@ namespace Mars.Seem.Test
 
                 Assert.IsTrue(treeVolume.TryGetLongLogVolumeTable(FiaCode.PseudotsugaMenziesii, out TreeSpeciesMerchantableVolumeTable? psmeLongLogVolumeTable));
                 Assert.IsTrue(psmeLongLogVolumeTable != null);
-                TreeSpeciesMerchantableVolumeForPeriod standingEnglish = psmeLongLogVolumeTable.GetStandingVolume(psmeEnglish);
+                TreeSpeciesMerchantableVolumeForPeriod standingEnglish = psmeLongLogVolumeTable.GetStandingMerchantableVolume(psmeEnglish);
                 float standingCubicEnglish = standingEnglish.Cubic2Saw + standingEnglish.Cubic3Saw + standingEnglish.Cubic4Saw;
                 float standingScribnerEnglish = standingEnglish.Scribner2Saw + standingEnglish.Scribner3Saw + standingEnglish.Scribner4Saw;
 
-                TreeSpeciesMerchantableVolumeForPeriod standingMetric = psmeLongLogVolumeTable.GetStandingVolume(psmeMetric);
+                TreeSpeciesMerchantableVolumeForPeriod standingMetric = psmeLongLogVolumeTable.GetStandingMerchantableVolume(psmeMetric);
                 float standingCubicMetric = standingMetric.Cubic2Saw + standingMetric.Cubic3Saw + standingMetric.Cubic4Saw;
                 float standingScribnerMetric = standingMetric.Scribner2Saw + standingMetric.Scribner3Saw + standingMetric.Scribner4Saw;
 
                 Assert.IsTrue(treeVolume.TryGetForwarderVolumeTable(FiaCode.PseudotsugaMenziesii, out TreeSpeciesMerchantableVolumeTable? psmeForwarderVolumeTable));
                 Assert.IsTrue(psmeForwarderVolumeTable != null);
-                TreeSpeciesMerchantableVolumeForPeriod thinEnglish = psmeForwarderVolumeTable.GetStandingVolume(psmeEnglish);
+                TreeSpeciesMerchantableVolumeForPeriod thinEnglish = psmeForwarderVolumeTable.GetStandingMerchantableVolume(psmeEnglish);
                 float thinCubicEnglish = thinEnglish.Cubic2Saw + thinEnglish.Cubic3Saw + thinEnglish.Cubic4Saw;
                 float thinScribnerEnglish = thinEnglish.Scribner2Saw + thinEnglish.Scribner3Saw + thinEnglish.Scribner4Saw;
 
-                TreeSpeciesMerchantableVolumeForPeriod thinMetric = psmeForwarderVolumeTable.GetStandingVolume(psmeMetric);
+                TreeSpeciesMerchantableVolumeForPeriod thinMetric = psmeForwarderVolumeTable.GetStandingMerchantableVolume(psmeMetric);
                 float thinCubicMetric = thinMetric.Cubic2Saw + thinMetric.Cubic3Saw + thinMetric.Cubic4Saw;
                 float thinScribnerMetric = thinMetric.Scribner2Saw + thinMetric.Scribner3Saw + thinMetric.Scribner4Saw;
 

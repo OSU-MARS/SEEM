@@ -89,7 +89,7 @@ namespace Mars.Seem.Cmdlets
                     knownTrajectories.Add(highTrajectory);
                 }
 
-                int lastThinningPeriod = Constant.RegenerationHarvestPeriod;
+                int lastThinningPeriod = Constant.RegenerationHarvestIfEligible;
                 List<int> thinningPeriods = highTrajectory.Treatments.GetThinningPeriods();
                 if (this.Harvestable && (thinningPeriods.Count > 0))
                 {
@@ -171,7 +171,7 @@ namespace Mars.Seem.Cmdlets
                                 }
                                 else
                                 {
-                                    if (harvestPeriod != Constant.RegenerationHarvestPeriod)
+                                    if (harvestPeriod != Constant.RegenerationHarvestIfEligible)
                                     {
                                         // tree should be logged in periods eligible for regeneration harvest because it is selected for thinning
                                         continue;

@@ -27,10 +27,12 @@ namespace Mars.Seem.Organon
             this.PeriodZeroAgeInYears = stand.AgeInYears;
 
             this.DensityByPeriod[0] = new OrganonStandDensity(organonConfiguration.Variant, stand);
-            Debug.Assert(Constant.RegenerationHarvestPeriod == 0, "Tree selection initialization assumes .");
+            Debug.Assert(Constant.RegenerationHarvestIfEligible == 0, "Tree selection initialization assumes .");
 
-            this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
-            this.StandByPeriod[0]!.Name += 0;
+            this.StandByPeriod[0] = new OrganonStand(stand) // subsequent periods initialized lazily in Simulate()
+            {
+                Name = stand.Name + 0
+            };
         }
 
         // shallow copy FIA and Organon for now
@@ -273,7 +275,7 @@ namespace Mars.Seem.Organon
                                 treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] = 0.0F;
                                 atLeastOneTreeRemoved = true;
                             }
-                            if ((treeSelection == Constant.RegenerationHarvestPeriod) || (treeSelection >= periodIndex))
+                            if ((treeSelection == Constant.RegenerationHarvestIfEligible) || (treeSelection >= periodIndex))
                             {
                                 // if tree is retained up to this period it's present in the current, compacted tree list and a compacted index increment 
                                 // is needed
@@ -307,9 +309,11 @@ namespace Mars.Seem.Organon
                     if (this.StandByPeriod[periodIndex] == null)
                     {
                         // lazy initialization
-                        OrganonStand standForPeriod = new(simulationStand);
-                        Debug.Assert(standForPeriod.Name != null);
-                        standForPeriod.Name = standForPeriod.Name[0..^1] + periodIndex;
+                        Debug.Assert(simulationStand.Name != null);
+                        OrganonStand standForPeriod = new(simulationStand)
+                        {
+                            Name = simulationStand.Name[0..^1] + periodIndex
+                        };
                         this.StandByPeriod[periodIndex] = standForPeriod;
                     }
                     else

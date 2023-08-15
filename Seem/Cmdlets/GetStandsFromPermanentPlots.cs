@@ -18,7 +18,7 @@ namespace Mars.Seem.Cmdlets
         [ValidateRange(0.0F, 10.0F * 1000.0F)]
         public float AccessDistance { get; set; }
         [Parameter(HelpMessage = "Slope of access from stand to nearest road in percent. Unused if AccessDistance is zero.")]
-        [ValidateRange(0.0F, 200.0F)]
+        [ValidateRange(0.0F, 100.0F)]
         public float AccessSlope { get; set; }
 
         [Parameter(HelpMessage = "Stand age in years, if even aged.")]
@@ -202,7 +202,7 @@ namespace Mars.Seem.Cmdlets
             int planningPeriods = ages.Count - 1;
             float landExpectationValue = this.Financial.GetLandExpectationValue(trajectory, Constant.HeuristicDefault.CoordinateIndex, planningPeriods);
 
-            SilviculturalSpace trajectories = new(new List<int>() { Constant.NoThinPeriod }, new List<int>() { planningPeriods }, this.Financial);
+            SilviculturalSpace trajectories = new(new List<int>() { Constant.NoHarvestPeriod }, new List<int>() { planningPeriods }, this.Financial);
             SilviculturalCoordinate currentCoordinate = new();
             trajectories.AssimilateIntoCoordinate(trajectory, landExpectationValue, currentCoordinate, new PrescriptionPerformanceCounters());
             trajectories.AddEvaluatedPosition(currentCoordinate);

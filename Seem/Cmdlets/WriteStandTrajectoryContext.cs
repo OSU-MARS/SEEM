@@ -16,6 +16,7 @@ namespace Mars.Seem.Cmdlets
         public bool NoHarvestCosts { get; private init; }
         public bool NoTimberSorts { get; private init; }
         public bool NoTreeGrowth { get; private init; }
+        public int? StartYear { get; init; }
 
         // per stand settings
         public int EndOfRotationPeriodIndex { get; set; }
@@ -34,6 +35,7 @@ namespace Mars.Seem.Cmdlets
             this.NoHarvestCosts = noHarvestCosts;
             this.NoTimberSorts = noTimberSorts;
             this.NoTreeGrowth = noTreeGrowth;
+            this.StartYear = null;
 
             this.EndOfRotationPeriodIndex = -1;
             this.FinancialIndex = -1;

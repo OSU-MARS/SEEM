@@ -46,6 +46,9 @@ namespace Mars.Seem.Cmdlets
         [Parameter(HelpMessage = "Exclude columns for TPH, QMD, top height, basal area, SDI, and merchantable wood volume from output.")]
         public SwitchParameter NoTreeGrowth { get; set; }
 
+        [Parameter(HelpMessage = "Calendar year at which stand trajectories start.")]
+        public int? StartYear { get; set; }
+
         [Parameter(Mandatory = true, HelpMessage = "List of stand trajectories to write.")]
         [ValidateNotNullOrEmpty]
         public List<StandTrajectory>? Trajectories { get; set; }
@@ -62,6 +65,7 @@ namespace Mars.Seem.Cmdlets
             this.NoHarvestCosts = false;
             this.NoTimberSorts = false;
             this.NoTreeGrowth = false;
+            this.StartYear = null;
             this.Trajectories = null;
         }
 
@@ -69,7 +73,11 @@ namespace Mars.Seem.Cmdlets
         {
             Debug.Assert(this.Trajectories != null);
 
-            WriteStandTrajectoryContext writeContext = new(this.FinancialScenarios, this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter);
+            WriteStandTrajectoryContext writeContext = new(this.FinancialScenarios, this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
+            {
+                StartYear = this.StartYear
+            };
+
             using StreamWriter writer = this.GetWriter();
             if (this.ShouldWriteHeader())
             {

@@ -31,9 +31,20 @@ namespace Mars.Seem.Silviculture
             this.ProcessorPMhPerHa += treeProcessingPMsPerHa;
         }
         
-        public void CalculatePMhAndProductivity(Stand stand, float merchantableCubicVolumePerHa, HarvestSystems harvestSystems, float yardedWeightPerHa)
+        public void CalculatePMhAndProductivity(Stand stand, bool isThin, float merchantableCubicVolumePerHa, HarvestSystems harvestSystems, float yardedWeightPerHa)
         {
-            float meanGrappleYardingTurnTimeInS = harvestSystems.GrappleYardingConstant + harvestSystems.GrappleYardingLinear * (stand.MeanYardingDistanceFactor * stand.CorridorLengthInM + stand.AccessDistanceInM);
+            Debug.Assert((merchantableCubicVolumePerHa == 0.0F) || (yardedWeightPerHa > 0.0F));
+
+            float averageYardingDistance = stand.MeanYardingDistanceFactor * stand.CorridorLengthInM + stand.AccessDistanceInM;
+            float meanGrappleYardingTurnTimeInS;
+            if (isThin)
+            {
+                meanGrappleYardingTurnTimeInS = harvestSystems.GrappleYardingConstantThin + harvestSystems.GrappleYardingLinearThin * averageYardingDistance;
+            }
+            else
+            {
+                meanGrappleYardingTurnTimeInS = harvestSystems.GrappleYardingConstantRegen + harvestSystems.GrappleYardingLinearRegen * averageYardingDistance;
+            }
             float meanGrappleYardingPayload;
             float meanGrappleYarderUtilization;
             if (this.IsYoader)
@@ -47,15 +58,15 @@ namespace Mars.Seem.Silviculture
                 meanGrappleYarderUtilization = harvestSystems.GrappleSwingYarderUtilization;
             }
 
-            float grappleSwingYarderTurnsPerHectare = yardedWeightPerHa / meanGrappleYardingPayload;
-            this.YarderPMhPerHectare = grappleSwingYarderTurnsPerHectare * meanGrappleYardingTurnTimeInS / Constant.SecondsPerHour;
+            float grappleTurnsPerHa = yardedWeightPerHa / meanGrappleYardingPayload;
+            this.YarderPMhPerHectare = grappleTurnsPerHa * meanGrappleYardingTurnTimeInS / Constant.SecondsPerHour;
             this.YarderSMhPerHectare = this.YarderPMhPerHectare / meanGrappleYarderUtilization;
             this.YarderProductivity = merchantableCubicVolumePerHa / this.YarderPMhPerHectare;
 
             this.ProcessorPMhPerHa /= Constant.SecondsPerHour;
             this.ProcessorProductivity = merchantableCubicVolumePerHa / this.ProcessorPMhPerHa;
-            Debug.Assert((this.YarderProductivity >= 0.0F) && (this.YarderProductivity < 1000.0F) &&
-                         (this.ProcessorProductivity >= 0.0F) && (this.ProcessorProductivity < 1000.0F));
+            Debug.Assert((this.YarderProductivity >= 0.0F) && (this.YarderProductivity < 1000.0F), "Yarder productivity out of range.");
+            Debug.Assert((this.ProcessorProductivity >= 0.0F) && (this.ProcessorProductivity < 1000.0F), "Processor productivity out of range.");
         }
 
         public void Clear()

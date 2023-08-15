@@ -65,7 +65,7 @@ namespace Mars.Seem.Cmdlets
             this.FirstThinAbove = 0.0F; // %
             this.FirstThinBelow = 0.0F; // %
             this.FirstThinProportional = 0.0F; // %
-            this.FirstThinPeriod = Constant.NoThinPeriod; // no stand entry
+            this.FirstThinPeriod = Constant.NoHarvestPeriod; // no stand entry
             this.Name = null;
             this.RotationLengths = new() { 15 }; // 75 years of simulation with Organon's 5 year timestep
             this.TreeVolume = TreeVolume.Default;
@@ -178,7 +178,7 @@ namespace Mars.Seem.Cmdlets
                 }
             }
 
-            if (this.FirstThinPeriod > Constant.NoThinPeriod)
+            if (this.FirstThinPeriod > Constant.NoHarvestPeriod)
             {
                 float thinningIntensity = this.FirstThinAbove + this.FirstThinBelow + this.FirstThinProportional;
                 if (thinningIntensity <= 0.0F)
@@ -197,7 +197,7 @@ namespace Mars.Seem.Cmdlets
             {
                 trajectory.Name = this.Name;
             }
-            if (this.FirstThinPeriod != Constant.NoThinPeriod)
+            if (this.FirstThinPeriod != Constant.NoHarvestPeriod)
             {
                 trajectory.Treatments.Harvests.Add(new ThinByPrescription(this.FirstThinPeriod)
                 {

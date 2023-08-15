@@ -31,7 +31,7 @@ namespace Mars.Seem.Cmdlets
         public FinancialScenarios Financial { get; set; }
         [Parameter]
         [ValidateNotNullOrEmpty]
-        [ValidateRange(Constant.NoThinPeriod, 100)]
+        [ValidateRange(Constant.NoHarvestPeriod, 100)]
         public List<int> FirstThinPeriod { get; set; }
 
         [Parameter]
@@ -51,7 +51,7 @@ namespace Mars.Seem.Cmdlets
         public List<int> RotationLengths { get; set; }
         [Parameter]
         [ValidateNotNullOrEmpty]
-        [ValidateRange(Constant.NoThinPeriod, 100)]
+        [ValidateRange(Constant.NoHarvestPeriod, 100)]
         public List<int> SecondThinPeriod { get; set; }
 
         [Parameter]
@@ -64,7 +64,7 @@ namespace Mars.Seem.Cmdlets
 
         [Parameter]
         [ValidateNotNullOrEmpty]
-        [ValidateRange(Constant.NoThinPeriod, 100)]
+        [ValidateRange(Constant.NoHarvestPeriod, 100)]
         public List<int> ThirdThinPeriod { get; set; }
 
         [Parameter]
@@ -88,9 +88,9 @@ namespace Mars.Seem.Cmdlets
             this.InitialThinningProbability = new() { Constant.HeuristicDefault.InitialThinningProbability };
             this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
             this.RotationLengths = new() { Constant.Default.RotationLengths };
-            this.SecondThinPeriod = new() { Constant.NoThinPeriod };
+            this.SecondThinPeriod = new() { Constant.NoHarvestPeriod };
             this.SolutionPoolSize = Constant.Default.SolutionPoolSize;
-            this.ThirdThinPeriod = new() { Constant.NoThinPeriod };
+            this.ThirdThinPeriod = new() { Constant.NoHarvestPeriod };
             this.TimberObjective = TimberObjective.LandExpectationValue;
             this.TreeModel = TreeModel.OrganonNwo;
         }
@@ -113,7 +113,7 @@ namespace Mars.Seem.Cmdlets
                 TimberObjective = this.TimberObjective
             };
 
-            int lastThinPeriod = Constant.NoThinPeriod;
+            int lastThinPeriod = Constant.NoHarvestPeriod;
             if (this.TryCreateFirstThin(coordinate.FirstThinPeriodIndex, out Harvest? firstThin))
             {
                 lastThinPeriod = Math.Max(lastThinPeriod, this.FirstThinPeriod[coordinate.FirstThinPeriodIndex]);
@@ -175,7 +175,7 @@ namespace Mars.Seem.Cmdlets
         {
             int periodWeight = 0; // no thins so only a single trajectory need be simulated; assume cost is negligible as no optimization occurs
             int firstThinPeriod = results.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
-            if (firstThinPeriod != Constant.NoThinPeriod)
+            if (firstThinPeriod != Constant.NoHarvestPeriod)
             {
                 int endOfRotationPeriod;
                 if (coordinate.RotationIndex == Constant.AllRotationPosition)
@@ -189,12 +189,12 @@ namespace Mars.Seem.Cmdlets
                 periodWeight = endOfRotationPeriod - firstThinPeriod;
 
                 int secondThinPeriod = results.SecondThinPeriods[coordinate.SecondThinPeriodIndex];
-                if (secondThinPeriod != Constant.NoThinPeriod)
+                if (secondThinPeriod != Constant.NoHarvestPeriod)
                 {
                     periodWeight += endOfRotationPeriod - secondThinPeriod;
 
                     int thirdThinPeriod = results.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex];
-                    if (thirdThinPeriod == Constant.NoThinPeriod)
+                    if (thirdThinPeriod == Constant.NoHarvestPeriod)
                     {
                         return endOfRotationPeriod - thirdThinPeriod;
                     }
@@ -309,9 +309,9 @@ namespace Mars.Seem.Cmdlets
                         {
                             throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod), "Second thinning period cannot be zero.");
                         }
-                        if (secondThinPeriod != Constant.NoThinPeriod)
+                        if (secondThinPeriod != Constant.NoHarvestPeriod)
                         {
-                            if ((firstThinPeriod == Constant.NoThinPeriod) || (firstThinPeriod >= secondThinPeriod))
+                            if ((firstThinPeriod == Constant.NoHarvestPeriod) || (firstThinPeriod >= secondThinPeriod))
                             {
                                 // can't perform a second thin if
                                 // - there was no first thin
@@ -329,9 +329,9 @@ namespace Mars.Seem.Cmdlets
                             {
                                 throw new ParameterOutOfRangeException(nameof(this.ThirdThinPeriod), "Third thinning period cannot be zero.");
                             }
-                            if (thirdThinPeriod != Constant.NoThinPeriod)
+                            if (thirdThinPeriod != Constant.NoHarvestPeriod)
                             {
-                                if ((secondThinPeriod == Constant.NoThinPeriod) || (secondThinPeriod >= thirdThinPeriod))
+                                if ((secondThinPeriod == Constant.NoHarvestPeriod) || (secondThinPeriod >= thirdThinPeriod))
                                 {
                                     // can't perform a third thin if
                                     // - there was no second thin
@@ -622,7 +622,7 @@ namespace Mars.Seem.Cmdlets
 
         private bool TryCreateThin(int thinPeriodIndex, [NotNullWhen(true)] out Harvest? thin)
         {
-            if (thinPeriodIndex == Constant.NoThinPeriod)
+            if (thinPeriodIndex == Constant.NoHarvestPeriod)
             {
                 thin = null;
                 return false;

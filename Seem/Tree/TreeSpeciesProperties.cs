@@ -80,5 +80,12 @@ namespace Mars.Seem.Tree
                          (this.StemDensity > this.StemDensityAtMidspanWithoutHarvester) && 
                          (this.StemDensity < this.BarkDensity));
         }
+
+        public float GetStemOrLogWeightWithAllBark(float merchantableVolumeInM3)
+        {
+            float woodAndBarkVolumePerStem = merchantableVolumeInM3 / (1.0F - this.BarkFraction);
+            float weightInKg = woodAndBarkVolumePerStem * this.StemDensity; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
+            return weightInKg;
+        }
     }
 }

@@ -12,6 +12,7 @@ namespace Mars.Seem.Silviculture
         public float HarvesterPMhPerHa { get; private set; } // accumulated in delay free seconds/ha and then converted to PMh₀/ha
         public float HarvesterProductivity { get; private set; } // m³/PMh₀
         public bool IsTracked { get; init; }
+        public float SystemCostPerHaWithForwarder { get; private set; } // US$/ha
         public float SystemCostPerHaWithYarder { get; private set; } // US$/ha
         public float SystemCostPerHaWithYoader { get; private set; } // US$/ha
         // yarded weight with harvesters depends on bark loss from processing by the harvester versus chainsaw bucking
@@ -104,39 +105,44 @@ namespace Mars.Seem.Silviculture
                 Debug.Assert(Single.IsNaN(this.HarvesterProductivity));
             }
 
-            this.AdjustChainsawForSlopeAndSetProductivity(stand, harvestSystems, this.HarvesterCostPerSMh);
+            this.AdjustChainsawForSlope(stand, harvestSystems, this.HarvesterCostPerSMh);
 
             float wheeledHarvesterSMhPerHectare = this.HarvesterPMhPerHa / harvestSystems.WheeledHarvesterUtilization;
             this.HarvesterCostPerHa = this.HarvesterCostPerSMh * wheeledHarvesterSMhPerHectare;
             Debug.Assert(this.HarvesterCostPerHa >= 0.0F);
         }
 
+        public void CalculateSystemCost(Stand stand, HarvestSystems harvestSystems, Forwarder forwarder)
+        {
+            // bulldozer + harvester + forwarder + anchors
+            int machinesToMoveInAndOut = 3 + (this.AnchorMachine ? 1 : 0) + (forwarder.AnchorMachine ? 1 : 0);
+            float machineMoveInAndOutPerHa = harvestSystems.GetMoveInAndOutCost(machinesToMoveInAndOut, stand);
+            float haulCostPerHectare = harvestSystems.GetCutToLengthHaulCost(forwarder.ForwardedWeightPerHa);
+
+            this.SystemCostPerHaWithForwarder = this.HarvesterCostPerHa + this.ChainsawMinimumCost + forwarder.ForwarderCostPerHa + haulCostPerHectare + machineMoveInAndOutPerHa;
+            
+            Debug.Assert((haulCostPerHectare > 0.0F) && (machineMoveInAndOutPerHa > 0.0F) && (this.SystemCostPerHaWithForwarder > 0.0F));
+        }
+
         public void CalculateSystemCost(Stand stand, HarvestSystems harvestSystems, YardingSystem yarder, YardingSystem yoader, float loaderSMhPerHa)
         {
-            // feller-buncher + chainsaw + yarder-loader system costs
-            float haulRoundtripsPerHectare = this.YardedWeightPerHa / harvestSystems.LongLogHaulPayloadInKg;
-            float haulCostPerHa = harvestSystems.LongLogHaulRoundtripSMh * haulRoundtripsPerHectare * harvestSystems.LongLogHaulPerSMh;
             // bulldozer + harvester [+ anchor] + yarder (larger yarders would count as two machines as two lowboys are required) + loader
             int machinesToMoveInAndOut = 4 + (this.AnchorMachine ? 1 : 0);
-            float machineMoveInAndOutPerHectare = 2.0F * machinesToMoveInAndOut * harvestSystems.MachineMoveInOrOut / stand.AreaInHa;
-            float systemCostBeyondLanding = this.HarvesterCostPerHa + this.ChainsawMinimumCost + haulCostPerHa + machineMoveInAndOutPerHectare;
+            float machineMoveInAndOutPerHa = harvestSystems.GetMoveInAndOutCost(machinesToMoveInAndOut, stand);
+            float haulCostPerHa = harvestSystems.GetLongLogHaulCost(this.YardedWeightPerHa); // loaded weight is assumed same as yarded weight 
+            float systemCostOffLanding = this.HarvesterCostPerHa + this.ChainsawMinimumCost + haulCostPerHa + machineMoveInAndOutPerHa;
 
-            // yarder
-            float limitingSMhWithYarder = MathF.Max(yarder.YarderSMhPerHectare, loaderSMhPerHa);
-            float yarderCostPerHectare = harvestSystems.GrappleSwingYarderCostPerSMh * limitingSMhWithYarder;
-            float loaderCostPerHectareWithYarder = harvestSystems.LoaderCostPerSMh * limitingSMhWithYarder;
-            this.SystemCostPerHaWithYarder = systemCostBeyondLanding + yarderCostPerHectare + loaderCostPerHectareWithYarder;
+            // feller-buncher + chainsaw + yarder-loader system costs
+            float yarderLandingCostPerHa = harvestSystems.GetYarderAndLoaderCost(yarder, loaderSMhPerHa);
+            this.SystemCostPerHaWithYarder = systemCostOffLanding + yarderLandingCostPerHa;
 
             // yoader
-            float limitingSMhWithYoader = MathF.Max(yoader.YarderSMhPerHectare, loaderSMhPerHa);
-            float yoaderCostPerHectare = harvestSystems.GrappleYoaderCostPerSMh * limitingSMhWithYoader;
-            float loaderCostPerHectareWithYoader = harvestSystems.LoaderCostPerSMh * limitingSMhWithYoader;
-            this.SystemCostPerHaWithYoader = systemCostBeyondLanding + yoaderCostPerHectare + loaderCostPerHectareWithYoader;
+            float yoaderLandingCostPerHa = harvestSystems.GetYarderAndLoaderCost(yoader, loaderSMhPerHa);
+            this.SystemCostPerHaWithYoader = systemCostOffLanding + yoaderLandingCostPerHa;
 
-            Debug.Assert((this.HarvesterCostPerHa >= 0.0F) && (this.ChainsawMinimumCost >= 0.0F) && (haulCostPerHa >= 0.0F) && (machineMoveInAndOutPerHectare > 0.0F));
-            Debug.Assert((limitingSMhWithYarder >= 0.0F) && (yarderCostPerHectare >= 0.0F) && (loaderCostPerHectareWithYarder >= 0.0F));
+            Debug.Assert((this.HarvesterCostPerHa >= 0.0F) && (this.ChainsawMinimumCost >= 0.0F) && (haulCostPerHa >= 0.0F) && (machineMoveInAndOutPerHa > 0.0F));
+            Debug.Assert((systemCostOffLanding >= 0.0F) && (yarderLandingCostPerHa >= 0.0F) && (yoaderLandingCostPerHa >= 0.0F));
             Debug.Assert((Single.IsNaN(this.SystemCostPerHaWithYarder) == false) && (this.SystemCostPerHaWithYarder >= 0.0F) && (this.SystemCostPerHaWithYarder < 200.0F * 1000.0F));
-            Debug.Assert((limitingSMhWithYoader >= 0.0F) && (yoaderCostPerHectare >= 0.0F) && (loaderCostPerHectareWithYoader >= 0.0F));
             Debug.Assert((Single.IsNaN(this.SystemCostPerHaWithYoader) == false) && (this.SystemCostPerHaWithYoader >= 0.0F) && (this.SystemCostPerHaWithYoader < 200.0F * 1000.0F));
         }
 
@@ -149,6 +155,7 @@ namespace Mars.Seem.Silviculture
             this.HarvesterCostPerSMh = Single.NaN;
             this.HarvesterPMhPerHa = 0.0F;
             this.HarvesterProductivity = Single.NaN;
+            this.SystemCostPerHaWithForwarder = Single.NaN;
             this.SystemCostPerHaWithYarder = Single.NaN;
             this.SystemCostPerHaWithYoader = Single.NaN;
             this.YardedWeightPerHa = 0.0F;

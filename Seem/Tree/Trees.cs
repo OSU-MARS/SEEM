@@ -210,6 +210,21 @@ namespace Mars.Seem.Tree
             return Constant.Simd256x8.Width * (int)MathF.Ceiling((float)treeCount / (float)Constant.Simd256x8.Width);
         }
 
+        public (float diameterToCentimetersMultiplier, float heightToMetersMultiplier, float hectareExpansionFactorMultiplier) GetConversionToMetric()
+        {
+            float diameterToCentimetersMultiplier = 1.0F;
+            float heightToMetersMultiplier = 1.0F;
+            float hectareExpansionFactorMultiplier = 1.0F;
+            if (this.Units == Units.English)
+            {
+                diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
+                heightToMetersMultiplier = Constant.MetersPerFoot;
+                hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
+            }
+
+            return (diameterToCentimetersMultiplier, heightToMetersMultiplier, hectareExpansionFactorMultiplier);
+        }
+
         public int[] GetDbhSortOrder()
         {
             int[] dbhSortIndices = ArrayExtensions.CreateSequentialIndices(this.Count);

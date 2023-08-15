@@ -118,7 +118,7 @@ namespace Mars.Seem.Organon
             //   eq 15: FR_Δh40 = 1.0 + pn1 / 800 + sum((pni / 800 exp(b1 (YFi - YF1)))^(1/3) exp(b1 YF1 + b2 ((SI - 4.5) / 100)^(3/2))
             // Here just fertX1 = sum((pni / 800 exp(k (YFi - YF1)) is calculated and YF1 returned.
             mostRecentFertilization = this.PoundsOfNitrogenPerAcreByPeriod[this.currentSimulationPeriod];
-            int mostRecentFertilizationPeriod = mostRecentFertilization > 0.0F ? this.currentSimulationPeriod : Constant.NoThinPeriod;
+            int mostRecentFertilizationPeriod = mostRecentFertilization > 0.0F ? this.currentSimulationPeriod : Constant.NoHarvestPeriod;
             int mostRecentFertilizationYear = variant.TimeStepInYears * mostRecentFertilizationPeriod;
 
             float fertX1 = 0.0F;
@@ -127,7 +127,7 @@ namespace Mars.Seem.Organon
                 float fertilization = this.PoundsOfNitrogenPerAcreByPeriod[previousPeriodIndex];
                 if (fertilization > 0.0F)
                 {
-                    if (mostRecentFertilizationPeriod == Constant.NoThinPeriod)
+                    if (mostRecentFertilizationPeriod == Constant.NoHarvestPeriod)
                     {
                         // most recent thinning: exp(k * (mostRecentThinYear - thinYear)) = exp(0)
                         Debug.Assert(fertX1 == 0.0F);
@@ -160,7 +160,7 @@ namespace Mars.Seem.Organon
             //   https://ir.library.oregonstate.edu/concern/technical_reports/jd472x893
             // Diameter equation 10 (p34) and height equation 18 (p47). The two definitions of PREM have the same form with k = a9 = b11/b10.
             float basalAreaRemovedInMostRecentThin = this.BasalAreaThinnedByPeriod[this.currentSimulationPeriod];
-            int mostRecentThinPeriod = basalAreaRemovedInMostRecentThin > 0.0F ? this.currentSimulationPeriod : Constant.NoThinPeriod;
+            int mostRecentThinPeriod = basalAreaRemovedInMostRecentThin > 0.0F ? this.currentSimulationPeriod : Constant.NoHarvestPeriod;
             int mostRecentThinYear = variant.TimeStepInYears * mostRecentThinPeriod;
 
             float partiallyDiscountedBasalAreaSum = 0.0F;
@@ -169,7 +169,7 @@ namespace Mars.Seem.Organon
                 float basalAreaPreviouslyRemoved = this.BasalAreaThinnedByPeriod[previousPeriodIndex];
                 if (basalAreaPreviouslyRemoved > 0.0F)
                 {
-                    if (mostRecentThinPeriod == Constant.NoThinPeriod)
+                    if (mostRecentThinPeriod == Constant.NoHarvestPeriod)
                     {
                         // most recent thinning: exp(k * (mostRecentThinYear - thinYear)) = exp(0)
                         Debug.Assert(basalAreaRemovedInMostRecentThin == 0.0F);
@@ -188,7 +188,7 @@ namespace Mars.Seem.Organon
                 }
             }
 
-            if (mostRecentThinPeriod == Constant.NoThinPeriod)
+            if (mostRecentThinPeriod == Constant.NoHarvestPeriod)
             {
                 // no thin has been performed so thinning multipliers do not apply
                 Debug.Assert(partiallyDiscountedBasalAreaSum == 0.0F);

@@ -1,4 +1,5 @@
-﻿using Mars.Seem.Tree;
+﻿using Mars.Seem.Optimization;
+using Mars.Seem.Tree;
 using System;
 using System.Diagnostics;
 
@@ -10,9 +11,6 @@ namespace Mars.Seem.Silviculture
         public FellerBuncherSystems FellerBuncher { get; private init; }
         
         public float LoaderSMhPerHectare { get; private set; } // SMh/ha
-
-        public HarvestSystemEquipment MinimumCostHarvestSystem { get; private set; }
-        public float MinimumSystemCostPerHa { get; private set; } // US$/ha
 
         public HarvesterSystem TrackedHarvester { get; private init; }
         public HarvesterSystem WheeledHarvester { get; private init; }
@@ -34,38 +32,41 @@ namespace Mars.Seem.Silviculture
                 IsYoader = true
             };
 
-            this.Clear();
+            this.LoaderSMhPerHectare = Single.NaN;
         }
 
-        private void CalculateVolumeAndPMh(Stand stand, TreeVolume treeVolume, HarvestSystems harvestSystems)
+        /// <param name="harvestPeriod">Index of thinning period or <see cref="Constant.RegenerationHarvestIfEligible"/> for regeneration harvest trees.</param>
+        private void CalculatePMh(Stand stand, StandTrajectory trajectory, int harvestPeriod, bool isThin, HarvestSystems harvestSystems)
         {
             // float preferredLogLengthWithTrimInM = scaledVolume.PreferredLogLengthInMeters + scaledVolume.GetPreferredTrim(); // for checking first log weight
             // float merchantableFractionOfLogLength = scaledVolume.PreferredLogLengthInMeters / preferredLogLengthWithTrimInM; // 1 in BC Firmwood
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                float diameterToCentimetersMultiplier = 1.0F;
-                float heightToMetersMultiplier = 1.0F;
-                float hectareExpansionFactorMultiplier = 1.0F;
-                if (treesOfSpecies.Units == Units.English)
-                {
-                    diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
-                    heightToMetersMultiplier = Constant.MetersPerFoot;
-                    hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
-                }
-                if (treeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable) == false)
+                if (trajectory.TreeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable) == false)
                 {
                     // for now, assume all non-merchantable trees are left in place in stand
                     // TODO: include felling and handling costs for cut and leave
                     continue;
                 }
 
+                IndividualTreeSelection individualTreeSelection = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
+                (float diameterToCentimetersMultiplier, float heightToMetersMultiplier, float hectareExpansionFactorMultiplier) = treesOfSpecies.GetConversionToMetric();
+
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                 {
+                    int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
+                    if (individualTreeSelection[uncompactedTreeIndex] != harvestPeriod)
+                    {
+                        // tree is not included in this harvest
+                        continue;
+                    }
+
                     float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
                     if (dbhInCm > longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
                     {
-                        continue; // large trees are considered unharvestable reserves
+                        HarvestFinancialValue.ThrowIfTreeNotAutomaticReserve(isThin, treesOfSpecies, compactedTreeIndex, longLogVolumeTable);
+                        continue;
                     }
 
                     float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
@@ -74,7 +75,6 @@ namespace Mars.Seem.Silviculture
                     float treeMerchantableVolumeInM3 = longLogVolumeTable.GetCubicVolumeOfMerchantableWood(dbhInCm, heightInM, out float unscaledNeiloidVolume);
                     Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
                     float treeMerchantableVolumeInM3PerHa = expansionFactorPerHa * treeMerchantableVolumeInM3;
-                    this.MerchantableCubicVolumePerHa += treeMerchantableVolumeInM3PerHa;
 
                     // yarded weight
                     // Since no yarder productivity study appears to consider bark loss it's generally unclear where in the turn reported
@@ -136,7 +136,7 @@ namespace Mars.Seem.Silviculture
                     }
 
                     // tracked harvester
-                    (float treeTrackedHarvesterPMs, float treeChainsawPMsWithTrackedHarvester) = harvestSystems.GetTrackedHarvesterTime(dbhInCm, treeMerchantableVolumeInM3);
+                    (float treeTrackedHarvesterPMs, float treeChainsawPMsWithTrackedHarvester) = harvestSystems.GetTrackedHarvesterTime(dbhInCm, treeMerchantableVolumeInM3, previousOversizeTreeBehindHarvester: false);
                     float treeTrackedHarvesterPMsPerHa = expansionFactorPerHa * treeTrackedHarvesterPMs;
                     float treeWoodAndRemainingBarkVolumePerStemWithHarvester = treeMerchantableVolumeInM3 / (1.0F - treeSpeciesProperties.BarkFractionAtMidspanAfterHarvester);
                     float treeYardedWeightInKgPerHaWithHarvester = expansionFactorPerHa * treeWoodAndRemainingBarkVolumePerStemWithHarvester * treeSpeciesProperties.StemDensityAtMidspanAfterHarvester;
@@ -188,27 +188,35 @@ namespace Mars.Seem.Silviculture
             }
         }
 
-        public void CalculateVolumeProductivityAndCost(Stand stand, TreeVolume treeVolume, HarvestSystems harvestSystems)
+        public override void CalculateProductivityAndCost(StandTrajectory trajectory, int harvestPeriod, bool isThin, HarvestSystems harvestSystems, float harvestCostPerHectare, float harvestTaskCostPerCubicMeter)
         {
-            if ((stand.AccessDistanceInM < 0.0F) ||
-                (stand.AccessSlopeInPercent < 0.0F) ||
-                (stand.AreaInHa <= 0.0F) ||
-                (stand.CorridorLengthInM <= 0.0F) ||
-                (stand.MeanYardingDistanceFactor <= 0.0F) ||
-                (stand.SlopeInPercent < 0.0F))
+            Stand stand = HarvestFinancialValue.GetAndValidateStand(trajectory, harvestPeriod, isThin);
+
+            // clear PMh, SMh, productivities, and harvest system selection, reset chainsaw volume and basal area accumulators
+            // Merchantable harvest volume and pond values are accumulated separately before this function is called, so don't clear those.
+            this.Fallers.Clear();
+            this.FellerBuncher.Clear();
+            this.TrackedHarvester.Clear();
+            this.WheeledHarvester.Clear();
+            this.Yarder.Clear();
+            this.Yoader.Clear();
+
+            if (this.MerchantableCubicVolumePerHa == 0.0F)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand));
+                this.HarvestRelatedTaskCostPerHa = 0.0F;
+                this.LoaderSMhPerHectare = Single.NaN;
+                this.NetPresentValuePerHa = 0.0F;
+                this.SetMinimumCostSystem();
+                return;
             }
 
-            // clear PMh, SMh, productivities, and harvest system selection, reset volume and basal accumulators
-            this.Clear();
-
-            // calculate regeneration harvest volume
-            this.CalculateVolumeAndPMh(stand, treeVolume, harvestSystems);
+            // calculate work hours needed to perform harvest
+            int thinOrRegenerationHarvestPeriod = isThin ? harvestPeriod : Constant.RegenerationHarvestIfEligible;
+            this.CalculatePMh(stand, trajectory, thinOrRegenerationHarvestPeriod, isThin, harvestSystems);
 
             // modify PMh for slope, convert to hours, set falling machine and chainsaw crew productivity
             // For now, assume uniform slope across stand.
-            this.Fallers.CalculatePMhAndProductivity(stand, harvestSystems);
+            this.Fallers.CalculatePMhAndProductivity(stand, harvestSystems, this.MerchantableCubicVolumePerHa);
             this.FellerBuncher.CalculatePMhAndProductivity(stand, harvestSystems, this.MerchantableCubicVolumePerHa);
             this.TrackedHarvester.CalculatePMhAndProductivity(stand, harvestSystems, this.MerchantableCubicVolumePerHa);
             this.WheeledHarvester.CalculatePMhAndProductivity(stand, harvestSystems, this.MerchantableCubicVolumePerHa);
@@ -219,48 +227,44 @@ namespace Mars.Seem.Silviculture
             // of using a harvester and calculate yarding as invariant of the felling system. It's also unclear if yarding trees
             // versus logs might result in different hang up rates.
             //Debug.Assert((this.FellerBuncher.YardedWeightPerHa >= this.TrackedHarvester.YardedWeightPerHa) && (this.FellerBuncher.YardedWeightPerHa >= 0.999 * this.WheeledHarvester.YardedWeightPerHa));
-            this.Yarder.CalculatePMhAndProductivity(stand, this.MerchantableCubicVolumePerHa, harvestSystems, this.FellerBuncher.YardedWeightPerHa);
-            this.Yoader.CalculatePMhAndProductivity(stand, this.MerchantableCubicVolumePerHa, harvestSystems, this.FellerBuncher.YardedWeightPerHa);
+            this.Yarder.CalculatePMhAndProductivity(stand, isThin, this.MerchantableCubicVolumePerHa, harvestSystems, this.FellerBuncher.YardedWeightPerHa);
+            this.Yoader.CalculatePMhAndProductivity(stand, isThin, this.MerchantableCubicVolumePerHa, harvestSystems, this.FellerBuncher.YardedWeightPerHa);
 
             // loader productivity is specified: doesn't need to be calculated or output to file
             this.LoaderSMhPerHectare = this.FellerBuncher.LoadedWeightPerHa / (harvestSystems.LoaderUtilization * harvestSystems.LoaderProductivity);
 
             // component costs are known: calculate system costs
-            // this.Fallers.CalculateSystemCost();
+            this.Fallers.CalculateSystemCost(stand, harvestSystems, this.Yarder, this.Yoader, this.LoaderSMhPerHectare);
             this.FellerBuncher.CalculateSystemCost(stand, harvestSystems, this.Yarder, this.Yoader, this.LoaderSMhPerHectare);
             this.TrackedHarvester.CalculateSystemCost(stand, harvestSystems, this.Yarder, this.Yoader, this.LoaderSMhPerHectare);
             this.WheeledHarvester.CalculateSystemCost(stand, harvestSystems, this.Yarder, this.Yoader, this.LoaderSMhPerHectare);
 
+            this.HarvestRelatedTaskCostPerHa = harvestCostPerHectare + harvestTaskCostPerCubicMeter * this.MerchantableCubicVolumePerHa;
             this.SetMinimumCostSystem();
-        }
-
-        public new void Clear()
-        {
-            this.LoaderSMhPerHectare = Single.NaN;
-            this.MerchantableCubicVolumePerHa = 0.0F;
-            this.MinimumCostHarvestSystem = HarvestSystemEquipment.None;
-            this.MinimumSystemCostPerHa = Single.NaN;
-
-            this.Fallers.Clear();
-            this.FellerBuncher.Clear();
-            this.TrackedHarvester.Clear();
-            this.WheeledHarvester.Clear();
-            this.Yarder.Clear();
-            this.Yoader.Clear();
         }
 
         private void SetMinimumCostSystem()
         {
-            if (this.CubicVolumePerHa == 0.0F)
+            if (this.MerchantableCubicVolumePerHa == 0.0F)
             {
                 this.MinimumCostHarvestSystem = HarvestSystemEquipment.None;
                 this.MinimumSystemCostPerHa = 0.0F;
                 return;
             }
 
-            this.MinimumCostHarvestSystem = HarvestSystemEquipment.FellerBuncherGrappleSwingYarderProcessorLoader;
-            this.MinimumSystemCostPerHa = this.FellerBuncher.Yarder.SystemCostPerHa;
+            this.MinimumCostHarvestSystem = HarvestSystemEquipment.FallersGrappleSwingYarderProcessorLoader;
+            this.MinimumSystemCostPerHa = this.Fallers.SystemCostPerHaWithYarder;
 
+            if (this.Fallers.SystemCostPerHaWithYoader < this.MinimumSystemCostPerHa)
+            {
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.FallersGrappleSwingYoaderProcessorLoader;
+                this.MinimumSystemCostPerHa = this.Fallers.SystemCostPerHaWithYoader;
+            }
+            if (this.FellerBuncher.Yarder.SystemCostPerHa < this.MinimumSystemCostPerHa)
+            {
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.FellerBuncherGrappleSwingYarderProcessorLoader;
+                this.MinimumSystemCostPerHa = this.FellerBuncher.Yarder.SystemCostPerHa;
+            }
             if (this.FellerBuncher.Yoader.SystemCostPerHa < this.MinimumSystemCostPerHa)
             {
                 this.MinimumCostHarvestSystem = HarvestSystemEquipment.FellerBuncherGrappleYoaderProcessorLoader;
@@ -286,6 +290,19 @@ namespace Mars.Seem.Silviculture
                 this.MinimumCostHarvestSystem = HarvestSystemEquipment.WheeledHarvesterGrappleYoaderLoader;
                 this.MinimumSystemCostPerHa = this.WheeledHarvester.SystemCostPerHaWithYoader;
             }
+        }
+
+        public override bool TryAddMerchantableVolume(StandTrajectory trajectory, int harvestPeriod, FinancialScenarios financialScenarios, int financialIndex, float appreciationFactor)
+        {
+            this.ClearNpvAndPond();
+
+            bool merchantableVolumeAdded = false;
+            foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in trajectory.LongLogVolumeBySpecies.Values)
+            {
+                merchantableVolumeAdded |= this.TryAddMerchantableVolume(harvestVolumeForSpecies, harvestPeriod, financialScenarios, financialIndex, appreciationFactor);
+            }
+
+            return merchantableVolumeAdded;
         }
     }
 }

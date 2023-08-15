@@ -76,45 +76,32 @@ namespace Mars.Seem.Silviculture
                 Debug.Assert(Single.IsNaN(this.FellerBuncherProductivity));
             }
 
-            this.Yarder.AdjustChainsawForSlopeAndSetProductivity(stand, harvestSystems, this.FellerBuncherCostPerSMh);
-            this.Yoader.AdjustChainsawForSlopeAndSetProductivity(stand, harvestSystems, this.FellerBuncherCostPerSMh);
+            this.Yarder.AdjustChainsawForSlope(stand, harvestSystems, this.FellerBuncherCostPerSMh);
+            this.Yoader.AdjustChainsawForSlope(stand, harvestSystems, this.FellerBuncherCostPerSMh);
 
             this.FellerBuncherCostPerHa = this.FellerBuncherCostPerSMh * this.FellerBuncherPMhPerHa / harvestSystems.FellerBuncherUtilization;
         }
 
         public void CalculateSystemCost(Stand stand, HarvestSystems harvestSystems, YardingSystem yarder, YardingSystem yoader, float loaderSMhPerHa)
         {
-            // feller-buncher + chainsaw + yarder-processor-loader system costs
-            float processorSMhPerHectareWithYarder = yarder.ProcessorPMhPerHa / harvestSystems.ProcessorUtilization;
-
-            float haulRoundtripsPerHectare = this.LoadedWeightPerHa / harvestSystems.LongLogHaulPayloadInKg;
-            float haulCostPerHectare = harvestSystems.LongLogHaulRoundtripSMh * haulRoundtripsPerHectare * harvestSystems.LongLogHaulPerSMh;
-
-            float limitingSMhWithYarder = MathE.Max(yarder.YarderSMhPerHectare, processorSMhPerHectareWithYarder, loaderSMhPerHa);
-            float yarderCostPerHectare = harvestSystems.GrappleSwingYarderCostPerSMh * limitingSMhWithYarder;
-            float processorCostPerHectareWithYarder = harvestSystems.ProcessorCostPerSMh * limitingSMhWithYarder;
-            float loaderCostPerHectareWithYarder = harvestSystems.LoaderCostPerSMh * limitingSMhWithYarder;
             // bulldozer + feller-buncher [+ anchor] + yarder (larger yarders would count as two machines as two lowboys are required) + processor + loader
             int machinesToMoveInAndOutWithFellerBuncher = 5 + (this.AnchorMachine ? 1 : 0);
-            float machineMoveInAndOutPerHectare = 2.0F * machinesToMoveInAndOutWithFellerBuncher * harvestSystems.MachineMoveInOrOut / stand.AreaInHa;
-            this.Yarder.SystemCostPerHa = this.FellerBuncherCostPerHa + this.Yarder.ChainsawMinimumCost +
-                yarderCostPerHectare + processorCostPerHectareWithYarder + loaderCostPerHectareWithYarder +
-                haulCostPerHectare + machineMoveInAndOutPerHectare;
+            float machineMoveInAndOutPerHa = harvestSystems.GetMoveInAndOutCost(machinesToMoveInAndOutWithFellerBuncher, stand);
+            float haulCostPerHa = harvestSystems.GetLongLogHaulCost(this.LoadedWeightPerHa);
+
+            // feller-buncher + chainsaw + yarder-processor-loader system costs
+            float yarderOffLandingCostPerHa = this.FellerBuncherCostPerHa + this.Yarder.ChainsawMinimumCost + haulCostPerHa + machineMoveInAndOutPerHa;
+            float yarderLandingCostPerHa = harvestSystems.GetYarderProcessorAndLoaderCost(yarder, loaderSMhPerHa);
+            this.Yarder.SystemCostPerHa = yarderOffLandingCostPerHa + yarderLandingCostPerHa;
 
             // grapple yoader
-            float processorSMhPerHectareWithYoader = yoader.ProcessorPMhPerHa / harvestSystems.ProcessorUtilization;
-
-            float limitingSMhWithYoader = MathE.Max(yoader.YarderSMhPerHectare, processorSMhPerHectareWithYoader, loaderSMhPerHa);
-            float yoaderCostPerHectare = harvestSystems.GrappleYoaderCostPerSMh * limitingSMhWithYoader;
-            float processorCostPerHectareWithYoader = harvestSystems.ProcessorCostPerSMh * limitingSMhWithYoader;
-            float loaderCostPerHectareWithYoader = harvestSystems.LoaderCostPerSMh * limitingSMhWithYoader;
-            this.Yoader.SystemCostPerHa = this.FellerBuncherCostPerHa + this.Yoader.ChainsawMinimumCost +
-                yoaderCostPerHectare + processorCostPerHectareWithYoader + loaderCostPerHectareWithYoader +
-                haulCostPerHectare + machineMoveInAndOutPerHectare;
+            float yoaderOffLandingCostPerHa = this.FellerBuncherCostPerHa + this.Yoader.ChainsawMinimumCost + haulCostPerHa + machineMoveInAndOutPerHa;
+            float yoaderLandingCostPerHa = harvestSystems.GetYarderProcessorAndLoaderCost(yoader, loaderSMhPerHa);
+            this.Yoader.SystemCostPerHa = yoaderOffLandingCostPerHa + yoaderLandingCostPerHa;
 
             // if heuristic selects all trees for thinning then there are no trees at final harvest and SMh and costs are zero
-            Debug.Assert((limitingSMhWithYarder >= 0.0F) && (Single.IsNaN(this.Yarder.SystemCostPerHa) == false) && (this.Yarder.SystemCostPerHa >= 0.0F) && (this.Yarder.SystemCostPerHa < 275.0F * 1000.0F));
-            Debug.Assert((limitingSMhWithYoader >= 0.0F) && (Single.IsNaN(this.Yoader.SystemCostPerHa) == false) && (this.Yoader.SystemCostPerHa >= 0.0F) && (this.Yoader.SystemCostPerHa < 260.0F * 1000.0F));
+            Debug.Assert((Single.IsNaN(this.Yarder.SystemCostPerHa) == false) && (this.Yarder.SystemCostPerHa >= 0.0F) && (this.Yarder.SystemCostPerHa < 275.0F * 1000.0F));
+            Debug.Assert((Single.IsNaN(this.Yoader.SystemCostPerHa) == false) && (this.Yoader.SystemCostPerHa >= 0.0F) && (this.Yoader.SystemCostPerHa < 260.0F * 1000.0F));
 
             // coupled utilization not currently calculated but may be of debugging interest
             //float swingYarderCoupledUtilization = grappleSwingYarderPMhPerHectare / limitingSMh;

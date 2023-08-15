@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Mars.Seem.Tree
@@ -65,6 +66,28 @@ namespace Mars.Seem.Tree
             };
 
             return volumeTable != null;
+        }
+
+        public float GetMaximumMerchantableDbh(FiaCode treeSpecies)
+        {
+            float maximumMerchantableDbhInCm = Single.NaN;
+            if (this.TryGetForwarderVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable))
+            {
+                maximumMerchantableDbhInCm = forwarderVolumeTable.MaximumMerchantableDiameterInCentimeters;
+            }
+            if (this.TryGetLongLogVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable))
+            {
+                if (Single.IsNaN(maximumMerchantableDbhInCm))
+                {
+                    maximumMerchantableDbhInCm = longLogVolumeTable.MaximumMerchantableDiameterInCentimeters;
+                }
+                else if (maximumMerchantableDbhInCm != longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
+                {
+                    throw new NotSupportedException("Maximum merchantable DBH for " + treeSpecies + " is " + maximumMerchantableDbhInCm + " cm in cut to length harvests and " + longLogVolumeTable.MaximumMerchantableDiameterInCentimeters + " cm in long long harvests. Currently, the maximum merchantable volume must be the same for both log sizes.");
+                }
+            }
+
+            return maximumMerchantableDbhInCm;
         }
 
         // thread safe implementation since default volume table is often used concurrently

@@ -21,7 +21,7 @@ namespace Mars.Seem.Tree
         public float[] Scribner2Saw { get; private init; }
         public float[] Scribner3Saw { get; private init; }
         public float[] Scribner4Saw { get; private init; }
-        public FiaCode Species { get; private set; }
+        public FiaCode Species { get; private init; }
 
         public TreeSpeciesMerchantableVolume(FiaCode species, int planningPeriods)
         {
@@ -46,13 +46,18 @@ namespace Mars.Seem.Tree
             this.CopyFrom(other);
         }
 
+        protected int Length
+        {
+            get { return this.isCalculated.Length; }
+        }
+
         public void CalculateMerchantableStandingVolume(Stand stand, int periodIndex, TreeVolume treeVolume)
         {
             Trees treesOfSpecies = stand.TreesBySpecies[this.Species];
             TreeSpeciesMerchantableVolumeForPeriod standingMerchVolume;
             if (treeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable))
             {
-                standingMerchVolume = longLogVolumeTable.GetStandingVolume(treesOfSpecies);
+                standingMerchVolume = longLogVolumeTable.GetStandingMerchantableVolume(treesOfSpecies);
                 standingMerchVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
 
                 this.SetMerchantableVolume(standingMerchVolume, periodIndex);
@@ -107,7 +112,9 @@ namespace Mars.Seem.Tree
                 throw new ArgumentOutOfRangeException(nameof(other), "Attempt to copy volumes of " + other.Species + " to " + this.Species + ".");
             }
 
-            int minPeriods = Math.Min(this.Cubic2Saw.Length, other.Cubic2Saw.Length);
+            int minPeriods = Math.Min(this.Length, other.Length);
+            Array.Copy(other.isCalculated, 0, this.isCalculated, 0, minPeriods);
+
             Array.Copy(other.Cubic2Saw, 0, this.Cubic2Saw, 0, minPeriods);
             Array.Copy(other.Cubic3Saw, 0, this.Cubic3Saw, 0, minPeriods);
             Array.Copy(other.Cubic4Saw, 0, this.Cubic4Saw, 0, minPeriods);
@@ -133,11 +140,13 @@ namespace Mars.Seem.Tree
 
         public float GetCubicTotal(int periodIndex)
         {
+            Debug.Assert(this.IsCalculated(periodIndex));
             return this.Cubic2Saw[periodIndex] + this.Cubic3Saw[periodIndex] + this.Cubic4Saw[periodIndex];
         }
 
         public float GetScribnerTotal(int periodIndex)
         {
+            Debug.Assert(this.IsCalculated(periodIndex));
             return this.Scribner2Saw[periodIndex] + this.Scribner3Saw[periodIndex] + this.Scribner4Saw[periodIndex];
         }
 

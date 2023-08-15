@@ -34,19 +34,10 @@ namespace Mars.Seem.Silviculture
             }
 
             // find payload available for slope from traction
-            float forwarderPayloadInKg = Forwarder.GetForwarderPayloadInKg(stand.SlopeInPercent, harvestSystems);
+            float forwarderPayloadInKg = Forwarder.GetForwarderPayloadInKg(stand, harvestSystems);
             if (forwarderPayloadInKg <= 0.0F)
             {
-                throw new NotSupportedException("Stand slope of " + stand.SlopeInPercent + "% is too steep for forwarding.");
-            }
-            if (stand.AccessDistanceInM > 0.0F)
-            {
-                float accessPayloadInKg = Forwarder.GetForwarderPayloadInKg(stand.AccessSlopeInPercent, harvestSystems);
-                forwarderPayloadInKg = MathF.Min(forwarderPayloadInKg, accessPayloadInKg);
-                if (forwarderPayloadInKg <= 0.0F)
-                {
-                    throw new NotSupportedException("Stand access slope of " + stand.AccessSlopeInPercent + "% is too steep for forwarding.");
-                }
+                throw new NotSupportedException("Either stand slope of " + stand.SlopeInPercent + "% or access slope of " + stand.AccessSlopeInPercent + "% is too steep for forwarding.");
             }
 
             // TODO: full bark retention on trees bucked by chainsaw (for now it's assumed all trees are bucked by a harvester)
@@ -137,6 +128,18 @@ namespace Mars.Seem.Silviculture
         private static float GetForwarderPayloadInKg(float slopeInPercent, HarvestSystems harvestSystems)
         {
             return MathF.Min(harvestSystems.ForwarderMaximumPayloadInKg, harvestSystems.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * slopeInPercent))) - harvestSystems.ForwarderEmptyWeight);
+        }
+
+        public static float GetForwarderPayloadInKg(Stand stand, HarvestSystems harvestSystems)
+        {
+            float forwarderPayloadInKg = MathF.Min(harvestSystems.ForwarderMaximumPayloadInKg, harvestSystems.ForwarderTractiveForce / (0.009807F * MathF.Sin(MathF.Atan(0.01F * stand.SlopeInPercent))) - harvestSystems.ForwarderEmptyWeight);
+            if (stand.AccessDistanceInM > 0.0F)
+            {
+                float accessPayloadInKg = Forwarder.GetForwarderPayloadInKg(stand.AccessSlopeInPercent, harvestSystems);
+                forwarderPayloadInKg = MathF.Min(forwarderPayloadInKg, accessPayloadInKg);
+            }
+
+            return forwarderPayloadInKg;
         }
 
         private static ForwarderTurn GetForwarderTurn(Stand stand, HarvestSystems harvestSystems, float merchM3PerHa, float logsPerHa, float forwarderMaxMerchM3, int sortsLoaded)

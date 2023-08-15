@@ -285,7 +285,7 @@ namespace Mars.Seem.Test
             Assert.IsTrue(financialScenarios.SeedlingCost.Count == expectedCount);
             Assert.IsTrue(financialScenarios.SitePrepAndReplantingCostPerHectare.Count == expectedCount);
             Assert.IsTrue(financialScenarios.ThinningHarvestCostPerHectare.Count == expectedCount);
-            Assert.IsTrue(financialScenarios.ThinningPondValueMultiplier.Count == expectedCount);
+            Assert.IsTrue(financialScenarios.ShortLogPondValueMultiplier.Count == expectedCount);
             Assert.IsTrue(financialScenarios.TimberAppreciationRate.Count == expectedCount);
             Assert.IsTrue(financialScenarios.WesternRedcedarCamprunPondValuePerMbf.Count == expectedCount);
             Assert.IsTrue(financialScenarios.WhiteWood2SawPondValuePerMbf.Count == expectedCount);
@@ -319,12 +319,12 @@ namespace Mars.Seem.Test
                               (financialScenarios.ReleaseSprayCostPerHectare[financialIndex] > 200.0F));
                 Assert.IsTrue((financialScenarios.SeedlingCost[financialIndex] < 2.00F) &&
                               (financialScenarios.SeedlingCost[financialIndex] > 0.25F));
+                Assert.IsTrue((financialScenarios.ShortLogPondValueMultiplier[financialIndex] <= 1.00F) &&
+                              (financialScenarios.ShortLogPondValueMultiplier[financialIndex] > 0.50F));
                 Assert.IsTrue((financialScenarios.SitePrepAndReplantingCostPerHectare[financialIndex] < 1000.0F) &&
                               (financialScenarios.SitePrepAndReplantingCostPerHectare[financialIndex] > 500.0F));
                 Assert.IsTrue((financialScenarios.ThinningHarvestCostPerHectare[financialIndex] < 500.0F) &&
                               (financialScenarios.ThinningHarvestCostPerHectare[financialIndex] > 250.0F));
-                Assert.IsTrue((financialScenarios.ThinningPondValueMultiplier[financialIndex] <= 1.00F) &&
-                              (financialScenarios.ThinningPondValueMultiplier[financialIndex] > 0.50F));
                 Assert.IsTrue((financialScenarios.TimberAppreciationRate[financialIndex] <= 0.03F) &&
                               (financialScenarios.TimberAppreciationRate[financialIndex] >= 0.00F));
                 Assert.IsTrue((financialScenarios.WesternRedcedarCamprunPondValuePerMbf[financialIndex] < 2200.0F) &&
@@ -428,10 +428,14 @@ namespace Mars.Seem.Test
                 Assert.IsTrue((harvestSystems.ForwarderUtilization < 1.0F) &&
                               (harvestSystems.ForwarderUtilization > 0.5F));
 
-                Assert.IsTrue((harvestSystems.GrappleYardingConstant < 500.0F) &&
-                              (harvestSystems.GrappleYardingConstant > 0.0F));
-                Assert.IsTrue((harvestSystems.GrappleYardingLinear < 5.0F) &&
-                              (harvestSystems.GrappleYardingLinear > 0.0F));
+                Assert.IsTrue((harvestSystems.GrappleYardingConstantRegen < 500.0F) &&
+                              (harvestSystems.GrappleYardingConstantRegen > 0.0F));
+                Assert.IsTrue((harvestSystems.GrappleYardingConstantThin < 500.0F) &&
+                              (harvestSystems.GrappleYardingConstantThin > 0.0F));
+                Assert.IsTrue((harvestSystems.GrappleYardingLinearRegen < 5.0F) &&
+                              (harvestSystems.GrappleYardingLinearRegen > 0.0F));
+                Assert.IsTrue((harvestSystems.GrappleYardingLinearThin < 5.0F) &&
+                              (harvestSystems.GrappleYardingLinearThin > 0.0F));
                 Assert.IsTrue((harvestSystems.GrappleSwingYarderCostPerSMh < 500.0F) &&
                               (harvestSystems.GrappleSwingYarderCostPerSMh > 100.0F));
                 Assert.IsTrue((harvestSystems.GrappleSwingYarderMaxPayload <= 8000.0F) &&

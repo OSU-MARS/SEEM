@@ -532,7 +532,7 @@ namespace Mars.Seem.Tree
             return this.PreferredLogLengthInMeters + ((this.PreferredLogLengthInMeters > Constant.Bucking.ScribnerShortLogLengthInM) ? Constant.Bucking.ScribnerTrimLongLogInM : Constant.Bucking.ScribnerTrimShortLogInM);
         }
 
-        public TreeSpeciesMerchantableVolumeForPeriod GetStandingVolume(Trees treesOfSpecies)
+        public TreeSpeciesMerchantableVolumeForPeriod GetStandingMerchantableVolume(Trees treesOfSpecies)
         {
             if (this.TreeSpecies != treesOfSpecies.Species)
             {

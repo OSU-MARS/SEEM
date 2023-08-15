@@ -38,7 +38,7 @@ namespace Mars.Seem.Test
             List<HeuristicParameters> parameterCombinations = new() { parameters };
             FinancialScenarios financialScenarios = new();
             List<int> firstThinPeriods = new() { firstThinPeriodIndex };
-            List<int> noThin = new() { Constant.NoThinPeriod };
+            List<int> noThin = new() { Constant.NoHarvestPeriod };
             List<int> planningPeriods = new() { rotationLength };
             HeuristicStandTrajectories<HeuristicParameters> results = new(parameterCombinations, firstThinPeriods, noThin, noThin, planningPeriods, financialScenarios, TestConstant.SolutionPoolSize);
 
@@ -175,15 +175,15 @@ namespace Mars.Seem.Test
             int treesThinnedByPrescription = 0;
             for (int treeIndex = 0; treeIndex < firstCircularTreeSelection.Count; ++treeIndex)
             {
-                if (firstCircularTreeSelection[treeIndex] != Constant.RegenerationHarvestPeriod)
+                if (firstCircularTreeSelection[treeIndex] != Constant.RegenerationHarvestIfEligible)
                 {
                     ++treesThinnedByFirstCircular;
                 }
-                if (heroTreeSelection[treeIndex] != Constant.RegenerationHarvestPeriod)
+                if (heroTreeSelection[treeIndex] != Constant.RegenerationHarvestIfEligible)
                 {
                     ++treesThinnedByHero;
                 }
-                if (prescriptionTreeSelection[treeIndex] != Constant.RegenerationHarvestPeriod)
+                if (prescriptionTreeSelection[treeIndex] != Constant.RegenerationHarvestIfEligible)
                 {
                     ++treesThinnedByPrescription;
                 }
@@ -195,25 +195,35 @@ namespace Mars.Seem.Test
 
             if (treesThinnedByFirstCircular == 0)
             {
-                CutToLengthHarvest firstCircularThin = landExpectationValueIts.Financial.GetNetPresentThinningValue(firstCircularTrajectory, financialIndex: 0, thinningPeriod);
+                Assert.IsTrue(landExpectationValueIts.Financial.TryGetNetPresentThinningValue(firstCircularTrajectory, financialIndex: 0, thinningPeriod, out HarvestFinancialValue? firstThin));
+                CutToLengthHarvest firstCircularThin = (CutToLengthHarvest)firstThin;
                 LongLogHarvest firstCircularRegen = landExpectationValueIts.Financial.GetNetPresentRegenerationHarvestValue(firstCircularTrajectory, financialIndex: 0, landExpectationValueIts.MaximizeForPlanningPeriod);
-                float reforestationValue = landExpectationValueIts.Financial.GetNetPresentReforestationValue(financialIndex: 0, firstCircularTrajectory.PlantingDensityInTreesPerHectare);
                 TreeSpeciesMerchantableVolume firstCircularStandingVolume = firstCircularTrajectory.LongLogVolumeBySpecies[FiaCode.PseudotsugaMenziesii];
 
                 // check NPV components if converged to optimal (unthinned) solution
                 #if DEBUG
-                Assert.IsTrue(firstCircularThin.CubicVolumePerHa == 0.0F, "thin: cubic volume");
                 Assert.IsTrue(firstCircularThin.Forwarder.ForwardedWeightPerHa == 0.0F, "thin: forwarder");
                 Assert.IsTrue(firstCircularThin.Forwarder.ForwarderPMhPerHa == 0.0F, "thin: forwarder");
                 Assert.IsTrue(firstCircularThin.Forwarder.ForwarderCostPerHa == 0.0F, "thin: forwarder");
                 Assert.IsTrue(firstCircularThin.Forwarder.LoadingMethod == ForwarderLoadingMethod.None, "thin: forwarder");
                 Assert.IsTrue(Single.IsNaN(firstCircularThin.Forwarder.ForwarderProductivity));
-                Assert.IsTrue(firstCircularThin.MerchantableCubicVolumePerHa == 0.0F, "thin: forwarder");
-                Assert.IsTrue(Single.IsNaN(firstCircularThin.MinimumSystemCostPerHa), "thin: minimum system cost");
+                Assert.IsTrue(firstCircularThin.HarvestRelatedTaskCostPerHa == 0.0F, "thin: harvest tasks");
+                Assert.IsTrue(firstCircularThin.MerchantableCubicVolumePerHa == 0.0F, "thin: merchantable cubic volume");
+                Assert.IsTrue(firstCircularThin.MinimumCostHarvestSystem == HarvestSystemEquipment.None, "thin: minimum cost system");
+                Assert.IsTrue(firstCircularThin.MinimumSystemCostPerHa == 0.0F, "thin: minimum system cost");
                 Assert.IsTrue(firstCircularThin.NetPresentValuePerHa == 0.0F, "thin: NPV");
+                Assert.IsTrue(Single.IsNaN(firstCircularThin.ReforestationNpv), "thin: reforestation");
                 Assert.IsTrue(firstCircularThin.PondValue2SawPerHa == 0.0F, "thin: pond 2S");
                 Assert.IsTrue(firstCircularThin.PondValue3SawPerHa == 0.0F, "thin: pond 3S");
                 Assert.IsTrue(firstCircularThin.PondValue4SawPerHa == 0.0F, "thin: pond 4S");
+                Assert.IsTrue(firstCircularThin.TrackedHarvester.ChainsawBasalAreaPerHa == 0.0F, "thin: tracked harvester");
+                Assert.IsTrue(firstCircularThin.TrackedHarvester.ChainsawCrew == ChainsawCrewType.None, "thin: tracked harvester");
+                Assert.IsTrue(firstCircularThin.TrackedHarvester.ChainsawCubicVolumePerHa == 0.0F, "thin: tracked harvester");
+                Assert.IsTrue(firstCircularThin.TrackedHarvester.ChainsawPMhPerHa == 0.0F, "thin: tracked harvester");
+                Assert.IsTrue(firstCircularThin.TrackedHarvester.ChainsawUtilization == 0.0F, "thin: tracked harvester");
+                Assert.IsTrue(firstCircularThin.TrackedHarvester.HarvesterPMhPerHa == 0.0F, "thin: tracked harvester");
+                Assert.IsTrue(Single.IsNaN(firstCircularThin.TrackedHarvester.HarvesterCostPerHa), "thin: tracked harvester");
+                Assert.IsTrue(Single.IsNaN(firstCircularThin.TrackedHarvester.HarvesterProductivity), "thin: tracked harvester");
                 Assert.IsTrue(firstCircularThin.WheeledHarvester.ChainsawBasalAreaPerHa == 0.0F, "thin: wheeled harvester");
                 Assert.IsTrue(firstCircularThin.WheeledHarvester.ChainsawCrew == ChainsawCrewType.None, "thin: wheeled harvester");
                 Assert.IsTrue(firstCircularThin.WheeledHarvester.ChainsawCubicVolumePerHa == 0.0F, "thin: wheeled harvester");
@@ -223,7 +233,6 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(Single.IsNaN(firstCircularThin.WheeledHarvester.HarvesterCostPerHa), "thin: wheeled harvester");
                 Assert.IsTrue(Single.IsNaN(firstCircularThin.WheeledHarvester.HarvesterProductivity), "thin: wheeled harvester");
 
-                Assert.IsTrue((firstCircularRegen.CubicVolumePerHa > 264.920F) && (firstCircularRegen.CubicVolumePerHa < PublicApi.HarvestTolerance * 264.920F), "regen: cubic volume");
                 Assert.IsTrue((firstCircularRegen.Fallers.ChainsawBasalAreaPerHa > 77.364F) && (firstCircularRegen.Fallers.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 77.364F), "regen: fallers");
                 Assert.IsTrue(firstCircularRegen.Fallers.ChainsawCrew == ChainsawCrewType.Fallers, "regen: fallers");
                 Assert.IsTrue((firstCircularRegen.Fallers.ChainsawCubicVolumePerHa > 277.560F) && (firstCircularRegen.Fallers.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 277.560F), "regen: fallers");
@@ -231,12 +240,18 @@ namespace Mars.Seem.Test
                 Assert.IsTrue((firstCircularRegen.Fallers.ChainsawMinimumCost > 5960.01F) && (firstCircularRegen.Fallers.ChainsawMinimumCost < PublicApi.HarvestTolerance * 5960.01F), "regen: fallers");
                 Assert.IsTrue((firstCircularRegen.Fallers.ChainsawPMhPerHa > 19.933F) && (firstCircularRegen.Fallers.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 19.933F), "regen: fallers");
                 Assert.IsTrue(firstCircularRegen.Fallers.ChainsawUtilization == 0.5F, "regen: fallers");
+                Assert.IsTrue((firstCircularRegen.Fallers.LoadedWeightPerHa > 201926.0F) && (firstCircularRegen.Fallers.LoadedWeightPerHa < PublicApi.HarvestTolerance * 201926.0F), "regen: fallers");
+                Assert.IsTrue((firstCircularRegen.Fallers.SystemCostPerHaWithYarder > 12949.77F) && (firstCircularRegen.Fallers.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 12949.77F), "regen: fallers");
+                Assert.IsTrue((firstCircularRegen.Fallers.SystemCostPerHaWithYoader > 13680.87F) && (firstCircularRegen.Fallers.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 13680.87F), "regen: fallers");
+                Assert.IsTrue((firstCircularRegen.Fallers.YardedWeightPerHa > 213994.5F) && (firstCircularRegen.Fallers.YardedWeightPerHa < PublicApi.HarvestTolerance * 213994.5F), "regen: fallers");
+                Assert.IsTrue(MathF.Abs(firstCircularRegen.Fallers.LoadedWeightPerHa - firstCircularRegen.FellerBuncher.LoadedWeightPerHa) < 0.1F);
+                Assert.IsTrue(MathF.Abs(firstCircularRegen.Fallers.YardedWeightPerHa - firstCircularRegen.FellerBuncher.YardedWeightPerHa) < 0.1F);
 
                 Assert.IsTrue(firstCircularRegen.FellerBuncher.AnchorMachine == true, "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherCostPerHa > 311.68F) && (firstCircularRegen.FellerBuncher.FellerBuncherCostPerHa < PublicApi.HarvestTolerance * 311.68F), "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherCostPerSMh > 263.4F) && (firstCircularRegen.FellerBuncher.FellerBuncherCostPerSMh < PublicApi.HarvestTolerance * 263.5F), "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherPMhPerHa > 0.910F) && (firstCircularRegen.FellerBuncher.FellerBuncherPMhPerHa < PublicApi.HarvestTolerance * 0.910F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherProductivity > 304.740F) && (firstCircularRegen.FellerBuncher.FellerBuncherProductivity < PublicApi.HarvestTolerance * 304.740F), "regen: feller-buncher");
+                Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherProductivity > 290.862F) && (firstCircularRegen.FellerBuncher.FellerBuncherProductivity < PublicApi.HarvestTolerance * 290.862F), "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.LoadedWeightPerHa > 201926.1F) && (firstCircularRegen.FellerBuncher.LoadedWeightPerHa < PublicApi.HarvestTolerance * 201926.1F), "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.YardedWeightPerHa > 213994.0F) && (firstCircularRegen.FellerBuncher.YardedWeightPerHa < PublicApi.HarvestTolerance * 213994.0F), "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.ChainsawBasalAreaPerHa > 37.043F) && (firstCircularRegen.FellerBuncher.Yarder.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 37.043F), "regen: feller-buncher+yarder chainsaw basal area");
@@ -258,25 +273,26 @@ namespace Mars.Seem.Test
 
                 Assert.IsTrue((firstCircularRegen.HarvestRelatedTaskCostPerHa > 688.89F) && (firstCircularRegen.HarvestRelatedTaskCostPerHa < PublicApi.HarvestTolerance * 688.89F), "regen: harvest tasks");
                 Assert.IsTrue((firstCircularRegen.LoaderSMhPerHectare > 4.312F) && (firstCircularRegen.LoaderSMhPerHectare < PublicApi.HarvestTolerance * 4.312F), "regen: loader");
-                Assert.IsTrue((firstCircularRegen.MerchantableCubicVolumePerHa > 277.560F) && (firstCircularRegen.MerchantableCubicVolumePerHa < PublicApi.HarvestTolerance * 277.560F), "regen: cubic volume");
+                Assert.IsTrue((firstCircularRegen.MerchantableCubicVolumePerHa > 264.920F) && (firstCircularRegen.MerchantableCubicVolumePerHa < PublicApi.HarvestTolerance * 264.920F), "regen: merchantable cubic volume");
                 Assert.IsTrue(firstCircularRegen.MinimumCostHarvestSystem == HarvestSystemEquipment.FellerBuncherGrappleSwingYarderProcessorLoader, "regen: min cost system");
                 Assert.IsTrue((firstCircularRegen.MinimumSystemCostPerHa > 8316.98F) && (firstCircularRegen.MinimumSystemCostPerHa < PublicApi.HarvestTolerance * 8316.98F), "regen: min cost system");
-                Assert.IsTrue((firstCircularRegen.NetPresentValuePerHa > 563.628F) && (firstCircularRegen.NetPresentValuePerHa < PublicApi.HarvestTolerance * 563.628F), "regen: NPV");
+                Assert.IsTrue((firstCircularRegen.NetPresentValuePerHa > 980.48F) && (firstCircularRegen.NetPresentValuePerHa < PublicApi.HarvestTolerance * 980.48F), "regen: NPV");
                 Assert.IsTrue((firstCircularRegen.PondValue2SawPerHa > 24668.05F) && (firstCircularRegen.PondValue2SawPerHa < PublicApi.HarvestTolerance * 24668.05F), "regen: pond 2S");
                 Assert.IsTrue((firstCircularRegen.PondValue3SawPerHa > 1573.129F) && (firstCircularRegen.PondValue3SawPerHa < PublicApi.HarvestTolerance * 1573.129F), "regen: pond 3S");
                 Assert.IsTrue((firstCircularRegen.PondValue4SawPerHa > 1102.866F) && (firstCircularRegen.PondValue4SawPerHa < PublicApi.HarvestTolerance * 1102.866F), "regen: pond 4S");
+                Assert.IsTrue((firstCircularRegen.ReforestationNpv < -452.33F) && (firstCircularRegen.ReforestationNpv > PublicApi.HarvestTolerance * -452.33F), "regen: reforestation");
 
                 Assert.IsTrue(firstCircularRegen.Yarder.OverweightFirstLogsPerHa == 0.0F, "regen: yarder");
                 Assert.IsTrue((firstCircularRegen.Yarder.ProcessorPMhPerHa > 2.691F) && (firstCircularRegen.Yarder.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.691F), "regen: yarder");
-                Assert.IsTrue((firstCircularRegen.Yarder.ProcessorProductivity > 103.123F) && (firstCircularRegen.Yarder.ProcessorProductivity < PublicApi.HarvestTolerance * 103.123F), "regen: yarder");
+                Assert.IsTrue((firstCircularRegen.Yarder.ProcessorProductivity > 98.427F) && (firstCircularRegen.Yarder.ProcessorProductivity < PublicApi.HarvestTolerance * 98.427F), "regen: yarder");
                 Assert.IsTrue((firstCircularRegen.Yarder.YarderPMhPerHectare > 4.761F) && (firstCircularRegen.Yarder.YarderPMhPerHectare < PublicApi.HarvestTolerance * 4.761F), "regen: yarder");
-                Assert.IsTrue((firstCircularRegen.Yarder.YarderProductivity > 58.294F) && (firstCircularRegen.Yarder.YarderProductivity < PublicApi.HarvestTolerance * 58.294F), "regen: yarder");
+                Assert.IsTrue((firstCircularRegen.Yarder.YarderProductivity > 55.639F) && (firstCircularRegen.Yarder.YarderProductivity < PublicApi.HarvestTolerance * 55.639F), "regen: yarder");
                 Assert.IsTrue((firstCircularRegen.Yarder.YarderSMhPerHectare > 5.951F) && (firstCircularRegen.Yarder.YarderSMhPerHectare < PublicApi.HarvestTolerance * 5.951F), "regen: yarder");
                 Assert.IsTrue((firstCircularRegen.Yoader.OverweightFirstLogsPerHa > 1.270F) && (firstCircularRegen.Yoader.OverweightFirstLogsPerHa < PublicApi.HarvestTolerance * 1.270F), "regen: yoader");
                 Assert.IsTrue((firstCircularRegen.Yoader.ProcessorPMhPerHa > 2.653F) && (firstCircularRegen.Yoader.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.653F), "regen: yoader");
-                Assert.IsTrue((firstCircularRegen.Yoader.ProcessorProductivity > 104.585F) && (firstCircularRegen.Yoader.ProcessorProductivity < PublicApi.HarvestTolerance * 104.585F), "regen: yoader");
+                Assert.IsTrue((firstCircularRegen.Yoader.ProcessorProductivity > 99.822F) && (firstCircularRegen.Yoader.ProcessorProductivity < PublicApi.HarvestTolerance * 99.822F), "regen: yoader");
                 Assert.IsTrue((firstCircularRegen.Yoader.YarderPMhPerHectare > 6.143F) && (firstCircularRegen.Yoader.YarderPMhPerHectare < PublicApi.HarvestTolerance * 6.143F), "regen: yoader");
-                Assert.IsTrue((firstCircularRegen.Yoader.YarderProductivity > 45.177F) && (firstCircularRegen.Yoader.YarderProductivity < PublicApi.HarvestTolerance * 45.177F), "regen: yoader");
+                Assert.IsTrue((firstCircularRegen.Yoader.YarderProductivity > 43.120F) && (firstCircularRegen.Yoader.YarderProductivity < PublicApi.HarvestTolerance * 43.120F), "regen: yoader");
                 Assert.IsTrue((firstCircularRegen.Yoader.YarderSMhPerHectare > 8.191F) && (firstCircularRegen.Yoader.YarderSMhPerHectare < PublicApi.HarvestTolerance * 8.191F), "regen: yoader");
 
                 Assert.IsTrue(firstCircularRegen.TrackedHarvester.AnchorMachine == true, "regen: tracked harvester");
@@ -290,7 +306,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterCostPerHa > 1866.86F) && (firstCircularRegen.TrackedHarvester.HarvesterCostPerHa < PublicApi.HarvestTolerance * 1866.86F), "regen: tracked harvester");
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterCostPerSMh > 264.4F) && (firstCircularRegen.TrackedHarvester.HarvesterCostPerSMh < PublicApi.HarvestTolerance * 264.5F), "regen: tracked harvester");
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterPMhPerHa > 5.434F) && (firstCircularRegen.TrackedHarvester.HarvesterPMhPerHa < PublicApi.HarvestTolerance * 5.434F), "regen: tracked harvester");
-                Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterProductivity > 51.071F) && (firstCircularRegen.TrackedHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 51.071F), "regen: tracked harvester");
+                Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterProductivity > 48.746F) && (firstCircularRegen.TrackedHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 48.746F), "regen: tracked harvester");
                 Assert.IsTrue(firstCircularRegen.TrackedHarvester.IsTracked == true, "regen: tracked harvester");
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYarder > 8469.53F) && (firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 8469.53F), "regen: tracked harvester");
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYoader > 8743.69F) && (firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 8743.69F), "regen: tracked harvester");
@@ -307,13 +323,11 @@ namespace Mars.Seem.Test
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterCostPerHa > 907.14F) && (firstCircularRegen.WheeledHarvester.HarvesterCostPerHa < PublicApi.HarvestTolerance * 907.14F), "regen: wheeled harvester");
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterCostPerSMh > 224.0F) && (firstCircularRegen.WheeledHarvester.HarvesterCostPerSMh < PublicApi.HarvestTolerance * 225.0F), "regen: wheeled harvester");
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterPMhPerHa > 3.104F) && (firstCircularRegen.WheeledHarvester.HarvesterPMhPerHa < PublicApi.HarvestTolerance * 3.104F), "regen: wheeled harvester");
-                Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterProductivity > 89.407F) && (firstCircularRegen.WheeledHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 89.407F), "regen: wheeled harvester");
+                Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterProductivity > 85.335F) && (firstCircularRegen.WheeledHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 85.335F), "regen: wheeled harvester");
                 Assert.IsTrue(firstCircularRegen.WheeledHarvester.IsTracked == false, "regen: wheeled harvester");
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYarder > 9562.6F) && (firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 9562.6F), "regen: wheeled harvester");
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYoader > 9836.7F) && (firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 9836.7F), "regen: wheeled harvester");
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.YardedWeightPerHa > 205149.0F) && (firstCircularRegen.WheeledHarvester.YardedWeightPerHa < PublicApi.HarvestTolerance * 205149.0F), "regen: wheeled harvester");
-
-                Assert.IsTrue((reforestationValue < -452.33F) && (reforestationValue > PublicApi.HarvestTolerance * -452.33F), "regen: reforestation");
 
                 // check volumes if converged to optimal (unthinned) solution
                 float scribner2saw = firstCircularStandingVolume.Scribner2Saw[landExpectationValueIts.MaximizeForPlanningPeriod];
@@ -1149,42 +1163,37 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(bestTreeSelection.Count == currentTreeSelection.Count);
                 for (int treeIndex = 0; treeIndex < bestTreeSelection.Count; ++treeIndex)
                 {
-                    Assert.IsTrue((bestTreeSelection[treeIndex] == Constant.RegenerationHarvestPeriod) || (bestTreeSelection[treeIndex] == firstThinningPeriod));
-                    Assert.IsTrue((currentTreeSelection[treeIndex] == Constant.RegenerationHarvestPeriod) || (currentTreeSelection[treeIndex] == firstThinningPeriod));
+                    Assert.IsTrue((bestTreeSelection[treeIndex] == Constant.RegenerationHarvestIfEligible) || (bestTreeSelection[treeIndex] == firstThinningPeriod));
+                    Assert.IsTrue((currentTreeSelection[treeIndex] == Constant.RegenerationHarvestIfEligible) || (currentTreeSelection[treeIndex] == firstThinningPeriod));
                 }
             }
 
             // check volumes
-            Assert.IsTrue(firstThinningPeriod != Constant.RegenerationHarvestPeriod);
-            bestTrajectory.GetMerchantableVolumes(out StandMerchantableVolume bestStandingVolume, out StandMerchantableVolume bestHarvestedVolume);
-            heuristic.CurrentTrajectory.GetMerchantableVolumes(out StandMerchantableVolume currentStandingVolume, out StandMerchantableVolume currentHarvestedVolume);
-            CutToLengthHarvest bestThinNpv = new();
-            CutToLengthHarvest currentThinNpv = new();
+            Assert.IsTrue(firstThinningPeriod != Constant.RegenerationHarvestIfEligible);
+            bestTrajectory.GetMerchantableVolumes(out StandMerchantableVolume bestLongLogVolume, out StandMerchantableVolume bestForwardedVolume);
+            heuristic.CurrentTrajectory.GetMerchantableVolumes(out StandMerchantableVolume currentLongLogVolume, out StandMerchantableVolume currentForwardedVolume);
             float previousBestCubicStandingVolume = Single.NaN;
             float previousBestScribnerStandingVolume = Single.NaN;
             float previousCurrentCubicStandingVolume = Single.NaN;
             float previousCurrentScribnerStandingVolume = Single.NaN;
             for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
             {
-                float bestCubicStandingVolume = bestStandingVolume.GetCubicTotal(periodIndex);
-                float bestCubicThinningVolume = bestHarvestedVolume.GetCubicTotal(periodIndex);
-                float currentCubicStandingVolume = currentStandingVolume.GetCubicTotal(periodIndex);
-                float currentCubicThinningVolume = currentHarvestedVolume.GetCubicTotal(periodIndex);
+                float bestCubicStandingVolume = bestLongLogVolume.GetCubicTotal(periodIndex);
+                float bestCubicThinningVolume = bestForwardedVolume.GetCubicTotal(periodIndex);
+                float currentCubicStandingVolume = currentLongLogVolume.GetCubicTotal(periodIndex);
+                float currentCubicThinningVolume = currentForwardedVolume.GetCubicTotal(periodIndex);
 
-                float bestCubicStandingCheckVolume = bestStandingVolume.Cubic2Saw[periodIndex] + bestStandingVolume.Cubic3Saw[periodIndex] + bestStandingVolume.Cubic4Saw[periodIndex];
-                float bestCubicThinningCheckVolume = bestHarvestedVolume.Cubic2Saw[periodIndex] + bestHarvestedVolume.Cubic3Saw[periodIndex] + bestHarvestedVolume.Cubic4Saw[periodIndex];
-                float currentCubicStandingCheckVolume = currentStandingVolume.Cubic2Saw[periodIndex] + currentStandingVolume.Cubic3Saw[periodIndex] + currentStandingVolume.Cubic4Saw[periodIndex];
-                float currentCubicThinningCheckVolume = currentHarvestedVolume.Cubic2Saw[periodIndex] + currentHarvestedVolume.Cubic3Saw[periodIndex] + currentHarvestedVolume.Cubic4Saw[periodIndex];
+                float bestCubicStandingCheckVolume = bestLongLogVolume.Cubic2Saw[periodIndex] + bestLongLogVolume.Cubic3Saw[periodIndex] + bestLongLogVolume.Cubic4Saw[periodIndex];
+                float bestCubicThinningCheckVolume = bestForwardedVolume.Cubic2Saw[periodIndex] + bestForwardedVolume.Cubic3Saw[periodIndex] + bestForwardedVolume.Cubic4Saw[periodIndex];
+                float currentCubicStandingCheckVolume = currentLongLogVolume.Cubic2Saw[periodIndex] + currentLongLogVolume.Cubic3Saw[periodIndex] + currentLongLogVolume.Cubic4Saw[periodIndex];
+                float currentCubicThinningCheckVolume = currentForwardedVolume.Cubic2Saw[periodIndex] + currentForwardedVolume.Cubic3Saw[periodIndex] + currentForwardedVolume.Cubic4Saw[periodIndex];
                 Assert.IsTrue(MathF.Abs(bestCubicStandingVolume - bestCubicStandingCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(bestCubicThinningVolume - bestCubicThinningCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(currentCubicStandingVolume - currentCubicStandingCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(currentCubicThinningVolume - currentCubicThinningCheckVolume) < 0.000001F);
 
-                if (periodIndex > 1)
-                {
-                    bestThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex);
-                    currentThinNpv = FinancialScenarios.Default.GetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex);
-                }
+                FinancialScenarios.Default.TryGetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex, out HarvestFinancialValue? bestThinNpv);
+                FinancialScenarios.Default.TryGetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex, out HarvestFinancialValue? currentThinNpv);
                 if (periodIndex == firstThinningPeriod)
                 {
                     Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F); // best selection with debug stand is no harvest
@@ -1198,16 +1207,17 @@ namespace Mars.Seem.Test
                         Debugger.Break();
                     }
                     Assert.IsTrue(Constant.Default.ThinningPondValueMultiplier * thinVolumeScribner < previousStandingVolumeScribner, "Thinning volume: " + thinVolumeScribner + " MBF/ha in period " + periodIndex + " but previous period's standing volume is " + previousStandingVolumeScribner + " MBF/ha."); // allow for differences between short and long log scaling
-                    Assert.IsTrue(bestHarvestedVolume.Scribner2Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Scribner3Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Scribner4Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Scribner2Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Scribner3Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Scribner4Saw[periodIndex] >= 0.0F);
 
                     Assert.IsTrue(bestCubicThinningVolume <= previousBestCubicStandingVolume);
-                    Assert.IsTrue(bestHarvestedVolume.Cubic2Saw[periodIndex] >= 0.0F, "2S cubic volume is negative.");
-                    Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] >= 0.0F, "3S cubic volume is negative.");
-                    Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] >= 0.0F, "4S cubic volume is negative.");
+                    Assert.IsTrue(bestForwardedVolume.Cubic2Saw[periodIndex] >= 0.0F, "2S cubic volume is negative.");
+                    Assert.IsTrue(bestForwardedVolume.Cubic3Saw[periodIndex] >= 0.0F, "3S cubic volume is negative.");
+                    Assert.IsTrue(bestForwardedVolume.Cubic4Saw[periodIndex] >= 0.0F, "4S cubic volume is negative.");
 
                     // TODO: investigate deeply negative NPVs
+                    Assert.IsTrue(bestThinNpv != null);
                     Assert.IsTrue(bestThinNpv.PondValue2SawPerHa >= 0.0F, "2S NPV is " + bestThinNpv.PondValue2SawPerHa + ".");
                     Assert.IsTrue(bestThinNpv.PondValue3SawPerHa >= 0.0F, "3S NPV is " + bestThinNpv.PondValue3SawPerHa + ".");
                     Assert.IsTrue(bestThinNpv.PondValue4SawPerHa >= 0.0F, "4S NPV is " + bestThinNpv.PondValue4SawPerHa + "."); // potentially fairly low when only 4S is removed
@@ -1220,6 +1230,7 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(currentCubicThinningVolume >= 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume <= previousCurrentCubicStandingVolume);
 
+                    Assert.IsTrue(currentThinNpv != null);
                     Assert.IsTrue(currentThinNpv.PondValue2SawPerHa >= 0.0F);
                     Assert.IsTrue(currentThinNpv.PondValue3SawPerHa >= 0.0F);
                     Assert.IsTrue(currentThinNpv.PondValue4SawPerHa >= 0.0F);
@@ -1229,33 +1240,29 @@ namespace Mars.Seem.Test
                     // for now, harvest should occur only in the one indicated period
                     Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] == 0.0F);
                     Assert.IsTrue(bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Scribner2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Scribner3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Scribner4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Scribner2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Scribner3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Scribner4Saw[periodIndex] == 0.0F);
 
                     Assert.IsTrue(bestCubicThinningVolume == 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Cubic2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Cubic3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestHarvestedVolume.Cubic4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Cubic2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Cubic3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedVolume.Cubic4Saw[periodIndex] == 0.0F);
 
-                    Assert.IsTrue(bestThinNpv.PondValue2SawPerHa == 0.0F);
-                    Assert.IsTrue(bestThinNpv.PondValue3SawPerHa == 0.0F);
-                    Assert.IsTrue(bestThinNpv.PondValue4SawPerHa == 0.0F);
+                    Assert.IsTrue(bestThinNpv == null);
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
-                    Assert.IsTrue(currentHarvestedVolume.Scribner2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentHarvestedVolume.Scribner3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentHarvestedVolume.Scribner4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedVolume.Scribner2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedVolume.Scribner3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedVolume.Scribner4Saw[periodIndex] == 0.0F);
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] == 0.0F);
                     Assert.IsTrue(currentCubicThinningVolume == 0.0F);
-                    Assert.IsTrue(currentHarvestedVolume.Cubic2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentHarvestedVolume.Cubic3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentHarvestedVolume.Cubic4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedVolume.Cubic2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedVolume.Cubic3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedVolume.Cubic4Saw[periodIndex] == 0.0F);
 
-                    Assert.IsTrue(currentThinNpv.PondValue2SawPerHa == 0.0F);
-                    Assert.IsTrue(currentThinNpv.PondValue3SawPerHa == 0.0F);
-                    Assert.IsTrue(currentThinNpv.PondValue4SawPerHa == 0.0F);
+                    Assert.IsTrue(currentThinNpv == null);
                 }
 
                 float bestScribnerStandingVolume = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex);
@@ -1350,8 +1357,8 @@ namespace Mars.Seem.Test
             for (int periodIndex = 0; periodIndex < thinnedTrajectory.PlanningPeriods; ++periodIndex)
             {
                 if ((periodIndex == expectedTrajectory.FirstThinPeriod) || 
-                    ((expectedTrajectory.SecondThinPeriod != Constant.NoThinPeriod) && (periodIndex == expectedTrajectory.SecondThinPeriod)) ||
-                    ((expectedTrajectory.ThirdThinPeriod != Constant.NoThinPeriod) && (periodIndex == expectedTrajectory.ThirdThinPeriod)))
+                    ((expectedTrajectory.SecondThinPeriod != Constant.NoHarvestPeriod) && (periodIndex == expectedTrajectory.SecondThinPeriod)) ||
+                    ((expectedTrajectory.ThirdThinPeriod != Constant.NoHarvestPeriod) && (periodIndex == expectedTrajectory.ThirdThinPeriod)))
                 {
                     OrganonStandDensity? standDensityBeforeThin = thinnedTrajectory.DensityByPeriod[periodIndex - 1];
                     Assert.IsNotNull(standDensityBeforeThin);
@@ -1371,12 +1378,11 @@ namespace Mars.Seem.Test
 
         private static void Verify(OrganonStandTrajectory trajectory, ExpectedStandTrajectory expectedTrajectory, int timeStepInYears)
         {
-            trajectory.RecalculateThinningVolumeIfNeeded(0);
-            trajectory.RecalculateStandingVolumeIfNeeded(0);
+            trajectory.RecalculateMerchantableVolumeIfNeeded(periodIndex: 0);
 
             Assert.IsTrue(trajectory.Treatments.BasalAreaThinnedByPeriod.Count == expectedTrajectory.Length);
             Assert.IsTrue(trajectory.Treatments.BasalAreaThinnedByPeriod[0] == 0.0F);
-            Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(0) == 0.0F);
+            Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex: 0) == 0.0F);
             foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in trajectory.ForwardedVolumeBySpecies.Values)
             {
                 Assert.IsTrue(thinVolumeForSpecies.Scribner2Saw.Length == expectedTrajectory.Length);
@@ -1391,17 +1397,17 @@ namespace Mars.Seem.Test
             Assert.IsTrue(trajectory.GetSecondThinPeriod() == expectedTrajectory.SecondThinPeriod);
 
             IList<int> thinningPeriods = trajectory.Treatments.GetHarvestPeriods();
-            Assert.IsTrue(thinningPeriods[^1] == Constant.RegenerationHarvestPeriod);
-            if (expectedTrajectory.FirstThinPeriod != Constant.NoThinPeriod)
+            Assert.IsTrue(thinningPeriods[^1] == Constant.RegenerationHarvestIfEligible);
+            if (expectedTrajectory.FirstThinPeriod != Constant.NoHarvestPeriod)
             {
                 Assert.IsTrue(thinningPeriods[0] == expectedTrajectory.FirstThinPeriod);
-                if (expectedTrajectory.ThirdThinPeriod != Constant.NoThinPeriod)
+                if (expectedTrajectory.ThirdThinPeriod != Constant.NoHarvestPeriod)
                 {
                     Assert.IsTrue(thinningPeriods[1] == expectedTrajectory.SecondThinPeriod);
                     Assert.IsTrue(thinningPeriods[2] == expectedTrajectory.ThirdThinPeriod);
                     Assert.IsTrue(thinningPeriods.Count == 4);
                 }
-                else if (expectedTrajectory.SecondThinPeriod != Constant.NoThinPeriod)
+                else if (expectedTrajectory.SecondThinPeriod != Constant.NoHarvestPeriod)
                 {
                     Assert.IsTrue(thinningPeriods[1] == expectedTrajectory.SecondThinPeriod);
                     Assert.IsTrue(thinningPeriods.Count == 3);
@@ -1425,8 +1431,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(standDensity.BasalAreaPerHa > 0.0F);
                 Assert.IsTrue(standDensity.BasalAreaPerHa <= Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * TestConstant.Maximum.TreeBasalAreaLarger);
 
-                trajectory.RecalculateThinningVolumeIfNeeded(periodIndex);
-                trajectory.RecalculateStandingVolumeIfNeeded(periodIndex);
+                trajectory.RecalculateMerchantableVolumeIfNeeded(periodIndex);
 
                 Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) > expectedTrajectory.MinimumStandingCubicM3PerHa[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingCubicM3PerHa[periodIndex]);
@@ -1544,11 +1549,11 @@ namespace Mars.Seem.Test
                 {
                     int treeSelection = individualTreeSelection[treeIndex];
                     bool isOutOfRange = (treeSelection != 0) && (treeSelection != expectedTrajectory.FirstThinPeriod);
-                    if (expectedTrajectory.SecondThinPeriod != Constant.NoThinPeriod)
+                    if (expectedTrajectory.SecondThinPeriod != Constant.NoHarvestPeriod)
                     {
                         isOutOfRange &= treeSelection != expectedTrajectory.SecondThinPeriod;
                     }
-                    if (expectedTrajectory.ThirdThinPeriod != Constant.NoThinPeriod)
+                    if (expectedTrajectory.ThirdThinPeriod != Constant.NoHarvestPeriod)
                     {
                         isOutOfRange &= treeSelection != expectedTrajectory.ThirdThinPeriod;
                     }
@@ -1587,9 +1592,9 @@ namespace Mars.Seem.Test
 
             public ExpectedStandTrajectory()
             {
-                this.FirstThinPeriod = Constant.NoThinPeriod;
-                this.SecondThinPeriod = Constant.NoThinPeriod;
-                this.ThirdThinPeriod = Constant.NoThinPeriod;
+                this.FirstThinPeriod = Constant.NoHarvestPeriod;
+                this.SecondThinPeriod = Constant.NoHarvestPeriod;
+                this.ThirdThinPeriod = Constant.NoHarvestPeriod;
                 this.MaximumTreesSelected = 0;
                 this.MinimumTreesSelected = 0;
                 this.MinimumHarvestCubicM3PerHa = Array.Empty<float>();

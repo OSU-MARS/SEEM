@@ -84,8 +84,8 @@ namespace Mars.Seem.Heuristics
                 case TimberObjective.LandExpectationValue:
                     // convert from US$/ha to USk$/ha
                     return 0.001F * this.RunParameters.Financial.GetLandExpectationValue(trajectory, financialIndex, endOfRotationPeriod);
-                // net present value of first rotation
                 case TimberObjective.NetPresentValue:
+                    // net present value of first rotation, USk$/ha
                     return 0.001F * this.RunParameters.Financial.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriod);
                 // TODO: move this out of financial objective calculations
                 case TimberObjective.ScribnerVolume:
@@ -93,10 +93,10 @@ namespace Mars.Seem.Heuristics
                     float scribnerVolumeInMbf = 0.0F;
                     foreach (int periodIndex in trajectory.Treatments.GetThinningPeriods())
                     {
-                        trajectory.RecalculateThinningVolumeIfNeeded(periodIndex);
+                        trajectory.RecalculateMerchantableVolumeIfNeeded(periodIndex);
                         scribnerVolumeInMbf += trajectory.GetTotalScribnerVolumeThinned(periodIndex);
                     }
-                    trajectory.RecalculateStandingVolumeIfNeeded(endOfRotationPeriod);
+                    trajectory.RecalculateMerchantableVolumeIfNeeded(endOfRotationPeriod);
                     scribnerVolumeInMbf += trajectory.GetTotalStandingScribnerVolume(endOfRotationPeriod);
                     return scribnerVolumeInMbf;
                 default:
@@ -358,7 +358,7 @@ namespace Mars.Seem.Heuristics
         // for now, if a tree is too large to be eligible for any thin checking it is still considered a randomization
         protected void RandomizeTreeSelection(int uncompactedTreeIndex, IList<int> thinningPeriods, float finalHarvestProbability)
         {
-            int harvestPeriod = Constant.RegenerationHarvestPeriod;
+            int harvestPeriod = Constant.RegenerationHarvestIfEligible;
             float harvestProbability = this.Pseudorandom.GetPseudorandomByteAsProbability();
             if (harvestProbability < finalHarvestProbability)
             {

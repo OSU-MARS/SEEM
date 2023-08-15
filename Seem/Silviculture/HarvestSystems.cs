@@ -1,5 +1,7 @@
-﻿using Mars.Seem.Tree;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Tree;
 using System;
+using System.Diagnostics;
 
 namespace Mars.Seem.Silviculture
 {
@@ -57,8 +59,10 @@ namespace Mars.Seem.Silviculture
         public float ForwarderUnloadPayload { get; set; } // unload time coefficient for payload size
         public float ForwarderUtilization { get; set; } // fraction
 
-        public float GrappleYardingConstant { get; set; } // seconds
-        public float GrappleYardingLinear { get; set; } // seconds/m of highlead or skyline yarding distance
+        public float GrappleYardingConstantRegen { get; set; } // seconds, regeneration harvests
+        public float GrappleYardingConstantThin { get; set; } // seconds, thinning
+        public float GrappleYardingLinearRegen { get; set; } // seconds/m of highlead or skyline yarding distance
+        public float GrappleYardingLinearThin { get; set; } // seconds/m of highlead or skyline yarding distance
         public float GrappleSwingYarderCostPerSMh { get; set; } // US$/SMh
         public float GrappleSwingYarderMaxPayload { get; set; } // kg
         public float GrappleSwingYarderMeanPayload { get; set; } // kg
@@ -175,8 +179,10 @@ namespace Mars.Seem.Silviculture
             this.ForwarderUtilization = 0.79F; // fraction
 
             // nominal grapple yarders
-            this.GrappleYardingConstant = 45.0F; // seconds
-            this.GrappleYardingLinear = 0.72F; // seconds/m of yarding distance
+            this.GrappleYardingConstantRegen = 45.0F; // seconds
+            this.GrappleYardingConstantThin = 64.0F; // seconds
+            this.GrappleYardingLinearRegen = 0.72F; // seconds/m of yarding distance
+            this.GrappleYardingLinearThin = 0.75F; // seconds/m of yarding distance
             this.GrappleSwingYarderMaxPayload = 4000.0F; // kg
             this.GrappleSwingYarderMeanPayload = 2000.0F; // kg
             this.GrappleSwingYarderCostPerSMh = 360.00F; // US$/SMh
@@ -293,6 +299,25 @@ namespace Mars.Seem.Silviculture
             return (treeFellerBuncherPMs, treeChainsawPMsWithYarder, treeChainsawPMsWithYoader);
         }
 
+        public float GetCutToLengthHaulCost(float loadedWeightInKgPerHa)
+        {
+            float haulRoundtripsPerHectare = loadedWeightInKgPerHa / this.CutToLengthHaulPayloadInKg;
+            float haulCostPerHa = this.CutToLengthHaulPerSMh * haulRoundtripsPerHectare * this.CutToLengthRoundtripHaulSMh;
+            return haulCostPerHa;
+        }
+
+        public float GetLongLogHaulCost(float loadedWeightInKgPerHa)
+        {
+            float haulRoundtripsPerHectare = loadedWeightInKgPerHa / this.LongLogHaulPayloadInKg;
+            float haulCostPerHa = this.LongLogHaulRoundtripSMh * haulRoundtripsPerHectare * this.LongLogHaulPerSMh;
+            return haulCostPerHa;
+        }
+
+        public float GetMoveInAndOutCost(int machinesToMoveInAndOut, Stand stand)
+        {
+            return 2.0F * machinesToMoveInAndOut * this.MachineMoveInOrOut / stand.AreaInHa; // 2.0F = move in + move out
+        }
+
         public float GetProcessorTime(float treeMerchantableVolumeInM3, bool includeQuadratic)
         {
             float treeProcessingPMs = this.ProcessorBuckConstant + this.ProcessorBuckLinear * treeMerchantableVolumeInM3;
@@ -313,7 +338,7 @@ namespace Mars.Seem.Silviculture
             return treeProcessingPMs;
         }
 
-        public (float treeHarvesterPMs, float treeChainsawPMs) GetTrackedHarvesterTime(float dbhInCm, float treeMerchantableVolumeInM3)
+        public (float treeHarvesterPMs, float treeChainsawPMs) GetTrackedHarvesterTime(float dbhInCm, float treeMerchantableVolumeInM3, bool previousOversizeTreeBehindHarvester)
         {
             float treeHarvesterPMs; // productive machine seconds
             float treeChainsawPMs = 0.0F; // productive machine seconds
@@ -333,7 +358,7 @@ namespace Mars.Seem.Silviculture
             }
             else
             {
-                if (dbhInCm > this.TrackedHarvesterFellingDiameterLimit)
+                if ((dbhInCm > this.TrackedHarvesterFellingDiameterLimit) || previousOversizeTreeBehindHarvester)
                 {
                     // tree felled and bucked by chainsaw, no cutting by harvester in this case
                     treeHarvesterPMs = 0.0F;
@@ -385,6 +410,35 @@ namespace Mars.Seem.Silviculture
             }
 
             return (treeHarvesterPMs, treeChainsawPMs);
+        }
+
+        public float GetYarderAndLoaderCost(YardingSystem yarder, float loaderSMhPerHa)
+        {
+            float limitingSMh = MathF.Max(yarder.YarderSMhPerHectare, loaderSMhPerHa);
+            float yarderCostPerHa = (yarder.IsYoader ? this.GrappleYoaderCostPerSMh : this.GrappleSwingYarderCostPerSMh) * limitingSMh;
+            float loaderCostPerHa = this.LoaderCostPerSMh * limitingSMh;
+
+            Debug.Assert(limitingSMh >= 0.0F);
+            return yarderCostPerHa + loaderCostPerHa;
+        }
+
+        public float GetYarderProcessorAndLoaderCost(YardingSystem yarder, float loaderSMhPerHa)
+        {
+            float processorSMhPerHectareWithYarder = yarder.ProcessorPMhPerHa / this.ProcessorUtilization;
+
+            float limitingSMh = MathE.Max(yarder.YarderSMhPerHectare, processorSMhPerHectareWithYarder, loaderSMhPerHa);
+            float yarderCostPerHa = (yarder.IsYoader ? this.GrappleYoaderCostPerSMh : this.GrappleSwingYarderCostPerSMh) * limitingSMh;
+            float processorCostPerHa = this.ProcessorCostPerSMh * limitingSMh;
+            float loaderCostPerHa = this.LoaderCostPerSMh * limitingSMh;
+
+            Debug.Assert(limitingSMh >= 0.0F);
+            return yarderCostPerHa + processorCostPerHa + loaderCostPerHa;
+        }
+
+        public bool IsForwardingEfficient(Stand stand)
+        {
+            float forwarderPayloadInKg = Forwarder.GetForwarderPayloadInKg(stand, this);
+            return forwarderPayloadInKg > this.GrappleYoaderMeanPayload; // for now, make a crude estimate
         }
 
         public void VerifyPropertyValues()
@@ -566,13 +620,21 @@ namespace Mars.Seem.Silviculture
                 throw new NotSupportedException("Forwarder utilization is not in the range [0.1, 1.0].");
             }
 
-            if ((this.GrappleYardingConstant <= 0.0F) || (this.GrappleYardingConstant > 500.0F))
+            if ((this.GrappleYardingConstantRegen <= 0.0F) || (this.GrappleYardingConstantRegen > 500.0F))
             {
-                throw new NotSupportedException("Grapple yarding turn time constant is not in the range (0.0, 500.0] seconds.");
+                throw new NotSupportedException("Grapple yarding turn time constant for regeneration harvests is not in the range (0.0, 500.0] seconds.");
             }
-            if ((this.GrappleYardingLinear <= 0.0F) || (this.GrappleYardingLinear > 5.0F))
+            if ((this.GrappleYardingConstantThin <= 0.0F) || (this.GrappleYardingConstantThin > 500.0F))
             {
-                throw new NotSupportedException("Grapple yarding turn time per meter of skyline length is not in the range (0.0, 5.0] seconds.");
+                throw new NotSupportedException("Grapple yarding turn time constant for thinning is not in the range (0.0, 500.0] seconds.");
+            }
+            if ((this.GrappleYardingLinearRegen <= 0.0F) || (this.GrappleYardingLinearRegen > 5.0F))
+            {
+                throw new NotSupportedException("Grapple yarding turn time per meter of skyline length in regeneration harvests is not in the range (0.0, 5.0] seconds.");
+            }
+            if ((this.GrappleYardingLinearThin <= 0.0F) || (this.GrappleYardingLinearThin > 5.0F))
+            {
+                throw new NotSupportedException("Grapple yarding turn time per meter of skyline length during thinning is not in the range (0.0, 5.0] seconds.");
             }
             if ((this.GrappleSwingYarderCostPerSMh < 100.0F) || (this.GrappleSwingYarderCostPerSMh > 750.0F))
             {

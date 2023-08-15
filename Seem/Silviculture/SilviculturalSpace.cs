@@ -25,7 +25,7 @@ namespace Mars.Seem.Silviculture
         public IList<int> ThirdThinPeriods { get; private init; }
 
         public SilviculturalSpace(IList<int> firstThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios)
-            : this(1, firstThinPeriods, new List<int>() { Constant.NoThinPeriod }, new List<int>() { Constant.NoThinPeriod }, rotationLengths, financialScenarios, Constant.Default.SolutionPoolSize)
+            : this(1, firstThinPeriods, new List<int>() { Constant.NoHarvestPeriod }, new List<int>() { Constant.NoHarvestPeriod }, rotationLengths, financialScenarios, Constant.Default.SolutionPoolSize)
         {
             // forwards
         }
@@ -63,7 +63,7 @@ namespace Mars.Seem.Silviculture
                     for (int secondThinIndex = 0; secondThinIndex < this.SecondThinPeriods.Count; ++secondThinIndex)
                     {
                         int secondThinPeriod = this.SecondThinPeriods[secondThinIndex];
-                        if ((secondThinPeriod == Constant.NoThinPeriod) || (secondThinPeriod > firstThinPeriod))
+                        if ((secondThinPeriod == Constant.NoHarvestPeriod) || (secondThinPeriod > firstThinPeriod))
                         {
                             SilviculturalCoordinateExploration[][][] secondThinElements = new SilviculturalCoordinateExploration[this.ThirdThinPeriods.Count][][];
                             firstThinElements[secondThinIndex] = secondThinElements;
@@ -72,7 +72,7 @@ namespace Mars.Seem.Silviculture
                             for (int thirdThinIndex = 0; thirdThinIndex < this.ThirdThinPeriods.Count; ++thirdThinIndex)
                             {
                                 int thirdThinPeriod = this.ThirdThinPeriods[thirdThinIndex];
-                                if ((thirdThinPeriod == Constant.NoThinPeriod) || (thirdThinPeriod > secondThinPeriod))
+                                if ((thirdThinPeriod == Constant.NoHarvestPeriod) || (thirdThinPeriod > secondThinPeriod))
                                 {
                                     SilviculturalCoordinateExploration[][] thirdThinElements = new SilviculturalCoordinateExploration[this.RotationLengths.Count][];
                                     secondThinElements[thirdThinIndex] = thirdThinElements;
@@ -233,11 +233,11 @@ namespace Mars.Seem.Silviculture
             Debug.Assert(parameterElements != null);
 
             // for now, only search within the same number of thinnings
-            if (this.FirstThinPeriods[coordinate.FirstThinPeriodIndex] == Constant.NoThinPeriod)
+            if (this.FirstThinPeriods[coordinate.FirstThinPeriodIndex] == Constant.NoHarvestPeriod)
             {
                 // no thins
-                Debug.Assert(this.SecondThinPeriods[coordinate.SecondThinPeriodIndex] == Constant.NoThinPeriod);
-                Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
+                Debug.Assert(this.SecondThinPeriods[coordinate.SecondThinPeriodIndex] == Constant.NoHarvestPeriod);
+                Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoHarvestPeriod);
                 SilviculturalCoordinateExploration[][][][] firstThinElements = parameterElements[coordinate.FirstThinPeriodIndex];
                 Debug.Assert(firstThinElements != null);
                 SilviculturalCoordinateExploration[][][] secondThinElements = firstThinElements[coordinate.SecondThinPeriodIndex];
@@ -249,18 +249,18 @@ namespace Mars.Seem.Silviculture
                     return true;
                 }
             }
-            else if (this.SecondThinPeriods[coordinate.SecondThinPeriodIndex] == Constant.NoThinPeriod)
+            else if (this.SecondThinPeriods[coordinate.SecondThinPeriodIndex] == Constant.NoHarvestPeriod)
             {
                 // one thin
                 BreadthFirstEnumerator<SilviculturalCoordinateExploration[][][][]> thinEnumerator = new(parameterElements, coordinate.FirstThinPeriodIndex);
                 while (thinEnumerator.MoveNext())
                 {
                     // for now, exclude positions with different numbers of thins from neighborhood
-                    if (this.FirstThinPeriods[thinEnumerator.Index] == Constant.NoThinPeriod)
+                    if (this.FirstThinPeriods[thinEnumerator.Index] == Constant.NoHarvestPeriod)
                     {
                         continue;
                     }
-                    Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
+                    Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoHarvestPeriod);
 
                     // position also has one thin, so search among rotation lengths and financial scenarios
                     SilviculturalCoordinateExploration[][][] secondThinElements = thinEnumerator.Current[coordinate.SecondThinPeriodIndex];
@@ -272,19 +272,19 @@ namespace Mars.Seem.Silviculture
                     }
                 }
             }
-            else if (this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoThinPeriod)
+            else if (this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoHarvestPeriod)
             {
                 // two thins
                 BreadthFirstEnumerator2D<SilviculturalCoordinateExploration[][][]> thinEnumerator = new(parameterElements, coordinate.FirstThinPeriodIndex, coordinate.SecondThinPeriodIndex);
                 while (thinEnumerator.MoveNext())
                 {
                     // for now, exclude positions with different numbers of thins from neighborhood
-                    if ((this.FirstThinPeriods[thinEnumerator.IndexX] == Constant.NoThinPeriod) ||
-                        (this.SecondThinPeriods[thinEnumerator.IndexY] == Constant.NoThinPeriod))
+                    if ((this.FirstThinPeriods[thinEnumerator.IndexX] == Constant.NoHarvestPeriod) ||
+                        (this.SecondThinPeriods[thinEnumerator.IndexY] == Constant.NoHarvestPeriod))
                     {
                         continue;
                     }
-                    Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoThinPeriod);
+                    Debug.Assert(this.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] == Constant.NoHarvestPeriod);
 
                     // position also has two thins, so search among rotation lengths and financial scenarios
                     SilviculturalCoordinateExploration[][] thirdThinElements = thinEnumerator.Current[coordinate.ThirdThinPeriodIndex];
@@ -301,9 +301,9 @@ namespace Mars.Seem.Silviculture
                 while (thinEnumerator.MoveNext())
                 {
                     // for now, exclude positions with different numbers of thins from neighborhood
-                    if ((this.FirstThinPeriods[thinEnumerator.IndexX] == Constant.NoThinPeriod) ||
-                        (this.SecondThinPeriods[thinEnumerator.IndexY] == Constant.NoThinPeriod) ||
-                        (this.ThirdThinPeriods[thinEnumerator.IndexZ] == Constant.NoThinPeriod))
+                    if ((this.FirstThinPeriods[thinEnumerator.IndexX] == Constant.NoHarvestPeriod) ||
+                        (this.SecondThinPeriods[thinEnumerator.IndexY] == Constant.NoHarvestPeriod) ||
+                        (this.ThirdThinPeriods[thinEnumerator.IndexZ] == Constant.NoHarvestPeriod))
                     {
                         continue;
                     }

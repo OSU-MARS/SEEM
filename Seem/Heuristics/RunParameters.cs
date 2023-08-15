@@ -21,7 +21,7 @@ namespace Mars.Seem.Heuristics
         public RunParameters(IList<int> rotationLengths, OrganonConfiguration organonConfiguration)
         {
             this.Financial = FinancialScenarios.Default;
-            this.LastThinPeriod = Constant.NoThinPeriod;
+            this.LastThinPeriod = Constant.NoHarvestPeriod;
             this.MaximizeForPlanningPeriod = Constant.HeuristicDefault.CoordinateIndex;
             this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
             this.LogOnlyImprovingMoves = Constant.HeuristicDefault.LogOnlyImprovingMoves;

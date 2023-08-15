@@ -27,7 +27,7 @@ namespace Mars.Seem.Silviculture
         }
 
         // slope and productivity for faller crew or a bucker
-        protected void AdjustChainsawForSlopeAndSetProductivity(Stand stand, HarvestSystems harvestSystems)
+        protected void AdjustChainsawForSlope(Stand stand, HarvestSystems harvestSystems)
         {
             this.ChainsawMinimumCost = 0.0F;
             if (this.ChainsawPMhPerHa > 0.0F)
@@ -65,13 +65,13 @@ namespace Mars.Seem.Silviculture
         }
 
         // slope and productivity for faller crew, bucker, or felling machine operator
-        public void AdjustChainsawForSlopeAndSetProductivity(Stand stand, HarvestSystems harvestSystems, float fellingMachineCostPerSMh)
+        public void AdjustChainsawForSlope(Stand stand, HarvestSystems harvestSystems, float fellingMachineCostPerSMh)
         {
             this.ChainsawMinimumCost = 0.0F;
             if (this.ChainsawPMhPerHa > 0.0F)
             {
                 // faller crew or bucker
-                this.AdjustChainsawForSlopeAndSetProductivity(stand, harvestSystems);
+                this.AdjustChainsawForSlope(stand, harvestSystems);
 
                 // operator periodically halts machine for a small amount of chainsaw work
                 float chainsawByOperatorSMh = this.ChainsawPMhPerHa / harvestSystems.ChainsawByOperatorUtilization; // SMh

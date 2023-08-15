@@ -25,13 +25,13 @@ namespace Mars.Seem
         public const float MetersPerFoot = 0.3048F;
         public const float MinutesPerHour = 60.0F;
         public const float NaturalLogOf10 = 2.3025850930F;
-        public const int NoThinPeriod = -1;
+        public const int NoHarvestPeriod = -1;
         // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128, 8 for VEX 256
         public const int OrganonHeightStrata = 40;
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
         public const float ReinekeExponent = 1.605F;
-        public const int RegenerationHarvestPeriod = 0;
+        public const int RegenerationHarvestIfEligible = 0;
         // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
         // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
         public const float RoundTowardsZeroTolerance = 0.001F;

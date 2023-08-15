@@ -62,9 +62,9 @@ namespace Mars.Seem.Tree
 
             foreach (FiaCode treeSpecies in other.TreeSelectionBySpecies.Keys)
             {
-                this.LongLogVolumeBySpecies.Add(treeSpecies, new(other.LongLogVolumeBySpecies[treeSpecies]));
-                this.ForwardedVolumeBySpecies.Add(treeSpecies, new(other.ForwardedVolumeBySpecies[treeSpecies]));
-                this.TreeSelectionBySpecies.Add(treeSpecies, new(other.TreeSelectionBySpecies[treeSpecies]));
+                this.LongLogVolumeBySpecies.Add(treeSpecies, new TreeSpeciesMerchantableVolume(other.LongLogVolumeBySpecies[treeSpecies]));
+                this.ForwardedVolumeBySpecies.Add(treeSpecies, new TreeSpeciesMerchantableVolume(other.ForwardedVolumeBySpecies[treeSpecies]));
+                this.TreeSelectionBySpecies.Add(treeSpecies, new IndividualTreeSelection(other.TreeSelectionBySpecies[treeSpecies]));
             }
         }
 
@@ -178,7 +178,7 @@ namespace Mars.Seem.Tree
                         thisSelectionForSpecies[uncompactedTreeIndex] = otherSelection;
                         atLeastOneTreeMoved = true;
 
-                        if (otherSelection == Constant.RegenerationHarvestPeriod)
+                        if (otherSelection == Constant.RegenerationHarvestIfEligible)
                         {
                             earliestThinningPeriod = Math.Min(earliestThinningPeriod, thisSelection);
                         }
@@ -209,16 +209,16 @@ namespace Mars.Seem.Tree
         public void DeselectAllTrees()
         {
             // see remarks in loop
-            Debug.Assert(Constant.RegenerationHarvestPeriod == 0);
+            Debug.Assert(Constant.RegenerationHarvestIfEligible == 0);
 
             foreach (IndividualTreeSelection selectionForSpecies in this.TreeSelectionBySpecies.Values)
             {
                 for (int treeIndex = 0; treeIndex < selectionForSpecies.Count; ++treeIndex)
                 {
                     int currentHarvestPeriod = selectionForSpecies[treeIndex];
-                    if (currentHarvestPeriod != Constant.RegenerationHarvestPeriod)
+                    if (currentHarvestPeriod != Constant.RegenerationHarvestIfEligible)
                     {
-                        selectionForSpecies[treeIndex] = Constant.RegenerationHarvestPeriod;
+                        selectionForSpecies[treeIndex] = Constant.RegenerationHarvestIfEligible;
                         // if stand has been simulated then the earliest period affected by removing all thinning is the first thin performed
                         this.EarliestPeriodChangedSinceLastSimulation = Math.Min(this.EarliestPeriodChangedSinceLastSimulation, currentHarvestPeriod);
                     }
@@ -268,7 +268,7 @@ namespace Mars.Seem.Tree
         public int GetFirstThinAge()
         {
             int firstHarvestPeriod = this.GetFirstThinPeriod();
-            if (firstHarvestPeriod == Constant.NoThinPeriod)
+            if (firstHarvestPeriod == Constant.NoHarvestPeriod)
             {
                 return -1;
             }
@@ -277,16 +277,15 @@ namespace Mars.Seem.Tree
 
         public abstract int GetFirstThinPeriod();
 
-        public void GetMerchantableVolumes(out StandMerchantableVolume standingVolume, out StandMerchantableVolume thinnedVolume)
+        public void GetMerchantableVolumes(out StandMerchantableVolume longLogVolume, out StandMerchantableVolume forwardedVolume)
         {
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
-                this.RecalculateStandingVolumeIfNeeded(periodIndex);
-                this.RecalculateThinningVolumeIfNeeded(periodIndex);
+                this.RecalculateMerchantableVolumeIfNeeded(periodIndex);
             }
 
-            thinnedVolume = new StandMerchantableVolume(this.ForwardedVolumeBySpecies);
-            standingVolume = new StandMerchantableVolume(this.LongLogVolumeBySpecies);
+            forwardedVolume = new StandMerchantableVolume(this.ForwardedVolumeBySpecies);
+            longLogVolume = new StandMerchantableVolume(this.LongLogVolumeBySpecies);
         }
 
         public int GetSecondThinAge()
@@ -311,9 +310,9 @@ namespace Mars.Seem.Tree
         private int GetThinAge(int thinIndex)
         {
             int harvestPeriod = this.GetThinPeriod(thinIndex);
-            if (harvestPeriod == Constant.NoThinPeriod)
+            if (harvestPeriod == Constant.NoHarvestPeriod)
             {
-                return Constant.NoThinPeriod;
+                return Constant.NoHarvestPeriod;
             }
             return this.GetEndOfPeriodAge(harvestPeriod);
         }
@@ -400,6 +399,20 @@ namespace Mars.Seem.Tree
             return units;
         }
 
+        public bool HasThinInPeriod(int periodIndex)
+        {
+            for (int harvestIndex = 0; harvestIndex < this.Treatments.Harvests.Count; ++harvestIndex)
+            {
+                Harvest harvest = this.Treatments.Harvests[harvestIndex];
+                if (harvest.Period == periodIndex)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public void InvalidateMerchantableVolumes(int periodIndex)
         {
             foreach (TreeSpeciesMerchantableVolume thinningVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
@@ -412,8 +425,7 @@ namespace Mars.Seem.Tree
             }
         }
 
-        public abstract void RecalculateStandingVolumeIfNeeded(int periodIndex);
-        public abstract void RecalculateThinningVolumeIfNeeded(int periodIndex);
+        public abstract void RecalculateMerchantableVolumeIfNeeded(int periodIndex);
 
         public void SetTreeSelection(int allSpeciesUncompactedTreeIndex, int newHarvestPeriod)
         {
@@ -429,6 +441,7 @@ namespace Mars.Seem.Tree
                 if (treeIndex < individualTreeSelection.Count)
                 {
                     int currentHarvestPeriod = individualTreeSelection[treeIndex];
+                    Debug.Assert(currentHarvestPeriod != Constant.NoHarvestPeriod); // for now
                     if (currentHarvestPeriod != newHarvestPeriod)
                     {
                         individualTreeSelection[treeIndex] = newHarvestPeriod;
@@ -444,7 +457,7 @@ namespace Mars.Seem.Tree
 
         public void SetTreeSelection(FiaCode species, int uncompactedTreeIndex, int newHarvestPeriod)
         {
-            if ((newHarvestPeriod < Constant.RegenerationHarvestPeriod) || (newHarvestPeriod >= this.PlanningPeriods))
+            if ((newHarvestPeriod < Constant.RegenerationHarvestIfEligible) || (newHarvestPeriod >= this.PlanningPeriods))
             {
                 throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod));
             }
@@ -452,6 +465,10 @@ namespace Mars.Seem.Tree
             int currentHarvestPeriod = this.TreeSelectionBySpecies[species][uncompactedTreeIndex];
             if (currentHarvestPeriod != newHarvestPeriod)
             {
+                if (currentHarvestPeriod == Constant.NoHarvestPeriod)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod), "Attempt to mark " + species + " at uncompacted tree index " + uncompactedTreeIndex + " for harvest in period " + newHarvestPeriod + " but tree is marked as excluded from harvest.");
+                }
                 this.TreeSelectionBySpecies[species][uncompactedTreeIndex] = newHarvestPeriod;
                 this.UpdateEariestPeriodChanged(currentHarvestPeriod, newHarvestPeriod);
             }
@@ -461,7 +478,7 @@ namespace Mars.Seem.Tree
 
         private void UpdateEariestPeriodChanged(int currentPeriod, int newPeriod)
         {
-            Debug.Assert((currentPeriod >= 0) && (currentPeriod <= this.PlanningPeriods) && (newPeriod >= 0) && (newPeriod <= this.PlanningPeriods) && (Constant.RegenerationHarvestPeriod == 0));
+            Debug.Assert((currentPeriod >= 0) && (currentPeriod <= this.PlanningPeriods) && (newPeriod >= 0) && (newPeriod <= this.PlanningPeriods) && (Constant.RegenerationHarvestIfEligible == 0));
 
             // four cases
             //   1) tree is not scheduled for thinning and becomes scheduled -> earliest affected period is harvest period
@@ -469,11 +486,11 @@ namespace Mars.Seem.Tree
             //   3) tree is reassinged to an earlier harvest period -> earliest affected period is earliest harvest period
             //   4) tree is reassinged to a later harvest period -> earliest affected period is still the earliest harvest period
             int earliestAffectedPeriod;
-            if (currentPeriod == Constant.RegenerationHarvestPeriod)
+            if (currentPeriod == Constant.RegenerationHarvestIfEligible)
             {
                 earliestAffectedPeriod = newPeriod;
             }
-            else if (newPeriod == Constant.RegenerationHarvestPeriod)
+            else if (newPeriod == Constant.RegenerationHarvestIfEligible)
             {
                 earliestAffectedPeriod = currentPeriod;
             }
@@ -508,7 +525,8 @@ namespace Mars.Seem.Tree
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 FiaCode species = treesOfSpecies.Species;
-                this.TreeSelectionBySpecies.Add(species, new IndividualTreeSelection(treesOfSpecies.Capacity)
+                float reserveDbhInCm = treeVolume.GetMaximumMerchantableDbh(species);
+                this.TreeSelectionBySpecies.Add(species, new IndividualTreeSelection(treesOfSpecies, reserveDbhInCm)
                 {
                     Count = treesOfSpecies.Count
                 });
@@ -550,8 +568,9 @@ namespace Mars.Seem.Tree
         public override int GetFirstThinPeriod()
         {
             int earliestThinningPeriod = Int32.MaxValue;
-            foreach (Harvest harvest in this.Treatments.Harvests)
+            for (int harvestIndex = 0; harvestIndex < this.Treatments.Harvests.Count; ++harvestIndex)
             {
+                Harvest harvest = this.Treatments.Harvests[harvestIndex];
                 if (harvest.Period < earliestThinningPeriod)
                 {
                     earliestThinningPeriod = harvest.Period;
@@ -563,7 +582,7 @@ namespace Mars.Seem.Tree
                 return earliestThinningPeriod;
             }
 
-            return Constant.NoThinPeriod;
+            return Constant.NoHarvestPeriod;
         }
 
         public override TStandDensity GetStandDensity(int periodIndex)
@@ -574,34 +593,35 @@ namespace Mars.Seem.Tree
         protected override int GetThinPeriod(int thinIndex)
         {
             List<int> thinningPeriods = new(this.Treatments.Harvests.Count);
-            foreach (Harvest harvest in this.Treatments.Harvests)
+            for (int harvestIndex = 0; harvestIndex < this.Treatments.Harvests.Count; ++harvestIndex)
             {
+                Harvest harvest = this.Treatments.Harvests[harvestIndex];
                 Debug.Assert(thinningPeriods.Contains(harvest.Period) == false);
                 thinningPeriods.Add(harvest.Period);
             }
             if (thinningPeriods.Count <= thinIndex)
             {
-                return Constant.NoThinPeriod;
+                return Constant.NoHarvestPeriod;
             }
 
             thinningPeriods.Sort();
             return thinningPeriods[thinIndex];
         }
 
-        public override void RecalculateStandingVolumeIfNeeded(int periodIndex)
+        // TODO: how to add a merchantable volume object on ingrowth of a new species?
+        public override void RecalculateMerchantableVolumeIfNeeded(int periodIndex)
         {
+            // standing volume/long log harvest volume
             TStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume longLogVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
             {
-                if (standingVolumeForSpecies.IsCalculated(periodIndex) == false)
+                if (longLogVolumeForSpecies.IsCalculated(periodIndex) == false)
                 {
-                    standingVolumeForSpecies.CalculateMerchantableStandingVolume(stand, periodIndex, this.TreeVolume);
+                    longLogVolumeForSpecies.CalculateMerchantableStandingVolume(stand, periodIndex, this.TreeVolume);
                 }
             }
-        }
 
-        public override void RecalculateThinningVolumeIfNeeded(int periodIndex)
-        {
+            // forwarded volume if a thin is scheduled in this period
             bool periodHasHarvest = false;
             foreach (Harvest harvest in this.Treatments.Harvests)
             {
@@ -613,13 +633,13 @@ namespace Mars.Seem.Tree
 
             if (periodHasHarvest)
             {
-                // trees' expansion factors are set to zero when harvested so use trees' volume at end of the previous period.
+                // trees' expansion factors are set to zero when harvested so use trees' volume at end of the previous period
                 TStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
-                foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
+                foreach (TreeSpeciesMerchantableVolume forwardedVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
                 {
-                    if (thinVolumeForSpecies.IsCalculated(periodIndex) == false)
+                    if (forwardedVolumeForSpecies.IsCalculated(periodIndex) == false)
                     {
-                        thinVolumeForSpecies.CalculateMerchantableThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeVolume);
+                        forwardedVolumeForSpecies.CalculateMerchantableThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeVolume);
                     }
                 }
 
