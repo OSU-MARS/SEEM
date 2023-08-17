@@ -1,12 +1,17 @@
-﻿using Mars.Seem.Optimization;
+﻿using Apache.Arrow.Ipc;
+using Apache.Arrow;
+using Mars.Seem.Optimization;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Management.Automation;
 using System.Text;
+using Mars.Seem.Output;
+using DocumentFormat.OpenXml.Bibliography;
 
 namespace Mars.Seem.Cmdlets
 {
@@ -20,14 +25,14 @@ namespace Mars.Seem.Cmdlets
         // to be acceptable.
         protected const int StreamLengthSynchronizationInterval = 10 * 1000 * 1000; // 10 MB, as of .NET 5.0 checking every 1.0 MB is undesirably expensive
 
-        private bool openedExistingFile;
+        private bool openedExistingCsvFile;
 
-        [Parameter]
-        public SwitchParameter Append;
+        [Parameter(HelpMessage = "Whether to append to an existing .csv file or overwrite it (default). Has no effect if the file does not exist or if -FilePath indicates a file type other than .csv.")]
+        public SwitchParameter AppendToCsv;
 
-        [Parameter(Mandatory = true)]
+        [Parameter(Mandatory = true, HelpMessage = "Relative or absolute path to write to. File type is inferred from the extension given.")]
         [ValidateNotNullOrEmpty]
-        public string? CsvFile;
+        public string? FilePath;
 
         [Parameter(HelpMessage = "Approximate upper bound of output file size in gigabytes.  This limit is loosely enforced and maximum file sizes will typically be somewhat larger.")]
         [ValidateRange(0.1F, 100.0F)]
@@ -35,9 +40,9 @@ namespace Mars.Seem.Cmdlets
 
         public WriteCmdlet()
         {
-            this.openedExistingFile = false;
+            this.openedExistingCsvFile = false;
 
-            this.Append = false;
+            this.AppendToCsv = false;
             this.LimitGB = 1.0F; // sanity default, may be set higher in derived classes
         }
 
@@ -58,10 +63,10 @@ namespace Mars.Seem.Cmdlets
             }
             if (writeContext.NoHarvestCosts == false)
             {
-                header += ",thinMinCostSystem,thinFallerGrappleSwingYarderCost,thinFallerGrappleSwingYoaderCost,thinFellerBuncherGrappleSwingYarderCost,thinFellerBuncherGrappleYoaderCost" +
+                header += ",thinMinCostSystem,thinFallerGrappleSwingYarderCost,thinFallerGrappleYoaderCost,thinFellerBuncherGrappleSwingYarderCost,thinFellerBuncherGrappleYoaderCost" +
                           ",thinTrackedHarvesterForwarderCost,thinTrackedHarvesterGrappleSwingYarderCost,thinTrackedHarvesterGrappleYoaderCost,thinWheeledHarvesterForwarderCost,thinWheeledHarvesterGrappleSwingYarderCost,thinWheeledHarvesterGrappleYoaderCost" +
                           ",thinTaskCost" +
-                          ",regenMinCostSystem,regenFallerGrappleSwingYarderCost,regenFallerGrappleSwingYoaderCost,regenFellerBuncherGrappleSwingYarderCost,regenFellerBuncherGrappleYoaderCost" +
+                          ",regenMinCostSystem,regenFallerGrappleSwingYarderCost,regenFallerGrappleYoaderCost,regenFellerBuncherGrappleSwingYarderCost,regenFellerBuncherGrappleYoaderCost" +
                           ",regenTrackedHarvesterGrappleSwingYarderCost,regenTrackedHarvesterGrappleYoaderCost,regenWheeledHarvesterGrappleSwingYarderCost,regenWheeledHarvesterGrappleYoaderCost" + 
                           ",regenTaskCost,reforestationNpv";
             }
@@ -91,6 +96,17 @@ namespace Mars.Seem.Cmdlets
             return header;
         }
 
+        protected StreamWriter GetCsvWriter()
+        {
+            FileMode fileMode = this.AppendToCsv ? FileMode.Append : FileMode.Create;
+            if (fileMode == FileMode.Append)
+            {
+                this.openedExistingCsvFile = File.Exists(this.FilePath);
+            }
+            FileStream stream = new(this.FilePath!, fileMode, FileAccess.Write, FileShare.Read, Constant.Default.FileWriteBufferSizeInBytes, FileOptions.SequentialScan);
+            return new StreamWriter(stream, Encoding.UTF8); // callers assume UTF8, see remarks for StreamLengthSynchronizationInterval
+        }
+
         protected static void GetMetricConversions(Units inputUnits, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor)
         {
             switch (inputUnits)
@@ -115,20 +131,62 @@ namespace Mars.Seem.Cmdlets
             return (long)(1E9F * this.LimitGB);
         }
 
-        protected StreamWriter GetWriter()
+        protected bool ShouldWriteCsvHeader()
         {
-            FileMode fileMode = this.Append ? FileMode.Append : FileMode.Create;
-            if (fileMode == FileMode.Append)
-            {
-                this.openedExistingFile = File.Exists(this.CsvFile);
-            }
-            FileStream stream = new(this.CsvFile!, fileMode, FileAccess.Write, FileShare.Read, Constant.Default.FileWriteBufferSizeInBytes, FileOptions.SequentialScan);
-            return new StreamWriter(stream, Encoding.UTF8); // callers assume UTF8, see remarks for StreamLengthSynchronizationInterval
+            return this.openedExistingCsvFile == false;
         }
 
-        protected bool ShouldWriteHeader()
+        protected void WriteFeather(IList<StandTrajectory> trajectories, FinancialScenarios financialScenarios, WriteStandTrajectoryContext writeContext)
         {
-            return this.openedExistingFile == false;
+            // get number of records to write
+            int periodsToLog = 0;
+            for (int trajectoryIndex = 0; trajectoryIndex < trajectories.Count; ++trajectoryIndex)
+            {
+                periodsToLog += writeContext.GetPeriodsToWrite(trajectories[trajectoryIndex]);
+            }
+            periodsToLog *= financialScenarios.Count;
+
+            // estimate output file size
+            StandTrajectoryArrowMemory arrowMemory = new(periodsToLog);
+            float uncompressedFileSizeInGB = (float)arrowMemory.UncompressedBytesPerRow * (float)periodsToLog / (1024.0F * 1024.0F * 1024.0F);
+            Debug.Assert((float)arrowMemory.UncompressedBytesPerRow * (float)arrowMemory.BatchLength < 2.0F * 1024.0F * 1024.0F * 1024.0F); // https://github.com/apache/arrow/issues/37069
+            if (uncompressedFileSizeInGB > this.LimitGB)
+            {
+                throw new NotSupportedException("Expected file size of " + uncompressedFileSizeInGB.ToString("0.00") + " GB exceeds size limit of " + this.LimitGB.ToString("0.00") + " GB.");
+            }
+
+            // marshall trajectories into Arrow arrays
+            for (int trajectoryIndex = 0; trajectoryIndex < trajectories.Count; ++trajectoryIndex)
+            {
+                for (int financialIndex = 0; financialIndex < financialScenarios.Count; ++financialIndex)
+                {
+                    StandTrajectory trajectory = trajectories[trajectoryIndex];
+                    writeContext.EndOfRotationPeriodIndex = trajectory.PlanningPeriods - 1;
+                    writeContext.FinancialIndex = financialIndex;
+                    arrowMemory.Add(trajectory, writeContext);
+                }
+            }
+
+            this.WriteFeather(arrowMemory.RecordBatches);
+        }
+
+        protected void WriteFeather(IList<RecordBatch> recordBatches)
+        {
+            Debug.Assert(this.FilePath != null);
+            if (recordBatches.Count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(recordBatches));
+            }
+
+            // for now, all weather time series should start in January of the first simulation year
+            using FileStream stream = new(this.FilePath, FileMode.Create, FileAccess.Write, FileShare.None, Constant.Default.FileWriteBufferSizeInBytes, FileOptions.SequentialScan);
+            using ArrowFileWriter writer = new(stream, recordBatches[0].Schema);
+            writer.WriteStart();
+            for (int batchIndex = 0; batchIndex < recordBatches.Count; ++batchIndex)
+            {
+                writer.WriteRecordBatch(recordBatches[batchIndex]);
+            }
+            writer.WriteEnd();
         }
 
         /// <summary>
@@ -143,11 +201,6 @@ namespace Mars.Seem.Cmdlets
         /// </remarks>
         protected static int WriteStandTrajectoryToCsv(StreamWriter writer, StandTrajectory trajectory, WriteStandTrajectoryContext writeContext)
         {
-            Units trajectoryUnits = trajectory.GetUnits();
-            if (trajectoryUnits != Units.English)
-            {
-                throw new NotSupportedException("Expected stand trajectory with English Units.");
-            }
             trajectory.GetMerchantableVolumes(out StandMerchantableVolume longLogVolume, out StandMerchantableVolume forwardedVolume);
 
             SnagDownLogTable? snagsAndDownLogs = null;
@@ -173,7 +226,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     if ((basalAreaThinnedPerHa == 0.0F) && (periodIndex != endOfRotationPeriodIndex))
                     {
-                        continue; // no harvest in this period so no data to write
+                        continue; // no trees cut in this before end of rotation period so no data to write
                     }
                 }
 
@@ -193,6 +246,8 @@ namespace Mars.Seem.Cmdlets
                         previousStandDensity = trajectory.GetStandDensity(periodIndex - 1);
                         basalAreaIntensity = basalAreaThinnedPerHa / previousStandDensity.BasalAreaPerHa;
                     }
+
+                    // TODO: support long log thins
                     float thinVolumeScribner = forwardedVolume.GetScribnerTotal(periodIndex); // MBF/ha
                     Debug.Assert((thinVolumeScribner == 0.0F && basalAreaThinnedPerHa == 0.0F) || (thinVolumeScribner > 0.0F && basalAreaThinnedPerHa > 0.0F));
 
@@ -216,7 +271,7 @@ namespace Mars.Seem.Cmdlets
                         "," + reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + 
                         "," + longLogVolume.GetCubicTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // m³/ha
                         "," + longLogVolume.GetScribnerTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // MBF/ha
-                        "," + forwardedVolume.GetCubicTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // m³/ha
+                        "," + forwardedVolume.GetCubicTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // m³/ha, TODO: support long log thins
                         "," + thinVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + 
                         "," + basalAreaThinnedPerHa.ToString("0.0", CultureInfo.InvariantCulture) + 
                         "," + basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + 
@@ -552,15 +607,15 @@ namespace Mars.Seem.Cmdlets
                         "," + longLogRegenHarvest.FellerBuncher.LoadedWeightPerHa.ToString("0", CultureInfo.InvariantCulture);
                     writer.Write(equipmentProductivity);
                     estimatedBytesWritten += equipmentProductivity.Length;
-
-                    if (year != null)
-                    {
-                        year += trajectory.PeriodLengthInYears;
-                    }
                 }
 
                 writer.Write(Environment.NewLine);
                 estimatedBytesWritten += Environment.NewLine.Length;
+
+                if (year != null)
+                {
+                    year += trajectory.PeriodLengthInYears;
+                }
             }
 
             return estimatedBytesWritten;

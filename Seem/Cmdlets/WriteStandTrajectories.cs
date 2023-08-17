@@ -1,5 +1,6 @@
 ﻿using Mars.Seem.Optimization;
 using Mars.Seem.Tree;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -72,14 +73,31 @@ namespace Mars.Seem.Cmdlets
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Trajectories != null);
-
             WriteStandTrajectoryContext writeContext = new(this.FinancialScenarios, this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
             {
                 StartYear = this.StartYear
             };
 
-            using StreamWriter writer = this.GetWriter();
-            if (this.ShouldWriteHeader())
+            string? fileExtension = Path.GetExtension(this.FilePath);
+            switch (fileExtension)
+            {
+                case Constant.FileExtension.Csv:
+                    this.WriteCsv(writeContext);
+                    break;
+                case Constant.FileExtension.Feather:
+                    this.WriteFeather(this.Trajectories, this.FinancialScenarios, writeContext);
+                    break;
+                default:
+                    throw new NotSupportedException("Unknown file type '" + fileExtension + "' in " + nameof(this.FilePath) + "'" + this.FilePath + "'.");
+            }
+        }
+
+        private void WriteCsv(WriteStandTrajectoryContext writeContext)
+        {
+            Debug.Assert(this.Trajectories != null);
+
+            using StreamWriter writer = this.GetCsvWriter();
+            if (this.ShouldWriteCsvHeader())
             {
                 string header = WriteCmdlet.GetCsvHeaderForStandTrajectory("stand,financialScenario", writeContext);
                 writer.WriteLine(header);

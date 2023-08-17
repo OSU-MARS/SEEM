@@ -1,4 +1,6 @@
 ﻿using Mars.Seem.Tree;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management.Automation;
@@ -40,6 +42,9 @@ namespace Mars.Seem.Cmdlets
         [Parameter(HelpMessage = "Exclude columns for TPH, QMD, top height, basal area, SDI, and merchantable wood volume from output.")]
         public SwitchParameter NoTreeGrowth { get; set; }
 
+        [Parameter(HelpMessage = "Calendar year at which stand trajectories start.")]
+        public int? StartYear { get; set; }
+
         public WriteSilviculturalTrajectories()
         {
             this.DiameterClassSize = Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters;
@@ -51,17 +56,38 @@ namespace Mars.Seem.Cmdlets
             this.NoHarvestCosts = false;
             this.NoTimberSorts = false;
             this.NoTreeGrowth = false;
+            this.StartYear = null;
         }
 
         protected override void ProcessRecord()
         {
             // this.DiameterClassSize and MaximumDiameter are checked by PowerShell
             this.ValidateParameters();
-            Debug.Assert(this.Trajectories != null);
 
-            WriteStandTrajectoryContext writeContext = new(this.Trajectories.FinancialScenarios, this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter);
-            using StreamWriter writer = this.GetWriter();
-            if (this.ShouldWriteHeader())
+            WriteStandTrajectoryContext writeContext = new(this.Trajectories.FinancialScenarios, this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
+            {
+                StartYear = this.StartYear
+            };
+
+            string? fileExtension = Path.GetExtension(this.FilePath);
+            switch (fileExtension)
+            {
+                case Constant.FileExtension.Csv:
+                    this.WriteCsv(writeContext);
+                    break;
+                case Constant.FileExtension.Feather:
+                    this.WriteFeather(writeContext);
+                    break;
+                default:
+                    throw new NotSupportedException("Unknown file type '" + fileExtension + "' in " + nameof(this.FilePath) + "'" + this.FilePath + "'.");
+            }
+        }
+
+        private void WriteCsv(WriteStandTrajectoryContext writeContext)
+        {
+            Debug.Assert(this.Trajectories != null);
+            using StreamWriter writer = this.GetCsvWriter();
+            if (this.ShouldWriteCsvHeader())
             {
                 string header = WriteCmdlet.GetCsvHeaderForStandTrajectory(this.GetCsvHeaderForSilviculturalCoordinate(), writeContext);
                 writer.WriteLine(header);
@@ -92,6 +118,23 @@ namespace Mars.Seem.Cmdlets
                     break;
                 }
             }
+        }
+
+        private void WriteFeather(WriteStandTrajectoryContext writeContext)
+        {
+            Debug.Assert(this.Trajectories != null);
+            if (this.HeuristicParameters)
+            {
+                throw new NotSupportedException("Inclusion of heuristic parameter columns when writing feather is not currently supported.  Either write to .csv or omit the -" + nameof(this.HeuristicParameters) + " switch.");
+            }
+
+            List<StandTrajectory> standTrajectories = new(this.Trajectories.CoordinatesEvaluated.Count);
+            for (int coordinateIndex = 0; coordinateIndex < this.Trajectories.CoordinatesEvaluated.Count; ++coordinateIndex)
+            {
+                standTrajectories.Add(this.GetHighTrajectory(this.Trajectories.CoordinatesEvaluated[coordinateIndex]));
+            }
+
+            this.WriteFeather(standTrajectories, this.Trajectories.FinancialScenarios, writeContext);
         }
     }
 }

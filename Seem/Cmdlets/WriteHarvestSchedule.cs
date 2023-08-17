@@ -26,8 +26,8 @@ namespace Mars.Seem.Cmdlets
             Debug.Assert(this.Trajectories != null);
 
             // write header
-            using StreamWriter writer = this.GetWriter();
-            if (this.ShouldWriteHeader())
+            using StreamWriter writer = this.GetCsvWriter();
+            if (this.ShouldWriteCsvHeader())
             {
                 writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
             }

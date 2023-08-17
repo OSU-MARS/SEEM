@@ -25,10 +25,10 @@ namespace Mars.Seem.Cmdlets
 
         protected override void ProcessRecord()
         {
-            using StreamWriter writer = this.GetWriter();
+            using StreamWriter writer = this.GetCsvWriter();
 
             // header
-            if (this.ShouldWriteHeader())
+            if (this.ShouldWriteCsvHeader())
             {
                 writer.WriteLine("stand,plot,tag,species,age,DBH,height,crownRatio,EF,deadEF");
             }

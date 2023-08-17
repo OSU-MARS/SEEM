@@ -20,10 +20,10 @@ namespace Mars.Seem.Cmdlets
         {
             Debug.Assert(this.Results != null);
 
-            using StreamWriter writer = this.GetWriter();
+            using StreamWriter writer = this.GetCsvWriter();
 
             // header
-            if (this.ShouldWriteHeader())
+            if (this.ShouldWriteCsvHeader())
             {
                 writer.WriteLine("stand,alpha,selected,rejected");
             }

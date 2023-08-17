@@ -35,10 +35,10 @@ namespace Mars.Seem.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.Trajectories));
             }
 
-            using StreamWriter writer = this.GetWriter();
+            using StreamWriter writer = this.GetCsvWriter();
 
             // for now, perform no reduction when Object.ReferenceEquals(lowSolution, highSolution) is true
-            if (this.ShouldWriteHeader())
+            if (this.ShouldWriteCsvHeader())
             {
                 SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[0];
                 SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;

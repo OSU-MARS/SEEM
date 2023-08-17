@@ -1,4 +1,6 @@
 ﻿using Mars.Seem.Optimization;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 
 namespace Mars.Seem.Cmdlets
@@ -40,6 +42,28 @@ namespace Mars.Seem.Cmdlets
             this.EndOfRotationPeriodIndex = -1;
             this.FinancialIndex = -1;
             this.LinePrefix = String.Empty;
+        }
+
+        public int GetPeriodsToWrite(StandTrajectory trajectory)
+        {
+            if (this.HarvestsOnly)
+            {
+                int harvests = 0;
+                for (int harvestIndex = 0; harvestIndex < trajectory.Treatments.Harvests.Count; ++harvestIndex)
+                {
+                    ++harvests;
+
+                    Harvest harvest = trajectory.Treatments.Harvests[harvestIndex];
+                    if (harvest.Period == this.EndOfRotationPeriodIndex)
+                    {
+                        return harvests; // thin scheduled in same period as end of rotation
+                    }
+                }
+
+                return ++harvests; // add one for regeneration harvest
+            }
+
+            return trajectory.StandByPeriod.Length;
         }
     }
 }

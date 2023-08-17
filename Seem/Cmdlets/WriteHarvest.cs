@@ -19,10 +19,10 @@ namespace Mars.Seem.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " must be specified.");
             }
 
-            using StreamWriter writer = this.GetWriter();
+            using StreamWriter writer = this.GetCsvWriter();
 
             StringBuilder line = new();
-            if (this.ShouldWriteHeader())
+            if (this.ShouldWriteCsvHeader())
             {
                 line.Append("period");
                 // harvest volume headers

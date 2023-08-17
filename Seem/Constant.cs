@@ -1,5 +1,6 @@
 ﻿using Mars.Seem.Heuristics;
 using Mars.Seem.Tree;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -25,6 +26,7 @@ namespace Mars.Seem
         public const float MetersPerFoot = 0.3048F;
         public const float MinutesPerHour = 60.0F;
         public const float NaturalLogOf10 = 2.3025850930F;
+        public const Int16 NoDataInt16 = Int16.MinValue;
         public const int NoHarvestPeriod = -1;
         // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128, 8 for VEX 256
         public const int OrganonHeightStrata = 40;
@@ -113,7 +115,7 @@ namespace Mars.Seem
             public const float DouglasFirSiteIndexInM = 39.6F; // from Malcolm Knapp Research Forest spacing trials, Douglas-fir site class 1 (~130 feet)
             public const string ExpansionFactorFormat = "0.0##";
             public const string FileSizeLimitFormat = "0.00";
-            public const int FileWriteBufferSizeInBytes = 64 * 1024; // .NET FileWriter() defaults to 4 kB
+            public const int FileWriteBufferSizeInBytes = 128 * 1024; // .NET FileWriter() defaults to 4 kB
             public const string HeightInMFormat = "0.0#";
             public const string LogVolumeFormat = "0.0##";
             public const string PercentageFormat = "0.0#";
@@ -125,6 +127,12 @@ namespace Mars.Seem
             public const int ThinningPeriod = 3;
             public const float ThinningPondValueMultiplier = 0.90F;
             public const float WesternHemlockSiteIndexInM = 29.1F; // from Malcolm Knapp Research Forest spacing trial plot 21
+        }
+
+        public static class FileExtension
+        {
+            public const string Csv = ".csv";
+            public const string Feather = ".feather";
         }
 
         public static class Financial

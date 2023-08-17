@@ -257,7 +257,7 @@ namespace Mars.Seem.Silviculture
 
             if (this.Fallers.SystemCostPerHaWithYoader < this.MinimumSystemCostPerHa)
             {
-                this.MinimumCostHarvestSystem = HarvestSystemEquipment.FallersGrappleSwingYoaderProcessorLoader;
+                this.MinimumCostHarvestSystem = HarvestSystemEquipment.FallersGrappleYoaderProcessorLoader;
                 this.MinimumSystemCostPerHa = this.Fallers.SystemCostPerHaWithYoader;
             }
             if (this.FellerBuncher.Yarder.SystemCostPerHa < this.MinimumSystemCostPerHa)

@@ -19,11 +19,11 @@ namespace Mars.Seem.Cmdlets
         {
             this.ValidateParameters();
 
-            using StreamWriter writer = this.GetWriter();
+            using StreamWriter writer = this.GetCsvWriter();
 
             // header
             bool resultsSpecified = this.Trajectories != null;
-            if (this.ShouldWriteHeader())
+            if (this.ShouldWriteCsvHeader())
             {
                 writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",standAge,species,diameter class,snags,logs");
             }

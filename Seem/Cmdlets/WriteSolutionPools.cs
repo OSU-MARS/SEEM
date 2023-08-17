@@ -23,11 +23,11 @@ namespace Mars.Seem.Cmdlets
                 poolCapacity = this.Trajectories[coordinate].Pool.PoolCapacity;
             }
 
-            using StreamWriter writer = this.GetWriter();
+            using StreamWriter writer = this.GetCsvWriter();
 
             // header
             bool resultsSpecified = this.Trajectories != null;
-            if (this.ShouldWriteHeader())
+            if (this.ShouldWriteCsvHeader())
             {
                 string?[] financialHeader = new string?[poolCapacity];
                 string?[] distanceHeader = new string?[poolCapacity];

@@ -73,32 +73,36 @@ namespace Mars.Seem.Cmdlets
                    financialScenario;
         }
 
-        [MemberNotNull(nameof(WriteSilviculturalTrajectoriesCmdlet.Trajectories))]
-        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(int evaluatedCoordinateIndex, out string linePrefix)
+        protected StandTrajectory GetHighTrajectory(SilviculturalCoordinate coordinate)
         {
             Debug.Assert(this.Trajectories != null);
-            SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
-            linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
 
             SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
             StandTrajectory? highTrajectory = prescriptions.High.Trajectory;
             if (highTrajectory == null)
             {
-                throw new NotSupportedException("Precription pool at position " + evaluatedCoordinateIndex + " is missing a high trajectory.");
+                throw new NotSupportedException("Precription pool at position (parameters: " + coordinate.ParameterIndex + ", financial: " + coordinate.FinancialIndex + ", first thin: " + coordinate.FirstThinPeriodIndex + ", second thin: " + coordinate.SecondThinPeriodIndex + ", third thin: " + coordinate.ThirdThinPeriodIndex + ", rotation: " + coordinate.RotationIndex + ") is missing a high trajectory.");
             }
 
             return highTrajectory;
         }
 
+        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(int evaluatedCoordinateIndex, out string linePrefix)
+        {
+            Debug.Assert(this.Trajectories != null);
+            SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
+            linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
+            return this.GetHighTrajectory(coordinate);
+        }
+
         protected StandTrajectory GetHighTrajectoryAndPositionPrefix(int evaluatedCoordinateIndex, out string linePrefix, out int endOfRotationPeriodIndex, out int financialIndex)
         {
-            StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(evaluatedCoordinateIndex, out linePrefix);
-
+            Debug.Assert(this.Trajectories != null);
             SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
-            endOfRotationPeriodIndex = this.Trajectories.RotationLengths[coordinate.RotationIndex];
+            linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
+            endOfRotationPeriodIndex = coordinate.RotationIndex;
             financialIndex = coordinate.FinancialIndex;
-
-            return highTrajectory;
+            return this.GetHighTrajectory(coordinate);
         }
 
         protected int GetMaxCoordinateIndex()

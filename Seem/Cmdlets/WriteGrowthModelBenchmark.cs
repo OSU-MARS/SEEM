@@ -17,9 +17,9 @@ namespace Mars.Seem.Cmdlets
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Benchmarks != null);
-            using StreamWriter writer = this.GetWriter();
+            using StreamWriter writer = this.GetCsvWriter();
 
-            if (this.ShouldWriteHeader())
+            if (this.ShouldWriteCsvHeader())
             {
                 writer.WriteLine("simd,threads,GHz,thread,timesteps,duration");
             }

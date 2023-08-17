@@ -50,9 +50,9 @@ namespace Mars.Seem.Cmdlets
             this.ValidateParameters();
 
             // write header
-            using StreamWriter writer = this.GetWriter();
+            using StreamWriter writer = this.GetCsvWriter();
             bool resultsSpecified = this.Trajectories != null;
-            if (this.ShouldWriteHeader())
+            if (this.ShouldWriteCsvHeader())
             {
                 string heuristicAndPositionHeader = this.GetCsvHeaderForSilviculturalCoordinate() + ",standAge";
                 if (this.Histogram)
