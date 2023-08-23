@@ -569,7 +569,7 @@ namespace Mars.Seem.Test
             OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
+            OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TreeScaling.Default, lastPeriod);
             int unthinnedTimeSteps = unthinnedTrajectory.Simulate();
             Assert.IsTrue(unthinnedTimeSteps == lastPeriod);
 
@@ -593,7 +593,7 @@ namespace Mars.Seem.Test
                 ProportionalPercentage = 20.0F,
                 FromBelowPercentage = 0.0F
             };
-            OrganonStandTrajectory twoThinTrajectory = new(stand, configuration, TreeVolume.Default, lastPeriod);
+            OrganonStandTrajectory twoThinTrajectory = new(stand, configuration, TreeScaling.Default, lastPeriod);
             twoThinTrajectory.Treatments.Harvests.Add(firstThinPrescription);
             twoThinTrajectory.Treatments.Harvests.Add(secondThinPrescription);
             Assert.IsNotNull(twoThinTrajectory.StandByPeriod[0]);
@@ -832,7 +832,7 @@ namespace Mars.Seem.Test
             OrganonStand standNwo = plot14.ToOrganonStand(configurationNwo, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             standNwo.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
 
-            OrganonStandTrajectory thinnedTrajectoryNwo = new(standNwo, configurationNwo, TreeVolume.Default, lastPeriod);
+            OrganonStandTrajectory thinnedTrajectoryNwo = new(standNwo, configurationNwo, TreeScaling.Default, lastPeriod);
             thinnedTrajectoryNwo.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
             {
                 FromAbovePercentage = fromAbovePercentage,
@@ -849,7 +849,7 @@ namespace Mars.Seem.Test
             OrganonStand standSmc = plot14.ToOrganonStand(configurationSmc, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             standSmc.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
 
-            OrganonStandTrajectory thinnedTrajectorySmc = new(standSmc, configurationSmc, TreeVolume.Default, lastPeriod);
+            OrganonStandTrajectory thinnedTrajectorySmc = new(standSmc, configurationSmc, TreeScaling.Default, lastPeriod);
             thinnedTrajectorySmc.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
             {
                 FromAbovePercentage = fromAbovePercentage,
@@ -866,7 +866,7 @@ namespace Mars.Seem.Test
             OrganonStand standSwo = plot14.ToOrganonStand(configurationSwo, ageInYears: 30, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             standSwo.PlantingDensityInTreesPerHectare = TestConstant.Plot14ReplantingDensityInTreesPerHectare;
 
-            OrganonStandTrajectory thinnedTrajectorySwo = new(standSwo, configurationSwo, TreeVolume.Default, lastPeriod);
+            OrganonStandTrajectory thinnedTrajectorySwo = new(standSwo, configurationSwo, TreeScaling.Default, lastPeriod);
             thinnedTrajectorySwo.Treatments.Harvests.Add(new ThinByPrescription(thinPeriod)
             {
                 FromAbovePercentage = fromAbovePercentage,
@@ -1105,6 +1105,7 @@ namespace Mars.Seem.Test
             }
             else
             {
+                Assert.IsTrue(heuristic.RunParameters.TimberObjective == TimberObjective.ScribnerVolume);
                 Assert.IsTrue(highestFinancialValue > 0.0F, "Highest volume is zero or negative."); // actually volume due to incomplete migration of code from 2019
             }
 

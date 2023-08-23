@@ -12,16 +12,9 @@ namespace Mars.Seem.Cmdlets
     {
         protected override void ProcessRecord()
         {
-            if (this.Trajectories == null)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " must be specified.");
-            }
-            if (this.Trajectories!.CoordinatesEvaluated.Count < 1)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.Trajectories));
-            }
+            this.ValidateParameters();
 
-            using StreamWriter writer = this.GetCsvWriter();
+            using StreamWriter writer = this.CreateCsvWriter();
 
             if (this.ShouldWriteCsvHeader())
             {
@@ -31,88 +24,93 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            for (int positionIndex = 0; positionIndex < this.Trajectories.CoordinatesEvaluated.Count; ++positionIndex)
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[positionIndex];
-                SilviculturalCoordinateExploration element = this.Trajectories[coordinate];
-                string linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
-                PopulationStatistics highStatistics = ((GeneticAlgorithm)element.Pool.High.Heuristic!).PopulationStatistics;
-                PopulationStatistics lowStatistics = ((GeneticAlgorithm)element.Pool.Low.Heuristic!).PopulationStatistics;
-                int maxGenerations = Math.Max(highStatistics.Generations, lowStatistics.Generations);
-                for (int generationIndex = 0; generationIndex < maxGenerations; ++generationIndex)
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+
+                for (int positionIndex = 0; positionIndex < silviculturalSpace.CoordinatesEvaluated.Count; ++positionIndex)
                 {
-                    string? highMinimumFitness = null;
-                    string? highMeanFitness = null;
-                    string? highMaximumFitness = null;
-                    string? highCoefficientOfVariance = null;
-                    string? highMeanAlleles = null;
-                    string? highMeanHeterozygosity = null;
-                    string? highNewIndividuals = null;
-                    string? highPolymorphism = null;
-                    if (highStatistics.Generations > generationIndex)
+                    SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[positionIndex];
+                    SilviculturalCoordinateExploration element = silviculturalSpace[coordinate];
+                    string linePrefix = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
+                    PopulationStatistics highStatistics = ((GeneticAlgorithm)element.Pool.High.Heuristic!).PopulationStatistics;
+                    PopulationStatistics lowStatistics = ((GeneticAlgorithm)element.Pool.Low.Heuristic!).PopulationStatistics;
+                    int maxGenerations = Math.Max(highStatistics.Generations, lowStatistics.Generations);
+                    for (int generationIndex = 0; generationIndex < maxGenerations; ++generationIndex)
                     {
-                        highMinimumFitness = highStatistics.MinimumFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        highMeanFitness = highStatistics.MeanFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        highMaximumFitness = highStatistics.MaximumFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        highCoefficientOfVariance = highStatistics.CoefficientOfVarianceByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        highMeanAlleles = highStatistics.MeanAllelesPerLocusByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        highMeanHeterozygosity = highStatistics.MeanHeterozygosityByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        highNewIndividuals = highStatistics.NewIndividualsByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        highPolymorphism = highStatistics.PolymorphismByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                        string? highMinimumFitness = null;
+                        string? highMeanFitness = null;
+                        string? highMaximumFitness = null;
+                        string? highCoefficientOfVariance = null;
+                        string? highMeanAlleles = null;
+                        string? highMeanHeterozygosity = null;
+                        string? highNewIndividuals = null;
+                        string? highPolymorphism = null;
+                        if (highStatistics.Generations > generationIndex)
+                        {
+                            highMinimumFitness = highStatistics.MinimumFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            highMeanFitness = highStatistics.MeanFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            highMaximumFitness = highStatistics.MaximumFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            highCoefficientOfVariance = highStatistics.CoefficientOfVarianceByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            highMeanAlleles = highStatistics.MeanAllelesPerLocusByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            highMeanHeterozygosity = highStatistics.MeanHeterozygosityByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            highNewIndividuals = highStatistics.NewIndividualsByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            highPolymorphism = highStatistics.PolymorphismByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                        }
+
+                        string? lowMinimumFitness = null;
+                        string? lowMeanFitness = null;
+                        string? lowMaximumFitness = null;
+                        string? lowCoefficientOfVariance = null;
+                        string? lowMeanAlleles = null;
+                        string? lowMeanHeterozygosity = null;
+                        string? lowNewIndividuals = null;
+                        string? lowPolymorphism = null;
+                        if (lowStatistics.Generations > generationIndex)
+                        {
+                            lowMinimumFitness = lowStatistics.MinimumFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            lowMeanFitness = lowStatistics.MeanFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            lowMaximumFitness = lowStatistics.MaximumFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            lowCoefficientOfVariance = lowStatistics.CoefficientOfVarianceByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            lowMeanAlleles = lowStatistics.MeanAllelesPerLocusByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            lowMeanHeterozygosity = lowStatistics.MeanHeterozygosityByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            lowNewIndividuals = lowStatistics.NewIndividualsByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                            lowPolymorphism = lowStatistics.PolymorphismByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                        }
+
+                        string line = linePrefix + "," +
+                            generationIndex + "," +
+                            highMinimumFitness + "," +
+                            highMeanFitness + "," +
+                            highMaximumFitness + "," +
+                            highCoefficientOfVariance + "," +
+                            highMeanAlleles + "," +
+                            highMeanHeterozygosity + "," +
+                            highNewIndividuals + "," +
+                            highPolymorphism + "," +
+                            lowMinimumFitness + "," +
+                            lowMeanFitness + "," +
+                            lowMaximumFitness + "," +
+                            lowCoefficientOfVariance + "," +
+                            lowMeanAlleles + "," +
+                            lowMeanHeterozygosity + "," +
+                            lowNewIndividuals + "," +
+                            lowPolymorphism;
+                        writer.WriteLine(line);
+                        estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                     }
 
-                    string? lowMinimumFitness = null;
-                    string? lowMeanFitness = null;
-                    string? lowMaximumFitness = null;
-                    string? lowCoefficientOfVariance = null;
-                    string? lowMeanAlleles = null;
-                    string? lowMeanHeterozygosity = null;
-                    string? lowNewIndividuals = null;
-                    string? lowPolymorphism = null;
-                    if (lowStatistics.Generations > generationIndex)
+                    if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
                     {
-                        lowMinimumFitness = lowStatistics.MinimumFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        lowMeanFitness = lowStatistics.MeanFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        lowMaximumFitness = lowStatistics.MaximumFitnessByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        lowCoefficientOfVariance = lowStatistics.CoefficientOfVarianceByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        lowMeanAlleles = lowStatistics.MeanAllelesPerLocusByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        lowMeanHeterozygosity = lowStatistics.MeanHeterozygosityByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        lowNewIndividuals = lowStatistics.NewIndividualsByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
-                        lowPolymorphism = lowStatistics.PolymorphismByGeneration[generationIndex].ToString(CultureInfo.InvariantCulture);
+                        // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                        knownFileSizeInBytes = writer.BaseStream.Length;
+                        estimatedBytesSinceLastFileLength = 0;
                     }
-
-                    string line = linePrefix + "," +
-                        generationIndex + "," +
-                        highMinimumFitness + "," +
-                        highMeanFitness + "," +
-                        highMaximumFitness + "," +
-                        highCoefficientOfVariance + "," +
-                        highMeanAlleles + "," +
-                        highMeanHeterozygosity + "," +
-                        highNewIndividuals + "," +
-                        highPolymorphism + "," +
-                        lowMinimumFitness + "," +
-                        lowMeanFitness + "," +
-                        lowMaximumFitness + "," +
-                        lowCoefficientOfVariance + "," +
-                        lowMeanAlleles + "," +
-                        lowMeanHeterozygosity + "," +
-                        lowNewIndividuals + "," +
-                        lowPolymorphism;
-                    writer.WriteLine(line);
-                    estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
-                }
-
-                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
-                {
-                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
-                    knownFileSizeInBytes = writer.BaseStream.Length;
-                    estimatedBytesSinceLastFileLength = 0;
-                }
-                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
-                {
-                    this.WriteWarning("Write-Population: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
-                    break;
+                    if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
+                    {
+                        this.WriteWarning("Write-Population: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        break;
+                    }
                 }
             }
         }

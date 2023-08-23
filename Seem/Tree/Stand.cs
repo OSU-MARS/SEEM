@@ -219,12 +219,13 @@ namespace Mars.Seem.Tree
         {
             if (this.TreesBySpecies.Count < 1)
             {
-                throw new NotSupportedException("Stand units are indeterminate if no trees are present.");
+                throw new NotSupportedException("Stand units are indeterminate when no trees are present.");
             }
 
             Units? units = null;
-            foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
+            for (int speciesIndex = 0; speciesIndex < this.TreesBySpecies.Count; ++speciesIndex)
             {
+                Trees treesOfSpecies = this.TreesBySpecies.Values[speciesIndex];
                 if (units == null)
                 {
                     units = treesOfSpecies.Units;

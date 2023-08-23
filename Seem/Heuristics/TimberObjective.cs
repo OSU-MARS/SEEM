@@ -2,7 +2,7 @@
 {
     public enum TimberObjective
     {
-        LandExpectationValue,
+        LandExpectationValue = 0, // default, by tradition
         NetPresentValue,
         ScribnerVolume
     }

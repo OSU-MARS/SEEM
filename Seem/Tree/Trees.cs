@@ -193,36 +193,19 @@ namespace Mars.Seem.Tree
 
         public float GetBasalArea(int compactedTreeIndex)
         {
-            switch (this.Units)
+            float dbh = this.Dbh[compactedTreeIndex];
+            float liveExpansionFactor = this.LiveExpansionFactor[compactedTreeIndex];
+            return this.Units switch
             {
-                // return basal area in ft²/ac for Organon
-                case Units.English:
-                    float dbhInInches = this.Dbh[compactedTreeIndex];
-                    float liveExpansionFactor = this.LiveExpansionFactor[compactedTreeIndex];
-                    return Constant.ForestersEnglish * dbhInInches * dbhInInches * liveExpansionFactor;
-                default:
-                    throw new NotSupportedException("Unhandled units " + this.Units + ".");
-            }
+                Units.English => Constant.ForestersEnglish * dbh * dbh * liveExpansionFactor, // return basal area in ft²/ac for Organon
+                Units.Metric => Constant.ForestersMetric * dbh * dbh * liveExpansionFactor, // m²/ha
+                _ => throw new NotSupportedException("Unhandled units " + this.Units + ".")
+            };
         }
 
         public static int GetCapacity(int treeCount)
         {
             return Constant.Simd256x8.Width * (int)MathF.Ceiling((float)treeCount / (float)Constant.Simd256x8.Width);
-        }
-
-        public (float diameterToCentimetersMultiplier, float heightToMetersMultiplier, float hectareExpansionFactorMultiplier) GetConversionToMetric()
-        {
-            float diameterToCentimetersMultiplier = 1.0F;
-            float heightToMetersMultiplier = 1.0F;
-            float hectareExpansionFactorMultiplier = 1.0F;
-            if (this.Units == Units.English)
-            {
-                diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
-                heightToMetersMultiplier = Constant.MetersPerFoot;
-                hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
-            }
-
-            return (diameterToCentimetersMultiplier, heightToMetersMultiplier, hectareExpansionFactorMultiplier);
         }
 
         public int[] GetDbhSortOrder()

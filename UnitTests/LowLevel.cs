@@ -302,7 +302,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue((financialScenarios.DouglasFir4SawPondValuePerMbf[financialIndex] <= financialScenarios.DouglasFir3SawPondValuePerMbf[financialIndex]) &&
                               (financialScenarios.DouglasFir4SawPondValuePerMbf[financialIndex] > 500.0F));
                 Assert.IsTrue((financialScenarios.HarvestTaxPerMbf.Count == expectedCount) &&
-                              (financialScenarios.HarvestTaxPerMbf[financialIndex] == Constant.Financial.OregonForestProductsHarvestTax));
+                              (financialScenarios.HarvestTaxPerMbf[financialIndex] == Constant.HarvestCost.OregonForestProductsHarvestTax));
                 Assert.IsTrue((financialScenarios.Name.Count == expectedCount) &&
                               (String.IsNullOrWhiteSpace(financialScenarios.Name[financialIndex]) == false));
                 Assert.IsTrue((financialScenarios.PropertyTaxAndManagementPerHectareYear[financialIndex] < 75.0F) &&

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Mars.Seem.Extensions;
+using System;
 using System.Diagnostics;
 
 namespace Mars.Seem.Tree
@@ -40,7 +41,7 @@ namespace Mars.Seem.Tree
 
             // automatically designate reserve trees by DBH
             // TODO: support designation of smaller reserve trees and nonmerchantable (cull or defect) trees
-            (float diameterToCentimetersMultiplier, float _, float _) = treesOfSpecies.GetConversionToMetric();
+            (float diameterToCentimetersMultiplier, float _, float _) = UnitsExtensions.GetConversionToMetric(treesOfSpecies.Units);
             for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
             {
                 float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[treeIndex];

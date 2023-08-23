@@ -15,13 +15,13 @@ namespace Mars.Seem.Cmdlets
 
         [Parameter]
         [ValidateNotNull]
-        public TreeVolume TreeVolume { get; set; }
+        public TreeScaling TreeVolume { get; set; }
 
         protected GetTrajectoryCmdlet()
         {
             this.Simd = Simd.Width128;
             this.Threads = Environment.ProcessorCount / 2;
-            this.TreeVolume = TreeVolume.Default;
+            this.TreeVolume = TreeScaling.Default;
         }
     }
 }

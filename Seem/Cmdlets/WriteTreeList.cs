@@ -25,7 +25,7 @@ namespace Mars.Seem.Cmdlets
 
         protected override void ProcessRecord()
         {
-            using StreamWriter writer = this.GetCsvWriter();
+            using StreamWriter writer = this.CreateCsvWriter();
 
             // header
             if (this.ShouldWriteCsvHeader())

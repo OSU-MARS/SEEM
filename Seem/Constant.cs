@@ -19,7 +19,8 @@ namespace Mars.Seem
         public const float DbhHeightInM = 1.37F; // cm
         public const float ExpToZeroPower = -16.2F; // truncate thinning effects of less than 1E-7 to zero
         public const float FeetPerMeter = 3.28084F;
-        public const float ForestersEnglish = 0.005454154F;
+        public const float ForestersEnglish = 0.005454154F; // pi/4 * 1/12²: DBH in inches to ft² basal area
+        public const float ForestersMetric = 0.00007853981F; // pi/4 * 1/100²: DBH in cm to m² basal area
         public const float HectaresPerAcre = 0.404685F;
         public const float InchesPerCentimeter = 0.393701F;
         public const int MaximizeForAllPlanningPeriods = -2;
@@ -138,7 +139,6 @@ namespace Mars.Seem
         public static class Financial
         {
             public const float DefaultAnnualDiscountRate = 0.04F;
-            public const float OregonForestProductsHarvestTax = 4.1322F; // US$/MBF, https://www.oregon.gov/dor/programs/property/Pages/timber-forest-harvest.aspx
         }
 
         public static class GeneticDefault
@@ -170,8 +170,16 @@ namespace Mars.Seem
 
         public static class HarvestCost
         {
+            // catch all for staffing, road maintenance, and other costs
+            // For fire protection, the Oregon Department of Forestry's Forest Patrol Assessment varies by county. These vary by
+            // biennium and are typically reported by a county's assessor or fire protection association. Charges include acreage
+            // and structure protection.
             public const float AdmininistrationCost = 14.82F; // US$/ha-year
-            public const float AssessedValue = 1.26F * 1128.57F; // US$/ha-year, average of northwestern Oregon counties adjusted up to site class 1
+            // US$/ha-year, default is average of northwestern Oregon counties adjusted up to site class 1
+            // Oregon Department of Revenue sets SAV (specially assessed value) and maximum SAV (MSAV) for counties under ORS 321.216.
+            //  https://www.oregon.gov/dor/programs/property/Documents/specially-assessed-forestland-values.pdf
+            //  https://www.oregon.gov/dor/programs/property/Documents/2022-23%20Cert%20OR%20Forestland%20Values-EastWest%20Counties.pdf
+            public const float AssessedValue = 1.26F * 1128.57F;
             public const float BrushControl = 45.0F; // US$/ha
             public const float ChainsawBasalAreaPerHaForFullUtilization = 30.0F; // m²/ha
             public const float DefaultAccessDistanceInM = 0.0F; // m, assume stand is adjacent to or encompasses at least one road
@@ -181,10 +189,13 @@ namespace Mars.Seem
             public const float DefaultForwardingDistanceOnRoad = 30.0F; // m
             public const float DefaultHarvestUnitSizeInHa = 15.0F;
             public const float DefaultSlopeInPercent = 65.0F;
+            // fraction of assessed value = 0.01 * percent of assessed value, default is average of northwestern Oregon counties
+            //  https://www.oregon.gov/dor/programs/gov-research/Documents/publication-or-pts_303-405_2019-20.pdf, Table 1.8
+            public const float ForestlandPropertyTaxRate = 0.01F * 1.61F;
             public const float ForwardingDistanceOnRoadPerSortInM = 10.0F; // m
             public const float MeanYardingDistanceFactor = 0.5F; // fraction of corridor length, 0.5 = parallel yearding
+            public const float OregonForestProductsHarvestTax = 4.1322F; // US$/MBF in 2020 and 2021, https://www.oregon.gov/dor/programs/property/Pages/timber-forest-harvest.aspx
             public const float PlantingLabor = 383.0F; // US$/ha
-            public const float PropertyTaxRate = 0.01F * 1.61F; // fraction of assessed value = 0.01 * percent of assessed value, average of northwestern Oregon counties
             public const float ReleaseSpray = 100.0F + 175.0F; // US$/ha, labor + herbicide cost
             public const float RoadMaintenance = 0.10F * 15.0F; // US$/merchantable m³-km * 15 km of access road
             public const float RoadReopening = 25.0F; // US$/ha

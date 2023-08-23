@@ -14,24 +14,26 @@ namespace Mars.Seem.Cmdlets
         protected override void ProcessRecord()
         {
             this.ValidateParameters();
-            Debug.Assert(this.Trajectories != null);
 
-            int poolCapacity = 0;
-            if (this.Trajectories.CoordinatesEvaluated.Count > 0)
+            using StreamWriter writer = this.CreateCsvWriter();
+
+            int maxPoolCapacity = 0;
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[0];
-                poolCapacity = this.Trajectories[coordinate].Pool.PoolCapacity;
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                if (silviculturalSpace.CoordinatesEvaluated.Count > 0)
+                {
+                    SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[0];
+                    maxPoolCapacity = Int32.Max(maxPoolCapacity, silviculturalSpace[coordinate].Pool.PoolCapacity);
+                }
             }
 
-            using StreamWriter writer = this.GetCsvWriter();
-
             // header
-            bool resultsSpecified = this.Trajectories != null;
             if (this.ShouldWriteCsvHeader())
             {
-                string?[] financialHeader = new string?[poolCapacity];
-                string?[] distanceHeader = new string?[poolCapacity];
-                for (int solutionIndex = 0; solutionIndex < poolCapacity; ++solutionIndex)
+                string?[] financialHeader = new string?[maxPoolCapacity];
+                string?[] distanceHeader = new string?[maxPoolCapacity];
+                for (int solutionIndex = 0; solutionIndex < maxPoolCapacity; ++solutionIndex)
                 {
                     financialHeader[solutionIndex] = "financial" + solutionIndex.ToString(CultureInfo.InvariantCulture);
                     distanceHeader[solutionIndex] = "distance" + solutionIndex.ToString(CultureInfo.InvariantCulture);
@@ -43,69 +45,85 @@ namespace Mars.Seem.Cmdlets
             }
 
             // pool contents
-            string?[] distances = new string?[poolCapacity];
-            string?[] financialValues = new string?[poolCapacity];
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            for (int resultIndex = 0; resultIndex < this.Trajectories!.CoordinatesEvaluated.Count; ++resultIndex)
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
-                SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
-                if (prescriptions.PoolCapacity != poolCapacity)
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+
+                int poolCapacity = 0;
+                if (silviculturalSpace.CoordinatesEvaluated.Count > 0)
                 {
-                    throw new NotSupportedException("Solution pool capacity changed from " + poolCapacity + " to " + prescriptions.PoolCapacity + ".");
+                    SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[0];
+                    poolCapacity = silviculturalSpace[coordinate].Pool.PoolCapacity;
+                }
+                if (poolCapacity != maxPoolCapacity)
+                {
+                    throw new NotSupportedException("Pool capacity " + poolCapacity + " for trajectory " + trajectoryIndex + " does not match the maximum capacity of " + maxPoolCapacity + ". Padding to align columns to the maximum capacity hasn't yet been implemented.");
                 }
 
-                string linePrefx = this.GetCsvPrefixForCoordinate(coordinate);
-                for (int solutionIndex = 0; solutionIndex < prescriptions.SolutionsInPool; ++solutionIndex)
+                string?[] distances = new string?[poolCapacity];
+                string?[] financialValues = new string?[poolCapacity];
+                for (int resultIndex = 0; resultIndex < silviculturalSpace.CoordinatesEvaluated.Count; ++resultIndex)
                 {
-                    //TreeSelectionBySpecies? eliteTreeSelection = prescriptions.EliteTreeSelections[solutionIndex];
-                    //Debug.Assert(eliteTreeSelection != null);
-                    float highestFinancialValue = prescriptions.EliteFinancialValues[solutionIndex];
-                    int nearestNeighborDistance = SolutionPool.UnknownDistance;
-                    int nearestNeighborIndex = prescriptions.NearestNeighborIndex[solutionIndex];
-                    if (nearestNeighborIndex != SolutionPool.UnknownNeighbor)
+                    SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[resultIndex];
+                    SilviculturalPrescriptionPool prescriptions = silviculturalSpace[coordinate].Pool;
+                    if (prescriptions.PoolCapacity != poolCapacity)
                     {
-                        nearestNeighborDistance = prescriptions.DistanceMatrix[nearestNeighborIndex, solutionIndex];
-                        Debug.Assert((nearestNeighborIndex != solutionIndex) && (nearestNeighborDistance == prescriptions.DistanceMatrix[solutionIndex, nearestNeighborIndex]));
+                        throw new NotSupportedException("Solution pool capacity changed from " + poolCapacity + " to " + prescriptions.PoolCapacity + ".");
                     }
 
-                    financialValues[solutionIndex] = highestFinancialValue.ToString(CultureInfo.InvariantCulture);
-                    if (nearestNeighborDistance != SolutionPool.UnknownDistance)
+                    string linePrefx = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
+                    for (int solutionIndex = 0; solutionIndex < prescriptions.SolutionsInPool; ++solutionIndex)
                     {
-                        distances[solutionIndex] = nearestNeighborDistance.ToString(CultureInfo.InvariantCulture);
+                        //TreeSelectionBySpecies? eliteTreeSelection = prescriptions.EliteTreeSelections[solutionIndex];
+                        //Debug.Assert(eliteTreeSelection != null);
+                        float highestFinancialValue = prescriptions.EliteFinancialValues[solutionIndex];
+                        int nearestNeighborDistance = SolutionPool.UnknownDistance;
+                        int nearestNeighborIndex = prescriptions.NearestNeighborIndex[solutionIndex];
+                        if (nearestNeighborIndex != SolutionPool.UnknownNeighbor)
+                        {
+                            nearestNeighborDistance = prescriptions.DistanceMatrix[nearestNeighborIndex, solutionIndex];
+                            Debug.Assert((nearestNeighborIndex != solutionIndex) && (nearestNeighborDistance == prescriptions.DistanceMatrix[solutionIndex, nearestNeighborIndex]));
+                        }
+
+                        financialValues[solutionIndex] = highestFinancialValue.ToString(CultureInfo.InvariantCulture);
+                        if (nearestNeighborDistance != SolutionPool.UnknownDistance)
+                        {
+                            distances[solutionIndex] = nearestNeighborDistance.ToString(CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            distances[solutionIndex] = null;
+                        }
                     }
-                    else
+                    for (int solutionIndex = prescriptions.SolutionsInPool; solutionIndex < financialValues.Length; ++solutionIndex)
                     {
+                        financialValues[solutionIndex] = null;
                         distances[solutionIndex] = null;
                     }
-                }
-                for (int solutionIndex = prescriptions.SolutionsInPool; solutionIndex < financialValues.Length; ++solutionIndex)
-                {
-                    financialValues[solutionIndex] = null;
-                    distances[solutionIndex] = null;
-                }
 
-                string line = linePrefx + "," +
-                    prescriptions.SolutionsInPool.ToString(CultureInfo.InvariantCulture) + "," +
-                    prescriptions.SolutionsAccepted.ToString(CultureInfo.InvariantCulture) + "," +
-                    prescriptions.SolutionsRejected.ToString(CultureInfo.InvariantCulture) + "," +
-                    String.Join(',', financialValues) + "," +
-                    String.Join(',', distances);
-                writer.WriteLine(line);
-                estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
+                    string line = linePrefx + "," +
+                        prescriptions.SolutionsInPool.ToString(CultureInfo.InvariantCulture) + "," +
+                        prescriptions.SolutionsAccepted.ToString(CultureInfo.InvariantCulture) + "," +
+                        prescriptions.SolutionsRejected.ToString(CultureInfo.InvariantCulture) + "," +
+                        String.Join(',', financialValues) + "," +
+                        String.Join(',', distances);
+                    writer.WriteLine(line);
+                    estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
 
-                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
-                {
-                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
-                    knownFileSizeInBytes = writer.BaseStream.Length;
-                    estimatedBytesSinceLastFileLength = 0;
-                }
-                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
-                {
-                    this.WriteWarning("Write-SolutionPool: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
-                    break;
+                    if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                    {
+                        // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                        knownFileSizeInBytes = writer.BaseStream.Length;
+                        estimatedBytesSinceLastFileLength = 0;
+                    }
+                    if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
+                    {
+                        this.WriteWarning("Write-SolutionPool: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        break;
+                    }
                 }
             }
         }

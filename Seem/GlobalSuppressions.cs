@@ -18,4 +18,5 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Style", "IDE0270:Use coalesce expression", Justification = "readability", Scope = "type", Target = "~T:Mars.Seem.Heuristics.Population")]
 [assembly: SuppressMessage("Style", "IDE0270:Use coalesce expression", Justification = "readability", Scope = "type", Target = "~T:Mars.Seem.Optimization.FinancialScenarios")]
 [assembly: SuppressMessage("Style", "IDE0270:Use coalesce expression", Justification = "readability", Scope = "type", Target = "~T:Mars.Seem.Organon.OrganonStandTrajectory")]
+[assembly: SuppressMessage("Style", "IDE0270:Use coalesce expression", Justification = "readability", Scope = "type", Target = "~T:Mars.Seem.Silviculture.SilviculturalSpace")]
 [assembly: SuppressMessage("Style", "IDE0270:Use coalesce expression", Justification = "readability", Scope = "type", Target = "~T:Mars.Seem.XlsxReader")]

@@ -15,8 +15,9 @@ namespace Mars.Seem.Output
         public int Count { get; protected set; }
 
         public IList<RecordBatch> RecordBatches { get; private init; }
+        public Schema Schema { get; protected init; }
 
-        protected ArrowMemory(int capacityInRecords, int batchLength)
+        protected ArrowMemory(Schema schema, int capacityInRecords, int batchLength)
         {
             if (capacityInRecords < 1)
             {
@@ -33,6 +34,7 @@ namespace Mars.Seem.Output
 
             int batches = capacityInRecords / batchLength + (capacityInRecords % batchLength != 0 ? 1 : 0);
             this.RecordBatches = new List<RecordBatch>(batches);
+            this.Schema = schema;
         }
 
         // provide CopyFirstN() overloads specialized to source type
@@ -158,47 +160,21 @@ namespace Mars.Seem.Output
             return Int32.Min(remainingCapacity, this.BatchLength);
         }
 
-        protected static int GetUncompressedBytesPerRow(Schema schema)
+        public int GetUncompressedBytesPerRow()
         {
-            int bytesPerRow = 0;
-            for (int fieldIndex = 0; fieldIndex < schema.FieldsList.Count; ++fieldIndex)
+            int fixedWidthBitsPerRow = 0;
+            for (int fieldIndex = 0; fieldIndex < this.Schema.FieldsList.Count; ++fieldIndex)
             {
-                bytesPerRow += schema.FieldsList[fieldIndex].DataType.TypeId switch
+                IArrowType fieldType = this.Schema.FieldsList[fieldIndex].DataType;
+                if (fieldType.IsFixedWidth == false)
                 {
-                    ArrowTypeId.Int8 or
-                    ArrowTypeId.UInt8 => 1,
-                    ArrowTypeId.HalfFloat or
-                    ArrowTypeId.Int16 or
-                    ArrowTypeId.UInt16 => 2,
-                    ArrowTypeId.Date32 or
-                    ArrowTypeId.Float or
-                    ArrowTypeId.Int32 or
-                    ArrowTypeId.Time32 or
-                    ArrowTypeId.UInt32 => 4,
-                    ArrowTypeId.Date64 or
-                    ArrowTypeId.Double or
-                    ArrowTypeId.Int64 or
-                    ArrowTypeId.Time64 or
-                    ArrowTypeId.UInt64 => 8,
-                    ArrowTypeId.Decimal128 => 16,
-                    ArrowTypeId.Decimal256 => 32,
-                    //ArrowTypeId.Dictionary
-                    //ArrowTypeId.FixedSizedBinary
-                    //ArrowTypeId.Interval
-                    //ArrowTypeId.Binary
-                    //ArrowTypeId.Boolean
-                    //ArrowTypeId.List
-                    //ArrowTypeId.Map
-                    //ArrowTypeId.Null
-                    //ArrowTypeId.String
-                    //ArrowTypeId.Struct
-                    //ArrowTypeId.Timestamp
-                    //ArrowTypeId.Union
-                    _ => throw new NotSupportedException("Unhandled type " + schema.FieldsList[fieldIndex].DataType.TypeId + " for field " + schema.FieldsList[fieldIndex].Name + ".")
-                };
+                    throw new NotSupportedException("Unhandled type " + fieldType.TypeId + " for field " + fieldType.Name + ".");
+                }
+                FixedWidthType fixedWidthType = (FixedWidthType)fieldType;
+                fixedWidthBitsPerRow += fixedWidthType.BitWidth;
             }
 
-            return bytesPerRow;
+            return fixedWidthBitsPerRow / 8;
         }
     }
 }

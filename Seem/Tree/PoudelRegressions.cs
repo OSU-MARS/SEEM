@@ -65,9 +65,9 @@ namespace Mars.Seem.Tree
             {
                 throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds regression limit of 135.0 cm.");
             }
-            if ((heightInM < PoudelRegressions.MinimumKozakHeightInM) || (heightInM > 80.0F))
+            if ((heightInM < PoudelRegressions.MinimumKozakHeightInM) || (heightInM > 85.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 75.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 85.0 m.");
             }
             if ((evaluationHeightInM < 0.0F) || (evaluationHeightInM > heightInM))
             {

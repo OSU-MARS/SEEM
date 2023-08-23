@@ -16,9 +16,9 @@ namespace Mars.Seem.Heuristics
         public IList<int> RotationLengths { get; init; }
         public TimberObjective TimberObjective { get; init; }
         public OrganonTreatments Treatments { get; init; }
-        public TreeVolume TreeVolume { get; init; }
+        public TreeScaling TreeVolume { get; init; }
 
-        public RunParameters(IList<int> rotationLengths, OrganonConfiguration organonConfiguration)
+        public RunParameters(IList<int> rotationLengthInPeriods, OrganonConfiguration organonConfiguration)
         {
             this.Financial = FinancialScenarios.Default;
             this.LastThinPeriod = Constant.NoHarvestPeriod;
@@ -26,10 +26,10 @@ namespace Mars.Seem.Heuristics
             this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
             this.LogOnlyImprovingMoves = Constant.HeuristicDefault.LogOnlyImprovingMoves;
             this.OrganonConfiguration = organonConfiguration;
-            this.RotationLengths = rotationLengths;
+            this.RotationLengths = rotationLengthInPeriods;
             this.TimberObjective = TimberObjective.LandExpectationValue;
             this.Treatments = new();
-            this.TreeVolume = TreeVolume.Default;
+            this.TreeVolume = TreeScaling.Default;
         }
     }
 }

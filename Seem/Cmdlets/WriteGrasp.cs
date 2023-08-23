@@ -20,7 +20,7 @@ namespace Mars.Seem.Cmdlets
         {
             Debug.Assert(this.Results != null);
 
-            using StreamWriter writer = this.GetCsvWriter();
+            using StreamWriter writer = this.CreateCsvWriter();
 
             // header
             if (this.ShouldWriteCsvHeader())

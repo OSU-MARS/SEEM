@@ -11,7 +11,6 @@ using System.IO;
 using System.Management.Automation;
 using System.Text;
 using Mars.Seem.Output;
-using DocumentFormat.OpenXml.Bibliography;
 
 namespace Mars.Seem.Cmdlets
 {
@@ -44,6 +43,35 @@ namespace Mars.Seem.Cmdlets
 
             this.AppendToCsv = false;
             this.LimitGB = 1.0F; // sanity default, may be set higher in derived classes
+        }
+
+        protected StreamWriter CreateCsvWriter()
+        {
+            Debug.Assert(this.FilePath != null);
+
+            FileMode fileMode = this.AppendToCsv ? FileMode.Append : FileMode.Create;
+            if (fileMode == FileMode.Append)
+            {
+                this.openedExistingCsvFile = File.Exists(this.FilePath);
+            }
+            FileStream stream = new(this.FilePath, fileMode, FileAccess.Write, FileShare.Read, Constant.Default.FileWriteBufferSizeInBytes, FileOptions.SequentialScan);
+            return new StreamWriter(stream, Encoding.UTF8); // callers assume UTF8, see remarks for StreamLengthSynchronizationInterval
+        }
+
+        protected StandTrajectoryArrowMemory CreateStandTrajectoryArrowMemory(int periodsToWrite)
+        {
+            StandTrajectoryArrowMemory arrowMemory = new(periodsToWrite);
+
+            // estimate output file size
+            float uncompressedBytesPerRow = arrowMemory.GetUncompressedBytesPerRow();
+            float uncompressedFileSizeInGB = uncompressedBytesPerRow * periodsToWrite / (1024.0F * 1024.0F * 1024.0F);
+            Debug.Assert(uncompressedBytesPerRow * arrowMemory.BatchLength < 2.0F * 1024.0F * 1024.0F * 1024.0F); // https://github.com/apache/arrow/issues/37069
+            if (uncompressedFileSizeInGB > this.LimitGB)
+            {
+                throw new NotSupportedException("Expected file size of " + uncompressedFileSizeInGB.ToString("0.00") + " GB exceeds size limit of " + this.LimitGB.ToString("0.00") + " GB.");
+            }
+
+            return arrowMemory;
         }
 
         protected static string GetCsvHeaderForStandTrajectory(string prefix, WriteStandTrajectoryContext writeContext)
@@ -96,17 +124,6 @@ namespace Mars.Seem.Cmdlets
             return header;
         }
 
-        protected StreamWriter GetCsvWriter()
-        {
-            FileMode fileMode = this.AppendToCsv ? FileMode.Append : FileMode.Create;
-            if (fileMode == FileMode.Append)
-            {
-                this.openedExistingCsvFile = File.Exists(this.FilePath);
-            }
-            FileStream stream = new(this.FilePath!, fileMode, FileAccess.Write, FileShare.Read, Constant.Default.FileWriteBufferSizeInBytes, FileOptions.SequentialScan);
-            return new StreamWriter(stream, Encoding.UTF8); // callers assume UTF8, see remarks for StreamLengthSynchronizationInterval
-        }
-
         protected static void GetMetricConversions(Units inputUnits, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor)
         {
             switch (inputUnits)
@@ -136,56 +153,23 @@ namespace Mars.Seem.Cmdlets
             return this.openedExistingCsvFile == false;
         }
 
-        protected void WriteFeather(IList<StandTrajectory> trajectories, FinancialScenarios financialScenarios, WriteStandTrajectoryContext writeContext)
-        {
-            // get number of records to write
-            int periodsToLog = 0;
-            for (int trajectoryIndex = 0; trajectoryIndex < trajectories.Count; ++trajectoryIndex)
-            {
-                periodsToLog += writeContext.GetPeriodsToWrite(trajectories[trajectoryIndex]);
-            }
-            periodsToLog *= financialScenarios.Count;
-
-            // estimate output file size
-            StandTrajectoryArrowMemory arrowMemory = new(periodsToLog);
-            float uncompressedFileSizeInGB = (float)arrowMemory.UncompressedBytesPerRow * (float)periodsToLog / (1024.0F * 1024.0F * 1024.0F);
-            Debug.Assert((float)arrowMemory.UncompressedBytesPerRow * (float)arrowMemory.BatchLength < 2.0F * 1024.0F * 1024.0F * 1024.0F); // https://github.com/apache/arrow/issues/37069
-            if (uncompressedFileSizeInGB > this.LimitGB)
-            {
-                throw new NotSupportedException("Expected file size of " + uncompressedFileSizeInGB.ToString("0.00") + " GB exceeds size limit of " + this.LimitGB.ToString("0.00") + " GB.");
-            }
-
-            // marshall trajectories into Arrow arrays
-            for (int trajectoryIndex = 0; trajectoryIndex < trajectories.Count; ++trajectoryIndex)
-            {
-                for (int financialIndex = 0; financialIndex < financialScenarios.Count; ++financialIndex)
-                {
-                    StandTrajectory trajectory = trajectories[trajectoryIndex];
-                    writeContext.EndOfRotationPeriodIndex = trajectory.PlanningPeriods - 1;
-                    writeContext.FinancialIndex = financialIndex;
-                    arrowMemory.Add(trajectory, writeContext);
-                }
-            }
-
-            this.WriteFeather(arrowMemory.RecordBatches);
-        }
-
-        protected void WriteFeather(IList<RecordBatch> recordBatches)
+        protected void WriteFeather(StandTrajectoryArrowMemory standTrajectories)
         {
             Debug.Assert(this.FilePath != null);
-            if (recordBatches.Count < 0)
+            if (standTrajectories.RecordBatches.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(recordBatches));
+                throw new ArgumentOutOfRangeException(nameof(standTrajectories));
             }
 
-            // for now, all weather time series should start in January of the first simulation year
             using FileStream stream = new(this.FilePath, FileMode.Create, FileAccess.Write, FileShare.None, Constant.Default.FileWriteBufferSizeInBytes, FileOptions.SequentialScan);
-            using ArrowFileWriter writer = new(stream, recordBatches[0].Schema);
+            using ArrowFileWriter writer = new(stream, standTrajectories.Schema);
             writer.WriteStart();
-            for (int batchIndex = 0; batchIndex < recordBatches.Count; ++batchIndex)
+
+            for (int batchIndex = 0; batchIndex < standTrajectories.RecordBatches.Count; ++batchIndex)
             {
-                writer.WriteRecordBatch(recordBatches[batchIndex]);
+                writer.WriteRecordBatch(standTrajectories.RecordBatches[batchIndex]);
             }
+            
             writer.WriteEnd();
         }
 
@@ -619,6 +603,20 @@ namespace Mars.Seem.Cmdlets
             }
 
             return estimatedBytesWritten;
+        }
+
+        protected static void WriteStandTrajectoriesToRecordBatches(StandTrajectoryArrowMemory arrowMemory, IList<StandTrajectory> trajectories, WriteStandTrajectoryContext writeContext)
+        {
+            // marshall trajectories into Arrow arrays
+            for (int trajectoryIndex = 0; trajectoryIndex < trajectories.Count; ++trajectoryIndex)
+            {
+                for (int financialIndex = 0; financialIndex < writeContext.FinancialScenarios.Count; ++financialIndex)
+                {
+                    StandTrajectory trajectory = trajectories[trajectoryIndex];
+                    writeContext.SetSilviculturalCoordinate(String.Empty, financialIndex, trajectory.PlanningPeriods - 1);
+                    arrowMemory.Add(trajectory, writeContext);
+                }
+            }
         }
     }
 }

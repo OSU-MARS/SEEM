@@ -12,18 +12,18 @@ namespace Mars.Seem.Cmdlets
     [Cmdlet(VerbsCommon.Get, "StandTrajectories")]
     public class GetStandTrajectories : GetTrajectoryCmdlet
     {
-        [Parameter(HelpMessage = "Time range, in years, to predict stands over.")]
-        [ValidateRange(1, 500)]
-        public int PredictionInterval { get; set; }
-
         [Parameter(Mandatory = true, HelpMessage = "List of stands to predict.")]
         [ValidateNotNull]
         public CruisedStands? Stands { get; set; }
 
+        [Parameter(HelpMessage = "Time range, in years, to predict stands over.")]
+        [ValidateRange(1, 500)]
+        public int Years { get; set; }
+
         public GetStandTrajectories()
         {
-            this.PredictionInterval = 100;
             this.Stands = null;
+            this.Years = 100; // years
         }
 
         protected override void ProcessRecord()
@@ -35,7 +35,7 @@ namespace Mars.Seem.Cmdlets
             }
 
             OrganonConfiguration organonConfiguration = new(cruisedStands.OrganonVariant);
-            int organonTimesteps = this.PredictionInterval / cruisedStands.OrganonVariant.TimeStepInYears;
+            int organonTimesteps = this.Years / cruisedStands.OrganonVariant.TimeStepInYears;
 
             ParallelOptions parallelOptions = new()
             {

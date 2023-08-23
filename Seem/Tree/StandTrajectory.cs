@@ -22,9 +22,9 @@ namespace Mars.Seem.Tree
 
         // harvest periods by tree, Constant.NoHarvestPeriod indicates no harvest
         public IndividualTreeSelectionBySpecies TreeSelectionBySpecies { get; private init; }
-        public TreeVolume TreeVolume { get; set; }
+        public TreeScaling TreeScaling { get; set; }
 
-        protected StandTrajectory(TreeVolume treeVolume, int lastPlanningPeriod, float plantingDensityInTreesPerHectare)
+        protected StandTrajectory(TreeScaling treeVolume, int lastPlanningPeriod, float plantingDensityInTreesPerHectare)
         {
             if (lastPlanningPeriod < 0)
             {
@@ -44,7 +44,7 @@ namespace Mars.Seem.Tree
             this.LongLogVolumeBySpecies = new();
             this.ForwardedVolumeBySpecies = new();
             this.TreeSelectionBySpecies = new();
-            this.TreeVolume = treeVolume;
+            this.TreeScaling = treeVolume;
         }
 
         protected StandTrajectory(StandTrajectory other)
@@ -58,7 +58,7 @@ namespace Mars.Seem.Tree
             this.LongLogVolumeBySpecies = new();
             this.ForwardedVolumeBySpecies = new();
             this.TreeSelectionBySpecies = new();
-            this.TreeVolume = other.TreeVolume; // runtime immutable, assumed thread safe for shallow copy
+            this.TreeScaling = other.TreeScaling; // runtime immutable, assumed thread safe for shallow copy
 
             foreach (FiaCode treeSpecies in other.TreeSelectionBySpecies.Keys)
             {
@@ -114,7 +114,7 @@ namespace Mars.Seem.Tree
                 (this.PeriodZeroAgeInYears != other.PeriodZeroAgeInYears) ||
                 (this.PlantingDensityInTreesPerHectare != other.PlantingDensityInTreesPerHectare) ||
                 (this.Treatments.Harvests.Count != other.Treatments.Harvests.Count) ||
-                (Object.ReferenceEquals(this.TreeVolume, other.TreeVolume) == false))
+                (Object.ReferenceEquals(this.TreeScaling, other.TreeScaling) == false))
             {
                 // no apparent need to check heuristics for compatibility
                 // number of planning periods may differ: as many periods are copied as possible
@@ -152,7 +152,7 @@ namespace Mars.Seem.Tree
             }
 
             bool atLeastOneTreeMoved = false;
-            int earliestThinningPeriod = Int32.MaxValue;
+            int earliestHarvestPeriodChanged = Int32.MaxValue;
             for (int speciesIndex = 0; speciesIndex < this.TreeSelectionBySpecies.Count; ++speciesIndex)
             {
                 FiaCode otherSpecies = otherTreeSelection.Keys[speciesIndex];
@@ -178,13 +178,16 @@ namespace Mars.Seem.Tree
                         thisSelectionForSpecies[uncompactedTreeIndex] = otherSelection;
                         atLeastOneTreeMoved = true;
 
-                        if (otherSelection == Constant.RegenerationHarvestIfEligible)
+                        if ((otherSelection == Constant.NoHarvestPeriod) || (otherSelection == Constant.RegenerationHarvestIfEligible))
                         {
-                            earliestThinningPeriod = Math.Min(earliestThinningPeriod, thisSelection);
+                            if (thisSelection != Constant.NoHarvestPeriod)
+                            {
+                                earliestHarvestPeriodChanged = Math.Min(earliestHarvestPeriodChanged, thisSelection);
+                            }
                         }
                         else
                         {
-                            earliestThinningPeriod = Math.Min(earliestThinningPeriod, otherSelection);
+                            earliestHarvestPeriodChanged = Math.Min(earliestHarvestPeriodChanged, otherSelection);
                         }
                     }
                 }
@@ -192,7 +195,7 @@ namespace Mars.Seem.Tree
 
             if (atLeastOneTreeMoved)
             {
-                this.UpdateEariestPeriodChanged(this.EarliestPeriodChangedSinceLastSimulation, earliestThinningPeriod);
+                this.UpdateEariestPeriodChanged(this.EarliestPeriodChangedSinceLastSimulation, earliestHarvestPeriodChanged);
             }
         }
 
@@ -206,7 +209,7 @@ namespace Mars.Seem.Tree
             }
         }
 
-        public void DeselectAllTrees()
+        public void MoveAllEligibleTreesToRegenerationHarvest()
         {
             // see remarks in loop
             Debug.Assert(Constant.RegenerationHarvestIfEligible == 0);
@@ -216,6 +219,11 @@ namespace Mars.Seem.Tree
                 for (int treeIndex = 0; treeIndex < selectionForSpecies.Count; ++treeIndex)
                 {
                     int currentHarvestPeriod = selectionForSpecies[treeIndex];
+                    if (currentHarvestPeriod == Constant.NoHarvestPeriod)
+                    {
+                        continue;
+                    }
+
                     if (currentHarvestPeriod != Constant.RegenerationHarvestIfEligible)
                     {
                         selectionForSpecies[treeIndex] = Constant.RegenerationHarvestIfEligible;
@@ -478,6 +486,11 @@ namespace Mars.Seem.Tree
 
         private void UpdateEariestPeriodChanged(int currentPeriod, int newPeriod)
         {
+            if (newPeriod == Constant.NoHarvestPeriod)
+            {
+                throw new ArgumentOutOfRangeException(nameof(newPeriod));
+            }
+
             Debug.Assert((currentPeriod >= 0) && (currentPeriod <= this.PlanningPeriods) && (newPeriod >= 0) && (newPeriod <= this.PlanningPeriods) && (Constant.RegenerationHarvestIfEligible == 0));
 
             // four cases
@@ -513,7 +526,7 @@ namespace Mars.Seem.Tree
 
         public TStandDensity?[] DensityByPeriod { get; private init; }
 
-        protected StandTrajectory(Stand stand, TreeVolume treeVolume, int lastPlanningPeriod) :
+        protected StandTrajectory(Stand stand, TreeScaling treeVolume, int lastPlanningPeriod) :
             base(treeVolume, lastPlanningPeriod, stand.PlantingDensityInTreesPerHectare ?? throw new ArgumentOutOfRangeException(nameof(stand), "Stand's planting density is not specified.")) // base does range checks
         {
             this.standByPeriod = new TStand[this.PlanningPeriods];
@@ -617,7 +630,7 @@ namespace Mars.Seem.Tree
             {
                 if (longLogVolumeForSpecies.IsCalculated(periodIndex) == false)
                 {
-                    longLogVolumeForSpecies.CalculateMerchantableStandingVolume(stand, periodIndex, this.TreeVolume);
+                    longLogVolumeForSpecies.CalculateMerchantableStandingVolume(stand, periodIndex, this.TreeScaling);
                 }
             }
 
@@ -639,7 +652,7 @@ namespace Mars.Seem.Tree
                 {
                     if (forwardedVolumeForSpecies.IsCalculated(periodIndex) == false)
                     {
-                        forwardedVolumeForSpecies.CalculateMerchantableThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeVolume);
+                        forwardedVolumeForSpecies.CalculateMerchantableThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeScaling);
                     }
                 }
 

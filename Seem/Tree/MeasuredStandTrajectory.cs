@@ -8,7 +8,7 @@ namespace Mars.Seem.Tree
     {
         private readonly IList<int> measurementAges;
 
-        public MeasuredStandTrajectory(Stand stand, TreeVolume treeVolume, IList<int> measurementAges)
+        public MeasuredStandTrajectory(Stand stand, TreeScaling treeVolume, IList<int> measurementAges)
             : base(stand, treeVolume, measurementAges.Count - 1)
         {
             this.measurementAges = measurementAges;

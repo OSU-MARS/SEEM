@@ -22,7 +22,7 @@ namespace Mars.Seem.Heuristics
     public class HeuristicStandTrajectories<TParameters> : HeuristicStandTrajectories where TParameters : HeuristicParameters
     {
         // TODO: refactor StandTrajectories' parameter combination dimension to here?
-        public IList<TParameters> ParameterCombinations { get; private init; }
+        public new IList<TParameters> ParameterCombinations { get; private init; }
 
         public HeuristicStandTrajectories(IList<TParameters> parameterCombinations, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios, int individualSolutionPoolSize)
             : base(parameterCombinations.Count, firstThinPeriods, secondThinPeriods, thirdThinPeriods, rotationLengths, financialScenarios, individualSolutionPoolSize)

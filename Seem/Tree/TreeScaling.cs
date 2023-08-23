@@ -1,27 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Mars.Seem.Tree
 {
-    public class TreeVolume
+    public class TreeScaling
     {
-        public static TreeVolume Default { get; private set; }
-        public static IReadOnlyList<FiaCode> MerchantableTreeSpeciesSupported { get; private set; }
+        public static TreeScaling Default { get; private set; }
+        public static ImmutableArray<FiaCode> MerchantableTreeSpeciesSupported { get; private set; }
 
         private readonly SortedList<FiaCode, TreeSpeciesMerchantableVolumeTable?> forwarder;
         private readonly float forwarderPreferredLogLengthInM;
         private readonly SortedList<FiaCode, TreeSpeciesMerchantableVolumeTable?> longLog;
         private readonly float longLogPreferredLengthInM;
 
-        static TreeVolume()
+        static TreeScaling()
         {
-            TreeVolume.Default = new(Constant.Bucking.DefaultForwarderLogLengthInM, Constant.Bucking.DefaultLongLogLengthInM);
-            TreeVolume.MerchantableTreeSpeciesSupported = new FiaCode[] { FiaCode.AlnusRubra, FiaCode.PseudotsugaMenziesii, FiaCode.ThujaPlicata, FiaCode.TsugaHeterophylla };
+            TreeScaling.Default = new(Constant.Bucking.DefaultForwarderLogLengthInM, Constant.Bucking.DefaultLongLogLengthInM);
+            TreeScaling.MerchantableTreeSpeciesSupported = ImmutableArray.Create(FiaCode.AlnusRubra, FiaCode.PseudotsugaMenziesii, FiaCode.ThujaPlicata, FiaCode.TsugaHeterophylla);
         }
 
-        public TreeVolume(float forwarderPreferredLogLengthInM, float longLogPreferredLengthInM)
+        public TreeScaling(float forwarderPreferredLogLengthInM, float longLogPreferredLengthInM)
         {
             if (Single.IsNaN(forwarderPreferredLogLengthInM) || (forwarderPreferredLogLengthInM <= 0.0F) || (forwarderPreferredLogLengthInM > 20.0F))
             {
@@ -41,6 +41,33 @@ namespace Mars.Seem.Tree
             this.longLog = new();
             this.longLogPreferredLengthInM = longLogPreferredLengthInM;
         }
+
+        public float GetMaximumMerchantableDbh(FiaCode treeSpecies)
+        {
+            float maximumMerchantableDbhInCm = Single.NaN;
+            if (this.TryGetForwarderVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable))
+            {
+                maximumMerchantableDbhInCm = forwarderVolumeTable.MaximumMerchantableDiameterInCentimeters;
+            }
+            if (this.TryGetLongLogVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable))
+            {
+                if (Single.IsNaN(maximumMerchantableDbhInCm))
+                {
+                    maximumMerchantableDbhInCm = longLogVolumeTable.MaximumMerchantableDiameterInCentimeters;
+                }
+                else if (maximumMerchantableDbhInCm != longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
+                {
+                    throw new NotSupportedException("Maximum merchantable DBH for " + treeSpecies + " is " + maximumMerchantableDbhInCm + " cm in cut to length harvests and " + longLogVolumeTable.MaximumMerchantableDiameterInCentimeters + " cm in long long harvests. Currently, the maximum merchantable volume must be the same for both log sizes.");
+                }
+            }
+
+            return maximumMerchantableDbhInCm;
+        }
+
+        //public static bool IsMerchantable(FiaCode treeSpecies)
+        //{
+        //    return TreeScaling.MerchantableTreeSpeciesSupported.Contains(treeSpecies);
+        //}
 
         private static bool TryCreateSpeciesVolumeTable(FiaCode treeSpecies, float preferredLogLengthInM, [NotNullWhen(true)] out TreeSpeciesMerchantableVolumeTable? volumeTable)
         {
@@ -68,44 +95,22 @@ namespace Mars.Seem.Tree
             return volumeTable != null;
         }
 
-        public float GetMaximumMerchantableDbh(FiaCode treeSpecies)
-        {
-            float maximumMerchantableDbhInCm = Single.NaN;
-            if (this.TryGetForwarderVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable))
-            {
-                maximumMerchantableDbhInCm = forwarderVolumeTable.MaximumMerchantableDiameterInCentimeters;
-            }
-            if (this.TryGetLongLogVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable))
-            {
-                if (Single.IsNaN(maximumMerchantableDbhInCm))
-                {
-                    maximumMerchantableDbhInCm = longLogVolumeTable.MaximumMerchantableDiameterInCentimeters;
-                }
-                else if (maximumMerchantableDbhInCm != longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
-                {
-                    throw new NotSupportedException("Maximum merchantable DBH for " + treeSpecies + " is " + maximumMerchantableDbhInCm + " cm in cut to length harvests and " + longLogVolumeTable.MaximumMerchantableDiameterInCentimeters + " cm in long long harvests. Currently, the maximum merchantable volume must be the same for both log sizes.");
-                }
-            }
-
-            return maximumMerchantableDbhInCm;
-        }
-
         // thread safe implementation since default volume table is often used concurrently
-        public bool TryGetForwarderVolumeTable(FiaCode treeSpecies, [NotNullWhen(true)] out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable)
+        public bool TryGetForwarderVolumeTable(FiaCode treeSpecies, [NotNullWhen(true)] out TreeSpeciesMerchantableVolumeTable? forwardedVolumeTable)
         {
-            if (this.forwarder.TryGetValue(treeSpecies, out forwarderVolumeTable) == false)
+            if (this.forwarder.TryGetValue(treeSpecies, out forwardedVolumeTable) == false)
             {
                 lock (this.forwarder)
                 {
-                    if (this.forwarder.TryGetValue(treeSpecies, out forwarderVolumeTable) == false)
+                    if (this.forwarder.TryGetValue(treeSpecies, out forwardedVolumeTable) == false)
                     {
-                        TreeVolume.TryCreateSpeciesVolumeTable(treeSpecies, this.forwarderPreferredLogLengthInM, out forwarderVolumeTable);
-                        this.forwarder.Add(treeSpecies, forwarderVolumeTable);
+                        TreeScaling.TryCreateSpeciesVolumeTable(treeSpecies, this.forwarderPreferredLogLengthInM, out forwardedVolumeTable);
+                        this.forwarder.Add(treeSpecies, forwardedVolumeTable);
                     }
                 }
             }
 
-            return forwarderVolumeTable != null;
+            return forwardedVolumeTable != null;
         }
 
         // thread safe implementation since default volume table is often used concurrently
@@ -117,7 +122,7 @@ namespace Mars.Seem.Tree
                 {
                     if (this.longLog.TryGetValue(treeSpecies, out longLogVolumeTable) == false)
                     {
-                        TreeVolume.TryCreateSpeciesVolumeTable(treeSpecies, this.longLogPreferredLengthInM, out longLogVolumeTable);
+                        TreeScaling.TryCreateSpeciesVolumeTable(treeSpecies, this.longLogPreferredLengthInM, out longLogVolumeTable);
                         this.longLog.Add(treeSpecies, longLogVolumeTable);
                     }
                 }

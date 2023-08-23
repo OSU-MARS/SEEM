@@ -1,4 +1,5 @@
 ﻿using Mars.Seem.Extensions;
+using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
@@ -50,8 +51,7 @@ namespace Mars.Seem.Cmdlets
             this.ValidateParameters();
 
             // write header
-            using StreamWriter writer = this.GetCsvWriter();
-            bool resultsSpecified = this.Trajectories != null;
+            using StreamWriter writer = this.CreateCsvWriter();
             if (this.ShouldWriteCsvHeader())
             {
                 string heuristicAndPositionHeader = this.GetCsvHeaderForSilviculturalCoordinate() + ",standAge";
@@ -66,237 +66,267 @@ namespace Mars.Seem.Cmdlets
             }
 
             // write data
-            int firstRegenerationHarvestPeriodAcrossAllTrajectories = this.Trajectories!.RotationLengths.Min(); // VS 16.11.7: nullability checking doesn't see [MemberNotNull] on ValidateParameters() call above
-            HashSet<StandTrajectory> knownTrajectories = new();
-            int maxCoordinateIndex = this.GetMaxCoordinateIndex();
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            List<int> regenHistogram = new();
-            List<int> thinHistogram = new();       
-            for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++ coordinateIndex)
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix);
-                if (this.SuppressIdentical)
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+
+                int firstRegenerationHarvestPeriodAcrossAllTrajectories = silviculturalSpace.RotationLengths.Min(); // VS 16.11.7: nullability checking doesn't see [MemberNotNull] on ValidateParameters() call above
+                HashSet<StandTrajectory> knownTrajectories = new();
+                int maxCoordinateIndex = WriteSilviculturalTrajectoriesCmdlet.GetMaxCoordinateIndex(silviculturalSpace);
+                List<int> regenHistogram = new();
+                List<int> thinHistogram = new();
+                for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
-                    // for now, identification of unique trajectories relies on reference equality
-                    // This amounts to an assumption heuristics don't generate duplicate duplicate prescriptions. This is likely a good
-                    // approximation but unlikely to be true in general.
-                    if (knownTrajectories.Contains(highTrajectory))
+                    StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(silviculturalSpace, coordinateIndex, out string linePrefix);
+                    if (this.SuppressIdentical)
                     {
-                        continue; // skip trajectory since it's already been logged
-                    }
-                    knownTrajectories.Add(highTrajectory);
-                }
-
-                int lastThinningPeriod = Constant.RegenerationHarvestIfEligible;
-                List<int> thinningPeriods = highTrajectory.Treatments.GetThinningPeriods();
-                if (this.Harvestable && (thinningPeriods.Count > 0))
-                {
-                    lastThinningPeriod = thinningPeriods.Max();
-                }
-
-                int firstRegenerationHarvestPeriod = Math.Max(lastThinningPeriod, firstRegenerationHarvestPeriodAcrossAllTrajectories); // see below
-                for (int period = 0; period < highTrajectory.PlanningPeriods; ++period)
-                {
-                    bool isThinningPeriod = thinningPeriods.Contains(period);
-                    if (this.Harvestable && (isThinningPeriod == false) && (period < firstRegenerationHarvestPeriod))
-                    {
-                        // no data to write for unthinned periods before the first regeneration harvest which applies to this trajectory
-                        // Checks are made against both the last thinning period for this trajectory and the earliest regeneration harvest
-                        // available across all trajectories since this trajectory's last thinning period might be later than the earliest
-                        // included regeneration harvest.
-                        continue;
-                    }
-
-                    Stand? stand;
-                    if (this.Harvestable && isThinningPeriod)
-                    {
-                        // have to get tree sizes from previous period as trees have been removed by end of this period
-                        stand = highTrajectory.StandByPeriod[period - 1];
-                    }
-                    else
-                    {
-                        // log trees at end of timestep by default
-                        stand = highTrajectory.StandByPeriod[period];
-                    }
-                    if (stand == null)
-                    {
-                        throw new InvalidOperationException("Stand has not been simulated for period " + period + ".");
-                    }
-                    string linePrefixForStandAge = linePrefix + "," + highTrajectory.GetEndOfPeriodAge(period).ToString(CultureInfo.InvariantCulture);
-
-                    if (this.Histogram)
-                    {
-                        // reset histograms if they're in used
-                        // If needed, per species histograms can be supported.
-                        regenHistogram.Clear();
-                        thinHistogram.Clear();
-                    }
-
-                    foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
-                    {
-                        string linePrefixForStandAgeAndSpecies = linePrefixForStandAge + "," + treesOfSpecies.Species.ToFourLetterCode();
-                        IndividualTreeSelection treeSelectionForSpecies = highTrajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
-
-                        highTrajectory.TreeVolume.TryGetForwarderVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable);
-                        highTrajectory.TreeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable);
-                        if ((forwarderVolumeTable == null) && (longLogVolumeTable == null))
+                        // for now, identification of unique trajectories relies on reference equality
+                        // This amounts to an assumption heuristics don't generate duplicate duplicate prescriptions. This is likely a good
+                        // approximation but unlikely to be true in general.
+                        if (knownTrajectories.Contains(highTrajectory))
                         {
-                            continue; // not a merchantable species, so no logs to buck
+                            continue; // skip trajectory since it's already been logged
                         }
-                        if ((forwarderVolumeTable == null) || (longLogVolumeTable == null))
+                        knownTrajectories.Add(highTrajectory);
+                    }
+
+                    int lastThinningPeriod = Constant.RegenerationHarvestIfEligible;
+                    List<int> thinningPeriods = highTrajectory.Treatments.GetThinningPeriods();
+                    if (this.Harvestable && (thinningPeriods.Count > 0))
+                    {
+                        lastThinningPeriod = thinningPeriods.Max();
+                    }
+
+                    int firstRegenerationHarvestPeriod = Math.Max(lastThinningPeriod, firstRegenerationHarvestPeriodAcrossAllTrajectories); // see below
+                    for (int period = 0; period < highTrajectory.PlanningPeriods; ++period)
+                    {
+                        bool isThinningPeriod = thinningPeriods.Contains(period);
+                        if (this.Harvestable && (isThinningPeriod == false) && (period < firstRegenerationHarvestPeriod))
                         {
-                            throw new NotSupportedException("Either the forwarder or long log volume table is null but the other is not. This is unexpected for species where long logs are produced and short log species are not currently supported.");
-                        }
-                        if (forwarderVolumeTable.MaximumLogs < longLogVolumeTable.MaximumLogs)
-                        {
-                            throw new NotSupportedException(forwarderVolumeTable.MaximumLogs + " logs are buckable from " + treesOfSpecies.Species + " in period " + period + ", which is more than the " + longLogVolumeTable.MaximumLogs + " logs buckable in regeneration harvest.");
+                            // no data to write for unthinned periods before the first regeneration harvest which applies to this trajectory
+                            // Checks are made against both the last thinning period for this trajectory and the earliest regeneration harvest
+                            // available across all trajectories since this trajectory's last thinning period might be later than the earliest
+                            // included regeneration harvest.
+                            continue;
                         }
 
-                        for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
+                        Stand? stand;
+                        if (this.Harvestable && isThinningPeriod)
                         {
-                            if (this.Harvestable)
+                            // have to get tree sizes from previous period as trees have been removed by end of this period
+                            stand = highTrajectory.StandByPeriod[period - 1];
+                        }
+                        else
+                        {
+                            // log trees at end of timestep by default
+                            stand = highTrajectory.StandByPeriod[period];
+                        }
+                        if (stand == null)
+                        {
+                            throw new InvalidOperationException("Stand has not been simulated for period " + period + ".");
+                        }
+                        string linePrefixForStandAge = linePrefix + "," + highTrajectory.GetEndOfPeriodAge(period).ToString(CultureInfo.InvariantCulture);
+
+                        if (this.Histogram)
+                        {
+                            // reset histograms if they're in used
+                            // If needed, per species histograms can be supported.
+                            regenHistogram.Clear();
+                            thinHistogram.Clear();
+                        }
+
+                        foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
+                        {
+                            string linePrefixForStandAgeAndSpecies = linePrefixForStandAge + "," + treesOfSpecies.Species.ToFourLetterCode();
+                            IndividualTreeSelection treeSelectionForSpecies = highTrajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
+
+                            highTrajectory.TreeScaling.TryGetForwarderVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable);
+                            highTrajectory.TreeScaling.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable);
+                            if ((forwarderVolumeTable == null) && (longLogVolumeTable == null))
                             {
-                                // if appropriate, skip this tree
-                                int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
-                                int harvestPeriod = treeSelectionForSpecies[uncompactedTreeIndex];
-                                if (isThinningPeriod)
-                                {
-                                    if (harvestPeriod != period)
-                                    {
-                                        // tree shouldn't be logged because it is not selected for thinning in this period
-                                        continue;
-                                    }
-                                }
-                                else
-                                {
-                                    if (harvestPeriod != Constant.RegenerationHarvestIfEligible)
-                                    {
-                                        // tree should be logged in periods eligible for regeneration harvest because it is selected for thinning
-                                        continue;
-                                    }
-                                }
+                                continue; // not a merchantable species, so no logs to buck
+                            }
+                            if ((forwarderVolumeTable == null) || (longLogVolumeTable == null))
+                            {
+                                throw new NotSupportedException("Either the forwarder or long log volume table is null but the other is not. This is unexpected for species where long logs are produced and short log species are not currently supported.");
+                            }
+                            if (forwarderVolumeTable.MaximumLogs < longLogVolumeTable.MaximumLogs)
+                            {
+                                throw new NotSupportedException(forwarderVolumeTable.MaximumLogs + " logs are buckable from " + treesOfSpecies.Species + " in period " + period + ", which is more than the " + longLogVolumeTable.MaximumLogs + " logs buckable in regeneration harvest.");
                             }
 
-                            float dbhInCm = treesOfSpecies.Dbh[compactedTreeIndex];
-                            float heightInM = treesOfSpecies.Height[compactedTreeIndex];
-                            float expansionFactorPerHa = treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
-                            if (treesOfSpecies.Units == Units.English)
+                            for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                             {
-                                dbhInCm *= Constant.CentimetersPerInch;
-                                heightInM *= Constant.MetersPerFoot;
-                                expansionFactorPerHa *= Constant.AcresPerHectare;
-                            }
-
-                            string linePrefixForTree = linePrefixForStandAgeAndSpecies + "," +
-                                                       treesOfSpecies.Plot[compactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                                       treesOfSpecies.Tag[compactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
-                                                       dbhInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
-                                                       heightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture) + "," +
-                                                       expansionFactorPerHa.ToString(CultureInfo.InvariantCulture);
-
-                            int regenDiameterClass = longLogVolumeTable.ToDiameterIndex(dbhInCm);
-                            int regenHeightClass = longLogVolumeTable.ToHeightIndex(heightInM);
-                            (int regenLogs2S, int regenLogs3S) = longLogVolumeTable.GetLogCounts(regenDiameterClass, regenHeightClass);
-
-                            int thinDiameterClass = forwarderVolumeTable.ToDiameterIndex(dbhInCm);
-                            int thinHeightClass = forwarderVolumeTable.ToHeightIndex(heightInM);
-                            (int thinLogs2S, int thinLogs3S) = forwarderVolumeTable.GetLogCounts(thinDiameterClass, thinHeightClass);
-
-                            for (int logIndex = 0; logIndex < forwarderVolumeTable.MaximumLogs; ++logIndex)
-                            {
-                                float thinLogVolume = forwarderVolumeTable.LogCubic[thinDiameterClass, thinHeightClass, logIndex];
-                                if (thinLogVolume <= 0.0F)
+                                if (this.Harvestable)
                                 {
-                                    continue;
-                                }
-
-                                string thinGrade = "4S";
-                                if (logIndex < thinLogs2S + thinLogs3S)
-                                {
-                                    thinGrade = "3S";
-                                    if (logIndex < thinLogs2S)
+                                    // if appropriate, skip this tree
+                                    int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
+                                    int harvestPeriod = treeSelectionForSpecies[uncompactedTreeIndex];
+                                    if (isThinningPeriod)
                                     {
-                                        thinGrade = "2S";
-                                    }
-                                }
-                                float thinTopDiameter = forwarderVolumeTable.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
-
-                                string? regenGrade = null;
-                                string? regenLogVolume = null;
-                                float regenLogVolumeAsFloat = 0.0F;
-                                string? regenTopDiameter = null;
-                                if (longLogVolumeTable.MaximumLogs > logIndex)
-                                {
-                                    regenLogVolumeAsFloat = longLogVolumeTable.LogCubic[regenDiameterClass, regenHeightClass, logIndex];
-                                    if (regenLogVolumeAsFloat > 0.0F)
-                                    {
-                                        if ((thinLogVolume < this.MinimumLogVolume) && (regenLogVolumeAsFloat < this.MinimumLogVolume))
+                                        if (harvestPeriod != period)
                                         {
-                                            // log is below both thinning and regen threshold so shouldn't be written to file
+                                            // tree shouldn't be logged because it is not selected for thinning in this period
                                             continue;
                                         }
-
-                                        regenGrade = "4S";
-                                        if (logIndex < regenLogs2S + regenLogs3S)
+                                    }
+                                    else
+                                    {
+                                        if ((harvestPeriod != Constant.NoHarvestPeriod) && (harvestPeriod != Constant.RegenerationHarvestIfEligible))
                                         {
-                                            regenGrade = "3S";
-                                            if (logIndex < regenLogs2S)
-                                            {
-                                                regenGrade = "2S";
-                                            }
+                                            // tree should be logged in periods eligible for regeneration harvest because it is selected for thinning
+                                            continue;
                                         }
+                                    }
+                                }
 
-                                        regenLogVolume = regenLogVolumeAsFloat.ToString(Constant.Default.LogVolumeFormat, CultureInfo.InvariantCulture);
+                                float dbhInCm = treesOfSpecies.Dbh[compactedTreeIndex];
+                                float heightInM = treesOfSpecies.Height[compactedTreeIndex];
+                                float expansionFactorPerHa = treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
+                                if (treesOfSpecies.Units == Units.English)
+                                {
+                                    dbhInCm *= Constant.CentimetersPerInch;
+                                    heightInM *= Constant.MetersPerFoot;
+                                    expansionFactorPerHa *= Constant.AcresPerHectare;
+                                }
 
-                                        float topDiameterInCm = longLogVolumeTable.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
-                                        Debug.Assert(topDiameterInCm > 0.0F);
-                                        regenTopDiameter = topDiameterInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture);
+                                string linePrefixForTree = linePrefixForStandAgeAndSpecies + "," +
+                                                           treesOfSpecies.Plot[compactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                                           treesOfSpecies.Tag[compactedTreeIndex].ToString(CultureInfo.InvariantCulture) + "," +
+                                                           dbhInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                                                           heightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture) + "," +
+                                                           expansionFactorPerHa.ToString(CultureInfo.InvariantCulture);
+
+                                int regenDiameterClass = longLogVolumeTable.ToDiameterIndex(dbhInCm);
+                                int regenHeightClass = longLogVolumeTable.ToHeightIndex(heightInM);
+                                (int regenLogs2S, int regenLogs3S) = longLogVolumeTable.GetLogCounts(regenDiameterClass, regenHeightClass);
+
+                                int thinDiameterClass = forwarderVolumeTable.ToDiameterIndex(dbhInCm);
+                                int thinHeightClass = forwarderVolumeTable.ToHeightIndex(heightInM);
+                                (int thinLogs2S, int thinLogs3S) = forwarderVolumeTable.GetLogCounts(thinDiameterClass, thinHeightClass);
+
+                                for (int logIndex = 0; logIndex < forwarderVolumeTable.MaximumLogs; ++logIndex)
+                                {
+                                    float thinLogVolume = forwarderVolumeTable.LogCubic[thinDiameterClass, thinHeightClass, logIndex];
+                                    if (thinLogVolume <= 0.0F)
+                                    {
+                                        continue;
+                                    }
+
+                                    string thinGrade = "4S";
+                                    if (logIndex < thinLogs2S + thinLogs3S)
+                                    {
+                                        thinGrade = "3S";
+                                        if (logIndex < thinLogs2S)
+                                        {
+                                            thinGrade = "2S";
+                                        }
+                                    }
+                                    float thinTopDiameter = forwarderVolumeTable.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
+
+                                    string? regenGrade = null;
+                                    string? regenLogVolume = null;
+                                    float regenLogVolumeAsFloat = 0.0F;
+                                    string? regenTopDiameter = null;
+                                    if (longLogVolumeTable.MaximumLogs > logIndex)
+                                    {
+                                        regenLogVolumeAsFloat = longLogVolumeTable.LogCubic[regenDiameterClass, regenHeightClass, logIndex];
+                                        if (regenLogVolumeAsFloat > 0.0F)
+                                        {
+                                            if ((thinLogVolume < this.MinimumLogVolume) && (regenLogVolumeAsFloat < this.MinimumLogVolume))
+                                            {
+                                                // log is below both thinning and regen threshold so shouldn't be written to file
+                                                continue;
+                                            }
+
+                                            regenGrade = "4S";
+                                            if (logIndex < regenLogs2S + regenLogs3S)
+                                            {
+                                                regenGrade = "3S";
+                                                if (logIndex < regenLogs2S)
+                                                {
+                                                    regenGrade = "2S";
+                                                }
+                                            }
+
+                                            regenLogVolume = regenLogVolumeAsFloat.ToString(Constant.Default.LogVolumeFormat, CultureInfo.InvariantCulture);
+
+                                            float topDiameterInCm = longLogVolumeTable.LogTopDiameterInCentimeters[regenDiameterClass, regenHeightClass, logIndex];
+                                            Debug.Assert(topDiameterInCm > 0.0F);
+                                            regenTopDiameter = topDiameterInCm.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture);
+                                        }
+                                        else if (thinLogVolume < this.MinimumLogVolume)
+                                        {
+                                            // since thinning log is below threshold there is no regen log, so log shouldn't be written to file
+                                            continue;
+                                        }
                                     }
                                     else if (thinLogVolume < this.MinimumLogVolume)
                                     {
                                         // since thinning log is below threshold there is no regen log, so log shouldn't be written to file
                                         continue;
                                     }
-                                }
-                                else if (thinLogVolume < this.MinimumLogVolume)
-                                {
-                                    // since thinning log is below threshold there is no regen log, so log shouldn't be written to file
-                                    continue;
-                                }
 
-                                if (this.Histogram)
-                                {
-                                    // accumulate thinning and regen logs into histogram
-                                    int thinIndex = (int)(thinLogVolume / this.HistogramBinSize + 0.5F);
-                                    if (thinHistogram.Count <= thinIndex)
+                                    if (this.Histogram)
                                     {
-                                        thinHistogram.Extend(thinIndex);
-                                    }
-                                    ++thinHistogram[thinIndex];
-
-                                    if (regenLogVolumeAsFloat > 0.0F)
-                                    {
-                                        int regenIndex = (int)(regenLogVolumeAsFloat / this.HistogramBinSize + 0.5F);
-                                        if (regenHistogram.Count <= regenIndex)
+                                        // accumulate thinning and regen logs into histogram
+                                        int thinIndex = (int)(thinLogVolume / this.HistogramBinSize + 0.5F);
+                                        if (thinHistogram.Count <= thinIndex)
                                         {
-                                            regenHistogram.Extend(regenIndex);
+                                            thinHistogram.Extend(thinIndex);
                                         }
-                                        ++regenHistogram[regenIndex];
+                                        ++thinHistogram[thinIndex];
+
+                                        if (regenLogVolumeAsFloat > 0.0F)
+                                        {
+                                            int regenIndex = (int)(regenLogVolumeAsFloat / this.HistogramBinSize + 0.5F);
+                                            if (regenHistogram.Count <= regenIndex)
+                                            {
+                                                regenHistogram.Extend(regenIndex);
+                                            }
+                                            ++regenHistogram[regenIndex];
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // write log to file
+                                        string line = linePrefixForTree + "," +
+                                            logIndex.ToString(CultureInfo.InvariantCulture) + "," +
+                                            thinGrade + "," +
+                                            thinTopDiameter.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                                            thinLogVolume.ToString(Constant.Default.LogVolumeFormat, CultureInfo.InvariantCulture) + "," +
+                                            regenGrade + "," +
+                                            regenTopDiameter + "," +
+                                            regenLogVolume;
+                                        writer.WriteLine(line);
+                                        estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                                     }
                                 }
-                                else
+                            }
+                        }
+
+                        if (this.Histogram)
+                        {
+                            // write histogram to file
+                            // for now, assume histogram bin sizes have granularity no finer than 0.01 m³. More digits can be added to the volume
+                            // format if needed.
+                            string logVolumeFormat = "0.00"; // Constant.Default.DiameterInCmFormat
+
+                            int maxVolumeClass = Math.Max(regenHistogram.Count, thinHistogram.Count);
+                            for (int volumeIndex = 0; volumeIndex < maxVolumeClass; ++volumeIndex)
+                            {
+                                float volumeClass = this.HistogramBinSize * volumeIndex;
+                                int thinCount = thinHistogram.Count > volumeIndex ? thinHistogram[volumeIndex] : 0;
+                                int regenCount = regenHistogram.Count > volumeIndex ? regenHistogram[volumeIndex] : 0;
+                                if ((thinCount > 0) || (regenCount > 0))
                                 {
-                                    // write log to file
-                                    string line = linePrefixForTree + "," +
-                                        logIndex.ToString(CultureInfo.InvariantCulture) + "," +
-                                        thinGrade + "," +
-                                        thinTopDiameter.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
-                                        thinLogVolume.ToString(Constant.Default.LogVolumeFormat, CultureInfo.InvariantCulture) + "," +
-                                        regenGrade + "," +
-                                        regenTopDiameter + "," +
-                                        regenLogVolume;
+                                    string line = linePrefixForStandAge + "," +
+                                        volumeClass.ToString(logVolumeFormat, CultureInfo.InvariantCulture) + "," +
+                                        thinCount.ToString(CultureInfo.InvariantCulture) + "," +
+                                        regenCount.ToString(CultureInfo.InvariantCulture);
                                     writer.WriteLine(line);
                                     estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
                                 }
@@ -304,42 +334,17 @@ namespace Mars.Seem.Cmdlets
                         }
                     }
 
-                    if (this.Histogram)
+                    if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
                     {
-                        // write histogram to file
-                        // for now, assume histogram bin sizes have granularity no finer than 0.01 m³. More digits can be added to the volume
-                        // format if needed.
-                        string logVolumeFormat = "0.00"; // Constant.Default.DiameterInCmFormat
-
-                        int maxVolumeClass = Math.Max(regenHistogram.Count, thinHistogram.Count);
-                        for (int volumeIndex = 0; volumeIndex < maxVolumeClass; ++volumeIndex)
-                        {
-                            float volumeClass = this.HistogramBinSize * volumeIndex;
-                            int thinCount = thinHistogram.Count > volumeIndex ? thinHistogram[volumeIndex] : 0;
-                            int regenCount = regenHistogram.Count > volumeIndex ? regenHistogram[volumeIndex] : 0;
-                            if ((thinCount > 0) || (regenCount > 0))
-                            {
-                                string line = linePrefixForStandAge + "," +
-                                    volumeClass.ToString(logVolumeFormat, CultureInfo.InvariantCulture) + "," +
-                                    thinCount.ToString(CultureInfo.InvariantCulture) + "," +
-                                    regenCount.ToString(CultureInfo.InvariantCulture);
-                                writer.WriteLine(line);
-                                estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
-                            }
-                        }
+                        // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                        knownFileSizeInBytes = writer.BaseStream.Length;
+                        estimatedBytesSinceLastFileLength = 0;
                     }
-                }
-
-                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
-                {
-                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
-                    knownFileSizeInBytes = writer.BaseStream.Length;
-                    estimatedBytesSinceLastFileLength = 0;
-                }
-                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
-                {
-                    this.WriteWarning("Write-MechantableLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
-                    break;
+                    if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
+                    {
+                        this.WriteWarning("Write-MechantableLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        break;
+                    }
                 }
             }
         }

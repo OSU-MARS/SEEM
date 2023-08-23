@@ -14,16 +14,16 @@ namespace Mars.Seem.Cmdlets
     {
         [Parameter]
         [ValidateNotNull]
-        public TreeVolume TreeVolume { get; set; }
+        public TreeScaling TreeVolume { get; set; }
 
         public WriteVolumeTable()
         {
-            this.TreeVolume = TreeVolume.Default;
+            this.TreeVolume = TreeScaling.Default;
         }
 
         protected override void ProcessRecord()
         {
-            using StreamWriter writer = this.GetCsvWriter();
+            using StreamWriter writer = this.CreateCsvWriter();
 
             // header
             if (this.ShouldWriteCsvHeader())
@@ -31,13 +31,13 @@ namespace Mars.Seem.Cmdlets
                 writer.WriteLine("logLength,species,height,DBH,heightDiameterRatio,logs,logs2S,logs3S,logs4S,cubic2S,cubic3S,cubic4S,cubic,scribner2S,scribner3S,scribner4S,scribner,fellingDiameter15,fellingDiameter30,maxFeedRollerDiameter,neiloidHeight,neiloidCubic");
             }
 
-            foreach (FiaCode treeSpecies in TreeVolume.MerchantableTreeSpeciesSupported)
+            foreach (FiaCode treeSpecies in TreeScaling.MerchantableTreeSpeciesSupported)
             {
-                if (TreeVolume.Default.TryGetForwarderVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable))
+                if (TreeScaling.Default.TryGetForwarderVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable))
                 {
                     this.WriteScaledVolume(writer, forwarderVolumeTable);
                 }
-                if (TreeVolume.Default.TryGetLongLogVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable))
+                if (TreeScaling.Default.TryGetLongLogVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable))
                 {
                     this.WriteScaledVolume(writer, longLogVolumeTable); // long logs may not be produced from species
                 }

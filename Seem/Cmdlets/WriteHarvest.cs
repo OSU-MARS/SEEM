@@ -14,36 +14,30 @@ namespace Mars.Seem.Cmdlets
     {
         protected override void ProcessRecord()
         {
-            if (this.Trajectories == null)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " must be specified.");
-            }
+            this.ValidateParameters();
 
-            using StreamWriter writer = this.GetCsvWriter();
+            using StreamWriter writer = this.CreateCsvWriter();
 
             StringBuilder line = new();
             if (this.ShouldWriteCsvHeader())
             {
                 line.Append("period");
-                // harvest volume headers
-                for (int coordinateIndex = 0; coordinateIndex < this.Trajectories.CoordinatesEvaluated.Count; ++coordinateIndex)
-                {
-                    SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[coordinateIndex];
-                    StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory;
-                    if (trajectory == null)
-                    {
-                        throw new NotSupportedException("Cannot write harvest becaue no high trajectory is present at evaluated coordinate index " + coordinateIndex + ".");
-                    }
+                SilviculturalSpace defaultSilviculturalSpace = this.Trajectories[0];
 
-                    line.Append("," + trajectory.Name + "harvest");
+                // harvest volume headers
+                for (int coordinateIndex = 0; coordinateIndex < defaultSilviculturalSpace.CoordinatesEvaluated.Count; ++coordinateIndex)
+                {
+                    SilviculturalCoordinate coordinate = defaultSilviculturalSpace.CoordinatesEvaluated[coordinateIndex];
+                    StandTrajectory highTrajectory = defaultSilviculturalSpace.GetHighTrajectory(coordinate);
+                    line.Append("," + highTrajectory.Name + "harvest");
                 }
 
                 // standing volume headers
-                for (int resultIndex = 0; resultIndex < this.Trajectories.CoordinatesEvaluated.Count; ++resultIndex)
+                for (int resultIndex = 0; resultIndex < defaultSilviculturalSpace.CoordinatesEvaluated.Count; ++resultIndex)
                 {
-                    SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[resultIndex];
-                    StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked in previous loop
-                    line.Append("," + trajectory.Name + "standing");
+                    SilviculturalCoordinate coordinate = defaultSilviculturalSpace.CoordinatesEvaluated[resultIndex];
+                    StandTrajectory highTrajectory = defaultSilviculturalSpace.GetHighTrajectory(coordinate);
+                    line.Append("," + highTrajectory.Name + "standing");
                 }
                 writer.WriteLine(line);
             }
@@ -51,39 +45,44 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxPlanningPeriod = this.Trajectories.RotationLengths.Max();
-            for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                line.Clear();
-                line.Append(periodIndex);
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
 
-                foreach (SilviculturalCoordinate coordinate in this.Trajectories.CoordinatesEvaluated)
+                int maxPlanningPeriod = silviculturalSpace.RotationLengths.Max();
+                for (int periodIndex = 0; periodIndex < maxPlanningPeriod; ++periodIndex)
                 {
-                    StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked loops above
-                    float harvestVolumeScibner = trajectory.GetTotalScribnerVolumeThinned(periodIndex);
-                    line.Append("," + harvestVolumeScibner.ToString(CultureInfo.InvariantCulture));
-                }
+                    line.Clear();
+                    line.Append(periodIndex);
 
-                foreach (SilviculturalCoordinate coordinate in this.Trajectories.CoordinatesEvaluated)
-                {
-                    StandTrajectory? trajectory = this.Trajectories[coordinate].Pool.High.Trajectory!; // checked loops above
-                    float standingVolumeScribner = trajectory.GetTotalStandingScribnerVolume(periodIndex);
-                    line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
-                }
+                    foreach (SilviculturalCoordinate coordinate in silviculturalSpace.CoordinatesEvaluated)
+                    {
+                        StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
+                        float harvestVolumeScribner = highTrajectory.GetTotalScribnerVolumeThinned(periodIndex);
+                        line.Append("," + harvestVolumeScribner.ToString(CultureInfo.InvariantCulture));
+                    }
 
-                writer.WriteLine(line);
-                estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
+                    foreach (SilviculturalCoordinate coordinate in silviculturalSpace.CoordinatesEvaluated)
+                    {
+                        StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
+                        float standingVolumeScribner = highTrajectory.GetTotalStandingScribnerVolume(periodIndex);
+                        line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
+                    }
 
-                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
-                {
-                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
-                    knownFileSizeInBytes = writer.BaseStream.Length;
-                    estimatedBytesSinceLastFileLength = 0;
-                }
-                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
-                {
-                    this.WriteWarning("Write-Harvest: Maximum file size of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB reached.");
-                    break;
+                    writer.WriteLine(line);
+                    estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
+
+                    if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                    {
+                        // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                        knownFileSizeInBytes = writer.BaseStream.Length;
+                        estimatedBytesSinceLastFileLength = 0;
+                    }
+                    if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
+                    {
+                        this.WriteWarning("Write-Harvest: Maximum file size of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB reached.");
+                        break;
+                    }
                 }
             }
         }

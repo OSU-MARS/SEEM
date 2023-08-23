@@ -14,7 +14,7 @@ namespace Mars.Seem.Organon
 
         public OrganonConfiguration Configuration { get; private init; }
 
-        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TreeVolume treeVolume, int lastPlanningPeriod)
+        public OrganonStandTrajectory(OrganonStand stand, OrganonConfiguration organonConfiguration, TreeScaling treeVolume, int lastPlanningPeriod)
             : base(stand, treeVolume, lastPlanningPeriod)
         {
             this.organonCalibration = organonConfiguration.CreateSpeciesCalibration();
@@ -31,7 +31,7 @@ namespace Mars.Seem.Organon
 
             this.StandByPeriod[0] = new OrganonStand(stand) // subsequent periods initialized lazily in Simulate()
             {
-                Name = stand.Name + 0
+                Name = this.Name + "p" + 0.ToString()
             };
         }
 
@@ -271,11 +271,11 @@ namespace Mars.Seem.Organon
                             {
                                 // tree is harvested in this period, so set its expansion factor to zero
                                 Debug.Assert(this.StandByPeriod[0]!.TreesBySpecies[treesOfSpecies.Species].Tag[uncompactedTreeIndex] == treesOfSpecies.Tag[compactedTreeIndex]);
-                                Debug.Assert(treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] > 0.0F);
+                                Debug.Assert((periodIndex > 0) && (treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] > 0.0F));
                                 treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] = 0.0F;
                                 atLeastOneTreeRemoved = true;
                             }
-                            if ((treeSelection == Constant.RegenerationHarvestIfEligible) || (treeSelection >= periodIndex))
+                            if ((treeSelection == Constant.NoHarvestPeriod) || (treeSelection == Constant.RegenerationHarvestIfEligible) || (treeSelection >= periodIndex))
                             {
                                 // if tree is retained up to this period it's present in the current, compacted tree list and a compacted index increment 
                                 // is needed
@@ -312,7 +312,7 @@ namespace Mars.Seem.Organon
                         Debug.Assert(simulationStand.Name != null);
                         OrganonStand standForPeriod = new(simulationStand)
                         {
-                            Name = simulationStand.Name[0..^1] + periodIndex
+                            Name = this.Name + "p" + periodIndex
                         };
                         this.StandByPeriod[periodIndex] = standForPeriod;
                     }

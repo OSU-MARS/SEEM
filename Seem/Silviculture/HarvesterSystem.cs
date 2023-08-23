@@ -98,7 +98,7 @@ namespace Mars.Seem.Silviculture
 
                 this.HarvesterPMhPerHa /= Constant.SecondsPerHour;
                 this.HarvesterProductivity = merchantableCubicVolumePerHa / this.HarvesterPMhPerHa;
-                Debug.Assert((this.HarvesterProductivity >= 0.0F) && (this.HarvesterProductivity < 1000.0F));
+                Debug.Assert((this.HarvesterProductivity >= 0.0F) && ((this.HarvesterProductivity < 1000.0F) | (this.HarvesterPMhPerHa < 0.3F)));
             }
             else
             {

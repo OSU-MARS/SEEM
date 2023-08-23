@@ -33,7 +33,7 @@ namespace Mars.Seem.Silviculture
         
         public void CalculatePMhAndProductivity(Stand stand, bool isThin, float merchantableCubicVolumePerHa, HarvestSystems harvestSystems, float yardedWeightPerHa)
         {
-            Debug.Assert((merchantableCubicVolumePerHa == 0.0F) || (yardedWeightPerHa > 0.0F));
+            Debug.Assert((merchantableCubicVolumePerHa == 0.0F) || (yardedWeightPerHa > 0.0F), "Stand " + stand.Name + ": merchantable volume is " + merchantableCubicVolumePerHa + " m³/ha but yarded weight is " + yardedWeightPerHa + " kg/ha.");
 
             float averageYardingDistance = stand.MeanYardingDistanceFactor * stand.CorridorLengthInM + stand.AccessDistanceInM;
             float meanGrappleYardingTurnTimeInS;

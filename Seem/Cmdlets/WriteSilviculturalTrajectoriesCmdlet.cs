@@ -2,6 +2,7 @@
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -15,8 +16,8 @@ namespace Mars.Seem.Cmdlets
         public SwitchParameter HeuristicParameters { get; set; }
 
         [Parameter(Mandatory = true)]
-        [ValidateNotNull]
-        public SilviculturalSpace? Trajectories { get; set; }
+        [ValidateNotNullOrEmpty]
+        public List<SilviculturalSpace>? Trajectories { get; set; }
 
         public WriteSilviculturalTrajectoriesCmdlet()
         {
@@ -27,34 +28,36 @@ namespace Mars.Seem.Cmdlets
         protected string GetCsvHeaderForSilviculturalCoordinate()
         {
             string? maybeHeuristicParametersWithTrailingComma = null;
-            if (this.HeuristicParameters && (this.Trajectories is HeuristicStandTrajectories heuristicTrajectories))
+            if (this.HeuristicParameters)
             {
-                HeuristicParameters? firstHeuristicParameters = heuristicTrajectories.GetParameters(Constant.HeuristicDefault.CoordinateIndex);
-                if (firstHeuristicParameters != null)
+                Debug.Assert((this.Trajectories != null) && (this.Trajectories.Count > 0));
+                if (this.Trajectories[0] is HeuristicStandTrajectories heuristicTrajectories)
                 {
-                    maybeHeuristicParametersWithTrailingComma = firstHeuristicParameters.GetCsvHeader() + ",";
+                    if (this.Trajectories.Count > 1)
+                    {
+                        throw new NotSupportedException("Writing heuristic parameters is not supported for multiple runs. Turn off -" + nameof(this.HeuristicParameters) + " or write each element of -" + nameof(this.Trajectories) + " individually");
+                    }
+
+                    HeuristicParameters? firstHeuristicParameters = heuristicTrajectories.GetParameters(Constant.HeuristicDefault.CoordinateIndex);
+                    if (firstHeuristicParameters != null)
+                    {
+                        maybeHeuristicParametersWithTrailingComma = firstHeuristicParameters.GetCsvHeader() + ",";
+                    }
                 }
             }
             return "stand," + maybeHeuristicParametersWithTrailingComma + "thin1,thin2,thin3,rotation,financialScenario";
         }
 
-        [MemberNotNull(nameof(WriteSilviculturalTrajectoriesCmdlet.Trajectories))]
-        protected string GetCsvPrefixForCoordinate(SilviculturalCoordinate coordinate)
+        protected string GetCsvPrefixForCoordinate(SilviculturalSpace silviculturalSpace, SilviculturalCoordinate coordinate)
         {
-            Debug.Assert(this.Trajectories != null);
-            StandTrajectory? highTrajectory = this.Trajectories[coordinate].Pool.High.Trajectory;
-            if (highTrajectory == null)
-            {
-                throw new NotSupportedException("Prescription pool is missing a high trajectory.");
-            }
-
-            int firstThinPeriod = this.Trajectories.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
-            int secondThinPeriod = this.Trajectories.SecondThinPeriods[coordinate.SecondThinPeriodIndex];
-            int thirdThinPeriod = this.Trajectories.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex];
-            int endOfRotationPeriod = this.Trajectories.RotationLengths[coordinate.RotationIndex];
+            StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
+            int firstThinPeriod = silviculturalSpace.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
+            int secondThinPeriod = silviculturalSpace.SecondThinPeriods[coordinate.SecondThinPeriodIndex];
+            int thirdThinPeriod = silviculturalSpace.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex];
+            int endOfRotationPeriod = silviculturalSpace.RotationLengths[coordinate.RotationIndex];
 
             string? maybeHeuristicParametersWithTrailingComma = null;
-            if (this.HeuristicParameters && (this.Trajectories is HeuristicStandTrajectories heuristicTrajectories))
+            if (this.HeuristicParameters && (silviculturalSpace is HeuristicStandTrajectories heuristicTrajectories))
             {
                 maybeHeuristicParametersWithTrailingComma = heuristicTrajectories.GetParameters(coordinate.ParameterIndex).GetCsvValues() + ",";
             }
@@ -62,7 +65,7 @@ namespace Mars.Seem.Cmdlets
             string? secondThinAge = secondThinPeriod != Constant.NoHarvestPeriod ? highTrajectory.GetEndOfPeriodAge(secondThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
             string? thirdThinAge = thirdThinPeriod != Constant.NoHarvestPeriod ? highTrajectory.GetEndOfPeriodAge(thirdThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
             string rotationLength = highTrajectory.GetEndOfPeriodAge(endOfRotationPeriod).ToString(CultureInfo.InvariantCulture);
-            string financialScenario = this.Trajectories.FinancialScenarios.Name[coordinate.FinancialIndex];
+            string financialScenario = silviculturalSpace.FinancialScenarios.Name[coordinate.FinancialIndex];
 
             return highTrajectory.Name + "," +
                    maybeHeuristicParametersWithTrailingComma +
@@ -73,54 +76,41 @@ namespace Mars.Seem.Cmdlets
                    financialScenario;
         }
 
-        protected StandTrajectory GetHighTrajectory(SilviculturalCoordinate coordinate)
+        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(SilviculturalSpace silviculturalSpace, int evaluatedCoordinateIndex, out string linePrefix)
         {
-            Debug.Assert(this.Trajectories != null);
-
-            SilviculturalPrescriptionPool prescriptions = this.Trajectories[coordinate].Pool;
-            StandTrajectory? highTrajectory = prescriptions.High.Trajectory;
-            if (highTrajectory == null)
-            {
-                throw new NotSupportedException("Precription pool at position (parameters: " + coordinate.ParameterIndex + ", financial: " + coordinate.FinancialIndex + ", first thin: " + coordinate.FirstThinPeriodIndex + ", second thin: " + coordinate.SecondThinPeriodIndex + ", third thin: " + coordinate.ThirdThinPeriodIndex + ", rotation: " + coordinate.RotationIndex + ") is missing a high trajectory.");
-            }
-
-            return highTrajectory;
+            Debug.Assert(silviculturalSpace != null);
+            SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[evaluatedCoordinateIndex];
+            linePrefix = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
+            return silviculturalSpace.GetHighTrajectory(coordinate);
         }
 
-        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(int evaluatedCoordinateIndex, out string linePrefix)
+        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(SilviculturalSpace silviculturalSpace, int evaluatedCoordinateIndex, out string linePrefix, out int endOfRotationPeriodIndex, out int financialIndex)
         {
-            Debug.Assert(this.Trajectories != null);
-            SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
-            linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
-            return this.GetHighTrajectory(coordinate);
-        }
-
-        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(int evaluatedCoordinateIndex, out string linePrefix, out int endOfRotationPeriodIndex, out int financialIndex)
-        {
-            Debug.Assert(this.Trajectories != null);
-            SilviculturalCoordinate coordinate = this.Trajectories.CoordinatesEvaluated[evaluatedCoordinateIndex];
-            linePrefix = this.GetCsvPrefixForCoordinate(coordinate);
+            SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[evaluatedCoordinateIndex];
+            linePrefix = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
             endOfRotationPeriodIndex = coordinate.RotationIndex;
             financialIndex = coordinate.FinancialIndex;
-            return this.GetHighTrajectory(coordinate);
+            return silviculturalSpace.GetHighTrajectory(coordinate);
         }
 
-        protected int GetMaxCoordinateIndex()
+        protected static int GetMaxCoordinateIndex(SilviculturalSpace silviculturalSpace)
         {
-            Debug.Assert(this.Trajectories != null);
-            return this.Trajectories.CoordinatesEvaluated.Count;
+            Debug.Assert(silviculturalSpace != null);
+            return silviculturalSpace.CoordinatesEvaluated.Count;
         }
 
         [MemberNotNull(nameof(WriteSilviculturalTrajectoriesCmdlet.Trajectories))]
         protected void ValidateParameters()
         {
-            if (this.Trajectories == null)
+            Debug.Assert((this.Trajectories != null) && (this.Trajectories.Count > 0));
+
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Trajectories));
-            }
-            if (this.Trajectories.CoordinatesEvaluated.Count < 1)
-            {
-                throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " is empty. At least one run must be present.");
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                if (silviculturalSpace.CoordinatesEvaluated.Count < 1)
+                {
+                    throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " contains an empty set of stand trajectories. At least one run must be present in each set of results.");
+                }
             }
         }
     }

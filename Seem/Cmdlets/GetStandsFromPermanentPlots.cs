@@ -191,7 +191,7 @@ namespace Mars.Seem.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.Financial));
             }
 
-            MeasuredStandTrajectory trajectory = new(initialStand, TreeVolume.Default, ages);
+            MeasuredStandTrajectory trajectory = new(initialStand, TreeScaling.Default, ages);
             for (int ageIndex = 1; ageIndex < ages.Count; ++ageIndex)
             {
                 Stand stand = this.CreateStand(plot, configuration, ages[ageIndex]);

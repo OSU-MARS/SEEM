@@ -45,9 +45,6 @@ namespace Mars.Seem.Silviculture
             // TODO: merchantable fraction of actual log length instead of assuming all logs are of preferred length
             foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in trajectory.ForwardedVolumeBySpecies.Values)
             {
-                TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[harvestVolumeForSpecies.Species];
-                float forwarderMaximumMerchantableM3 = forwarderPayloadInKg / (treeSpeciesProperties.StemDensityAfterHarvester * (1.0F + treeSpeciesProperties.BarkFractionAfterHarvester)); // * merchantableFractionOfLogLength; // merchantable m³ = kg / kg/m³ * 1 / merchantable m³/m³ [* merchantable m/m = 1 in BC Firmwood]
-
                 float cubic4Saw = harvestVolumeForSpecies.Cubic4Saw[harvestPeriod];
                 float logs4Saw = harvestVolumeForSpecies.Logs4Saw[harvestPeriod];
                 float cubic3Saw = harvestVolumeForSpecies.Cubic3Saw[harvestPeriod];
@@ -55,43 +52,48 @@ namespace Mars.Seem.Silviculture
                 float cubic2Saw = harvestVolumeForSpecies.Cubic2Saw[harvestPeriod];
                 float logs2Saw = harvestVolumeForSpecies.Logs2Saw[harvestPeriod];
                 float speciesMerchM3PerHa = cubic2Saw + cubic3Saw + cubic4Saw; // m³/ha
+                
                 int sortsPresent = (cubic2Saw > 0.0F ? 1 : 0) + (cubic3Saw > 0.0F ? 1 : 0) + (cubic4Saw > 0.0F ? 1 : 0);
-
-                if (sortsPresent > 0)
+                if (sortsPresent == 0)
                 {
-                    // logs are forwarded for at least one sort; find default productivity
-                    ForwarderTurn turnAllSortsCombined = Forwarder.GetForwarderTurn(stand, harvestSystems, speciesMerchM3PerHa, logs2Saw + logs3Saw + logs4Saw, forwarderMaximumMerchantableM3, sortsPresent);
-                    this.ForwarderProductivity = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnAllSortsCombined.Time; // m³/PMh₀
-                    this.LoadingMethod = ForwarderLoadingMethod.AllSortsCombined;
+                    continue; // no harvest of species, so no forwarding of species
+                }
 
-                    if (sortsPresent > 1)
+                TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[harvestVolumeForSpecies.Species];
+                float forwarderMaximumMerchantableM3 = forwarderPayloadInKg / (treeSpeciesProperties.StemDensityAfterHarvester * (1.0F + treeSpeciesProperties.BarkFractionAfterHarvester)); // * merchantableFractionOfLogLength; // merchantable m³ = kg / kg/m³ * 1 / merchantable m³/m³ [* merchantable m/m = 1 in BC Firmwood]
+
+                // logs are forwarded for at least one sort; find default productivity
+                ForwarderTurn turnAllSortsCombined = Forwarder.GetForwarderTurn(stand, harvestSystems, speciesMerchM3PerHa, logs2Saw + logs3Saw + logs4Saw, forwarderMaximumMerchantableM3, sortsPresent);
+                this.ForwarderProductivity = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnAllSortsCombined.Time; // m³/PMh₀
+                this.LoadingMethod = ForwarderLoadingMethod.AllSortsCombined;
+
+                if (sortsPresent > 1)
+                {
+                    // if multiple sorts are present they can be forwarded separately rather than jointly
+                    // Four possible combinations: 2S+3S, 2S+4S, 3S+4S, 2S+3S+4S, typically all three or 2S+4S. Turn times are calculated
+                    // for each sort and then added to find the total forwarding time per corridor as this approach is robust against sorts
+                    // with low volumes. Calculating a volume weighted mean of productivities is not appropriate here as the forwarder must
+                    // presumably still travel the full length of the corridor to pick up all logs in low volume sorts.
+                    ForwarderTurn turn2S = Forwarder.GetForwarderTurn(stand, harvestSystems, cubic2Saw, logs2Saw, forwarderMaximumMerchantableM3, 1);
+                    ForwarderTurn turn3S = Forwarder.GetForwarderTurn(stand, harvestSystems, cubic3Saw, logs3Saw, forwarderMaximumMerchantableM3, 1);
+                    ForwarderTurn turn4S = Forwarder.GetForwarderTurn(stand, harvestSystems, cubic4Saw, logs4Saw, forwarderMaximumMerchantableM3, 1);
+                    float turnTimeAllSortsSeparate = turn2S.Time + turn3S.Time + turn4S.Time;
+                    if (turnTimeAllSortsSeparate < turnAllSortsCombined.Time)
                     {
-                        // if multiple sorts are present they can be forwarded separately rather than jointly
-                        // Four possible combinations: 2S+3S, 2S+4S, 3S+4S, 2S+3S+4S, typically all three or 2S+4S. Turn times are calculated
-                        // for each sort and then added to find the total forwarding time per corridor as this approach is robust against sorts
-                        // with low volumes. Calculating a volume weighted mean of productivities is not appropriate here as the forwarder must
-                        // presumably still travel the full length of the corridor to pick up all logs in low volume sorts.
-                        ForwarderTurn turn2S = Forwarder.GetForwarderTurn(stand, harvestSystems, cubic2Saw, logs2Saw, forwarderMaximumMerchantableM3, 1);
-                        ForwarderTurn turn3S = Forwarder.GetForwarderTurn(stand, harvestSystems, cubic3Saw, logs3Saw, forwarderMaximumMerchantableM3, 1);
-                        ForwarderTurn turn4S = Forwarder.GetForwarderTurn(stand, harvestSystems, cubic4Saw, logs4Saw, forwarderMaximumMerchantableM3, 1);
-                        float turnTimeAllSortsSeparate = turn2S.Time + turn3S.Time + turn4S.Time;
-                        if (turnTimeAllSortsSeparate < turnAllSortsCombined.Time)
-                        {
-                            this.ForwarderProductivity = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnTimeAllSortsSeparate;
-                            this.LoadingMethod = ForwarderLoadingMethod.AllSortsSeparate;
-                        }
+                        this.ForwarderProductivity = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnTimeAllSortsSeparate;
+                        this.LoadingMethod = ForwarderLoadingMethod.AllSortsSeparate;
+                    }
 
-                        if (sortsPresent == 3)
+                    if (sortsPresent == 3)
+                    {
+                        // combining 2S and 4S and loading them separately from 3S is only meaningful if all three sorts exist
+                        // This is an intermediate complexity option and is.
+                        ForwarderTurn turn2S4S = Forwarder.GetForwarderTurn(stand, harvestSystems, cubic2Saw + cubic4Saw, logs2Saw + logs4Saw, forwarderMaximumMerchantableM3, 2);
+                        float turnTime2S4SCombined = turn2S4S.Time + turn3S.Time;
+                        if ((turnTime2S4SCombined < turnAllSortsCombined.Time) && (turnTime2S4SCombined < turnTimeAllSortsSeparate))
                         {
-                            // combining 2S and 4S and loading them separately from 3S is only meaningful if all three sorts exist
-                            // This is an intermediate complexity option and is.
-                            ForwarderTurn turn2S4S = Forwarder.GetForwarderTurn(stand, harvestSystems, cubic2Saw + cubic4Saw, logs2Saw + logs4Saw, forwarderMaximumMerchantableM3, 2);
-                            float turnTime2S4SCombined = turn2S4S.Time + turn3S.Time;
-                            if ((turnTime2S4SCombined < turnAllSortsCombined.Time) && (turnTime2S4SCombined < turnTimeAllSortsSeparate))
-                            {
-                                this.ForwarderProductivity = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnTime2S4SCombined;
-                                this.LoadingMethod = ForwarderLoadingMethod.TwoFourSCombined;
-                            }
+                            this.ForwarderProductivity = Constant.MinutesPerHour * turnAllSortsCombined.Volume / turnTime2S4SCombined;
+                            this.LoadingMethod = ForwarderLoadingMethod.TwoFourSCombined;
                         }
                     }
                 }

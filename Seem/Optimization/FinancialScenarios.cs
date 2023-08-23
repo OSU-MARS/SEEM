@@ -84,9 +84,9 @@ namespace Mars.Seem.Optimization
             this.DouglasFir3SawPondValuePerMbf = new List<float>() { 635.00F }; // US$/MBF 3S
             this.DouglasFir4SawPondValuePerMbf = new List<float>() { 552.00F }; // US$/MBF 4S/CNS
             this.HarvestSystems = new List<HarvestSystems>() { Silviculture.HarvestSystems.Default };
-            this.HarvestTaxPerMbf = new List<float>() { Constant.Financial.OregonForestProductsHarvestTax };
+            this.HarvestTaxPerMbf = new List<float>() { Constant.HarvestCost.OregonForestProductsHarvestTax };
             this.Name = new List<string>() { "default" };
-            this.PropertyTaxAndManagementPerHectareYear = new List<float>() { Constant.HarvestCost.PropertyTaxRate * Constant.HarvestCost.AssessedValue + Constant.HarvestCost.AdmininistrationCost }; // US$/ha-year
+            this.PropertyTaxAndManagementPerHectareYear = new List<float>() { Constant.HarvestCost.ForestlandPropertyTaxRate * Constant.HarvestCost.AssessedValue + Constant.HarvestCost.AdmininistrationCost }; // US$/ha-year
             this.RedAlder2SawPondValuePerMbf = new List<float>() { 721 }; // US$/MBF 2S
             this.RedAlder3SawPondValuePerMbf = new List<float>() { 680 }; // US$/MBF 3S
             this.RedAlder4SawPondValuePerMbf = new List<float>() { 420 }; // US$/MBF 4S
@@ -198,8 +198,8 @@ namespace Mars.Seem.Optimization
             float reforestationNpv = replantingCost * amortizationFactor;
 
             // 26 USC § 194(c)(3) defines reforestation expenses as site prep and planting, release sprays are therefore excluded
-            float releaseSprayCost = this.ReleaseSprayCostPerHectare[financialIndex] * annualDiscountFactor * annualDiscountFactor;
-            // releaseSprayCost = this.ReleaseSprayCostPerHectare; // disable discounting
+            float releaseSprayCost = this.ReleaseSprayCostPerHectare[financialIndex] * annualDiscountFactor * annualDiscountFactor; // release spray at two years, so discount factor squared
+            // releaseSprayCost = this.ReleaseSprayCostPerHectare[financialIndex]; // disable discounting
             reforestationNpv -= releaseSprayCost;
 
             Debug.Assert((reforestationNpv > -1000.0F) && (reforestationNpv < 0.0F));
@@ -251,11 +251,21 @@ namespace Mars.Seem.Optimization
             HarvestFinancialValue regenFinancialValue = this.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, endOfRotationPeriod);
             netPresentValue += regenFinancialValue.NetPresentValuePerHa;
 
+            // standard annuity formula for present value of finite series of annual payments a: NPV = a (1 - (1 + r)^-n) / r, r ≠ 0
+            // for r = 0, NPV = na (https://math.stackexchange.com/questions/3159219/limit-of-geometric-series-sum-when-r-1)
             int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
             float discountRate = this.DiscountRate[financialIndex];
-            float discountFactor = this.GetDiscountFactor(financialIndex, rotationLengthInYears);
-            float propertyTaxesAndManagement = this.PropertyTaxAndManagementPerHectareYear[financialIndex] * (1.0F - discountFactor) / discountRate;
-            netPresentValue -= propertyTaxesAndManagement; // present value of finite series of annual payments = (1 - (1 + r)^-n) / r
+            float propertyTaxesAndManagement = this.PropertyTaxAndManagementPerHectareYear[financialIndex];
+            if (discountRate > 0.0F)
+            {
+                float discountFactor = this.GetDiscountFactor(financialIndex, rotationLengthInYears);
+                propertyTaxesAndManagement *= (1.0F - discountFactor) / discountRate;
+            }
+            else
+            {
+                propertyTaxesAndManagement *= rotationLengthInYears;
+            }
+            netPresentValue -= propertyTaxesAndManagement; 
 
             Debug.Assert((netPresentValue > -10.0F * 1000.0F) && (netPresentValue < 1000.0F * 1000.0F));
             return netPresentValue;

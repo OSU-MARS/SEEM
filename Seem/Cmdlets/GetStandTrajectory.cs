@@ -68,7 +68,7 @@ namespace Mars.Seem.Cmdlets
             this.FirstThinPeriod = Constant.NoHarvestPeriod; // no stand entry
             this.Name = null;
             this.RotationLengths = new() { 15 }; // 75 years of simulation with Organon's 5 year timestep
-            this.TreeVolume = TreeVolume.Default;
+            this.TreeVolume = TreeScaling.Default;
         }
 
         [SupportedOSPlatform("windows")]

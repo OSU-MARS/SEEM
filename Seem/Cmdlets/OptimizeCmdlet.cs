@@ -32,7 +32,7 @@ namespace Mars.Seem.Cmdlets
         [Parameter]
         [ValidateNotNullOrEmpty]
         [ValidateRange(Constant.NoHarvestPeriod, 100)]
-        public List<int> FirstThinPeriod { get; set; }
+        public List<int> FirstThinAge { get; set; }
 
         [Parameter]
         [ValidateNotNullOrEmpty]
@@ -47,12 +47,12 @@ namespace Mars.Seem.Cmdlets
 
         [Parameter]
         [ValidateNotNullOrEmpty]
-        [ValidateRange(0, 100)]
-        public List<int> RotationLengths { get; set; }
+        [ValidateRange(0, 200)]
+        public List<int> RotationAge { get; set; }
         [Parameter]
         [ValidateNotNullOrEmpty]
         [ValidateRange(Constant.NoHarvestPeriod, 100)]
-        public List<int> SecondThinPeriod { get; set; }
+        public List<int> SecondThinAge { get; set; }
 
         [Parameter]
         [ValidateRange(1, 100)]
@@ -65,7 +65,7 @@ namespace Mars.Seem.Cmdlets
         [Parameter]
         [ValidateNotNullOrEmpty]
         [ValidateRange(Constant.NoHarvestPeriod, 100)]
-        public List<int> ThirdThinPeriod { get; set; }
+        public List<int> ThirdThinAge { get; set; }
 
         [Parameter]
         [ValidateRange(1, 100)]
@@ -82,15 +82,15 @@ namespace Mars.Seem.Cmdlets
             this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
 
             this.Financial = FinancialScenarios.Default;
-            this.FirstThinPeriod = new() { Constant.Default.ThinningPeriod };
+            this.FirstThinAge = new() { Constant.Default.ThinningPeriod };
             this.ConstructionGreediness = new() { Constant.Grasp.DefaultMinimumConstructionGreedinessForMaximization };
             this.LogImprovingOnly = false;
             this.InitialThinningProbability = new() { Constant.HeuristicDefault.InitialThinningProbability };
             this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
-            this.RotationLengths = new() { Constant.Default.RotationLengths };
-            this.SecondThinPeriod = new() { Constant.NoHarvestPeriod };
+            this.RotationAge = new() { Constant.Default.RotationLengths };
+            this.SecondThinAge = new() { Constant.NoHarvestPeriod };
             this.SolutionPoolSize = Constant.Default.SolutionPoolSize;
-            this.ThirdThinPeriod = new() { Constant.NoHarvestPeriod };
+            this.ThirdThinAge = new() { Constant.NoHarvestPeriod };
             this.TimberObjective = TimberObjective.LandExpectationValue;
             this.TreeModel = TreeModel.OrganonNwo;
         }
@@ -100,33 +100,60 @@ namespace Mars.Seem.Cmdlets
             get { return false; }
         }
 
+        private IList<int> ConvertAgesToSimulationPeriods(IList<int> agesInYears, float timestepInYears, bool thinningAges)
+        {
+            Debug.Assert(this.Stand != null);
+
+            float initialStandAge = this.Stand.AgeInYears;
+            int minimumValidPeriod = thinningAges ? 1 : 0;  // can't thin at period 0 as no previous stand information is available for yield
+            IList<int> periods = new List<int>(agesInYears.Count);
+
+            for (int thinIndex = 0; thinIndex < agesInYears.Count; ++thinIndex)
+            {
+                int ageInYears = agesInYears[thinIndex];
+                if (ageInYears == Constant.NoHarvestPeriod)
+                {
+                    periods.Add(Constant.NoHarvestPeriod);
+                    continue;
+                }
+
+                int simulationPeriod = (int)MathF.Round((ageInYears - initialStandAge) / timestepInYears);
+                if (simulationPeriod >= minimumValidPeriod)
+                {
+                    periods.Add(simulationPeriod);
+                }
+            }
+
+            return periods;
+        }
+
         protected abstract Heuristic<TParameters> CreateHeuristic(TParameters heuristicParameters, RunParameters runParameters);
 
-        private RunParameters CreateRunParameters(SilviculturalCoordinate coordinate, OrganonConfiguration organonConfiguration)
+        private RunParameters CreateRunParameters(SilviculturalSpace silviculturalSpace, SilviculturalCoordinate coordinate, OrganonConfiguration organonConfiguration)
         {
-            RunParameters runParameters = new(this.RotationLengths, organonConfiguration)
+            RunParameters runParameters = new(silviculturalSpace.RotationLengths, organonConfiguration)
             {
                 Financial = this.Financial,
                 LogOnlyImprovingMoves = this.LogImprovingOnly,
-                MaximizeForPlanningPeriod = this.HeuristicEvaluatesAcrossRotationsAndScenarios ? Constant.MaximizeForAllPlanningPeriods : this.RotationLengths[coordinate.RotationIndex],
+                MaximizeForPlanningPeriod = this.HeuristicEvaluatesAcrossRotationsAndScenarios ? Constant.MaximizeForAllPlanningPeriods : silviculturalSpace.RotationLengths[coordinate.RotationIndex],
                 MoveCapacity = this.MoveCapacity,
                 TimberObjective = this.TimberObjective
             };
 
             int lastThinPeriod = Constant.NoHarvestPeriod;
-            if (this.TryCreateFirstThin(coordinate.FirstThinPeriodIndex, out Harvest? firstThin))
+            if (this.TryCreateThin(silviculturalSpace.FirstThinPeriods[coordinate.FirstThinPeriodIndex], out Harvest? firstThin))
             {
-                lastThinPeriod = Math.Max(lastThinPeriod, this.FirstThinPeriod[coordinate.FirstThinPeriodIndex]);
+                lastThinPeriod = Math.Max(lastThinPeriod, silviculturalSpace.FirstThinPeriods[coordinate.FirstThinPeriodIndex]);
                 runParameters.Treatments.Harvests.Add(firstThin);
 
-                if (this.TryCreateSecondThin(coordinate.SecondThinPeriodIndex, out Harvest? secondThin))
+                if (this.TryCreateThin(silviculturalSpace.SecondThinPeriods[coordinate.SecondThinPeriodIndex], out Harvest? secondThin))
                 {
-                    lastThinPeriod = Math.Max(lastThinPeriod, this.SecondThinPeriod[coordinate.SecondThinPeriodIndex]);
+                    lastThinPeriod = Math.Max(lastThinPeriod, silviculturalSpace.SecondThinPeriods[coordinate.SecondThinPeriodIndex]);
                     runParameters.Treatments.Harvests.Add(secondThin);
 
-                    if (this.TryCreateThirdThin(coordinate.ThirdThinPeriodIndex, out Harvest? thirdThin))
+                    if (this.TryCreateThin(silviculturalSpace.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex], out Harvest? thirdThin))
                     {
-                        lastThinPeriod = Math.Max(lastThinPeriod, this.ThirdThinPeriod[coordinate.ThirdThinPeriodIndex]);
+                        lastThinPeriod = Math.Max(lastThinPeriod, silviculturalSpace.SecondThinPeriods[coordinate.ThirdThinPeriodIndex]);
                         runParameters.Treatments.Harvests.Add(thirdThin);
                     }
                 }
@@ -209,37 +236,37 @@ namespace Mars.Seem.Cmdlets
         // ideally this would be virtual but, as of C# 9.0, the nature of C# generics requires GetDefaultParameterCombinations() to be separate
         protected abstract IList<TParameters> GetParameterCombinations();
 
-        private string GetStatusDescription(IList<TParameters> parameterCombinations, SilviculturalCoordinate currentPosition)
+        private string GetStatusDescription(SilviculturalSpace silviculturalSpace, SilviculturalCoordinate currentPosition, int workerThreadsUsed)
         {
             string mostRecentEvaluationDescription = String.Empty;
-            if (parameterCombinations.Count > 1)
+            if (silviculturalSpace.ParameterCombinations > 1)
             {
-                mostRecentEvaluationDescription += ", parameters " + currentPosition.ParameterIndex + "/" + parameterCombinations.Count;
+                mostRecentEvaluationDescription += ", parameters " + currentPosition.ParameterIndex + "/" + silviculturalSpace.ParameterCombinations;
             }
-            if (this.FirstThinPeriod.Count > 1)
+            if (silviculturalSpace.FirstThinPeriods.Count > 1)
             {
-                mostRecentEvaluationDescription += ", thin 1 " + currentPosition.FirstThinPeriodIndex + "/" + this.FirstThinPeriod.Count;
+                mostRecentEvaluationDescription += ", thin 1 " + currentPosition.FirstThinPeriodIndex + "/" + silviculturalSpace.FirstThinPeriods.Count;
             }
-            if (this.SecondThinPeriod.Count > 1)
+            if (silviculturalSpace.SecondThinPeriods.Count > 1)
             {
-                mostRecentEvaluationDescription += ", 2 " + currentPosition.SecondThinPeriodIndex + "/" + this.SecondThinPeriod.Count;
+                mostRecentEvaluationDescription += ", 2 " + currentPosition.SecondThinPeriodIndex + "/" + silviculturalSpace.SecondThinPeriods.Count;
             }
-            if (this.ThirdThinPeriod.Count > 1)
+            if (silviculturalSpace.ThirdThinPeriods.Count > 1)
             {
-                mostRecentEvaluationDescription += ", 3 " + currentPosition.ThirdThinPeriodIndex + "/" + this.ThirdThinPeriod.Count;
+                mostRecentEvaluationDescription += ", 3 " + currentPosition.ThirdThinPeriodIndex + "/" + silviculturalSpace.ThirdThinPeriods.Count;
             }
             if (this.HeuristicEvaluatesAcrossRotationsAndScenarios == false)
             {
-                if (this.RotationLengths.Count > 1)
+                if (silviculturalSpace.RotationLengths.Count > 1)
                 {
-                    mostRecentEvaluationDescription += ", rotation " + currentPosition.RotationIndex + "/" + this.RotationLengths.Count;
+                    mostRecentEvaluationDescription += ", rotation " + currentPosition.RotationIndex + "/" + silviculturalSpace.RotationLengths.Count;
                 }
                 if (this.Financial.Count > 1)
                 {
                     mostRecentEvaluationDescription += ", scenario " + currentPosition.FinancialIndex + "/" + this.Financial.Count;
                 }
             }
-            mostRecentEvaluationDescription += " (" + this.Threads + " threads)";
+            mostRecentEvaluationDescription += " (" + workerThreadsUsed + " threads)";
             return mostRecentEvaluationDescription;
         }
 
@@ -253,9 +280,9 @@ namespace Mars.Seem.Cmdlets
             {
                 throw new ParameterOutOfRangeException(nameof(this.Financial));
             }
-            if (this.FirstThinPeriod.Count < 1)
+            if (this.FirstThinAge.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.FirstThinPeriod));
+                throw new ParameterOutOfRangeException(nameof(this.FirstThinAge));
             }
             if (this.InitialThinningProbability.Count < 1)
             {
@@ -265,50 +292,54 @@ namespace Mars.Seem.Cmdlets
             {
                 throw new ParameterOutOfRangeException(nameof(this.MoveCapacity));
             }
-            if (this.RotationLengths.Count < 1)
+            if (this.RotationAge.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.RotationLengths));
+                throw new ParameterOutOfRangeException(nameof(this.RotationAge));
             }
-            if (this.SecondThinPeriod.Count < 1)
+            if (this.SecondThinAge.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod));
+                throw new ParameterOutOfRangeException(nameof(this.SecondThinAge));
             }
-            if (this.ThirdThinPeriod.Count < 1)
+            if (this.ThirdThinAge.Count < 1)
             {
-                throw new ParameterOutOfRangeException(nameof(this.ThirdThinPeriod));
+                throw new ParameterOutOfRangeException(nameof(this.ThirdThinAge));
             }
             if ((this.TimberObjective == TimberObjective.ScribnerVolume) && (this.Financial.Count > 1) && (this.HeuristicEvaluatesAcrossRotationsAndScenarios == false))
             {
-                // low priority to improve this but at least warn about limited support
-                this.WriteWarning("Timber optimization objective is " + this.TimberObjective + " but multiple discount rates are specified. Optimization will be unnecessarily repeated for each discount rate.");
+                // low priority to improve this by checking for varying discount rates but at least warn about limited support
+                this.WriteWarning("Timber optimization objective is " + this.TimberObjective + " but multiple discount rates may be specified in different financial scenarios. If so, optimization will be unnecessarily repeated for each discount rate.");
             }
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
+
+            OrganonConfiguration organonConfiguration = new(OrganonVariant.Create(this.TreeModel));
             PrescriptionPerformanceCounters totalPerfCounters = new();
             int totalRuntimeCost = 0;
+
+            float timestepInYears = (float)organonConfiguration.Variant.TimeStepInYears;
+            IList<int> firstThinPeriods = this.ConvertAgesToSimulationPeriods(this.FirstThinAge, timestepInYears, thinningAges: true);
+            IList<int> secondThinPeriods = this.ConvertAgesToSimulationPeriods(this.SecondThinAge, timestepInYears, thinningAges: true);
+            IList<int> thirdThinPeriods = this.ConvertAgesToSimulationPeriods(this.ThirdThinAge, timestepInYears, thinningAges: true);
+            IList<int> rotationLengthsInPeriods = this.ConvertAgesToSimulationPeriods(this.RotationAge, timestepInYears, thinningAges: false);
 
             int treeCount = this.Stand!.GetTreeRecordCount();
             List<SilviculturalCoordinate> combinationsToEvaluate = new();
             IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
-            HeuristicStandTrajectories<TParameters> results = new(parameterCombinationsForHeuristic, this.FirstThinPeriod, this.SecondThinPeriod, this.ThirdThinPeriod, this.RotationLengths, this.Financial, this.SolutionPoolSize);
+            HeuristicStandTrajectories<TParameters> results = new(parameterCombinationsForHeuristic, firstThinPeriods, secondThinPeriods, thirdThinPeriods, rotationLengthsInPeriods, this.Financial, this.SolutionPoolSize);
+            
             for (int parameterIndex = 0; parameterIndex < parameterCombinationsForHeuristic.Count; ++parameterIndex)
             {
-                for (int firstThinIndex = 0; firstThinIndex < this.FirstThinPeriod.Count; ++firstThinIndex)
+                for (int firstThinIndex = 0; firstThinIndex < firstThinPeriods.Count; ++firstThinIndex)
                 {
-                    int firstThinPeriod = this.FirstThinPeriod[firstThinIndex];
-                    if (firstThinPeriod == 0)
-                    {
-                        throw new ParameterOutOfRangeException(nameof(this.FirstThinPeriod), "First thinning period cannot be zero.");
-                    }
+                    int firstThinPeriod = firstThinPeriods[firstThinIndex];
+                    Debug.Assert(firstThinPeriod != 0, "First thinning period cannot be zero.");
 
-                    for (int secondThinIndex = 0; secondThinIndex < this.SecondThinPeriod.Count; ++secondThinIndex)
+                    for (int secondThinIndex = 0; secondThinIndex < secondThinPeriods.Count; ++secondThinIndex)
                     {
-                        int secondThinPeriod = this.SecondThinPeriod[secondThinIndex];
-                        if (secondThinPeriod == 0)
-                        {
-                            throw new ParameterOutOfRangeException(nameof(this.SecondThinPeriod), "Second thinning period cannot be zero.");
-                        }
+                        int secondThinPeriod = secondThinPeriods[secondThinIndex];
+                        Debug.Assert(secondThinPeriod != 0, "First thinning period cannot be zero.");
+
                         if (secondThinPeriod != Constant.NoHarvestPeriod)
                         {
                             if ((firstThinPeriod == Constant.NoHarvestPeriod) || (firstThinPeriod >= secondThinPeriod))
@@ -322,13 +353,11 @@ namespace Mars.Seem.Cmdlets
                         }
 
                         int lastOfFirstOrSecondThinPeriod = Math.Max(firstThinPeriod, secondThinPeriod);
-                        for (int thirdThinIndex = 0; thirdThinIndex < this.ThirdThinPeriod.Count; ++thirdThinIndex)
+                        for (int thirdThinIndex = 0; thirdThinIndex < thirdThinPeriods.Count; ++thirdThinIndex)
                         {
-                            int thirdThinPeriod = this.ThirdThinPeriod[thirdThinIndex];
-                            if (thirdThinPeriod == 0)
-                            {
-                                throw new ParameterOutOfRangeException(nameof(this.ThirdThinPeriod), "Third thinning period cannot be zero.");
-                            }
+                            int thirdThinPeriod = thirdThinPeriods[thirdThinIndex];
+                            Debug.Assert(thirdThinPeriod != 0, "First thinning period cannot be zero.");
+
                             if (thirdThinPeriod != Constant.NoHarvestPeriod)
                             {
                                 if ((secondThinPeriod == Constant.NoHarvestPeriod) || (secondThinPeriod >= thirdThinPeriod))
@@ -358,9 +387,9 @@ namespace Mars.Seem.Cmdlets
                             else
                             {
                                 int lastOfFirstSecondOrThirdThinPeriod = Math.Max(lastOfFirstOrSecondThinPeriod, thirdThinPeriod);
-                                for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
+                                for (int rotationIndex = 0; rotationIndex < rotationLengthsInPeriods.Count; ++rotationIndex)
                                 {
-                                    int planningPeriods = this.RotationLengths[rotationIndex];
+                                    int planningPeriods = rotationLengthsInPeriods[rotationIndex];
                                     if (lastOfFirstSecondOrThirdThinPeriod >= planningPeriods)
                                     {
                                         // last thin would occur before or in the same period as the final harvest
@@ -391,15 +420,15 @@ namespace Mars.Seem.Cmdlets
                 }
             }
 
-            OrganonConfiguration organonConfiguration = new(OrganonVariant.Create(this.TreeModel));
             int runsCompleted = 0;
             int runsStarted = -1; // step through combinationsToEvaluate sequentially
             int runtimeCostCompleted = 0;
             int totalRuns = this.BestOf * combinationsToEvaluate.Count;
+            int usableWorkerThreads = Int32.Min(totalRuns, this.Threads);
             totalRuntimeCost *= this.BestOf;
             Task runs = Task.Run(() =>
             {
-                Task[] workers = new Task[this.Threads];
+                Task[] workers = new Task[usableWorkerThreads];
                 for (int workerThread = 0; workerThread < workers.Length; ++workerThread)
                 {
                     workers[workerThread] = Task.Run(() =>
@@ -416,7 +445,7 @@ namespace Mars.Seem.Cmdlets
                             try
                             {
                                 TParameters heuristicParameters = parameterCombinationsForHeuristic[coordinate.ParameterIndex];
-                                RunParameters runParameters = this.CreateRunParameters(coordinate, organonConfiguration);
+                                RunParameters runParameters = this.CreateRunParameters(results, coordinate, organonConfiguration);
                                 Heuristic<TParameters> currentHeuristic = this.CreateHeuristic(heuristicParameters, runParameters);
                                 PrescriptionPerformanceCounters perfCounters = currentHeuristic.Run(coordinate, results);
 
@@ -430,9 +459,9 @@ namespace Mars.Seem.Cmdlets
                                         // scatter heuristic's results to rotation lengths and discount rates
                                         PrescriptionPerformanceCounters perfCountersToAssmilate = perfCounters;
                                         bool perfCountersLogged = false;
-                                        for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
+                                        for (int rotationIndex = 0; rotationIndex < rotationLengthsInPeriods.Count; ++rotationIndex)
                                         {
-                                            int endOfRotationPeriod = this.RotationLengths[rotationIndex];
+                                            int endOfRotationPeriod = rotationLengthsInPeriods[rotationIndex];
                                             if (endOfRotationPeriod <= runParameters.LastThinPeriod)
                                             {
                                                 continue; // not a valid position because end of rotation would occur before or in the same period as the last thin
@@ -441,19 +470,19 @@ namespace Mars.Seem.Cmdlets
                                             for (int financialIndex = 0; financialIndex < this.Financial.Count; ++financialIndex)
                                             {
                                                 // must be new each time to uniquely populate results.CombinationsEvaluated through AddEvaluatedPosition()
-                                                SilviculturalCoordinate evaluatedPosition = new(coordinate)
+                                                SilviculturalCoordinate evaluatedCoordinate = new(coordinate)
                                                 {
                                                     FinancialIndex = financialIndex,
                                                     RotationIndex = rotationIndex
                                                 };
 
-                                                results.AssimilateIntoCoordinate(currentHeuristic, evaluatedPosition, perfCountersToAssmilate);
+                                                results.AssimilateIntoCoordinate(currentHeuristic, evaluatedCoordinate, perfCountersToAssmilate);
                                                 if (runWithinCombination == this.BestOf - 1)
                                                 {
                                                     // last run in combination adds the evaluated positions to CombinationsEvaluated
                                                     // The evaluated position is added because it is specific to a particular rotation and
                                                     // financial scenario. In this case the heuristic position spans rotations and scenarios.
-                                                    results.AddEvaluatedPosition(evaluatedPosition);
+                                                    results.AddEvaluatedPosition(evaluatedCoordinate);
                                                 }
 
                                                 if (perfCountersLogged == false)
@@ -508,24 +537,28 @@ namespace Mars.Seem.Cmdlets
             string cmdletName = this.GetName();
             bool progressWritten = false;
             int sleepsSinceLastStatusUpdate = 0;
+            // check work status frequently at first in case tasks run very quickly
+            // Quick checking makes single threaded PowerShell loops requesting many short optimizations (e.g. coarse thinning prescription enumerations)
+            // run much more quickly.
+            TimeSpan sleepTime = TimeSpan.FromSeconds(0.1);
             while (runs.IsCompleted == false)
             {
-                Thread.Sleep(TimeSpan.FromSeconds(1.0));
-                ++sleepsSinceLastStatusUpdate;
-
+                Thread.Sleep(sleepTime);
                 if (runs.IsFaulted)
                 {
                     Debug.Assert(runs.Exception != null && runs.Exception.InnerException != null);
                     // per https://stackoverflow.com/questions/20170527/how-to-correctly-rethrow-an-exception-of-task-already-in-faulted-state
                     ExceptionDispatchInfo.Capture(runs.Exception.InnerException).Throw();
                 }
+
+                ++sleepsSinceLastStatusUpdate;
                 if (sleepsSinceLastStatusUpdate > 30)
                 {
                     int currentRun = Math.Min(runsCompleted + 1, totalRuns);
                     int currentPositionIndex = Math.Min(currentRun / this.BestOf, combinationsToEvaluate.Count - 1);
                     SilviculturalCoordinate mostRecentCombination = combinationsToEvaluate[currentPositionIndex];
 
-                    string mostRecentEvaluationDescription = "run " + currentRun + "/" + totalRuns + this.GetStatusDescription(parameterCombinationsForHeuristic, mostRecentCombination);
+                    string mostRecentEvaluationDescription = "run " + currentRun + "/" + totalRuns + this.GetStatusDescription(results, mostRecentCombination, usableWorkerThreads);
                     double fractionComplete = (double)runtimeCostCompleted / (double)totalRuntimeCost;
                     double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
                     double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
@@ -537,6 +570,8 @@ namespace Mars.Seem.Cmdlets
 
                     progressWritten = true;
                     sleepsSinceLastStatusUpdate = 0;
+                    // assume longer running tasks and, after first status, move to less less frequent checking and updates
+                    sleepTime = TimeSpan.FromSeconds(1.0);
                 }
             }
             runs.GetAwaiter().GetResult(); // propagate any exceptions since last IsFaulted check
@@ -546,7 +581,7 @@ namespace Mars.Seem.Cmdlets
             if (progressWritten)
             {
                 // write progress complete
-                string mostRecentEvaluationDescription = totalRuns + " runs " + this.GetStatusDescription(parameterCombinationsForHeuristic, combinationsToEvaluate[^1]);
+                string mostRecentEvaluationDescription = totalRuns + " runs " + this.GetStatusDescription(results, combinationsToEvaluate[^1], usableWorkerThreads);
                 this.WriteProgress(new ProgressRecord(0, cmdletName, mostRecentEvaluationDescription)
                 {
                     PercentComplete = 100,
@@ -603,21 +638,6 @@ namespace Mars.Seem.Cmdlets
             double movesPerSecondMultiplier = movesPerSecond > 1E3 ? 1E-3 : 1.0;
             string movesPerSecondScale = movesPerSecond > 1E3 ? "k" : String.Empty;
             this.WriteVerbose("{0} moves in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4} moves/core-s).", totalMoves, totalSeconds, elapsedTime.TotalSeconds, movesPerSecondMultiplier * movesPerSecond, movesPerSecondScale);
-        }
-
-        private bool TryCreateFirstThin(int firstThinPeriodIndex, [NotNullWhen(true)] out Harvest? firstThin)
-        {
-            return this.TryCreateThin(this.FirstThinPeriod[firstThinPeriodIndex], out firstThin);
-        }
-
-        private bool TryCreateSecondThin(int secondThinPeriodIndex, [NotNullWhen(true)] out Harvest? secondThin)
-        {
-            return this.TryCreateThin(this.SecondThinPeriod[secondThinPeriodIndex], out secondThin);
-        }
-
-        private bool TryCreateThirdThin(int thirdThinPeriodIndex, [NotNullWhen(true)] out Harvest? thirdThin)
-        {
-            return this.TryCreateThin(this.ThirdThinPeriod[thirdThinPeriodIndex], out thirdThin);
         }
 
         private bool TryCreateThin(int thinPeriodIndex, [NotNullWhen(true)] out Harvest? thin)

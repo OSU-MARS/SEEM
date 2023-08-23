@@ -414,7 +414,7 @@ namespace Mars.Seem.Test
             //float volumeLowSideTolerance = 0.95F;
             //float volumeHighSideTolerance = 1.25F;
 
-            TreeVolume treeVolume = TreeVolume.Default;
+            TreeScaling treeVolume = TreeScaling.Default;
             foreach (ExpectedTreeVolume tree in trees)
             {
                 float dbhInCentimeters = tree.DbhInCm;

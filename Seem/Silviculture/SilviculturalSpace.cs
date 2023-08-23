@@ -14,12 +14,12 @@ namespace Mars.Seem.Silviculture
         // indices are: parameter combination, first thin, second thin, third thin, rotation length, financial scenario
         // Nullability in multidimensional arrays does not appear supported as of Visual Studio 16.10.1. See remarks in constructor.
         private readonly SilviculturalCoordinateExploration[][][][][][] elements;
-        private readonly int parameterCombinationCount;
 
         public IList<SilviculturalCoordinate> CoordinatesEvaluated { get; private init; }
 
         public FinancialScenarios FinancialScenarios { get; private init; }
         public IList<int> FirstThinPeriods { get; private init; }
+        public int ParameterCombinations { get; private init; }
         public IList<int> RotationLengths { get; private init; }
         public IList<int> SecondThinPeriods { get; private init; }
         public IList<int> ThirdThinPeriods { get; private init; }
@@ -33,11 +33,11 @@ namespace Mars.Seem.Silviculture
         public SilviculturalSpace(int parameterCombinationCount, IList<int> firstThinPeriods, IList<int> secondThinPeriods, IList<int> thirdThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios, int individualPoolSize)
         {
             this.elements = new SilviculturalCoordinateExploration[parameterCombinationCount][][][][][];
-            this.parameterCombinationCount = parameterCombinationCount;
 
             this.CoordinatesEvaluated = new List<SilviculturalCoordinate>();
             this.FinancialScenarios = financialScenarios;
             this.FirstThinPeriods = firstThinPeriods;
+            this.ParameterCombinations = parameterCombinationCount;
             this.RotationLengths = rotationLengths;
             this.SecondThinPeriods = secondThinPeriods;
             this.ThirdThinPeriods = thirdThinPeriods;
@@ -146,7 +146,7 @@ namespace Mars.Seem.Silviculture
         // preferred to adding to PositionsEvaluated directly for argument checking
         public void AddEvaluatedPosition(SilviculturalCoordinate coordinate)
         {
-            if ((coordinate.ParameterIndex < 0) || (coordinate.ParameterIndex >= this.parameterCombinationCount) ||
+            if ((coordinate.ParameterIndex < 0) || (coordinate.ParameterIndex >= this.ParameterCombinations) ||
                 (coordinate.FirstThinPeriodIndex < 0) || (coordinate.FirstThinPeriodIndex >= this.FirstThinPeriods.Count) ||
                 (coordinate.SecondThinPeriodIndex < 0) || (coordinate.SecondThinPeriodIndex >= this.SecondThinPeriods.Count) ||
                 (coordinate.ThirdThinPeriodIndex < 0) || (coordinate.ThirdThinPeriodIndex >= this.ThirdThinPeriods.Count) ||
@@ -176,13 +176,25 @@ namespace Mars.Seem.Silviculture
             Debug.Assert((element.Pool.SolutionsInPool > 0) && (element.Pool.High.Trajectory != null) && (element.Pool.Low.Trajectory != null));
         }
 
+        public StandTrajectory GetHighTrajectory(SilviculturalCoordinate coordinate)
+        {
+            SilviculturalPrescriptionPool prescriptions = this[coordinate].Pool;
+            StandTrajectory? highTrajectory = prescriptions.High.Trajectory;
+            if (highTrajectory == null)
+            {
+                throw new NotSupportedException("Precription pool at position (parameters: " + coordinate.ParameterIndex + ", financial: " + coordinate.FinancialIndex + ", first thin: " + coordinate.FirstThinPeriodIndex + ", second thin: " + coordinate.SecondThinPeriodIndex + ", third thin: " + coordinate.ThirdThinPeriodIndex + ", rotation: " + coordinate.RotationIndex + ") is missing a high trajectory.");
+            }
+
+            return highTrajectory;
+        }
+
         public void GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected)
         {
             solutionsAccepted = 0;
             solutionsCached = 0;
             solutionsRejected = 0;
 
-            for (int parameterIndex = 0; parameterIndex < this.parameterCombinationCount; ++parameterIndex)
+            for (int parameterIndex = 0; parameterIndex < this.ParameterCombinations; ++parameterIndex)
             {
                 SilviculturalCoordinateExploration[][][][][] parameterCombinationElements = this.elements[parameterIndex];
                 for (int firstThinIndex = 0; firstThinIndex < parameterCombinationElements.Length; ++firstThinIndex)

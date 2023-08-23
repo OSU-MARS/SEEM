@@ -1,4 +1,5 @@
-﻿using Mars.Seem.Optimization;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Optimization;
 using Mars.Seem.Tree;
 using System;
 using System.Diagnostics;
@@ -42,7 +43,7 @@ namespace Mars.Seem.Silviculture
             // float merchantableFractionOfLogLength = scaledVolume.PreferredLogLengthInMeters / preferredLogLengthWithTrimInM; // 1 in BC Firmwood
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
-                if (trajectory.TreeVolume.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable) == false)
+                if (trajectory.TreeScaling.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable) == false)
                 {
                     // for now, assume all non-merchantable trees are left in place in stand
                     // TODO: include felling and handling costs for cut and leave
@@ -50,7 +51,7 @@ namespace Mars.Seem.Silviculture
                 }
 
                 IndividualTreeSelection individualTreeSelection = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
-                (float diameterToCentimetersMultiplier, float heightToMetersMultiplier, float hectareExpansionFactorMultiplier) = treesOfSpecies.GetConversionToMetric();
+                (float diameterToCentimetersMultiplier, float heightToMetersMultiplier, float hectareExpansionFactorMultiplier) = UnitsExtensions.GetConversionToMetric(treesOfSpecies.Units);
 
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)

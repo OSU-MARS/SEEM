@@ -51,7 +51,7 @@ namespace Mars.Seem.Tree
             get { return this.isCalculated.Length; }
         }
 
-        public void CalculateMerchantableStandingVolume(Stand stand, int periodIndex, TreeVolume treeVolume)
+        public void CalculateMerchantableStandingVolume(Stand stand, int periodIndex, TreeScaling treeVolume)
         {
             Trees treesOfSpecies = stand.TreesBySpecies[this.Species];
             TreeSpeciesMerchantableVolumeForPeriod standingMerchVolume;
@@ -71,7 +71,7 @@ namespace Mars.Seem.Tree
             }
         }
 
-        public void CalculateMerchantableThinningVolume(Stand previousStand, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, int periodIndex, TreeVolume treeVolume)
+        public void CalculateMerchantableThinningVolume(Stand previousStand, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, int periodIndex, TreeScaling treeVolume)
         {
             Trees previousTreesOfSpecies = previousStand.TreesBySpecies[this.Species];
             IndividualTreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];

@@ -1,4 +1,5 @@
 ﻿using Mars.Seem.Optimization;
+using Mars.Seem.Output;
 using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
@@ -72,9 +73,9 @@ namespace Mars.Seem.Cmdlets
 
         protected override void ProcessRecord()
         {
-            Debug.Assert(this.Trajectories != null);
-            WriteStandTrajectoryContext writeContext = new(this.FinancialScenarios, this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
+            WriteStandTrajectoryContext writeContext = new(this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
             {
+                FinancialScenarios = this.FinancialScenarios,
                 StartYear = this.StartYear
             };
 
@@ -85,7 +86,7 @@ namespace Mars.Seem.Cmdlets
                     this.WriteCsv(writeContext);
                     break;
                 case Constant.FileExtension.Feather:
-                    this.WriteFeather(this.Trajectories, this.FinancialScenarios, writeContext);
+                    this.WriteFeather(writeContext);
                     break;
                 default:
                     throw new NotSupportedException("Unknown file type '" + fileExtension + "' in " + nameof(this.FilePath) + "'" + this.FilePath + "'.");
@@ -96,7 +97,7 @@ namespace Mars.Seem.Cmdlets
         {
             Debug.Assert(this.Trajectories != null);
 
-            using StreamWriter writer = this.GetCsvWriter();
+            using StreamWriter writer = this.CreateCsvWriter();
             if (this.ShouldWriteCsvHeader())
             {
                 string header = WriteCmdlet.GetCsvHeaderForStandTrajectory("stand,financialScenario", writeContext);
@@ -110,12 +111,12 @@ namespace Mars.Seem.Cmdlets
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 StandTrajectory trajectory = this.Trajectories[trajectoryIndex];
-                writeContext.EndOfRotationPeriodIndex = trajectory.PlanningPeriods - 1;
+                int endOfRotationPeriodIndex = trajectory.PlanningPeriods - 1;
                 for (int financialIndex = 0; financialIndex < this.FinancialScenarios.Count; ++financialIndex)
                 {
-                    writeContext.FinancialIndex = financialIndex;
                     string financialScenario = this.FinancialScenarios.Name[financialIndex];
-                    writeContext.LinePrefix = trajectory.Name + "," + financialScenario;
+                    string linePrefix = trajectory.Name + "," + financialScenario;
+                    writeContext.SetSilviculturalCoordinate(linePrefix, financialIndex, endOfRotationPeriodIndex);                    
                     estimatedBytesSinceLastFileLength += WriteCmdlet.WriteStandTrajectoryToCsv(writer, trajectory, writeContext);
                 }
 
@@ -131,6 +132,16 @@ namespace Mars.Seem.Cmdlets
                     break;
                 }
             }
+        }
+
+        private void WriteFeather(WriteStandTrajectoryContext writeContext)
+        {
+            Debug.Assert(this.Trajectories != null);
+
+            int periodsToWrite = writeContext.GetPeriodsToWrite(this.Trajectories);
+            StandTrajectoryArrowMemory arrowMemory = this.CreateStandTrajectoryArrowMemory(periodsToWrite);
+            WriteCmdlet.WriteStandTrajectoriesToRecordBatches(arrowMemory, this.Trajectories, writeContext);
+            this.WriteFeather(arrowMemory);
         }
     }
 }

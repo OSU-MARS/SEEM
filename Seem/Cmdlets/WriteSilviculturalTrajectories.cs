@@ -1,4 +1,6 @@
-﻿using Mars.Seem.Tree;
+﻿using Mars.Seem.Output;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +12,7 @@ namespace Mars.Seem.Cmdlets
     /// <summary>
     /// Same parameters as <see cref="WriteStandTrajectories"/>.
     /// </summary>
-    [Cmdlet(VerbsCommunications.Write, "SilviculuralTrajectories")]
+    [Cmdlet(VerbsCommunications.Write, "SilviculturalTrajectories")]
     public class WriteSilviculturalTrajectories : WriteSilviculturalTrajectoriesCmdlet
     {
         [Parameter]
@@ -63,8 +65,7 @@ namespace Mars.Seem.Cmdlets
         {
             // this.DiameterClassSize and MaximumDiameter are checked by PowerShell
             this.ValidateParameters();
-
-            WriteStandTrajectoryContext writeContext = new(this.Trajectories.FinancialScenarios, this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
+            WriteStandTrajectoryContext writeContext = new(this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
             {
                 StartYear = this.StartYear
             };
@@ -85,8 +86,9 @@ namespace Mars.Seem.Cmdlets
 
         private void WriteCsv(WriteStandTrajectoryContext writeContext)
         {
-            Debug.Assert(this.Trajectories != null);
-            using StreamWriter writer = this.GetCsvWriter();
+            Debug.Assert((this.Trajectories != null) && (this.Trajectories.Count > 0));
+
+            using StreamWriter writer = this.CreateCsvWriter();
             if (this.ShouldWriteCsvHeader())
             {
                 string header = WriteCmdlet.GetCsvHeaderForStandTrajectory(this.GetCsvHeaderForSilviculturalCoordinate(), writeContext);
@@ -94,28 +96,32 @@ namespace Mars.Seem.Cmdlets
             }
 
             // write stand trajectory with highest objective function value at each silvicultural coordinate
-            long estimatedBytesSinceLastFileLength = 0;
-            long knownFileSizeInBytes = 0;
-            long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            int maxCoordinateIndex = this.GetMaxCoordinateIndex();
-            for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix, out int endOfRotationPeriod, out int financialIndex);
-                writeContext.EndOfRotationPeriodIndex = endOfRotationPeriod;
-                writeContext.FinancialIndex = financialIndex;
-                writeContext.LinePrefix = linePrefix;
-                estimatedBytesSinceLastFileLength += WriteCmdlet.WriteStandTrajectoryToCsv(writer, highTrajectory, writeContext);
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
 
-                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                long estimatedBytesSinceLastFileLength = 0;
+                long knownFileSizeInBytes = 0;
+                long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+                int maxCoordinateIndex = WriteSilviculturalTrajectoriesCmdlet.GetMaxCoordinateIndex(silviculturalSpace);
+                for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
-                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
-                    knownFileSizeInBytes = writer.BaseStream.Length;
-                    estimatedBytesSinceLastFileLength = 0;
-                }
-                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
-                {
-                    this.WriteWarning("Write-StandTrajectory: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
-                    break;
+                    StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(silviculturalSpace, coordinateIndex, out string linePrefix, out int endOfRotationPeriod, out int financialIndex);
+                    writeContext.SetSilviculturalCoordinate(linePrefix, financialIndex, endOfRotationPeriod);
+                    estimatedBytesSinceLastFileLength += WriteCmdlet.WriteStandTrajectoryToCsv(writer, highTrajectory, writeContext);
+
+                    if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                    {
+                        // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                        knownFileSizeInBytes = writer.BaseStream.Length;
+                        estimatedBytesSinceLastFileLength = 0;
+                    }
+                    if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
+                    {
+                        this.WriteWarning("Write-StandTrajectory: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        break;
+                    }
                 }
             }
         }
@@ -128,13 +134,24 @@ namespace Mars.Seem.Cmdlets
                 throw new NotSupportedException("Inclusion of heuristic parameter columns when writing feather is not currently supported.  Either write to .csv or omit the -" + nameof(this.HeuristicParameters) + " switch.");
             }
 
-            List<StandTrajectory> standTrajectories = new(this.Trajectories.CoordinatesEvaluated.Count);
-            for (int coordinateIndex = 0; coordinateIndex < this.Trajectories.CoordinatesEvaluated.Count; ++coordinateIndex)
+            int periodsToWrite = writeContext.GetPeriodsToWrite(this.Trajectories);
+            StandTrajectoryArrowMemory arrowMemory = this.CreateStandTrajectoryArrowMemory(periodsToWrite);
+
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                standTrajectories.Add(this.GetHighTrajectory(this.Trajectories.CoordinatesEvaluated[coordinateIndex]));
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
+
+                List<StandTrajectory> standTrajectories = new(silviculturalSpace.CoordinatesEvaluated.Count);
+                for (int coordinateIndex = 0; coordinateIndex < silviculturalSpace.CoordinatesEvaluated.Count; ++coordinateIndex)
+                {
+                    standTrajectories.Add(silviculturalSpace.GetHighTrajectory(silviculturalSpace.CoordinatesEvaluated[coordinateIndex]));
+                }
+
+                WriteCmdlet.WriteStandTrajectoriesToRecordBatches(arrowMemory, standTrajectories, writeContext);
             }
 
-            this.WriteFeather(standTrajectories, this.Trajectories.FinancialScenarios, writeContext);
+            this.WriteFeather(arrowMemory);
         }
     }
 }

@@ -19,68 +19,72 @@ namespace Mars.Seem.Cmdlets
         {
             this.ValidateParameters();
 
-            using StreamWriter writer = this.GetCsvWriter();
+            using StreamWriter writer = this.CreateCsvWriter();
 
             // header
-            bool resultsSpecified = this.Trajectories != null;
             if (this.ShouldWriteCsvHeader())
             {
                 writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",standAge,species,diameter class,snags,logs");
             }
 
-            // rows for periods
-            int maxCoordinateIndex = this.GetMaxCoordinateIndex();
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
-            for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
-                StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(coordinateIndex, out string linePrefix);
+                SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
 
-                SnagDownLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
-                for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)
+                // rows for periods
+                int maxCoordinateIndex = WriteSilviculturalTrajectoriesCmdlet.GetMaxCoordinateIndex(silviculturalSpace);
+                for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
-                    Stand? stand = highTrajectory.StandByPeriod[periodIndex];
-                    Debug.Assert(stand != null);
-                    string standAge = highTrajectory.GetEndOfPeriodAge(periodIndex).ToString(CultureInfo.InvariantCulture);
+                    StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(silviculturalSpace, coordinateIndex, out string linePrefix);
 
-                    foreach (FiaCode species in snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass.Keys)
+                    SnagDownLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
+                    for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)
                     {
-                        float[,] logsByPeriodAndDiameterClass = snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[species];
-                        float[,] snagsByPeriodAndDiameterClass = snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[species];
-                        string standAgeAndSpeciesCode = standAge + "," + species.ToFourLetterCode();
-                        string linePrefixForPeriodAndSpecies = linePrefix + "," + standAgeAndSpeciesCode;
+                        Stand? stand = highTrajectory.StandByPeriod[periodIndex];
+                        Debug.Assert(stand != null);
+                        string standAge = highTrajectory.GetEndOfPeriodAge(periodIndex).ToString(CultureInfo.InvariantCulture);
 
-                        for (int diameterClassIndex = 0; diameterClassIndex < snagsAndLogs.DiameterClasses; ++diameterClassIndex)
+                        foreach (FiaCode species in snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass.Keys)
                         {
-                            float snagsPerHectare = snagsByPeriodAndDiameterClass[periodIndex, diameterClassIndex];
-                            float logsPerHectare = logsByPeriodAndDiameterClass[periodIndex, diameterClassIndex];
-                            if (this.SkipZero && (snagsPerHectare == 0.0F) && (logsPerHectare == 0.0F))
-                            {
-                                continue;
-                            }
-                            float diameterClass = snagsAndLogs.GetDiameter(diameterClassIndex);
+                            float[,] logsByPeriodAndDiameterClass = snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[species];
+                            float[,] snagsByPeriodAndDiameterClass = snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[species];
+                            string standAgeAndSpeciesCode = standAge + "," + species.ToFourLetterCode();
+                            string linePrefixForPeriodAndSpecies = linePrefix + "," + standAgeAndSpeciesCode;
 
-                            string line = linePrefixForPeriodAndSpecies + "," +
-                                diameterClass.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
-                                snagsPerHectare.ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture) + "," +
-                                logsPerHectare.ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
-                            writer.WriteLine(line);
-                            estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
+                            for (int diameterClassIndex = 0; diameterClassIndex < snagsAndLogs.DiameterClasses; ++diameterClassIndex)
+                            {
+                                float snagsPerHectare = snagsByPeriodAndDiameterClass[periodIndex, diameterClassIndex];
+                                float logsPerHectare = logsByPeriodAndDiameterClass[periodIndex, diameterClassIndex];
+                                if (this.SkipZero && (snagsPerHectare == 0.0F) && (logsPerHectare == 0.0F))
+                                {
+                                    continue;
+                                }
+                                float diameterClass = snagsAndLogs.GetDiameter(diameterClassIndex);
+
+                                string line = linePrefixForPeriodAndSpecies + "," +
+                                    diameterClass.ToString(Constant.Default.DiameterInCmFormat, CultureInfo.InvariantCulture) + "," +
+                                    snagsPerHectare.ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture) + "," +
+                                    logsPerHectare.ToString(Constant.Default.ExpansionFactorFormat, CultureInfo.InvariantCulture);
+                                writer.WriteLine(line);
+                                estimatedBytesSinceLastFileLength += line.Length + Environment.NewLine.Length;
+                            }
                         }
                     }
-                }
 
-                if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
-                {
-                    // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
-                    knownFileSizeInBytes = writer.BaseStream.Length;
-                    estimatedBytesSinceLastFileLength = 0;
-                }
-                if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
-                {
-                    this.WriteWarning("Write-SnagsAndLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
-                    break;
+                    if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
+                    {
+                        // see remarks on WriteCmdlet.StreamLengthSynchronizationInterval
+                        knownFileSizeInBytes = writer.BaseStream.Length;
+                        estimatedBytesSinceLastFileLength = 0;
+                    }
+                    if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
+                    {
+                        this.WriteWarning("Write-SnagsAndLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        break;
+                    }
                 }
             }
         }

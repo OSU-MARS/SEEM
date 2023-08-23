@@ -159,7 +159,7 @@ namespace Mars.Seem.Heuristics
                 // ensure no trees are selected for thinning since no thinning is specified
                 // If needed, checking can be done for conflict between removing trees from thinning and construction greediness. At least for now, the 
                 // scheduling of thins is treated as an override to greediness.
-                this.CurrentTrajectory.DeselectAllTrees();
+                this.CurrentTrajectory.MoveAllEligibleTreesToRegenerationHarvest();
                 return 0;
             }
 
