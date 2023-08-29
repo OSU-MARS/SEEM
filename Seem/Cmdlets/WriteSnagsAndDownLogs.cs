@@ -1,4 +1,5 @@
 ﻿using Mars.Seem.Extensions;
+using Mars.Seem.Output;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
@@ -30,16 +31,20 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            WriteSilviculturalCoordinateContext writeContext = new(this.HeuristicParameters);
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 // rows for periods
                 int maxCoordinateIndex = WriteSilviculturalTrajectoriesCmdlet.GetMaxCoordinateIndex(silviculturalSpace);
                 for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
-                    StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(silviculturalSpace, coordinateIndex, out string linePrefix);
+                    writeContext.SetSilviculturalCoordinate(coordinateIndex);
+                    string linePrefix = writeContext.GetCsvPrefixForSilviculturalCoordinate();
 
+                    StandTrajectory highTrajectory = writeContext.HighTrajectory;
                     SnagDownLogTable snagsAndLogs = new(highTrajectory, this.MaximumDiameter, this.DiameterClassSize);
                     for (int periodIndex = 0; periodIndex < highTrajectory.PlanningPeriods; ++periodIndex)
                     {

@@ -1,4 +1,5 @@
 ﻿using Mars.Seem.Heuristics;
+using Mars.Seem.Output;
 using Mars.Seem.Silviculture;
 using System;
 using System.Globalization;
@@ -24,17 +25,21 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            WriteSilviculturalCoordinateContext writeContext = new(this.HeuristicParameters);
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 for (int positionIndex = 0; positionIndex < silviculturalSpace.CoordinatesEvaluated.Count; ++positionIndex)
                 {
                     SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[positionIndex];
-                    SilviculturalCoordinateExploration element = silviculturalSpace[coordinate];
-                    string linePrefix = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
-                    PopulationStatistics highStatistics = ((GeneticAlgorithm)element.Pool.High.Heuristic!).PopulationStatistics;
-                    PopulationStatistics lowStatistics = ((GeneticAlgorithm)element.Pool.Low.Heuristic!).PopulationStatistics;
+                    writeContext.SetSilviculturalCoordinate(coordinate);
+                    string linePrefix = writeContext.GetCsvPrefixForSilviculturalCoordinate();
+
+                    SilviculturalCoordinateExploration exploration = silviculturalSpace[coordinate];
+                    PopulationStatistics highStatistics = ((GeneticAlgorithm)exploration.Pool.High.Heuristic!).PopulationStatistics;
+                    PopulationStatistics lowStatistics = ((GeneticAlgorithm)exploration.Pool.Low.Heuristic!).PopulationStatistics;
                     int maxGenerations = Math.Max(highStatistics.Generations, lowStatistics.Generations);
                     for (int generationIndex = 0; generationIndex < maxGenerations; ++generationIndex)
                     {

@@ -31,14 +31,18 @@ namespace Mars.Seem.Silviculture
             this.RotationIndex = other.RotationIndex;
         }
 
-        public static bool operator ==(SilviculturalCoordinate coordinate1, SilviculturalCoordinate coordinate2)
+        public static bool operator ==(SilviculturalCoordinate? coordinate1, SilviculturalCoordinate? coordinate2)
         {
+            if (coordinate1 is null) // coordinate1 == null invokes this operator recursively -> stack overflow
+            {
+                return coordinate2 is null; // ibid
+            }
             return coordinate1.Equals(coordinate2);
         }
 
-        public static bool operator !=(SilviculturalCoordinate coordinate1, SilviculturalCoordinate coordinate2)
+        public static bool operator !=(SilviculturalCoordinate? coordinate1, SilviculturalCoordinate? coordinate2)
         {
-            return coordinate1.Equals(coordinate2) == false;
+            return !SilviculturalCoordinate.Equals(coordinate1, coordinate2);
         }
 
         public override int GetHashCode()

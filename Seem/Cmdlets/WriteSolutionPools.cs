@@ -1,4 +1,5 @@
 ﻿using Mars.Seem.Optimization;
+using Mars.Seem.Output;
 using Mars.Seem.Silviculture;
 using System;
 using System.Diagnostics;
@@ -48,9 +49,11 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            WriteSilviculturalCoordinateContext writeContext = new(this.HeuristicParameters);
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 int poolCapacity = 0;
                 if (silviculturalSpace.CoordinatesEvaluated.Count > 0)
@@ -74,7 +77,8 @@ namespace Mars.Seem.Cmdlets
                         throw new NotSupportedException("Solution pool capacity changed from " + poolCapacity + " to " + prescriptions.PoolCapacity + ".");
                     }
 
-                    string linePrefx = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
+                    writeContext.SetSilviculturalCoordinate(coordinate);
+                    string linePrefx = writeContext.GetCsvPrefixForSilviculturalCoordinate();
                     for (int solutionIndex = 0; solutionIndex < prescriptions.SolutionsInPool; ++solutionIndex)
                     {
                         //TreeSelectionBySpecies? eliteTreeSelection = prescriptions.EliteTreeSelections[solutionIndex];

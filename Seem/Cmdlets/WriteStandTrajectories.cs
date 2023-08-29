@@ -73,7 +73,7 @@ namespace Mars.Seem.Cmdlets
 
         protected override void ProcessRecord()
         {
-            WriteStandTrajectoryContext writeContext = new(this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
+            WriteStandTrajectoryContext writeContext = new(this.HarvestsOnly, false, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
             {
                 FinancialScenarios = this.FinancialScenarios,
                 StartYear = this.StartYear
@@ -111,12 +111,10 @@ namespace Mars.Seem.Cmdlets
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 StandTrajectory trajectory = this.Trajectories[trajectoryIndex];
-                int endOfRotationPeriodIndex = trajectory.PlanningPeriods - 1;
                 for (int financialIndex = 0; financialIndex < this.FinancialScenarios.Count; ++financialIndex)
                 {
                     string financialScenario = this.FinancialScenarios.Name[financialIndex];
-                    string linePrefix = trajectory.Name + "," + financialScenario;
-                    writeContext.SetSilviculturalCoordinate(linePrefix, financialIndex, endOfRotationPeriodIndex);                    
+                    writeContext.SetStandTrajectoryCoordinate(trajectory, financialIndex);                    
                     estimatedBytesSinceLastFileLength += WriteCmdlet.WriteStandTrajectoryToCsv(writer, trajectory, writeContext);
                 }
 
@@ -140,7 +138,18 @@ namespace Mars.Seem.Cmdlets
 
             int periodsToWrite = writeContext.GetPeriodsToWrite(this.Trajectories);
             StandTrajectoryArrowMemory arrowMemory = this.CreateStandTrajectoryArrowMemory(periodsToWrite);
-            WriteCmdlet.WriteStandTrajectoriesToRecordBatches(arrowMemory, this.Trajectories, writeContext);
+
+            // marshall trajectories into Arrow arrays
+            for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
+            {
+                for (int financialIndex = 0; financialIndex < writeContext.FinancialScenarios.Count; ++financialIndex)
+                {
+                    StandTrajectory trajectory = this.Trajectories[trajectoryIndex];
+                    writeContext.SetStandTrajectoryCoordinate(trajectory, financialIndex);
+                    arrowMemory.Add(trajectory, writeContext);
+                }
+            }
+
             this.WriteFeather(arrowMemory);
         }
     }

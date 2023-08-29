@@ -1,6 +1,5 @@
 ﻿using Apache.Arrow;
 using Apache.Arrow.Types;
-using Mars.Seem.Cmdlets;
 using Mars.Seem.Extensions;
 using Mars.Seem.Optimization;
 using Mars.Seem.Silviculture;
@@ -15,6 +14,10 @@ namespace Mars.Seem.Output
     public class StandTrajectoryArrowMemory : ArrowMemory
     {
         private byte[]? stand;
+        private byte[]? thin1;
+        private byte[]? thin2;
+        private byte[]? thin3;
+        private byte[]? rotation;
         private byte[]? financialScenario;
         private byte[]? year;
         private byte[]? standAge;
@@ -167,6 +170,10 @@ namespace Mars.Seem.Output
             : base(StandTrajectoryArrowMemory.CreateSchema(), capacityInRecords, 4 * 1000 * 1000) // 531 bytes / record * 400k records = 1.98 GB, https://github.com/apache/arrow/issues/37069
         {
             this.stand = null;
+            this.thin1 = null;
+            this.thin2 = null;
+            this.thin3 = null;
+            this.rotation = null;
             this.financialScenario = null;
             this.year = null;
             this.standAge = null;
@@ -329,6 +336,10 @@ namespace Mars.Seem.Output
             }
 
             Span<UInt32> batchStand = MemoryMarshal.Cast<byte, UInt32>(this.stand);
+            Span<Int16> batchThin1 = MemoryMarshal.Cast<byte, Int16>(this.thin1);
+            Span<Int16> batchThin2 = MemoryMarshal.Cast<byte, Int16>(this.thin2);
+            Span<Int16> batchThin3 = MemoryMarshal.Cast<byte, Int16>(this.thin3);
+            Span<Int16> batchRotation = MemoryMarshal.Cast<byte, Int16>(this.rotation);
             Span<UInt32> batchFinancialScenario = MemoryMarshal.Cast<byte, UInt32>(this.financialScenario);
             Span<Int16> batchYear = MemoryMarshal.Cast<byte, Int16>(this.year);
             Span<Int16> batchStandAge = MemoryMarshal.Cast<byte, Int16>(this.standAge);
@@ -486,6 +497,12 @@ namespace Mars.Seem.Output
             //    snagsAndDownLogs = new(trajectory, writeContext.MaximumDiameter, writeContext.DiameterClassSize);
             //}
 
+            (int firstThinAgeInt32, int secondThinAgeInt32, int thirdThinAgeInt32, int rotationAgeInt32) = writeContext.GetHarvestAges();
+            Int16 firstThinAge = (Int16)firstThinAgeInt32;
+            Int16 secondThinAge = (Int16)secondThinAgeInt32;
+            Int16 thirdThinAge = (Int16)thirdThinAgeInt32;
+            Int16 rotationAge = (Int16)rotationAgeInt32;
+
             int lastPeriodToCopy = startPeriod + periodsToCopy - 1;
             int financialIndex = writeContext.FinancialIndex;
             FinancialScenarios financialScenarios = writeContext.FinancialScenarios;
@@ -499,7 +516,7 @@ namespace Mars.Seem.Output
                 float basalAreaThinnedPerHa = trajectory.GetBasalAreaThinnedPerHa(periodIndex); // m²/ha
                 if (writeContext.HarvestsOnly)
                 {
-                    if ((basalAreaThinnedPerHa == 0.0F) && (periodIndex != writeContext.EndOfRotationPeriodIndex))
+                    if ((basalAreaThinnedPerHa == 0.0F) && (periodIndex != writeContext.EndOfRotationPeriod))
                     {
                         continue; // no trees cut in this before end of rotation period so no data to write
                     }
@@ -510,6 +527,10 @@ namespace Mars.Seem.Output
                 LongLogHarvest longLogRegenHarvest = financialScenarios.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, periodIndex);
 
                 batchStand[recordIndex] = standID;
+                batchThin1[recordIndex] = firstThinAge;
+                batchThin2[recordIndex] = secondThinAge;
+                batchThin3[recordIndex] = thirdThinAge;
+                batchRotation[recordIndex] = rotationAge;
                 batchFinancialScenario[recordIndex] = (UInt32)financialIndex;
                 batchYear[recordIndex] = year != null ? (Int16)year.Value : Constant.NoDataInt16;
                 batchStandAge[recordIndex] = (Int16)trajectory.GetEndOfPeriodAge(periodIndex);
@@ -580,7 +601,7 @@ namespace Mars.Seem.Output
                         totalThinNetPresentValue += thinFinancialValue.NetPresentValuePerHa;
                     }
                     float periodNetPresentValue = totalThinNetPresentValue + longLogRegenHarvest.NetPresentValuePerHa;
-                    float presentToFutureConversionFactor = financialScenarios.GetAppreciationFactor(financialIndex, trajectory.GetEndOfPeriodAge(writeContext.EndOfRotationPeriodIndex));
+                    float presentToFutureConversionFactor = financialScenarios.GetAppreciationFactor(financialIndex, trajectory.GetEndOfPeriodAge(writeContext.EndOfRotationPeriod));
                     float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);
 
                     batchNpv[recordIndex] = periodNetPresentValue;
@@ -901,7 +922,7 @@ namespace Mars.Seem.Output
 
         public void Add(StandTrajectory trajectory, WriteStandTrajectoryContext writeContext)
         {
-            Debug.Assert((writeContext.EndOfRotationPeriodIndex >= 0) && (writeContext.FinancialIndex >= 0));
+            Debug.Assert((writeContext.EndOfRotationPeriod >= 0) && (writeContext.FinancialIndex >= 0));
 
             int periodsToCopy = writeContext.GetPeriodsToWrite(trajectory);
 
@@ -925,6 +946,10 @@ namespace Mars.Seem.Output
             int capacityInRecords = this.GetNextBatchLength();
 
             this.stand = new byte[capacityInRecords * sizeof(UInt32)];
+            this.thin1 = new byte[capacityInRecords * sizeof(Int16)];
+            this.thin2 = new byte[capacityInRecords * sizeof(Int16)];
+            this.thin3 = new byte[capacityInRecords * sizeof(Int16)];
+            this.rotation = new byte[capacityInRecords * sizeof(Int16)];
             this.financialScenario = new byte[capacityInRecords * sizeof(UInt32)];
             this.year = new byte[capacityInRecords * sizeof(Int16)];
             this.standAge = new byte[capacityInRecords * sizeof(Int16)];
@@ -1084,6 +1109,10 @@ namespace Mars.Seem.Output
             IArrowArray[] arrowArrays = new IArrowArray[]
             {
                 ArrowArrayExtensions.WrapInUInt32(this.stand),
+                ArrowArrayExtensions.WrapInInt16(this.thin1),
+                ArrowArrayExtensions.WrapInInt16(this.thin2),
+                ArrowArrayExtensions.WrapInInt16(this.thin3),
+                ArrowArrayExtensions.WrapInInt16(this.rotation),
                 ArrowArrayExtensions.WrapInUInt32(this.financialScenario),
                 ArrowArrayExtensions.WrapInInt16(this.year),
                 ArrowArrayExtensions.WrapInInt16(this.standAge),
@@ -1248,6 +1277,10 @@ namespace Mars.Seem.Output
             List<Field> fields = new()
             {
                 new("stand", UInt32Type.Default, false),
+                new("thin1", Int16Type.Default, false),
+                new("thin2", Int16Type.Default, false),
+                new("thin3", Int16Type.Default, false),
+                new("rotation", Int16Type.Default, false),
                 new("financialScenario", UInt32Type.Default, false),
                 new("year", Int16Type.Default, false),
                 new("standAge", Int16Type.Default, false),
@@ -1401,6 +1434,10 @@ namespace Mars.Seem.Output
             {
                 // always on
                 { "stand", "stand ID" },
+                { "thin1", "age of first thin in years or -1 for no thin" },
+                { "thin2", "age of second thin in years or -1 for no thin" },
+                { "thin3", "age of third thin in years or -1 for no thin" },
+                { "rotation", "rotation age in years" },
                 { "financialScenario", "index of financial scenario used in cost calculations" },
                 { "year", "calendar year, CE" },
                 { "standAge", "nominal age of dominant and codominant trees in stand, years" },

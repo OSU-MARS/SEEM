@@ -194,10 +194,11 @@ namespace Mars.Seem.Cmdlets
                 snagsAndDownLogs = new(trajectory, writeContext.MaximumDiameter, writeContext.DiameterClassSize);
             }
 
-            int endOfRotationPeriodIndex = writeContext.EndOfRotationPeriodIndex;
+            int endOfRotationPeriodIndex = writeContext.EndOfRotationPeriod;
             int estimatedBytesWritten = 0;
             int financialIndex = writeContext.FinancialIndex;
             FinancialScenarios financialScenarios = writeContext.FinancialScenarios;
+            string linePrefix = writeContext.GetCsvPrefixForSilviculturalCoordinate();
             StandDensity? previousStandDensity = null;
             float totalThinNetPresentValue = 0.0F;
             int? year = writeContext.StartYear;
@@ -218,7 +219,7 @@ namespace Mars.Seem.Cmdlets
                 financialScenarios.TryGetNetPresentThinningValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue);
                 LongLogHarvest longLogRegenHarvest = financialScenarios.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, periodIndex);
 
-                string linePrefixAndStandAge = writeContext.LinePrefix + "," + year.ToString() + "," + trajectory.GetEndOfPeriodAge(periodIndex).ToString(CultureInfo.InvariantCulture);
+                string linePrefixAndStandAge = linePrefix + "," + year.ToString() + "," + trajectory.GetEndOfPeriodAge(periodIndex).ToString(CultureInfo.InvariantCulture);
                 writer.Write(linePrefixAndStandAge);
                 estimatedBytesWritten += linePrefixAndStandAge.Length;
                 if (writeContext.NoTreeGrowth == false)
@@ -603,20 +604,6 @@ namespace Mars.Seem.Cmdlets
             }
 
             return estimatedBytesWritten;
-        }
-
-        protected static void WriteStandTrajectoriesToRecordBatches(StandTrajectoryArrowMemory arrowMemory, IList<StandTrajectory> trajectories, WriteStandTrajectoryContext writeContext)
-        {
-            // marshall trajectories into Arrow arrays
-            for (int trajectoryIndex = 0; trajectoryIndex < trajectories.Count; ++trajectoryIndex)
-            {
-                for (int financialIndex = 0; financialIndex < writeContext.FinancialScenarios.Count; ++financialIndex)
-                {
-                    StandTrajectory trajectory = trajectories[trajectoryIndex];
-                    writeContext.SetSilviculturalCoordinate(String.Empty, financialIndex, trajectory.PlanningPeriods - 1);
-                    arrowMemory.Add(trajectory, writeContext);
-                }
-            }
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Mars.Seem.Heuristics;
 using Mars.Seem.Optimization;
+using Mars.Seem.Output;
 using Mars.Seem.Silviculture;
 using System;
 using System.Collections.Generic;
@@ -67,9 +68,11 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            WriteSilviculturalCoordinateContext writeContext = new(this.HeuristicParameters);
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 // sort each discount rate's runs by decreasing objective function value  
                 List<List<(float, SilviculturalCoordinate)>> solutionsByFinancialIndexAndValue = new();
@@ -119,8 +122,10 @@ namespace Mars.Seem.Cmdlets
                 {
                     // since high and low solutions are from the same position, they use the same heuristic parameters
                     SilviculturalCoordinate coordinate = prioritizedCoordinates[coordinateIndex];
+                    writeContext.SetSilviculturalCoordinate(coordinate);
+                    string linePrefix = writeContext.GetCsvPrefixForSilviculturalCoordinate();
+
                     SilviculturalCoordinateExploration exploration = silviculturalSpace[coordinate];
-                    string linePrefix = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
                     Heuristic highHeuristic = exploration.Pool.High.Heuristic!; // checked for null in GetHeuristicAndPositionCsvValues()
                     Heuristic lowHeuristic = exploration.Pool.Low.Heuristic ?? throw new InvalidOperationException("Evaluated coordinate " + coordinateIndex + " does not have a low heuristic.");
 

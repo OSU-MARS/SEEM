@@ -1,4 +1,5 @@
 ﻿using Mars.Seem.Optimization;
+using Mars.Seem.Output;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
@@ -26,17 +27,20 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            WriteSilviculturalCoordinateContext writeContext = new(this.HeuristicParameters);
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 for (int coordinateIndex = 0; coordinateIndex < silviculturalSpace.CoordinatesEvaluated.Count; ++coordinateIndex)
                 {
                     SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[coordinateIndex];
-                    SilviculturalCoordinateExploration element = silviculturalSpace[coordinate];
-                    StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(silviculturalSpace, coordinateIndex, out string linePrefix);
+                    writeContext.SetSilviculturalCoordinate(coordinate);
+                    string linePrefix = writeContext.GetCsvPrefixForSilviculturalCoordinate();
 
-                    OptimizationObjectiveDistribution distribution = element.Distribution;
+                    SilviculturalCoordinateExploration exploration = silviculturalSpace[coordinate];
+                    OptimizationObjectiveDistribution distribution = exploration.Distribution;
                     List<float> highestFinancialValues = distribution.HighestFinancialValueBySolution;
                     for (int solutionIndex = 0; solutionIndex < highestFinancialValues.Count; ++solutionIndex)
                     {

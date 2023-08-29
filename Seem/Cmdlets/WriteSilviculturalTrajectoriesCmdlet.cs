@@ -48,51 +48,6 @@ namespace Mars.Seem.Cmdlets
             return "stand," + maybeHeuristicParametersWithTrailingComma + "thin1,thin2,thin3,rotation,financialScenario";
         }
 
-        protected string GetCsvPrefixForCoordinate(SilviculturalSpace silviculturalSpace, SilviculturalCoordinate coordinate)
-        {
-            StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
-            int firstThinPeriod = silviculturalSpace.FirstThinPeriods[coordinate.FirstThinPeriodIndex];
-            int secondThinPeriod = silviculturalSpace.SecondThinPeriods[coordinate.SecondThinPeriodIndex];
-            int thirdThinPeriod = silviculturalSpace.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex];
-            int endOfRotationPeriod = silviculturalSpace.RotationLengths[coordinate.RotationIndex];
-
-            string? maybeHeuristicParametersWithTrailingComma = null;
-            if (this.HeuristicParameters && (silviculturalSpace is HeuristicStandTrajectories heuristicTrajectories))
-            {
-                maybeHeuristicParametersWithTrailingComma = heuristicTrajectories.GetParameters(coordinate.ParameterIndex).GetCsvValues() + ",";
-            }
-            string? firstThinAge = firstThinPeriod != Constant.NoHarvestPeriod ? highTrajectory.GetEndOfPeriodAge(firstThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
-            string? secondThinAge = secondThinPeriod != Constant.NoHarvestPeriod ? highTrajectory.GetEndOfPeriodAge(secondThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
-            string? thirdThinAge = thirdThinPeriod != Constant.NoHarvestPeriod ? highTrajectory.GetEndOfPeriodAge(thirdThinPeriod).ToString(CultureInfo.InvariantCulture) : null;
-            string rotationLength = highTrajectory.GetEndOfPeriodAge(endOfRotationPeriod).ToString(CultureInfo.InvariantCulture);
-            string financialScenario = silviculturalSpace.FinancialScenarios.Name[coordinate.FinancialIndex];
-
-            return highTrajectory.Name + "," +
-                   maybeHeuristicParametersWithTrailingComma +
-                   firstThinAge + "," +
-                   secondThinAge + "," +
-                   thirdThinAge + "," +
-                   rotationLength + "," +
-                   financialScenario;
-        }
-
-        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(SilviculturalSpace silviculturalSpace, int evaluatedCoordinateIndex, out string linePrefix)
-        {
-            Debug.Assert(silviculturalSpace != null);
-            SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[evaluatedCoordinateIndex];
-            linePrefix = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
-            return silviculturalSpace.GetHighTrajectory(coordinate);
-        }
-
-        protected StandTrajectory GetHighTrajectoryAndPositionPrefix(SilviculturalSpace silviculturalSpace, int evaluatedCoordinateIndex, out string linePrefix, out int endOfRotationPeriodIndex, out int financialIndex)
-        {
-            SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[evaluatedCoordinateIndex];
-            linePrefix = this.GetCsvPrefixForCoordinate(silviculturalSpace, coordinate);
-            endOfRotationPeriodIndex = coordinate.RotationIndex;
-            financialIndex = coordinate.FinancialIndex;
-            return silviculturalSpace.GetHighTrajectory(coordinate);
-        }
-
         protected static int GetMaxCoordinateIndex(SilviculturalSpace silviculturalSpace)
         {
             Debug.Assert(silviculturalSpace != null);

@@ -65,7 +65,7 @@ namespace Mars.Seem.Cmdlets
         {
             // this.DiameterClassSize and MaximumDiameter are checked by PowerShell
             this.ValidateParameters();
-            WriteStandTrajectoryContext writeContext = new(this.HarvestsOnly, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
+            WriteStandTrajectoryContext writeContext = new(this.HarvestsOnly, this.HeuristicParameters, this.NoTreeGrowth, this.NoFinancial, this.NoCarbon, this.NoHarvestCosts, this.NoTimberSorts, this.NoEquipmentProductivity, this.DiameterClassSize, this.MaximumDiameter)
             {
                 StartYear = this.StartYear
             };
@@ -107,8 +107,9 @@ namespace Mars.Seem.Cmdlets
                 int maxCoordinateIndex = WriteSilviculturalTrajectoriesCmdlet.GetMaxCoordinateIndex(silviculturalSpace);
                 for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
-                    StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(silviculturalSpace, coordinateIndex, out string linePrefix, out int endOfRotationPeriod, out int financialIndex);
-                    writeContext.SetSilviculturalCoordinate(linePrefix, financialIndex, endOfRotationPeriod);
+                    writeContext.SetSilviculturalCoordinate(coordinateIndex);
+
+                    StandTrajectory highTrajectory = writeContext.HighTrajectory;
                     estimatedBytesSinceLastFileLength += WriteCmdlet.WriteStandTrajectoryToCsv(writer, highTrajectory, writeContext);
 
                     if (estimatedBytesSinceLastFileLength > WriteCmdlet.StreamLengthSynchronizationInterval)
@@ -142,13 +143,12 @@ namespace Mars.Seem.Cmdlets
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
                 writeContext.SetSilviculturalSpace(silviculturalSpace);
 
-                List<StandTrajectory> standTrajectories = new(silviculturalSpace.CoordinatesEvaluated.Count);
+                // marshall trajectories into Arrow arrays
                 for (int coordinateIndex = 0; coordinateIndex < silviculturalSpace.CoordinatesEvaluated.Count; ++coordinateIndex)
                 {
-                    standTrajectories.Add(silviculturalSpace.GetHighTrajectory(silviculturalSpace.CoordinatesEvaluated[coordinateIndex]));
+                    writeContext.SetSilviculturalCoordinate(coordinateIndex);
+                    arrowMemory.Add(writeContext.HighTrajectory, writeContext);
                 }
-
-                WriteCmdlet.WriteStandTrajectoriesToRecordBatches(arrowMemory, standTrajectories, writeContext);
             }
 
             this.WriteFeather(arrowMemory);

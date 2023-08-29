@@ -1,4 +1,5 @@
-﻿using Mars.Seem.Silviculture;
+﻿using Mars.Seem.Output;
+using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
@@ -35,24 +36,29 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            WriteSilviculturalCoordinateContext writeContext = new(this.HeuristicParameters);
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 Dictionary<int, HashSet<StandTrajectory>> knownTrajectoriesByEndOfRotationPeriod = new();
                 int maxCoordinateIndex = WriteSilviculturalTrajectoriesCmdlet.GetMaxCoordinateIndex(silviculturalSpace);
                 for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
-                    StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(silviculturalSpace, coordinateIndex, out string linePrefix, out int endOfRotationPeriodIndex, out int financialIndex);
+                    writeContext.SetSilviculturalCoordinate(coordinateIndex);
+                    string linePrefix = writeContext.GetCsvPrefixForSilviculturalCoordinate();
+                    
+                    StandTrajectory highTrajectory = writeContext.HighTrajectory;
                     if (this.SuppressIdentical)
                     {
                         // skip writing trajectory if it's already been written for this rotation length
                         // Tree DBH, height, expansion factor, and volume vary with timing of regeneration harvest so stand trajectories spanning
                         // multiple rotation lengths must be written once for each rotation length.
-                        if (knownTrajectoriesByEndOfRotationPeriod.TryGetValue(endOfRotationPeriodIndex, out HashSet<StandTrajectory>? knownTrajectoriesForRotation) == false)
+                        if (knownTrajectoriesByEndOfRotationPeriod.TryGetValue(writeContext.EndOfRotationPeriod, out HashSet<StandTrajectory>? knownTrajectoriesForRotation) == false)
                         {
                             knownTrajectoriesForRotation = new();
-                            knownTrajectoriesByEndOfRotationPeriod.Add(endOfRotationPeriodIndex, knownTrajectoriesForRotation);
+                            knownTrajectoriesByEndOfRotationPeriod.Add(writeContext.EndOfRotationPeriod, knownTrajectoriesForRotation);
                         }
                         if (knownTrajectoriesForRotation.Contains(highTrajectory)) // reference equality for now
                         {
@@ -95,7 +101,7 @@ namespace Mars.Seem.Cmdlets
                         }
                     }
 
-                    Stand? highStandAtEnd = highTrajectory.StandByPeriod[endOfRotationPeriodIndex];
+                    Stand? highStandAtEnd = highTrajectory.StandByPeriod[writeContext.EndOfRotationPeriod];
                     if (highStandAtEnd == null)
                     {
                         throw new ParameterOutOfRangeException(nameof(this.Trajectories), "High trajectory in run " + trajectoryIndex + " has not been fully simulated as stand is null at end of rotation. Did the heuristic perform at least one move?");

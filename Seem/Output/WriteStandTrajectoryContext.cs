@@ -1,16 +1,13 @@
 ﻿using Mars.Seem.Optimization;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
-using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
-namespace Mars.Seem.Cmdlets
+namespace Mars.Seem.Output
 {
-    public class WriteStandTrajectoryContext
+    public class WriteStandTrajectoryContext : WriteSilviculturalCoordinateContext
     {
-        // per run (heuristic optimization or group of stands) settings
-        private FinancialScenarios? financialScenarios;
-
         // global settings invariant across all stands
         public float DiameterClassSize { get; private init; }
         public bool HarvestsOnly { get; private init; }
@@ -23,12 +20,8 @@ namespace Mars.Seem.Cmdlets
         public bool NoTreeGrowth { get; private init; }
         public int? StartYear { get; init; }
 
-        // per trajectory settings
-        public int EndOfRotationPeriodIndex { get; private set; }
-        public int FinancialIndex { get; private set; }
-        public string LinePrefix { get; private set; }
-
-        public WriteStandTrajectoryContext(bool harvestsOnly, bool noTreeGrowth, bool noFinancial, bool noCarbon, bool noHarvestCosts, bool noTimberSorts, bool noEquipmentProductivity, float diameterClassSize, float maximumDiameter)
+        public WriteStandTrajectoryContext(bool harvestsOnly, bool heuristicParameters, bool noTreeGrowth, bool noFinancial, bool noCarbon, bool noHarvestCosts, bool noTimberSorts, bool noEquipmentProductivity, float diameterClassSize, float maximumDiameter)
+            : base(heuristicParameters)
         {
             this.DiameterClassSize = diameterClassSize;
             this.HarvestsOnly = harvestsOnly;
@@ -40,25 +33,6 @@ namespace Mars.Seem.Cmdlets
             this.NoTimberSorts = noTimberSorts;
             this.NoTreeGrowth = noTreeGrowth;
             this.StartYear = null;
-
-            this.financialScenarios = null;
-
-            this.EndOfRotationPeriodIndex = -1;
-            this.FinancialIndex = -1;
-            this.LinePrefix = String.Empty;
-        }
-
-        public FinancialScenarios FinancialScenarios 
-        { 
-            get 
-            { 
-                if (this.financialScenarios == null)
-                {
-                    throw new InvalidOperationException("Financial scenarios have not been specified. Either set them at construction time or call " + nameof(this.SetSilviculturalCoordinate) + "() before accessing the " + nameof(this.FinancialScenarios) + " property.");
-                }
-                return this.financialScenarios;
-            }
-            init { this.financialScenarios = value; }
         }
 
         public int GetPeriodsToWrite(IList<SilviculturalSpace> silviculturalSpaces)
@@ -92,7 +66,7 @@ namespace Mars.Seem.Cmdlets
 
         public int GetPeriodsToWrite(StandTrajectory trajectory)
         {
-            return this.GetPeriodsToWrite(trajectory, this.FinancialScenarios.Count);
+            return this.GetPeriodsToWrite(trajectory, FinancialScenarios.Count);
         }
 
         private int GetPeriodsToWrite(StandTrajectory trajectory, int financialScenarioCount)
@@ -106,7 +80,7 @@ namespace Mars.Seem.Cmdlets
                     ++harvests;
 
                     Harvest harvest = trajectory.Treatments.Harvests[harvestIndex];
-                    if (harvest.Period == this.EndOfRotationPeriodIndex)
+                    if (harvest.Period == EndOfRotationPeriod)
                     {
                         return harvests; // thin scheduled in same period as end of rotation
                     }
@@ -123,16 +97,15 @@ namespace Mars.Seem.Cmdlets
             return periodsToWrite;
         }
 
-        public void SetSilviculturalSpace(SilviculturalSpace silviculturalSpace)
+        public void SetStandTrajectoryCoordinate(StandTrajectory trajectory, int financialIndex)
         {
-            this.financialScenarios = silviculturalSpace.FinancialScenarios;
-        }
-
-        public void SetSilviculturalCoordinate(string linePrefix, int financialIndex, int endOfRotationPeriod)
-        {
-            this.EndOfRotationPeriodIndex = endOfRotationPeriod;
+            this.HighTrajectoryNullable = trajectory;
+            
+            this.FirstThinPeriod = trajectory.GetFirstThinPeriod();
+            this.SecondThinPeriod = trajectory.GetSecondThinPeriod();
+            this.ThirdThinPeriod = trajectory.GetThirdThinPeriod();
+            this.EndOfRotationPeriod = trajectory.PlanningPeriods - 1;
             this.FinancialIndex = financialIndex;
-            this.LinePrefix = linePrefix;
         }
     }
 }

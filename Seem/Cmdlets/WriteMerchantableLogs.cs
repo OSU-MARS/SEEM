@@ -1,4 +1,5 @@
 ﻿using Mars.Seem.Extensions;
+using Mars.Seem.Output;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
@@ -69,9 +70,11 @@ namespace Mars.Seem.Cmdlets
             long estimatedBytesSinceLastFileLength = 0;
             long knownFileSizeInBytes = 0;
             long maxFileSizeInBytes = this.GetMaxFileSizeInBytes();
+            WriteSilviculturalCoordinateContext writeContext = new(this.HeuristicParameters);
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
+                writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 int firstRegenerationHarvestPeriodAcrossAllTrajectories = silviculturalSpace.RotationLengths.Min(); // VS 16.11.7: nullability checking doesn't see [MemberNotNull] on ValidateParameters() call above
                 HashSet<StandTrajectory> knownTrajectories = new();
@@ -80,7 +83,9 @@ namespace Mars.Seem.Cmdlets
                 List<int> thinHistogram = new();
                 for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
-                    StandTrajectory highTrajectory = this.GetHighTrajectoryAndPositionPrefix(silviculturalSpace, coordinateIndex, out string linePrefix);
+                    writeContext.SetSilviculturalCoordinate(coordinateIndex);
+
+                    StandTrajectory highTrajectory = writeContext.HighTrajectory;
                     if (this.SuppressIdentical)
                     {
                         // for now, identification of unique trajectories relies on reference equality
@@ -101,6 +106,7 @@ namespace Mars.Seem.Cmdlets
                     }
 
                     int firstRegenerationHarvestPeriod = Math.Max(lastThinningPeriod, firstRegenerationHarvestPeriodAcrossAllTrajectories); // see below
+                    string linePrefix = writeContext.GetCsvPrefixForSilviculturalCoordinate();
                     for (int period = 0; period < highTrajectory.PlanningPeriods; ++period)
                     {
                         bool isThinningPeriod = thinningPeriods.Contains(period);
