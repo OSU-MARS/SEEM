@@ -186,7 +186,7 @@ namespace Mars.Seem.Data
             }
 
             // add trees with placeholder crown ratio
-            treesOfSpecies.Add(plot, tag, dbhInCm, heightInM, this.DefaultCrownRatio, expansionFactorPerHa);
+            treesOfSpecies.Add(plot, tag, dbhInCm, heightInM, this.DefaultCrownRatio, expansionFactorPerHa, TreeConditionCode.Live);
         }
 
         public void Read(string xlsxFilePath, string worksheetName)
@@ -299,7 +299,7 @@ namespace Mars.Seem.Data
                     }
 
                     float liveExpansionFactorPerAcre = Constant.HectaresPerAcre * plotTreesOfSpecies.LiveExpansionFactor[treeIndex];
-                    standTreesOfSpecies.Add(plot, tag, dbhInInches, heightInFeet, this.DefaultCrownRatio, liveExpansionFactorPerAcre);
+                    standTreesOfSpecies.Add(plot, tag, dbhInInches, heightInFeet, this.DefaultCrownRatio, liveExpansionFactorPerAcre, TreeConditionCode.Live);
                     if (++treesCopied >= maximumTreesToCopy)
                     {
                         break; // break inner for loop

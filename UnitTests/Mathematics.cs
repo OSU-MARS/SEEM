@@ -420,9 +420,9 @@ namespace Mars.Seem.Test
                 float dbhInCentimeters = tree.DbhInCm;
                 float heightInMeters = tree.HeightInM;
                 Trees psmeEnglish = new(FiaCode.PseudotsugaMenziesii, 1, Units.English);
-                psmeEnglish.Add(1, 1, Constant.InchesPerCentimeter * dbhInCentimeters, Constant.FeetPerMeter * heightInMeters, 0.5F, Constant.HectaresPerAcre * tree.ExpansionFactorPerHa);
+                psmeEnglish.Add(1, 1, Constant.InchesPerCentimeter * dbhInCentimeters, Constant.FeetPerMeter * heightInMeters, 0.5F, Constant.HectaresPerAcre * tree.ExpansionFactorPerHa, TreeConditionCode.Live);
                 Trees psmeMetric = new(FiaCode.PseudotsugaMenziesii, 1, Units.Metric);
-                psmeMetric.Add(1, 1, dbhInCentimeters, heightInMeters, 0.5F, tree.ExpansionFactorPerHa);
+                psmeMetric.Add(1, 1, dbhInCentimeters, heightInMeters, 0.5F, tree.ExpansionFactorPerHa, TreeConditionCode.Live);
 
                 Assert.IsTrue(treeVolume.TryGetLongLogVolumeTable(FiaCode.PseudotsugaMenziesii, out TreeSpeciesMerchantableVolumeTable? psmeLongLogVolumeTable));
                 Assert.IsTrue(psmeLongLogVolumeTable != null);

@@ -1,7 +1,6 @@
 ﻿using Mars.Seem.Extensions;
 using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace Mars.Seem.Tree
 {
@@ -11,6 +10,11 @@ namespace Mars.Seem.Tree
         /// Maximum number of trees which can be stored in this set.
         /// </summary>
         public int Capacity { get; private set; }
+
+        /// <summary>
+        /// Condition codes for trees currently in this set.
+        /// </summary>
+        public TreeConditionCode[] Codes { get; private set; }
 
         /// <summary>
         /// Number of trees currently in this set.
@@ -82,6 +86,7 @@ namespace Mars.Seem.Tree
             // ensure array lengths are an exact multiple of the SIMD width
             this.Capacity = Trees.GetCapacity(minimumSize);
             this.Count = 0; // no trees assigned yet
+            this.Codes = new TreeConditionCode[this.Capacity];
             this.CrownRatio = new float[this.Capacity];
             this.Dbh = new float[this.Capacity];
             this.DbhGrowth = new float[this.Capacity];
@@ -101,6 +106,7 @@ namespace Mars.Seem.Tree
         {
             this.Count = other.Count;
 
+            other.Codes.CopyTo(this.Codes, 0);
             other.CrownRatio.CopyTo(this.CrownRatio, 0);
             other.Dbh.CopyTo(this.Dbh, 0);
             other.DbhGrowth.CopyTo(this.DbhGrowth, 0);
@@ -122,6 +128,7 @@ namespace Mars.Seem.Tree
 
             // copy tree data
             this.Count = other.Count;
+            Array.Copy(other.Codes, 0, this.Codes, 0, other.Count);
             Array.Copy(other.CrownRatio, 0, this.CrownRatio, 0, other.Count);
             Array.Copy(other.Dbh, 0, this.Dbh, 0, other.Count);
             Array.Copy(other.DbhGrowth, 0, this.DbhGrowth, 0, other.Count);
@@ -133,10 +140,11 @@ namespace Mars.Seem.Tree
             Array.Copy(other.Tag, 0, this.Tag, 0, other.Count);
             Array.Copy(other.UncompactedIndex, 0, this.UncompactedIndex, 0, other.Count);
 
+
             // ensure expansion factors are zeroed in any unused capacity
-            for (int treeIndex = this.Count; treeIndex < this.Capacity; ++treeIndex)
+            if (this.Count < this.Capacity)
             {
-                this.LiveExpansionFactor[treeIndex] = 0.0F;
+                Array.Fill(this.LiveExpansionFactor, 0.0F, this.Count, this.Capacity - this.Count);
             }
         }
 
@@ -145,7 +153,7 @@ namespace Mars.Seem.Tree
             return new NotSupportedException(String.Format("Unhandled species {0}.", species));
         }
 
-        public void Add(int plot, int tag, float dbh, float height, float crownRatio, float liveExpansionFactor)
+        public void Add(int plot, int tag, float dbh, float height, float crownRatio, float liveExpansionFactor, TreeConditionCode codes)
         {
             // allow NaN and negative DBHes as they may later be imputed
             Debug.Assert(Single.IsNaN(dbh) || ((dbh >= 0.0F) && (dbh < 500.0F)));
@@ -163,6 +171,7 @@ namespace Mars.Seem.Tree
             {
                 // for now, double in size like List<T>
                 this.Capacity *= 2;
+                this.Codes = this.Codes.Extend(this.Capacity);
                 this.CrownRatio = this.CrownRatio.Extend(this.Capacity);
                 this.Dbh = this.Dbh.Extend(this.Capacity);
                 this.DbhGrowth = this.DbhGrowth.Extend(this.Capacity);
@@ -186,6 +195,7 @@ namespace Mars.Seem.Tree
             this.Height[this.Count] = height;
             this.CrownRatio[this.Count] = crownRatio;
             this.LiveExpansionFactor[this.Count] = liveExpansionFactor;
+            this.Codes[this.Count] = codes;
             this.UncompactedIndex[this.Count] = this.Count; // if needed, support multiple species by including offset due to trees of other species
 
             ++this.Count;

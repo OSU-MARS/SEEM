@@ -50,7 +50,7 @@ namespace Mars.Seem.Test
 
                 float dbhInInches = Constant.InchesPerCentimeter * tree.DbhInCentimetersByYear.Values[0];
                 float heightInFeet = TestConstant.FeetPerMeter * TreeRecord.EstimateHeightInMeters(tree.Species, dbhInInches);
-                treesOfSpecies.Add(tree.Plot, tree.Tag, dbhInInches, heightInFeet, tree.EstimateInitialCrownRatio(standDensity), fixedPlotExpansionFactor);
+                treesOfSpecies.Add(tree.Plot, tree.Tag, dbhInInches, heightInFeet, tree.EstimateInitialCrownRatio(standDensity), fixedPlotExpansionFactor, TreeConditionCode.Live);
             }
 
             this.yearOfMostRecentIngrowthAdded = ingrowthYear;
@@ -183,7 +183,7 @@ namespace Mars.Seem.Test
                 Debug.Assert(treesOfSpecies.Capacity > treesOfSpecies.Count);
                 float dbhInInches = TestConstant.InchesPerCm * tree.DbhInCentimetersByYear[firstPlotMeasurementYear];
                 float heightInFeet = TreeRecord.EstimateHeightInFeet(species, dbhInInches);
-                treesOfSpecies.Add(tree.Plot, tree.Tag, dbhInInches, heightInFeet, TestConstant.Default.CrownRatio, fixedPlotExpansionFactor);
+                treesOfSpecies.Add(tree.Plot, tree.Tag, dbhInInches, heightInFeet, TestConstant.Default.CrownRatio, fixedPlotExpansionFactor, TreeConditionCode.Live);
             }
 
             // estimate crown ratios

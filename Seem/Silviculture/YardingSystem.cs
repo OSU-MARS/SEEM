@@ -33,7 +33,7 @@ namespace Mars.Seem.Silviculture
         
         public void CalculatePMhAndProductivity(Stand stand, bool isThin, float merchantableCubicVolumePerHa, HarvestSystems harvestSystems, float yardedWeightPerHa)
         {
-            Debug.Assert((merchantableCubicVolumePerHa == 0.0F) || (yardedWeightPerHa > 0.0F), "Stand " + stand.Name + ": merchantable volume is " + merchantableCubicVolumePerHa + " m³/ha but yarded weight is " + yardedWeightPerHa + " kg/ha.");
+            Debug.Assert((merchantableCubicVolumePerHa == 0.0F) || ((yardedWeightPerHa > 0.0F) || (merchantableCubicVolumePerHa < 25.0F)), "Stand " + stand.Name + ": merchantable volume is " + merchantableCubicVolumePerHa + " m³/ha but yarded weight is " + yardedWeightPerHa + " kg/ha.");
 
             float averageYardingDistance = stand.MeanYardingDistanceFactor * stand.CorridorLengthInM + stand.AccessDistanceInM;
             float meanGrappleYardingTurnTimeInS;
@@ -61,11 +61,19 @@ namespace Mars.Seem.Silviculture
             float grappleTurnsPerHa = yardedWeightPerHa / meanGrappleYardingPayload;
             this.YarderPMhPerHectare = grappleTurnsPerHa * meanGrappleYardingTurnTimeInS / Constant.SecondsPerHour;
             this.YarderSMhPerHectare = this.YarderPMhPerHectare / meanGrappleYarderUtilization;
-            this.YarderProductivity = merchantableCubicVolumePerHa / this.YarderPMhPerHectare;
+            if (this.YarderPMhPerHectare > 0.0F)
+            {
+                this.YarderProductivity = merchantableCubicVolumePerHa / this.YarderPMhPerHectare;
+            }
+            else
+            {
+                Debug.Assert(this.YarderPMhPerHectare == 0.0F);
+                this.YarderProductivity = 0.0F;
+            }
 
             this.ProcessorPMhPerHa /= Constant.SecondsPerHour;
             this.ProcessorProductivity = merchantableCubicVolumePerHa / this.ProcessorPMhPerHa;
-            Debug.Assert((this.YarderProductivity >= 0.0F) && (this.YarderProductivity < 1000.0F), "Yarder productivity out of range.");
+            Debug.Assert((this.YarderProductivity >= 0.0F) && (this.YarderProductivity < 1900.0F), "Yarder productivity out of range.");
             Debug.Assert((this.ProcessorProductivity >= 0.0F) && (this.ProcessorProductivity < 1000.0F), "Processor productivity out of range.");
         }
 

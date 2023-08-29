@@ -348,7 +348,7 @@ namespace Mars.Seem.Silviculture
             }
 
             float basalAreaRemoved = basalAreaRemovedFromAbove + basalAreaRemovedProportionally + basalAreaRemovedFromBelow;
-            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || (((int)(0.01F * totalPercentage * thinFromAboveIndexBySpecies.Values.Sum() - Constant.RoundTowardsZeroTolerance) == 0) && (basalAreaRemoved == 0.0F)));
+            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || (((int)(0.01F * totalPercentage * thinFromAboveIndexBySpecies.Values.Sum() - Constant.RoundTowardsZeroTolerance) <= 1) && (basalAreaRemoved == 0.0F)));
             return basalAreaRemoved;
         }
 

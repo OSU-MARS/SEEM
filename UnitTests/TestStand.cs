@@ -37,7 +37,7 @@ namespace Mars.Seem.Test
             }
 
             Debug.Assert(treesOfSpecies.Units == Units.English);
-            treesOfSpecies.Add(tree.Plot, tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor);
+            treesOfSpecies.Add(tree.Plot, tree.Tag, tree.DbhInInches, tree.HeightInFeet, tree.CrownRatio, tree.LiveExpansionFactor, TreeConditionCode.Live);
         }
 
         public void SetQuantiles()

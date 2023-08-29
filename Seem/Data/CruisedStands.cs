@@ -224,7 +224,14 @@ namespace Mars.Seem.Data
             float dbh = Single.Parse(rowAsStrings[this.treeHeader.Dbh]);
             float height = Single.Parse(rowAsStrings[this.treeHeader.Height]);
             float expansionFactor = Single.Parse(rowAsStrings[this.treeHeader.ExpansionFactor]);
-            // TODO: codes, heightToBrokenTop?
+
+            TreeConditionCode code = TreeConditionCode.Live;
+            if (this.treeHeader.Codes >= 0)
+            {
+                code = TreeConditionCodeExtensions.Parse(rowAsStrings[this.treeHeader.Codes]);
+            }
+
+            // TODO: heightToBrokenTop?
 
             // add tree with placeholder crown ratio
             if (stand.TreesBySpecies.TryGetValue(species, out Trees? treesOfSpecies) == false)
@@ -232,7 +239,8 @@ namespace Mars.Seem.Data
                 treesOfSpecies = new Trees(species, minimumSize: 1, Units.Metric);
                 stand.TreesBySpecies.Add(species, treesOfSpecies);
             }
-            treesOfSpecies.Add(plot, this.nextTreeID++, dbh, height, this.DefaultCrownRatio, expansionFactor);
+
+            treesOfSpecies.Add(plot, this.nextTreeID++, dbh, height, this.DefaultCrownRatio, expansionFactor, code);
         }
 
         public void Read(string xlsxFilePath, string standWorksheetName, string treesWorksheetName)

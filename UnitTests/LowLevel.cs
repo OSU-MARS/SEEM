@@ -573,7 +573,7 @@ namespace Mars.Seem.Test
                     crownRatio = 0.01F;
                     expansionFactor = 0.0F;
                 }
-                trees.Add(1, treeIndex, treeIndexAsFloat, treeIndexAsFloat, crownRatio, expansionFactor);
+                trees.Add(1, treeIndex, treeIndexAsFloat, treeIndexAsFloat, crownRatio, expansionFactor, TreeConditionCode.Live);
                 trees.DbhGrowth[treeIndex] = treeIndexAsFloat;
                 trees.DeadExpansionFactor[treeIndex] = treeIndexAsFloat;
                 trees.HeightGrowth[treeIndex] = treeIndexAsFloat;
