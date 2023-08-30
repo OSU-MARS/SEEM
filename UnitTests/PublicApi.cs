@@ -195,7 +195,7 @@ namespace Mars.Seem.Test
 
             if (treesThinnedByFirstCircular == 0)
             {
-                Assert.IsTrue(landExpectationValueIts.Financial.TryGetNetPresentThinningValue(firstCircularTrajectory, financialIndex: 0, thinningPeriod, out HarvestFinancialValue? firstThin));
+                Assert.IsTrue(landExpectationValueIts.Financial.TryGetNetPresentThinValue(firstCircularTrajectory, financialIndex: 0, thinningPeriod, out HarvestFinancialValue? firstThin));
                 CutToLengthHarvest firstCircularThin = (CutToLengthHarvest)firstThin;
                 LongLogHarvest firstCircularRegen = landExpectationValueIts.Financial.GetNetPresentRegenerationHarvestValue(firstCircularTrajectory, financialIndex: 0, landExpectationValueIts.MaximizeForPlanningPeriod);
                 TreeSpeciesMerchantableVolume firstCircularStandingVolume = firstCircularTrajectory.LongLogVolumeBySpecies[FiaCode.PseudotsugaMenziesii];
@@ -276,11 +276,11 @@ namespace Mars.Seem.Test
                 Assert.IsTrue((firstCircularRegen.MerchantableCubicVolumePerHa > 264.920F) && (firstCircularRegen.MerchantableCubicVolumePerHa < PublicApi.HarvestTolerance * 264.920F), "regen: merchantable cubic volume");
                 Assert.IsTrue(firstCircularRegen.MinimumCostHarvestSystem == HarvestSystemEquipment.FellerBuncherGrappleSwingYarderProcessorLoader, "regen: min cost system");
                 Assert.IsTrue((firstCircularRegen.MinimumSystemCostPerHa > 8316.98F) && (firstCircularRegen.MinimumSystemCostPerHa < PublicApi.HarvestTolerance * 8316.98F), "regen: min cost system");
-                Assert.IsTrue((firstCircularRegen.NetPresentValuePerHa > 980.48F) && (firstCircularRegen.NetPresentValuePerHa < PublicApi.HarvestTolerance * 980.48F), "regen: NPV");
+                Assert.IsTrue((firstCircularRegen.NetPresentValuePerHa > 3062.03F) && (firstCircularRegen.NetPresentValuePerHa < PublicApi.HarvestTolerance * 3062.03F), "regen: NPV");
                 Assert.IsTrue((firstCircularRegen.PondValue2SawPerHa > 24668.05F) && (firstCircularRegen.PondValue2SawPerHa < PublicApi.HarvestTolerance * 24668.05F), "regen: pond 2S");
                 Assert.IsTrue((firstCircularRegen.PondValue3SawPerHa > 1573.129F) && (firstCircularRegen.PondValue3SawPerHa < PublicApi.HarvestTolerance * 1573.129F), "regen: pond 3S");
                 Assert.IsTrue((firstCircularRegen.PondValue4SawPerHa > 1102.866F) && (firstCircularRegen.PondValue4SawPerHa < PublicApi.HarvestTolerance * 1102.866F), "regen: pond 4S");
-                Assert.IsTrue((firstCircularRegen.ReforestationNpv < -452.33F) && (firstCircularRegen.ReforestationNpv > PublicApi.HarvestTolerance * -452.33F), "regen: reforestation");
+                Assert.IsTrue((firstCircularRegen.ReforestationNpv < -77.43F) && (firstCircularRegen.ReforestationNpv > PublicApi.HarvestTolerance * -77.43F), "regen: reforestation");
 
                 Assert.IsTrue(firstCircularRegen.Yarder.OverweightFirstLogsPerHa == 0.0F, "regen: yarder");
                 Assert.IsTrue((firstCircularRegen.Yarder.ProcessorPMhPerHa > 2.691F) && (firstCircularRegen.Yarder.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.691F), "regen: yarder");
@@ -1193,8 +1193,8 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(MathF.Abs(currentCubicStandingVolume - currentCubicStandingCheckVolume) < 0.000001F);
                 Assert.IsTrue(MathF.Abs(currentCubicThinningVolume - currentCubicThinningCheckVolume) < 0.000001F);
 
-                FinancialScenarios.Default.TryGetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex, out HarvestFinancialValue? bestThinNpv);
-                FinancialScenarios.Default.TryGetNetPresentThinningValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex, out HarvestFinancialValue? currentThinNpv);
+                FinancialScenarios.Default.TryGetNetPresentThinValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex, out HarvestFinancialValue? bestThinNpv);
+                FinancialScenarios.Default.TryGetNetPresentThinValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex, out HarvestFinancialValue? currentThinNpv);
                 if (periodIndex == firstThinningPeriod)
                 {
                     Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F); // best selection with debug stand is no harvest

@@ -194,7 +194,7 @@ namespace Mars.Seem.Cmdlets
                 snagsAndDownLogs = new(trajectory, writeContext.MaximumDiameter, writeContext.DiameterClassSize);
             }
 
-            int endOfRotationPeriodIndex = writeContext.EndOfRotationPeriod;
+            int endOfRotationPeriod = writeContext.EndOfRotationPeriod;
             int estimatedBytesWritten = 0;
             int financialIndex = writeContext.FinancialIndex;
             FinancialScenarios financialScenarios = writeContext.FinancialScenarios;
@@ -202,21 +202,21 @@ namespace Mars.Seem.Cmdlets
             StandDensity? previousStandDensity = null;
             float totalThinNetPresentValue = 0.0F;
             int? year = writeContext.StartYear;
-            for (int periodIndex = 0; periodIndex <= endOfRotationPeriodIndex; ++periodIndex)
+            for (int periodIndex = 0; periodIndex <= endOfRotationPeriod; ++periodIndex)
             {
                 Stand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
 
                 float basalAreaThinnedPerHa = trajectory.GetBasalAreaThinnedPerHa(periodIndex); // m²/ha
                 if (writeContext.HarvestsOnly)
                 {
-                    if ((basalAreaThinnedPerHa == 0.0F) && (periodIndex != endOfRotationPeriodIndex))
+                    if ((basalAreaThinnedPerHa == 0.0F) && (periodIndex != endOfRotationPeriod))
                     {
                         continue; // no trees cut in this before end of rotation period so no data to write
                     }
                 }
 
                 // financial value
-                financialScenarios.TryGetNetPresentThinningValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue);
+                financialScenarios.TryGetNetPresentThinValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue);
                 LongLogHarvest longLogRegenHarvest = financialScenarios.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, periodIndex);
 
                 string linePrefixAndStandAge = linePrefix + "," + year.ToString() + "," + trajectory.GetEndOfPeriodAge(periodIndex).ToString(CultureInfo.InvariantCulture);
@@ -268,16 +268,15 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (writeContext.NoFinancial == false)
                 {
-                    // TODO: remove duplication of code in financialScenarios.GetLandExpectationValue() and GetNetPresentValue()?
                     if (thinFinancialValue != null)
                     {
                         totalThinNetPresentValue += thinFinancialValue.NetPresentValuePerHa;
                     }
-                    float periodNetPresentValue = totalThinNetPresentValue + longLogRegenHarvest.NetPresentValuePerHa;
-                    float presentToFutureConversionFactor = financialScenarios.GetAppreciationFactor(financialIndex, trajectory.GetEndOfPeriodAge(endOfRotationPeriodIndex));
-                    float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);
+                    
+                    float periodNetPresentValue = financialScenarios.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriod, totalThinNetPresentValue, longLogRegenHarvest);
+                    float landExpectationValue = financialScenarios.GetLandExpectationValue(trajectory, financialIndex, endOfRotationPeriod, totalThinNetPresentValue, longLogRegenHarvest);
                     string financial = "," + periodNetPresentValue.ToString("0", CultureInfo.InvariantCulture) + 
-                        "," + landExpectationValue.ToString("0", CultureInfo.InvariantCulture);
+                                       "," + landExpectationValue.ToString("0", CultureInfo.InvariantCulture);
                     writer.Write(financial);
                     estimatedBytesWritten += financial.Length;
                 }

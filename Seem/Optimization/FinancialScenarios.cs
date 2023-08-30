@@ -158,25 +158,15 @@ namespace Mars.Seem.Optimization
             return MathF.Pow(1.0F + discountRate, years);
         }
 
-        private float GetDiscountFactor(int financialIndex, int years)
-        {
-            float discountRate = this.DiscountRate[financialIndex];
-            return 1.0F / MathF.Pow(1.0F + discountRate, years);
-        }
-
-        public float GetLandExpectationValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
-        {
-            float netPresentValue = this.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriod);
-
-            int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
-            float presentToFutureConversionFactor = this.GetAppreciationFactor(financialIndex, rotationLengthInYears);
-            float landExpectationValue = presentToFutureConversionFactor * netPresentValue / (presentToFutureConversionFactor - 1.0F);
-            Debug.Assert(Single.IsNaN(landExpectationValue) == false);
-
-            return landExpectationValue;
-        }
-
-        private float GetNetPresentReforestationValue(int financialIndex, float plantingDensityInTreesPerHectare)
+        /// <summary>
+        /// Get net present value of large landowner amoritized reforestation costs at stand age zero.
+        /// </summary>
+        /// <returns>Net present value of amoritized reforestation costs at stand age zero.</returns>
+        /// <remarks>
+        /// Stand age zero is defined as immediately following regeneration harvest and post-harvest slash management (and road maintenance)
+        /// but before site preparation, replanting, and release sprays.
+        /// </remarks>
+        private float GetBareEarthReforestationValue(int financialIndex, float plantingDensityInTreesPerHectare)
         {
             // amoritzed reforestation expenses under 26 USC § 194 https://www.law.cornell.edu/uscode/text/26/194
             // NPV = C0 * (-1 + 1/7 * (0.5 / (1 + r) + 1 / (1 + r)^2 + ... + 1 / (1 + r)^7 + 0.5 / (1 + r)^8))
@@ -206,6 +196,59 @@ namespace Mars.Seem.Optimization
             return reforestationNpv;
         }
 
+        private float GetDiscountFactor(int financialIndex, int years)
+        {
+            float discountRate = this.DiscountRate[financialIndex];
+            return 1.0F / MathF.Pow(1.0F + discountRate, years);
+        }
+
+        public float GetLandExpectationValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
+        {
+            float npvOfAllThins = this.GetNetPresentValueOfAllThins(trajectory, financialIndex);
+            HarvestFinancialValue regenFinancialValue = this.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, endOfRotationPeriod);
+
+            return this.GetLandExpectationValue(trajectory, financialIndex, endOfRotationPeriod, npvOfAllThins, regenFinancialValue);
+        }
+
+        public float GetLandExpectationValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod, float npvOfAllThins, HarvestFinancialValue regenHarvestFinancialValue)
+        {
+            // NPV has reforestation as a regen harvest expense, LEV has reforestation as an initial expense
+            float netPresentHarvestValueFromPeriodZeroAge = npvOfAllThins + regenHarvestFinancialValue.NetPresentValuePerHa - regenHarvestFinancialValue.ReforestationNpv;
+
+            int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
+            int regenerationHarvestYearsFromNow = rotationLengthInYears - trajectory.PeriodZeroAgeInYears;
+
+            float discountFactorFromBareEarth = this.GetDiscountFactor(financialIndex, trajectory.PeriodZeroAgeInYears);
+            float discountFactorToEndOfRotation = this.GetDiscountFactor(financialIndex, regenerationHarvestYearsFromNow);
+
+            float netPresentValueFromBareEarth = discountFactorFromBareEarth * netPresentHarvestValueFromPeriodZeroAge +
+                regenHarvestFinancialValue.ReforestationNpv / discountFactorToEndOfRotation +
+                this.GetNetPresentPropertyTaxAndManagement(financialIndex, rotationLengthInYears);
+
+            float presentToFutureConversionFactor = this.GetAppreciationFactor(financialIndex, rotationLengthInYears);
+            float landExpectationValue = presentToFutureConversionFactor * netPresentValueFromBareEarth / (presentToFutureConversionFactor - 1.0F);
+            Debug.Assert(Single.IsNaN(landExpectationValue) == false);
+
+            return landExpectationValue;
+        }
+
+        private float GetNetPresentPropertyTaxAndManagement(int financialIndex, int regenerationHarvestYearsFromNow)
+        {
+            float discountRate = this.DiscountRate[financialIndex];
+            float propertyTaxesAndManagement = -this.PropertyTaxAndManagementPerHectareYear[financialIndex];
+            if (discountRate > 0.0F)
+            {
+                float discountFactor = this.GetDiscountFactor(financialIndex, regenerationHarvestYearsFromNow);
+                propertyTaxesAndManagement *= (1.0F - discountFactor) / discountRate;
+            }
+            else
+            {
+                propertyTaxesAndManagement *= regenerationHarvestYearsFromNow;
+            }
+
+            return propertyTaxesAndManagement;
+        }
+
         public LongLogHarvest GetNetPresentRegenerationHarvestValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
         {
             Stand? endOfRotationStand = trajectory.StandByPeriod[endOfRotationPeriod];
@@ -218,8 +261,9 @@ namespace Mars.Seem.Optimization
             trajectory.RecalculateMerchantableVolumeIfNeeded(endOfRotationPeriod);
 
             LongLogHarvest longLogHarvest = new();
-            int harvestAgeInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
-            float appreciationFactor = this.GetTimberAppreciationFactor(financialIndex, harvestAgeInYears);
+            int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
+            int regenerationHarvestYearsFromNow = rotationLengthInYears - trajectory.PeriodZeroAgeInYears;
+            float appreciationFactor = this.GetTimberAppreciationFactor(financialIndex, regenerationHarvestYearsFromNow);
             longLogHarvest.TryAddMerchantableVolume(trajectory, endOfRotationPeriod, this, financialIndex, appreciationFactor);
 
             // get harvest cost
@@ -228,8 +272,8 @@ namespace Mars.Seem.Optimization
             float regenHarvestTaskCostPerCubicMeter = this.RegenerationSlashCostPerCubicMeter[financialIndex] + this.RegenerationRoadCostPerCubicMeter[financialIndex];
             longLogHarvest.CalculateProductivityAndCost(trajectory, endOfRotationPeriod, isThin: false, harvestSystems, this.RegenerationHarvestCostPerHectare[financialIndex], regenHarvestTaskCostPerCubicMeter);
 
-            float discountFactor = this.GetDiscountFactor(financialIndex, harvestAgeInYears);
-            float reforestationNpv = this.GetNetPresentReforestationValue(financialIndex, trajectory.PlantingDensityInTreesPerHectare);
+            float discountFactor = this.GetDiscountFactor(financialIndex, regenerationHarvestYearsFromNow);
+            float reforestationNpv = discountFactor * this.GetBareEarthReforestationValue(financialIndex, trajectory.PlantingDensityInTreesPerHectare);
             longLogHarvest.SetNetPresentValue(discountFactor, reforestationNpv);
 
             Debug.Assert((longLogHarvest.NetPresentValuePerHa > -100.0F * 1000.0F) && (longLogHarvest.NetPresentValuePerHa < 1000.0F * 1000.0F));
@@ -238,36 +282,36 @@ namespace Mars.Seem.Optimization
 
         public float GetNetPresentValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
         {
+            float npvOfAllThins = this.GetNetPresentValueOfAllThins(trajectory, financialIndex);
+            HarvestFinancialValue regenHarvestFinancialValue = this.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, endOfRotationPeriod);
+            return this.GetNetPresentValue(trajectory, financialIndex, endOfRotationPeriod, npvOfAllThins, regenHarvestFinancialValue);
+        }
+
+        public float GetNetPresentValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod, float npvOfAllThins, HarvestFinancialValue regenHarvestFinancialValue)
+        {
+            float npv = npvOfAllThins + regenHarvestFinancialValue.NetPresentValuePerHa; // includes reforestation after regeneration harvest
+
+            // standard annuity formula for present value of finite series of annual payments a: NPV = a (1 - (1 + r)^-n) / r, r ≠ 0
+            // for r = 0, NPV = na (https://math.stackexchange.com/questions/3159219/limit-of-geometric-series-sum-when-r-1)
+            int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
+            int regenerationHarvestYearsFromNow = rotationLengthInYears - trajectory.PeriodZeroAgeInYears;
+            npv += this.GetNetPresentPropertyTaxAndManagement(financialIndex, regenerationHarvestYearsFromNow);
+
+            Debug.Assert((npv > -11.0F * 1000.0F) && (npv < 1000.0F * 1000.0F));
+            return npv;
+        }
+
+        private float GetNetPresentValueOfAllThins(StandTrajectory trajectory, int financialIndex)
+        {
             float netPresentValue = 0.0F;
             foreach (Harvest harvest in trajectory.Treatments.Harvests)
             {
-                // for now, assume only one harvest per period
-                if (this.TryGetNetPresentThinningValue(trajectory, financialIndex, harvest.Period, out HarvestFinancialValue? thinFinancialValue))
+                if (this.TryGetNetPresentThinValue(trajectory, financialIndex, harvest.Period, out HarvestFinancialValue? thinFinancialValue))
                 {
                     netPresentValue += thinFinancialValue.NetPresentValuePerHa;
                 }
             }
 
-            HarvestFinancialValue regenFinancialValue = this.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, endOfRotationPeriod);
-            netPresentValue += regenFinancialValue.NetPresentValuePerHa;
-
-            // standard annuity formula for present value of finite series of annual payments a: NPV = a (1 - (1 + r)^-n) / r, r ≠ 0
-            // for r = 0, NPV = na (https://math.stackexchange.com/questions/3159219/limit-of-geometric-series-sum-when-r-1)
-            int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
-            float discountRate = this.DiscountRate[financialIndex];
-            float propertyTaxesAndManagement = this.PropertyTaxAndManagementPerHectareYear[financialIndex];
-            if (discountRate > 0.0F)
-            {
-                float discountFactor = this.GetDiscountFactor(financialIndex, rotationLengthInYears);
-                propertyTaxesAndManagement *= (1.0F - discountFactor) / discountRate;
-            }
-            else
-            {
-                propertyTaxesAndManagement *= rotationLengthInYears;
-            }
-            netPresentValue -= propertyTaxesAndManagement; 
-
-            Debug.Assert((netPresentValue > -10.0F * 1000.0F) && (netPresentValue < 1000.0F * 1000.0F));
             return netPresentValue;
         }
 
@@ -702,7 +746,7 @@ namespace Mars.Seem.Optimization
             Debug.Assert(this.Count == this.WhiteWood4SawPondValuePerMbf.Count);
         }
 
-        public bool TryGetNetPresentThinningValue(StandTrajectory trajectory, int financialIndex, int thinningPeriod, [NotNullWhen(true)] out HarvestFinancialValue? thinningRevenue)
+        public bool TryGetNetPresentThinValue(StandTrajectory trajectory, int financialIndex, int thinningPeriod, [NotNullWhen(true)] out HarvestFinancialValue? thinningRevenue)
         {
             if (trajectory.HasThinInPeriod(thinningPeriod) == false)
             {
@@ -721,7 +765,8 @@ namespace Mars.Seem.Optimization
             // get harvest revenue
             HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
             int thinningAgeInYears = trajectory.GetEndOfPeriodAge(thinningPeriod);
-            float pondValueMultiplier = this.GetTimberAppreciationFactor(financialIndex, thinningAgeInYears);
+            int harvestYearsFromNow = thinningAgeInYears - trajectory.PeriodZeroAgeInYears;
+            float pondValueMultiplier = this.GetTimberAppreciationFactor(financialIndex, harvestYearsFromNow);
 
             if (harvestSystems.IsForwardingEfficient(previousStand))
             {
@@ -739,7 +784,7 @@ namespace Mars.Seem.Optimization
             // get harvest cost
             float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
             thinningRevenue.CalculateProductivityAndCost(trajectory, thinningPeriod, isThin: true, harvestSystems, this.ThinningHarvestCostPerHectare[financialIndex], thinningHarvestTaskCostPerCubicMeter);
-            float discountFactor = this.GetDiscountFactor(financialIndex, thinningAgeInYears);
+            float discountFactor = this.GetDiscountFactor(financialIndex, harvestYearsFromNow);
             thinningRevenue.SetNetPresentValue(discountFactor, reforestationNpv: Single.NaN); // no site prep and planting after thinning
 
             Debug.Assert((thinningRevenue.NetPresentValuePerHa > -100.0F * 1000.0F) && (thinningRevenue.NetPresentValuePerHa < 1000.0F * 1000.0F));

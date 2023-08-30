@@ -523,7 +523,7 @@ namespace Mars.Seem.Output
                 }
 
                 // financial value
-                financialScenarios.TryGetNetPresentThinningValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue);
+                financialScenarios.TryGetNetPresentThinValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue);
                 LongLogHarvest longLogRegenHarvest = financialScenarios.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, periodIndex);
 
                 batchStand[recordIndex] = standID;
@@ -595,14 +595,13 @@ namespace Mars.Seem.Output
 
                 if (writeContext.NoFinancial == false)
                 {
-                    // TODO: remove duplication of code in financialScenarios.GetLandExpectationValue() and GetNetPresentValue()?
                     if (thinFinancialValue != null)
                     {
                         totalThinNetPresentValue += thinFinancialValue.NetPresentValuePerHa;
                     }
-                    float periodNetPresentValue = totalThinNetPresentValue + longLogRegenHarvest.NetPresentValuePerHa;
-                    float presentToFutureConversionFactor = financialScenarios.GetAppreciationFactor(financialIndex, trajectory.GetEndOfPeriodAge(writeContext.EndOfRotationPeriod));
-                    float landExpectationValue = presentToFutureConversionFactor * periodNetPresentValue / (presentToFutureConversionFactor - 1.0F);
+
+                    float periodNetPresentValue = financialScenarios.GetNetPresentValue(trajectory, financialIndex, writeContext.EndOfRotationPeriod, totalThinNetPresentValue, longLogRegenHarvest);
+                    float landExpectationValue = financialScenarios.GetLandExpectationValue(trajectory, financialIndex, writeContext.EndOfRotationPeriod, totalThinNetPresentValue, longLogRegenHarvest);
 
                     batchNpv[recordIndex] = periodNetPresentValue;
                     batchLev[recordIndex] = landExpectationValue;
