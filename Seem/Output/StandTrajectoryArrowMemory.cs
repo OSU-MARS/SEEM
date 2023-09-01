@@ -489,7 +489,7 @@ namespace Mars.Seem.Output
             Span<float> batchRegenProcessorProductivityWithGrappleYoader = MemoryMarshal.Cast<byte, float>(this.regenProcessorProductivityWithGrappleYoader);
             Span<float> batchRegenLoadedWeight = MemoryMarshal.Cast<byte, float>(this.regenLoadedWeight);
 
-            trajectory.GetMerchantableVolumes(out StandMerchantableVolume longLogVolume, out StandMerchantableVolume forwardedVolume);
+            (StandMerchantableVolume forwardedThinVolume, StandMerchantableVolume longLogThinVolume, StandMerchantableVolume longLogRegenVolume) = trajectory.GetMerchantableVolumes();
 
             //SnagDownLogTable? snagsAndDownLogs = null;
             //if (writeContext.NoCarbon == false)
@@ -523,7 +523,16 @@ namespace Mars.Seem.Output
                 }
 
                 // financial value
-                financialScenarios.TryGetNetPresentThinValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue);
+                StandMerchantableVolume thinVolume = longLogThinVolume;
+                if (financialScenarios.TryGetNetPresentThinValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue))
+                {
+                    bool isCutToLengthThin = (thinFinancialValue.MinimumCostHarvestSystem == HarvestSystemEquipment.TrackedHarvesterForwarder) ||
+                                             (thinFinancialValue.MinimumCostHarvestSystem == HarvestSystemEquipment.TrackedHarvesterForwarder);
+                    if (isCutToLengthThin)
+                    {
+                        thinVolume = forwardedThinVolume;
+                    }
+                }
                 LongLogHarvest longLogRegenHarvest = financialScenarios.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, periodIndex);
 
                 batchStand[recordIndex] = standID;
@@ -546,7 +555,7 @@ namespace Mars.Seem.Output
                     }
 
                     // TODO: support long log thins
-                    float thinVolumeScribner = forwardedVolume.GetScribnerTotal(periodIndex); // MBF/ha
+                    float thinVolumeScribner = thinVolume.GetScribnerTotal(periodIndex); // MBF/ha
                     Debug.Assert((thinVolumeScribner == 0.0F && basalAreaThinnedPerHa == 0.0F) || (thinVolumeScribner > 0.0F && basalAreaThinnedPerHa > 0.0F));
 
                     StandDensity currentStandDensity = trajectory.GetStandDensity(periodIndex);
@@ -567,9 +576,9 @@ namespace Mars.Seem.Output
                     batchHtop[recordIndex] = topHeightInM;
                     batchBasalArea[recordIndex] = currentStandDensity.BasalAreaPerHa;
                     batchSdi[recordIndex] = reinekeStandDensityIndex;
-                    batchStandingCmh[recordIndex] = longLogVolume.GetCubicTotal(periodIndex);
-                    batchStandingMbfh[recordIndex] = longLogVolume.GetScribnerTotal(periodIndex);
-                    batchThinCmh[recordIndex] = forwardedVolume.GetCubicTotal(periodIndex); // TODO: support long log thins
+                    batchStandingCmh[recordIndex] = longLogRegenVolume.GetCubicTotal(periodIndex);
+                    batchStandingMbfh[recordIndex] = longLogRegenVolume.GetScribnerTotal(periodIndex);
+                    batchThinCmh[recordIndex] = thinVolume.GetCubicTotal(periodIndex); // TODO: support long log thins
                     batchThinMbfh[recordIndex] = thinVolumeScribner;
                     batchBAremoved[recordIndex] = basalAreaThinnedPerHa;
                     batchBAintensity[recordIndex] = basalAreaIntensity;
@@ -695,15 +704,15 @@ namespace Mars.Seem.Output
                 {
                     if (thinFinancialValue != null)
                     {
-                        batchThinLogs2S [recordIndex] = forwardedVolume.Logs2Saw[periodIndex];
-                        batchThinLogs3S[recordIndex] = forwardedVolume.Logs3Saw[periodIndex];
-                        batchThinLogs4S[recordIndex] = forwardedVolume.Logs4Saw[periodIndex];
-                        batchThinCmh2S[recordIndex] = forwardedVolume.Cubic2Saw[periodIndex];
-                        batchThinCmh3S[recordIndex] = forwardedVolume.Cubic3Saw[periodIndex];
-                        batchThinCmh4S[recordIndex] = forwardedVolume.Cubic4Saw[periodIndex];
-                        batchThinMbfh2S[recordIndex] = forwardedVolume.Scribner2Saw[periodIndex];
-                        batchThinMbfh3S[recordIndex] = forwardedVolume.Scribner3Saw[periodIndex];
-                        batchThinMbfh4S[recordIndex] = forwardedVolume.Scribner4Saw[periodIndex];
+                        batchThinLogs2S [recordIndex] = thinVolume.Logs2Saw[periodIndex];
+                        batchThinLogs3S[recordIndex] = thinVolume.Logs3Saw[periodIndex];
+                        batchThinLogs4S[recordIndex] = thinVolume.Logs4Saw[periodIndex];
+                        batchThinCmh2S[recordIndex] = thinVolume.Cubic2Saw[periodIndex];
+                        batchThinCmh3S[recordIndex] = thinVolume.Cubic3Saw[periodIndex];
+                        batchThinCmh4S[recordIndex] = thinVolume.Cubic4Saw[periodIndex];
+                        batchThinMbfh2S[recordIndex] = thinVolume.Scribner2Saw[periodIndex];
+                        batchThinMbfh3S[recordIndex] = thinVolume.Scribner3Saw[periodIndex];
+                        batchThinMbfh4S[recordIndex] = thinVolume.Scribner4Saw[periodIndex];
                         batchThinPond2S[recordIndex] = thinFinancialValue.PondValue2SawPerHa;
                         batchThinPond3S[recordIndex] = thinFinancialValue.PondValue3SawPerHa;
                         batchThinPond4S[recordIndex] = thinFinancialValue.PondValue4SawPerHa;
@@ -723,15 +732,15 @@ namespace Mars.Seem.Output
                         batchThinPond3S[recordIndex] = Single.NaN;
                         batchThinPond4S[recordIndex] = Single.NaN;
                     }
-                    batchStandingLogs2S[recordIndex] = longLogVolume.Logs2Saw[periodIndex];
-                    batchStandingLogs3S[recordIndex] = longLogVolume.Logs3Saw[periodIndex];
-                    batchStandingLogs4S[recordIndex] = longLogVolume.Logs4Saw[periodIndex];
-                    batchStandingCmh2S[recordIndex] = longLogVolume.Cubic2Saw[periodIndex];
-                    batchStandingCmh3S[recordIndex] = longLogVolume.Cubic3Saw[periodIndex];
-                    batchStandingCmh4S[recordIndex] = longLogVolume.Cubic4Saw[periodIndex];
-                    batchStandingMbfh2S[recordIndex] = longLogVolume.Scribner2Saw[periodIndex];
-                    batchStandingMbfh3S[recordIndex] = longLogVolume.Scribner3Saw[periodIndex];
-                    batchStandingMbfh4S[recordIndex] = longLogVolume.Scribner4Saw[periodIndex];
+                    batchStandingLogs2S[recordIndex] = longLogRegenVolume.Logs2Saw[periodIndex];
+                    batchStandingLogs3S[recordIndex] = longLogRegenVolume.Logs3Saw[periodIndex];
+                    batchStandingLogs4S[recordIndex] = longLogRegenVolume.Logs4Saw[periodIndex];
+                    batchStandingCmh2S[recordIndex] = longLogRegenVolume.Cubic2Saw[periodIndex];
+                    batchStandingCmh3S[recordIndex] = longLogRegenVolume.Cubic3Saw[periodIndex];
+                    batchStandingCmh4S[recordIndex] = longLogRegenVolume.Cubic4Saw[periodIndex];
+                    batchStandingMbfh2S[recordIndex] = longLogRegenVolume.Scribner2Saw[periodIndex];
+                    batchStandingMbfh3S[recordIndex] = longLogRegenVolume.Scribner3Saw[periodIndex];
+                    batchStandingMbfh4S[recordIndex] = longLogRegenVolume.Scribner4Saw[periodIndex];
                     batchRegenPond2S[recordIndex] = longLogRegenHarvest.PondValue2SawPerHa;
                     batchRegenPond3S[recordIndex] = longLogRegenHarvest.PondValue3SawPerHa;
                     batchRegenPond4S[recordIndex] = longLogRegenHarvest.PondValue4SawPerHa;

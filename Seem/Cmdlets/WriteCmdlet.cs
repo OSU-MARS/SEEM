@@ -11,6 +11,7 @@ using System.IO;
 using System.Management.Automation;
 using System.Text;
 using Mars.Seem.Output;
+using Mars.Seem.Heuristics;
 
 namespace Mars.Seem.Cmdlets
 {
@@ -74,9 +75,14 @@ namespace Mars.Seem.Cmdlets
             return arrowMemory;
         }
 
-        protected static string GetCsvHeaderForStandTrajectory(string prefix, WriteStandTrajectoryContext writeContext)
+        protected virtual string GetCsvHeaderForSilviculturalCoordinate()
         {
-            string header = prefix + ",year,standAge";
+            return "stand,thin1,thin2,thin3,rotation,financialScenario";
+        }
+
+        protected string GetCsvHeaderForStandTrajectory(WriteStandTrajectoryContext writeContext)
+        {
+            string header = this.GetCsvHeaderForSilviculturalCoordinate() + ",year,standAge";
             if (writeContext.NoTreeGrowth == false)
             {
                 header += ",TPH,QMD,Htop,BA,SDI,standingCmh,standingMbfh,thinCmh,thinMbfh,BAremoved,BAintensity,TPHdecrease";
@@ -185,7 +191,7 @@ namespace Mars.Seem.Cmdlets
         /// </remarks>
         protected static int WriteStandTrajectoryToCsv(StreamWriter writer, StandTrajectory trajectory, WriteStandTrajectoryContext writeContext)
         {
-            trajectory.GetMerchantableVolumes(out StandMerchantableVolume longLogVolume, out StandMerchantableVolume forwardedVolume);
+            (StandMerchantableVolume forwardedThinVolume, StandMerchantableVolume longLogThinVolume, StandMerchantableVolume longLogRegenVolume) = trajectory.GetMerchantableVolumes();
 
             SnagDownLogTable? snagsAndDownLogs = null;
             if (writeContext.NoCarbon == false)
@@ -216,7 +222,16 @@ namespace Mars.Seem.Cmdlets
                 }
 
                 // financial value
-                financialScenarios.TryGetNetPresentThinValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue);
+                StandMerchantableVolume thinVolume = longLogThinVolume;
+                if (financialScenarios.TryGetNetPresentThinValue(trajectory, financialIndex, periodIndex, out HarvestFinancialValue? thinFinancialValue))
+                {
+                    bool isCutToLengthThin = (thinFinancialValue.MinimumCostHarvestSystem == HarvestSystemEquipment.TrackedHarvesterForwarder) ||
+                                             (thinFinancialValue.MinimumCostHarvestSystem == HarvestSystemEquipment.TrackedHarvesterForwarder);
+                    if (isCutToLengthThin)
+                    {
+                        thinVolume = forwardedThinVolume;
+                    }
+                }
                 LongLogHarvest longLogRegenHarvest = financialScenarios.GetNetPresentRegenerationHarvestValue(trajectory, financialIndex, periodIndex);
 
                 string linePrefixAndStandAge = linePrefix + "," + year.ToString() + "," + trajectory.GetEndOfPeriodAge(periodIndex).ToString(CultureInfo.InvariantCulture);
@@ -233,7 +248,7 @@ namespace Mars.Seem.Cmdlets
                     }
 
                     // TODO: support long log thins
-                    float thinVolumeScribner = forwardedVolume.GetScribnerTotal(periodIndex); // MBF/ha
+                    float thinVolumeScribner = thinVolume.GetScribnerTotal(periodIndex); // MBF/ha
                     Debug.Assert((thinVolumeScribner == 0.0F && basalAreaThinnedPerHa == 0.0F) || (thinVolumeScribner > 0.0F && basalAreaThinnedPerHa > 0.0F));
 
                     StandDensity currentStandDensity = trajectory.GetStandDensity(periodIndex);
@@ -254,9 +269,9 @@ namespace Mars.Seem.Cmdlets
                         "," + topHeightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture) + 
                         "," + currentStandDensity.BasalAreaPerHa.ToString("0.0", CultureInfo.InvariantCulture) + 
                         "," + reinekeStandDensityIndex.ToString("0.0", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.GetCubicTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // m³/ha
-                        "," + longLogVolume.GetScribnerTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // MBF/ha
-                        "," + forwardedVolume.GetCubicTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // m³/ha, TODO: support long log thins
+                        "," + longLogRegenVolume.GetCubicTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // m³/ha
+                        "," + longLogRegenVolume.GetScribnerTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // MBF/ha
+                        "," + thinVolume.GetCubicTotal(periodIndex).ToString("0.000", CultureInfo.InvariantCulture) + // m³/ha, TODO: support long log thins
                         "," + thinVolumeScribner.ToString("0.000", CultureInfo.InvariantCulture) + 
                         "," + basalAreaThinnedPerHa.ToString("0.0", CultureInfo.InvariantCulture) + 
                         "," + basalAreaIntensity.ToString("0.000", CultureInfo.InvariantCulture) + 
@@ -370,15 +385,15 @@ namespace Mars.Seem.Cmdlets
                     string timberSorts;
                     if (thinFinancialValue != null)
                     {
-                        timberSorts = "," + forwardedVolume.Logs2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
-                            "," + forwardedVolume.Logs3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
-                            "," + forwardedVolume.Logs4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
-                            "," + forwardedVolume.Cubic2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
-                            "," + forwardedVolume.Cubic3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
-                            "," + forwardedVolume.Cubic4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
-                            "," + forwardedVolume.Scribner2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
-                            "," + forwardedVolume.Scribner3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
-                            "," + forwardedVolume.Scribner4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                        timberSorts = "," + thinVolume.Logs2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                            "," + thinVolume.Logs3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                            "," + thinVolume.Logs4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                            "," + thinVolume.Cubic2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                            "," + thinVolume.Cubic3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                            "," + thinVolume.Cubic4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                            "," + thinVolume.Scribner2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                            "," + thinVolume.Scribner3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
+                            "," + thinVolume.Scribner4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) +
                             "," + thinFinancialValue.PondValue2SawPerHa.ToString("0.00", CultureInfo.InvariantCulture) +
                             "," + thinFinancialValue.PondValue3SawPerHa.ToString("0.00", CultureInfo.InvariantCulture) +
                             "," + thinFinancialValue.PondValue4SawPerHa.ToString("0.00", CultureInfo.InvariantCulture);
@@ -399,15 +414,15 @@ namespace Mars.Seem.Cmdlets
                             ","; // thinFinancialValue.PondValue4SawPerHa
                     }
                     timberSorts +=
-                        "," + longLogVolume.Logs2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.Logs3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.Logs4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.Cubic2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.Cubic3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.Cubic4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.Scribner2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.Scribner3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
-                        "," + longLogVolume.Scribner4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Logs2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Logs3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Logs4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Cubic2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Cubic3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Cubic4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Scribner2Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Scribner3Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
+                        "," + longLogRegenVolume.Scribner4Saw[periodIndex].ToString("0.000", CultureInfo.InvariantCulture) + 
                         "," + longLogRegenHarvest.PondValue2SawPerHa.ToString("0.00", CultureInfo.InvariantCulture) + 
                         "," + longLogRegenHarvest.PondValue3SawPerHa.ToString("0.00", CultureInfo.InvariantCulture) + 
                         "," + longLogRegenHarvest.PondValue4SawPerHa.ToString("0.00", CultureInfo.InvariantCulture);

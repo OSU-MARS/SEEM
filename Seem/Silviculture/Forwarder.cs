@@ -43,8 +43,9 @@ namespace Mars.Seem.Silviculture
             // TODO: full bark retention on trees bucked by chainsaw (for now it's assumed all trees are bucked by a harvester)
             // TODO: support cross-species loading
             // TODO: merchantable fraction of actual log length instead of assuming all logs are of preferred length
-            foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in trajectory.ForwardedVolumeBySpecies.Values)
+            for (int treeSpeciesIndex = 0; treeSpeciesIndex < trajectory.ForwardedThinVolumeBySpecies.Count; ++treeSpeciesIndex)
             {
+                TreeSpeciesMerchantableVolume harvestVolumeForSpecies = trajectory.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
                 float cubic4Saw = harvestVolumeForSpecies.Cubic4Saw[harvestPeriod];
                 float logs4Saw = harvestVolumeForSpecies.Logs4Saw[harvestPeriod];
                 float cubic3Saw = harvestVolumeForSpecies.Cubic3Saw[harvestPeriod];

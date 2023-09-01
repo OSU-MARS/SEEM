@@ -435,12 +435,6 @@ namespace Mars.Seem.Silviculture
             return yarderCostPerHa + processorCostPerHa + loaderCostPerHa;
         }
 
-        public bool IsForwardingEfficient(Stand stand)
-        {
-            float forwarderPayloadInKg = Forwarder.GetForwarderPayloadInKg(stand, this);
-            return forwarderPayloadInKg > this.GrappleYoaderMeanPayload; // for now, make a crude estimate
-        }
-
         public void VerifyPropertyValues()
         {
             if ((this.AddOnWinchCableLengthInM < 250.0F) || (this.AddOnWinchCableLengthInM > 350.0F))

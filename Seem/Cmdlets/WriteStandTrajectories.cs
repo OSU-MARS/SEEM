@@ -100,8 +100,7 @@ namespace Mars.Seem.Cmdlets
             using StreamWriter writer = this.CreateCsvWriter();
             if (this.ShouldWriteCsvHeader())
             {
-                string header = WriteCmdlet.GetCsvHeaderForStandTrajectory("stand,financialScenario", writeContext);
-                writer.WriteLine(header);
+                writer.WriteLine(this.GetCsvHeaderForStandTrajectory(writeContext));
             }
 
             // write stand trajectories

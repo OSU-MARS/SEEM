@@ -249,7 +249,7 @@ namespace Mars.Seem.Optimization
             return propertyTaxesAndManagement;
         }
 
-        public LongLogHarvest GetNetPresentRegenerationHarvestValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
+        public LongLogRegenerationHarvest GetNetPresentRegenerationHarvestValue(StandTrajectory trajectory, int financialIndex, int endOfRotationPeriod)
         {
             Stand? endOfRotationStand = trajectory.StandByPeriod[endOfRotationPeriod];
             if (endOfRotationStand == null)
@@ -258,9 +258,9 @@ namespace Mars.Seem.Optimization
             }
 
             // get harvest revenue
-            trajectory.RecalculateMerchantableVolumeIfNeeded(endOfRotationPeriod);
+            trajectory.RecalculateRegenerationHarvestMerchantableVolumeIfNeeded(endOfRotationPeriod);
 
-            LongLogHarvest longLogHarvest = new();
+            LongLogRegenerationHarvest longLogHarvest = new();
             int rotationLengthInYears = trajectory.GetEndOfPeriodAge(endOfRotationPeriod);
             int regenerationHarvestYearsFromNow = rotationLengthInYears - trajectory.PeriodZeroAgeInYears;
             float appreciationFactor = this.GetTimberAppreciationFactor(financialIndex, regenerationHarvestYearsFromNow);
@@ -760,34 +760,35 @@ namespace Mars.Seem.Optimization
                 throw new InvalidOperationException("Stand information is missing for period " + (thinningPeriod - 1) + ". Has the stand trajectory been simulated?");
             }
 
-            trajectory.RecalculateMerchantableVolumeIfNeeded(thinningPeriod);
+            // TODO: unify merchantable and operable volume calculations?
+            trajectory.RecalculateThinningMerchantableVolumeIfNeeded(thinningPeriod);
 
             // get harvest revenue
             HarvestSystems harvestSystems = this.HarvestSystems[financialIndex];
             int thinningAgeInYears = trajectory.GetEndOfPeriodAge(thinningPeriod);
             int harvestYearsFromNow = thinningAgeInYears - trajectory.PeriodZeroAgeInYears;
-            float pondValueMultiplier = this.GetTimberAppreciationFactor(financialIndex, harvestYearsFromNow);
+            float longLogPondValueMultiplier = this.GetTimberAppreciationFactor(financialIndex, harvestYearsFromNow);
 
-            if (harvestSystems.IsForwardingEfficient(previousStand))
-            {
-                thinningRevenue = new CutToLengthHarvest();
-                pondValueMultiplier *= this.ShortLogPondValueMultiplier[financialIndex];
-            }
-            else
-            {
-                thinningRevenue = new LongLogHarvest();
-            }
+            CutToLengthHarvest cutToLengthThin = new();
+            float shortLogPondValueMultiplier = this.ShortLogPondValueMultiplier[financialIndex] * longLogPondValueMultiplier;
+            cutToLengthThin.TryAddMerchantableVolume(trajectory, thinningPeriod, this, financialIndex, shortLogPondValueMultiplier);
 
-            // TODO: unify merchantable and operable volume calculations?
-            thinningRevenue.TryAddMerchantableVolume(trajectory, thinningPeriod, this, financialIndex, pondValueMultiplier);
+            LongLogThin longLogThin = new();
+            longLogThin.TryAddMerchantableVolume(trajectory, thinningPeriod, this, financialIndex, longLogPondValueMultiplier);
 
             // get harvest cost
             float thinningHarvestTaskCostPerCubicMeter = this.ThinningRoadCostPerCubicMeter[financialIndex] + this.ThinningSlashCostPerCubicMeter[financialIndex];
-            thinningRevenue.CalculateProductivityAndCost(trajectory, thinningPeriod, isThin: true, harvestSystems, this.ThinningHarvestCostPerHectare[financialIndex], thinningHarvestTaskCostPerCubicMeter);
-            float discountFactor = this.GetDiscountFactor(financialIndex, harvestYearsFromNow);
-            thinningRevenue.SetNetPresentValue(discountFactor, reforestationNpv: Single.NaN); // no site prep and planting after thinning
+            cutToLengthThin.CalculateProductivityAndCost(trajectory, thinningPeriod, isThin: true, harvestSystems, this.ThinningHarvestCostPerHectare[financialIndex], thinningHarvestTaskCostPerCubicMeter);
+            longLogThin.CalculateProductivityAndCost(trajectory, thinningPeriod, isThin: true, harvestSystems, this.ThinningHarvestCostPerHectare[financialIndex], thinningHarvestTaskCostPerCubicMeter);
 
-            Debug.Assert((thinningRevenue.NetPresentValuePerHa > -100.0F * 1000.0F) && (thinningRevenue.NetPresentValuePerHa < 1000.0F * 1000.0F));
+            float discountFactor = this.GetDiscountFactor(financialIndex, harvestYearsFromNow);
+            cutToLengthThin.SetNetPresentValue(discountFactor, reforestationNpv: Single.NaN); // no site prep and planting after thinning
+            longLogThin.SetNetPresentValue(discountFactor, reforestationNpv: Single.NaN); // no site prep and planting after thinning
+
+            Debug.Assert((cutToLengthThin.NetPresentValuePerHa > -100.0F * 1000.0F) && (cutToLengthThin.NetPresentValuePerHa < 1000.0F * 1000.0F) &&
+                         (longLogThin.NetPresentValuePerHa > -100.0F * 1000.0F) && (longLogThin.NetPresentValuePerHa < 1000.0F * 1000.0F));
+
+            thinningRevenue = cutToLengthThin.NetPresentValuePerHa >= longLogThin.NetPresentValuePerHa ? cutToLengthThin : longLogThin;
             return true;
         }
 

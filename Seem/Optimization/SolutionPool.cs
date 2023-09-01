@@ -125,7 +125,8 @@ namespace Mars.Seem.Optimization
             Debug.Assert((nearestNeighborIndex >= SolutionPool.UnknownNeighbor) && 
                          (nearestNeighborIndex < this.SolutionsInPool) &&
                          ((nearestNeighborIndex == SolutionPool.UnknownNeighbor) || (neighborDistances[nearestNeighborIndex] != SolutionPool.UnknownDistance)) &&
-                         ((neighborDistances.Length == this.SolutionsInPool) || (neighborDistances.Length == this.SolutionsInPool + 1))); // insert or append new solution
+                         ((neighborDistances.Length == this.SolutionsInPool) || (neighborDistances.Length == this.SolutionsInPool + 1)), 
+                         "A neighbor distance is out of range or the number of neighbors is mismatched to the pool's current size."); // insert or append new solution
 
             // update distance matrix and neighbors based on information in neighborDistances
             int minimumNeighborDistance = SolutionPool.UnknownDistance;

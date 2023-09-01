@@ -67,27 +67,39 @@ namespace Mars.Seem.Tree
             }
             else
             {
-                this.ZeroMerchantableVolume(periodIndex); // should be zero since species merchantability doesn't change at runtime, but just in case
+                this.SetZeroMerchantableVolume(periodIndex); // should be zero since species merchantability doesn't change at runtime, but just in case
             }
         }
 
-        public void CalculateMerchantableThinningVolume(Stand previousStand, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, int periodIndex, TreeScaling treeVolume)
+        public void CalculateMerchantableThinningVolume(Stand previousStand, bool isCutToLength, IndividualTreeSelectionBySpecies individualTreeSelectionBySpecies, int periodIndex, TreeScaling treeScaling)
         {
             Trees previousTreesOfSpecies = previousStand.TreesBySpecies[this.Species];
-            IndividualTreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
-            if (treeVolume.TryGetForwarderVolumeTable(previousTreesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? forwardedVolumeTable))
+            bool hasVolumeTable;
+            TreeSpeciesMerchantableVolumeTable? volumeTable;
+            if (isCutToLength)
             {
-                TreeSpeciesMerchantableVolumeForPeriod thinnedMerchVolume = forwardedVolumeTable.GetHarvestedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex);
-                thinnedMerchVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
-                this.SetMerchantableVolume(thinnedMerchVolume, periodIndex);
-
-                Debug.Assert((thinnedMerchVolume.Cubic2Saw >= 0.0F) && (thinnedMerchVolume.Cubic3Saw >= 0.0F) && (thinnedMerchVolume.Cubic4Saw >= 0.0F));
-                Debug.Assert((thinnedMerchVolume.Scribner2Saw >= 0.0F) && (thinnedMerchVolume.Scribner3Saw >= 0.0F) && (thinnedMerchVolume.Scribner4Saw >= 0.0F));
+                hasVolumeTable = treeScaling.TryGetForwarderVolumeTable(previousTreesOfSpecies.Species, out volumeTable);
             }
             else
             {
-                this.ZeroMerchantableVolume(periodIndex); // should be zero since species merchantability doesn't change at runtime, but just in case
+                hasVolumeTable = treeScaling.TryGetLongLogVolumeTable(previousTreesOfSpecies.Species, out volumeTable);
             }
+
+            if (hasVolumeTable == false)
+            {
+                this.SetZeroMerchantableVolume(periodIndex); // should be zero since species merchantability doesn't change at runtime, but just in case
+                return;
+            }
+
+            IndividualTreeSelection individualTreeSelection = individualTreeSelectionBySpecies[previousTreesOfSpecies.Species];
+
+            Debug.Assert(volumeTable != null);
+            TreeSpeciesMerchantableVolumeForPeriod thinnedMerchVolume = volumeTable.GetHarvestedVolume(previousTreesOfSpecies, individualTreeSelection, periodIndex);
+            thinnedMerchVolume.Multiply(Constant.Bucking.DefectAndBreakageReduction);
+            this.SetMerchantableVolume(thinnedMerchVolume, periodIndex);
+
+            Debug.Assert((thinnedMerchVolume.Cubic2Saw >= 0.0F) && (thinnedMerchVolume.Cubic3Saw >= 0.0F) && (thinnedMerchVolume.Cubic4Saw >= 0.0F));
+            Debug.Assert((thinnedMerchVolume.Scribner2Saw >= 0.0F) && (thinnedMerchVolume.Scribner3Saw >= 0.0F) && (thinnedMerchVolume.Scribner4Saw >= 0.0F));
         }
 
         public void ClearVolume(int periodIndex)
@@ -189,7 +201,7 @@ namespace Mars.Seem.Tree
             this.isCalculated[periodIndex] = true;
         }
 
-        private void ZeroMerchantableVolume(int periodIndex)
+        private void SetZeroMerchantableVolume(int periodIndex)
         {
             this.Cubic2Saw[periodIndex] = 0.0F;
             this.Cubic3Saw[periodIndex] = 0.0F;

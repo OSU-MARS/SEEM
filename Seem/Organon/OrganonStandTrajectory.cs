@@ -146,17 +146,26 @@ namespace Mars.Seem.Organon
             //    this.StandByPeriod[periodIndex] = null;
             //}
 
-            Debug.Assert(IDictionaryExtensions.KeysIdentical(this.LongLogVolumeBySpecies, other.LongLogVolumeBySpecies) &&
-                         IDictionaryExtensions.KeysIdentical(this.ForwardedVolumeBySpecies, other.ForwardedVolumeBySpecies));
-            foreach (KeyValuePair<FiaCode, TreeSpeciesMerchantableVolume> otherStandingVolumeForSpecies in other.LongLogVolumeBySpecies)
+            Debug.Assert(IDictionaryExtensions.KeysIdentical(this.ForwardedThinVolumeBySpecies, other.ForwardedThinVolumeBySpecies) &&
+                         IDictionaryExtensions.KeysIdentical(this.LongLogThinVolumeBySpecies, other.LongLogThinVolumeBySpecies) &&
+                         IDictionaryExtensions.KeysIdentical(this.LongLogRegenerationVolumeBySpecies, other.LongLogRegenerationVolumeBySpecies));
+            for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.ForwardedThinVolumeBySpecies.Count; ++treeSpeciesIndex)
             {
-                FiaCode treeSpecies = otherStandingVolumeForSpecies.Key;
-                TreeSpeciesMerchantableVolume thisStandingVolumeForSpecies = this.LongLogVolumeBySpecies[treeSpecies];
-                TreeSpeciesMerchantableVolume otherThinningVolumeForSpecies = other.ForwardedVolumeBySpecies[treeSpecies];
-                TreeSpeciesMerchantableVolume thisThinningVolumeForSpecies = this.ForwardedVolumeBySpecies[treeSpecies];
+                Debug.Assert((this.ForwardedThinVolumeBySpecies.Keys[treeSpeciesIndex] == other.ForwardedThinVolumeBySpecies.Keys[treeSpeciesIndex]) &&
+                             (this.LongLogThinVolumeBySpecies.Keys[treeSpeciesIndex] == other.LongLogThinVolumeBySpecies.Keys[treeSpeciesIndex]) &&
+                             (this.LongLogRegenerationVolumeBySpecies.Keys[treeSpeciesIndex] == other.LongLogRegenerationVolumeBySpecies.Keys[treeSpeciesIndex]));
 
-                thisStandingVolumeForSpecies.CopyFrom(otherStandingVolumeForSpecies.Value);
-                thisThinningVolumeForSpecies.CopyFrom(otherThinningVolumeForSpecies);
+                TreeSpeciesMerchantableVolume otherForwardedThinVolumeForSpecies = other.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
+                TreeSpeciesMerchantableVolume thisForwardedThinVolumeForSpecies = this.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
+                thisForwardedThinVolumeForSpecies.CopyFrom(otherForwardedThinVolumeForSpecies);
+
+                TreeSpeciesMerchantableVolume otherLongLogThinVolumeForSpecies = other.LongLogThinVolumeBySpecies.Values[treeSpeciesIndex];
+                TreeSpeciesMerchantableVolume thisLongLogThinVolumeForSpecies = this.LongLogThinVolumeBySpecies.Values[treeSpeciesIndex];
+                thisLongLogThinVolumeForSpecies.CopyFrom(otherLongLogThinVolumeForSpecies);
+
+                TreeSpeciesMerchantableVolume otherStandingVolumeForSpecies = other.LongLogRegenerationVolumeBySpecies.Values[treeSpeciesIndex];
+                TreeSpeciesMerchantableVolume thisRegenVolumeForSpecies = this.LongLogRegenerationVolumeBySpecies.Values[treeSpeciesIndex];
+                thisRegenVolumeForSpecies.CopyFrom(otherStandingVolumeForSpecies);
             }
 
             this.Treatments.CopyTreeGrowthFrom(other.Treatments);

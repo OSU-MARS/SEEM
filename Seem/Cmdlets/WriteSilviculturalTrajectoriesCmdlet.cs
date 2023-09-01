@@ -1,11 +1,9 @@
 ﻿using Mars.Seem.Heuristics;
 using Mars.Seem.Silviculture;
-using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Management.Automation;
 
 namespace Mars.Seem.Cmdlets
@@ -25,7 +23,7 @@ namespace Mars.Seem.Cmdlets
             this.Trajectories = null;
         }
 
-        protected string GetCsvHeaderForSilviculturalCoordinate()
+        protected override string GetCsvHeaderForSilviculturalCoordinate()
         {
             string? maybeHeuristicParametersWithTrailingComma = null;
             if (this.HeuristicParameters)

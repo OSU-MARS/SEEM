@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Mars.Seem.Silviculture
 {
-    public class LongLogHarvest : HarvestFinancialValue
+    public abstract class LongLogHarvest : HarvestFinancialValue
     {
         public Fallers Fallers { get; private init; }
         public FellerBuncherSystems FellerBuncher { get; private init; }
@@ -291,19 +291,6 @@ namespace Mars.Seem.Silviculture
                 this.MinimumCostHarvestSystem = HarvestSystemEquipment.WheeledHarvesterGrappleYoaderLoader;
                 this.MinimumSystemCostPerHa = this.WheeledHarvester.SystemCostPerHaWithYoader;
             }
-        }
-
-        public override bool TryAddMerchantableVolume(StandTrajectory trajectory, int harvestPeriod, FinancialScenarios financialScenarios, int financialIndex, float appreciationFactor)
-        {
-            this.ClearNpvAndPond();
-
-            bool merchantableVolumeAdded = false;
-            foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in trajectory.LongLogVolumeBySpecies.Values)
-            {
-                merchantableVolumeAdded |= this.TryAddMerchantableVolume(harvestVolumeForSpecies, harvestPeriod, financialScenarios, financialIndex, appreciationFactor);
-            }
-
-            return merchantableVolumeAdded;
         }
     }
 }

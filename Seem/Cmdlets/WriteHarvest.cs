@@ -58,15 +58,15 @@ namespace Mars.Seem.Cmdlets
                     foreach (SilviculturalCoordinate coordinate in silviculturalSpace.CoordinatesEvaluated)
                     {
                         StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
-                        float harvestVolumeScribner = highTrajectory.GetTotalScribnerVolumeThinned(periodIndex);
-                        line.Append("," + harvestVolumeScribner.ToString(CultureInfo.InvariantCulture));
+                        float thinVolumeScribner = highTrajectory.GetTotalScribnerVolumeThinned(periodIndex);
+                        line.Append("," + thinVolumeScribner.ToString(CultureInfo.InvariantCulture));
                     }
 
                     foreach (SilviculturalCoordinate coordinate in silviculturalSpace.CoordinatesEvaluated)
                     {
                         StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
-                        float standingVolumeScribner = highTrajectory.GetTotalStandingScribnerVolume(periodIndex);
-                        line.Append("," + standingVolumeScribner.ToString(CultureInfo.InvariantCulture));
+                        float regenVolumeScribner = highTrajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex);
+                        line.Append("," + regenVolumeScribner.ToString(CultureInfo.InvariantCulture));
                     }
 
                     writer.WriteLine(line);

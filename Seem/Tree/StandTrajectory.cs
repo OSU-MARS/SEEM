@@ -17,8 +17,9 @@ namespace Mars.Seem.Tree
         public int PlanningPeriods { get; private init; } // for now, synonymous with rotation length
         public float PlantingDensityInTreesPerHectare { get; private init; } // trees per hectare
 
-        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> LongLogVolumeBySpecies { get; private init; }
-        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> ForwardedVolumeBySpecies { get; private init; }
+        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> ForwardedThinVolumeBySpecies { get; private init; }
+        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> LongLogRegenerationVolumeBySpecies { get; private init; }
+        public SortedList<FiaCode, TreeSpeciesMerchantableVolume> LongLogThinVolumeBySpecies { get; private init; }
 
         // harvest periods by tree, Constant.NoHarvestPeriod indicates no harvest
         public IndividualTreeSelectionBySpecies TreeSelectionBySpecies { get; private init; }
@@ -36,13 +37,14 @@ namespace Mars.Seem.Tree
             }
 
             this.EarliestPeriodChangedSinceLastSimulation = 0;
+            this.ForwardedThinVolumeBySpecies = new();
+            this.LongLogRegenerationVolumeBySpecies = new();
+            this.LongLogThinVolumeBySpecies = new();
             this.Name = null;
             this.PeriodLengthInYears = -1;
             this.PeriodZeroAgeInYears = -1;
             this.PlantingDensityInTreesPerHectare = plantingDensityInTreesPerHectare;
             this.PlanningPeriods = lastPlanningPeriod + 1;
-            this.LongLogVolumeBySpecies = new();
-            this.ForwardedVolumeBySpecies = new();
             this.TreeSelectionBySpecies = new();
             this.TreeScaling = treeVolume;
         }
@@ -50,20 +52,22 @@ namespace Mars.Seem.Tree
         protected StandTrajectory(StandTrajectory other)
         {
             this.EarliestPeriodChangedSinceLastSimulation = other.EarliestPeriodChangedSinceLastSimulation;
+            this.ForwardedThinVolumeBySpecies = new();
+            this.LongLogRegenerationVolumeBySpecies = new();
+            this.LongLogThinVolumeBySpecies = new();
             this.Name = other.Name;
             this.PeriodLengthInYears = other.PeriodLengthInYears;
             this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
             this.PlanningPeriods = other.PlanningPeriods;
-            this.LongLogVolumeBySpecies = new();
-            this.ForwardedVolumeBySpecies = new();
             this.TreeSelectionBySpecies = new();
             this.TreeScaling = other.TreeScaling; // runtime immutable, assumed thread safe for shallow copy
 
             foreach (FiaCode treeSpecies in other.TreeSelectionBySpecies.Keys)
             {
-                this.LongLogVolumeBySpecies.Add(treeSpecies, new TreeSpeciesMerchantableVolume(other.LongLogVolumeBySpecies[treeSpecies]));
-                this.ForwardedVolumeBySpecies.Add(treeSpecies, new TreeSpeciesMerchantableVolume(other.ForwardedVolumeBySpecies[treeSpecies]));
+                this.ForwardedThinVolumeBySpecies.Add(treeSpecies, new TreeSpeciesMerchantableVolume(other.ForwardedThinVolumeBySpecies[treeSpecies]));
+                this.LongLogThinVolumeBySpecies.Add(treeSpecies, new TreeSpeciesMerchantableVolume(other.LongLogThinVolumeBySpecies[treeSpecies]));
+                this.LongLogRegenerationVolumeBySpecies.Add(treeSpecies, new TreeSpeciesMerchantableVolume(other.LongLogRegenerationVolumeBySpecies[treeSpecies]));
                 this.TreeSelectionBySpecies.Add(treeSpecies, new IndividualTreeSelection(other.TreeSelectionBySpecies[treeSpecies]));
             }
         }
@@ -130,17 +134,26 @@ namespace Mars.Seem.Tree
                 thisSelectionForSpecies.CopyFrom(otherSelectionForSpecies.Value);
             }
 
-            Debug.Assert(IDictionaryExtensions.KeysIdentical(this.LongLogVolumeBySpecies, other.LongLogVolumeBySpecies) &&
-                         IDictionaryExtensions.KeysIdentical(this.ForwardedVolumeBySpecies, other.ForwardedVolumeBySpecies));
-            foreach (KeyValuePair<FiaCode, TreeSpeciesMerchantableVolume> otherStandingVolumeForSpecies in other.LongLogVolumeBySpecies)
+            Debug.Assert(IDictionaryExtensions.KeysIdentical(this.ForwardedThinVolumeBySpecies, other.ForwardedThinVolumeBySpecies) &&
+                         IDictionaryExtensions.KeysIdentical(this.LongLogThinVolumeBySpecies, other.LongLogThinVolumeBySpecies) &&
+                         IDictionaryExtensions.KeysIdentical(this.LongLogRegenerationVolumeBySpecies, other.LongLogRegenerationVolumeBySpecies));
+            for (int treeSpeciesIndex = 0; treeSpeciesIndex < other.ForwardedThinVolumeBySpecies.Count; ++treeSpeciesIndex)
             {
-                FiaCode treeSpecies = otherStandingVolumeForSpecies.Key;
-                TreeSpeciesMerchantableVolume thisStandingVolumeForSpecies = this.LongLogVolumeBySpecies[treeSpecies];
-                TreeSpeciesMerchantableVolume otherThinningVolumeForSpecies = other.ForwardedVolumeBySpecies[treeSpecies];
-                TreeSpeciesMerchantableVolume thisThinningVolumeForSpecies = this.ForwardedVolumeBySpecies[treeSpecies];
+                Debug.Assert((this.ForwardedThinVolumeBySpecies.Keys[treeSpeciesIndex] == other.ForwardedThinVolumeBySpecies.Keys[treeSpeciesIndex]) &&
+                             (this.LongLogThinVolumeBySpecies.Keys[treeSpeciesIndex] == other.LongLogThinVolumeBySpecies.Keys[treeSpeciesIndex]) &&
+                             (this.LongLogRegenerationVolumeBySpecies.Keys[treeSpeciesIndex] == other.LongLogRegenerationVolumeBySpecies.Keys[treeSpeciesIndex]));
 
-                thisStandingVolumeForSpecies.CopyFrom(otherStandingVolumeForSpecies.Value);
-                thisThinningVolumeForSpecies.CopyFrom(otherThinningVolumeForSpecies);
+                TreeSpeciesMerchantableVolume otherForwardedThinVolumeForSpecies = other.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
+                TreeSpeciesMerchantableVolume thisForwardedThinVolumeForSpecies = this.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
+                thisForwardedThinVolumeForSpecies.CopyFrom(otherForwardedThinVolumeForSpecies);
+
+                TreeSpeciesMerchantableVolume otherLongLogThinVolumeForSpecies = other.LongLogThinVolumeBySpecies.Values[treeSpeciesIndex];
+                TreeSpeciesMerchantableVolume thisLongLogThinVolumeForSpecies = this.LongLogThinVolumeBySpecies.Values[treeSpeciesIndex];
+                thisLongLogThinVolumeForSpecies.CopyFrom(otherLongLogThinVolumeForSpecies);
+
+                TreeSpeciesMerchantableVolume otherLongLogRegenVolumeForSpecies = other.LongLogRegenerationVolumeBySpecies.Values[treeSpeciesIndex];
+                TreeSpeciesMerchantableVolume thisLongLogRegenVolumeForSpecies = this.LongLogRegenerationVolumeBySpecies.Values[treeSpeciesIndex];
+                thisLongLogRegenVolumeForSpecies.CopyFrom(otherLongLogRegenVolumeForSpecies);
             }
         }
 
@@ -285,15 +298,18 @@ namespace Mars.Seem.Tree
 
         public abstract int GetFirstThinPeriod();
 
-        public void GetMerchantableVolumes(out StandMerchantableVolume longLogVolume, out StandMerchantableVolume forwardedVolume)
+        public (StandMerchantableVolume forwardedThinVolume, StandMerchantableVolume longLogThinVolume, StandMerchantableVolume longLogRegenVolume) GetMerchantableVolumes()
         {
             for (int periodIndex = 0; periodIndex < this.PlanningPeriods; ++periodIndex)
             {
-                this.RecalculateMerchantableVolumeIfNeeded(periodIndex);
+                this.RecalculateThinningMerchantableVolumeIfNeeded(periodIndex);
+                this.RecalculateRegenerationHarvestMerchantableVolumeIfNeeded(periodIndex);
             }
 
-            forwardedVolume = new StandMerchantableVolume(this.ForwardedVolumeBySpecies);
-            longLogVolume = new StandMerchantableVolume(this.LongLogVolumeBySpecies);
+            StandMerchantableVolume forwardedThinVolume = new(this.ForwardedThinVolumeBySpecies);
+            StandMerchantableVolume longLogThinVolume = new(this.LongLogThinVolumeBySpecies);
+            StandMerchantableVolume longLogRegenVolume = new(this.LongLogRegenerationVolumeBySpecies);
+            return (forwardedThinVolume, longLogThinVolume, longLogRegenVolume);
         }
 
         public int GetSecondThinAge()
@@ -340,7 +356,7 @@ namespace Mars.Seem.Tree
         public float GetTotalCubicVolumeThinned(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedThinVolumeBySpecies.Values)
             {
                 totalVolume += thinVolumeForSpecies.GetCubicTotal(periodIndex);
             }
@@ -350,27 +366,27 @@ namespace Mars.Seem.Tree
         public float GetTotalScribnerVolumeThinned(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedThinVolumeBySpecies.Values)
             {
                 totalVolume += thinVolumeForSpecies.GetScribnerTotal(periodIndex);
             }
             return totalVolume;
         }
 
-        public float GetTotalStandingCubicVolume(int periodIndex)
+        public float GetTotalRegenerationHarvestMerchantableCubicVolume(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogRegenerationVolumeBySpecies.Values)
             {
                 totalVolume += standingVolumeForSpecies.GetCubicTotal(periodIndex);
             }
             return totalVolume;
         }
 
-        public float GetTotalStandingScribnerVolume(int periodIndex)
+        public float GetTotalRegenerationHarvestMerchantableScribnerVolume(int periodIndex)
         {
             float totalVolume = 0.0F;
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogRegenerationVolumeBySpecies.Values)
             {
                 totalVolume += standingVolumeForSpecies.GetScribnerTotal(periodIndex);
             }
@@ -423,17 +439,25 @@ namespace Mars.Seem.Tree
 
         public void InvalidateMerchantableVolumes(int periodIndex)
         {
-            foreach (TreeSpeciesMerchantableVolume thinningVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
+            for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.ForwardedThinVolumeBySpecies.Count; ++treeSpeciesIndex)
             {
-                thinningVolumeForSpecies.MarkUncalculated(periodIndex);
+                TreeSpeciesMerchantableVolume forwardedThinVolumeForSpecies = this.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
+                forwardedThinVolumeForSpecies.MarkUncalculated(periodIndex);
             }
-            foreach (TreeSpeciesMerchantableVolume standingVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
+            for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.LongLogThinVolumeBySpecies.Count; ++treeSpeciesIndex)
             {
-                standingVolumeForSpecies.MarkUncalculated(periodIndex);
+                TreeSpeciesMerchantableVolume longLogThinVolumeForSpecies = this.LongLogThinVolumeBySpecies.Values[treeSpeciesIndex];
+                longLogThinVolumeForSpecies.MarkUncalculated(periodIndex);
+            }
+            for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.LongLogRegenerationVolumeBySpecies.Count; ++treeSpeciesIndex)
+            {
+                TreeSpeciesMerchantableVolume longLogRegenVolumeForSpecies = this.LongLogRegenerationVolumeBySpecies.Values[treeSpeciesIndex];
+                longLogRegenVolumeForSpecies.MarkUncalculated(periodIndex);
             }
         }
 
-        public abstract void RecalculateMerchantableVolumeIfNeeded(int periodIndex);
+        public abstract void RecalculateRegenerationHarvestMerchantableVolumeIfNeeded(int periodIndex);
+        public abstract void RecalculateThinningMerchantableVolumeIfNeeded(int periodIndex);
 
         public void SetTreeSelection(int allSpeciesUncompactedTreeIndex, int newHarvestPeriod)
         {
@@ -543,8 +567,10 @@ namespace Mars.Seem.Tree
                 {
                     Count = treesOfSpecies.Count
                 });
-                this.LongLogVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
-                this.ForwardedVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
+
+                this.ForwardedThinVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
+                this.LongLogThinVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
+                this.LongLogRegenerationVolumeBySpecies.Add(species, new TreeSpeciesMerchantableVolume(species, maximumPlanningPeriodIndex));
             }
         }
 
@@ -622,18 +648,22 @@ namespace Mars.Seem.Tree
         }
 
         // TODO: how to add a merchantable volume object on ingrowth of a new species?
-        public override void RecalculateMerchantableVolumeIfNeeded(int periodIndex)
+        public override void RecalculateRegenerationHarvestMerchantableVolumeIfNeeded(int periodIndex)
         {
             // standing volume/long log harvest volume
             TStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
-            foreach (TreeSpeciesMerchantableVolume longLogVolumeForSpecies in this.LongLogVolumeBySpecies.Values)
+            for (int merchantableSpeciesIndex = 0; merchantableSpeciesIndex < this.LongLogRegenerationVolumeBySpecies.Count; ++merchantableSpeciesIndex)
             {
+                TreeSpeciesMerchantableVolume longLogVolumeForSpecies = this.LongLogRegenerationVolumeBySpecies.Values[merchantableSpeciesIndex];
                 if (longLogVolumeForSpecies.IsCalculated(periodIndex) == false)
                 {
                     longLogVolumeForSpecies.CalculateMerchantableStandingVolume(stand, periodIndex, this.TreeScaling);
                 }
             }
+        }
 
+        public override void RecalculateThinningMerchantableVolumeIfNeeded(int periodIndex)
+        {
             // forwarded volume if a thin is scheduled in this period
             bool periodHasHarvest = false;
             foreach (Harvest harvest in this.Treatments.Harvests)
@@ -648,11 +678,20 @@ namespace Mars.Seem.Tree
             {
                 // trees' expansion factors are set to zero when harvested so use trees' volume at end of the previous period
                 TStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
-                foreach (TreeSpeciesMerchantableVolume forwardedVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
+                for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.ForwardedThinVolumeBySpecies.Count; ++treeSpeciesIndex)
                 {
-                    if (forwardedVolumeForSpecies.IsCalculated(periodIndex) == false)
+                    TreeSpeciesMerchantableVolume forwardedThinVolumeForSpecies = this.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
+                    if (forwardedThinVolumeForSpecies.IsCalculated(periodIndex) == false)
                     {
-                        forwardedVolumeForSpecies.CalculateMerchantableThinningVolume(previousStand, this.TreeSelectionBySpecies, periodIndex, this.TreeScaling);
+                        forwardedThinVolumeForSpecies.CalculateMerchantableThinningVolume(previousStand, isCutToLength: true, this.TreeSelectionBySpecies, periodIndex, this.TreeScaling);
+                    }
+                }
+                for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.LongLogThinVolumeBySpecies.Count; ++treeSpeciesIndex)
+                {
+                    TreeSpeciesMerchantableVolume longLogThinVolumeForSpecies = this.LongLogThinVolumeBySpecies.Values[treeSpeciesIndex];
+                    if (longLogThinVolumeForSpecies.IsCalculated(periodIndex) == false)
+                    {
+                        longLogThinVolumeForSpecies.CalculateMerchantableThinningVolume(previousStand, isCutToLength: false, this.TreeSelectionBySpecies, periodIndex, this.TreeScaling);
                     }
                 }
 
@@ -664,9 +703,15 @@ namespace Mars.Seem.Tree
             }
             else
             {
-                foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in this.ForwardedVolumeBySpecies.Values)
+                for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.ForwardedThinVolumeBySpecies.Count; ++treeSpeciesIndex)
                 {
-                    thinVolumeForSpecies.ClearVolume(periodIndex);
+                    TreeSpeciesMerchantableVolume forwardedThinVolumeForSpecies = this.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
+                    forwardedThinVolumeForSpecies.ClearVolume(periodIndex);
+                }
+                for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.LongLogThinVolumeBySpecies.Count; ++treeSpeciesIndex)
+                {
+                    TreeSpeciesMerchantableVolume longLogThinVolumeForSpecies = this.LongLogThinVolumeBySpecies.Values[treeSpeciesIndex];
+                    longLogThinVolumeForSpecies.ClearVolume(periodIndex);
                 }
             }
         }

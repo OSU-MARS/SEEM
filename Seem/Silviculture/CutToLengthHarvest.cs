@@ -186,8 +186,9 @@ namespace Mars.Seem.Silviculture
             this.ClearNpvAndPond();
 
             bool merchantableVolumeAdded = false;
-            foreach (TreeSpeciesMerchantableVolume harvestVolumeForSpecies in trajectory.ForwardedVolumeBySpecies.Values)
+            for (int treeSpeciesIndex = 0; treeSpeciesIndex < trajectory.ForwardedThinVolumeBySpecies.Count; ++treeSpeciesIndex)
             {
+                TreeSpeciesMerchantableVolume harvestVolumeForSpecies = trajectory.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];
                 merchantableVolumeAdded |= this.TryAddMerchantableVolume(harvestVolumeForSpecies, harvestPeriod, financialScenarios, financialIndex, shortLogPondMultiplier);
             }
 

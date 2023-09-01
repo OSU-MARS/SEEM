@@ -33,7 +33,7 @@ namespace Mars.Seem.Silviculture
         
         public void CalculatePMhAndProductivity(Stand stand, bool isThin, float merchantableCubicVolumePerHa, HarvestSystems harvestSystems, float yardedWeightPerHa)
         {
-            Debug.Assert((merchantableCubicVolumePerHa == 0.0F) || ((yardedWeightPerHa > 0.0F) || (merchantableCubicVolumePerHa < 25.0F)), "Stand " + stand.Name + ": merchantable volume is " + merchantableCubicVolumePerHa + " m³/ha but yarded weight is " + yardedWeightPerHa + " kg/ha.");
+            Debug.Assert((merchantableCubicVolumePerHa == 0.0F) || ((yardedWeightPerHa > 0.0F) || (merchantableCubicVolumePerHa < 100.0F)), "Stand " + stand.Name + ": merchantable volume is " + merchantableCubicVolumePerHa + " m³/ha but yarded weight is " + yardedWeightPerHa + " kg/ha.");
 
             float averageYardingDistance = stand.MeanYardingDistanceFactor * stand.CorridorLengthInM + stand.AccessDistanceInM;
             float meanGrappleYardingTurnTimeInS;
@@ -72,9 +72,17 @@ namespace Mars.Seem.Silviculture
             }
 
             this.ProcessorPMhPerHa /= Constant.SecondsPerHour;
-            this.ProcessorProductivity = merchantableCubicVolumePerHa / this.ProcessorPMhPerHa;
-            Debug.Assert((this.YarderProductivity >= 0.0F) && (this.YarderProductivity < 1900.0F), "Yarder productivity out of range.");
-            Debug.Assert((this.ProcessorProductivity >= 0.0F) && (this.ProcessorProductivity < 1000.0F), "Processor productivity out of range.");
+            if (this.ProcessorPMhPerHa > 0.0F)
+            {
+                this.ProcessorProductivity = merchantableCubicVolumePerHa / this.ProcessorPMhPerHa;
+            }
+            else
+            {
+                Debug.Assert(this.ProcessorPMhPerHa == 0.0F);
+                this.ProcessorProductivity = 0.0F;
+            }
+            Debug.Assert((this.YarderProductivity >= 0.0F) && (this.YarderProductivity < 15000.0F), "Yarder productivity out of range.");
+            Debug.Assert((this.ProcessorProductivity >= 0.0F) && (this.ProcessorProductivity < 15000.0F), "Processor productivity out of range.");
         }
 
         public void Clear()

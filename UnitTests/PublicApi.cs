@@ -198,7 +198,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(landExpectationValueIts.Financial.TryGetNetPresentThinValue(firstCircularTrajectory, financialIndex: 0, thinningPeriod, out HarvestFinancialValue? firstThin));
                 CutToLengthHarvest firstCircularThin = (CutToLengthHarvest)firstThin;
                 LongLogHarvest firstCircularRegen = landExpectationValueIts.Financial.GetNetPresentRegenerationHarvestValue(firstCircularTrajectory, financialIndex: 0, landExpectationValueIts.MaximizeForPlanningPeriod);
-                TreeSpeciesMerchantableVolume firstCircularStandingVolume = firstCircularTrajectory.LongLogVolumeBySpecies[FiaCode.PseudotsugaMenziesii];
+                TreeSpeciesMerchantableVolume firstCircularStandingVolume = firstCircularTrajectory.LongLogRegenerationVolumeBySpecies[FiaCode.PseudotsugaMenziesii];
 
                 // check NPV components if converged to optimal (unthinned) solution
                 #if DEBUG
@@ -1171,27 +1171,34 @@ namespace Mars.Seem.Test
 
             // check volumes
             Assert.IsTrue(firstThinningPeriod != Constant.RegenerationHarvestIfEligible);
-            bestTrajectory.GetMerchantableVolumes(out StandMerchantableVolume bestLongLogVolume, out StandMerchantableVolume bestForwardedVolume);
-            heuristic.CurrentTrajectory.GetMerchantableVolumes(out StandMerchantableVolume currentLongLogVolume, out StandMerchantableVolume currentForwardedVolume);
-            float previousBestCubicStandingVolume = Single.NaN;
-            float previousBestScribnerStandingVolume = Single.NaN;
-            float previousCurrentCubicStandingVolume = Single.NaN;
-            float previousCurrentScribnerStandingVolume = Single.NaN;
+            (StandMerchantableVolume bestForwardedThinVolume, StandMerchantableVolume bestLongLogThinVolume, StandMerchantableVolume bestLongLogRegenVolume) = bestTrajectory.GetMerchantableVolumes();
+            (StandMerchantableVolume currentForwardedThinVolume, StandMerchantableVolume currentLongLogThinVolume, StandMerchantableVolume currentLongLogRegenVolume) = heuristic.CurrentTrajectory.GetMerchantableVolumes();
+            float previousBestCubicRegenVolume = Single.NaN;
+            float previousBestScribnerRegenVolume = Single.NaN;
+            float previousCurrentCubicRegenVolume = Single.NaN;
+            float previousCurrentScribnerRegenVolume = Single.NaN;
             for (int periodIndex = 0; periodIndex < bestTrajectory.PlanningPeriods; ++periodIndex)
             {
-                float bestCubicStandingVolume = bestLongLogVolume.GetCubicTotal(periodIndex);
-                float bestCubicThinningVolume = bestForwardedVolume.GetCubicTotal(periodIndex);
-                float currentCubicStandingVolume = currentLongLogVolume.GetCubicTotal(periodIndex);
-                float currentCubicThinningVolume = currentForwardedVolume.GetCubicTotal(periodIndex);
+                float bestCubicForwardedThinVolume = bestForwardedThinVolume.GetCubicTotal(periodIndex);
+                float bestCubicLongLogThinVolume = bestLongLogThinVolume.GetCubicTotal(periodIndex);
+                float bestCubicRegenVolume = bestLongLogRegenVolume.GetCubicTotal(periodIndex);
+                float currentCubicForwardedThinVolume = currentForwardedThinVolume.GetCubicTotal(periodIndex);
+                float currentCubicLongLogThinVolume = currentLongLogThinVolume.GetCubicTotal(periodIndex);
+                float currentCubicRegenVolume = currentLongLogRegenVolume.GetCubicTotal(periodIndex);
 
-                float bestCubicStandingCheckVolume = bestLongLogVolume.Cubic2Saw[periodIndex] + bestLongLogVolume.Cubic3Saw[periodIndex] + bestLongLogVolume.Cubic4Saw[periodIndex];
-                float bestCubicThinningCheckVolume = bestForwardedVolume.Cubic2Saw[periodIndex] + bestForwardedVolume.Cubic3Saw[periodIndex] + bestForwardedVolume.Cubic4Saw[periodIndex];
-                float currentCubicStandingCheckVolume = currentLongLogVolume.Cubic2Saw[periodIndex] + currentLongLogVolume.Cubic3Saw[periodIndex] + currentLongLogVolume.Cubic4Saw[periodIndex];
-                float currentCubicThinningCheckVolume = currentForwardedVolume.Cubic2Saw[periodIndex] + currentForwardedVolume.Cubic3Saw[periodIndex] + currentForwardedVolume.Cubic4Saw[periodIndex];
-                Assert.IsTrue(MathF.Abs(bestCubicStandingVolume - bestCubicStandingCheckVolume) < 0.000001F);
-                Assert.IsTrue(MathF.Abs(bestCubicThinningVolume - bestCubicThinningCheckVolume) < 0.000001F);
-                Assert.IsTrue(MathF.Abs(currentCubicStandingVolume - currentCubicStandingCheckVolume) < 0.000001F);
-                Assert.IsTrue(MathF.Abs(currentCubicThinningVolume - currentCubicThinningCheckVolume) < 0.000001F);
+                float bestCubicForwardedThinCheckVolume = bestForwardedThinVolume.Cubic2Saw[periodIndex] + bestForwardedThinVolume.Cubic3Saw[periodIndex] + bestForwardedThinVolume.Cubic4Saw[periodIndex];
+                float bestCubicLongLogThinCheckVolume = bestLongLogThinVolume.Cubic2Saw[periodIndex] + bestLongLogThinVolume.Cubic3Saw[periodIndex] + bestLongLogThinVolume.Cubic4Saw[periodIndex];
+                float bestCubicRegenCheckVolume = bestLongLogRegenVolume.Cubic2Saw[periodIndex] + bestLongLogRegenVolume.Cubic3Saw[periodIndex] + bestLongLogRegenVolume.Cubic4Saw[periodIndex];
+                float currentCubicForwardedThinCheckVolume = currentForwardedThinVolume.Cubic2Saw[periodIndex] + currentForwardedThinVolume.Cubic3Saw[periodIndex] + currentForwardedThinVolume.Cubic4Saw[periodIndex];
+                float currentCubicLongLogThinCheckVolume = currentLongLogThinVolume.Cubic2Saw[periodIndex] + currentLongLogThinVolume.Cubic3Saw[periodIndex] + currentLongLogThinVolume.Cubic4Saw[periodIndex];
+                float currentCubicRegenCheckVolume = currentLongLogRegenVolume.Cubic2Saw[periodIndex] + currentLongLogRegenVolume.Cubic3Saw[periodIndex] + currentLongLogRegenVolume.Cubic4Saw[periodIndex];
+                
+                Assert.IsTrue(MathF.Abs(bestCubicForwardedThinVolume - bestCubicForwardedThinCheckVolume) < 0.000001F);
+                Assert.IsTrue(MathF.Abs(bestCubicLongLogThinVolume - bestCubicLongLogThinCheckVolume) < 0.000001F);
+                Assert.IsTrue(MathF.Abs(bestCubicRegenVolume - bestCubicRegenCheckVolume) < 0.000001F);
+                Assert.IsTrue(MathF.Abs(currentCubicForwardedThinVolume - currentCubicForwardedThinCheckVolume) < 0.000001F);
+                Assert.IsTrue(MathF.Abs(currentCubicLongLogThinVolume - currentCubicLongLogThinCheckVolume) < 0.000001F);
+                Assert.IsTrue(MathF.Abs(currentCubicRegenVolume - currentCubicRegenCheckVolume) < 0.000001F);
 
                 FinancialScenarios.Default.TryGetNetPresentThinValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex, out HarvestFinancialValue? bestThinNpv);
                 FinancialScenarios.Default.TryGetNetPresentThinValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex, periodIndex, out HarvestFinancialValue? currentThinNpv);
@@ -1201,23 +1208,28 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
 
                     float thinVolumeScribner = bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex);
-                    float previousStandingVolumeScribner = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1);
+                    float previousStandingVolumeScribner = bestTrajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex - 1);
                     Assert.IsTrue(bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= 0.0F);
                     if (thinVolumeScribner > previousStandingVolumeScribner)
                     {
                         Debugger.Break();
                     }
                     Assert.IsTrue(Constant.Default.ThinningPondValueMultiplier * thinVolumeScribner < previousStandingVolumeScribner, "Thinning volume: " + thinVolumeScribner + " MBF/ha in period " + periodIndex + " but previous period's standing volume is " + previousStandingVolumeScribner + " MBF/ha."); // allow for differences between short and long log scaling
-                    Assert.IsTrue(bestForwardedVolume.Scribner2Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestForwardedVolume.Scribner3Saw[periodIndex] >= 0.0F);
-                    Assert.IsTrue(bestForwardedVolume.Scribner4Saw[periodIndex] >= 0.0F);
+                    Assert.IsTrue(bestForwardedThinVolume.Scribner2Saw[periodIndex] >= 0.0F, "Forwarded thin: 2S Scribner volume is negative.");
+                    Assert.IsTrue(bestForwardedThinVolume.Scribner3Saw[periodIndex] >= 0.0F, "Forwarded thin: 3S Scribner volume is negative.");
+                    Assert.IsTrue(bestForwardedThinVolume.Scribner4Saw[periodIndex] >= 0.0F, "Forwarded thin: 4S Scribner volume is negative.");
+                    Assert.IsTrue(bestLongLogThinVolume.Scribner2Saw[periodIndex] >= 0.0F, "Long log thin: 2S Scribner volume is negative.");
+                    Assert.IsTrue(bestLongLogThinVolume.Scribner3Saw[periodIndex] >= 0.0F, "Long log thin: 3S Scribner volume is negative.");
+                    Assert.IsTrue(bestLongLogThinVolume.Scribner4Saw[periodIndex] >= 0.0F, "Long log thin: 4S Scribner volume is negative.");
 
-                    Assert.IsTrue(bestCubicThinningVolume <= previousBestCubicStandingVolume);
-                    Assert.IsTrue(bestForwardedVolume.Cubic2Saw[periodIndex] >= 0.0F, "2S cubic volume is negative.");
-                    Assert.IsTrue(bestForwardedVolume.Cubic3Saw[periodIndex] >= 0.0F, "3S cubic volume is negative.");
-                    Assert.IsTrue(bestForwardedVolume.Cubic4Saw[periodIndex] >= 0.0F, "4S cubic volume is negative.");
+                    Assert.IsTrue(bestCubicForwardedThinVolume <= previousBestCubicRegenVolume);
+                    Assert.IsTrue(bestForwardedThinVolume.Cubic2Saw[periodIndex] >= 0.0F, "Forwarded thin: 2S cubic volume is negative.");
+                    Assert.IsTrue(bestForwardedThinVolume.Cubic3Saw[periodIndex] >= 0.0F, "Forwarded thin: 3S cubic volume is negative.");
+                    Assert.IsTrue(bestForwardedThinVolume.Cubic4Saw[periodIndex] >= 0.0F, "Forwarded thin: 4S cubic volume is negative.");
+                    Assert.IsTrue(bestLongLogThinVolume.Cubic2Saw[periodIndex] >= 0.0F, "Long log thin: 2S cubic volume is negative.");
+                    Assert.IsTrue(bestLongLogThinVolume.Cubic3Saw[periodIndex] >= 0.0F, "Long log thin: 3S cubic volume is negative.");
+                    Assert.IsTrue(bestLongLogThinVolume.Cubic4Saw[periodIndex] >= 0.0F, "Long log thin: 4S cubic volume is negative.");
 
-                    // TODO: investigate deeply negative NPVs
                     Assert.IsTrue(bestThinNpv != null);
                     Assert.IsTrue(bestThinNpv.PondValue2SawPerHa >= 0.0F, "2S NPV is " + bestThinNpv.PondValue2SawPerHa + ".");
                     Assert.IsTrue(bestThinNpv.PondValue3SawPerHa >= 0.0F, "3S NPV is " + bestThinNpv.PondValue3SawPerHa + ".");
@@ -1226,10 +1238,10 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) >= 0.0F);
-                    Assert.IsTrue(Constant.Default.ThinningPondValueMultiplier * heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) < heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex - 1)); // allow for differences between short and long log scaling
+                    Assert.IsTrue(Constant.Default.ThinningPondValueMultiplier * heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) < heuristic.CurrentTrajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex - 1)); // allow for differences between short and long log scaling
 
-                    Assert.IsTrue(currentCubicThinningVolume >= 0.0F);
-                    Assert.IsTrue(currentCubicThinningVolume <= previousCurrentCubicStandingVolume);
+                    Assert.IsTrue(currentCubicForwardedThinVolume >= 0.0F);
+                    Assert.IsTrue(currentCubicForwardedThinVolume <= previousCurrentCubicRegenVolume);
 
                     Assert.IsTrue(currentThinNpv != null);
                     Assert.IsTrue(currentThinNpv.PondValue2SawPerHa >= 0.0F);
@@ -1241,36 +1253,42 @@ namespace Mars.Seem.Test
                     // for now, harvest should occur only in the one indicated period
                     Assert.IsTrue(bestTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] == 0.0F);
                     Assert.IsTrue(bestTrajectory.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
-                    Assert.IsTrue(bestForwardedVolume.Scribner2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestForwardedVolume.Scribner3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestForwardedVolume.Scribner4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedThinVolume.Scribner2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedThinVolume.Scribner3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedThinVolume.Scribner4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestLongLogThinVolume.Scribner2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestLongLogThinVolume.Scribner3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestLongLogThinVolume.Scribner4Saw[periodIndex] == 0.0F);
 
-                    Assert.IsTrue(bestCubicThinningVolume == 0.0F);
-                    Assert.IsTrue(bestForwardedVolume.Cubic2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestForwardedVolume.Cubic3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(bestForwardedVolume.Cubic4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestCubicForwardedThinVolume == 0.0F);
+                    Assert.IsTrue(bestForwardedThinVolume.Cubic2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedThinVolume.Cubic3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestForwardedThinVolume.Cubic4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestLongLogThinVolume.Cubic2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestLongLogThinVolume.Cubic3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(bestLongLogThinVolume.Cubic4Saw[periodIndex] == 0.0F);
 
                     Assert.IsTrue(bestThinNpv == null);
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.GetTotalScribnerVolumeThinned(periodIndex) == 0.0F);
-                    Assert.IsTrue(currentForwardedVolume.Scribner2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentForwardedVolume.Scribner3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentForwardedVolume.Scribner4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedThinVolume.Scribner2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedThinVolume.Scribner3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedThinVolume.Scribner4Saw[periodIndex] == 0.0F);
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentCubicThinningVolume == 0.0F);
-                    Assert.IsTrue(currentForwardedVolume.Cubic2Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentForwardedVolume.Cubic3Saw[periodIndex] == 0.0F);
-                    Assert.IsTrue(currentForwardedVolume.Cubic4Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentCubicForwardedThinVolume == 0.0F);
+                    Assert.IsTrue(currentForwardedThinVolume.Cubic2Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedThinVolume.Cubic3Saw[periodIndex] == 0.0F);
+                    Assert.IsTrue(currentForwardedThinVolume.Cubic4Saw[periodIndex] == 0.0F);
 
                     Assert.IsTrue(currentThinNpv == null);
                 }
 
-                float bestScribnerStandingVolume = bestTrajectory.GetTotalStandingScribnerVolume(periodIndex);
-                float currentScribnerStandingVolume = heuristic.CurrentTrajectory.GetTotalStandingScribnerVolume(periodIndex);
+                float bestScribnerStandingVolume = bestTrajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex);
+                float currentScribnerStandingVolume = heuristic.CurrentTrajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex);
                 // zero merchantable on Nelder 1 at age 20 with Poudel 2018 net volume
-                Assert.IsTrue(bestCubicStandingVolume >= 0.0F, "Standing cubic volume from best trajectory is " + bestCubicStandingVolume + " m³.");
-                Assert.IsTrue(currentCubicStandingVolume >= 0.0F, "Standing cubic volume from current trajectory is " + currentCubicStandingVolume + " m³.");
+                Assert.IsTrue(bestCubicRegenVolume >= 0.0F, "Standing cubic volume from best trajectory is " + bestCubicRegenVolume + " m³.");
+                Assert.IsTrue(currentCubicRegenVolume >= 0.0F, "Standing cubic volume from current trajectory is " + currentCubicRegenVolume + " m³.");
                 Assert.IsTrue(bestScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + bestScribnerStandingVolume + " MBF.");
                 Assert.IsTrue(currentScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + currentScribnerStandingVolume + " MBF.");
 
@@ -1279,17 +1297,17 @@ namespace Mars.Seem.Test
                     // for now, assume monotonic increase in standing volumes except in harvest periods
                     if (periodIndex != firstThinningPeriod)
                     {
-                        Assert.IsTrue(bestCubicStandingVolume >= previousBestCubicStandingVolume, "Standing cubic volume did not increase monotonically (current: " + bestCubicStandingVolume + ", previous: " + previousBestCubicStandingVolume + ").");
-                        Assert.IsTrue(bestScribnerStandingVolume >= previousBestScribnerStandingVolume, "Standing Scribner volume did not increase monotonically (current: " + bestScribnerStandingVolume + ", previous: " + previousBestScribnerStandingVolume + ").");
-                        Assert.IsTrue(currentCubicStandingVolume >= previousCurrentCubicStandingVolume);
-                        Assert.IsTrue(currentScribnerStandingVolume >= previousCurrentScribnerStandingVolume);
+                        Assert.IsTrue(bestCubicRegenVolume >= previousBestCubicRegenVolume, "Standing cubic volume did not increase monotonically (current: " + bestCubicRegenVolume + ", previous: " + previousBestCubicRegenVolume + ").");
+                        Assert.IsTrue(bestScribnerStandingVolume >= previousBestScribnerRegenVolume, "Standing Scribner volume did not increase monotonically (current: " + bestScribnerStandingVolume + ", previous: " + previousBestScribnerRegenVolume + ").");
+                        Assert.IsTrue(currentCubicRegenVolume >= previousCurrentCubicRegenVolume);
+                        Assert.IsTrue(currentScribnerStandingVolume >= previousCurrentScribnerRegenVolume);
                     }
                 }
 
-                previousBestCubicStandingVolume = bestCubicStandingVolume;
-                previousBestScribnerStandingVolume = bestScribnerStandingVolume;
-                previousCurrentCubicStandingVolume = currentCubicStandingVolume;
-                previousCurrentScribnerStandingVolume = currentScribnerStandingVolume;
+                previousBestCubicRegenVolume = bestCubicRegenVolume;
+                previousBestScribnerRegenVolume = bestScribnerStandingVolume;
+                previousCurrentCubicRegenVolume = currentCubicRegenVolume;
+                previousCurrentScribnerRegenVolume = currentScribnerStandingVolume;
             }
 
             // check moves
@@ -1379,12 +1397,13 @@ namespace Mars.Seem.Test
 
         private static void Verify(OrganonStandTrajectory trajectory, ExpectedStandTrajectory expectedTrajectory, int timeStepInYears)
         {
-            trajectory.RecalculateMerchantableVolumeIfNeeded(periodIndex: 0);
+            trajectory.RecalculateThinningMerchantableVolumeIfNeeded(periodIndex: 0);
+            trajectory.RecalculateRegenerationHarvestMerchantableVolumeIfNeeded(periodIndex: 0);
 
             Assert.IsTrue(trajectory.Treatments.BasalAreaThinnedByPeriod.Count == expectedTrajectory.Length);
             Assert.IsTrue(trajectory.Treatments.BasalAreaThinnedByPeriod[0] == 0.0F);
             Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex: 0) == 0.0F);
-            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in trajectory.ForwardedVolumeBySpecies.Values)
+            foreach (TreeSpeciesMerchantableVolume thinVolumeForSpecies in trajectory.ForwardedThinVolumeBySpecies.Values)
             {
                 Assert.IsTrue(thinVolumeForSpecies.Scribner2Saw.Length == expectedTrajectory.Length);
                 Assert.IsTrue(thinVolumeForSpecies.Scribner3Saw.Length == expectedTrajectory.Length);
@@ -1432,15 +1451,16 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(standDensity.BasalAreaPerHa > 0.0F);
                 Assert.IsTrue(standDensity.BasalAreaPerHa <= Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * TestConstant.Maximum.TreeBasalAreaLarger);
 
-                trajectory.RecalculateMerchantableVolumeIfNeeded(periodIndex);
+                trajectory.RecalculateThinningMerchantableVolumeIfNeeded(periodIndex);
+                trajectory.RecalculateRegenerationHarvestMerchantableVolumeIfNeeded(periodIndex);
 
-                Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) > expectedTrajectory.MinimumStandingCubicM3PerHa[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalStandingCubicVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingCubicM3PerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalRegenerationHarvestMerchantableCubicVolume(periodIndex) > expectedTrajectory.MinimumStandingCubicM3PerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalRegenerationHarvestMerchantableCubicVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingCubicM3PerHa[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestCubicM3PerHa[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalCubicVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestCubicM3PerHa[periodIndex]);
 
-                Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) > expectedTrajectory.MinimumStandingMbfPerHa[periodIndex]);
-                Assert.IsTrue(trajectory.GetTotalStandingScribnerVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingMbfPerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex) > expectedTrajectory.MinimumStandingMbfPerHa[periodIndex]);
+                Assert.IsTrue(trajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex) < PublicApi.VolumeTolerance * expectedTrajectory.MinimumStandingMbfPerHa[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
 

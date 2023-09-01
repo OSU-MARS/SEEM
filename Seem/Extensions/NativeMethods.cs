@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Mars.Seem.Extensions
 {
-    internal static class NativeMethods
+    internal static partial class NativeMethods
     {
         private const int ProcessorInformation = 11;
         private const uint STATUS_SUCCESS = 0;
@@ -29,12 +29,12 @@ namespace Mars.Seem.Extensions
             return managedPowerInfo;
         }
 
-        [DllImport("powrprof.dll", SetLastError = true)]
-        private static extern UInt32 CallNtPowerInformation([In] Int32 InformationLevel,
-                                                            [In] IntPtr lpInputBuffer,
-                                                            [In] UInt32 nInputBufferSize,
-                                                            [In, Out] PROCESSOR_POWER_INFORMATION[] lpOutputBuffer,
-                                                            [In] UInt32 nOutputBufferSize);
+        [LibraryImport("powrprof.dll", SetLastError = true)]
+        private static partial UInt32 CallNtPowerInformation(Int32 InformationLevel,
+                                                             IntPtr lpInputBuffer,
+                                                             UInt32 nInputBufferSize,
+                                                             /* .NET 8.0 [In, Out] */ PROCESSOR_POWER_INFORMATION[] lpOutputBuffer, // https://github.com/dotnet/runtime/issues/90785
+                                                             UInt32 nOutputBufferSize);
 
         [StructLayout(LayoutKind.Sequential)]
         public struct PROCESSOR_POWER_INFORMATION

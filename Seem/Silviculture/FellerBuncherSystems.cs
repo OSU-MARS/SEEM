@@ -69,7 +69,7 @@ namespace Mars.Seem.Silviculture
                 }
                 this.FellerBuncherPMhPerHa /= Constant.SecondsPerHour;
                 this.FellerBuncherProductivity = merchantableCubicVolumePerHa / this.FellerBuncherPMhPerHa;
-                Debug.Assert((this.FellerBuncherProductivity >= 0.0F) && (this.FellerBuncherProductivity < 5000.0F));
+                Debug.Assert((this.FellerBuncherProductivity >= 0.0F) && (this.FellerBuncherProductivity < 10000.0F));
             }
             else
             {

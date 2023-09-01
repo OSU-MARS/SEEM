@@ -93,11 +93,11 @@ namespace Mars.Seem.Heuristics
                     float scribnerVolumeInMbf = 0.0F;
                     foreach (int periodIndex in trajectory.Treatments.GetThinningPeriods())
                     {
-                        trajectory.RecalculateMerchantableVolumeIfNeeded(periodIndex);
+                        trajectory.RecalculateThinningMerchantableVolumeIfNeeded(periodIndex);
                         scribnerVolumeInMbf += trajectory.GetTotalScribnerVolumeThinned(periodIndex);
                     }
-                    trajectory.RecalculateMerchantableVolumeIfNeeded(endOfRotationPeriod);
-                    scribnerVolumeInMbf += trajectory.GetTotalStandingScribnerVolume(endOfRotationPeriod);
+                    trajectory.RecalculateRegenerationHarvestMerchantableVolumeIfNeeded(endOfRotationPeriod);
+                    scribnerVolumeInMbf += trajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(endOfRotationPeriod);
                     return scribnerVolumeInMbf;
                 default:
                     throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");

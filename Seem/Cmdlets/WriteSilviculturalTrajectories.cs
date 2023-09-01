@@ -91,8 +91,7 @@ namespace Mars.Seem.Cmdlets
             using StreamWriter writer = this.CreateCsvWriter();
             if (this.ShouldWriteCsvHeader())
             {
-                string header = WriteCmdlet.GetCsvHeaderForStandTrajectory(this.GetCsvHeaderForSilviculturalCoordinate(), writeContext);
-                writer.WriteLine(header);
+                writer.WriteLine(this.GetCsvHeaderForStandTrajectory(writeContext));
             }
 
             // write stand trajectory with highest objective function value at each silvicultural coordinate
