@@ -40,13 +40,13 @@ namespace Mars.Seem.Test
                 FiaCode.QuercusKelloggii
             });
 
-        public static readonly OrganonVariant[] Variants = new OrganonVariant[] 
-        { 
+        public static readonly OrganonVariant[] Variants =
+        [
             new OrganonVariantNwo(),
             new OrganonVariantSwo(),
             new OrganonVariantSmc(),
             new OrganonVariantRap()
-        };
+        ];
 
         public static class Default
         {

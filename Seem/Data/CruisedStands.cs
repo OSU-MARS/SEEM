@@ -22,7 +22,7 @@ namespace Mars.Seem.Data
         {
             this.nextTreeID = 0;
             this.standHeader = new();
-            this.standsByID = new();
+            this.standsByID = [];
             this.treeHeader = new();
 
             this.OrganonVariant = OrganonVariant.Create(growthModel);

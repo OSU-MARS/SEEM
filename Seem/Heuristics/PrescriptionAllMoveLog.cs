@@ -22,17 +22,17 @@ namespace Mars.Seem.Heuristics
         public PrescriptionAllMoveLog(int moveCapacity)
             : base(moveCapacity)
         {
-            this.FromAbovePercentageByMove1 = new List<float>();
-            this.FromBelowPercentageByMove1 = new List<float>();
-            this.ProportionalPercentageByMove1 = new List<float>();
+            this.FromAbovePercentageByMove1 = [];
+            this.FromBelowPercentageByMove1 = [];
+            this.ProportionalPercentageByMove1 = [];
 
-            this.FromAbovePercentageByMove2 = new List<float>();
-            this.FromBelowPercentageByMove2 = new List<float>();
-            this.ProportionalPercentageByMove2 = new List<float>();
+            this.FromAbovePercentageByMove2 = [];
+            this.FromBelowPercentageByMove2 = [];
+            this.ProportionalPercentageByMove2 = [];
 
-            this.FromAbovePercentageByMove3 = new List<float>();
-            this.FromBelowPercentageByMove3 = new List<float>();
-            this.ProportionalPercentageByMove3 = new List<float>();
+            this.FromAbovePercentageByMove3 = [];
+            this.FromBelowPercentageByMove3 = [];
+            this.ProportionalPercentageByMove3 = [];
         }
 
         public override string GetCsvHeader(string prefix)

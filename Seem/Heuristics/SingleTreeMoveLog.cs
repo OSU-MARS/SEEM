@@ -12,7 +12,7 @@ namespace Mars.Seem.Heuristics
         public SingleTreeMoveLog(int moveCapacity)
             : base(moveCapacity)
         {
-            this.TreeIDByMove = new List<int>();
+            this.TreeIDByMove = [];
         }
 
         public override string GetCsvHeader(string prefix)

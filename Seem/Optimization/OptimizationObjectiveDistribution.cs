@@ -40,10 +40,10 @@ namespace Mars.Seem.Optimization
 
         public OptimizationObjectiveDistribution()
         {
-            this.acceptedFinancialValueBySolution = new();
+            this.acceptedFinancialValueBySolution = [];
 
-            this.HighestFinancialValueBySolution = new();
-            this.PerfCountersBySolution = new();
+            this.HighestFinancialValueBySolution = [];
+            this.PerfCountersBySolution = [];
         }
 
         public int SolutionsInFinancialDistribution
@@ -95,7 +95,7 @@ namespace Mars.Seem.Optimization
         public DistributionStatistics GetFinancialStatisticsForMove(int moveIndex)
         {
             // assemble objective functions for this move
-            List<float> financialValues = new();
+            List<float> financialValues = [];
             foreach (List<float> acceptedObjectives in this.acceptedFinancialValueBySolution)
             {
                 if (moveIndex < acceptedObjectives.Count)

@@ -82,15 +82,15 @@ namespace Mars.Seem.Cmdlets
             this.Threads = Environment.ProcessorCount / 2; // assume all cores are hyperthreaded
 
             this.Financial = FinancialScenarios.Default;
-            this.FirstThinAge = new() { Constant.Default.ThinningPeriod };
-            this.ConstructionGreediness = new() { Constant.Grasp.DefaultMinimumConstructionGreedinessForMaximization };
+            this.FirstThinAge = [ Constant.Default.ThinningPeriod ];
+            this.ConstructionGreediness = [ Constant.Grasp.DefaultMinimumConstructionGreedinessForMaximization ];
             this.LogImprovingOnly = false;
-            this.InitialThinningProbability = new() { Constant.HeuristicDefault.InitialThinningProbability };
+            this.InitialThinningProbability = [ Constant.HeuristicDefault.InitialThinningProbability ];
             this.MoveCapacity = Constant.HeuristicDefault.MoveCapacity;
-            this.RotationAge = new() { Constant.Default.RotationLengths };
-            this.SecondThinAge = new() { Constant.NoHarvestPeriod };
+            this.RotationAge = [ Constant.Default.RotationLengths ];
+            this.SecondThinAge = [ Constant.NoHarvestPeriod ];
             this.SolutionPoolSize = Constant.Default.SolutionPoolSize;
-            this.ThirdThinAge = new() { Constant.NoHarvestPeriod };
+            this.ThirdThinAge = [ Constant.NoHarvestPeriod ];
             this.TimberObjective = TimberObjective.LandExpectationValue;
             this.TreeModel = TreeModel.OrganonNwo;
         }
@@ -100,13 +100,13 @@ namespace Mars.Seem.Cmdlets
             get { return false; }
         }
 
-        private IList<int> ConvertAgesToSimulationPeriods(IList<int> agesInYears, float timestepInYears, bool thinningAges)
+        private List<int> ConvertAgesToSimulationPeriods(IList<int> agesInYears, float timestepInYears, bool thinningAges)
         {
             Debug.Assert(this.Stand != null);
 
             float initialStandAge = this.Stand.AgeInYears;
             int minimumValidPeriod = thinningAges ? 1 : 0;  // can't thin at period 0 as no previous stand information is available for yield
-            IList<int> periods = new List<int>(agesInYears.Count);
+            List<int> periods = new(agesInYears.Count);
 
             for (int thinIndex = 0; thinIndex < agesInYears.Count; ++thinIndex)
             {
@@ -170,7 +170,7 @@ namespace Mars.Seem.Cmdlets
 
         protected IList<HeuristicParameters> GetDefaultParameterCombinations()
         {
-            List<HeuristicParameters> parameterCombinations = new();
+            List<HeuristicParameters> parameterCombinations = [];
             foreach (float constructionGreediness in this.ConstructionGreediness)
             {
                 if ((constructionGreediness < Constant.Grasp.FullyRandomConstructionForMaximization) || (constructionGreediness > Constant.Grasp.FullyGreedyConstructionForMaximization))
@@ -324,7 +324,7 @@ namespace Mars.Seem.Cmdlets
             IList<int> rotationLengthsInPeriods = this.ConvertAgesToSimulationPeriods(this.RotationAge, timestepInYears, thinningAges: false);
 
             int treeCount = this.Stand!.GetTreeRecordCount();
-            List<SilviculturalCoordinate> combinationsToEvaluate = new();
+            List<SilviculturalCoordinate> combinationsToEvaluate = [];
             IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
             HeuristicStandTrajectories<TParameters> results = new(parameterCombinationsForHeuristic, firstThinPeriods, secondThinPeriods, thirdThinPeriods, rotationLengthsInPeriods, this.Financial, this.SolutionPoolSize);
             

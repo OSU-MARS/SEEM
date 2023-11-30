@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <RootNamespace>Mars.Seem</RootNamespace>
     <Version>0.0.0</Version>
     <Company>Oregon State University</Company>
@@ -9,7 +9,7 @@
     <RepositoryUrl>https://github.com/OSU-MARS/SEEM</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>GPLv3</PackageLicenseExpression>
-    <Copyright>Copyright © 2019-2022 Oregon State University</Copyright>
+    <Copyright>Copyright © 2019-2023 Oregon State University</Copyright>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Platforms>x64</Platforms>
     <Description>Includes code derived from the CIPS-R 2.2.4 version of the Organon growth and yield model created by Oregon State University's Center for Intensive Planted-forest Silviculture and Management, Algorithms, and Remote Sensing.</Description>
@@ -41,10 +41,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Apache.Arrow" Version="13.0.0" />
-    <PackageReference Include="DocumentFormat.OpenXml" Version="2.20.0" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="7.0.0" />
-    <PackageReference Include="System.Management.Automation" Version="7.3.6" />
+    <PackageReference Include="Apache.Arrow" Version="14.0.1" />
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.0.0" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
+    <PackageReference Include="System.Management.Automation" Version="7.4.0" />
   </ItemGroup>
   
 </Project>

@@ -20,8 +20,8 @@ namespace Mars.Seem.Optimization
             {
                 for (int financialIndex = 0; financialIndex < financialCapacity; ++financialIndex)
                 {
-                    this.acceptedValueByRotationAndScenario[rotationIndex, financialIndex] = new();
-                    this.candidateValueByRotationAndScenario[rotationIndex, financialIndex] = new();
+                    this.acceptedValueByRotationAndScenario[rotationIndex, financialIndex] = [];
+                    this.candidateValueByRotationAndScenario[rotationIndex, financialIndex] = [];
                 }
             }
 

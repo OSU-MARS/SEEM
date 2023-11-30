@@ -79,7 +79,7 @@ namespace Mars.Seem.Organon
                 TreeModel.OrganonSwo => Constant.SwoSpecies,
                 _ => throw OrganonVariant.CreateUnhandledModelException(this.Variant.TreeModel),
             };
-            SortedList<FiaCode, SpeciesCalibration> calibration = new();
+            SortedList<FiaCode, SpeciesCalibration> calibration = [];
             foreach (FiaCode species in speciesList)
             {
                 calibration.Add(species, new SpeciesCalibration());

@@ -35,11 +35,11 @@ namespace Mars.Seem.Test
 
         private static HeuristicStandTrajectories<HeuristicParameters> CreateResults(HeuristicParameters parameters, int firstThinPeriodIndex, int rotationLength)
         {
-            List<HeuristicParameters> parameterCombinations = new() { parameters };
+            List<HeuristicParameters> parameterCombinations = [ parameters ];
             FinancialScenarios financialScenarios = new();
-            List<int> firstThinPeriods = new() { firstThinPeriodIndex };
-            List<int> noThin = new() { Constant.NoHarvestPeriod };
-            List<int> planningPeriods = new() { rotationLength };
+            List<int> firstThinPeriods = [ firstThinPeriodIndex ];
+            List<int> noThin = [ Constant.NoHarvestPeriod ];
+            List<int> planningPeriods = [ rotationLength ];
             HeuristicStandTrajectories<HeuristicParameters> results = new(parameterCombinations, firstThinPeriods, noThin, noThin, planningPeriods, financialScenarios, TestConstant.SolutionPoolSize);
 
             SilviculturalCoordinate coordinate = new()
@@ -346,11 +346,11 @@ namespace Mars.Seem.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = stackalloc[] { -0.0351F, 0.120F };
-                Span<int> treesThinned = stackalloc[] { 5, 0 };
+                Span<float> minFinancialValues = [ -0.0351F, 0.120F ];
+                Span<int> treesThinned = [ 5, 0 ];
             #else
-                Span<float> minFinancialValues = stackalloc[] { 1.075F, 1.169F };
-                Span<int> treesThinned = stackalloc[] { 2, 0 };
+                Span<float> minFinancialValues = [ 1.075F, 1.169F ];
+                Span<int> treesThinned = [ 2, 0 ];
             #endif
             int matchingOptimaIndexFirstCircular = -1;
             int matchingOptimaIndexHero = -1;
@@ -619,14 +619,14 @@ namespace Mars.Seem.Test
             //                                                                          \s+\w+\.\w+\(\d+\)\s+(\d+.\d{1,2})\d*\s+float\r?\n
             ExpectedStandTrajectory unthinnedExpected = new()
             {
-                //                             0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 27.93F, 31.01F, 33.96F, 36.86F, 39.72F, 42.57F, 45.41F }, // cm
-                //                                  0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 27.91F, 31.04F, 33.89F, 36.50F, 38.89F, 41.10F, 43.13F }, // m
+                //                 0       1       2       3       4       5       6       7       8       9
+                MinimumQmdInCm = [ 16.84F, 20.96F, 24.63F, 27.93F, 31.01F, 33.96F, 36.86F, 39.72F, 42.57F, 45.41F ], // cm
+                //                      0       1       2       3       4       5       6       7       8       9
+                MinimumTopHeightInM = [ 16.50F, 20.68F, 24.48F, 27.91F, 31.04F, 33.89F, 36.50F, 38.89F, 41.10F, 43.13F ], // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 363.45F, 468.31F, 558.84F, 638.64F, 709.21F, 771.96F, 828.46F },
-                MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 46.63F, 61.66F, 74.19F, 87.95F, 102.12F, 114.95F, 126.89F },
+                MinimumStandingCubicM3PerHa = [ 65.82F, 154.34F, 252.96F, 363.45F, 468.31F, 558.84F, 638.64F, 709.21F, 771.96F, 828.46F ],
+                MinimumStandingMbfPerHa = [ 9.64F, 18.87F, 30.66F, 46.63F, 61.66F, 74.19F, 87.95F, 102.12F, 114.95F, 126.89F ],
                 MinimumHarvestCubicM3PerHa = new float[lastPeriod + 1], // no thinning -> all zero
                 MinimumHarvestMbfPerHa = new float[lastPeriod + 1] // no thinning -> all zero
             };
@@ -644,16 +644,16 @@ namespace Mars.Seem.Test
                 FirstThinPeriod = firstThinPeriod,
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 400,
-                //                             0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.33F, 44.28F, 47.04F, 49.65F }, // cm
-                //                                  0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.58F, 38.05F, 40.33F, 42.43F }, // m
+                //                 0       1       2       3       4       5       6       7       8       9
+                MinimumQmdInCm = [ 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.33F, 44.28F, 47.04F, 49.65F ], // cm
+                //                      0       1       2       3       4       5       6       7       8       9
+                MinimumTopHeightInM = [ 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.58F, 38.05F, 40.33F, 42.43F ], // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 511.58F, 597.88F, 677.49F, 750.30F },
-                MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 67.30F, 83.50F, 99.00F, 112.93F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F },
-                MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F }
+                MinimumStandingCubicM3PerHa = [ 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 511.58F, 597.88F, 677.49F, 750.30F ],
+                MinimumStandingMbfPerHa = [ 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 67.30F, 83.50F, 99.00F, 112.93F ],
+                MinimumHarvestCubicM3PerHa = [ 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F ],
+                MinimumHarvestMbfPerHa = [ 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F ]
             };
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -679,18 +679,18 @@ namespace Mars.Seem.Test
                 SecondThinPeriod = secondThinPeriod,
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 400,
-                //                             0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 48.38F, 51.02F }, // cm
-                //                                  0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.88F, 42.02F }, // m
+                //                 0       1       2       3       4       5       6       7       8       9
+                MinimumQmdInCm = [ 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 48.38F, 51.02F ], // cm
+                //                      0       1       2       3       4       5       6       7       8       9
+                MinimumTopHeightInM = [ 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.88F, 42.02F ], // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 589.38F, 666.28F },
-                MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 85.56F, 99.86F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 0.0F, 0.0F },
-                MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 0.0F, 0.0F }
+                MinimumStandingCubicM3PerHa = [ 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 589.38F, 666.28F ],
+                MinimumStandingMbfPerHa = [ 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 85.56F, 99.86F ],
+                MinimumHarvestCubicM3PerHa = [ 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 0.0F, 0.0F ],
+                MinimumHarvestMbfPerHa = [ 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 0.0F, 0.0F ]
             };
-            float[] minimumTwoThinLiveBiomass = new float[] { 85531F, 146900F, 212987F, 167906F, 226196F, 283469F, 278099F, 329517F, 377780F, 422620F }; // kg/ha
+            float[] minimumTwoThinLiveBiomass = [ 85531F, 146900F, 212987F, 167906F, 226196F, 283469F, 278099F, 329517F, 377780F, 422620F ]; // kg/ha
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -730,16 +730,16 @@ namespace Mars.Seem.Test
                 ThirdThinPeriod = thirdThinPeriod,
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 485,
-                //                             0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = new float[] { 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 51.89F, 55.16F }, // cm
-                //                                  0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeightInM = new float[] { 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.41F, 41.52F }, // m
+                //                 0       1       2       3       4       5       6       7       8       9
+                MinimumQmdInCm = [ 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 51.89F, 55.16F ], // cm
+                //                      0       1       2       3       4       5       6       7       8       9
+                MinimumTopHeightInM = [ 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.41F, 41.52F ], // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 483.19F, 559.39F },
-                MinimumStandingMbfPerHa = new float[] { 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 69.92F, 83.92F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 98.60F, 0.0F },
-                MinimumHarvestMbfPerHa = new float[] { 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 15.17F, 0.0F }
+                MinimumStandingCubicM3PerHa = [ 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 483.19F, 559.39F ],
+                MinimumStandingMbfPerHa = [ 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 69.92F, 83.92F ],
+                MinimumHarvestCubicM3PerHa = [ 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 98.60F, 0.0F ],
+                MinimumHarvestMbfPerHa = [ 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 15.17F, 0.0F ]
             };
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -887,16 +887,16 @@ namespace Mars.Seem.Test
                 FirstThinPeriod = thinPeriod,
                 MinimumTreesSelected = 65,
                 MaximumTreesSelected = 70,
-                //                             0       1       2       3       4     
-                MinimumQmdInCm = new float[] { 23.33F, 26.87F, 30.16F, 33.12F, 35.92F },
-                //                                  0       1       2       3       4     
-                MinimumTopHeightInM = new float[] { 28.32F, 30.80F, 33.52F, 36.11F, 38.50F },
+                //                 0       1       2       3       4     
+                MinimumQmdInCm = [ 23.33F, 26.87F, 30.16F, 33.12F, 35.92F ],
+                //                      0       1       2       3       4     
+                MinimumTopHeightInM = [ 28.32F, 30.80F, 33.52F, 36.11F, 38.50F ],
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 360.59F, 361.88F, 473.05F, 571.58F, 660.29F },
-                MinimumStandingMbfPerHa = new float[] { 50.62F, 50.97F, 66.41F, 80.67F, 95.58F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 104.27F, 0.0F, 0.0F, 0.0F },
-                MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
+                MinimumStandingCubicM3PerHa = [ 360.59F, 361.88F, 473.05F, 571.58F, 660.29F ],
+                MinimumStandingMbfPerHa = [ 50.62F, 50.97F, 66.41F, 80.67F, 95.58F ],
+                MinimumHarvestCubicM3PerHa = [ 0.0F, 104.27F, 0.0F, 0.0F, 0.0F ],
+                MinimumHarvestMbfPerHa = [ 0.0F, 15.18F, 0.0F, 0.0F, 0.0F ]
             };
             PublicApi.Verify(thinnedTrajectoryNwo, immediateThinExpectedNwo, configurationNwo.Variant.TimeStepInYears);
             PublicApi.Verify(thinnedTrajectoryNwo, immediateThinExpectedNwo);
@@ -908,16 +908,16 @@ namespace Mars.Seem.Test
                 FirstThinPeriod = thinPeriod,
                 MinimumTreesSelected = 65,
                 MaximumTreesSelected = 70,
-                //                             0       1       2       3       4     
-                MinimumQmdInCm = new float[] { 23.33F, 26.88F, 29.85F, 32.33F, 34.59F },
-                //                                  0       1       2       3       4     
-                MinimumTopHeightInM = new float[] { 28.32F, 30.87F, 33.68F, 36.31F, 38.74F },
+                //                 0       1       2       3       4     
+                MinimumQmdInCm = [ 23.33F, 26.88F, 29.85F, 32.33F, 34.59F ],
+                //                      0       1       2       3       4     
+                MinimumTopHeightInM = [ 28.32F, 30.87F, 33.68F, 36.31F, 38.74F ],
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 360.59F, 377.43F, 505.03F, 623.25F, 726.62F },
-                MinimumStandingMbfPerHa = new float[] { 50.62F, 53.23F, 71.35F, 88.32F, 108.13F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 104.27F, 0.0F, 0.0F, 0.0F },
-                MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
+                MinimumStandingCubicM3PerHa = [ 360.59F, 377.43F, 505.03F, 623.25F, 726.62F ],
+                MinimumStandingMbfPerHa = [ 50.62F, 53.23F, 71.35F, 88.32F, 108.13F ],
+                MinimumHarvestCubicM3PerHa = [ 0.0F, 104.27F, 0.0F, 0.0F, 0.0F ],
+                MinimumHarvestMbfPerHa = [ 0.0F, 15.18F, 0.0F, 0.0F, 0.0F ]
             };
 
             PublicApi.Verify(thinnedTrajectorySmc, immediateThinExpectedSmc, configurationSmc.Variant.TimeStepInYears);
@@ -930,16 +930,16 @@ namespace Mars.Seem.Test
                 FirstThinPeriod = thinPeriod,
                 MinimumTreesSelected = 65,
                 MaximumTreesSelected = 70,
-                //                             0       1       2       3       4     
-                MinimumQmdInCm = new float[] { 23.33F, 26.81F, 29.94F, 32.73F, 35.30F },
-                //                                  0       1       2       3       4     
-                MinimumTopHeightInM = new float[] { 28.32F, 31.28F, 34.57F, 37.77F, 40.81F },
+                //                 0       1       2       3       4     
+                MinimumQmdInCm = [ 23.33F, 26.81F, 29.94F, 32.73F, 35.30F ],
+                //                      0       1       2       3       4     
+                MinimumTopHeightInM = [ 28.32F, 31.28F, 34.57F, 37.77F, 40.81F ],
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = new float[] { 360.59F, 378.39F, 511.55F, 641.53F, 770.84F },
-                MinimumStandingMbfPerHa = new float[] { 50.62F, 53.94F, 73.25F, 94.52F, 120.26F },
-                MinimumHarvestCubicM3PerHa = new float[] { 0.0F, 104.27F, 0.0F, 0.0F, 0.0F },
-                MinimumHarvestMbfPerHa = new float[] { 0.0F, 15.18F, 0.0F, 0.0F, 0.0F }
+                MinimumStandingCubicM3PerHa = [ 360.59F, 378.39F, 511.55F, 641.53F, 770.84F ],
+                MinimumStandingMbfPerHa = [ 50.62F, 53.94F, 73.25F, 94.52F, 120.26F ],
+                MinimumHarvestCubicM3PerHa = [ 0.0F, 104.27F, 0.0F, 0.0F, 0.0F ],
+                MinimumHarvestMbfPerHa = [ 0.0F, 15.18F, 0.0F, 0.0F, 0.0F ]
             };
             
             PublicApi.Verify(thinnedTrajectorySwo, immediateThinExpectedSwo, configurationSwo.Variant.TimeStepInYears);
@@ -1011,7 +1011,7 @@ namespace Mars.Seem.Test
                 treeRecordCount = 10;
             #endif
 
-            List<float> discountRates = new() {  Constant.Financial.DefaultAnnualDiscountRate };
+            List<float> discountRates = [  Constant.Financial.DefaultAnnualDiscountRate ];
             PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
             OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
             OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecordCount, ImputationMethod.None);
@@ -1618,12 +1618,12 @@ namespace Mars.Seem.Test
                 this.ThirdThinPeriod = Constant.NoHarvestPeriod;
                 this.MaximumTreesSelected = 0;
                 this.MinimumTreesSelected = 0;
-                this.MinimumHarvestCubicM3PerHa = Array.Empty<float>();
-                this.MinimumHarvestMbfPerHa = Array.Empty<float>();
-                this.MinimumQmdInCm = Array.Empty<float>();
-                this.MinimumStandingCubicM3PerHa = Array.Empty<float>();
-                this.MinimumStandingMbfPerHa = Array.Empty<float>();
-                this.MinimumTopHeightInM = Array.Empty<float>();
+                this.MinimumHarvestCubicM3PerHa = [];
+                this.MinimumHarvestMbfPerHa = [];
+                this.MinimumQmdInCm = [];
+                this.MinimumStandingCubicM3PerHa = [];
+                this.MinimumStandingMbfPerHa = [];
+                this.MinimumTopHeightInM = [];
             }
 
             public int Length

@@ -261,7 +261,7 @@ namespace Mars.Seem.Heuristics
             //int treeIndexStep = this.Jump;
 
             float acceptedFinancialValue = Single.MinValue;
-            SortedList<float, OneOptMove> highestNonTabuMovesByFinancialValue = new();
+            SortedList<float, OneOptMove> highestNonTabuMovesByFinancialValue = [];
             float highestFinancialValueSinceLastEscape = highestFinancialValue;
             int iterationsSinceFinancialValueIncreasedOrEscape = 0;
             //int subset = 0;

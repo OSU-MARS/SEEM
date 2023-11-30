@@ -17,7 +17,7 @@ namespace Mars.Seem.Silviculture
         {
             Debug.Assert(standTrajectory.PeriodLengthInYears > 0);
 
-            this.SnagsPerHectareBySpeciesAndDiameterClass = new();
+            this.SnagsPerHectareBySpeciesAndDiameterClass = [];
             this.SnagQmdInCentimetersByPeriod = new float[this.Periods];
             this.SnagsPerHectareByPeriod = new float[this.Periods];
 

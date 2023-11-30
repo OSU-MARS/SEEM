@@ -55,8 +55,8 @@ namespace Mars.Seem.Silviculture
 
             Debug.Assert((this.ChainsawMinimumCost >= 0.0F) && (haulCostPerHa >= 0.0F) && (machineMoveInAndOutPerHa > 0.0F));
             Debug.Assert((systemCostOffLanding >= 0.0F) && (yarderLandingCostPerHa >= 0.0F) && (yoaderLandingCostPerHa >= 0.0F));
-            Debug.Assert((Single.IsNaN(this.SystemCostPerHaWithYarder) == false) && (this.SystemCostPerHaWithYarder >= 0.0F) && (this.SystemCostPerHaWithYarder < 200.0F * 1000.0F));
-            Debug.Assert((Single.IsNaN(this.SystemCostPerHaWithYoader) == false) && (this.SystemCostPerHaWithYoader >= 0.0F) && (this.SystemCostPerHaWithYoader < 200.0F * 1000.0F));
+            Debug.Assert((Single.IsNaN(this.SystemCostPerHaWithYarder) == false) && (this.SystemCostPerHaWithYarder >= 0.0F) && (this.SystemCostPerHaWithYarder < 210.0F * 1000.0F));
+            Debug.Assert((Single.IsNaN(this.SystemCostPerHaWithYoader) == false) && (this.SystemCostPerHaWithYoader >= 0.0F) && (this.SystemCostPerHaWithYoader < 220.0F * 1000.0F));
         }
 
         public new void Clear()

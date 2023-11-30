@@ -20,9 +20,9 @@ namespace Mars.Seem.Test
 
         public PspStand(string xlsxFilePath, string worksheetName, float plotAreaInAcres)
         {
-            this.IngrowthByYear = new SortedDictionary<int, List<PspTreeMeasurementSeries>>();
-            this.MeasurementsByTag = new SortedList<int, PspTreeMeasurementSeries>();
-            this.MeasurementYears = new HashSet<int>();
+            this.IngrowthByYear = [];
+            this.MeasurementsByTag = [];
+            this.MeasurementYears = [];
             this.plotAreaInAcres = plotAreaInAcres;
             this.plotCount = 0;
             this.yearOfMostRecentIngrowthAdded = Int32.MinValue;
@@ -58,7 +58,7 @@ namespace Mars.Seem.Test
 
         private Dictionary<FiaCode, int> CountTreesBySpecies()
         {
-            Dictionary<FiaCode, int> treeCountBySpecies = new();
+            Dictionary<FiaCode, int> treeCountBySpecies = [];
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
                 if (treeCountBySpecies.TryGetValue(tree.Species, out int count) == false)
@@ -188,7 +188,7 @@ namespace Mars.Seem.Test
 
             // estimate crown ratios
             OrganonStandDensity standDensity = new(configuration.Variant, stand);
-            Dictionary<FiaCode, int> indexBySpecies = new();
+            Dictionary<FiaCode, int> indexBySpecies = [];
             foreach (PspTreeMeasurementSeries tree in this.MeasurementsByTag.Values)
             {
                 int firstTreeMeasurementYear = tree.GetFirstMeasurementYear();

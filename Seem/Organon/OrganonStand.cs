@@ -52,7 +52,7 @@ namespace Mars.Seem.Organon
             this.RedAlderSiteIndexInFeet = -1.0F;
             this.RedAlderGrowthEffectiveAge = -1.0F;
             this.SiteIndexInFeet = primarySiteIndexInFeet;
-            this.TreeHeightWarningBySpecies = new();
+            this.TreeHeightWarningBySpecies = [];
             this.Warnings = new OrganonWarnings();
         }
 
@@ -68,7 +68,7 @@ namespace Mars.Seem.Organon
             //this.SdiMaxLnQmd = other.SdiMaxLnQmd;
             //this.SdiMaxReciprocalExponent = other.SdiMaxReciprocalExponent;
             this.SiteIndexInFeet = other.SiteIndexInFeet;
-            this.TreeHeightWarningBySpecies = new();
+            this.TreeHeightWarningBySpecies = [];
             this.Warnings = new OrganonWarnings(other.Warnings);
 
             foreach (KeyValuePair<FiaCode, bool[]> species in other.TreeHeightWarningBySpecies)

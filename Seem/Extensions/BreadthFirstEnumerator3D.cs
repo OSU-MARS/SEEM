@@ -25,46 +25,46 @@ namespace Mars.Seem.Extensions
                 Offsets = new (int, int, int)[][]
                 { 
                     // 1@0 + 18@1 + 62@2 + 82@3 = checking of 163 nearest neighbors
-                    new (int, int, int)[] { new(0, 0, 0) },
-                    new (int, int, int)[] { new(0, 0, 1), new(0, 0, -1), new(0, 1, 0), new(0, -1, 0), new(1, 0, 0), new(-1, 0, 0), // cardinals @ Hamming distance = Euclidean distance = 1
-                                            new(0, 1, 1), new(0, 1, -1), new(0, -1, 1), new(0, -1, -1),                            // ordinals x, y, z @ Hamming = 2, Euclidean = 1.4
-                                            new(1, 0, 1), new(1, 0, -1), new(-1, 0, 1), new(-1, 0, -1),                            // ordinals x, y, z @ Hamming = 2, Euclidean = 1.4
-                                            new(1, 1, 0), new(-1, -1, 0), new(1, -1, 0), new(-1, 1, 0) },                          // corners in x, y, z = 0 plane @ Hamming = 2, Euclidean = 1.4
-                    new (int, int, int)[] { new(1, 1, 1), new(-1, -1, 1), new(1, -1, 1), new(-1, 1, 1),                            // corners in x, y, z = 1 plane @ Hamming = 3, Euclidean = 1.7
-                                            new(1, 1, -1), new(-1, -1, -1), new(1, -1, -1), new(-1, 1, -1),                        // corners in x, y, z = -1 plane @ Hamming = 3, Euclidean = 1.7
-                                            new(0, 0, 2), new(0, 0, -2), new(0, 2, 0), new(0, -2, 0), new(2, 0, 0), new(-2, 0, 0), // cardinals @ Hamming distance = Euclidean distance = 2
-                                            new(0, 2, 1), new(0, -2, -1), new(0, -2, 1), new(0, 2, -1),                            // ordinals in x, y, z plane @ Hamming = 3, Euclidean = 2.2
-                                            new(0, 2, 1), new(0, -2, -1), new(0, -2, 1), new(0, 2, -1),                            // ordinals in x, y, z plane @ Hamming = 3, Euclidean = 2.2
-                                            new(0, 1, 2), new(0, 1, -2), new(0, -1, 2), new(0, -1, -2),                            // ordinals in x, y, z plane @ Hamming = 3, Euclidean = 2.2
-                                            new(1, 0, 2), new(1, 0, -2), new(-1, 0, 2), new(-1, 0, -2),                            // ordinals in x, y, z plane @ Hamming = 3, Euclidean = 2.2
-                                            new(1, 2, 0), new(-1, -2, 0), new(1, -2, 0), new(-1, 2, 0),                            // y favoring in x, y, z = 0 plane @ Hamming = 3, Euclidean = 2.2
-                                            new(2, 1, 0), new(-2, -1, 0), new(2, -1, 0), new(-2, 1, 0),                            // x favoring in x, y, z = 0 plane @ Hamming = 3, Euclidean = 2.2
-                                            new(1, 2, 1), new(-1, -2, 1), new(1, -2, 1), new(-1, 2, 1),                            // y favoring in x, y, z = 1 plane @ Hamming = 4, Euclidean = 2.4
-                                            new(1, 1, 2), new(1, 1, -2), new(1, -1, 2), new(1, -1, -2),                            // xy corners in x, y, z plane @ Hamming = 4, Euclidean = 2.4
-                                            new(-1, 1, 2), new(-1, 1, -2), new(-1, -1, 2), new(-1, -1, -2),                        // xy corners in x, y, z plane @ Hamming = 4, Euclidean = 2.4
-                                            new(1, 2, -1), new(-1, -2, -1), new(1, -2, 1), new(-1, 2, -1),                         // y favoring in x, y, z = -1 plane @ Hamming = 4, Euclidean = 2.4
-                                            new(2, 1, 1), new(-2, -1, 1), new(2, -1, 1), new(-2, 1, 1),                            // x favoring in x, y, z = 1 plane @ Hamming = 4, Euclidean = 2.4
-                                            new(2, 1, -1), new(-2, -1, -1), new(2, -1, -1), new(-2, 1, -1) },                      // x favoring in x, y, z = -1 plane @ Hamming = 4, Euclidean = 2.4
-                    new (int, int, int)[] { new(0, 2, 2), new(0, 2, -2), new(0, -2, 2), new(0, -2, -2),                            // diagonals @ Hamming = 4, Euclidean = 2.8
-                                            new(2, 0, 2), new(2, 0, -2), new(-2, 0, 2), new(-2, 0, -2),                            // diagonals @ Hamming = 4, Euclidean = 2.8
-                                            new(2, 2, 0), new(-2, -2, 0), new(2, -2, 0), new(-2, 2, 0),                            // diagonals @ Hamming = 4, Euclidean = 2.8
-                                            new(1, 2, 2), new(1, 2, -2), new(1, -2, 2), new(1, 2, -2),                             // y favoring in x, y, z plane @ Hamming = 5, Euclidean = 3
-                                            new(-1, 2, 2), new(-1, 2, -2), new(-1, -2, 2), new(-1, 2, -2),                         // y favoring in x, y, z plane @ Hamming = 5, Euclidean = 3
-                                            new(2, 1, 2), new(2, 1, -2), new(2, -1, 2), new(2, 1, -2),                             // x favoring in x, y, z plane @ Hamming = 5, Euclidean = 3
-                                            new(-2, 1, 2), new(-2, 1, -2), new(-2, -1, 2), new(-2, 1, -2),                         // x favoring in x, y, z plane @ Hamming = 5, Euclidean = 3
-                                            new(2, 2, 1), new(2, 2, -1), new(2, -2, 1), new(2, 2, -1),                             // xy corners in x, y, z plane @ Hamming = 5, Euclidean = 3
-                                            new(-2, 2, 1), new(-2, 2, -1), new(-2, -2, 1), new(-2, 2, -1),                         // xy corners in x, y, z plane @ Hamming = 5, Euclidean = 3
-                                            new(0, 0, 3), new(0, 0, -3), new(0, 3, 0), new(0, -3, 0), new(3, 0, 0), new(-3, 0, 0), // cardinals @ Hamming distance = Euclidean distance = 3
-                                            new(0, 1, 3), new(0, 1, -3), new(0, -1, 3), new(0, -1, -3),                            // y favoring in x, y, z plane @ Hamming = 4, Euclidean = 3.2
-                                            new(1, 0, 3), new(1, 0, -3), new(-1, 0, 3), new(-1, 0, -3),                            // x favoring in x, y, z plane @ Hamming = 4, Euclidean = 3.2
-                                            new(0, 3, 1), new(0, -3, -1), new(0, -3, 1), new(0, 3, -1),                            // ordinals in x, y, z plane @ Hamming = 4, Euclidean = 3.2
-                                            new(3, 0, 1), new(-3, 0, -1), new(3, 0, -1), new(3, 0, -1),                            // ordinals in x, y, z plane @ Hamming = 4, Euclidean = 3.2
-                                            new(1, 3, 0), new(-1, -3, 0), new(1, -3, 0), new(-1, 3, 0),                            // y favoring in x, y, z = 0 plane @ Hamming = 4, Euclidean = 3.2
-                                            new(3, 1, 0), new(-3, -1, 0), new(3, -1, 0), new(-3, 1, 0),                            // x favoring in x, y, z = 0 plane @ Hamming = 4, Euclidean = 3.2
-                                            new(1, 3, 1), new(-1, -3, 1), new(1, -3, 1), new(-1, 3, 1),                            // y favoring in x, y, z = 0 plane @ Hamming = 5, Euclidean = 3.3
-                                            new(1, 3, -1), new(-1, -3, -1), new(1, -3, -1), new(-1, 3, -1),                        // y favoring in x, y, z = 0 plane @ Hamming = 5, Euclidean = 3.3
-                                            new(3, 1, 1), new(-3, -1, 1), new(3, -1, 1), new(-3, 1, 1),                            // x favoring in x, y, z = 0 plane @ Hamming = 5, Euclidean = 3.3
-                                            new(3, 1, -1), new(-3, -1, -1), new(3, -1, -1), new(-3, 1, -1) },                      // x favoring in x, y, z = 0 plane @ Hamming = 5, Euclidean = 3.3
+                    [ new(0, 0, 0) ],
+                    [ new(0, 0, 1), new(0, 0, -1), new(0, 1, 0), new(0, -1, 0), new(1, 0, 0), new(-1, 0, 0), // cardinals @ Hamming distance = Euclidean distance = 1
+                      new(0, 1, 1), new(0, 1, -1), new(0, -1, 1), new(0, -1, -1),                            // ordinals x, y, z @ Hamming = 2, Euclidean = 1.4
+                      new(1, 0, 1), new(1, 0, -1), new(-1, 0, 1), new(-1, 0, -1),                            // ordinals x, y, z @ Hamming = 2, Euclidean = 1.4
+                      new(1, 1, 0), new(-1, -1, 0), new(1, -1, 0), new(-1, 1, 0) ],                          // corners in x, y, z = 0 plane @ Hamming = 2, Euclidean = 1.4
+                    [ new(1, 1, 1), new(-1, -1, 1), new(1, -1, 1), new(-1, 1, 1),                            // corners in x, y, z = 1 plane @ Hamming = 3, Euclidean = 1.7
+                      new(1, 1, -1), new(-1, -1, -1), new(1, -1, -1), new(-1, 1, -1),                        // corners in x, y, z = -1 plane @ Hamming = 3, Euclidean = 1.7
+                      new(0, 0, 2), new(0, 0, -2), new(0, 2, 0), new(0, -2, 0), new(2, 0, 0), new(-2, 0, 0), // cardinals @ Hamming distance = Euclidean distance = 2
+                      new(0, 2, 1), new(0, -2, -1), new(0, -2, 1), new(0, 2, -1),                            // ordinals in x, y, z plane @ Hamming = 3, Euclidean = 2.2
+                      new(0, 2, 1), new(0, -2, -1), new(0, -2, 1), new(0, 2, -1),                            // ordinals in x, y, z plane @ Hamming = 3, Euclidean = 2.2
+                      new(0, 1, 2), new(0, 1, -2), new(0, -1, 2), new(0, -1, -2),                            // ordinals in x, y, z plane @ Hamming = 3, Euclidean = 2.2
+                      new(1, 0, 2), new(1, 0, -2), new(-1, 0, 2), new(-1, 0, -2),                            // ordinals in x, y, z plane @ Hamming = 3, Euclidean = 2.2
+                      new(1, 2, 0), new(-1, -2, 0), new(1, -2, 0), new(-1, 2, 0),                            // y favoring in x, y, z = 0 plane @ Hamming = 3, Euclidean = 2.2
+                      new(2, 1, 0), new(-2, -1, 0), new(2, -1, 0), new(-2, 1, 0),                            // x favoring in x, y, z = 0 plane @ Hamming = 3, Euclidean = 2.2
+                      new(1, 2, 1), new(-1, -2, 1), new(1, -2, 1), new(-1, 2, 1),                            // y favoring in x, y, z = 1 plane @ Hamming = 4, Euclidean = 2.4
+                      new(1, 1, 2), new(1, 1, -2), new(1, -1, 2), new(1, -1, -2),                            // xy corners in x, y, z plane @ Hamming = 4, Euclidean = 2.4
+                      new(-1, 1, 2), new(-1, 1, -2), new(-1, -1, 2), new(-1, -1, -2),                        // xy corners in x, y, z plane @ Hamming = 4, Euclidean = 2.4
+                      new(1, 2, -1), new(-1, -2, -1), new(1, -2, 1), new(-1, 2, -1),                         // y favoring in x, y, z = -1 plane @ Hamming = 4, Euclidean = 2.4
+                      new(2, 1, 1), new(-2, -1, 1), new(2, -1, 1), new(-2, 1, 1),                            // x favoring in x, y, z = 1 plane @ Hamming = 4, Euclidean = 2.4
+                      new(2, 1, -1), new(-2, -1, -1), new(2, -1, -1), new(-2, 1, -1) ],                      // x favoring in x, y, z = -1 plane @ Hamming = 4, Euclidean = 2.4
+                    [ new(0, 2, 2), new(0, 2, -2), new(0, -2, 2), new(0, -2, -2),                            // diagonals @ Hamming = 4, Euclidean = 2.8
+                      new(2, 0, 2), new(2, 0, -2), new(-2, 0, 2), new(-2, 0, -2),                            // diagonals @ Hamming = 4, Euclidean = 2.8
+                      new(2, 2, 0), new(-2, -2, 0), new(2, -2, 0), new(-2, 2, 0),                            // diagonals @ Hamming = 4, Euclidean = 2.8
+                      new(1, 2, 2), new(1, 2, -2), new(1, -2, 2), new(1, 2, -2),                             // y favoring in x, y, z plane @ Hamming = 5, Euclidean = 3
+                      new(-1, 2, 2), new(-1, 2, -2), new(-1, -2, 2), new(-1, 2, -2),                         // y favoring in x, y, z plane @ Hamming = 5, Euclidean = 3
+                      new(2, 1, 2), new(2, 1, -2), new(2, -1, 2), new(2, 1, -2),                             // x favoring in x, y, z plane @ Hamming = 5, Euclidean = 3
+                      new(-2, 1, 2), new(-2, 1, -2), new(-2, -1, 2), new(-2, 1, -2),                         // x favoring in x, y, z plane @ Hamming = 5, Euclidean = 3
+                      new(2, 2, 1), new(2, 2, -1), new(2, -2, 1), new(2, 2, -1),                             // xy corners in x, y, z plane @ Hamming = 5, Euclidean = 3
+                      new(-2, 2, 1), new(-2, 2, -1), new(-2, -2, 1), new(-2, 2, -1),                         // xy corners in x, y, z plane @ Hamming = 5, Euclidean = 3
+                      new(0, 0, 3), new(0, 0, -3), new(0, 3, 0), new(0, -3, 0), new(3, 0, 0), new(-3, 0, 0), // cardinals @ Hamming distance = Euclidean distance = 3
+                      new(0, 1, 3), new(0, 1, -3), new(0, -1, 3), new(0, -1, -3),                            // y favoring in x, y, z plane @ Hamming = 4, Euclidean = 3.2
+                      new(1, 0, 3), new(1, 0, -3), new(-1, 0, 3), new(-1, 0, -3),                            // x favoring in x, y, z plane @ Hamming = 4, Euclidean = 3.2
+                      new(0, 3, 1), new(0, -3, -1), new(0, -3, 1), new(0, 3, -1),                            // ordinals in x, y, z plane @ Hamming = 4, Euclidean = 3.2
+                      new(3, 0, 1), new(-3, 0, -1), new(3, 0, -1), new(3, 0, -1),                            // ordinals in x, y, z plane @ Hamming = 4, Euclidean = 3.2
+                      new(1, 3, 0), new(-1, -3, 0), new(1, -3, 0), new(-1, 3, 0),                            // y favoring in x, y, z = 0 plane @ Hamming = 4, Euclidean = 3.2
+                      new(3, 1, 0), new(-3, -1, 0), new(3, -1, 0), new(-3, 1, 0),                            // x favoring in x, y, z = 0 plane @ Hamming = 4, Euclidean = 3.2
+                      new(1, 3, 1), new(-1, -3, 1), new(1, -3, 1), new(-1, 3, 1),                            // y favoring in x, y, z = 0 plane @ Hamming = 5, Euclidean = 3.3
+                      new(1, 3, -1), new(-1, -3, -1), new(1, -3, -1), new(-1, 3, -1),                        // y favoring in x, y, z = 0 plane @ Hamming = 5, Euclidean = 3.3
+                      new(3, 1, 1), new(-3, -1, 1), new(3, -1, 1), new(-3, 1, 1),                            // x favoring in x, y, z = 0 plane @ Hamming = 5, Euclidean = 3.3
+                      new(3, 1, -1), new(-3, -1, -1), new(3, -1, -1), new(-3, 1, -1) ],                      // x favoring in x, y, z = 0 plane @ Hamming = 5, Euclidean = 3.3
                 }
             };
         }

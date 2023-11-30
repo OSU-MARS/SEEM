@@ -22,14 +22,14 @@ namespace Mars.Seem.Heuristics
 
         public PopulationStatistics()
         {
-            this.CoefficientOfVarianceByGeneration = new List<float>();
-            this.MaximumFitnessByGeneration = new List<float>();
-            this.MeanAllelesPerLocusByGeneration = new List<float>();
-            this.MeanFitnessByGeneration = new List<float>();
-            this.MeanHeterozygosityByGeneration = new List<float>();
-            this.MinimumFitnessByGeneration = new List<float>();
-            this.NewIndividualsByGeneration = new List<int>();
-            this.PolymorphismByGeneration = new List<float>();
+            this.CoefficientOfVarianceByGeneration = [];
+            this.MaximumFitnessByGeneration = [];
+            this.MeanAllelesPerLocusByGeneration = [];
+            this.MeanFitnessByGeneration = [];
+            this.MeanHeterozygosityByGeneration = [];
+            this.MinimumFitnessByGeneration = [];
+            this.NewIndividualsByGeneration = [];
+            this.PolymorphismByGeneration = [];
         }
 
         public int Generations

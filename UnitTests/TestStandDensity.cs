@@ -3,13 +3,8 @@ using System.IO;
 
 namespace Mars.Seem.Test
 {
-    internal class TestStandDensity : OrganonStandDensity
+    internal class TestStandDensity(OrganonStand stand, OrganonVariant variant) : OrganonStandDensity(variant, stand)
     {
-        public TestStandDensity(OrganonStand stand, OrganonVariant variant)
-            : base(variant, stand)
-        {
-        }
-
         public StreamWriter WriteToCsv(string filePath, OrganonVariant variant, int year)
         {
             FileStream stream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);

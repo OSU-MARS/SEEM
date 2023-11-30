@@ -19,7 +19,7 @@ namespace Mars.Seem.Silviculture
         {
             this.DiameterClasses = (int)(maximumDiameterInCm / diameterClassSizeInCm) + 1;
             this.DiameterClassSizeInCentimeters = diameterClassSizeInCm;
-            this.LogsPerHectareBySpeciesAndDiameterClass = new();
+            this.LogsPerHectareBySpeciesAndDiameterClass = [];
             this.MaximumDiameterInCentimeters = maximumDiameterInCm;
             this.Periods = periods;
 

@@ -21,13 +21,13 @@ namespace Mars.Seem.Test
 
         protected TreeQuantiles()
         {
-            this.DeadExpansionFactorBySpecies = new SortedDictionary<FiaCode, float[]>();
-            this.LiveExpansionFactorBySpecies = new SortedDictionary<FiaCode, float[]>();
-            this.MaxDbhInCmBySpecies = new SortedDictionary<FiaCode, float[]>();
-            this.MeanCrownRatioBySpecies = new SortedDictionary<FiaCode, float[]>();
-            this.MeanDbhInCmBySpecies = new SortedDictionary<FiaCode, float[]>();
-            this.MeanHeightInMetersBySpecies = new SortedDictionary<FiaCode, float[]>();
-            this.MinDbhInCmBySpecies = new SortedDictionary<FiaCode, float[]>();
+            this.DeadExpansionFactorBySpecies = [];
+            this.LiveExpansionFactorBySpecies = [];
+            this.MaxDbhInCmBySpecies = [];
+            this.MeanCrownRatioBySpecies = [];
+            this.MeanDbhInCmBySpecies = [];
+            this.MeanHeightInMetersBySpecies = [];
+            this.MinDbhInCmBySpecies = [];
         }
 
         public TreeQuantiles(TestStand stand, PspStand pspStand, int measurementYear)

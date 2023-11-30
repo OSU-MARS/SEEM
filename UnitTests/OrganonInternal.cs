@@ -61,7 +61,7 @@ namespace Mars.Seem.Test
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
                 SortedList<FiaCode, SpeciesCalibration> calibrationBySpecies = configuration.CreateSpeciesCalibration();
 
-                SortedList<FiaCode, float[]> previousTreeDiametersBySpecies = new();
+                SortedList<FiaCode, float[]> previousTreeDiametersBySpecies = [];
                 foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                 {
                     previousTreeDiametersBySpecies.Add(treesOfSpecies.Species, new float[treesOfSpecies.Capacity]);

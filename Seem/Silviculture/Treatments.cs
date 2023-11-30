@@ -9,7 +9,7 @@ namespace Mars.Seem.Silviculture
 
         public Treatments()
         {
-            this.Harvests = new();
+            this.Harvests = [];
         }
 
         protected Treatments(Treatments other)
@@ -52,9 +52,9 @@ namespace Mars.Seem.Silviculture
             Debug.Assert(this.Harvests.Count == other.Harvests.Count); // sanity check
         }
 
-        public IList<int> GetHarvestPeriods()
+        public List<int> GetHarvestPeriods()
         {
-            IList<int> thinningPeriods = this.GetThinningPeriods();
+            List<int> thinningPeriods = this.GetThinningPeriods();
             thinningPeriods.Add(Constant.RegenerationHarvestIfEligible);
             return thinningPeriods;
         }

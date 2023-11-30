@@ -82,10 +82,7 @@ namespace Mars.Seem.Extensions
             {
                 return 0.0F; // truncate values less than 5.877472e-39 down to zero
             }
-            if (power > MathV.FloatExp2MaximumPower)
-            {
-                throw new ArgumentOutOfRangeException(nameof(power));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(power, MathV.FloatExp2MaximumPower);
 
             // fast_exp() by @jenkas in https://stackoverflow.com/questions/479705/reinterpret-cast-in-c-sharp
             // ExpC4 is corrected in this code as @jenkas used a value of log2(e) that's low by 0.013 ppm.
@@ -120,10 +117,10 @@ namespace Mars.Seem.Extensions
             Vector128<int> integerExponent = Avx.ShiftLeftLogical(integerPower, 23);
             Vector128<float> exponent = Avx.Add(integerExponent, fractionalInterpolant.AsInt32()).AsSingle();
 
-            byte zeroMask = (byte)Avx.MoveMask(Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector128(-MathV.FloatExp2MaximumPower)));
-            if (zeroMask != 0)
+            Vector128<float> zeroMask = Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector128(-MathV.FloatExp2MaximumPower));
+            if (Avx.MoveMask(zeroMask) != Constant.Simd128x4.MaskAllFalse)
             {
-                exponent = Avx.Blend(exponent, Vector128<float>.Zero, zeroMask);
+                exponent = Avx.BlendVariable(exponent, Vector128<float>.Zero, zeroMask);
             }
             return exponent;
         }
@@ -148,10 +145,10 @@ namespace Mars.Seem.Extensions
             Vector256<int> integerExponent = Avx2.ShiftLeftLogical(integerPower, 23);
             Vector256<float> exponent = Avx2.Add(integerExponent, fractionalInterpolant.AsInt32()).AsSingle();
 
-            byte zeroMask = (byte)Avx.MoveMask(Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector256(-MathV.FloatExp2MaximumPower)));
-            if (zeroMask != 0)
+            Vector256<float> zeroMask = Avx.CompareLessThan(power, AvxExtensions.BroadcastScalarToVector256(-MathV.FloatExp2MaximumPower));
+            if (Avx.MoveMask(zeroMask) != Constant.Simd256x8.MaskAllFalse)
             {
-                exponent = Avx.Blend(exponent, Vector256<float>.Zero, zeroMask);
+                exponent = Avx.BlendVariable(exponent, Vector256<float>.Zero, zeroMask);
             }
             return exponent;
         }
@@ -300,22 +297,22 @@ namespace Mars.Seem.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<float> MaskExp(Vector128<float> power, byte exponentMask)
+        public static Vector128<float> MaskExp(Vector128<float> power, Vector128<float> exponentMask)
         {
             // if corresponding bit in mask is set then 1.0 is used instead of power in restrictedPower to avoid math errors
             // Uses lower 4 bits of mask.
-            Vector128<float> restrictedPower = Avx.Blend(power, AvxExtensions.BroadcastScalarToVector128(1.0F), exponentMask);
+            Vector128<float> restrictedPower = Avx.BlendVariable(power, AvxExtensions.BroadcastScalarToVector128(1.0F), exponentMask);
             // if corresponding bit in mask is set then 0.0 is returned
-            Vector128<float> exponent = Avx.Blend(MathV.Exp(restrictedPower), Vector128<float>.Zero, exponentMask);
+            Vector128<float> exponent = Avx.BlendVariable(MathV.Exp(restrictedPower), Vector128<float>.Zero, exponentMask);
             return exponent;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<float> MaskExp(Vector256<float> power, byte exponentMask)
+        public static Vector256<float> MaskExp(Vector256<float> power, Vector256<float> exponentMask)
         {
             // uses lower 8 bits of mask
-            Vector256<float> restrictedPower = Avx.Blend(power, AvxExtensions.BroadcastScalarToVector256(1.0F), exponentMask);
-            Vector256<float> exponent = Avx.Blend(MathV.Exp(restrictedPower), Vector256<float>.Zero, exponentMask);
+            Vector256<float> restrictedPower = Avx.BlendVariable(power, AvxExtensions.BroadcastScalarToVector256(1.0F), exponentMask);
+            Vector256<float> exponent = Avx.BlendVariable(MathV.Exp(restrictedPower), Vector256<float>.Zero, exponentMask);
             return exponent;
         }
 
@@ -328,16 +325,10 @@ namespace Mars.Seem.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Pow(float x, float y)
         {
-            if (x < 0.0F)
-            {
-                throw new ArgumentOutOfRangeException(nameof(x));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(x, 0.0F);
             if (x == 0.0F)
             {
-                if (y <= 0.0F)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(y));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(y, 0.0F);
                 return 0.0F;
             }
             return MathV.Exp2(MathV.Log2(x) * y);

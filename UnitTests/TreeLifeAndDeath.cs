@@ -12,9 +12,9 @@ namespace Mars.Seem.Test
 
         public TreeLifeAndDeath()
         {
-            this.TotalDbhGrowthInInches = new Dictionary<FiaCode, float[]>();
-            this.TotalDeadExpansionFactor = new Dictionary<FiaCode, float[]>();
-            this.TotalHeightGrowthInFeet = new Dictionary<FiaCode, float[]>();
+            this.TotalDbhGrowthInInches = [];
+            this.TotalDeadExpansionFactor = [];
+            this.TotalHeightGrowthInFeet = [];
         }
 
         public void AccumulateGrowthAndMortality(OrganonStand stand)

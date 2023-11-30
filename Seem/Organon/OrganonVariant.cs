@@ -20,8 +20,8 @@ namespace Mars.Seem.Organon
 
         protected OrganonVariant(TreeModel treeModel, float oldTreeAgeThreshold)
         {
-            this.crownCoefficients = new();
-            this.heightCoefficients = new();
+            this.crownCoefficients = [];
+            this.heightCoefficients = [];
             this.OldTreeAgeThreshold = oldTreeAgeThreshold;
             this.Simd = Simd.Width128;
             this.TimeStepInYears = treeModel == TreeModel.OrganonRap ? 1 : 5;
@@ -431,27 +431,27 @@ namespace Mars.Seem.Organon
                     Vector128<float> strataHeight = Avx.Multiply(Vector128.Create(0.25F, 0.50F, 0.75F, 1.0F), strataHeightIncrement); // find CCF at top of strata as in Fortran
                     for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += Constant.Simd128x4.Width)
                     {
-                        int strataBelowTreeHeightMask = Avx.MoveMask(Avx.CompareLessThan(strataHeight, heightInFeet128));
-                        if (strataBelowTreeHeightMask == 0)
+                        Vector128<float> strataBelowTreeHeightMask = Avx.CompareLessThan(strataHeight, heightInFeet128);
+                        if (Avx.MoveMask(strataBelowTreeHeightMask) == Constant.Simd128x4.MaskAllFalse)
                         {
                             // tree contributes no crown competition factor above its height
                             break;
                         }
 
                         // find crown width and lowered CCFs for any strata above height of largest crown width
-                        int strataAboveLargestCrownMask = Avx.MoveMask(Avx.CompareGreaterThan(strataHeight, heightToLargestCrownWidth128));
-                        if (strataAboveLargestCrownMask != 0)
+                        Vector128<float> strataAboveLargestCrownMask = Avx.CompareGreaterThan(strataHeight, heightToLargestCrownWidth128);
+                        if (Avx.MoveMask(strataAboveLargestCrownMask) != Constant.Simd128x4.MaskAllFalse)
                         {
                             // very slightly faster to divide than to precompute denominator reciprocal
                             Vector128<float> relativePosition = Avx.Divide(Avx.Subtract(heightInFeet128, strataHeight), Avx.Subtract(heightInFeet128, heightToLargestCrownWidth128));
                             Vector128<float> largestWidthMultiplier = MathV.Pow(relativePosition, Avx.Add(cwB1_128, Avx.Add(Avx.Multiply(cwB2_128, Avx.Sqrt(relativePosition)), cwB3heightDiameterRatio128)));
                             Vector128<float> crownWidthInStrata = Avx.Multiply(largestCrownWidth128, largestWidthMultiplier);
                             Vector128<float> crownCompetitionFactorInStrata = Avx.Multiply(ccfExpansionFactor128, Avx.Multiply(crownWidthInStrata, crownWidthInStrata));
-                            crownCompetitionFactor = Avx.Blend(crownCompetitionFactor, crownCompetitionFactorInStrata, (byte)strataAboveLargestCrownMask);
+                            crownCompetitionFactor = Avx.BlendVariable(crownCompetitionFactor, crownCompetitionFactorInStrata, strataAboveLargestCrownMask);
                         }
 
                         // zero any elements above tree height
-                        crownCompetitionFactor = Avx.Blend(Vector128<float>.Zero, crownCompetitionFactor, (byte)strataBelowTreeHeightMask);
+                        crownCompetitionFactor = Avx.BlendVariable(Vector128<float>.Zero, crownCompetitionFactor, strataBelowTreeHeightMask);
 
                         // accumulate CCF
                         Vector128<float> crownCompetitionByHeight128 = Avx.LoadVector128(pinnedCrownCompetitionByHeight + strataIndex);
@@ -596,27 +596,27 @@ namespace Mars.Seem.Organon
                     Vector256<float> strataHeight = Avx.Multiply(Vector256.Create(0.125F, 0.250F, 0.375F, 0.500F, 0.625F, 0.750F, 0.875F, 1.00F), strataHeightIncrement); // find CCF at top of strata as in Fortran
                     for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += Constant.Simd256x8.Width)
                     {
-                        int strataBelowTreeHeightMask = Avx.MoveMask(Avx.CompareLessThan(strataHeight, heightInFeet256));
-                        if (strataBelowTreeHeightMask == 0)
+                        Vector256<float> strataBelowTreeHeightMask = Avx.CompareLessThan(strataHeight, heightInFeet256);
+                        if (Avx.MoveMask(strataBelowTreeHeightMask) == Constant.Simd256x8.MaskAllFalse)
                         {
                             // tree contributes no crown competition factor above its height
                             break;
                         }
 
                         // find crown width and lowered CCFs for any strata above height of largest crown width
-                        int strataAboveLargestCrownMask = Avx.MoveMask(Avx.CompareGreaterThan(strataHeight, heightToLargestCrownWidth256));
-                        if (strataAboveLargestCrownMask != 0)
+                        Vector256<float> strataAboveLargestCrownMask = Avx.CompareGreaterThan(strataHeight, heightToLargestCrownWidth256);
+                        if (Avx.MoveMask(strataAboveLargestCrownMask) != Constant.Simd256x8.MaskAllFalse)
                         {
                             // very slightly faster to divide than to precompute denominator reciprocal
                             Vector256<float> relativePosition = Avx.Divide(Avx.Subtract(heightInFeet256, strataHeight), Avx.Subtract(heightInFeet256, heightToLargestCrownWidth256));
                             Vector256<float> largestWidthMultiplier = MathV.Pow(relativePosition, Avx.Add(cwB1_256, Avx.Add(Avx.Multiply(cwB2_256, Avx.Sqrt(relativePosition)), cwB3heightDiameterRatio256)));
                             Vector256<float> crownWidthInStrata = Avx.Multiply(largestCrownWidth256, largestWidthMultiplier);
                             Vector256<float> crownCompetitionFactorInStrata = Avx.Multiply(ccfExpansionFactor256, Avx.Multiply(crownWidthInStrata, crownWidthInStrata));
-                            crownCompetitionFactor = Avx.Blend(crownCompetitionFactor, crownCompetitionFactorInStrata, (byte)strataAboveLargestCrownMask);
+                            crownCompetitionFactor = Avx.BlendVariable(crownCompetitionFactor, crownCompetitionFactorInStrata, strataAboveLargestCrownMask);
                         }
 
                         // zero any elements above tree height
-                        crownCompetitionFactor = Avx.Blend(Vector256<float>.Zero, crownCompetitionFactor, (byte)strataBelowTreeHeightMask);
+                        crownCompetitionFactor = Avx.BlendVariable(Vector256<float>.Zero, crownCompetitionFactor, strataBelowTreeHeightMask);
 
                         // accumulate CCF
                         Vector256<float> crownCompetitionByHeight256 = Avx.LoadVector256(pinnedCrownCompetitionByHeight + strataIndex);
@@ -743,11 +743,11 @@ namespace Mars.Seem.Organon
         protected static Vector128<float> GetCrownRatioAdjustment(Vector128<float> crownRatio)
         {
             Vector128<float> crownRatioAdjustment = AvxExtensions.BroadcastScalarToVector128(1.0F);
-            int exponentMask = Avx.MoveMask(Avx.CompareLessThan(crownRatio, AvxExtensions.BroadcastScalarToVector128(0.11F)));
-            if (exponentMask != 0)
+            Vector128<float> exponentMask = Avx.CompareLessThan(crownRatio, AvxExtensions.BroadcastScalarToVector128(0.11F));
+            if (Avx.MoveMask(exponentMask) != Constant.Simd128x4.MaskAllFalse)
             {
                 Vector128<float> power = Avx.Multiply(AvxExtensions.BroadcastScalarToVector128(-25.0F * 25.0F), Avx.Multiply(crownRatio, crownRatio));
-                Vector128<float> exponent = MathV.MaskExp(power, (byte)exponentMask);
+                Vector128<float> exponent = MathV.MaskExp(power, exponentMask);
                 crownRatioAdjustment = Avx.Subtract(crownRatioAdjustment, exponent);
                 DebugV.Assert(Avx.CompareGreaterThanOrEqual(crownRatioAdjustment, Vector128<float>.Zero));
                 DebugV.Assert(Avx.CompareLessThanOrEqual(crownRatioAdjustment, AvxExtensions.BroadcastScalarToVector128(1.0F)));
@@ -758,11 +758,11 @@ namespace Mars.Seem.Organon
         protected static Vector256<float> GetCrownRatioAdjustment(Vector256<float> crownRatio)
         {
             Vector256<float> crownRatioAdjustment = AvxExtensions.BroadcastScalarToVector256(1.0F);
-            int exponentMask = Avx.MoveMask(Avx.CompareLessThan(crownRatio, AvxExtensions.BroadcastScalarToVector256(0.11F)));
-            if (exponentMask != 0)
+            Vector256<float> exponentMask = Avx.CompareLessThan(crownRatio, AvxExtensions.BroadcastScalarToVector256(0.11F));
+            if (Avx.MoveMask(exponentMask) != Constant.Simd256x8.MaskAllFalse)
             {
                 Vector256<float> power = Avx.Multiply(AvxExtensions.BroadcastScalarToVector256(-25.0F * 25.0F), Avx.Multiply(crownRatio, crownRatio));
-                Vector256<float> exponent = MathV.MaskExp(power, (byte)exponentMask);
+                Vector256<float> exponent = MathV.MaskExp(power, exponentMask);
                 crownRatioAdjustment = Avx.Subtract(crownRatioAdjustment, exponent);
             }
             return crownRatioAdjustment;

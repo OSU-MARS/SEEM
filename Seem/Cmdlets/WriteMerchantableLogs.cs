@@ -77,10 +77,10 @@ namespace Mars.Seem.Cmdlets
                 writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 int firstRegenerationHarvestPeriodAcrossAllTrajectories = silviculturalSpace.RotationLengths.Min(); // VS 16.11.7: nullability checking doesn't see [MemberNotNull] on ValidateParameters() call above
-                HashSet<StandTrajectory> knownTrajectories = new();
+                HashSet<StandTrajectory> knownTrajectories = [];
                 int maxCoordinateIndex = WriteSilviculturalTrajectoriesCmdlet.GetMaxCoordinateIndex(silviculturalSpace);
-                List<int> regenHistogram = new();
-                List<int> thinHistogram = new();
+                List<int> regenHistogram = [];
+                List<int> thinHistogram = [];
                 for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
                     writeContext.SetSilviculturalCoordinate(coordinateIndex);

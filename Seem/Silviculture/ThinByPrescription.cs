@@ -16,10 +16,7 @@ namespace Mars.Seem.Silviculture
 
         public ThinByPrescription(int harvestAtBeginningOfPeriod)
         {
-            if (harvestAtBeginningOfPeriod < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(harvestAtBeginningOfPeriod));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(harvestAtBeginningOfPeriod, 1);
 
             this.fromAbovePercentage = 0.0F;
             this.fromBelowPercentage = 0.0F;
@@ -102,9 +99,9 @@ namespace Mars.Seem.Silviculture
             float diameterToStandUnitsMultiplier = 1.0F / diameterToCmMultiplier;
 
             // sort trees by diameter
-            SortedList<FiaCode, int[]> dbhSortOrderBySpecies = new();
-            SortedList<FiaCode, int> thinFromAboveIndexBySpecies = new();
-            SortedList<FiaCode, int> thinFromBelowIndexBySpecies = new();
+            SortedList<FiaCode, int[]> dbhSortOrderBySpecies = [];
+            SortedList<FiaCode, int> thinFromAboveIndexBySpecies = [];
+            SortedList<FiaCode, int> thinFromBelowIndexBySpecies = [];
             float maximumDbh = Single.MinValue;
             float minimumDbh = Single.MaxValue;
             FiaCode currentMaximumDbhSpeciesSelection = default;

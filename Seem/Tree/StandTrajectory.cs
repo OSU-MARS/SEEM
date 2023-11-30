@@ -27,40 +27,37 @@ namespace Mars.Seem.Tree
 
         protected StandTrajectory(TreeScaling treeVolume, int lastPlanningPeriod, float plantingDensityInTreesPerHectare)
         {
-            if (lastPlanningPeriod < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(lastPlanningPeriod));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(lastPlanningPeriod);
             if ((plantingDensityInTreesPerHectare <= 0.0F) || (plantingDensityInTreesPerHectare > Constant.Maximum.PlantingDensityInTreesPerHectare))
             {
                 throw new ArgumentOutOfRangeException(nameof(plantingDensityInTreesPerHectare));
             }
 
             this.EarliestPeriodChangedSinceLastSimulation = 0;
-            this.ForwardedThinVolumeBySpecies = new();
-            this.LongLogRegenerationVolumeBySpecies = new();
-            this.LongLogThinVolumeBySpecies = new();
+            this.ForwardedThinVolumeBySpecies = [];
+            this.LongLogRegenerationVolumeBySpecies = [];
+            this.LongLogThinVolumeBySpecies = [];
             this.Name = null;
             this.PeriodLengthInYears = -1;
             this.PeriodZeroAgeInYears = -1;
             this.PlantingDensityInTreesPerHectare = plantingDensityInTreesPerHectare;
             this.PlanningPeriods = lastPlanningPeriod + 1;
-            this.TreeSelectionBySpecies = new();
+            this.TreeSelectionBySpecies = [];
             this.TreeScaling = treeVolume;
         }
 
         protected StandTrajectory(StandTrajectory other)
         {
             this.EarliestPeriodChangedSinceLastSimulation = other.EarliestPeriodChangedSinceLastSimulation;
-            this.ForwardedThinVolumeBySpecies = new();
-            this.LongLogRegenerationVolumeBySpecies = new();
-            this.LongLogThinVolumeBySpecies = new();
+            this.ForwardedThinVolumeBySpecies = [];
+            this.LongLogRegenerationVolumeBySpecies = [];
+            this.LongLogThinVolumeBySpecies = [];
             this.Name = other.Name;
             this.PeriodLengthInYears = other.PeriodLengthInYears;
             this.PeriodZeroAgeInYears = other.PeriodZeroAgeInYears;
             this.PlantingDensityInTreesPerHectare = other.PlantingDensityInTreesPerHectare;
             this.PlanningPeriods = other.PlanningPeriods;
-            this.TreeSelectionBySpecies = new();
+            this.TreeSelectionBySpecies = [];
             this.TreeScaling = other.TreeScaling; // runtime immutable, assumed thread safe for shallow copy
 
             foreach (FiaCode treeSpecies in other.TreeSelectionBySpecies.Keys)
@@ -510,10 +507,7 @@ namespace Mars.Seem.Tree
 
         private void UpdateEariestPeriodChanged(int currentPeriod, int newPeriod)
         {
-            if (newPeriod == Constant.NoHarvestPeriod)
-            {
-                throw new ArgumentOutOfRangeException(nameof(newPeriod));
-            }
+            ArgumentOutOfRangeException.ThrowIfEqual(newPeriod, Constant.NoHarvestPeriod);
 
             Debug.Assert((currentPeriod >= 0) && (currentPeriod <= this.PlanningPeriods) && (newPeriod >= 0) && (newPeriod <= this.PlanningPeriods) && (Constant.RegenerationHarvestIfEligible == 0));
 

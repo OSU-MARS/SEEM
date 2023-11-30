@@ -20,11 +20,11 @@ namespace Mars.Seem.Organon
 
         public OrganonTreatments()
         {
-            this.basalAreaByPeriod = new();
+            this.basalAreaByPeriod = [];
             this.currentSimulationPeriod = 0;
 
-            this.BasalAreaThinnedByPeriod = new() { 0.0F }; // no removal in pre-simulation period
-            this.PoundsOfNitrogenPerAcreByPeriod = new();
+            this.BasalAreaThinnedByPeriod = [ 0.0F ]; // no removal in pre-simulation period
+            this.PoundsOfNitrogenPerAcreByPeriod = [];
         }
 
         private OrganonTreatments(OrganonTreatments other)
@@ -39,10 +39,7 @@ namespace Mars.Seem.Organon
 
         public bool ApplyToPeriod(int periodJustBeginning, OrganonStandTrajectory trajectory)
         {
-            if (periodJustBeginning < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(periodJustBeginning));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(periodJustBeginning, 1);
 
             if (this.basalAreaByPeriod.Count < periodJustBeginning)
             {

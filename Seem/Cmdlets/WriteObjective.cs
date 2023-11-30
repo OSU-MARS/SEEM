@@ -75,7 +75,7 @@ namespace Mars.Seem.Cmdlets
                 writeContext.SetSilviculturalSpace(silviculturalSpace);
 
                 // sort each discount rate's runs by decreasing objective function value  
-                List<List<(float, SilviculturalCoordinate)>> solutionsByFinancialIndexAndValue = new();
+                List<List<(float, SilviculturalCoordinate)>> solutionsByFinancialIndexAndValue = [];
                 for (int positionIndex = 0; positionIndex < silviculturalSpace.CoordinatesEvaluated.Count; ++positionIndex)
                 {
                     SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[positionIndex];
@@ -84,7 +84,7 @@ namespace Mars.Seem.Cmdlets
                     int maxFinancialIndex = coordinate.FinancialIndex;
                     while (maxFinancialIndex >= solutionsByFinancialIndexAndValue.Count)
                     {
-                        solutionsByFinancialIndexAndValue.Add(new());
+                        solutionsByFinancialIndexAndValue.Add([]);
                     }
 
                     List<(float, SilviculturalCoordinate)> runsForDiscountRate = solutionsByFinancialIndexAndValue[maxFinancialIndex];
@@ -99,7 +99,7 @@ namespace Mars.Seem.Cmdlets
                 // list runs in declining order of objective function value for logging
                 // Runs are listed in groups with each discount rate having the ability to be represented within each group. This controls for reduction in
                 // land expectation values with increasing discount rate, enabling preferentiall logging of the move histories for the most desirable runs.
-                List<SilviculturalCoordinate> prioritizedCoordinates = new();
+                List<SilviculturalCoordinate> prioritizedCoordinates = [];
                 int[] resultIndicesByFinancialScenario = new int[solutionsByFinancialIndexAndValue.Count];
                 for (bool atLeastOneRunAddedByInnerLoop = true; atLeastOneRunAddedByInnerLoop;)
                 {

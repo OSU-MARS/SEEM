@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Xml;
 
@@ -31,10 +32,10 @@ namespace Mars.Seem.Data
             this.csvHeader = new();
             this.defaultExpansionFactorPerHa = -1.0F;
             this.plotIDs = plotIDs;
-            this.standByAge = new SortedList<int, Stand>();
+            this.standByAge = [];
 
             this.ExcludeSpecies = Array.Empty<FiaCode>();
-            this.ExpansionFactorPerHaByAge = new();
+            this.ExpansionFactorPerHaByAge = [];
             this.IncludeSpacingAndReplicateInTag = false;
         }
 
@@ -62,13 +63,13 @@ namespace Mars.Seem.Data
 
                 if ((this.csvHeader.ExpansionFactor < 0) && (this.defaultExpansionFactorPerHa <= 0.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.csvHeader.ExpansionFactor), "Expansion factor column not found or default expansion factor not specified.");
+                    throw new XmlException("Expansion factor column not found or default expansion factor not specified.", null, 1, 0);
                 }
                 if (this.IncludeSpacingAndReplicateInTag)
                 {
                     if ((this.csvHeader.Spacing < 0) && (this.csvHeader.Replicate < 0))
                     {
-                        throw new XmlException(nameof(this.IncludeSpacingAndReplicateInTag) + " is set but spacing and replicate columns are not available.");
+                        throw new XmlException(nameof(this.IncludeSpacingAndReplicateInTag) + " is set but spacing and replicate columns are not available.", null, 1, 0);
                     }
                 }
 
@@ -209,10 +210,7 @@ namespace Mars.Seem.Data
             {
                 throw new ArgumentOutOfRangeException(nameof(primarySpeciesSiteIndexInM));
             }
-            if (maximumTreeRecords < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(maximumTreeRecords));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(maximumTreeRecords, 1);
 
             // find requested, preceeding, and following measurements
             HeightDiameterImputation imputation = new(ageInYears);

@@ -70,21 +70,21 @@ namespace Mars.Seem.Cmdlets
         {
             Debug.Assert(this.InitialThinningProbability.Count == 1);
 
-            this.ConstructionGreediness = new() { Constant.Grasp.FullyGreedyConstructionForMaximization };
-            this.DefaultStep = new() { Constant.PrescriptionSearchDefault.DefaultIntensityStepSize };
+            this.ConstructionGreediness = [ Constant.Grasp.FullyGreedyConstructionForMaximization ];
+            this.DefaultStep = [ Constant.PrescriptionSearchDefault.DefaultIntensityStepSize ];
             this.FromAbovePercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
             this.FromBelowPercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
             this.Gradient = false;
             this.InitialThinningProbability[0] = Constant.PrescriptionSearchDefault.InitialThinningProbability;
             this.LogLastNImprovingMoves = Constant.PrescriptionSearchDefault.LogLastNImprovingMoves;
-            this.MaximumIntensity = new() { Constant.PrescriptionSearchDefault.MaximumIntensity };
-            this.MinimumIntensity = new() { Constant.PrescriptionSearchDefault.MinimumIntensity };
+            this.MaximumIntensity = [ Constant.PrescriptionSearchDefault.MaximumIntensity ];
+            this.MinimumIntensity = [ Constant.PrescriptionSearchDefault.MinimumIntensity ];
             this.MaximumStep = Constant.PrescriptionSearchDefault.MaximumIntensityStepSize;
-            this.MinimumStep = new() { Constant.PrescriptionSearchDefault.MinimumIntensityStepSize };
+            this.MinimumStep = [ Constant.PrescriptionSearchDefault.MinimumIntensityStepSize ];
             this.ProportionalPercentageUpperLimit = Constant.PrescriptionSearchDefault.MethodPercentageUpperLimit;
             // leave this.SolutionPoolSize set to 1 as deterministic evaluation is the default
             this.RestartOnLocalMaximum = false; // mitigates risk of entrapment
-            this.StepMultiplier = new() { Constant.PrescriptionSearchDefault.StepSizeMultiplier };
+            this.StepMultiplier = [ Constant.PrescriptionSearchDefault.StepSizeMultiplier ];
             this.Stochastic = false; // stochastic search is ~13% less efficient in simple testing
             this.Units = Constant.PrescriptionSearchDefault.Units;
         }

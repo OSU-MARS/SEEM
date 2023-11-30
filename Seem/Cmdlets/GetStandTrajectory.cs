@@ -67,7 +67,7 @@ namespace Mars.Seem.Cmdlets
             this.FirstThinProportional = 0.0F; // %
             this.FirstThinPeriod = Constant.NoHarvestPeriod; // no stand entry
             this.Name = null;
-            this.RotationLengths = new() { 15 }; // 75 years of simulation with Organon's 5 year timestep
+            this.RotationLengths = [ 15 ]; // 75 years of simulation with Organon's 5 year timestep
             this.TreeVolume = TreeScaling.Default;
         }
 
@@ -95,7 +95,7 @@ namespace Mars.Seem.Cmdlets
             int benchmarkDurationInSeconds = (int)(this.BenchmarkDuration + this.BenchmarkWarmup).TotalSeconds;
             ParallelOptions parallelOptions = new();
 
-            List<GrowthModelBenchmark> benchmarks = new();
+            List<GrowthModelBenchmark> benchmarks = [];
             using LogicalProcessorFrequencies processorFrequencies = new();                
             for (int threads = 1; threads <= this.Threads; threads *= 2)
             {

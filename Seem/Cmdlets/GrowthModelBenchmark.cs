@@ -22,7 +22,7 @@ namespace Mars.Seem.Cmdlets
             ProcessorPowerInformation powerInfo = NativeMethods.CallNtPowerInformation();
 
             this.PollingInterval = TimeSpan.FromSeconds(1.0F);
-            this.ProcessorFrequenciesInPercent = new();
+            this.ProcessorFrequenciesInPercent = [];
             this.ProcessorReferenceFrequenciesInGHz = new float[powerInfo.MaxMHz.Length];
             this.End = new DateTime[threads];
             this.PollingInterval = TimeSpan.Zero;

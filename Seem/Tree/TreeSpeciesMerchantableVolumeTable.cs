@@ -8,8 +8,8 @@ namespace Mars.Seem.Tree
     {
         // Scribner lumber recovery from BC Firmwood cubic scale
         // Indexed by small end diameter in centimeters.
-        private static readonly float[] BoardFootRecoveryPerCubicMeter = new float[]
-        {
+        private static readonly float[] BoardFootRecoveryPerCubicMeter =
+        [
                 /* 0*/ 0.0F,
                 /* 1*/ 0.0F,
                 /* 2*/ 0.0F,
@@ -111,7 +111,8 @@ namespace Mars.Seem.Tree
                 /*98*/ 194.1308F,
                 /*99*/ 194.1308F,
                /*100*/ 194.1308F
-        };
+        ];
+
         private static readonly float[,] ScribnerCLongLog = new float[,] {
             // small end diameter, inch
             // |      length, feet

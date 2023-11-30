@@ -1402,19 +1402,13 @@ namespace Mars.Seem.Organon
 
         public override float ToHemlockSiteIndex(float siteIndex)
         {
-            if (siteIndex < Constant.Minimum.SiteIndexInFeet)
-            {
-                throw new ArgumentOutOfRangeException(nameof(siteIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(siteIndex, Constant.Minimum.SiteIndexInFeet);
             return 0.940792F * siteIndex;
         }
 
         public override float ToSiteIndex(float hemlockSiteIndex)
         {
-            if (hemlockSiteIndex < Constant.Minimum.SiteIndexInFeet)
-            {
-                throw new ArgumentOutOfRangeException(nameof(hemlockSiteIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(hemlockSiteIndex, Constant.Minimum.SiteIndexInFeet);
             return 1.062934F * hemlockSiteIndex;
         }
     }

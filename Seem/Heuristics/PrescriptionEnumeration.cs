@@ -6,15 +6,10 @@ using System.Diagnostics;
 
 namespace Mars.Seem.Heuristics
 {
-    public class PrescriptionEnumeration : PrescriptionHeuristic
+    public class PrescriptionEnumeration(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters) 
+        : PrescriptionHeuristic(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndFinancialScenarios: true)
     {
         private int prescriptionsEnumerated;
-
-        public PrescriptionEnumeration(OrganonStand stand, PrescriptionParameters heuristicParameters, RunParameters runParameters)
-            : base(stand, heuristicParameters, runParameters, evaluatesAcrossRotationsAndFinancialScenarios: true)
-        {
-            // this.prescriptionsEnumerated is (re)set in EvaluateThinningPrescriptions()
-        }
 
         protected override void EvaluateThinningPrescriptions(SilviculturalCoordinate coordinate, SilviculturalSpace trajectories, PrescriptionPerformanceCounters perfCounters)
         {

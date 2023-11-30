@@ -85,9 +85,9 @@ namespace Mars.Seem.Cmdlets
         {
             this.AccessDistance = Constant.HarvestCost.DefaultAccessDistanceInM;
             this.AccessSlope = Constant.HarvestCost.DefaultAccessSlopeInPercent;
-            this.Ages = Array.Empty<int>();
+            this.Ages = [];
             this.Area = Constant.HarvestCost.DefaultHarvestUnitSizeInHa;
-            this.ExcludeSpecies = Array.Empty<string>();
+            this.ExcludeSpecies = [];
             this.ExpansionFactorPerHa = null;
             this.Financial = FinancialScenarios.Default;
             this.ForwardingTethered = Constant.HarvestCost.DefaultForwardingDistanceInStandTethered;
@@ -102,7 +102,7 @@ namespace Mars.Seem.Cmdlets
             this.YardingFactor = Constant.HarvestCost.MeanYardingDistanceFactor;
         }
 
-        private Stand CreateStand(PermanentPlotsWithHeight plot, OrganonConfiguration configuration, int age)
+        private OrganonStand CreateStand(PermanentPlotsWithHeight plot, OrganonConfiguration configuration, int age)
         {
             OrganonStand stand = plot.ToOrganonStand(configuration, age, this.SiteIndexInM, this.HemlockSiteIndexInM, this.Trees, this.Imputation);
 
@@ -139,7 +139,7 @@ namespace Mars.Seem.Cmdlets
                         throw new ParameterOutOfRangeException(nameof(this.Ages) + " or " + nameof(this.ExpansionFactorPerHa));
                     }
 
-                    SortedList<int, float> expansionFactorByAge = new();
+                    SortedList<int, float> expansionFactorByAge = [];
                     for (int ageIndex = 0; ageIndex < this.Ages.Length; ++ageIndex)
                     {
                         expansionFactorByAge.Add(this.Ages[ageIndex], this.ExpansionFactorPerHa[ageIndex]);

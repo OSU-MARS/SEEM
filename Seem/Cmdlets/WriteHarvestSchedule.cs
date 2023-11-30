@@ -42,7 +42,7 @@ namespace Mars.Seem.Cmdlets
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
                 writeContext.SetSilviculturalSpace(silviculturalSpace);
 
-                Dictionary<int, HashSet<StandTrajectory>> knownTrajectoriesByEndOfRotationPeriod = new();
+                Dictionary<int, HashSet<StandTrajectory>> knownTrajectoriesByEndOfRotationPeriod = [];
                 int maxCoordinateIndex = WriteSilviculturalTrajectoriesCmdlet.GetMaxCoordinateIndex(silviculturalSpace);
                 for (int coordinateIndex = 0; coordinateIndex < maxCoordinateIndex; ++coordinateIndex)
                 {
@@ -57,7 +57,7 @@ namespace Mars.Seem.Cmdlets
                         // multiple rotation lengths must be written once for each rotation length.
                         if (knownTrajectoriesByEndOfRotationPeriod.TryGetValue(writeContext.EndOfRotationPeriod, out HashSet<StandTrajectory>? knownTrajectoriesForRotation) == false)
                         {
-                            knownTrajectoriesForRotation = new();
+                            knownTrajectoriesForRotation = [];
                             knownTrajectoriesByEndOfRotationPeriod.Add(writeContext.EndOfRotationPeriod, knownTrajectoriesForRotation);
                         }
                         if (knownTrajectoriesForRotation.Contains(highTrajectory)) // reference equality for now

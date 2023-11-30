@@ -9,10 +9,7 @@ namespace Mars.Seem.Silviculture
     {
         public ThinByIndividualTreeSelection(int harvestPeriod)
         {
-            if (harvestPeriod < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(harvestPeriod));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(harvestPeriod, 1);
 
             this.Period = harvestPeriod;
         }

@@ -35,18 +35,9 @@ namespace Mars.Seem.Heuristics
         public PrescriptionLastNMoveLog(int rotationLengths, int financialScenarios, int moveCapacity, int nMoves)
             : base(moveCapacity)
         {
-            if (rotationLengths < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(rotationLengths));
-            }
-            if (financialScenarios < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(financialScenarios));
-            }
-            if (nMoves < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(nMoves));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(rotationLengths, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(financialScenarios, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(nMoves, 1);
 
             this.fromAbovePercentageByRotationAndRate1 = new float[rotationLengths, financialScenarios, nMoves];
             this.fromBelowPercentageByRotationAndRate1 = new float[rotationLengths, financialScenarios, nMoves];
@@ -81,7 +72,7 @@ namespace Mars.Seem.Heuristics
             {
                 for (int financialIndex = 0; financialIndex < financialScenarios; ++financialIndex)
                 {
-                    this.moveNumberByRotationAndRate[rotationIndex, financialIndex] = new();
+                    this.moveNumberByRotationAndRate[rotationIndex, financialIndex] = [];
                 }
             }
 

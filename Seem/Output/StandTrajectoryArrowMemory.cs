@@ -1114,8 +1114,8 @@ namespace Mars.Seem.Output
 
             // repackage arrays into Arrow record batch
             // Order must match schema. Mismatches result in column data swaps or corruption, depending on sizes of data elements.
-            IArrowArray[] arrowArrays = new IArrowArray[]
-            {
+            IArrowArray[] arrowArrays =
+            [
                 ArrowArrayExtensions.WrapInUInt32(this.stand),
                 ArrowArrayExtensions.WrapInInt16(this.thin1),
                 ArrowArrayExtensions.WrapInInt16(this.thin2),
@@ -1274,7 +1274,7 @@ namespace Mars.Seem.Output
                 ArrowArrayExtensions.WrapInFloat(this.regenProcessorPMhWithGrappleYoader),
                 ArrowArrayExtensions.WrapInFloat(this.regenProcessorProductivityWithGrappleYoader),
                 ArrowArrayExtensions.WrapInFloat(this.regenLoadedWeight)
-            };
+            ];
 
             this.RecordBatches.Add(new(this.Schema, arrowArrays, capacityInRecords));
         }
@@ -1282,8 +1282,8 @@ namespace Mars.Seem.Output
         private static Schema CreateSchema()
         {
             // create schema
-            List<Field> fields = new()
-            {
+            List<Field> fields = 
+            [
                 new("stand", UInt32Type.Default, false),
                 new("thin1", Int16Type.Default, false),
                 new("thin2", Int16Type.Default, false),
@@ -1436,7 +1436,7 @@ namespace Mars.Seem.Output
                 new("regenProcessorPMhWithGrappleYoader", FloatType.Default, false),
                 new("regenProcessorProductivityWithGrappleYoader", FloatType.Default, false),
                 new("regenLoadedWeight", FloatType.Default, false)
-            };
+            ];
 
             Dictionary<string, string> metadata = new()
             {

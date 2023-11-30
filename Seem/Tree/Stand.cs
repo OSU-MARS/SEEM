@@ -33,7 +33,7 @@ namespace Mars.Seem.Tree
             this.Name = null;
             this.PlantingDensityInTreesPerHectare = null;
             this.SlopeInPercent = Constant.HarvestCost.DefaultSlopeInPercent;
-            this.TreesBySpecies = new SortedList<FiaCode, Trees>();
+            this.TreesBySpecies = [];
         }
 
         public Stand(Stand other)
@@ -130,7 +130,7 @@ namespace Mars.Seem.Tree
                 treesForTopHeight = 40.0F;
             }
 
-            SortedList<float, float> expansionFactorByHeight = new();
+            SortedList<float, float> expansionFactorByHeight = [];
             float topTrees = 0.0F;
             float minimumHeight = Single.MinValue;
             foreach (Trees treesOfSpecies in this.TreesBySpecies.Values)
@@ -240,14 +240,8 @@ namespace Mars.Seem.Tree
 
         public void SetCorridorLength(float forwardingDistanceInStandTethered, float forwardingDistanceInStandUntethered)
         {
-            if (forwardingDistanceInStandTethered < 0.0F)
-            {
-                throw new ArgumentOutOfRangeException(nameof(forwardingDistanceInStandUntethered));
-            }
-            if (forwardingDistanceInStandUntethered < 0.0F)
-            {
-                throw new ArgumentOutOfRangeException(nameof(forwardingDistanceInStandUntethered));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(forwardingDistanceInStandTethered, 0.0F);
+            ArgumentOutOfRangeException.ThrowIfLessThan(forwardingDistanceInStandUntethered, 0.0F);
 
             this.CorridorLengthInM = forwardingDistanceInStandTethered + forwardingDistanceInStandUntethered;
             this.CorridorLengthInMTethered = forwardingDistanceInStandTethered;

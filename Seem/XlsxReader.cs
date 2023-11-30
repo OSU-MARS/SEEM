@@ -53,7 +53,7 @@ namespace Mars.Seem
             }
 
             // read shared strings
-            List<string> sharedStrings = new();
+            List<string> sharedStrings = [];
             if (workbook.SharedStringTablePart != null)
             {
                 using Stream sharedStringStream = workbook.SharedStringTablePart.GetStream(FileMode.Open, FileAccess.Read);

@@ -941,19 +941,13 @@ namespace Mars.Seem.Organon
         // and therefore doesn't distinguish between instance and static method names
         public static float ToHemlockSiteIndexStatic(float siteIndex)
         {
-            if (siteIndex < Constant.Minimum.SiteIndexInFeet)
-            {
-                throw new ArgumentOutOfRangeException(nameof(siteIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(siteIndex, Constant.Minimum.SiteIndexInFeet);
             return -0.432F + 0.899F * siteIndex;
         }
 
         public override float ToSiteIndex(float hemlockSiteIndex)
         {
-            if (hemlockSiteIndex < Constant.Minimum.SiteIndexInFeet)
-            {
-                throw new ArgumentOutOfRangeException(nameof(hemlockSiteIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(hemlockSiteIndex, Constant.Minimum.SiteIndexInFeet);
 
             // Nigh 1995, Forest Science 41:84-98
             return 0.480F + 1.110F * hemlockSiteIndex;

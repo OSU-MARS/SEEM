@@ -16,8 +16,8 @@ namespace Mars.Seem.Heuristics
             : base(stand, heuristicParameters, runParameters)
         {
             int treeRecords = stand.GetTreeRecordCount();
-            this.IterationsPerThreshold = new List<int>() { (int)(11.5F * treeRecords), 25, (int)(7.5F * treeRecords) };
-            this.Thresholds = new List<float>() { 1.0F, 0.999F, 1.0F };
+            this.IterationsPerThreshold = [ (int)(11.5F * treeRecords), 25, (int)(7.5F * treeRecords) ];
+            this.Thresholds = [ 1.0F, 0.999F, 1.0F ];
         }
 
         public override string GetName()

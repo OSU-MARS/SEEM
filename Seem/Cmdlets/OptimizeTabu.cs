@@ -37,10 +37,10 @@ namespace Mars.Seem.Cmdlets
 
         public OptimizeTabu()
         {
-            this.EscapeAfter = new() { Constant.TabuDefault.EscapeAfter };
-            this.EscapeBy = new() { Constant.TabuDefault.EscapeBy };
-            this.IterationMultipliers = new() { Constant.TabuDefault.IterationMultiplier };
-            this.MaxTenure = new() { Constant.TabuDefault.MaximumTenureRatio };
+            this.EscapeAfter = [ Constant.TabuDefault.EscapeAfter ];
+            this.EscapeBy = [ Constant.TabuDefault.EscapeBy ];
+            this.IterationMultipliers = [ Constant.TabuDefault.IterationMultiplier ];
+            this.MaxTenure = [ Constant.TabuDefault.MaximumTenureRatio ];
             this.Tenure = Constant.TabuDefault.Tenure;
         }
 

@@ -66,10 +66,7 @@ namespace Mars.Seem.Silviculture
 
         public void SetNetPresentValue(float discountFactor, float reforestationNpv)
         {
-            if (reforestationNpv > 0.0F)
-            {
-                throw new ArgumentOutOfRangeException(nameof(reforestationNpv));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(reforestationNpv, 0.0F);
 
             float netValuePerHaAtHarvest = 0.0F;
             if (this.MerchantableCubicVolumePerHa > 0.0F)

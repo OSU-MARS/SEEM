@@ -25,27 +25,27 @@ namespace Mars.Seem.Test
         [TestMethod]
         public void BarkThickness()
         {
-            List<ExpectedTreeBarkThickness> trees = new()
-            {
+            List<ExpectedTreeBarkThickness> trees = 
+            [
                 new()
                 {
                     Dbh = 20.0F,
                     Height = 25.0F,
                     HeightToCrownBase = 15.0F,
-                    EvaluationHeights = new float[] { Constant.MetersPerFoot, Constant.Bucking.DefaultStumpHeightInM + Constant.Bucking.ProcessingHeadFeedRollerHeightInM, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 15.0F, 20.0F, 25.0F },
-                    ExpectedDoubleBarkThickness = new float[] { 3.24F, 2.25F, 1.33F, 1.20F, 1.01F, 0.72F, 0.50F, 0.42F, 0.28F, 0.14F, 0.00F } // diameter inside bark at DBH from Poudel et al. 2018
-                    // ExpectedDoubleBarkThickness = new float[] { 3.24F, 2.76F, 2.32F, 2.09F, 1.76F, 1.25F, 0.87F, 0.73F, 0.50F, 0.25F, 0.00F } // diameter inside bark at DBH from Larson and Hann 1985 (via Maguire and Hann 1990)
+                    EvaluationHeights = [ Constant.MetersPerFoot, Constant.Bucking.DefaultStumpHeightInM + Constant.Bucking.ProcessingHeadFeedRollerHeightInM, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 15.0F, 20.0F, 25.0F ],
+                    ExpectedDoubleBarkThickness = [ 3.24F, 2.25F, 1.33F, 1.20F, 1.01F, 0.72F, 0.50F, 0.42F, 0.28F, 0.14F, 0.00F ] // diameter inside bark at DBH from Poudel et al. 2018
+                    // ExpectedDoubleBarkThickness = [ 3.24F, 2.76F, 2.32F, 2.09F, 1.76F, 1.25F, 0.87F, 0.73F, 0.50F, 0.25F, 0.00F ] // diameter inside bark at DBH from Larson and Hann 1985 (via Maguire and Hann 1990)
                 },
                 new()
                 {
                     Dbh = 80.0F,
                     Height = 42.0F,
                     HeightToCrownBase = 21.0F,
-                    EvaluationHeights = new float[] { Constant.MetersPerFoot, Constant.Bucking.DefaultStumpHeightInM + Constant.Bucking.ProcessingHeadFeedRollerHeightInM, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 20.0F, 30.0F, 40.0F },
-                    ExpectedDoubleBarkThickness = new float[] { 12.82F, 9.75F, 6.91F, 6.51F, 5.91F, 4.84F, 3.78F, 3.00F, 1.89F, 1.04F, 0.17F } // diameter inside bark at DBH from Poudel et al. 2018
-                    // ExpectedDoubleBarkThickness = new float[] { 12.82F, 11.52F, 10.31F, 9.71F, 8.81F, 7.22F, 5.63F, 4.48F, 2.82F, 1.56F, 0.26F } // diameter inside bark at DBH from Larson and Hann 1985 (via Maguire and Hann 1990)
+                    EvaluationHeights = [ Constant.MetersPerFoot, Constant.Bucking.DefaultStumpHeightInM + Constant.Bucking.ProcessingHeadFeedRollerHeightInM, Constant.DbhHeightInM, 2.0F, 3.0F, 5.0F, 7.5F, 10.0F, 20.0F, 30.0F, 40.0F ],
+                    ExpectedDoubleBarkThickness = [ 12.82F, 9.75F, 6.91F, 6.51F, 5.91F, 4.84F, 3.78F, 3.00F, 1.89F, 1.04F, 0.17F ] // diameter inside bark at DBH from Poudel et al. 2018
+                    // ExpectedDoubleBarkThickness = [ 12.82F, 11.52F, 10.31F, 9.71F, 8.81F, 7.22F, 5.63F, 4.48F, 2.82F, 1.56F, 0.26F ] // diameter inside bark at DBH from Larson and Hann 1985 (via Maguire and Hann 1990)
                 }
-            };
+            ];
 
             foreach (ExpectedTreeBarkThickness tree in trees)
             {
@@ -71,11 +71,11 @@ namespace Mars.Seem.Test
 
             const float exp10maxPower = 38.5318F; // upper bound of 10^power from log10(Single.MaxValue = 3.4e38
 
-            //                              0        1        2        3        4        5        6        7        8        9        10    
-            float[] powers = new float[] { -152.3F, -127.1F, -88.05F, -87.99F, -36.83F, -10.45F, -6.694F, -5.883F, -5.223F, -4.776F, -4.234F,
-                                           -3.766F, -2.294F, -1.605F, -1.330F, -1.012F, -0.567F, -0.500F, -0.333F, -0.298F, -0.116F,  0.0F,    
-                                            0.176F,  0.333F,  0.474F,  0.500F,  0.753F,  1.318F,  1.333F,  1.605F,  1.856F,  2.0F,    2.566F,
-                                            2.789F,  3.888F,  4.000F,  4.779F,  5.128F, 10.0F,   12.6F,   28.3F,   48.9F,   69.6F,   87.3F };
+            //                  0        1        2        3        4        5        6        7        8        9        10    
+            float[] powers = [ -152.3F, -127.1F, -88.05F, -87.99F, -36.83F, -10.45F, -6.694F, -5.883F, -5.223F, -4.776F, -4.234F,
+                               -3.766F, -2.294F, -1.605F, -1.330F, -1.012F, -0.567F, -0.500F, -0.333F, -0.298F, -0.116F,  0.0F,    
+                                0.176F,  0.333F,  0.474F,  0.500F,  0.753F,  1.318F,  1.333F,  1.605F,  1.856F,  2.0F,    2.566F,
+                                2.789F,  3.888F,  4.000F,  4.779F,  5.128F, 10.0F,   12.6F,   28.3F,   48.9F,   69.6F,   87.3F ];
             for (int index = 0; index < powers.Length; ++index)
             {
                 float power = powers[index];
@@ -152,8 +152,8 @@ namespace Mars.Seem.Test
             float accuracy = 2E-6F; // error of up to 2E-6 expected for 5th order polynomial
             float precision = 5E-7F; // numerical error
 
-            //                             0       1           2     3     4     5     6                   7      8      9        10        11
-            float[] values = new float[] { 1E-30F, 0.0000099F, 0.1F, 0.5F, 1.0F, 2.0F, 2.718281828459045F, 10.0F, 17.0F, 2.22E3F, 3.336E6F, 30E30F };
+            //                 0       1           2     3     4     5     6                   7      8      9        10        11
+            float[] values = [ 1E-30F, 0.0000099F, 0.1F, 0.5F, 1.0F, 2.0F, 2.718281828459045F, 10.0F, 17.0F, 2.22E3F, 3.336E6F, 30E30F ];
             for (int index = 0; index < values.Length; ++index)
             {
                 float value = values[index];
@@ -217,27 +217,27 @@ namespace Mars.Seem.Test
         [TestMethod]
         public void Population()
         {
-            List<int> thinningPeriods = new() { 0, 1 };
+            List<int> thinningPeriods = [ 0, 1 ];
 
             Population binaryPopulation = new(2, 0.5F, 5);
-            binaryPopulation.IndividualTreeSelections[0] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new(new int[] { 0, 0, 0, 0, 0 }) } };
-            binaryPopulation.IndividualTreeSelections[1] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new(new int[] { 1, 1, 1, 1, 1 }) } };
+            binaryPopulation.IndividualTreeSelections[0] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new([ 0, 0, 0, 0, 0 ]) } };
+            binaryPopulation.IndividualTreeSelections[1] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new([ 1, 1, 1, 1, 1 ]) } };
             binaryPopulation.SetDistancesForNewIndividual(0);
             binaryPopulation.SetDistancesForNewIndividual(1);
             binaryPopulation.InsertFitness(0, 0.0F);
             binaryPopulation.InsertFitness(1, 1.0F);
 
             Population clones = new(2, 0.5F, 5);
-            clones.IndividualTreeSelections[0] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new(new int[] { 0, 0, 0, 0, 0 }) } };
-            clones.IndividualTreeSelections[1] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new(new int[] { 0, 0, 0, 0, 0 }) } };
+            clones.IndividualTreeSelections[0] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new([ 0, 0, 0, 0, 0 ]) } };
+            clones.IndividualTreeSelections[1] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new([ 0, 0, 0, 0, 0 ]) } };
             clones.SetDistancesForNewIndividual(0);
             clones.SetDistancesForNewIndividual(1);
             clones.InsertFitness(0, 0.0F);
             clones.InsertFitness(1, 0.0F);
 
             Population heterozygousPopulation = new(2, 0.5F, 5);
-            heterozygousPopulation.IndividualTreeSelections[0] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new(new int[] { 1, 0, 0, 1, 0 }) } };
-            heterozygousPopulation.IndividualTreeSelections[1] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new(new int[] { 1, 0, 1, 0, 1 }) } };
+            heterozygousPopulation.IndividualTreeSelections[0] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new([ 1, 0, 0, 1, 0 ]) } };
+            heterozygousPopulation.IndividualTreeSelections[1] = new IndividualTreeSelectionBySpecies { { FiaCode.AbiesAmabalis, new([ 1, 0, 1, 0, 1 ]) } };
             heterozygousPopulation.SetDistancesForNewIndividual(0);
             heterozygousPopulation.SetDistancesForNewIndividual(1);
             heterozygousPopulation.InsertFitness(0, 0.4F);
@@ -281,8 +281,8 @@ namespace Mars.Seem.Test
             float accuracy = 4E-6F; // error of up to 2E-6 expected for 5th order polynomial
             float precision = 1.2E-6F; // numerical error
 
-            float[] x = new float[] { 0.0F, 0.0001F, 0.1F,  0.1F,   1.0F,  1.0F, 1.3F, 2.0F, 1E6F };
-            float[] y = new float[] { 0.1F, 0.0001F, 1.0F, -0.25F, 80.0F, -1.0F, 0.6F, 2.0F, 2.22F };
+            float[] x = [ 0.0F, 0.0001F, 0.1F,  0.1F,   1.0F,  1.0F, 1.3F, 2.0F, 1E6F ];
+            float[] y = [ 0.1F, 0.0001F, 1.0F, -0.25F, 80.0F, -1.0F, 0.6F, 2.0F, 2.22F ];
 
             for (int index = 0; index < x.Length; ++index)
             {
@@ -351,8 +351,8 @@ namespace Mars.Seem.Test
         [TestMethod]
         public void VolumeTaper()
         {
-            List<ExpectedTreeVolume> trees = new()
-            {
+            List<ExpectedTreeVolume> trees =
+            [
                 // trees very near height and diameter class breaks may estimate differently between metric and English due to numerical precision
                 new ExpectedTreeVolume()
                 {
@@ -390,7 +390,7 @@ namespace Mars.Seem.Test
                     MinimumThinVolumeCubic = 2.55F,
                     MinimumThinVolumeMbf = 0.4527F
                 }
-            };
+            ];
 
             // rounding to nearest indices in volume table
             // 1 cm diameter classes, 0.5 m height classes
@@ -491,8 +491,8 @@ namespace Mars.Seem.Test
 
             public ExpectedTreeBarkThickness()
             {
-                this.EvaluationHeights = Array.Empty<float>();
-                this.ExpectedDoubleBarkThickness = Array.Empty<float>();
+                this.EvaluationHeights = [];
+                this.ExpectedDoubleBarkThickness = [];
             }
         }
 

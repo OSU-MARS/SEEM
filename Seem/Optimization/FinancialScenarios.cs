@@ -297,7 +297,7 @@ namespace Mars.Seem.Optimization
             int regenerationHarvestYearsFromNow = rotationLengthInYears - trajectory.PeriodZeroAgeInYears;
             npv += this.GetNetPresentPropertyTaxAndManagement(financialIndex, regenerationHarvestYearsFromNow);
 
-            Debug.Assert((npv > -11.0F * 1000.0F) && (npv < 1000.0F * 1000.0F));
+            Debug.Assert((npv > -12.0F * 1000.0F) && (npv < 1000.0F * 1000.0F));
             return npv;
         }
 

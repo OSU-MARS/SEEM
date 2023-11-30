@@ -18,7 +18,7 @@ namespace Mars.Seem.Tree
         static TreeScaling()
         {
             TreeScaling.Default = new(Constant.Bucking.DefaultForwarderLogLengthInM, Constant.Bucking.DefaultLongLogLengthInM);
-            TreeScaling.MerchantableTreeSpeciesSupported = ImmutableArray.Create(FiaCode.AlnusRubra, FiaCode.PseudotsugaMenziesii, FiaCode.ThujaPlicata, FiaCode.TsugaHeterophylla);
+            TreeScaling.MerchantableTreeSpeciesSupported = [ FiaCode.AlnusRubra, FiaCode.PseudotsugaMenziesii, FiaCode.ThujaPlicata, FiaCode.TsugaHeterophylla ];
         }
 
         public TreeScaling(float forwarderPreferredLogLengthInM, float longLogPreferredLengthInM)
@@ -31,14 +31,11 @@ namespace Mars.Seem.Tree
             {
                 throw new ArgumentOutOfRangeException(nameof(longLogPreferredLengthInM));
             }
-            if (forwarderPreferredLogLengthInM > longLogPreferredLengthInM)
-            {
-                throw new ArgumentOutOfRangeException(nameof(forwarderPreferredLogLengthInM));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(forwarderPreferredLogLengthInM, longLogPreferredLengthInM);
 
-            this.forwarder = new();
+            this.forwarder = [];
             this.forwarderPreferredLogLengthInM = forwarderPreferredLogLengthInM;
-            this.longLog = new();
+            this.longLog = [];
             this.longLogPreferredLengthInM = longLogPreferredLengthInM;
         }
 

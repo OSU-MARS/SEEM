@@ -669,7 +669,7 @@ namespace Mars.Seem.Organon
 
             if (stand.AgeInYears < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand.AgeInYears), nameof(stand.AgeInYears) + " must be zero or greater.");
+                throw new ArgumentOutOfRangeException(nameof(stand), nameof(stand.AgeInYears) + " must be zero or greater.");
             }
 
             for (int fertilizationindex = 0; fertilizationindex < treatments.PoundsOfNitrogenPerAcreByPeriod.Count; ++fertilizationindex)
@@ -691,10 +691,7 @@ namespace Mars.Seem.Organon
                 }
             }
 
-            if (periodIndex < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(periodIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(periodIndex, 1);
 
             //if (configuration.DefaultMaximumSdi > Constant.Maximum.SdiPerAcre)
             //{
@@ -728,7 +725,7 @@ namespace Mars.Seem.Organon
             {
                 if ((configuration.Variant.TreeModel == TreeModel.OrganonSwo) || (configuration.Variant.TreeModel == TreeModel.OrganonRap))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration.Variant), "Swiss needle cast is not supported by the SWO and RAP variants.");
+                    throw new ArgumentOutOfRangeException(nameof(configuration), "Swiss needle cast is not supported by the SWO and RAP variants.");
                 }
                 if ((configuration.FR < 0.85F) || (configuration.FR > 7.0F))
                 {

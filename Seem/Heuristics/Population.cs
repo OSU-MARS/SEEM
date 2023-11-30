@@ -22,7 +22,7 @@ namespace Mars.Seem.Heuristics
         public Population(int numberOfIndividuals, float reservedPopulationProportion, int allTreeCount)
             : base(numberOfIndividuals)
         {
-            this.individualIndexByFitness = new SortedList<float, List<int>>();
+            this.individualIndexByFitness = [];
             this.matingDistributionFunction = new float[numberOfIndividuals];
             this.reservedPopulationProportion = reservedPopulationProportion;
 
@@ -33,7 +33,7 @@ namespace Mars.Seem.Heuristics
 
             for (int individualIndex = 0; individualIndex < numberOfIndividuals; ++individualIndex)
             {
-                this.IndividualTreeSelections[individualIndex] = new();
+                this.IndividualTreeSelections[individualIndex] = [];
             }
         }
 
@@ -321,10 +321,7 @@ namespace Mars.Seem.Heuristics
 
         private static List<int> GetTreeDiameterClasses(Stand standBeforeThinning, int diameterClasses)
         {
-            if (diameterClasses < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(diameterClasses));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(diameterClasses, 1);
 
             float maximumDbh = Single.MinValue;
             float minimumDbh = Single.MaxValue;
@@ -385,10 +382,7 @@ namespace Mars.Seem.Heuristics
 
         private static List<int> GetTreeQuantiles(Trees treesOfSpecies, Func<int[]> getSortOrder, int quantiles)
         {
-            if (quantiles < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(quantiles));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(quantiles, 1);
 
             int[] treeSortOrder = getSortOrder.Invoke();
             List<int> quantileByTree = new(treesOfSpecies.Capacity);
@@ -413,7 +407,7 @@ namespace Mars.Seem.Heuristics
             }
             else
             {
-                this.individualIndexByFitness.Add(newFitness, new List<int>() { individualIndex });
+                this.individualIndexByFitness.Add(newFitness, [ individualIndex ]);
             }
 
             ++this.SolutionsAccepted;
@@ -486,7 +480,7 @@ namespace Mars.Seem.Heuristics
                     else
                     {
                         // mainline case
-                        this.individualIndexByFitness.Add(newFitness, new List<int>() { replacementIndex });
+                        this.individualIndexByFitness.Add(newFitness, [ replacementIndex ]);
                     }
                 }
             }
@@ -553,7 +547,7 @@ namespace Mars.Seem.Heuristics
             return replacementStrategy switch
             {
                 PopulationReplacementStrategy.ContributionOfDiversityReplaceWorst => this.TryReplaceByDiversityOrFitness(newFitness, trajectory),
-                PopulationReplacementStrategy.ReplaceWorst => this.TryReplaceWorst(newFitness, trajectory, new int[] { SolutionPool.UnknownDistance }, SolutionPool.UnknownNeighbor),
+                PopulationReplacementStrategy.ReplaceWorst => this.TryReplaceWorst(newFitness, trajectory, [ SolutionPool.UnknownDistance ], SolutionPool.UnknownNeighbor),
                 _ => throw new NotSupportedException(String.Format("Unhandled replacement strategy {0}.", replacementStrategy))
             };
         }

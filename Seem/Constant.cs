@@ -330,6 +330,7 @@ namespace Mars.Seem
 
         public static class Simd128x4
         {
+            public const int MaskAllFalse = 0x0;
             public const int MaskAllTrue = 0xf;
             public const byte Broadcast0toAll = 0; // 0 << 6  | 0 << 4 | 0 << 2 | 0
             public const int ShuffleRotateLower1 = 0x39; // 0 << 6 | 3 << 4 | 2 << 2 | 1
@@ -343,6 +344,7 @@ namespace Mars.Seem
             public const byte InsertUpper128 = 1;
             public const byte ExtractLower128 = 0;
             public const byte ExtractUpper128 = 1;
+            public const int MaskAllFalse = 0x00;
             public const int MaskAllTrue = 0xff;
             public const int Width = 8;
         }

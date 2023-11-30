@@ -62,17 +62,17 @@ namespace Mars.Seem.Cmdlets
 
         public OptimizeGenetic()
         {
-            this.CrossoverProbabilityEnd = new() { Constant.GeneticDefault.CrossoverProbabilityEnd };
-            this.ExchangeProbabilityEnd = new() { Constant.GeneticDefault.ExchangeProbabilityEnd };
-            this.ExponentK = new() { Constant.GeneticDefault.ExponentK };
-            this.FlipProbabilityEnd = new() { Constant.GeneticDefault.FlipProbabilityEnd };
-            this.GenerationMultiplier = new() { Constant.GeneticDefault.GenerationMultiplier };
-            this.InitializationClasses = new() { Constant.GeneticDefault.InitializationClasses };
-            this.InitializationMethod = new() { Constant.GeneticDefault.InitializationMethod };
-            this.MinCoefficientOfVariation = new() { Constant.GeneticDefault.MinimumCoefficientOfVariation };
-            this.PopulationSize = new() { Constant.GeneticDefault.PopulationSize };
+            this.CrossoverProbabilityEnd = [ Constant.GeneticDefault.CrossoverProbabilityEnd ];
+            this.ExchangeProbabilityEnd = [ Constant.GeneticDefault.ExchangeProbabilityEnd ];
+            this.ExponentK = [ Constant.GeneticDefault.ExponentK ];
+            this.FlipProbabilityEnd = [ Constant.GeneticDefault.FlipProbabilityEnd ];
+            this.GenerationMultiplier = [ Constant.GeneticDefault.GenerationMultiplier ];
+            this.InitializationClasses = [ Constant.GeneticDefault.InitializationClasses ];
+            this.InitializationMethod = [ Constant.GeneticDefault.InitializationMethod ];
+            this.MinCoefficientOfVariation = [ Constant.GeneticDefault.MinimumCoefficientOfVariation ];
+            this.PopulationSize = [ Constant.GeneticDefault.PopulationSize ];
             this.ReplacementStrategy = Constant.GeneticDefault.ReplacementStrategy;
-            this.ReservedProportion = new() { Constant.GeneticDefault.ReservedPopulationProportion };
+            this.ReservedProportion = [ Constant.GeneticDefault.ReservedPopulationProportion ];
         }
 
         protected override Heuristic<GeneticParameters> CreateHeuristic(GeneticParameters heuristicParameters, RunParameters runParameters)

@@ -33,7 +33,7 @@ namespace Mars.Seem.Extensions
         private static partial UInt32 CallNtPowerInformation(Int32 InformationLevel,
                                                              IntPtr lpInputBuffer,
                                                              UInt32 nInputBufferSize,
-                                                             /* .NET 8.0 [In, Out] */ PROCESSOR_POWER_INFORMATION[] lpOutputBuffer, // https://github.com/dotnet/runtime/issues/90785
+                                                             [In, Out] PROCESSOR_POWER_INFORMATION[] lpOutputBuffer, // https://github.com/dotnet/runtime/issues/90785
                                                              UInt32 nOutputBufferSize);
 
         [StructLayout(LayoutKind.Sequential)]
