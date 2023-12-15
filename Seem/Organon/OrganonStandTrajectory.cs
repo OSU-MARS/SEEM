@@ -29,10 +29,10 @@ namespace Mars.Seem.Organon
             this.DensityByPeriod[0] = new OrganonStandDensity(organonConfiguration.Variant, stand);
             Debug.Assert(Constant.RegenerationHarvestIfEligible == 0, "Tree selection initialization assumes .");
 
-            this.StandByPeriod[0] = new OrganonStand(stand) // subsequent periods initialized lazily in Simulate()
-            {
-                Name = this.Name + "p" + 0.ToString()
-            };
+            this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
+            //{
+            //    Name = this.Name + "p0" // append period index to stand name; sometimes useful when debugging
+            //};
         }
 
         // shallow copy FIA and Organon for now
@@ -319,10 +319,10 @@ namespace Mars.Seem.Organon
                     {
                         // lazy initialization
                         Debug.Assert(simulationStand.Name != null);
-                        OrganonStand standForPeriod = new(simulationStand)
-                        {
-                            Name = this.Name + "p" + periodIndex
-                        };
+                        OrganonStand standForPeriod = new(simulationStand);
+                        //{
+                        //    Name = this.Name + "p" + periodIndex // append period index to stand name; sometimes useful when debugging
+                        //};
                         this.StandByPeriod[periodIndex] = standForPeriod;
                     }
                     else

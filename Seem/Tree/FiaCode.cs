@@ -1,4 +1,6 @@
-﻿namespace Mars.Seem.Tree
+﻿using System;
+
+namespace Mars.Seem.Tree
 {
     /// <summary>
     /// FIA species and genera codes.
@@ -6,7 +8,7 @@
     /// <remarks>
     /// Primarily from the USFS FIA western species list provided with FVS's documentation.
     /// </remarks>
-    public enum FiaCode
+    public enum FiaCode : UInt16
     {
         AbiesAmabalis = 11,
         AbiesConcolor = 15,

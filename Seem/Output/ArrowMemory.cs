@@ -8,32 +8,25 @@ namespace Mars.Seem.Output
 {
     public class ArrowMemory
     {
-        protected const int DefaultMaximumRecordsPerBatch = 10 * 1000 * 1000;
+        public const int DefaultMaximumRecordsPerBatch = 10 * 1000 * 1000;
 
-        public int BatchLength { get; private init; }
-        public int Capacity { get; private init; }
-        public int Count { get; protected set; }
-
-        public IList<RecordBatch> RecordBatches { get; private init; }
+        public int MaximumBatchLength { get; private init; }
+        public List<RecordBatch> RecordBatches { get; private init; }
+        public int RecordCount { get; protected set; }
         public Schema Schema { get; protected init; }
+        public int TotalNumberOfRecords { get; protected set; }
 
-        protected ArrowMemory(Schema schema, int capacityInRecords, int batchLength)
+        protected ArrowMemory(Schema schema, int maximumBatchLength)
         {
-            if (capacityInRecords < 1)
+            if ((maximumBatchLength < 10 * 1000) || (maximumBatchLength > 100 * 1000 * 1000))
             {
-                throw new ArgumentOutOfRangeException(nameof(capacityInRecords), "Capacity of " + capacityInRecords + " is zero or negative.");
-            }
-            if ((batchLength < 10 * 1000) || (batchLength > 100 * 1000 * 1000))
-            {
-                throw new ArgumentOutOfRangeException(nameof(batchLength), "Record batch size of " + batchLength + " is unexpectedly large or small.");
+                throw new ArgumentOutOfRangeException(nameof(maximumBatchLength), "Record batch size of " + maximumBatchLength + " is unexpectedly large or small.");
             }
 
-            this.BatchLength = batchLength;
-            this.Capacity = capacityInRecords;
-            this.Count = 0;
+            this.MaximumBatchLength = maximumBatchLength;
 
-            int batches = capacityInRecords / batchLength + (capacityInRecords % batchLength != 0 ? 1 : 0);
-            this.RecordBatches = new List<RecordBatch>(batches);
+            this.RecordBatches = new();
+            this.RecordCount = 0;
             this.Schema = schema;
         }
 
@@ -146,18 +139,24 @@ namespace Mars.Seem.Output
             MemoryMarshal.Cast<byte, UInt32>(field.Span).Slice(start, count).Fill(value);
         }
 
+        /// <summary>
+        /// Get position and remaining space in current batch, assuming batch length has single record granularity.
+        /// </summary>
         protected (int startIndexInCurrentBatch, int recordsToCopyToCurrentBatch) GetBatchIndicesForAdd(int recordsToAdd)
         {
-            int startIndexInCurrentBatch = this.Count % this.BatchLength;
-            int capacityRemainingInRecordBatch = this.BatchLength - startIndexInCurrentBatch;
+            int startIndexInCurrentBatch = this.RecordCount % this.MaximumBatchLength;
+            int capacityRemainingInRecordBatch = this.MaximumBatchLength - startIndexInCurrentBatch;
             int recordsToCopyToCurrentBatch = Int32.Min(recordsToAdd, capacityRemainingInRecordBatch);
             return (startIndexInCurrentBatch, recordsToCopyToCurrentBatch);
         }
 
+        /// <summary>
+        /// Get 
+        /// </summary>
         protected int GetNextBatchLength()
         {
-            int remainingCapacity = this.Capacity - this.Count;
-            return Int32.Min(remainingCapacity, this.BatchLength);
+            int remainingCapacity = this.TotalNumberOfRecords - this.RecordCount;
+            return Int32.Min(remainingCapacity, this.MaximumBatchLength);
         }
 
         public int GetUncompressedBytesPerRow()

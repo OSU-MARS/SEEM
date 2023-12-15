@@ -6,26 +6,15 @@ namespace Mars.Seem.Extensions
     {
         public static (float diameterToCentimetersMultiplier, float heightToMetersMultiplier, float hectareExpansionFactorMultiplier) GetConversionToMetric(this Units units)
         {
-            float diameterToCentimetersMultiplier;
-            float heightToMetersMultiplier;
-            float hectareExpansionFactorMultiplier;
             switch (units)
             {
                 case Units.English:
-                    diameterToCentimetersMultiplier = Constant.CentimetersPerInch;
-                    heightToMetersMultiplier = Constant.MetersPerFoot;
-                    hectareExpansionFactorMultiplier = Constant.AcresPerHectare;
-                    break;
+                    return (Constant.CentimetersPerInch, Constant.MetersPerFoot,  Constant.AcresPerHectare);
                 case Units.Metric:
-                    diameterToCentimetersMultiplier = 1.0F;
-                    heightToMetersMultiplier = 1.0F;
-                    hectareExpansionFactorMultiplier = 1.0F;
-                    break;
+                    return (1.0F, 1.0F, 1.0F);
                 default:
                     throw new NotSupportedException("Unhandled units " + units + ".");
             }
-
-            return (diameterToCentimetersMultiplier, heightToMetersMultiplier, hectareExpansionFactorMultiplier);
         }
     }
 }

@@ -46,6 +46,18 @@ namespace Mars.Seem.Cmdlets
             this.LimitGB = 1.0F; // sanity default, may be set higher in derived classes
         }
 
+        protected void CheckOutputFileSize(ArrowMemory arrowMemory)
+        {
+            // estimate output file size
+            float uncompressedBytesPerRow = arrowMemory.GetUncompressedBytesPerRow();
+            float uncompressedFileSizeInGB = uncompressedBytesPerRow * arrowMemory.TotalNumberOfRecords / (1024.0F * 1024.0F * 1024.0F);
+            Debug.Assert(uncompressedBytesPerRow * arrowMemory.MaximumBatchLength < 2.0F * 1024.0F * 1024.0F * 1024.0F); // https://github.com/apache/arrow/issues/37069
+            if (uncompressedFileSizeInGB > this.LimitGB)
+            {
+                throw new NotSupportedException("Expected file size of " + uncompressedFileSizeInGB.ToString("0.00") + " GB exceeds size limit of " + this.LimitGB.ToString("0.00") + " GB.");
+            }
+        }
+
         protected StreamWriter CreateCsvWriter()
         {
             Debug.Assert(this.FilePath != null);
@@ -62,16 +74,7 @@ namespace Mars.Seem.Cmdlets
         protected StandTrajectoryArrowMemory CreateStandTrajectoryArrowMemory(int periodsToWrite)
         {
             StandTrajectoryArrowMemory arrowMemory = new(periodsToWrite);
-
-            // estimate output file size
-            float uncompressedBytesPerRow = arrowMemory.GetUncompressedBytesPerRow();
-            float uncompressedFileSizeInGB = uncompressedBytesPerRow * periodsToWrite / (1024.0F * 1024.0F * 1024.0F);
-            Debug.Assert(uncompressedBytesPerRow * arrowMemory.BatchLength < 2.0F * 1024.0F * 1024.0F * 1024.0F); // https://github.com/apache/arrow/issues/37069
-            if (uncompressedFileSizeInGB > this.LimitGB)
-            {
-                throw new NotSupportedException("Expected file size of " + uncompressedFileSizeInGB.ToString("0.00") + " GB exceeds size limit of " + this.LimitGB.ToString("0.00") + " GB.");
-            }
-
+            this.CheckOutputFileSize(arrowMemory);
             return arrowMemory;
         }
 
@@ -130,25 +133,6 @@ namespace Mars.Seem.Cmdlets
             return header;
         }
 
-        protected static void GetMetricConversions(Units inputUnits, out float areaConversionFactor, out float dbhConversionFactor, out float heightConversionFactor)
-        {
-            switch (inputUnits)
-            {
-                case Units.English:
-                    areaConversionFactor = Constant.AcresPerHectare;
-                    dbhConversionFactor = Constant.CentimetersPerInch;
-                    heightConversionFactor = Constant.MetersPerFoot;
-                    break;
-                case Units.Metric:
-                    areaConversionFactor = 1.0F;
-                    dbhConversionFactor = 1.0F;
-                    heightConversionFactor = 1.0F;
-                    break;
-                default:
-                    throw new NotSupportedException("Unhandled units " + inputUnits + ".");
-            }
-        }
-
         protected long GetMaxFileSizeInBytes()
         {
             return (long)(1E9F * this.LimitGB);
@@ -159,21 +143,21 @@ namespace Mars.Seem.Cmdlets
             return this.openedExistingCsvFile == false;
         }
 
-        protected void WriteFeather(StandTrajectoryArrowMemory standTrajectories)
+        protected void WriteFeather(ArrowMemory data)
         {
             Debug.Assert(this.FilePath != null);
-            if (standTrajectories.RecordBatches.Count < 1)
+            if (data.RecordBatches.Count < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(standTrajectories));
+                throw new ArgumentOutOfRangeException(nameof(data));
             }
 
             using FileStream stream = new(this.FilePath, FileMode.Create, FileAccess.Write, FileShare.None, Constant.Default.FileWriteBufferSizeInBytes, FileOptions.SequentialScan);
-            using ArrowFileWriter writer = new(stream, standTrajectories.Schema);
+            using ArrowFileWriter writer = new(stream, data.Schema);
             writer.WriteStart();
 
-            for (int batchIndex = 0; batchIndex < standTrajectories.RecordBatches.Count; ++batchIndex)
+            for (int batchIndex = 0; batchIndex < data.RecordBatches.Count; ++batchIndex)
             {
-                writer.WriteRecordBatch(standTrajectories.RecordBatches[batchIndex]);
+                writer.WriteRecordBatch(data.RecordBatches[batchIndex]);
             }
             
             writer.WriteEnd();

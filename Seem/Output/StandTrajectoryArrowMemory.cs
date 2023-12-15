@@ -166,8 +166,8 @@ namespace Mars.Seem.Output
         private byte[]? regenProcessorProductivityWithGrappleYoader;
         private byte[]? regenLoadedWeight;
 
-        public StandTrajectoryArrowMemory(int capacityInRecords)
-            : base(StandTrajectoryArrowMemory.CreateSchema(), capacityInRecords, 4 * 1000 * 1000) // 531 bytes / record * 400k records = 1.98 GB, https://github.com/apache/arrow/issues/37069
+        public StandTrajectoryArrowMemory(int totalNumberOfRecords)
+            : base(StandTrajectoryArrowMemory.CreateSchema(), 4 * 1000 * 1000) // 531 bytes / record * 400k records = 1.98 GB, https://github.com/apache/arrow/issues/37069
         {
             this.stand = null;
             this.thin1 = null;
@@ -326,6 +326,8 @@ namespace Mars.Seem.Output
             this.regenProcessorPMhWithGrappleYoader = null;
             this.regenProcessorProductivityWithGrappleYoader = null;
             this.regenLoadedWeight = null;
+
+            this.TotalNumberOfRecords = totalNumberOfRecords;
         }
 
         private void Add(StandTrajectory trajectory, int startPeriod, WriteStandTrajectoryContext writeContext, int startIndexInRecordBatch, int periodsToCopy)
@@ -508,7 +510,7 @@ namespace Mars.Seem.Output
             FinancialScenarios financialScenarios = writeContext.FinancialScenarios;
             StandDensity? previousStandDensity = null;
             float totalThinNetPresentValue = 0.0F;
-            int? year = writeContext.StartYear;
+            Int16 year = writeContext.StartYear != null ? (Int16)writeContext.StartYear : Constant.NoDataInt16;
             for (int periodIndex = startPeriod, recordIndex = startIndexInRecordBatch; periodIndex <= lastPeriodToCopy; ++periodIndex, ++recordIndex)
             {
                 Stand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
@@ -541,7 +543,7 @@ namespace Mars.Seem.Output
                 batchThin3[recordIndex] = thirdThinAge;
                 batchRotation[recordIndex] = rotationAge;
                 batchFinancialScenario[recordIndex] = (UInt32)financialIndex;
-                batchYear[recordIndex] = year != null ? (Int16)year.Value : Constant.NoDataInt16;
+                batchYear[recordIndex] = year;
                 batchStandAge[recordIndex] = (Int16)trajectory.GetEndOfPeriodAge(periodIndex);
                 
                 if (writeContext.NoTreeGrowth == false)
@@ -919,13 +921,13 @@ namespace Mars.Seem.Output
                     batchRegenLoadedWeight[recordIndex] = longLogRegenHarvest.FellerBuncher.LoadedWeightPerHa;
                 }
 
-                if (year != null)
+                if (year != Constant.NoDataInt16)
                 {
-                    year += trajectory.PeriodLengthInYears;
+                    year += (Int16)trajectory.PeriodLengthInYears;
                 }
             }
 
-            this.Count += periodsToCopy;
+            this.RecordCount += periodsToCopy;
         }
 
         public void Add(StandTrajectory trajectory, WriteStandTrajectoryContext writeContext)
@@ -1281,7 +1283,6 @@ namespace Mars.Seem.Output
 
         private static Schema CreateSchema()
         {
-            // create schema
             List<Field> fields = 
             [
                 new("stand", UInt32Type.Default, false),
@@ -1447,7 +1448,7 @@ namespace Mars.Seem.Output
                 { "thin3", "age of third thin in years or -1 for no thin" },
                 { "rotation", "rotation age in years" },
                 { "financialScenario", "index of financial scenario used in cost calculations" },
-                { "year", "calendar year, CE" },
+                { "year", "calendar year, CE, if specified" },
                 { "standAge", "nominal age of dominant and codominant trees in stand, years" },
                 // tree growth
                 { "TPH", "trees per hectare" },

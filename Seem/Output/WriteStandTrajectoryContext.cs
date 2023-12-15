@@ -1,8 +1,6 @@
-﻿using Mars.Seem.Optimization;
-using Mars.Seem.Silviculture;
+﻿using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System.Collections.Generic;
-using System.Text.Json.Serialization.Metadata;
 
 namespace Mars.Seem.Output
 {
@@ -66,7 +64,7 @@ namespace Mars.Seem.Output
 
         public int GetPeriodsToWrite(StandTrajectory trajectory)
         {
-            return this.GetPeriodsToWrite(trajectory, FinancialScenarios.Count);
+            return this.GetPeriodsToWrite(trajectory, this.FinancialScenarios.Count);
         }
 
         private int GetPeriodsToWrite(StandTrajectory trajectory, int financialScenarioCount)

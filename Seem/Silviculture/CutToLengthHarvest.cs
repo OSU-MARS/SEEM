@@ -37,7 +37,7 @@ namespace Mars.Seem.Silviculture
                 }
 
                 IndividualTreeSelection individualTreeSelection = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
-                (float diameterToCentimetersMultiplier, float heightToMetersMultiplier, float hectareExpansionFactorMultiplier) = UnitsExtensions.GetConversionToMetric(treesOfSpecies.Units);
+                (float diameterToCmMultiplier, float heightToMetersMultiplier, float expansionFactorMultiplier) = UnitsExtensions.GetConversionToMetric(treesOfSpecies.Units);
 
                 TreeSpeciesProperties treeSpeciesProperties = TreeSpecies.Properties[treesOfSpecies.Species];
                 for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
@@ -51,7 +51,7 @@ namespace Mars.Seem.Silviculture
 
                     // Could factor constant and linear terms out of loop (true for all machines, both CTL and long log) but it doesn't
                     // appear important to do so.
-                    float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                    float dbhInCm = diameterToCmMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
                     if (dbhInCm > forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters)
                     {
                         HarvestFinancialValue.ThrowIfTreeNotAutomaticReserve(isThin, treesOfSpecies, compactedTreeIndex, forwardedVolumeTable);
@@ -59,7 +59,7 @@ namespace Mars.Seem.Silviculture
                     }
 
                     float heightInM = heightToMetersMultiplier * treesOfSpecies.Height[compactedTreeIndex];
-                    float expansionFactorPerHa = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
+                    float expansionFactorPerHa = expansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[compactedTreeIndex];
                     float treeMerchantableVolumeInM3 = forwardedVolumeTable.GetCubicVolumeOfMerchantableWood(dbhInCm, heightInM, out float unscaledNeiloidVolumeInM3);
                     Debug.Assert(Single.IsNaN(treeMerchantableVolumeInM3) == false);
                     float treeMerchantableVolumePerHa = expansionFactorPerHa * treeMerchantableVolumeInM3;

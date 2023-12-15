@@ -41,10 +41,10 @@ namespace Mars.Seem.Tree
 
             // automatically designate reserve trees by DBH
             // TODO: support designation of smaller reserve trees and nonmerchantable (cull or defect) trees
-            (float diameterToCentimetersMultiplier, float _, float _) = UnitsExtensions.GetConversionToMetric(treesOfSpecies.Units);
+            (float diameterToCmMultiplier, float _, float _) = UnitsExtensions.GetConversionToMetric(treesOfSpecies.Units);
             for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
             {
-                float dbhInCm = diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
+                float dbhInCm = diameterToCmMultiplier * treesOfSpecies.Dbh[compactedTreeIndex];
                 if (dbhInCm > reserveDbhInCm)
                 {
                     this.treeSelection[compactedTreeIndex] = Constant.NoHarvestPeriod;

@@ -216,7 +216,7 @@ namespace Mars.Seem.Data
 
             FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[this.treeHeader.Species]);
             int plot = Constant.Default.PlotID;
-            if (this.treeHeader.Age >= 0)
+            if (this.treeHeader.Plot >= 0)
             {
                 plot = Int32.Parse(rowAsStrings[this.treeHeader.Plot]);
             }

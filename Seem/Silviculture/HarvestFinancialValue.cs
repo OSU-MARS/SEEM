@@ -91,8 +91,8 @@ namespace Mars.Seem.Silviculture
             {
                 // automatic reserve trees should never be marked for thinning: this indicates a tree selection bug in a heuristic or
                 // silvicultural prescription
-                (float diameterToCentimetersMultiplier, float _, float _) = UnitsExtensions.GetConversionToMetric(treesOfSpecies.Units);
-                throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + " with DBH of " + diameterToCentimetersMultiplier * treesOfSpecies.Dbh[compactedTreeIndex] + " cm is selected for thinning. This tree exceeds the long log volume table's DBH limit of " + volumeTable.MaximumMerchantableDiameterInCentimeters + " cm.");
+                (float diameterToCmMultiplier, float _, float _) = UnitsExtensions.GetConversionToMetric(treesOfSpecies.Units);
+                throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + " with DBH of " + diameterToCmMultiplier * treesOfSpecies.Dbh[compactedTreeIndex] + " cm is selected for thinning. This tree exceeds the long log volume table's DBH limit of " + volumeTable.MaximumMerchantableDiameterInCentimeters + " cm.");
             }
 
             // otherwise, for now, assume tree was initially small enough not to be automatic reserve but has grown across the

@@ -254,10 +254,10 @@ namespace Mars.Seem.Data
             // For now, when the stand size is limited this just copies the first n trees encountered rather than subsampling the plot.
             // Can move this to a Trees.CopyFrom() and Trees.ChangeUnits() if needed.
             int maximumTreesToCopy = Math.Min(plotAtAge.GetTreeRecordCount(), maximumTreeRecords);
-            for (int ageIndex = 0; ageIndex < plotAtAge.TreesBySpecies.Count; ++ageIndex)
+            for (int speciesIndex = 0; speciesIndex < plotAtAge.TreesBySpecies.Count; ++speciesIndex)
             {
                 // get or create Organon trees
-                Trees plotTreesOfSpecies = plotAtAge.TreesBySpecies.Values[ageIndex];
+                Trees plotTreesOfSpecies = plotAtAge.TreesBySpecies.Values[speciesIndex];
                 if (organonStand.TreesBySpecies.TryGetValue(plotTreesOfSpecies.Species, out Trees? standTreesOfSpecies) == false)
                 {
                     int minimumSize = Math.Min(maximumTreesToCopy - treesCopied, plotTreesOfSpecies.Count);
