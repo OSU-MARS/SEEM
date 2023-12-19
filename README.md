@@ -18,8 +18,10 @@ the nuget's. If Visual Studio Code is used for PowerShell Core execution then co
 are required.
 
 SEEM is developed using current or near-current versions of [Visual Studio Community](https://visualstudio.microsoft.com/downloads/) edition. 
-In principle it can be ported to any .NET supported platform with minimal effort but availability of x64 AVX instructions (Intel Core 
-2<sup>nd</sup> generation, equivalent AMD processors, or newer) is assumed and SEEM is only tested on Windows 10.
+In principle it can be ported to any .NET supported platform with minimal effort but availability of AVX2 instructions (Intel Core 
+4<sup>nd</sup> generation, equivalent AMD processors, or newer) is assumed and SEEM is only tested on Windows 10. AVX10.1/256 and, with
+code edits, /512 are supported but yield somewhat different growth predictions due to changes in instructions (mainly `vrcp14ps` rather 
+than `vrcpps`) and the number of CCF layers (crown competition factor, /512).
 
 ### Relationship to CIPS-R 2.2.4 Organon (2014) and Organon 9.1 (2011)
 This repo began with a C# port and object oriented refactoring of the [CIPS-R](http://r-forge.r-project.org/projects/cipsr/) 2.2.4 Organon

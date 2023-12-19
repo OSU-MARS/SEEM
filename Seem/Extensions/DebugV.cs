@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Management.Automation;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
@@ -6,6 +7,12 @@ namespace Mars.Seem.Extensions
 {
     internal static class DebugV
     {
+        [Conditional("DEBUG")]
+        public static void Assert(Vector128<float> condition, string message)
+        {
+            Debug.Assert(Avx.MoveMask(condition) == Constant.Simd128x4.MaskAllTrue, message);
+        }
+
         [Conditional("DEBUG")]
         public static void Assert(Vector128<float> condition)
         {
@@ -16,12 +23,6 @@ namespace Mars.Seem.Extensions
         public static void Assert(Vector128<int> condition)
         {
             Debug.Assert(Avx.MoveMask(condition.AsSingle()) == Constant.Simd128x4.MaskAllTrue);
-        }
-
-        [Conditional("DEBUG")]
-        public static void Assert(Vector128<float> condition, string message)
-        {
-            Debug.Assert(Avx.MoveMask(condition) == Constant.Simd128x4.MaskAllTrue, message);
         }
 
         [Conditional("DEBUG")]
@@ -40,6 +41,24 @@ namespace Mars.Seem.Extensions
         public static void Assert(Vector256<float> condition, string message)
         {
             Debug.Assert(Avx.MoveMask(condition) == Constant.Simd256x8.MaskAllTrue, message);
+        }
+
+        [Conditional("DEBUG")]
+        public static void Assert(Vector512<float> condition)
+        {
+            Debug.Assert(condition.ExtractMostSignificantBits() == Constant.Simd512x16.MaskAllTrue);
+        }
+
+        [Conditional("DEBUG")]
+        public static void Assert(Vector512<int> condition)
+        {
+            Debug.Assert(condition.ExtractMostSignificantBits() == Constant.Simd512x16.MaskAllTrue);
+        }
+
+        [Conditional("DEBUG")]
+        public static void Assert(Vector512<float> condition, string message)
+        {
+            Debug.Assert(condition.ExtractMostSignificantBits() == Constant.Simd512x16.MaskAllTrue, message);
         }
     }
 }

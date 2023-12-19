@@ -84,7 +84,7 @@ namespace Mars.Seem.Tree
         public Trees(FiaCode species, int minimumSize, Units units)
         {
             // ensure array lengths are an exact multiple of the SIMD width
-            this.Capacity = Trees.GetCapacity(minimumSize);
+            this.Capacity = Constant.Simd256x8.Width * (int)MathF.Ceiling((float)minimumSize / (float)Constant.Simd256x8.Width);
             this.Count = 0; // no trees assigned yet
             this.Codes = new TreeConditionCode[this.Capacity];
             this.CrownRatio = new float[this.Capacity];
@@ -211,11 +211,6 @@ namespace Mars.Seem.Tree
                 Units.Metric => Constant.ForestersMetric * dbh * dbh * liveExpansionFactor, // m²/ha
                 _ => throw new NotSupportedException("Unhandled units " + this.Units + ".")
             };
-        }
-
-        public static int GetCapacity(int treeCount)
-        {
-            return Constant.Simd256x8.Width * (int)MathF.Ceiling((float)treeCount / (float)Constant.Simd256x8.Width);
         }
 
         public int[] GetDbhSortOrder()

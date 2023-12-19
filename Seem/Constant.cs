@@ -3,6 +3,7 @@ using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Configuration;
 
 namespace Mars.Seem
 {
@@ -29,8 +30,8 @@ namespace Mars.Seem
         public const float NaturalLogOf10 = 2.3025850930F;
         public const Int16 NoDataInt16 = Int16.MinValue;
         public const int NoHarvestPeriod = -1;
-        // number of height strata must be an exact multiple of SIMD width: multiples of 4 for VEX 128, 8 for VEX 256
-        public const int OrganonHeightStrata = 40;
+        // number of height strata must currently be an exact multiple of SIMD width: multiples of 4 for 128 bit, 8 for 256 bit, 16 for 512 bit
+        public const int OrganonHeightStrata = 40; // supports 128 and 256 bit
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
         public const float ReinekeExponent = 1.605F;
@@ -90,6 +91,11 @@ namespace Mars.Seem
             FiaCode.Salix
         });
 
+        public static class Avx512
+        {
+            public const int RoundToZero = 3; // _MM_FROUND_TO_ZERO
+        }
+
         public static class Bucking
         {
             public const float BarSawKerf = 0.007F; // m
@@ -123,6 +129,7 @@ namespace Mars.Seem
             public const int PlotID = 0;
             public const string ProbabilityFormat = "0.00##";
             public const int RotationLengths = 9;
+            public const SimdInstructions Simd = SimdInstructions.Avx;
             public const float SlopeForTetheringInPercent = 45.0F;
             public const int SolutionPoolSize = 4;
             public const int ThinningPeriod = 3;
@@ -223,6 +230,33 @@ namespace Mars.Seem
                 public const int Harvested = 1;
                 public const int Dead = 2;
             }
+        }
+
+        public static class Math
+        {
+            public const float Exp10ToExp2 = 3.321928094887362F; // log2(10)
+            public const float ExpToExp2 = 1.442695040888963F; // log2(e) for converting base 2 IEEE 754 exponent manipulation to base e
+
+            public const float ExpC1 = 0.007972914726F;
+            public const float ExpC2 = 0.1385283768F;
+            public const float ExpC3 = 2.885390043F;
+
+            public const float FloatExp2MaximumPower = 127.0F; // range limiting decompositions using 8 bit signed exponent
+            public const int FloatExponentMask = 0x7F800000;
+            public const int FloatMantissaBits = 23;
+            public const int FloatMantissaZero = 127;
+            public const int FloatMantissaMask = 0x007FFFFF;
+
+            public const float Log2Beta1 = 1.441814292091611F;
+            public const float Log2Beta2 = -0.708440969761796F;
+            public const float Log2Beta3 = 0.414281442395441F;
+            public const float Log2Beta4 = -0.192544768195605F;
+            public const float Log2Beta5 = 0.044890234549254F;
+            public const float Log2ToNaturalLog = 0.693147180559945F;
+            public const float Log2ToLog10 = 0.301029995663981F;
+
+            public const float One = 1.0F;
+            public const int OneAsInt = 0x3f800000; // 0x3f800000 = 1.0F
         }
 
         public static class Maximum
@@ -344,9 +378,19 @@ namespace Mars.Seem
             public const byte InsertUpper128 = 1;
             public const byte ExtractLower128 = 0;
             public const byte ExtractUpper128 = 1;
+            public const byte Mantissa12Sign = 0x00; // _MM_MANT_NORM_1_2 << ? | _MM_MANT_SIGN_src << ?, https://github.com/dotnet/dotnet-api-docs/issues/9520
             public const int MaskAllFalse = 0x00;
             public const int MaskAllTrue = 0xff;
             public const int Width = 8;
+        }
+
+        public static class Simd512x16
+        {
+            public const byte ExtractLower256 = 0;
+            public const byte ExtractUpper256 = 1;
+            public const int MaskAllFalse = 0x0000;
+            public const int MaskAllTrue = 0xffff;
+            public const int Width = 16;
         }
 
         public static class TabuDefault

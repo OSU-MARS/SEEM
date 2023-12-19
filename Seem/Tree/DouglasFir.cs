@@ -188,43 +188,85 @@ namespace Mars.Seem.Tree
             return growthEffectiveAge;
         }
 
-        public static Vector128<float> GetPsmeAbgrGrowthEffectiveAge(SiteConstants site, float timeStepInYears, Vector128<float> treeHeight, out Vector128<float> potentialHeightGrowth)
+        public static Vector256<float> GetPsmeAbgrGrowthEffectiveAgeAvx(SiteConstants site, float timeStepInYears, Vector256<float> treeHeight, out Vector256<float> potentialHeightGrowth)
         {
-            Vector128<float> B1 = AvxExtensions.BroadcastScalarToVector128(site.B1);
-            Vector128<float> B2 = AvxExtensions.BroadcastScalarToVector128(site.B2);
-            Vector128<float> X2toB2 = AvxExtensions.BroadcastScalarToVector128(site.X2toB2);
-            Vector128<float> siteIndexFromGround128 = AvxExtensions.BroadcastScalarToVector128(site.SiteIndexFromGround);
-            Vector128<float> X1 = AvxExtensions.BroadcastScalarToVector128(site.X1);
+            Vector256<float> B1 = Vector256.Create(site.B1);
+            Vector256<float> B2 = Vector256.Create(site.B2);
+            Vector256<float> X2toB2 = Vector256.Create(site.X2toB2);
+            Vector256<float> siteIndexFromGround256 = Vector256.Create(site.SiteIndexFromGround);
+            Vector256<float> X1 = Vector256.Create(site.X1);
 
-            Vector128<float> XX1 = Avx.Add(Avx.Divide(MathV.Ln(Avx.Divide(treeHeight, siteIndexFromGround128)), B1), X2toB2);
-            Vector128<float> xx1lessThanZero = Avx.CompareLessThanOrEqual(XX1, Vector128<float>.Zero);
-            Vector128<float> growthEffectiveAge = Avx.Subtract(MathV.Pow(XX1, Avx.Reciprocal(B2)), X1);
-                             growthEffectiveAge = Avx.BlendVariable(growthEffectiveAge, AvxExtensions.BroadcastScalarToVector128(500.0F), xx1lessThanZero);
+            Vector256<float> XX1 = Avx.Add(Avx.Divide(MathAvx.Ln(Avx.Divide(treeHeight, siteIndexFromGround256)), B1), X2toB2);
+            Vector256<float> xx1lessThanZero = Avx.CompareLessThanOrEqual(XX1, Vector256<float>.Zero);
+            Vector256<float> growthEffectiveAge = Avx.Subtract(MathAvx.Pow(XX1, Avx.Reciprocal(B2)), X1);
+            growthEffectiveAge = Avx.BlendVariable(growthEffectiveAge, Vector256.Create(500.0F), xx1lessThanZero);
 
-            Vector128<float> timeStepInYearsPlusX1 = AvxExtensions.BroadcastScalarToVector128(timeStepInYears + site.X1);
-            Vector128<float> potentialHeightPower = Avx.Multiply(B1, Avx.Subtract(MathV.Pow(Avx.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
-            Vector128<float> potentialHeight = Avx.Multiply(siteIndexFromGround128, MathV.Exp(potentialHeightPower));
+            Vector256<float> timeStepInYearsPlusX1 = Vector256.Create(timeStepInYears + site.X1);
+            Vector256<float> potentialHeightPower = Avx.Multiply(B1, Avx.Subtract(MathAvx.Pow(Avx.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
+            Vector256<float> potentialHeight = Avx.Multiply(siteIndexFromGround256, MathAvx.Exp(potentialHeightPower));
             potentialHeightGrowth = Avx.Subtract(potentialHeight, treeHeight);
 
             return growthEffectiveAge;
         }
 
-        public static Vector256<float> GetPsmeAbgrGrowthEffectiveAge(SiteConstants site, float timeStepInYears, Vector256<float> treeHeight, out Vector256<float> potentialHeightGrowth)
+        public static Vector256<float> GetPsmeAbgrGrowthEffectiveAgeAvx10(SiteConstants site, float timeStepInYears, Vector256<float> treeHeight, out Vector256<float> potentialHeightGrowth)
         {
-            Vector256<float> B1 = AvxExtensions.BroadcastScalarToVector256(site.B1);
-            Vector256<float> B2 = AvxExtensions.BroadcastScalarToVector256(site.B2);
-            Vector256<float> X2toB2 = AvxExtensions.BroadcastScalarToVector256(site.X2toB2);
-            Vector256<float> siteIndexFromGround256 = AvxExtensions.BroadcastScalarToVector256(site.SiteIndexFromGround);
-            Vector256<float> X1 = AvxExtensions.BroadcastScalarToVector256(site.X1);
+            Vector256<float> B1 = Vector256.Create(site.B1);
+            Vector256<float> B2 = Vector256.Create(site.B2);
+            Vector256<float> X2toB2 = Vector256.Create(site.X2toB2);
+            Vector256<float> siteIndexFromGround256 = Vector256.Create(site.SiteIndexFromGround);
+            Vector256<float> X1 = Vector256.Create(site.X1);
 
-            Vector256<float> XX1 = Avx.Add(Avx.Divide(MathV.Ln(Avx.Divide(treeHeight, siteIndexFromGround256)), B1), X2toB2);
-            Vector256<float> xx1lessThanZero = Avx.CompareLessThanOrEqual(XX1, Vector256<float>.Zero);
-            Vector256<float> growthEffectiveAge = Avx.Subtract(MathV.Pow(XX1, Avx.Reciprocal(B2)), X1);
-            growthEffectiveAge = Avx.BlendVariable(growthEffectiveAge, AvxExtensions.BroadcastScalarToVector256(500.0F), xx1lessThanZero);
+            Vector256<float> XX1 = Avx512F.Add(Avx512F.Divide(MathAvx10.Ln(Avx512F.Divide(treeHeight, siteIndexFromGround256)), B1), X2toB2);
+            Vector256<float> xx1lessThanZero = Avx512F.CompareLessThanOrEqual(XX1, Vector256<float>.Zero);
+            Vector256<float> growthEffectiveAge = Avx512F.Subtract(MathAvx10.Pow(XX1, Avx512F.VL.Reciprocal14(B2)), X1);
+            growthEffectiveAge = Avx512F.BlendVariable(growthEffectiveAge, Vector256.Create(500.0F), xx1lessThanZero);
 
-            Vector256<float> timeStepInYearsPlusX1 = AvxExtensions.BroadcastScalarToVector256(timeStepInYears + site.X1);
-            Vector256<float> potentialHeightPower = Avx.Multiply(B1, Avx.Subtract(MathV.Pow(Avx.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
-            Vector256<float> potentialHeight = Avx.Multiply(siteIndexFromGround256, MathV.Exp(potentialHeightPower));
+            Vector256<float> timeStepInYearsPlusX1 = Vector256.Create(timeStepInYears + site.X1);
+            Vector256<float> potentialHeightPower = Avx512F.Multiply(B1, Avx512F.Subtract(MathAvx10.Pow(Avx512F.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
+            Vector256<float> potentialHeight = Avx512F.Multiply(siteIndexFromGround256, MathAvx10.Exp(potentialHeightPower));
+            potentialHeightGrowth = Avx512F.Subtract(potentialHeight, treeHeight);
+
+            return growthEffectiveAge;
+        }
+
+        public static Vector512<float> GetPsmeAbgrGrowthEffectiveAgeAvx512(SiteConstants site, float timeStepInYears, Vector512<float> treeHeight, out Vector512<float> potentialHeightGrowth)
+        {
+            Vector512<float> B1 = Vector512.Create(site.B1);
+            Vector512<float> B2 = Vector512.Create(site.B2);
+            Vector512<float> X2toB2 = Vector512.Create(site.X2toB2);
+            Vector512<float> siteIndexFromGround256 = Vector512.Create(site.SiteIndexFromGround);
+            Vector512<float> X1 = Vector512.Create(site.X1);
+
+            Vector512<float> XX1 = Avx512F.Add(Avx512F.Divide(MathAvx10.Ln(Avx512F.Divide(treeHeight, siteIndexFromGround256)), B1), X2toB2);
+            Vector512<float> xx1lessThanZero = Avx512F.CompareLessThanOrEqual(XX1, Vector512<float>.Zero);
+            Vector512<float> growthEffectiveAge = Avx512F.Subtract(MathAvx10.Pow(XX1, Avx512F.Reciprocal14(B2)), X1);
+            growthEffectiveAge = Avx512F.BlendVariable(growthEffectiveAge, Vector512.Create(500.0F), xx1lessThanZero);
+
+            Vector512<float> timeStepInYearsPlusX1 = Vector512.Create(timeStepInYears + site.X1);
+            Vector512<float> potentialHeightPower = Avx512F.Multiply(B1, Avx512F.Subtract(MathAvx10.Pow(Avx512F.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
+            Vector512<float> potentialHeight = Avx512F.Multiply(siteIndexFromGround256, MathAvx10.Exp(potentialHeightPower));
+            potentialHeightGrowth = Avx512F.Subtract(potentialHeight, treeHeight);
+
+            return growthEffectiveAge;
+        }
+
+        public static Vector128<float> GetPsmeAbgrGrowthEffectiveAgeVex128(SiteConstants site, float timeStepInYears, Vector128<float> treeHeight, out Vector128<float> potentialHeightGrowth)
+        {
+            Vector128<float> B1 = Vector128.Create(site.B1);
+            Vector128<float> B2 = Vector128.Create(site.B2);
+            Vector128<float> X2toB2 = Vector128.Create(site.X2toB2);
+            Vector128<float> siteIndexFromGround128 = Vector128.Create(site.SiteIndexFromGround);
+            Vector128<float> X1 = Vector128.Create(site.X1);
+
+            Vector128<float> XX1 = Avx.Add(Avx.Divide(MathAvx.Ln(Avx.Divide(treeHeight, siteIndexFromGround128)), B1), X2toB2);
+            Vector128<float> xx1lessThanZero = Avx.CompareLessThanOrEqual(XX1, Vector128<float>.Zero);
+            Vector128<float> growthEffectiveAge = Avx.Subtract(MathAvx.Pow(XX1, Avx.Reciprocal(B2)), X1);
+            growthEffectiveAge = Avx.BlendVariable(growthEffectiveAge, Vector128.Create(500.0F), xx1lessThanZero);
+
+            Vector128<float> timeStepInYearsPlusX1 = Vector128.Create(timeStepInYears + site.X1);
+            Vector128<float> potentialHeightPower = Avx.Multiply(B1, Avx.Subtract(MathAvx.Pow(Avx.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
+            Vector128<float> potentialHeight = Avx.Multiply(siteIndexFromGround128, MathAvx.Exp(potentialHeightPower));
             potentialHeightGrowth = Avx.Subtract(potentialHeight, treeHeight);
 
             return growthEffectiveAge;

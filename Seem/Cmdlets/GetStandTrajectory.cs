@@ -1,4 +1,5 @@
-﻿using Mars.Seem.Optimization;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Optimization;
 using Mars.Seem.Organon;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
@@ -86,9 +87,9 @@ namespace Mars.Seem.Cmdlets
             {
                 throw new ParameterOutOfRangeException(nameof(this.BenchmarkDuration));
             }
-            if ((this.Simd == Simd.Width256) && (Avx2.IsSupported == false))
+            if (SimdInstructionsExtensions.IsSupported(this.Simd) == false)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Simd), "256 bit wide SIMD is not supported on processors without AVX2 instructions.");
+                throw new ParameterOutOfRangeException(nameof(this.Simd), this.Simd + " instructions are not supported on this processor.");
             }
 
             int benchmarkCount = (int)MathF.Log2(this.Threads) + 1;
@@ -146,7 +147,7 @@ namespace Mars.Seem.Cmdlets
                 benchmarks.Add(benchmark);
             }
 
-            this.WriteProgress(new ProgressRecord(0, "Get-StandTrajectory", ((int)this.Simd).ToString() + " bit SIMD benchmarking complete.")
+            this.WriteProgress(new ProgressRecord(0, "Get-StandTrajectory", this.Simd + " benchmarking complete.")
             {
                 PercentComplete = 100,
                 SecondsRemaining = 0

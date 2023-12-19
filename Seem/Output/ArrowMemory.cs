@@ -25,7 +25,7 @@ namespace Mars.Seem.Output
 
             this.MaximumBatchLength = maximumBatchLength;
 
-            this.RecordBatches = new();
+            this.RecordBatches = [];
             this.RecordCount = 0;
             this.Schema = schema;
         }

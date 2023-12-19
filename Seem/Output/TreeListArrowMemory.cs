@@ -40,7 +40,7 @@ namespace Mars.Seem.Output
             this.TotalNumberOfRecords = 0;
 
             // find record batch sizes
-            List<(int batchStartIndex, int batchEndIndex, int recordsInBatch)> recordBatchPlans = new();
+            List<(int batchStartIndex, int batchEndIndex, int recordsInBatch)> recordBatchPlans = [];
             int trajectoryStartIndex = 0;
             int treeTimestepsInBatch = 0;
             for (int trajectoryIndex = 0; trajectoryIndex < trajectories.Count; ++trajectoryIndex)

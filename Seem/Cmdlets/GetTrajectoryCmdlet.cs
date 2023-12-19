@@ -7,7 +7,7 @@ namespace Mars.Seem.Cmdlets
     public class GetTrajectoryCmdlet : Cmdlet
     {
         [Parameter]
-        public Simd Simd { get; set; }
+        public SimdInstructions Simd { get; set; }
 
         [Parameter]
         [ValidateRange(1, 128)]
@@ -19,7 +19,7 @@ namespace Mars.Seem.Cmdlets
 
         protected GetTrajectoryCmdlet()
         {
-            this.Simd = Simd.Width128;
+            this.Simd = Constant.Default.Simd;
             this.Threads = Environment.ProcessorCount / 2;
             this.TreeVolume = TreeScaling.Default;
         }

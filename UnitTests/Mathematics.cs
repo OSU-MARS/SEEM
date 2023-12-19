@@ -113,9 +113,9 @@ namespace Mars.Seem.Test
                 bool exp10inRange = (power0 <= exp10maxPower) && (power1 <= exp10maxPower) && (power2 <= exp10maxPower) && (power3 <= exp10maxPower);
 
                 Vector128<float> value = Vector128.Create(power0, power1, power2, power3);
-                Vector128<float> exp_m128 = MathV.Exp(value);
-                Vector128<float> exp2_m128 = MathV.Exp2(value);
-                Vector128<float> exp10_m128 = exp10inRange ? MathV.Exp10(value) : Vector128<float>.Zero;
+                Vector128<float> exp_m128 = MathAvx.Exp(value);
+                Vector128<float> exp2_m128 = MathAvx.Exp2(value);
+                Vector128<float> exp10_m128 = exp10inRange ? MathAvx.Exp10(value) : Vector128<float>.Zero;
 
                 for (int scalarIndex = 0; scalarIndex < 4; ++scalarIndex)
                 {
@@ -183,9 +183,9 @@ namespace Mars.Seem.Test
             for (int quadIndex = 0; quadIndex < values.Length; quadIndex += 4)
             {
                 Vector128<float> value = Vector128.Create(values[quadIndex], values[quadIndex + 1], values[quadIndex + 2], values[quadIndex + 3]);
-                Vector128<float> ln = MathV.Ln(value);
-                Vector128<float> log10 = MathV.Log10(value);
-                Vector128<float> log2 = MathV.Log2(value);
+                Vector128<float> ln = MathAvx.Ln(value);
+                Vector128<float> log10 = MathAvx.Log10(value);
+                Vector128<float> log2 = MathAvx.Log2(value);
 
                 for (int scalarIndex = 0; scalarIndex < 4; ++scalarIndex)
                 {
@@ -305,12 +305,6 @@ namespace Mars.Seem.Test
         public void Simd()
         {
             // 128 bit
-            Vector128<float> broadcastFloat128 = AvxExtensions.BroadcastScalarToVector128(Constant.ForestersEnglish);
-            Vector128<int> broadcastInt128 = AvxExtensions.Set128(1);
-
-            AssertV.IsTrue(Avx.CompareEqual(broadcastFloat128, Vector128.Create(Constant.ForestersEnglish)));
-            AssertV.IsTrue(Avx.CompareEqual(broadcastInt128, Vector128.Create(1)));
-
             Vector128<int> index128 = Vector128.Create(0, 1, 2, 3);
             Vector128<int> shuffle128_1 = Avx.Shuffle(index128, Constant.Simd128x4.ShuffleRotateLower1);
             Vector128<int> shuffle128_2 = Avx.Shuffle(index128, Constant.Simd128x4.ShuffleRotateLower2);
@@ -327,12 +321,6 @@ namespace Mars.Seem.Test
             if (Avx2.IsSupported)
             {
                 // 256 bit
-                Vector256<float> broadcastFloat256 = AvxExtensions.BroadcastScalarToVector256(Constant.ForestersEnglish);
-                Vector256<int> broadcastInt256 = AvxExtensions.Set256(1);
-
-                AssertV.IsTrue(Avx.CompareEqual(broadcastFloat256, Vector256.Create(Constant.ForestersEnglish)));
-                AssertV.IsTrue(Avx2.CompareEqual(broadcastInt256, Vector256.Create(1)));
-
                 Vector256<int> index256 = Vector256.Create(0, 1, 2, 3, 0, 1, 2, 3);
                 Vector256<int> shuffle256_1 = Avx2.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower1);
                 Vector256<int> shuffle256_2 = Avx2.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower2);

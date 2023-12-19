@@ -397,12 +397,12 @@ namespace Mars.Seem.Test
             #endif
 
             PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
-            OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords, ImputationMethod.None);
+            OrganonConfiguration configurationNwo = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
+            OrganonStand stand = nelder.ToOrganonStand(configurationNwo, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             // heuristics optimizing for LEV
-            RunParameters runForLandExpectationValue = new(new List<int>() { 9 }, configuration)
+            RunParameters runForLandExpectationValue = new(new List<int>() { 9 }, configurationNwo)
             {
                 MaximizeForPlanningPeriod = 9
             };
@@ -483,7 +483,7 @@ namespace Mars.Seem.Test
             SilviculturalPrescriptionPool levEliteSolutions = PublicApi.Verify(levResults, levCoordinate);
 
             // heuristic optimizing for volume
-            RunParameters runForVolume = new(runForLandExpectationValue.RotationLengths, configuration)
+            RunParameters runForVolume = new(runForLandExpectationValue.RotationLengths, configurationNwo)
             {
                 MaximizeForPlanningPeriod = runForLandExpectationValue.MaximizeForPlanningPeriod,
                 TimberObjective = TimberObjective.ScribnerVolume
@@ -565,11 +565,11 @@ namespace Mars.Seem.Test
             int lastPeriod = 9;
 
             PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
-            OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
+            OrganonConfiguration configurationNwo = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
+            OrganonStand stand = nelder.ToOrganonStand(configurationNwo, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            OrganonStandTrajectory unthinnedTrajectory = new(stand, configuration, TreeScaling.Default, lastPeriod);
+            OrganonStandTrajectory unthinnedTrajectory = new(stand, configurationNwo, TreeScaling.Default, lastPeriod);
             int unthinnedTimeSteps = unthinnedTrajectory.Simulate();
             Assert.IsTrue(unthinnedTimeSteps == lastPeriod);
 
@@ -593,7 +593,7 @@ namespace Mars.Seem.Test
                 ProportionalPercentage = 20.0F,
                 FromBelowPercentage = 0.0F
             };
-            OrganonStandTrajectory twoThinTrajectory = new(stand, configuration, TreeScaling.Default, lastPeriod);
+            OrganonStandTrajectory twoThinTrajectory = new(stand, configurationNwo, TreeScaling.Default, lastPeriod);
             twoThinTrajectory.Treatments.Harvests.Add(firstThinPrescription);
             twoThinTrajectory.Treatments.Harvests.Add(secondThinPrescription);
             Assert.IsNotNull(twoThinTrajectory.StandByPeriod[0]);
@@ -636,7 +636,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
             }
 
-            PublicApi.Verify(unthinnedTrajectory, unthinnedExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(unthinnedTrajectory, unthinnedExpected, configurationNwo.Variant.TimeStepInYears);
 
             // verify one thin trajectory
             ExpectedStandTrajectory oneThinExpected = new()
@@ -669,7 +669,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
             }
 
-            PublicApi.Verify(oneThinTrajectory, oneThinExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(oneThinTrajectory, oneThinExpected, configurationNwo.Variant.TimeStepInYears);
             PublicApi.Verify(oneThinTrajectory, oneThinExpected);
 
             // verify two thin trajectory
@@ -712,7 +712,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedSecondThinTreeRecordCount);
             }
 
-            PublicApi.Verify(twoThinTrajectory, twoThinExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(twoThinTrajectory, twoThinExpected, configurationNwo.Variant.TimeStepInYears);
             PublicApi.Verify(twoThinTrajectory, twoThinExpected);
 
             for (int periodIndex = 0; periodIndex < twoThinTrajectory.PlanningPeriods; ++periodIndex)
@@ -767,7 +767,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedThirdThinTreeRecordCount);
             }
 
-            PublicApi.Verify(threeThinTrajectory, threeThinExpected, configuration.Variant.TimeStepInYears);
+            PublicApi.Verify(threeThinTrajectory, threeThinExpected, configurationNwo.Variant.TimeStepInYears);
             PublicApi.Verify(threeThinTrajectory, threeThinExpected);
         }
 
@@ -1013,11 +1013,11 @@ namespace Mars.Seem.Test
 
             List<float> discountRates = [  Constant.Financial.DefaultAnnualDiscountRate ];
             PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
-            OrganonConfiguration configuration = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
-            OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecordCount, ImputationMethod.None);
+            OrganonConfiguration configurationNwo = PublicApi.CreateOrganonConfiguration(new OrganonVariantNwo());
+            OrganonStand stand = nelder.ToOrganonStand(configurationNwo, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecordCount, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            RunParameters landExpectationValue = new(new List<int>() { 9 }, configuration)
+            RunParameters landExpectationValue = new(new List<int>() { 9 }, configurationNwo)
             {
                 MaximizeForPlanningPeriod = 9
             };
