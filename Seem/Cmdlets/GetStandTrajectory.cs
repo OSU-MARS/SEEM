@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Management.Automation;
-using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;

@@ -221,6 +221,12 @@ namespace Mars.Seem.Data
                 plot = Int32.Parse(rowAsStrings[this.treeHeader.Plot]);
             }
 
+            int tag = this.nextTreeID;
+            if (this.treeHeader.Tag >= 0)
+            {
+                tag = Int32.Parse(rowAsStrings[this.treeHeader.Tag]);
+            }
+
             float dbh = Single.Parse(rowAsStrings[this.treeHeader.Dbh]);
             float height = Single.Parse(rowAsStrings[this.treeHeader.Height]);
             float expansionFactor = Single.Parse(rowAsStrings[this.treeHeader.ExpansionFactor]);
@@ -240,7 +246,8 @@ namespace Mars.Seem.Data
                 stand.TreesBySpecies.Add(species, treesOfSpecies);
             }
 
-            treesOfSpecies.Add(plot, this.nextTreeID++, dbh, height, this.DefaultCrownRatio, expansionFactor, code);
+            treesOfSpecies.Add(plot, tag, dbh, height, this.DefaultCrownRatio, expansionFactor, code);
+            ++this.nextTreeID;
         }
 
         public void Read(string xlsxFilePath, string standWorksheetName, string treesWorksheetName)
@@ -407,6 +414,7 @@ namespace Mars.Seem.Data
             public int Plot { get; set; }
             public int Species { get; set; }
             public int Stand { get; set; }
+            public int Tag { get; set; }
 
             public CruisedTreeHeader()
             {
@@ -419,6 +427,7 @@ namespace Mars.Seem.Data
                 this.Plot = -1;
                 this.Species = -1;
                 this.Stand = -1;
+                this.Tag = -1;
             }
 
             public void Parse(string[] rowAsStrings)
@@ -439,6 +448,9 @@ namespace Mars.Seem.Data
                             break;
                         case "plot":
                             this.Plot = columnIndex;
+                            break;
+                        case "tag":
+                            this.Tag = columnIndex;
                             break;
                         case "species":
                             this.Species = columnIndex;
@@ -498,6 +510,7 @@ namespace Mars.Seem.Data
 
                 // age is optional as age may be defined at the stand level
                 // plot is optional as it's not currently used
+                // tag is optional
             }
         }
     }
