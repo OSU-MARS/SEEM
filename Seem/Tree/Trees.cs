@@ -84,7 +84,7 @@ namespace Mars.Seem.Tree
         public Trees(FiaCode species, int minimumSize, Units units)
         {
             // ensure array lengths are an exact multiple of the SIMD width
-            this.Capacity = Constant.Simd256x8.Width * (int)MathF.Ceiling((float)minimumSize / (float)Constant.Simd256x8.Width);
+            this.Capacity = Trees.GetSimdCompatibleCapacity(minimumSize);
             this.Count = 0; // no trees assigned yet
             this.Codes = new TreeConditionCode[this.Capacity];
             this.CrownRatio = new float[this.Capacity];
@@ -229,6 +229,11 @@ namespace Mars.Seem.Tree
             Array.Copy(this.Height, 0, heightCloneWhichBecomesSorted, 0, this.Count);
             Array.Sort(heightCloneWhichBecomesSorted, heightSortIndices);
             return heightSortIndices;
+        }
+
+        public static int GetSimdCompatibleCapacity(int minimumSize)
+        {
+            return Constant.Simd256x8.Width * (int)MathF.Ceiling((float)minimumSize / (float)Constant.Simd256x8.Width);
         }
 
         public void RemoveZeroExpansionFactorTrees()

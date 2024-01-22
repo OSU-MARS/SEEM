@@ -1,4 +1,5 @@
-﻿using Mars.Seem.Tree;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -45,6 +46,12 @@ namespace Mars.Seem.Organon
 
         public OrganonConfiguration(OrganonVariant variant)
         {
+            int simdWidth32 = variant.Simd.GetWidth32();
+            if ((Constant.OrganonHeightStrata % simdWidth32 != 0) || (Trees.GetSimdCompatibleCapacity(1) % simdWidth32 != 0))
+            {
+                throw new NotSupportedException(Constant.OrganonHeightStrata + " height strata is not an integer multiple of the SIMD width of " + simdWidth32 + " floats. Specify a compatible width or change Constant.OrganonHeightStrata. For AVX-512, calculation of Trees.Capacity must also be updated.");
+            }
+
             this.Variant = variant;
         }
 

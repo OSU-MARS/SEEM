@@ -5,6 +5,23 @@ namespace Mars.Seem.Extensions
 {
     internal static class SimdInstructionsExtensions
     {
+        public static int GetWidth(this SimdInstructions instructions)
+        {
+            return instructions switch
+            {
+                SimdInstructions.Avx or
+                SimdInstructions.Avx10 => 256,
+                SimdInstructions.Avx512 => 512,
+                SimdInstructions.Vex128 => 128,
+                _ => throw new NotSupportedException("Unhandled instruction set " + instructions + "."),
+            };
+        }
+
+        public static int GetWidth32(this SimdInstructions instructions)
+        {
+            return instructions.GetWidth() / 32;
+        }
+
         public static bool IsSupported(SimdInstructions instructions)
         {
             return instructions switch

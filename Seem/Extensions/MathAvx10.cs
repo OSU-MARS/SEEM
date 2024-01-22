@@ -47,8 +47,7 @@ namespace Mars.Seem.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<float> Exp2(Vector512<float> power)
         {
-            // TODO: https://github.com/dotnet/runtime/discussions/96204
-            // Debug.Assert(Avx512F.MoveMask(Avx512DQ.And(Avx512F.CompareGreaterThan(power, Vector512.Create(Constant.Math.FloatExp2MaximumPower)), Avx512F.CompareOrdered(power, power))) == 0);
+            Debug.Assert(Avx512DQ.And(Avx512F.CompareGreaterThan(power, Vector512.Create(Constant.Math.FloatExp2MaximumPower)), Avx512F.CompareOrdered(power, power)).ExtractMostSignificantBits() == 0);
 
             Vector512<float> integerPowerAsFloat = Avx512F.RoundScale(power, Constant.Avx512.RoundToZero);
             Vector512<float> fractionalPower = Avx512F.Subtract(power, integerPowerAsFloat);

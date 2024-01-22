@@ -1,6 +1,6 @@
 # user specific configuration files
-# *.csproj.user
-# *.pubxml.user
+*.csproj.user
+*.pubxml.user
 
 # build, packaging, and test results
 bin/

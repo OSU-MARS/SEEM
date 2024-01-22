@@ -22,6 +22,10 @@ namespace Mars.Seem.Cmdlets
         public TimeSpan BenchmarkDuration { get; set; }
         [Parameter]
         public TimeSpan BenchmarkPolling { get; set; }
+        [Parameter(HelpMessage = "List of thread counts to use when stepping benchmark load. Overrides -Threads.")]
+        [ValidateNotNullOrEmpty]
+        [ValidateRange(1, 128)]
+        public List<int> BenchmarkThreads { get; set; }
         [Parameter]
         public TimeSpan BenchmarkWarmup { get; set; }
 
@@ -58,9 +62,10 @@ namespace Mars.Seem.Cmdlets
         public GetStandTrajectory()
         {
             this.Benchmark = false;
-            this.BenchmarkDuration = TimeSpan.FromMinutes(1.0); // long enough to average out processor turbo
+            this.BenchmarkDuration = TimeSpan.FromMinutes(2.0); // typically long enough to average out tau if on an Intel processor
             this.BenchmarkPolling = TimeSpan.FromSeconds(1.0);
-            this.BenchmarkWarmup = TimeSpan.FromSeconds(10.0);
+            this.BenchmarkThreads = [ 1, 2, 4, 6, 8, 12, 14, 16 ]; // simple default to 16 core CPU, could build dynamically to this.Threads
+            this.BenchmarkWarmup = TimeSpan.FromMinutes(1.0); // roughly two core temperature time constants under an air cooler
             this.Financial = FinancialScenarios.Default;
             this.FirstThinAbove = 0.0F; // %
             this.FirstThinBelow = 0.0F; // %
@@ -76,12 +81,13 @@ namespace Mars.Seem.Cmdlets
         {
             if ((this.BenchmarkDuration < TimeSpan.FromSeconds(1.0)) || (this.BenchmarkDuration > TimeSpan.FromMinutes(10.0)))
             {
-                throw new ParameterOutOfRangeException(nameof(this.BenchmarkDuration));
+                throw new ParameterOutOfRangeException(nameof(this.BenchmarkDuration)); // can't readily use TimeSpan with [ValidateRange] as it's a struct
             }
             if ((this.BenchmarkPolling < TimeSpan.FromSeconds(1.0)) || (this.BenchmarkPolling > TimeSpan.FromMinutes(1.0)))
             {
                 throw new ParameterOutOfRangeException(nameof(this.BenchmarkPolling));
             }
+            // this.BenchmarkThreads is [ValidateNotNullOrEmpty] and [ValidateRange]
             if ((this.BenchmarkWarmup < TimeSpan.Zero) || (this.BenchmarkWarmup > TimeSpan.FromMinutes(1.0)))
             {
                 throw new ParameterOutOfRangeException(nameof(this.BenchmarkDuration));
@@ -91,66 +97,68 @@ namespace Mars.Seem.Cmdlets
                 throw new ParameterOutOfRangeException(nameof(this.Simd), this.Simd + " instructions are not supported on this processor.");
             }
 
-            int benchmarkCount = (int)MathF.Log2(this.Threads) + 1;
-            int benchmarkDurationInSeconds = (int)(this.BenchmarkDuration + this.BenchmarkWarmup).TotalSeconds;
+            int totalLoadStepDurationInSeconds = (int)((this.BenchmarkDuration + this.BenchmarkWarmup).TotalSeconds);
             ParallelOptions parallelOptions = new();
+            ProgressRecord progressRecord = new(0)
+            {
+                Activity = "Get-StandTrajectory"
+            };
 
             List<GrowthModelBenchmark> benchmarks = [];
             using LogicalProcessorFrequencies processorFrequencies = new();                
-            for (int threads = 1; threads <= this.Threads; threads *= 2)
+            for (int threadCountIndex = 1; threadCountIndex <= this.BenchmarkThreads.Count; ++threadCountIndex)
             {
-                this.WriteProgress(new ProgressRecord(0, "Get-StandTrajectory", "Starting benchmark with " + threads + " thread" + (threads > 1 ? "s" : String.Empty) + "...")
-                {
-                    PercentComplete = (int)(100.0F * benchmarks.Count / benchmarkCount),
-                    SecondsRemaining = benchmarkDurationInSeconds * (benchmarkCount - benchmarks.Count)
-                });
+                progressRecord.PercentComplete = (int)(100.0F * benchmarks.Count / this.BenchmarkThreads.Count);
+                progressRecord.SecondsRemaining = totalLoadStepDurationInSeconds * (this.BenchmarkThreads.Count - benchmarks.Count);
+                progressRecord.StatusDescription = "Starting benchmark with " + threadCountIndex + " thread" + (threadCountIndex > 1 ? "s" : String.Empty) + "...";
+                this.WriteProgress(progressRecord);
 
+                int threads = this.BenchmarkThreads[threadCountIndex];
                 parallelOptions.MaxDegreeOfParallelism = threads;
-                GrowthModelBenchmark benchmark = new(threads)
+                GrowthModelBenchmark benchmarkAtThreadCount = new(threads)
                 {
                     PollingInterval = this.BenchmarkPolling,
                     Simd = this.Simd,
                     Start = DateTime.UtcNow
                 };
 
-                Task runs = Task.Run(() =>
+                Task benchmarkRunAtThreadCount = Task.Run(() =>
                 {
-                    DateTime warmupEnd = benchmark.Start + this.BenchmarkWarmup;
+                    DateTime warmupEnd = benchmarkAtThreadCount.Start + this.BenchmarkWarmup;
                     DateTime benchmarkEnd = warmupEnd + this.BenchmarkDuration;
 
-                    Parallel.For(0, threads, parallelOptions, (int threadNumber) =>
+                    Parallel.For(0, parallelOptions.MaxDegreeOfParallelism, parallelOptions, (int workerThreadIndex) =>
                     {
                         while ((this.Stopping == false) && (DateTime.UtcNow < warmupEnd))
                         {
                             StandTrajectory trajectory = unsimulatedTrajectory.Clone();
-                            benchmark.WarmupTimesteps[threadNumber] += trajectory.Simulate();
+                            benchmarkAtThreadCount.WarmupTimesteps[workerThreadIndex] += trajectory.Simulate();
                         }
-                        benchmark.WarmupEnd[threadNumber] = DateTime.UtcNow;
+                        benchmarkAtThreadCount.WarmupEnd[workerThreadIndex] = DateTime.UtcNow;
 
                         while ((this.Stopping == false) && (DateTime.UtcNow < benchmarkEnd))
                         {
                             StandTrajectory trajectory = unsimulatedTrajectory.Clone();
-                            benchmark.Timesteps[threadNumber] += trajectory.Simulate();
+                            benchmarkAtThreadCount.Timesteps[workerThreadIndex] += trajectory.Simulate();
                         }
-                        benchmark.End[threadNumber] = DateTime.UtcNow;
+                        benchmarkAtThreadCount.End[workerThreadIndex] = DateTime.UtcNow;
                     });
                 });
 
-                while (runs.IsCompleted == false)
+                while (benchmarkRunAtThreadCount.IsCompleted == false)
                 {
                     Thread.Sleep(this.BenchmarkPolling);
-                    benchmark.ProcessorFrequenciesInPercent.Add(processorFrequencies.NextValue());
+                    benchmarkAtThreadCount.ProcessorFrequenciesInPercent.Add(processorFrequencies.NextValue());
                 }
-                runs.GetAwaiter().GetResult(); // propagate any exceptions since last IsFaulted check
+                benchmarkRunAtThreadCount.GetAwaiter().GetResult(); // propagate any exceptions since last IsFaulted check
 
-                benchmarks.Add(benchmark);
+                benchmarks.Add(benchmarkAtThreadCount);
             }
 
-            this.WriteProgress(new ProgressRecord(0, "Get-StandTrajectory", this.Simd + " benchmarking complete.")
-            {
-                PercentComplete = 100,
-                SecondsRemaining = 0
-            });
+            progressRecord.PercentComplete = 100;
+            progressRecord.SecondsRemaining = 0;
+            progressRecord.StatusDescription = this.Simd + " benchmarking complete.";
+            this.WriteProgress(progressRecord);
             return benchmarks;
         }
 

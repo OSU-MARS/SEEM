@@ -3,7 +3,6 @@ using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Configuration;
 
 namespace Mars.Seem
 {
@@ -31,7 +30,7 @@ namespace Mars.Seem
         public const Int16 NoDataInt16 = Int16.MinValue;
         public const int NoHarvestPeriod = -1;
         // number of height strata must currently be an exact multiple of SIMD width: multiples of 4 for 128 bit, 8 for 256 bit, 16 for 512 bit
-        public const int OrganonHeightStrata = 40; // supports 128 and 256 bit
+        public const int OrganonHeightStrata = 40; // supports 128 and 256 bit, use 48 for 512 bit SIMD
         public const float PolymorphicLocusThreshold = 0.95F;
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
         public const float ReinekeExponent = 1.605F;
