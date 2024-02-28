@@ -29,13 +29,13 @@ namespace Mars.Seem.Organon
         //public float TrueFirMaximumSdi { get; set; }
         // Maximum stand density index for western hemblock, ignored if less than or equal to zero.
         //public float HemlockMaximumSdi { get; set; }
-        // RVARS[5] genetic diameter growth modifier (requires Genetics = true)
-        public float GWDG { get; set; }
-        // RVARS[6] genetic height growth modifier (requires Genetics = true)
-        public float GWHG { get; set; }
-        // RVARS[7] Swiss needle cast coefficient for diameter and height growth modifiers, accepted range is [0.85 - 4.0]
-        public float FR { get; set; }
-        // RVARS[8] density correction coefficient for red alder height growth (WHHLB_SI_UC) and additional mortality (Mortality = true)
+        // RVARS[5] genetic diameter growth modifier (GWDG, requires Genetics = true)
+        public float DouglasFirGeneticDiameterGrowthModifier { get; set; }
+        // RVARS[6] genetic height growth modifier (GWHG, requires Genetics = true)
+        public float DouglasFirGeneticHeightGrowthModifier { get; set; }
+        // RVARS[7] Swiss Needle Cast (Nothophaeocryptopus gaeumannii) coefficient for diameter and height growth modifiers, accepted range is [0.85 - 4.0]
+        public float DouglasFirFoliageRetentionInYears { get; set; }
+        // RVARS[8] density correction coefficient for red alder height growth (WHHLB_SI_UC)
         public float PDEN { get; set; }
 
         public OrganonConfiguration(OrganonConfiguration other)
@@ -70,9 +70,9 @@ namespace Mars.Seem.Organon
             //this.DefaultMaximumSdi = other.DefaultMaximumSdi;
             //this.HemlockMaximumSdi = other.HemlockMaximumSdi;
             //this.TrueFirMaximumSdi = other.TrueFirMaximumSdi;
-            this.GWDG = other.GWDG;
-            this.GWHG = other.GWHG;
-            this.FR = other.FR;
+            this.DouglasFirGeneticDiameterGrowthModifier = other.DouglasFirGeneticDiameterGrowthModifier;
+            this.DouglasFirGeneticHeightGrowthModifier = other.DouglasFirGeneticHeightGrowthModifier;
+            this.DouglasFirFoliageRetentionInYears = other.DouglasFirFoliageRetentionInYears;
             this.PDEN = other.PDEN;
         }
 

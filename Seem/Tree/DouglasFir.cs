@@ -153,6 +153,79 @@ namespace Mars.Seem.Tree
             return doubleBarkThicknessInCm;
         }
 
+        /// <summary>
+        /// Get genetic diameter and height growth modifiers.
+        /// </summary>
+        /// <param name="standAgeInYears">Tree age in years.</param>
+        /// <param name="diameterGeneticGain">Genetic diameter gain factor (GWDG, accepted range 0-20).</param>
+        /// <param name="heightGeneticGain">Genetic height gain factor (GWHG, accepted range 0-20).</param>
+        /// <param name="diameterModifier">Diameter growth modifier.</param>
+        /// <param name="heightModifier">Height growth modifier.</param>
+        public static void GetGeneticModifiers(float standAgeInYears, float diameterGeneticGain, float heightGeneticGain, out float diameterModifier, out float heightModifier)
+        {
+            float XGWHG = diameterGeneticGain;
+            if (heightGeneticGain > 20.0F)
+            {
+                XGWHG = 20.0F;
+            }
+            if (heightGeneticGain < 0.0F)
+            {
+                XGWHG = 0.0F;
+            }
+            float XGWDG = diameterGeneticGain;
+            if (diameterGeneticGain > 20.0F)
+            {
+                XGWDG = 20.0F;
+            }
+            if (diameterGeneticGain < 0.0F)
+            {
+                XGWDG = 0.0F;
+            }
+
+            // SET THE PARAMETERS FOR THE DIAMETER GROWTH MODIFIER
+            float A1 = 0.0101054F; // VALUE FOR TAGE = 5
+            float A2 = 0.0031F;    // VALUE FOR TAGE => 10
+            float A;
+            if (standAgeInYears <= 5.0F)
+            {
+                A = A1;
+            }
+            else if ((standAgeInYears > 5.0F) && (standAgeInYears < 10.0F))
+            {
+                A = A1 - (A1 - A2) * (standAgeInYears - 5.0F) / 5.0F;
+            }
+            else
+            {
+                A = A2;
+            }
+
+            // SET THE PARAMETERS FOR THE HEIGHT GROWTH MODIFIER
+            float B1 = 0.0062770F;                      // VALUE FOR TAGE = 5
+            float B2 = 0.0036F;                         // VALUE FOR TAGE => 10
+            float B;
+            if (standAgeInYears <= 5.0F)
+            {
+                B = B1;
+            }
+            else
+            {
+                if ((standAgeInYears > 5.0F) && (standAgeInYears < 10.0F))
+                {
+                    B = B1 - (B1 - B2) * (standAgeInYears - 5.0F) / 5.0F;
+                }
+                else
+                {
+                    B = B2;
+                }
+            }
+
+            // GENETIC GAIN DIAMETER GROWTH RATE MODIFIER
+            diameterModifier = 1.0F + A * XGWDG;
+
+            // GENETIC GAIN HEIGHT GROWTH RATE MODIFIER
+            heightModifier = 1.0F + B * XGWHG;
+        }
+
         internal static float GetNeiloidHeight(float dbhInCm, float heightInM)
         {
             // approximation from plotting families of Poudel et al. 2018 dib curves in R and fitting the neiloid inflection point
@@ -324,6 +397,37 @@ namespace Mars.Seem.Tree
                 float XAI5 = 1.0F - MathV.Exp(-1.0F * MathV.Exp(BBC + B2 * MathV.Ln(GEAGE + 5.0F)));
                 PHTGRO = 4.5F + (HT - 4.5F) * (XAI5 / XAI) - HT;
             }
+        }
+
+        /// <summary>
+        /// Get Swiss needle cast diameter and height growth modifiers.
+        /// </summary>
+        /// <param name="foliageRetentionInYears">Foliage retention? (DOUG?)</param>
+        /// <param name="diameterGrowthModifier">Diameter growth modifier.</param>
+        /// <param name="heightGrowthModifier">Height growth modifier.</param>
+        public static void GetSwissNeedleCastModifiers(float foliageRetentionInYears, out float diameterGrowthModifier, out float heightGrowthModifier)
+        {
+            float clampedFoliageRetention = foliageRetentionInYears;
+            if (foliageRetentionInYears > 4.0F) // probably needs to be updated to clamp at three years instead of four
+            {
+                clampedFoliageRetention = 4.0F;
+            }
+            if (foliageRetentionInYears < 0.85F)
+            {
+                clampedFoliageRetention = 0.85F;
+            }
+
+            // SET THE PARAMETERS FOR THE DIAMETER GROWTH MODIFIER
+            float A1 = -0.5951664F;
+            float A2 = 1.7121299F;
+            // SET THE PARAMETERS FOR THE HEIGHT GROWTH MODIFIER
+            float B1 = -1.0021090F;
+            float B2 = 1.2801740F;
+
+            // SWISS NEEDLE CAST DIAMETER GROWTH RATE MODIFIER
+            diameterGrowthModifier = 1.0F - MathV.Exp(A1 * MathF.Pow(clampedFoliageRetention, A2));
+            // SWISS NEEDLE CAST HEIGHT GROWTH RATE MODIFIER
+            heightGrowthModifier = 1.0F - MathV.Exp(B1 * MathF.Pow(clampedFoliageRetention, B2));
         }
 
         // Collection of pre-calculable site constants used by Bruce 1981's height growth increments.

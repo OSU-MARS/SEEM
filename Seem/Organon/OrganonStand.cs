@@ -171,11 +171,11 @@ namespace Mars.Seem.Organon
             }
 
             this.RedAlderSiteIndexInFeet = RedAlder.ConiferToRedAlderSiteIndex(this.SiteIndexInFeet);
-            this.RedAlderGrowthEffectiveAge = RedAlder.GetGrowthEffectiveAge(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndexInFeet);
+            this.RedAlderGrowthEffectiveAge = RedAlder.GetGrowthEffectiveAgeWorthington(heightOfTallestRedAlderInFeet, this.RedAlderSiteIndexInFeet);
             if (this.RedAlderGrowthEffectiveAge <= 0.0F)
             {
                 this.RedAlderGrowthEffectiveAge = Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears;
-                this.RedAlderSiteIndexInFeet = RedAlder.GetSiteIndex(heightOfTallestRedAlderInFeet, this.RedAlderGrowthEffectiveAge);
+                this.RedAlderSiteIndexInFeet = RedAlder.GetSiteIndexWorthington(heightOfTallestRedAlderInFeet, this.RedAlderGrowthEffectiveAge);
             }
             else if (this.RedAlderGrowthEffectiveAge > Constant.RedAlderAdditionalMortalityGrowthEffectiveAgeInYears)
             {

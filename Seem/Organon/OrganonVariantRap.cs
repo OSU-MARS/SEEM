@@ -335,7 +335,7 @@ namespace Mars.Seem.Organon
             {
                 // GROWTH EFFECTIVE AGE AND POTENTIAL HEIGHT GROWTH FROM WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM (2009) RED ALDER TOP HEIGHT GROWTH
                 float siteIndexFromGround = stand.SiteIndexInFeet + 4.5F;
-                RedAlder.WHHLB_HG(siteIndexFromGround, configuration.PDEN, trees.Height[treeIndex], 1.0F, out growthEffectiveAge, out potentialHeightGrowth);
+                RedAlder.GetPotentialHeightGrowthWeiskittel(siteIndexFromGround, configuration.PDEN, trees.Height[treeIndex], 1.0F, out growthEffectiveAge, out potentialHeightGrowth);
             }
             else if (trees.Species == FiaCode.TsugaHeterophylla)
             {

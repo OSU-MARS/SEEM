@@ -21,11 +21,11 @@ namespace Mars.Seem.Tree
         /// <summary>
         /// Estimate red alder site index from conifer site index
         /// </summary>
-        /// <param name="SITE_1">Conifer site index from ground.</param>
+        /// <param name="coniferSiteIndex">Conifer site index from ground.</param>
         /// <returns>Red alder site index from ground?</returns>
-        public static float ConiferToRedAlderSiteIndex(float SITE_1)
+        public static float ConiferToRedAlderSiteIndex(float coniferSiteIndex)
         {
-            return 9.73F + 0.64516F * SITE_1;
+            return 9.73F + 0.64516F * coniferSiteIndex;
         }
 
         /// <summary>
@@ -51,23 +51,60 @@ namespace Mars.Seem.Tree
             return MathF.Max(neiloidHeightInM, Constant.Bucking.DefaultStumpHeightInM);
         }
 
-        public static float GetGrowthEffectiveAge(float H, float SI)
+        private static float GetGrowthEffectiveAgeWeiskittel(float height, float siteIndexUncorrected)
         {
-            // RED ALDER GROWTH EFFECTIVE AGE EQUATION BASED ON H40 EQUATION FROM
-            // WORTHINGTON, JOHNSON, STAEBLER AND LLOYD(1960) PNW RESEARCH PAPER 36
+            // red alder growth effective age equation based on H40 from Weiskittel et al. 2009's dominant height growth equation
+            // Weiskittel AR, Hann DW, Hibbs DE, Lam TY, Bluhm A. 2009. Modeling top height growth of red alder plantations. Forest Ecology and
+            //   Managment 258(3):323-331. https://doi.org/10.1016/j.foreco.2009.04.029
+            float B1 = -4.481266F;
+            float B2 = -0.658884F;
+            float X = (1.0F / B1) * MathV.Ln(height / siteIndexUncorrected) + MathV.Exp2(4.3219280949F * B2); // MathV.Exp2(4.3219280949F, B2) = MathF.Pow(20.0F, B2)
+            if (X < 0.03F)
+            {
+                X = 0.03F;
+            }
+            float growthEffectiveAge = MathV.Pow(X, 1.0F / B2);
+            return growthEffectiveAge;
+        }
+
+        public static float GetGrowthEffectiveAgeWorthington(float H, float SI)
+        {
+            // Red alder growth effective age based on H40 equation from
+            // Worthington NP, Johnson FA, Staebler GR, and Lloyd WJ. 1960. Normal Yield Tables for Red Alder. PNW Research Paper 36, Pacific Northwest Forest and Range Experiment Station.
             return 19.538F * H / (SI - 0.60924F * H);
         }
 
-        public static float GetSiteIndex(float H, float A)
+        public static float GetH40Weiskittel(float H40M, float TAGEM, float TAGEP)
         {
-            // RED ALDER SITE INDEX EQUATION FROM WORTHINGTON, JOHNSON, STAEBLER AND LLOYD(1960) PNW RESEARCH PAPER 36
-            return (0.60924F + 19.538F / A) * H;
+            // Weiskittel et al. 2009 dominant height growth equation for red alder
+            float B1 = -4.481266F;
+            float B2 = -0.658884F;
+            float PH40P = H40M * MathV.Exp(B1 * (MathV.Pow(TAGEP, B2) - MathV.Pow(TAGEM, B2)));
+            return PH40P;
         }
 
-        public static float GetH50(float A, float SI)
+        public static float GetH50Worthington(float growthEffectiveAge, float siteIndex)
         {
-            // RED ALDER H40 EQUATION FROM FROM WORTHINGTON, JOHNSON, STAEBLER AND LLOYD(1960) PNW RESEARCH PAPER 36
-            return SI / (0.60924F + 19.538F / A);
+            // Worthington et al. 1960, inverse of GetSiteIndex()
+            return siteIndex / (0.60924F + 19.538F / growthEffectiveAge);
+        }
+
+        public static void GetPotentialHeightGrowthWeiskittel(float siteIndexCorrected, float PDEN, float currentHeight, float GP, out float growthEffectiveAge, out float potentialHeightGrowth)
+        {
+            // removes density impact on Weiskittel et al. 2009's site index
+            float siteIndexUncorrected = siteIndexCorrected * (1.0F - 0.326480904F * MathV.Exp(-0.000400268678F * MathF.Pow(PDEN, 1.5F)));
+
+            // Weiskittel et al. 2009 dominant height growth equation for red alder
+            growthEffectiveAge = RedAlder.GetGrowthEffectiveAgeWeiskittel(currentHeight, siteIndexUncorrected);
+            float A = growthEffectiveAge + GP;
+            float potentialHeight = GetH40Weiskittel(currentHeight, growthEffectiveAge, A);
+            potentialHeightGrowth = potentialHeight - currentHeight;
+        }
+
+        public static float GetSiteIndexWorthington(float tallestHeight, float growthEffectiveAge)
+        {
+            // Worthington et al. 1960
+            return (0.60924F + 19.538F / growthEffectiveAge) * tallestHeight;
         }
 
         public static void ReduceExpansionFactor(Trees redAlders, float growthEffectiveAge, float treesPerAcre, float[] PMK)
@@ -140,45 +177,6 @@ namespace Mars.Seem.Tree
                     redAlders.LiveExpansionFactor[alderIndex] = revisedLiveExpansionFactor;
                 }
             }
-        }
-
-        private static void WHHLB_GEA(float H, float SI_UC, out float GEA)
-        {
-            // RED ALDER GROWTH EFFECTIVE AGE EQUATION BASED ON H40 EQUATION FROM
-            // THE WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH EQUATION
-            float B1 = -4.481266F;
-            float B2 = -0.658884F;
-            float X = (1.0F / B1) * MathV.Ln(H / SI_UC) + MathV.Exp2(4.3219280949F * B2); // MathV.Exp2(4.3219280949F, B2) = MathF.Pow(20.0F, B2)
-            if (X < 0.03F)
-            {
-                X = 0.03F;
-            }
-            GEA = MathV.Pow(X, 1.0F / B2);
-        }
-
-        public static void WHHLB_H40(float H40M, float TAGEM, float TAGEP, out float PH40P)
-        {
-            // WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH EQUATION FOR RED ALDER
-            float B1 = -4.481266F;
-            float B2 = -0.658884F;
-            PH40P = H40M * MathV.Exp(B1 * (MathV.Pow(TAGEP, B2) - MathV.Pow(TAGEM, B2)));
-        }
-
-        public static void WHHLB_HG(float SI_C, float PDEN, float HT, float GP, out float GEA, out float POTHGRO)
-        {
-            // WEISKITTEL, HANN, HIBBS, LAM, AND BLUHM DOMINANT HEIGHT GROWTH INCREMENT EQUATION FOR RED ALDER
-            WHHLB_SI_UC(SI_C, PDEN, out float SI_UC);
-            WHHLB_GEA(HT, SI_UC, out GEA);
-            float A = GEA + GP;
-            WHHLB_H40(HT, GEA, A, out float PHT);
-            POTHGRO = PHT - HT;
-        }
-
-        private static void WHHLB_SI_UC(float SI_C, float PDEN, out float SI_UC)
-        {
-            // UNCORRECTS THE DENSITY INPACT UPON THE WEISKITTEL, HANN, HIBBS, LAM, AND BLUHN SITE INDEX FOR RED ALDER
-            // SITE INDEX UNCORRECTED FOR DENSITY EFFECT
-            SI_UC = SI_C * (1.0F - 0.326480904F * MathV.Exp(-0.000400268678F * MathF.Pow(PDEN, 1.5F)));
         }
     }
 }

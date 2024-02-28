@@ -135,7 +135,7 @@ namespace Mars.Seem.Test
                 {
                     for (float heightGeneticFactor = 0.0F; heightGeneticFactor <= 25.0F; heightGeneticFactor += 5.0F)
                     {
-                        OrganonGrowthModifiers.GetGeneticModifiers(standAgeInYears, diameterGeneticFactor, heightGeneticFactor, out float diameterGrowthModifier, out float heightGrowthModifier);
+                        DouglasFir.GetGeneticModifiers(standAgeInYears, diameterGeneticFactor, heightGeneticFactor, out float diameterGrowthModifier, out float heightGrowthModifier);
                         this.TestContext.WriteLine("{0},{1},{2},{3},{4}", standAgeInYears, diameterGeneticFactor, heightGeneticFactor, diameterGrowthModifier, heightGrowthModifier);
                         Assert.IsTrue(diameterGrowthModifier >= 1.0F);
                         Assert.IsTrue(diameterGrowthModifier < 2.0F);
@@ -148,7 +148,7 @@ namespace Mars.Seem.Test
             this.TestContext.WriteLine("FR, diameter growth modifier, height growth modifier");
             for (float FR = 0.5F; FR <= 5.0F; FR += 0.5F)
             {
-                OrganonGrowthModifiers.GetSwissNeedleCastModifiers(FR, out float diameterGrowthModifier, out float heightGrowthModifier);
+                DouglasFir.GetSwissNeedleCastModifiers(FR, out float diameterGrowthModifier, out float heightGrowthModifier);
                 this.TestContext.WriteLine("{0},{1},{2}", FR, diameterGrowthModifier, heightGrowthModifier);
                 Assert.IsTrue(diameterGrowthModifier >= 0.0F);
                 Assert.IsTrue(diameterGrowthModifier <= 1.0F);

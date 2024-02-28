@@ -237,17 +237,17 @@ namespace Mars.Seem.Organon
                                 out int oldTreeRecordCount)
         {
             // initalize step
-            float DGMODgenetic = 1.0F;
-            float HGMODgenetic = 1.0F;
-            float DGMODSwissNeedleCast = 1.0F;
-            float HGMODSwissNeedleCast = 1.0F;
-            if ((stand.AgeInYears > 0) && configuration.Genetics)
+            float psmeDiameterModifierGenetic = 1.0F;
+            float psmeHeightModifierGenetic = 1.0F;
+            if (configuration.Genetics && (stand.AgeInYears > 0))
             {
-                OrganonGrowthModifiers.GetGeneticModifiers(stand.AgeInYears, configuration.GWDG, configuration.GWHG, out DGMODgenetic, out HGMODgenetic);
+                DouglasFir.GetGeneticModifiers(stand.AgeInYears, configuration.DouglasFirGeneticDiameterGrowthModifier, configuration.DouglasFirGeneticHeightGrowthModifier, out psmeDiameterModifierGenetic, out psmeHeightModifierGenetic);
             }
-            if (configuration.SwissNeedleCast && (configuration.Variant.TreeModel == TreeModel.OrganonNwo || configuration.Variant.TreeModel == TreeModel.OrganonSmc))
+            float psmeDiameterModifierNeedleCast = 1.0F;
+            float psmeHeightModifierNeedleCast = 1.0F;
+            if (configuration.SwissNeedleCast) // restricted to only NWO and SMC in Fortran
             {
-                OrganonGrowthModifiers.GetSwissNeedleCastModifiers(configuration.FR, out DGMODSwissNeedleCast, out HGMODSwissNeedleCast);
+                DouglasFir.GetSwissNeedleCastModifiers(configuration.DouglasFirFoliageRetentionInYears, out psmeDiameterModifierNeedleCast, out psmeHeightModifierNeedleCast);
             }
 
             // diameter growth
@@ -279,7 +279,7 @@ namespace Mars.Seem.Organon
                 float geneticDiseaseAndCalibrationMultiplier = calibrationBySpecies[treesOfSpecies.Species].Diameter;
                 if (treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii)
                 {
-                    geneticDiseaseAndCalibrationMultiplier *= DGMODgenetic * DGMODSwissNeedleCast;
+                    geneticDiseaseAndCalibrationMultiplier *= psmeDiameterModifierGenetic * psmeDiameterModifierNeedleCast;
                 }
                 OrganonGrowth.GrowDiameter(configuration, treatments, stand, treesOfSpecies, densityInPreviousPeriod, geneticDiseaseAndCalibrationMultiplier);
             }
@@ -297,7 +297,7 @@ namespace Mars.Seem.Organon
                 float geneticAndDiseaseMultiplier = 1.0F;
                 if (treesOfSpecies.Species == FiaCode.PseudotsugaMenziesii)
                 {
-                    geneticAndDiseaseMultiplier = HGMODgenetic * HGMODSwissNeedleCast;
+                    geneticAndDiseaseMultiplier = psmeHeightModifierGenetic * psmeHeightModifierNeedleCast;
                 }
                 OrganonGrowth.GrowHeightBigSixSpecies(configuration, treatments, stand, treesOfSpecies, geneticAndDiseaseMultiplier, crownCompetitionByHeight, out int oldTreeRecordCountForSpecies);
                 oldTreeRecordCount += oldTreeRecordCountForSpecies;
@@ -330,6 +330,7 @@ namespace Mars.Seem.Organon
                     continue;
                 }
 
+                Debug.Assert((species != FiaCode.PseudotsugaMenziesii) || ((configuration.Genetics == false) && (configuration.SwissNeedleCast == false)), "Douglas-fir is not a big six species for " + configuration.Variant.TreeModel + " but genetic gain or Swiss Needle Cast is enabled.");
                 OrganonGrowth.GrowHeightMinorSpecies(configuration, stand, treesOfSpecies, calibrationBySpecies[species].Height);
             }
 
@@ -419,15 +420,15 @@ namespace Mars.Seem.Organon
                         continue;
                     }
 
-                    float growthEffectiveAge = RedAlder.GetGrowthEffectiveAge(trees.Height[treeIndex], stand.RedAlderSiteIndexInFeet);
+                    float growthEffectiveAge = RedAlder.GetGrowthEffectiveAgeWorthington(trees.Height[treeIndex], stand.RedAlderSiteIndexInFeet);
                     if (growthEffectiveAge <= 0.0F)
                     {
                         trees.HeightGrowth[treeIndex] = 0.0F;
                     }
                     else
                     {
-                        float redAlderStartH50 = RedAlder.GetH50(growthEffectiveAge, stand.RedAlderSiteIndexInFeet);
-                        float redAlderEndH50 = RedAlder.GetH50(growthEffectiveAge + configuration.Variant.TimeStepInYears, stand.RedAlderSiteIndexInFeet);
+                        float redAlderStartH50 = RedAlder.GetH50Worthington(growthEffectiveAge, stand.RedAlderSiteIndexInFeet);
+                        float redAlderEndH50 = RedAlder.GetH50Worthington(growthEffectiveAge + configuration.Variant.TimeStepInYears, stand.RedAlderSiteIndexInFeet);
                         trees.HeightGrowth[treeIndex] = redAlderEndH50 - redAlderStartH50;
                         Debug.Assert((trees.HeightGrowth[treeIndex] >= 0.0F) && (trees.HeightGrowth[treeIndex] < Constant.Maximum.HeightIncrementInFeet));
                         trees.Height[treeIndex] += trees.HeightGrowth[treeIndex];
@@ -708,14 +709,14 @@ namespace Mars.Seem.Organon
 
             if (configuration.Genetics)
             {
-                if ((configuration.GWDG < 0.0F) || (configuration.GWDG > 20.0F))
+                if ((configuration.DouglasFirGeneticDiameterGrowthModifier < 0.0F) || (configuration.DouglasFirGeneticDiameterGrowthModifier > 20.0F))
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration), "GWDG is negative or greater than 20.");
                 }
             }
             else
             {
-                if (configuration.GWDG != 0.0F)
+                if (configuration.DouglasFirGeneticDiameterGrowthModifier != 0.0F)
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration), "Genetic modifiers are disabled but GWDG is nonzero.");
                 }
@@ -727,18 +728,18 @@ namespace Mars.Seem.Organon
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration), "Swiss needle cast is not supported by the SWO and RAP variants.");
                 }
-                if ((configuration.FR < 0.85F) || (configuration.FR > 7.0F))
+                if ((configuration.DouglasFirFoliageRetentionInYears < 0.85F) || (configuration.DouglasFirFoliageRetentionInYears > 7.0F))
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration));
                 }
-                if ((treatments.PoundsOfNitrogenPerAcreByPeriod.Count > 0) && (configuration.FR < 3.0F))
+                if ((treatments.PoundsOfNitrogenPerAcreByPeriod.Count > 0) && (configuration.DouglasFirFoliageRetentionInYears < 3.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration), nameof(configuration.FR) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(treatments.PoundsOfNitrogenPerAcreByPeriod) + " isn't empty.");
+                    throw new ArgumentOutOfRangeException(nameof(configuration), nameof(configuration.DouglasFirFoliageRetentionInYears) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(treatments.PoundsOfNitrogenPerAcreByPeriod) + " isn't empty.");
                 }
             }
             else
             {
-                if (configuration.FR > 0.0F)
+                if (configuration.DouglasFirFoliageRetentionInYears > 0.0F)
                 {
                     throw new ArgumentOutOfRangeException(nameof(configuration));
                 }
@@ -1036,7 +1037,7 @@ namespace Mars.Seem.Organon
                 case TreeModel.OrganonRap:
                     if (maxRedAlderHeight > 0.0F)
                     {
-                        RedAlder.WHHLB_H40(stand.SiteIndexInFeet, 20.0F, 150.0F, out float MAXHT);
+                        float MAXHT = RedAlder.GetH40Weiskittel(stand.SiteIndexInFeet, 20.0F, 150.0F);
                         if (maxRedAlderHeight > MAXHT)
                         {
                             stand.Warnings.BigSixHeightAbovePotential = true;
