@@ -105,15 +105,15 @@ namespace Mars.Seem.Cmdlets
             };
 
             List<GrowthModelBenchmark> benchmarks = [];
-            using LogicalProcessorFrequencies processorFrequencies = new();                
-            for (int threadCountIndex = 1; threadCountIndex <= this.BenchmarkThreads.Count; ++threadCountIndex)
+            using LogicalProcessorFrequencies processorFrequencies = new();
+            for (int threadCountIndex = 0; threadCountIndex < this.BenchmarkThreads.Count; ++threadCountIndex)
             {
+                int threads = this.BenchmarkThreads[threadCountIndex];
                 progressRecord.PercentComplete = (int)(100.0F * benchmarks.Count / this.BenchmarkThreads.Count);
                 progressRecord.SecondsRemaining = totalLoadStepDurationInSeconds * (this.BenchmarkThreads.Count - benchmarks.Count);
-                progressRecord.StatusDescription = "Starting benchmark with " + threadCountIndex + " thread" + (threadCountIndex > 1 ? "s" : String.Empty) + "...";
+                progressRecord.StatusDescription = "Starting benchmark with " + threads + " thread" + (threads > 1 ? "s" : String.Empty) + "...";
                 this.WriteProgress(progressRecord);
 
-                int threads = this.BenchmarkThreads[threadCountIndex];
                 parallelOptions.MaxDegreeOfParallelism = threads;
                 GrowthModelBenchmark benchmarkAtThreadCount = new(threads)
                 {
@@ -232,7 +232,7 @@ namespace Mars.Seem.Cmdlets
                 perfCounters.Duration += stopwatch.Elapsed;
 
                 // assign stand trajectory to coordinates
-                SilviculturalSpace trajectories = new(new List<int>() { this.FirstThinPeriod }, this.RotationLengths, this.Financial);
+                SilviculturalSpace trajectories = new([ this.FirstThinPeriod ], this.RotationLengths, this.Financial);
                 for (int rotationIndex = 0; rotationIndex < this.RotationLengths.Count; ++rotationIndex)
                 {
                     int endOfRotationPeriod = this.RotationLengths[rotationIndex];

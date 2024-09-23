@@ -1,4 +1,4 @@
-﻿namespace Mars.Seem
+﻿namespace Mars.Seem.Organon
 {
     public class OrganonWarnings
     {

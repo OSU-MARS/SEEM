@@ -1410,7 +1410,7 @@ namespace Mars.Seem.Organon
             oldTreeRecordCount128 = Avx.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
             // oldTreeRecordCount128[0] = a[1] + a[0] = oldTreeRecordCount256[7] + [6] + [5] + [4] + [3] + [2] + [1] + [0]
             oldTreeRecordCount128 = Avx.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
-            return oldTreeRecordCount256.ToScalar();
+            return oldTreeRecordCount128.ToScalar();
         }
 
         private unsafe int GrowHeightBigSixAvx10(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float[] crownCompetitionByHeight)
@@ -1494,7 +1494,7 @@ namespace Mars.Seem.Organon
                                                                Avx512F.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractUpper128));
             oldTreeRecordCount128 = Avx512F.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
             oldTreeRecordCount128 = Avx512F.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
-            return oldTreeRecordCount256.ToScalar();
+            return oldTreeRecordCount128.ToScalar();
         }
 
         private unsafe int GrowHeightBigSixAvx512(OrganonConfiguration configuration, OrganonStand stand, Trees trees, float[] crownCompetitionByHeight)

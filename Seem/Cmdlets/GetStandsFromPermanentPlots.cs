@@ -202,7 +202,7 @@ namespace Mars.Seem.Cmdlets
             int planningPeriods = ages.Count - 1;
             float landExpectationValue = this.Financial.GetLandExpectationValue(trajectory, Constant.HeuristicDefault.CoordinateIndex, planningPeriods);
 
-            SilviculturalSpace trajectories = new(new List<int>() { Constant.NoHarvestPeriod }, new List<int>() { planningPeriods }, this.Financial);
+            SilviculturalSpace trajectories = new([ Constant.NoHarvestPeriod ], [ planningPeriods ], this.Financial);
             SilviculturalCoordinate currentCoordinate = new();
             trajectories.AssimilateIntoCoordinate(trajectory, landExpectationValue, currentCoordinate, new PrescriptionPerformanceCounters());
             trajectories.AddEvaluatedPosition(currentCoordinate);

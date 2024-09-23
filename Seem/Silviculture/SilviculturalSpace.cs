@@ -25,7 +25,7 @@ namespace Mars.Seem.Silviculture
         public IList<int> ThirdThinPeriods { get; private init; }
 
         public SilviculturalSpace(IList<int> firstThinPeriods, IList<int> rotationLengths, FinancialScenarios financialScenarios)
-            : this(1, firstThinPeriods, new List<int>() { Constant.NoHarvestPeriod }, new List<int>() { Constant.NoHarvestPeriod }, rotationLengths, financialScenarios, Constant.Default.SolutionPoolSize)
+            : this(1, firstThinPeriods, [ Constant.NoHarvestPeriod ], [ Constant.NoHarvestPeriod ], rotationLengths, financialScenarios, Constant.Default.SolutionPoolSize)
         {
             // forwards
         }
@@ -34,7 +34,7 @@ namespace Mars.Seem.Silviculture
         {
             this.elements = new SilviculturalCoordinateExploration[parameterCombinationCount][][][][][];
 
-            this.CoordinatesEvaluated = new List<SilviculturalCoordinate>();
+            this.CoordinatesEvaluated = [];
             this.FinancialScenarios = financialScenarios;
             this.FirstThinPeriods = firstThinPeriods;
             this.ParameterCombinations = parameterCombinationCount;

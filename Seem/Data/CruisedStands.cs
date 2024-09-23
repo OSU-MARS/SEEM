@@ -26,7 +26,7 @@ namespace Mars.Seem.Data
             this.treeHeader = new();
 
             this.OrganonVariant = OrganonVariant.Create(growthModel);
-            this.Stands = new List<Stand>();
+            this.Stands = [];
         }
 
         public int Count

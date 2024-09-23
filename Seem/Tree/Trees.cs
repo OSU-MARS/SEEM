@@ -169,7 +169,8 @@ namespace Mars.Seem.Tree
 
             if (this.Capacity == this.Count)
             {
-                // for now, double in size like List<T>
+                // for now, double in size like List<T>.GetNewCapacity()
+                // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs
                 this.Capacity *= 2;
                 this.Codes = this.Codes.Extend(this.Capacity);
                 this.CrownRatio = this.CrownRatio.Extend(this.Capacity);
@@ -234,6 +235,8 @@ namespace Mars.Seem.Tree
         public static int GetSimdCompatibleCapacity(int minimumSize)
         {
             return Constant.Simd256x8.Width * (int)MathF.Ceiling((float)minimumSize / (float)Constant.Simd256x8.Width);
+            // for AVX-512 testing
+            // return Constant.Simd512x16.Width * (int)MathF.Ceiling((float)minimumSize / (float)Constant.Simd512x16.Width);
         }
 
         public void RemoveZeroExpansionFactorTrees()

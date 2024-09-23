@@ -43,8 +43,7 @@ namespace Mars.Seem
         public const float SquareFeetPerSquareMeter = 10.7639104167097F;
         public const float SquareMetersPerHectare = 10000.0F;
 
-        public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new(new List<FiaCode>()
-        {
+        public static readonly ReadOnlyCollection<FiaCode> NwoSmcSpecies = new([
             FiaCode.PseudotsugaMenziesii,
             FiaCode.AbiesGrandis,
             FiaCode.TsugaHeterophylla,
@@ -56,9 +55,8 @@ namespace Mars.Seem
             FiaCode.AlnusRubra,
             FiaCode.CornusNuttallii,
             FiaCode.Salix
-        });
-        public static readonly ReadOnlyCollection<FiaCode> RapSpecies = new(new List<FiaCode>()
-        {
+        ]);
+        public static readonly ReadOnlyCollection<FiaCode> RapSpecies = new([
             FiaCode.AlnusRubra,
             FiaCode.PseudotsugaMenziesii,
             FiaCode.TsugaHeterophylla,
@@ -66,9 +64,8 @@ namespace Mars.Seem
             FiaCode.AcerMacrophyllum,
             FiaCode.CornusNuttallii,
             FiaCode.Salix
-        });
-        public static readonly ReadOnlyCollection<FiaCode> SwoSpecies = new(new List<FiaCode>()
-        {
+        ]);
+        public static readonly ReadOnlyCollection<FiaCode> SwoSpecies = new([
             FiaCode.PseudotsugaMenziesii,
             FiaCode.AbiesConcolor,
             FiaCode.AbiesGrandis,
@@ -88,7 +85,7 @@ namespace Mars.Seem
             FiaCode.AlnusRubra,
             FiaCode.CornusNuttallii,
             FiaCode.Salix
-        });
+        ]);
 
         public static class Avx512
         {

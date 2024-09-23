@@ -78,33 +78,33 @@ namespace Mars.Seem.Optimization
             // a default. Different tax calculations apply in other jusristictions and somewhat different tax calculations apply for lands
             // enrolled in Oregon's small tract forestland program.
 
-            this.DiscountRate = new List<float>() { Constant.Financial.DefaultAnnualDiscountRate };
-            //this.DouglasFirSpecialMillPondValuePerMbf = new List<float>() { 720.00 }; // US$/MBF special mill and better
-            this.DouglasFir2SawPondValuePerMbf = new List<float>() { 649.00F }; // US$/MBF 2S
-            this.DouglasFir3SawPondValuePerMbf = new List<float>() { 635.00F }; // US$/MBF 3S
-            this.DouglasFir4SawPondValuePerMbf = new List<float>() { 552.00F }; // US$/MBF 4S/CNS
-            this.HarvestSystems = new List<HarvestSystems>() { Silviculture.HarvestSystems.Default };
-            this.HarvestTaxPerMbf = new List<float>() { Constant.HarvestCost.OregonForestProductsHarvestTax };
-            this.Name = new List<string>() { "default" };
-            this.PropertyTaxAndManagementPerHectareYear = new List<float>() { Constant.HarvestCost.ForestlandPropertyTaxRate * Constant.HarvestCost.AssessedValue + Constant.HarvestCost.AdmininistrationCost }; // US$/ha-year
-            this.RedAlder2SawPondValuePerMbf = new List<float>() { 721 }; // US$/MBF 2S
-            this.RedAlder3SawPondValuePerMbf = new List<float>() { 680 }; // US$/MBF 3S
-            this.RedAlder4SawPondValuePerMbf = new List<float>() { 420 }; // US$/MBF 4S
-            this.RegenerationHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha
-            this.RegenerationRoadCostPerCubicMeter = new List<float>() { Constant.HarvestCost.RoadMaintenance }; // US$/m³
-            this.RegenerationSlashCostPerCubicMeter = new List<float>() { Constant.HarvestCost.SlashDisposal + Constant.HarvestCost.YarderLandingSlashDisposal }; // US$/m³
-            this.ReleaseSprayCostPerHectare = new List<float>() { Constant.HarvestCost.ReleaseSpray }; // US$/ha, one release spray
-            this.SeedlingCost = new List<float>() { 0.50F }; // US$ per seedling, make species specific when needed
-            this.ShortLogPondValueMultiplier = new List<float>() { Constant.Default.ThinningPondValueMultiplier }; // short log price penalty
-            this.SitePrepAndReplantingCostPerHectare = new List<float>() { Constant.HarvestCost.SitePrep + Constant.HarvestCost.PlantingLabor }; // US$/ha: site prep + planting labor, cost of seedlings not included
-            this.ThinningHarvestCostPerHectare = new List<float>() { Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl }; // US$/ha
-            this.ThinningRoadCostPerCubicMeter = new List<float>() { Constant.HarvestCost.RoadMaintenance }; // US$/m³
-            this.ThinningSlashCostPerCubicMeter = new List<float>() { Constant.HarvestCost.SlashDisposal }; // US$/m³
-            this.TimberAppreciationRate = new List<float>() { 0.0F }; // per year
-            this.WesternRedcedarCamprunPondValuePerMbf = new List<float>() { 1238.00F }; // US$/MBF
-            this.WhiteWood2SawPondValuePerMbf = new List<float>() { 531.00F }; // US$/MBF 2S
-            this.WhiteWood3SawPondValuePerMbf = new List<float>() { 525.00F }; // US$/MBF 3S
-            this.WhiteWood4SawPondValuePerMbf = new List<float>() { 454.00F }; // US$/MBF 4S/CNS
+            this.DiscountRate = [ Constant.Financial.DefaultAnnualDiscountRate ];
+            //this.DouglasFirSpecialMillPondValuePerMbf = [ 720.00 ]; // US$/MBF special mill and better
+            this.DouglasFir2SawPondValuePerMbf = [ 649.00F ]; // US$/MBF 2S
+            this.DouglasFir3SawPondValuePerMbf = [ 635.00F ]; // US$/MBF 3S
+            this.DouglasFir4SawPondValuePerMbf = [ 552.00F ]; // US$/MBF 4S/CNS
+            this.HarvestSystems = [ Silviculture.HarvestSystems.Default ];
+            this.HarvestTaxPerMbf = [ Constant.HarvestCost.OregonForestProductsHarvestTax ];
+            this.Name = [ "default" ];
+            this.PropertyTaxAndManagementPerHectareYear = [ Constant.HarvestCost.ForestlandPropertyTaxRate * Constant.HarvestCost.AssessedValue + Constant.HarvestCost.AdmininistrationCost ]; // US$/ha-year
+            this.RedAlder2SawPondValuePerMbf = [ 721 ]; // US$/MBF 2S
+            this.RedAlder3SawPondValuePerMbf = [ 680 ]; // US$/MBF 3S
+            this.RedAlder4SawPondValuePerMbf = [ 420 ]; // US$/MBF 4S
+            this.RegenerationHarvestCostPerHectare = [ Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl ]; // US$/ha
+            this.RegenerationRoadCostPerCubicMeter = [ Constant.HarvestCost.RoadMaintenance ]; // US$/m³
+            this.RegenerationSlashCostPerCubicMeter = [ Constant.HarvestCost.SlashDisposal + Constant.HarvestCost.YarderLandingSlashDisposal ]; // US$/m³
+            this.ReleaseSprayCostPerHectare = [ Constant.HarvestCost.ReleaseSpray ]; // US$/ha, one release spray
+            this.SeedlingCost = [ 0.50F ]; // US$ per seedling, make species specific when needed
+            this.ShortLogPondValueMultiplier = [ Constant.Default.ThinningPondValueMultiplier ]; // short log price penalty
+            this.SitePrepAndReplantingCostPerHectare = [ Constant.HarvestCost.SitePrep + Constant.HarvestCost.PlantingLabor ]; // US$/ha: site prep + planting labor, cost of seedlings not included
+            this.ThinningHarvestCostPerHectare = [ Constant.HarvestCost.TimberCruisePerHectare + Constant.HarvestCost.TimberSaleAdministrationPerHectare + Constant.HarvestCost.RoadReopening + Constant.HarvestCost.BrushControl ]; // US$/ha
+            this.ThinningRoadCostPerCubicMeter = [ Constant.HarvestCost.RoadMaintenance ]; // US$/m³
+            this.ThinningSlashCostPerCubicMeter = [ Constant.HarvestCost.SlashDisposal ]; // US$/m³
+            this.TimberAppreciationRate = [ 0.0F ]; // per year
+            this.WesternRedcedarCamprunPondValuePerMbf = [ 1238.00F ]; // US$/MBF
+            this.WhiteWood2SawPondValuePerMbf = [ 531.00F ]; // US$/MBF 2S
+            this.WhiteWood3SawPondValuePerMbf = [ 525.00F ]; // US$/MBF 3S
+            this.WhiteWood4SawPondValuePerMbf = [ 454.00F ]; // US$/MBF 4S/CNS
         }
 
         public int Count

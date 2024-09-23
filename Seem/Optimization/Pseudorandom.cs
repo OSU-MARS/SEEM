@@ -90,10 +90,13 @@ namespace Mars.Seem.Optimization
             return this.GetTwoPseudorandomBytesAsFloat() / UInt16.MaxValue;
         }
 
-        // randomize order of elements in array
+        /// <summary>
+        /// Randomize order of elements in array.
+        /// </summary>
         public void Shuffle(int[] array)
         {
             // Fisher-Yates shuffle
+            // https://stackoverflow.com/questions/108819/best-way-to-randomize-an-array-with-net
             for (int destinationIndex = array.Length; destinationIndex > 1; /* decrement in body */)
             {
                 int sourceIndex = this.pseudorandom.Next(destinationIndex--);

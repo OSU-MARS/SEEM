@@ -23,6 +23,13 @@ namespace Mars.Seem.Extensions
             return array;
         }
 
+        public static T[] Extend<T>(this T[] array, int newLength)
+        {
+            T[] longerArray = new T[newLength];
+            array.CopyTo(longerArray, 0);
+            return longerArray;
+        }
+
         // as of .NET 8: no two dimensional overload of Array.Fill()
         public static unsafe void Fill(this float[,,] array, float value)
         {
@@ -58,13 +65,6 @@ namespace Mars.Seem.Extensions
                 Span<int> span = new(pinnedArray, array.Length);
                 span.Fill(value);
             }
-        }
-
-        public static T[] Extend<T>(this T[] array, int newLength)
-        {
-            T[] longerArray = new T[newLength];
-            array.CopyTo(longerArray, 0);
-            return longerArray;
         }
     }
 }

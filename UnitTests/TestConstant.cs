@@ -17,7 +17,7 @@ namespace Mars.Seem.Test
         public const int SolutionPoolSize = 2; // set lower than Constant.DefaultSolutionPoolSize to increase coverage of replacement of solutions in pools
         public const float SquareMetersPerSquareFoot = 0.092903F;
 
-        public static ReadOnlyCollection<FiaCode> TreeSpeciesList = new(new FiaCode[] {
+        public static ReadOnlyCollection<FiaCode> TreeSpeciesList = new([
                 FiaCode.AbiesGrandis,
                 FiaCode.CalocedrusDecurrens,
                 FiaCode.PinusPonderosa,
@@ -38,7 +38,7 @@ namespace Mars.Seem.Test
                 FiaCode.PinusLambertiana,
                 FiaCode.QuercusChrysolepis,
                 FiaCode.QuercusKelloggii
-            });
+            ]);
 
         public static readonly OrganonVariant[] Variants =
         [

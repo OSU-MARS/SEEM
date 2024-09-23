@@ -36,37 +36,36 @@ namespace Mars.Seem.Extensions
             BreadthFirstEnumerator2D.BalancedXY = new()
             {
                 MaxRange = 4,
-                Offsets = new (int, int)[][]
-                { 
-                    // 1@0 + 8@1 + 12@2 + 16@3 + 24@4 + 32@5 = enumeration over 93 nearest positions, extend to longer ranges if needed
-                    [ new(0, 0) ],
-                    [ new(1, 0), new(-1, 0), new(0, 1), new(0, -1),     // cardinals @ Hamming distance = Euclidean distance = 1
-                      new(1, 1), new(-1, -1), new(1, -1), new(-1, 1) ], // corners @ Hamming = 2, Euclidean = 1.4
-                    [ new(2, 0), new(-2, 0), new(0, 2), new(0, -2),     // cardinals @ Hamming = Euclidean = 2
-                      new(2, 1), new(-2, -1), new(2, -1), new(-2, 1),   // x favoring @ Hamming = 3, Euclidean = 2.2
-                      new(1, 2), new(-1, -2), new(1, -2), new(-1, 2) ], // y favoring @ Hamming = 3, Euclidean = 2.2
-                    [ new(2, 2), new(-2, -2), new(2, -2), new(-2, 2),   // corners @ Hamming = 4, Euclidean = 2.8
-                      new(3, 0), new(-3, 0), new(0, 3), new(0, -3),     // cardinals @ Hamming = 3, Euclidean = 3
-                      new(3, 1), new(-3, -1), new(3, -1), new(-3, 1),   // x favoring @ Hamming = 4, Euclidean = 3.2
-                      new(1, 3), new(-1, -3), new(1, -3), new(-1, 3) ], // y favoring @ Hamming = 4, Euclidean = 3.2
-                    // 24@4
-                    [ new(3, 2), new(-3, -2), new(3, -2), new(-3, 2),   // x favoring @ Hamming = 5, Euclidean = 3.6
-                      new(2, 3), new(-2, -3), new(2, -3), new(-2, 3),   // y favoring @ Hamming = 5, Euclidean = 3.6
-                      new(4, 0), new(-4, 0), new(0, 4), new(0, -4),     // cardinals @ Hamming = 4, Euclidean = 4
-                      new(4, 1), new(-4, -1), new(4, -1), new(-4, 1),   // x favoring @ Hamming = 5, Euclidean = 4.1
-                      new(1, 4), new(-1, -4), new(1, -4), new(-1, 4),   // y favoring @ Hamming = 5, Euclidean = 4.1
-                      new(3, 3), new(-3, -3), new(3, -3), new(-3, 3) ], // diagonals @ Hamming = 6, Euclidean = 4.2
-                    // 32@5
-                    [ new(4, 2), new(-4, -2), new(4, -2), new(-4, 2),   // x favoring @ Hamming = 6, Euclidean = 4.5
-                      new(2, 4), new(-2, -4), new(2, -4), new(-2, 4),   // y favoring @ Hamming = 6, Euclidean = 4.5
-                      new(4, 3), new(-4, -3), new(4, -3), new(-4, 3),   // near diagonals @ Hamming = 7, Euclidean = 5
-                      new(3, 4), new(-3, -4), new(3, -4), new(-3, 4),   // near diagonals @ Hamming = 7, Euclidean = 5
-                      new(5, 0), new(-5, 0), new(0, 5), new(0, -5),     // cardinals @ Hamming = 5, Euclidean = 5
-                      new(5, 1), new(-5, -1), new(5, -1), new(-5, 1),   // x favoring @ Hamming = 6, Euclidean = 5.1
-                      new(1, 5), new(-1, -5), new(1, -5), new(-1, 5),   // y favoring @ Hamming = 6, Euclidean = 5.1
-                      new(4, 2), new(-5, -2), new(5, -2), new(-5, 2),   // x favoring @ Hamming = 7, Euclidean = 5.4
-                      new(2, 5), new(-2, -5), new(2, -5), new(-2, 5) ], // y favoring @ Hamming = 7, Euclidean = 5.4
-                }
+                Offsets = [ 
+                              // 1@0 + 8@1 + 12@2 + 16@3 + 24@4 + 32@5 = enumeration over 93 nearest positions, extend to longer ranges if needed
+                              [ new(0, 0) ],
+                              [ new(1, 0), new(-1, 0), new(0, 1), new(0, -1),     // cardinals @ Hamming distance = Euclidean distance = 1
+                                new(1, 1), new(-1, -1), new(1, -1), new(-1, 1) ], // corners @ Hamming = 2, Euclidean = 1.4
+                              [ new(2, 0), new(-2, 0), new(0, 2), new(0, -2),     // cardinals @ Hamming = Euclidean = 2
+                                new(2, 1), new(-2, -1), new(2, -1), new(-2, 1),   // x favoring @ Hamming = 3, Euclidean = 2.2
+                                new(1, 2), new(-1, -2), new(1, -2), new(-1, 2) ], // y favoring @ Hamming = 3, Euclidean = 2.2
+                              [ new(2, 2), new(-2, -2), new(2, -2), new(-2, 2),   // corners @ Hamming = 4, Euclidean = 2.8
+                                new(3, 0), new(-3, 0), new(0, 3), new(0, -3),     // cardinals @ Hamming = 3, Euclidean = 3
+                                new(3, 1), new(-3, -1), new(3, -1), new(-3, 1),   // x favoring @ Hamming = 4, Euclidean = 3.2
+                                new(1, 3), new(-1, -3), new(1, -3), new(-1, 3) ], // y favoring @ Hamming = 4, Euclidean = 3.2
+                              // 24@4
+                              [ new(3, 2), new(-3, -2), new(3, -2), new(-3, 2),   // x favoring @ Hamming = 5, Euclidean = 3.6
+                                new(2, 3), new(-2, -3), new(2, -3), new(-2, 3),   // y favoring @ Hamming = 5, Euclidean = 3.6
+                                new(4, 0), new(-4, 0), new(0, 4), new(0, -4),     // cardinals @ Hamming = 4, Euclidean = 4
+                                new(4, 1), new(-4, -1), new(4, -1), new(-4, 1),   // x favoring @ Hamming = 5, Euclidean = 4.1
+                                new(1, 4), new(-1, -4), new(1, -4), new(-1, 4),   // y favoring @ Hamming = 5, Euclidean = 4.1
+                                new(3, 3), new(-3, -3), new(3, -3), new(-3, 3) ], // diagonals @ Hamming = 6, Euclidean = 4.2
+                              // 32@5
+                              [ new(4, 2), new(-4, -2), new(4, -2), new(-4, 2),   // x favoring @ Hamming = 6, Euclidean = 4.5
+                                new(2, 4), new(-2, -4), new(2, -4), new(-2, 4),   // y favoring @ Hamming = 6, Euclidean = 4.5
+                                new(4, 3), new(-4, -3), new(4, -3), new(-4, 3),   // near diagonals @ Hamming = 7, Euclidean = 5
+                                new(3, 4), new(-3, -4), new(3, -4), new(-3, 4),   // near diagonals @ Hamming = 7, Euclidean = 5
+                                new(5, 0), new(-5, 0), new(0, 5), new(0, -5),     // cardinals @ Hamming = 5, Euclidean = 5
+                                new(5, 1), new(-5, -1), new(5, -1), new(-5, 1),   // x favoring @ Hamming = 6, Euclidean = 5.1
+                                new(1, 5), new(-1, -5), new(1, -5), new(-1, 5),   // y favoring @ Hamming = 6, Euclidean = 5.1
+                                new(4, 2), new(-5, -2), new(5, -2), new(-5, 2),   // x favoring @ Hamming = 7, Euclidean = 5.4
+                               new(2, 5), new(-2, -5), new(2, -5), new(-2, 5) ], // y favoring @ Hamming = 7, Euclidean = 5.4
+                          ]
             };
 
             // search in x first, then y
@@ -87,26 +86,25 @@ namespace Mars.Seem.Extensions
             BreadthFirstEnumerator2D.XFirst = new()
             {
                 MaxRange = 5,
-                Offsets = new (int, int)[][]
-                {
-                    [ new(0, 0), new(1, 0), new(-1, 0), new(2, 0), new(-2, 0), new(3, 0), new(-3, 0), new(4, 0), new(-4, 0), 
-                      new(5, 0), new(-5, 0) ],
-                    [ new(0, 1), new(0, -1), new(1, 1), new(-1, 1), new(1, -1), new(-1, -1), new(2, 1), new(-2, 1), new(2, -1), new(-2, -1), 
-                      new(3, 1), new(-3, 1), new(3, -1), new(-3, -1), new(4, -1), new(-4, -1), new(4, 1), new(-4, 1), 
-                      new(5, 1), new(-5, 1), new(5, -1), new(-5, -1) ],
-                    [ new(0, 2), new(0, -2), new(1, 2), new(-1, 2), new(1, -2), new(-1, -2), new(2, 2), new(-2, 2), new(2, -2), new(-2, -2),
-                      new(3, 2), new(-3, 2), new(3, -2), new(-3, -2), new(4, 2), new(-4, 2), new(4, -2), new(-4, -2),
-                      new(5, 2), new(-5, 2), new(5, -2), new(-5, -2) ],
-                    [ new(0, 3), new(0, -3), new(1, 3), new(-1, 3), new(1, -3), new(-1, -3), new(2, 3), new(-2, 3), new(2, -3), new(-2, -3),
-                      new(3, 3), new(-3, 3), new(3, -3), new(-3, -3), new(4, 3), new(-4, 3), new(4, -3), new(-4, -3),
-                      new(5, 3), new(-5, 3), new(5, -3), new(-5, -3) ],
-                    [ new(0, 4), new(0, -4), new(1, 4), new(-1, 4), new(1, -4), new(-1, -4), new(2, 4), new(-2, 4), new(2, -4), new(-2, -4),
-                      new(3, 4), new(-3, 4), new(3, -4), new(-3, -4), new(4, 4), new(-4, 4), new(4, -4), new(-4, -4),
-                      new(5, 4), new(-5, 4), new(5, -4), new(-5, -4) ],
-                    [ new(0, 5), new(0, -5), new(1, 5), new(-1, 5), new(1, -5), new(-1, -5), new(2, 5), new(-2, 5), new(2, -5), new(-2, -5),
-                      new(3, 5), new(-3, 5), new(3, -5), new(-3, -5), new(4, 5), new(-4, 5), new(4, -5), new(-4, -5),
-                      new(5, 5), new(-5, 5), new(5, -5), new(-5, -5) ],
-                }
+                Offsets = [
+                              [ new(0, 0), new(1, 0), new(-1, 0), new(2, 0), new(-2, 0), new(3, 0), new(-3, 0), new(4, 0), new(-4, 0), 
+                                new(5, 0), new(-5, 0) ],
+                              [ new(0, 1), new(0, -1), new(1, 1), new(-1, 1), new(1, -1), new(-1, -1), new(2, 1), new(-2, 1), new(2, -1), new(-2, -1), 
+                                new(3, 1), new(-3, 1), new(3, -1), new(-3, -1), new(4, -1), new(-4, -1), new(4, 1), new(-4, 1), 
+                                new(5, 1), new(-5, 1), new(5, -1), new(-5, -1) ],
+                              [ new(0, 2), new(0, -2), new(1, 2), new(-1, 2), new(1, -2), new(-1, -2), new(2, 2), new(-2, 2), new(2, -2), new(-2, -2),
+                                new(3, 2), new(-3, 2), new(3, -2), new(-3, -2), new(4, 2), new(-4, 2), new(4, -2), new(-4, -2),
+                                new(5, 2), new(-5, 2), new(5, -2), new(-5, -2) ],
+                              [ new(0, 3), new(0, -3), new(1, 3), new(-1, 3), new(1, -3), new(-1, -3), new(2, 3), new(-2, 3), new(2, -3), new(-2, -3),
+                                new(3, 3), new(-3, 3), new(3, -3), new(-3, -3), new(4, 3), new(-4, 3), new(4, -3), new(-4, -3),
+                                new(5, 3), new(-5, 3), new(5, -3), new(-5, -3) ],
+                              [ new(0, 4), new(0, -4), new(1, 4), new(-1, 4), new(1, -4), new(-1, -4), new(2, 4), new(-2, 4), new(2, -4), new(-2, -4),
+                                new(3, 4), new(-3, 4), new(3, -4), new(-3, -4), new(4, 4), new(-4, 4), new(4, -4), new(-4, -4),
+                                new(5, 4), new(-5, 4), new(5, -4), new(-5, -4) ],
+                              [ new(0, 5), new(0, -5), new(1, 5), new(-1, 5), new(1, -5), new(-1, -5), new(2, 5), new(-2, 5), new(2, -5), new(-2, -5),
+                                new(3, 5), new(-3, 5), new(3, -5), new(-3, -5), new(4, 5), new(-4, 5), new(4, -5), new(-4, -5),
+                                new(5, 5), new(-5, 5), new(5, -5), new(-5, -5) ],
+                          ]
             };
 
             // search in y first, then x
@@ -127,25 +125,24 @@ namespace Mars.Seem.Extensions
             BreadthFirstEnumerator2D.YFirst = new()
             {
                 MaxRange = 5,
-                Offsets = new (int, int)[][]
-                {
-                    [ new(0, 0), new(0, 1), new(0, -1), new(0, 2), new(0, -2), new(0, 3), new(0, -3), new(0, 4), new(0, -4), new(0, 5), new(0, -5) ],
-                    [ new(1, 0), new(-1, 0), new(1, 1), new(1, -1), new(-1, 1), new(-1, -1), new(1, 2), new(1, -2), new(-1, 2), new(-1, -2),
-                      new(1, 3), new(1, -3), new(-1, 3), new(-1, -3), new(1, 4), new(1, -4), new(-1, 4), new(-1, -4),
-                      new(1, 5), new(1, -5), new(-1, 5), new(-1, -5) ],
-                    [ new(2, 0), new(-2, 0), new(2, 1), new(2, -1), new(-2, 1), new(-2, -1), new(2, 2), new(2, -2), new(-2, 2), new(-2, -2),
-                      new(2, 3), new(2, -3), new(-2, 3), new(-2, -3), new(2, 4), new(2, -4), new(-2, 4), new(-2, -4),
-                      new(2, 5), new(2, -5), new(-2, 5), new(-2, -5) ],
-                    [ new(3, 0), new(-3, 0), new(3, 1), new(3, -1), new(-3, 1), new(-3, -1), new(3, 2), new(3, -2), new(-3, 2), new(-3, -2),
-                      new(3, 3), new(3, -3), new(-3, 3), new(-3, -3), new(3, 4), new(3, -4), new(-3, 4), new(-3, -4),
-                      new(3, 5), new(3, -5), new(-3, 5), new(-3, -5) ],
-                    [ new(4, 0), new(-4, 0), new(4, 1), new(4, -1), new(-4, 1), new(-4, -1), new(4, 2), new(4, -2), new(-4, 2), new(-4, -2),
-                      new(4, 3), new(4, -3), new(-4, 3), new(-4, -3), new(4, 4), new(4, -4), new(-4, 4), new(-4, -4),
-                      new(4, 5), new(4, -5), new(-4, 5), new(-4, -5) ],
-                    [ new(5, 0), new(-5, 0), new(5, 1), new(5, -1), new(-5, 1), new(-5, -1), new(5, 2), new(5, -2), new(-5, 2), new(-5, -2),
-                      new(5, 3), new(5, -3), new(-5, 3), new(-5, -3), new(5, 4), new(5, -4), new(-5, 4), new(-5, -4),
-                      new(5, 5), new(5, -5), new(-5, 5), new(-5, -5) ]
-                }
+                Offsets = [
+                              [ new(0, 0), new(0, 1), new(0, -1), new(0, 2), new(0, -2), new(0, 3), new(0, -3), new(0, 4), new(0, -4), new(0, 5), new(0, -5) ],
+                              [ new(1, 0), new(-1, 0), new(1, 1), new(1, -1), new(-1, 1), new(-1, -1), new(1, 2), new(1, -2), new(-1, 2), new(-1, -2),
+                                new(1, 3), new(1, -3), new(-1, 3), new(-1, -3), new(1, 4), new(1, -4), new(-1, 4), new(-1, -4),
+                                new(1, 5), new(1, -5), new(-1, 5), new(-1, -5) ],
+                              [ new(2, 0), new(-2, 0), new(2, 1), new(2, -1), new(-2, 1), new(-2, -1), new(2, 2), new(2, -2), new(-2, 2), new(-2, -2),
+                                new(2, 3), new(2, -3), new(-2, 3), new(-2, -3), new(2, 4), new(2, -4), new(-2, 4), new(-2, -4),
+                                new(2, 5), new(2, -5), new(-2, 5), new(-2, -5) ],
+                              [ new(3, 0), new(-3, 0), new(3, 1), new(3, -1), new(-3, 1), new(-3, -1), new(3, 2), new(3, -2), new(-3, 2), new(-3, -2),
+                                new(3, 3), new(3, -3), new(-3, 3), new(-3, -3), new(3, 4), new(3, -4), new(-3, 4), new(-3, -4),
+                                new(3, 5), new(3, -5), new(-3, 5), new(-3, -5) ],
+                              [ new(4, 0), new(-4, 0), new(4, 1), new(4, -1), new(-4, 1), new(-4, -1), new(4, 2), new(4, -2), new(-4, 2), new(-4, -2),
+                                new(4, 3), new(4, -3), new(-4, 3), new(-4, -3), new(4, 4), new(4, -4), new(-4, 4), new(-4, -4),
+                                new(4, 5), new(4, -5), new(-4, 5), new(-4, -5) ],
+                              [ new(5, 0), new(-5, 0), new(5, 1), new(5, -1), new(-5, 1), new(-5, -1), new(5, 2), new(5, -2), new(-5, 2), new(-5, -2),
+                                new(5, 3), new(5, -3), new(-5, 3), new(-5, -3), new(5, 4), new(5, -4), new(-5, 4), new(-5, -4),
+                                new(5, 5), new(5, -5), new(-5, 5), new(-5, -5) ]
+                          ]
             };
         }
 
@@ -159,7 +156,7 @@ namespace Mars.Seem.Extensions
             public SearchPattern2D()
             {
                 this.MaxRange = -1;
-                this.Offsets = Array.Empty<(int, int)[]>(); // nullablity hack
+                this.Offsets = [];
             }
         }
     }

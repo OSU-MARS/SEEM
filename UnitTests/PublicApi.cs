@@ -59,7 +59,7 @@ namespace Mars.Seem.Test
         private static PermanentPlotsWithHeight GetNelder()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp Nelder 1.xlsx");
-            PermanentPlotsWithHeight plot = new(new List<int>() { 1 }, defaultExpansionFactorPerHa: 1.327F);
+            PermanentPlotsWithHeight plot = new(plotIDs: [1 ], defaultExpansionFactorPerHa: 1.327F);
             plot.Read(plotFilePath, "1");
             return plot;
         }
@@ -67,7 +67,7 @@ namespace Mars.Seem.Test
         private static PermanentPlotsWithHeight GetPlot14()
         {
             string plotFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "OSU", "Organon", "Malcolm Knapp plots 14-18+34 Ministry.xlsx");
-            PermanentPlotsWithHeight plot = new(new List<int>() { 14 }, defaultExpansionFactorPerHa: 4.48F);
+            PermanentPlotsWithHeight plot = new(plotIDs: [ 14 ], defaultExpansionFactorPerHa: 4.48F);
             plot.Read(plotFilePath, "0.2 ha");
             return plot;
         }
@@ -110,7 +110,7 @@ namespace Mars.Seem.Test
             OrganonStand stand = nelder.ToOrganonStand(configuration, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecords, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            RunParameters landExpectationValueIts = new(new List<int>() { 9 }, configuration)
+            RunParameters landExpectationValueIts = new(rotationLengthInPeriods: [ 9 ], configuration)
             {
                 MaximizeForPlanningPeriod = 9
             };
@@ -140,7 +140,7 @@ namespace Mars.Seem.Test
             results.AssimilateIntoCoordinate(hero, singleThinCoordinate, heroCounters);
 
             // prescription coordinate descent
-            RunParameters landExpectationValuePrescription = new(new List<int>() { landExpectationValueIts.MaximizeForPlanningPeriod }, configuration)
+            RunParameters landExpectationValuePrescription = new([ landExpectationValueIts.MaximizeForPlanningPeriod ], configuration)
             {
                 MaximizeForPlanningPeriod = landExpectationValueIts.MaximizeForPlanningPeriod
             };
@@ -402,7 +402,7 @@ namespace Mars.Seem.Test
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
             // heuristics optimizing for LEV
-            RunParameters runForLandExpectationValue = new(new List<int>() { 9 }, configurationNwo)
+            RunParameters runForLandExpectationValue = new(rotationLengthInPeriods: [ 9 ], configurationNwo)
             {
                 MaximizeForPlanningPeriod = 9
             };
@@ -1017,7 +1017,7 @@ namespace Mars.Seem.Test
             OrganonStand stand = nelder.ToOrganonStand(configurationNwo, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, treeRecordCount, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
-            RunParameters landExpectationValue = new(new List<int>() { 9 }, configurationNwo)
+            RunParameters landExpectationValue = new([ 9 ], configurationNwo)
             {
                 MaximizeForPlanningPeriod = 9
             };

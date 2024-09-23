@@ -17,20 +17,20 @@ namespace Mars.Seem.Test
             // 1D enumerations
             // basic 1-5 element arrays
             object object1 = new();
-            BreadthFirstEnumerator<object> enumerator1D = new([ object1 ], 0);
+            BreadthFirstEnumerator<object> enumerator1D = new([ object1 ], origin: 0);
             Assert.IsTrue(enumerator1D.MoveNext() == true);
             Assert.IsTrue(Object.ReferenceEquals(enumerator1D.Current, object1));
             Assert.IsTrue(enumerator1D.MoveNext() == false);
 
             object object2 = new();
-            enumerator1D = new([ object1, object2 ], 0);
+            enumerator1D = new([ object1, object2 ], origin: 0);
             Assert.IsTrue(enumerator1D.MoveNext() == true);
             Assert.IsTrue(Object.ReferenceEquals(enumerator1D.Current, object1));
             Assert.IsTrue(enumerator1D.MoveNext() == true);
             Assert.IsTrue(Object.ReferenceEquals(enumerator1D.Current, object2));
             Assert.IsTrue(enumerator1D.MoveNext() == false);
 
-            enumerator1D = new([ object1, object2 ], 1);
+            enumerator1D = new([ object1, object2 ], origin: 1);
             Assert.IsTrue(enumerator1D.MoveNext() == true);
             Assert.IsTrue(Object.ReferenceEquals(enumerator1D.Current, object2));
             Assert.IsTrue(enumerator1D.MoveNext() == true);
@@ -38,7 +38,7 @@ namespace Mars.Seem.Test
             Assert.IsTrue(enumerator1D.MoveNext() == false);
 
             object object3 = new();
-            enumerator1D = new([ object1, object2, object3 ], 1);
+            enumerator1D = new([ object1, object2, object3 ], origin: 1);
             Assert.IsTrue(enumerator1D.MoveNext() == true);
             Assert.IsTrue(Object.ReferenceEquals(enumerator1D.Current, object2));
             Assert.IsTrue(enumerator1D.MoveNext() == true);
@@ -48,7 +48,7 @@ namespace Mars.Seem.Test
             Assert.IsTrue(enumerator1D.MoveNext() == false);
 
             object object4 = new();
-            enumerator1D = new([ object1, object2, object3, object4 ], 3);
+            enumerator1D = new([ object1, object2, object3, object4 ], origin: 3);
             Assert.IsTrue(enumerator1D.MoveNext() == true);
             Assert.IsTrue(Object.ReferenceEquals(enumerator1D.Current, object4));
             Assert.IsTrue(enumerator1D.MoveNext() == true);
@@ -60,7 +60,7 @@ namespace Mars.Seem.Test
             Assert.IsTrue(enumerator1D.MoveNext() == false);
 
             object object5 = new();
-            enumerator1D = new([ object1, object2, object3, object4, object5 ], 1);
+            enumerator1D = new([ object1, object2, object3, object4, object5 ], origin: 1);
             Assert.IsTrue(enumerator1D.MoveNext() == true);
             Assert.IsTrue(Object.ReferenceEquals(enumerator1D.Current, object2));
             Assert.IsTrue(enumerator1D.MoveNext() == true);
@@ -77,7 +77,7 @@ namespace Mars.Seem.Test
             enumerator1D = new([ null, null, null ], 0);
             Assert.IsTrue(enumerator1D.MoveNext() == false);
 
-            enumerator1D = new([ object1, null, null, object2, object3, null, object4, null, object5, null ], 2);
+            enumerator1D = new([ object1, null, null, object2, object3, null, object4, null, object5, null ], origin: 2);
             Assert.IsTrue(enumerator1D.MoveNext() == true);
             Assert.IsTrue(Object.ReferenceEquals(enumerator1D.Current, object2));
             Assert.IsTrue(enumerator1D.MoveNext() == true);
@@ -91,14 +91,14 @@ namespace Mars.Seem.Test
             Assert.IsTrue(enumerator1D.MoveNext() == false);
 
             // 2D enumerations
-            BreadthFirstEnumerator2D<object> enumerator2D = new(new object[][] { [ object1 ]  }, 0, 0);
+            BreadthFirstEnumerator2D<object> enumerator2D = new([ [ object1 ] ], 0, 0);
             Assert.IsTrue(enumerator2D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object1));
             Assert.IsTrue(enumerator2D.MoveNext() == false);
 
-            enumerator2D = new(new object[][] { [ object1, object2 ],
-                                                [ object3, object4 ] },
-                               0, 0); // balanced traversal, top left
+            enumerator2D = new([ [ object1, object2 ],
+                                 [ object3, object4 ] ],
+                               originX: 0, originY: 0); // balanced traversal, top left
             Assert.IsTrue(enumerator2D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object1));
             Assert.IsTrue(enumerator2D.MoveNext());
@@ -109,9 +109,9 @@ namespace Mars.Seem.Test
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object4));
             Assert.IsTrue(enumerator2D.MoveNext() == false);
 
-            enumerator2D = new(new object[][] { [ object1, object2 ],
-                                                [ object3, object4 ] },
-                               1, 1); // balanced traversal, bottom right
+            enumerator2D = new([ [ object1, object2 ],
+                                 [ object3, object4 ] ],
+                               originX: 1, originY: 1); // balanced traversal, bottom right
             Assert.IsTrue(enumerator2D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object4));
             Assert.IsTrue(enumerator2D.MoveNext());
@@ -122,9 +122,9 @@ namespace Mars.Seem.Test
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object1));
             Assert.IsTrue(enumerator2D.MoveNext() == false);
 
-            enumerator2D = new(new object[][] { [ object1, object2 ],
-                                                [ object3, object4 ] },
-                               1, 0); // balanced traversal, bottom left
+            enumerator2D = new([ [ object1, object2 ],
+                                 [ object3, object4 ] ],
+                               originX: 1, originY: 0); // balanced traversal, bottom left
             Assert.IsTrue(enumerator2D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object3));
             Assert.IsTrue(enumerator2D.MoveNext());
@@ -135,9 +135,9 @@ namespace Mars.Seem.Test
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object2));
             Assert.IsTrue(enumerator2D.MoveNext() == false);
 
-            enumerator2D = new(new object[][] { [ object1, object2 ],
-                                                [ object3, object4 ] },
-                               0, 1); // balanced traversal, top right
+            enumerator2D = new([ [ object1, object2 ],
+                                 [ object3, object4 ] ],
+                               originX: 0, originY: 1); // balanced traversal, top right
             Assert.IsTrue(enumerator2D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object2));
             Assert.IsTrue(enumerator2D.MoveNext());
@@ -154,7 +154,7 @@ namespace Mars.Seem.Test
             enumerator2D = new([ [ object1, object2, object3 ],
                                  [ object4, null, object5 ],
                                  [ object6, object7, object8 ] ],
-                               1, 1);
+                               originX: 1, originY: 1);
             Assert.IsTrue(enumerator2D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object7));
             Assert.IsTrue(enumerator2D.MoveNext());
@@ -176,7 +176,7 @@ namespace Mars.Seem.Test
             enumerator2D = new([ [ object1, object2, object3 ],
                                  [ object4, object5, object6 ],
                                  [ null, object7, object8 ] ],
-                               0, 1, BreadthFirstEnumerator2D.XFirst);
+                               originX: 0, originY: 1, BreadthFirstEnumerator2D.XFirst);
             Assert.IsTrue(enumerator2D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object2));
             Assert.IsTrue(enumerator2D.MoveNext());
@@ -198,7 +198,7 @@ namespace Mars.Seem.Test
             enumerator2D = new([ [ object1, object2, object3 ],
                                  [ object4, object5, object6 ],
                                  [ object7, null, object8 ] ],
-                               2, 1, BreadthFirstEnumerator2D.YFirst);
+                               originX: 2, originY: 1, BreadthFirstEnumerator2D.YFirst);
             Assert.IsTrue(enumerator2D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator2D.Current, object8));
             Assert.IsTrue(enumerator2D.MoveNext());
@@ -223,9 +223,9 @@ namespace Mars.Seem.Test
             Assert.IsTrue(Object.ReferenceEquals(enumerator3D.Current, object1));
             Assert.IsTrue(enumerator3D.MoveNext() == false);
 
-            enumerator3D = new(new object[][][] { [ [ object1, object2 ],
-                                                    [ object3, object4 ] ] },
-                               0, 1, 0);
+            enumerator3D = new([ [ [ object1, object2 ],
+                                   [ object3, object4 ] ] ],
+                               originX: 0, originY: 1, originZ: 0);
             Assert.IsTrue(enumerator3D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator3D.Current, object3));
             Assert.IsTrue(enumerator3D.MoveNext());
@@ -236,11 +236,11 @@ namespace Mars.Seem.Test
             Assert.IsTrue(Object.ReferenceEquals(enumerator3D.Current, object2));
             Assert.IsTrue(enumerator3D.MoveNext() == false);
 
-            enumerator3D = new(new object[][][] { [ [ object1, object2 ],
-                                                    [ object3, object4 ] ],
-                                                  [ [ object5, object6 ],
-                                                    [ object7, object8 ] ] },
-                               1, 1, 0);
+            enumerator3D = new([ [ [ object1, object2 ],
+                                   [ object3, object4 ] ],
+                                 [ [ object5, object6 ],
+                                   [ object7, object8 ] ] ],
+                               originX: 1, originY: 1, originZ: 0);
             Assert.IsTrue(enumerator3D.MoveNext());
             Assert.IsTrue(Object.ReferenceEquals(enumerator3D.Current, object7));
             Assert.IsTrue(enumerator3D.MoveNext());
