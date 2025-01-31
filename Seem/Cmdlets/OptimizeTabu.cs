@@ -54,7 +54,7 @@ namespace Mars.Seem.Cmdlets
             return "Optimize-Tabu";
         }
 
-        protected override IList<TabuParameters> GetParameterCombinations()
+        protected override List<TabuParameters> GetParameterCombinations()
         {
             int treeRecords = this.Stand!.GetTreeRecordCount();
 

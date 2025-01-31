@@ -125,7 +125,6 @@ namespace Mars.Seem
             public const int PlotID = 0;
             public const string ProbabilityFormat = "0.00##";
             public const int RotationLengths = 9;
-            public const SimdInstructions Simd = SimdInstructions.Avx;
             public const float SlopeForTetheringInPercent = 45.0F;
             public const int SolutionPoolSize = 4;
             public const int ThinningPeriod = 3;

@@ -2,6 +2,7 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Avx512 = System.Runtime.Intrinsics.X86.Avx10v1.V512;
 
 namespace Mars.Seem.Tree
 {
@@ -129,9 +130,9 @@ namespace Mars.Seem.Tree
         public static Vector512<float> GetFlewellingGrowthEffectiveAgeAvx512(SiteConstants site, float timeStepInYears, Vector512<float> treeHeight, out Vector512<float> potentialHeightGrowth)
         {
             // for now, just a Vector512 to Vector256 fallback for caller convenience
-            Vector256<float> treeHeightLower = Avx512F.ExtractVector256(treeHeight, Constant.Simd512x16.ExtractLower256);
+            Vector256<float> treeHeightLower = Avx512.ExtractVector256(treeHeight, Constant.Simd512x16.ExtractLower256);
             Vector256<float> growthEffectiveAgeLower = WesternHemlock.GetFlewellingGrowthEffectiveAgeAvx(site, timeStepInYears, treeHeightLower, out Vector256<float> potentialHeightGrowthLower);
-            Vector256<float> treeHeightUpper = Avx512F.ExtractVector256(treeHeight, Constant.Simd512x16.ExtractUpper256);
+            Vector256<float> treeHeightUpper = Avx512.ExtractVector256(treeHeight, Constant.Simd512x16.ExtractUpper256);
             Vector256<float> growthEffectiveAgeUpper = WesternHemlock.GetFlewellingGrowthEffectiveAgeAvx(site, timeStepInYears, treeHeightUpper, out Vector256<float> potentialHeightGrowthUpper);
 
             potentialHeightGrowth = Vector512.Create(potentialHeightGrowthLower, potentialHeightGrowthUpper);

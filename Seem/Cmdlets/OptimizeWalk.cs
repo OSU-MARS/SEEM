@@ -27,7 +27,7 @@ namespace Mars.Seem.Cmdlets
             return "Optimize-Random";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override List<HeuristicParameters> GetParameterCombinations()
         {
             return this.GetDefaultParameterCombinations();
         }

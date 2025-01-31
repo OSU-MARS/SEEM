@@ -150,7 +150,7 @@ namespace Mars.Seem.Test
             foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
             {
                 FiaCode species = treesOfSpecies.Species;
-                Assert.IsTrue(Enum.IsDefined(typeof(FiaCode), species));
+                Assert.IsTrue(Enum.IsDefined<FiaCode>(species));
 
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
                 {

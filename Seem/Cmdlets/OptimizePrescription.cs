@@ -129,7 +129,7 @@ namespace Mars.Seem.Cmdlets
             return "Optimize-Prescription";
         }
 
-        protected override IList<PrescriptionParameters> GetParameterCombinations()
+        protected override List<PrescriptionParameters> GetParameterCombinations()
         {
             if ((this.ConstructionGreediness.Count != 1) || (this.ConstructionGreediness[0] != Constant.Grasp.FullyGreedyConstructionForMaximization))
             {

@@ -85,7 +85,7 @@ namespace Mars.Seem.Cmdlets
             return "Optimize-Genetic";
         }
 
-        protected override IList<GeneticParameters> GetParameterCombinations()
+        protected override List<GeneticParameters> GetParameterCombinations()
         {
             if (this.ExchangeProbabilityEnd.Count < 1)
             {

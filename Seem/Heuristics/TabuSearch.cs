@@ -228,7 +228,7 @@ namespace Mars.Seem.Heuristics
                 throw new NotSupportedException("Logging of only improving moves isn't currently supported.");
             }
 
-            IList<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
+            List<int> thinningPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
             if (thinningPeriods.Count < 2)
             {
                 throw new NotSupportedException("A decision between at least two thinning periods is expected.");

@@ -15,7 +15,7 @@ namespace Mars.Seem.Heuristics
         {
             this.prescriptionsEnumerated = 0;
 
-            IList<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
+            List<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
             if (harvests.Count == 0)
             {
                 // no thins: no intensities to enumerate so only a single growth model call to obtain a no action trajectory

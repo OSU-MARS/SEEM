@@ -12,7 +12,7 @@ The primary code components are
 * A performance tuned version of Organon 2.2.4 and C# implementations of logarithms, exponents, and powers using 128 bit SIMD.
 
 ### Dependencies
-SEEM is a .NET 8.0 assembly which includes C# cmdlets for PowerShell Core. It therefore makes use of both the System.Management.Automation
+SEEM is a .NET 9 assembly which includes C# cmdlets for PowerShell Core. It therefore makes use of both the System.Management.Automation
 nuget package and the system's PowerShell Core installation, creating a requirement the PowerShell Core version be the same or newer than 
 the nuget's. If Visual Studio Code is used for PowerShell Core execution then corresponding updates to Code and its PowerShell extension
 are required.

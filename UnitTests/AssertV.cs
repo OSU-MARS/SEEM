@@ -25,5 +25,11 @@ namespace Mars.Seem.Test
         {
             AssertV.IsTrue(Avx.ConvertToVector256Single(comparison));
         }
+
+        // no _mm512_cmpeq_epi32_mask() in .NET 9
+        public static void IsTrue(Vector512<int> comparison)
+        {
+            Assert.IsTrue((Avx.MoveMask(comparison.GetLower().AsSingle()) & Avx.MoveMask(comparison.GetUpper().AsSingle())) == Constant.Simd256x8.MaskAllTrue);
+        }
     }
 }

@@ -79,7 +79,7 @@ namespace Mars.Seem.Heuristics
                 throw new InvalidOperationException(nameof(this.StopAfter));
             }
 
-            IList<int> harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
+            List<int> harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
             if ((harvestPeriods.Count < 2) || (harvestPeriods.Count > 3))
             {
                 throw new NotSupportedException("Currently, only one or two thins are supported.");

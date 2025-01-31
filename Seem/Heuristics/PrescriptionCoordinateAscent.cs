@@ -30,7 +30,7 @@ namespace Mars.Seem.Heuristics
             }
 
             // evaluate objective function at position since it has not been recently visited
-            IList<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
+            List<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
             Debug.Assert((harvests.Count < 4) && (moveState.CandidateIntensities.Length == 3 * harvests.Count));
 
             ThinByPrescription? firstThinPrescription = null;
@@ -362,7 +362,7 @@ namespace Mars.Seem.Heuristics
             // initialize search position from whatever values are already set on the current trajectory
             // This allows prescriptions to flow between positions in sweeps using GRASP, potentially reducing search effort.
             // TODO: move this code into an override of ConstructTreeSelection(float)
-            IList<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
+            List<Harvest> harvests = this.CurrentTrajectory.Treatments.Harvests;
             MoveState moveState = new(coordinate, harvests.Count, 3)
             {
                 FinancialIndex = coordinate.FinancialIndex,

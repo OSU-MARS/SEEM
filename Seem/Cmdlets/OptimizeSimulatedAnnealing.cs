@@ -104,7 +104,7 @@ namespace Mars.Seem.Cmdlets
             return "Optimize-SimulatedAnnealing";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override List<HeuristicParameters> GetParameterCombinations()
         {
             return this.GetDefaultParameterCombinations();
         }

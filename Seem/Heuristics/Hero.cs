@@ -39,7 +39,7 @@ namespace Mars.Seem.Heuristics
                 throw new NotSupportedException("Logging of only improving moves isn't currently supported.");
             }
 
-            IList<int> harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
+            List<int> harvestPeriods = this.CurrentTrajectory.Treatments.GetHarvestPeriods();
 
             Stopwatch stopwatch = new();
             stopwatch.Start();
