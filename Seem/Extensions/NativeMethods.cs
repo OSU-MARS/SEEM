@@ -19,7 +19,7 @@ namespace Mars.Seem.Extensions
                                                                  IntPtr.Zero,
                                                                  0,
                                                                  nativePowerInfo,
-                                                                 (uint)(nativePowerInfo.Length * Marshal.SizeOf(typeof(PROCESSOR_POWER_INFORMATION))));
+                                                                 (uint)(nativePowerInfo.Length * Marshal.SizeOf<PROCESSOR_POWER_INFORMATION>()));
             if (ntstatus != STATUS_SUCCESS)
             {
                 throw new Win32Exception((int)ntstatus, "P/Invoke of CallNtPowerInformation() failed.");

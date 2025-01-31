@@ -26,7 +26,7 @@ namespace Mars.Seem.Cmdlets
             this.ProcessorReferenceFrequenciesInGHz = new float[powerInfo.MaxMHz.Length];
             this.End = new DateTime[threads];
             this.PollingInterval = TimeSpan.Zero;
-            this.Simd = Constant.Default.Simd;
+            this.Simd = SimdInstructionsExtensions.GetDefault();
             this.Timesteps = new int[threads];
             this.WarmupEnd = new DateTime[threads];
             this.WarmupTimesteps = new int[threads];

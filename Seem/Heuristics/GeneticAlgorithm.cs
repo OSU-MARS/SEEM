@@ -9,7 +9,7 @@ namespace Mars.Seem.Heuristics
 {
     public class GeneticAlgorithm : Heuristic<GeneticParameters>
     {
-        private IList<int>? harvestPeriods;
+        private List<int>? harvestPeriods;
 
         public PopulationStatistics PopulationStatistics { get; private init; }
 

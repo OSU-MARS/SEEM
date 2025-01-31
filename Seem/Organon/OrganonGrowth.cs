@@ -655,7 +655,7 @@ namespace Mars.Seem.Organon
             {
                 throw new ArgumentOutOfRangeException(nameof(stand), "Stand does not have any trees.");
             }
-            if (Enum.IsDefined(typeof(TreeModel), configuration.Variant.TreeModel) == false)
+            if (Enum.IsDefined<TreeModel>(configuration.Variant.TreeModel) == false)
             {
                 throw new ArgumentOutOfRangeException(nameof(configuration), "Unknown Organon variant " + configuration.Variant.TreeModel + ".");
             }

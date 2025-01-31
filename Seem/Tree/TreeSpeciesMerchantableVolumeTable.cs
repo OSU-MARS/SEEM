@@ -344,6 +344,8 @@ namespace Mars.Seem.Tree
                 return 0.0F;
             }
 
+            // lazy volume table initialization means another thread could be partway through assigning another tree in the same DBH and height classes'
+            // scales, resulting in a mix of initialized and uninitialized values across grades
             int diameterClass = this.ToDiameterIndex(dbhInCm);
             int heightClass = this.ToHeightIndex(heightInM);
             float cubic2saw = this.Cubic2Saw[diameterClass, heightClass];
@@ -353,7 +355,12 @@ namespace Mars.Seem.Tree
                 cubic2saw = this.Cubic2Saw[diameterClass, heightClass];
             }
 
-            return cubic2saw + this.Cubic3Saw[diameterClass, heightClass] + this.Cubic4Saw[diameterClass, heightClass];
+            float cubic3saw = this.Cubic3Saw[diameterClass, heightClass];
+            float cubic4saw = this.Cubic4Saw[diameterClass, heightClass];
+            Debug.Assert((Single.IsNaN(cubic2saw) == false) && (Single.IsNaN(cubic3saw) == false) && (Single.IsNaN(cubic4saw) == false));
+
+            float merchantableCubicVolume = cubic2saw + cubic3saw + cubic4saw;
+            return merchantableCubicVolume;
         }
 
         public float GetCubicVolumeOfMerchantableWood(float dbhInCm, float heightInM, out float unscaledNeiloidVolume)
@@ -367,14 +374,19 @@ namespace Mars.Seem.Tree
             int diameterClass = this.ToDiameterIndex(dbhInCm);
             int heightClass = this.ToHeightIndex(heightInM);
             float cubic2saw = this.Cubic2Saw[diameterClass, heightClass];
-            if (Single.IsNaN(cubic2saw))
+            if (Single.IsNaN(cubic2saw)) // initialziation race condition check
             {
                 this.ScaleTree(diameterClass, heightClass);
                 cubic2saw = this.Cubic2Saw[diameterClass, heightClass];
             }
 
+            float cubic3saw = this.Cubic3Saw[diameterClass, heightClass];
+            float cubic4saw = this.Cubic4Saw[diameterClass, heightClass];
             unscaledNeiloidVolume = this.UnscaledNeiloidCubic[diameterClass, heightClass];
-            return cubic2saw + this.Cubic3Saw[diameterClass, heightClass] + this.Cubic4Saw[diameterClass, heightClass];
+            Debug.Assert((Single.IsNaN(cubic2saw) == false) && (Single.IsNaN(cubic3saw) == false) && (Single.IsNaN(cubic4saw) == false) && (Single.IsNaN(unscaledNeiloidVolume) == false));
+
+            float merchantableCubicVolume = cubic2saw + cubic3saw + cubic4saw;
+            return merchantableCubicVolume;
         }
 
         public float GetCubicVolumeOfMerchantableWoodInFirstLog(float dbhInCm, float heightInM)
@@ -386,12 +398,14 @@ namespace Mars.Seem.Tree
 
             int diameterClass = this.ToDiameterIndex(dbhInCm);
             int heightClass = this.ToHeightIndex(heightInM);
-            float firstLogCubicVolumeInM3 = this.LogCubic[diameterClass, heightClass, 0];
-            if (Single.IsNaN(firstLogCubicVolumeInM3))
+            float firstLogCubicVolumeInM3 = this.LogCubic[diameterClass, heightClass, 0];            
+            if (Single.IsNaN(firstLogCubicVolumeInM3)) // initialization race condition check
             {
                 this.ScaleTree(diameterClass, heightClass);
                 firstLogCubicVolumeInM3 = this.LogCubic[diameterClass, heightClass, 0];
+                Debug.Assert(Single.IsNaN(firstLogCubicVolumeInM3) == false);
             }
+
             return firstLogCubicVolumeInM3;
         }
 
@@ -454,57 +468,60 @@ namespace Mars.Seem.Tree
                 int diameterClass1 = diameterClass0 + 1;
                 int heightClass1 = heightClass0 + 1;
                 (int logs2saw00, int logs3saw00) = this.GetLogCounts(diameterClass0, heightClass0);
-                (int logs2saw01, int logs3saw01) = this.GetLogCounts(diameterClass0, heightClass0 + 1);
+                (int logs2saw01, int logs3saw01) = this.GetLogCounts(diameterClass0, heightClass1);
                 (int logs2saw10, int logs3saw10) = this.GetLogCounts(diameterClass1, heightClass0);
                 (int logs2saw11, int logs3saw11) = this.GetLogCounts(diameterClass1, heightClass1);
-                float logs2sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * logs2saw00 + heightFraction * logs2saw01) +
-                                        dbhFraction * ((1.0F - heightFraction) * logs2saw10 + heightFraction * logs2saw11);
+
+                float inverseDbhFraction = 1.0F - dbhFraction;
+                float inverseHeightFraction = 1.0F - heightFraction;
+                float logs2sawForTree = inverseDbhFraction * (inverseHeightFraction * logs2saw00 + heightFraction * logs2saw01) +
+                                        dbhFraction * (inverseHeightFraction * logs2saw10 + heightFraction * logs2saw11);
                 harvestedMerchVolume.Logs2Saw += expansionFactorPerHa * logs2sawForTree;
-                float logs3sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * logs3saw00 + heightFraction * logs3saw01) +
-                                        dbhFraction * ((1.0F - heightFraction) * logs3saw10 + heightFraction * logs3saw11);
+                float logs3sawForTree = inverseDbhFraction * (inverseHeightFraction * logs3saw00 + heightFraction * logs3saw01) +
+                                        dbhFraction * (inverseHeightFraction * logs3saw10 + heightFraction * logs3saw11);
                 harvestedMerchVolume.Logs3Saw += expansionFactorPerHa * logs3sawForTree;
-                float logs4sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Logs4Saw[diameterClass0, heightClass0] +
-                                                                heightFraction * this.Logs4Saw[diameterClass0, heightClass1]) +
-                                        dbhFraction * ((1.0F - heightFraction) * this.Logs4Saw[diameterClass1, heightClass0] +
+                float logs4sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Logs4Saw[diameterClass0, heightClass0] +
+                                                              heightFraction * this.Logs4Saw[diameterClass0, heightClass1]) +
+                                        dbhFraction * (inverseHeightFraction * this.Logs4Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Logs4Saw[diameterClass1, heightClass1]);
                 harvestedMerchVolume.Logs4Saw += expansionFactorPerHa * logs4sawForTree;
 
                 // bilinear interpolation between height and diameter classes for cubic volume
-                float cubic2sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Cubic2Saw[diameterClass0, heightClass0] +
-                                                                 heightFraction * this.Cubic2Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Cubic2Saw[diameterClass1, heightClass0] +
+                float cubic2sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Cubic2Saw[diameterClass0, heightClass0] +
+                                                               heightFraction * this.Cubic2Saw[diameterClass0, heightClass1]) +
+                                         dbhFraction * (inverseHeightFraction * this.Cubic2Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Cubic2Saw[diameterClass1, heightClass1]);
                 harvestedMerchVolume.Cubic2Saw += expansionFactorPerHa * cubic2sawForTree;
-                float cubic3sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Cubic3Saw[diameterClass0, heightClass0] +
-                                                                 heightFraction * this.Cubic3Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Cubic3Saw[diameterClass1, heightClass0] +
+                float cubic3sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Cubic3Saw[diameterClass0, heightClass0] +
+                                                               heightFraction * this.Cubic3Saw[diameterClass0, heightClass1]) +
+                                         dbhFraction * (inverseHeightFraction * this.Cubic3Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Cubic3Saw[diameterClass1, heightClass1]);
                 harvestedMerchVolume.Cubic3Saw += expansionFactorPerHa * cubic3sawForTree;
-                float cubic4sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Cubic4Saw[diameterClass0, heightClass0] +
-                                                                 heightFraction * this.Cubic4Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Cubic4Saw[diameterClass1, heightClass0] +
+                float cubic4sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Cubic4Saw[diameterClass0, heightClass0] +
+                                                               heightFraction * this.Cubic4Saw[diameterClass0, heightClass1]) +
+                                         dbhFraction * (inverseHeightFraction * this.Cubic4Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Cubic4Saw[diameterClass1, heightClass1]);
                 harvestedMerchVolume.Cubic4Saw += expansionFactorPerHa * cubic4sawForTree;
 
                 // bilinear interpolation for Scribner volume
-                float scribner2sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Scribner2Saw[diameterClass0, heightClass0] +
-                                                                    heightFraction * this.Scribner2Saw[diameterClass0, heightClass1]) +
-                                            dbhFraction * ((1.0F - heightFraction) * this.Scribner2Saw[diameterClass1, heightClass0] +
+                float scribner2sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Scribner2Saw[diameterClass0, heightClass0] +
+                                                                  heightFraction * this.Scribner2Saw[diameterClass0, heightClass1]) +
+                                            dbhFraction * (inverseHeightFraction * this.Scribner2Saw[diameterClass1, heightClass0] +
                                                            heightFraction * this.Scribner2Saw[diameterClass1, heightClass1]);
                 harvestedMerchVolume.Scribner2Saw += expansionFactorPerHa * scribner2sawForTree;
-                float scribner3sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Scribner3Saw[diameterClass0, heightClass0] +
-                                                                    heightFraction * this.Scribner3Saw[diameterClass0, heightClass1]) +
-                                            dbhFraction * ((1.0F - heightFraction) * this.Scribner3Saw[diameterClass1, heightClass0] +
+                float scribner3sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Scribner3Saw[diameterClass0, heightClass0] +
+                                                                  heightFraction * this.Scribner3Saw[diameterClass0, heightClass1]) +
+                                            dbhFraction * (inverseHeightFraction * this.Scribner3Saw[diameterClass1, heightClass0] +
                                                            heightFraction * this.Scribner3Saw[diameterClass1, heightClass1]);
                 harvestedMerchVolume.Scribner3Saw += expansionFactorPerHa * scribner3sawForTree;
-                float scribner4sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Scribner4Saw[diameterClass0, heightClass0] +
-                                                                    heightFraction * this.Scribner4Saw[diameterClass0, heightClass1]) +
-                                            dbhFraction * ((1.0F - heightFraction) * this.Scribner4Saw[diameterClass1, heightClass0] +
+                float scribner4sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Scribner4Saw[diameterClass0, heightClass0] +
+                                                                  heightFraction * this.Scribner4Saw[diameterClass0, heightClass1]) +
+                                            dbhFraction * (inverseHeightFraction * this.Scribner4Saw[diameterClass1, heightClass0] +
                                                            heightFraction * this.Scribner4Saw[diameterClass1, heightClass1]);
                 harvestedMerchVolume.Scribner4Saw += expansionFactorPerHa * scribner4sawForTree;
 
-                Debug.Assert((cubic2sawForTree >= 0.0F) && (cubic3sawForTree >= 0.0F) && (cubic4sawForTree >= 0.0F));
-                Debug.Assert((scribner2sawForTree >= 0.0F) && (scribner3sawForTree >= 0.0F) && (scribner4sawForTree >= 0.0F));
+                Debug.Assert((cubic2sawForTree >= 0.0F) && (cubic3sawForTree >= 0.0F) && (cubic4sawForTree >= 0.0F), "Cubic volume is not greater than or equal to zero.");
+                Debug.Assert((scribner2sawForTree >= 0.0F) && (scribner3sawForTree >= 0.0F) && (scribner4sawForTree >= 0.0F), "Scribner volume is not greater than or equal to zero for " + treesOfSpecies.Species + " with height " + heightInMeters + " m and DBH " + dbhInCm + " cm (2S " + scribner2sawForTree + ", 3S " + scribner3sawForTree + ", 4S " + scribner4sawForTree + " MBF/ha).");
             }
 
             harvestedMerchVolume.ConvertToMbf();
@@ -519,12 +536,14 @@ namespace Mars.Seem.Tree
         public (int logs2S, int logs3S) GetLogCounts(int diameterClass, int heightClass)
         {
             int logs2S = this.Logs2Saw[diameterClass, heightClass];
-            if (logs2S < 0)
+            if (logs2S < 0) // initialziation race condition check
             {
                 this.ScaleTree(diameterClass, heightClass);
                 logs2S = this.Logs2Saw[diameterClass, heightClass];
             }
+
             int logs3S = this.Logs3Saw[diameterClass, heightClass];
+            Debug.Assert((logs2S >= 0) && (logs3S >= 0));
             return (logs2S, logs3S);
         }
 
@@ -578,59 +597,62 @@ namespace Mars.Seem.Tree
 
                 // bilinear interpolation for number of logs
                 int diameterClass1 = diameterClass0 + 1;
-                int heightClass1  = heightClass0 + 1;
+                int heightClass1 = heightClass0 + 1;
                 (int logs2saw00, int logs3saw00) = this.GetLogCounts(diameterClass0, heightClass0);
                 (int logs2saw01, int logs3saw01) = this.GetLogCounts(diameterClass0, heightClass1);
                 (int logs2saw10, int logs3saw10) = this.GetLogCounts(diameterClass1, heightClass0);
                 (int logs2saw11, int logs3saw11) = this.GetLogCounts(diameterClass1, heightClass1);
-                float logs2sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * logs2saw00 + heightFraction * logs2saw01) +
-                                        dbhFraction * ((1.0F - heightFraction) * logs2saw10 + heightFraction * logs2saw11);
+
+                float inverseDbhFraction = 1.0F - dbhFraction;
+                float inverseHeightFraction = 1.0F - heightFraction;
+                float logs2sawForTree = inverseDbhFraction * (inverseHeightFraction * logs2saw00 + heightFraction * logs2saw01) +
+                                        dbhFraction * (inverseHeightFraction * logs2saw10 + heightFraction * logs2saw11);
                 standingMerchVolume.Logs2Saw += expansionFactorPerHa * logs2sawForTree;
-                float logs3sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * logs3saw00 + heightFraction * logs3saw01) +
-                                        dbhFraction * ((1.0F - heightFraction) * logs3saw10 + heightFraction * logs3saw11);
+                float logs3sawForTree = inverseDbhFraction * (inverseHeightFraction * logs3saw00 + heightFraction * logs3saw01) +
+                                        dbhFraction * (inverseHeightFraction * logs3saw10 + heightFraction * logs3saw11);
                 standingMerchVolume.Logs3Saw += expansionFactorPerHa * logs3sawForTree;
-                float logs4sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Logs4Saw[diameterClass0, heightClass0] +
+                float logs4sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Logs4Saw[diameterClass0, heightClass0] +
                                                                 heightFraction * this.Logs4Saw[diameterClass0, heightClass1]) +
-                                        dbhFraction * ((1.0F - heightFraction) * this.Logs4Saw[diameterClass1, heightClass0] +
+                                        dbhFraction * (inverseHeightFraction * this.Logs4Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Logs4Saw[diameterClass1, heightClass1]);
                 standingMerchVolume.Logs4Saw += expansionFactorPerHa * logs4sawForTree;
 
                 // bilinear interpolation for cubic volume
-                float cubic2sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Cubic2Saw[diameterClass0, heightClass0] +
+                float cubic2sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Cubic2Saw[diameterClass0, heightClass0] +
                                                                  heightFraction * this.Cubic2Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Cubic2Saw[diameterClass1, heightClass0] +
+                                         dbhFraction * (inverseHeightFraction * this.Cubic2Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Cubic2Saw[diameterClass1, heightClass1]);
                 standingMerchVolume.Cubic2Saw += expansionFactorPerHa * cubic2sawForTree;
-                float cubic3sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Cubic3Saw[diameterClass0, heightClass0] +
+                float cubic3sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Cubic3Saw[diameterClass0, heightClass0] +
                                                                  heightFraction * this.Cubic3Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Cubic3Saw[diameterClass1, heightClass0] +
+                                         dbhFraction * (inverseHeightFraction * this.Cubic3Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Cubic3Saw[diameterClass1, heightClass1]);
                 standingMerchVolume.Cubic3Saw += expansionFactorPerHa * cubic3sawForTree;
-                float cubic4sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Cubic4Saw[diameterClass0, heightClass0] +
+                float cubic4sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Cubic4Saw[diameterClass0, heightClass0] +
                                                                  heightFraction * this.Cubic4Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Cubic4Saw[diameterClass1, heightClass0] +
+                                         dbhFraction * (inverseHeightFraction * this.Cubic4Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Cubic4Saw[diameterClass1, heightClass1]);
                 standingMerchVolume.Cubic4Saw += expansionFactorPerHa * cubic4sawForTree;
 
                 // bilinear interpolation for Scribner
-                float scribner2sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Scribner2Saw[diameterClass0, heightClass0] +
+                float scribner2sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Scribner2Saw[diameterClass0, heightClass0] +
                                                                  heightFraction * this.Scribner2Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Scribner2Saw[diameterClass1, heightClass0] +
+                                         dbhFraction * (inverseHeightFraction * this.Scribner2Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Scribner2Saw[diameterClass1, heightClass1]);
                 standingMerchVolume.Scribner2Saw += expansionFactorPerHa * scribner2sawForTree;
-                float scribner3sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Scribner3Saw[diameterClass0, heightClass0] +
+                float scribner3sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Scribner3Saw[diameterClass0, heightClass0] +
                                                                  heightFraction * this.Scribner3Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Scribner3Saw[diameterClass1, heightClass0] +
+                                         dbhFraction * (inverseHeightFraction * this.Scribner3Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Scribner3Saw[diameterClass1, heightClass1]);
                 standingMerchVolume.Scribner3Saw += expansionFactorPerHa * scribner3sawForTree;
-                float scribner4sawForTree = (1.0F - dbhFraction) * ((1.0F - heightFraction) * this.Scribner4Saw[diameterClass0, heightClass0] +
+                float scribner4sawForTree = inverseDbhFraction * (inverseHeightFraction * this.Scribner4Saw[diameterClass0, heightClass0] +
                                                                  heightFraction * this.Scribner4Saw[diameterClass0, heightClass1]) +
-                                         dbhFraction * ((1.0F - heightFraction) * this.Scribner4Saw[diameterClass1, heightClass0] +
+                                         dbhFraction * (inverseHeightFraction * this.Scribner4Saw[diameterClass1, heightClass0] +
                                                         heightFraction * this.Scribner4Saw[diameterClass1, heightClass1]);
                 standingMerchVolume.Scribner4Saw += expansionFactorPerHa * scribner4sawForTree;
 
                 Debug.Assert((cubic2sawForTree >= 0.0F) && (cubic3sawForTree >= 0.0F) && (cubic4sawForTree >= 0.0F), "Cubic volume is not greater than or equal to zero.");
-                Debug.Assert((scribner2sawForTree >= 0.0F) && (scribner3sawForTree >= 0.0F) && (scribner4sawForTree >= 0.0F), "Scribner volume is not greater than or equal to zero.");
+                Debug.Assert((scribner2sawForTree >= 0.0F) && (scribner3sawForTree >= 0.0F) && (scribner4sawForTree >= 0.0F), "Scribner volume is not greater than or equal to zero for " + treesOfSpecies.Species + " with height " + heightInMeters + " m and DBH " + dbhInCm + " cm (2S " + scribner2sawForTree + ", 3S " + scribner3sawForTree + ", 4S " + scribner4sawForTree + " MBF/ha).");
             }
 
             standingMerchVolume.ConvertToMbf();
@@ -870,16 +892,24 @@ namespace Mars.Seem.Tree
                 previousLogLengthWithTrim = logLengthIncludingTrim + scribnerTrim;
             }
 
-            this.Cubic2Saw[diameterClass, heightClass] = cubic2saw;
-            this.Cubic3Saw[diameterClass, heightClass] = cubic3saw;
-            this.Cubic4Saw[diameterClass, heightClass] = cubic4saw;
-            this.Logs2Saw[diameterClass, heightClass] = logs2S;
-            this.Logs3Saw[diameterClass, heightClass] = logs3S;
-            this.Logs4Saw[diameterClass, heightClass] = logs4S;
-            this.Scribner2Saw[diameterClass, heightClass] = scribner2saw;
-            this.Scribner3Saw[diameterClass, heightClass] = scribner3saw;
-            this.Scribner4Saw[diameterClass, heightClass] = scribner4saw;
+            // assign 2S values and log counts last as they're used as checks for completeness
+            // This makes GetHarvestedVolume() and GetStandingMerchantableVolume()'s calls to GetLogCounts() thread safe by ensuring cubic and
+            // Scribner volumes have been set once the log counts transition from -1 to >= 0. Assignments are idempotent, so ScaleTree() can be
+            // called concurrently from multiple threads performing lazy initialization of the same height and diameter class.
+            Debug.Assert((logs2S >= 0) && (logs3S >= 0) && (logs4S >= 0) && (Single.IsNaN(cubic2saw) == false) && (Single.IsNaN(cubic3saw) == false) && (Single.IsNaN(cubic4saw) == false) && (Single.IsNaN(scribner2saw) == false) && (Single.IsNaN(scribner3saw) == false) && (Single.IsNaN(scribner4saw) == false) && (Single.IsNaN(unscaledNeiloidVolume) == false));
             this.UnscaledNeiloidCubic[diameterClass, heightClass] = unscaledNeiloidVolume;
+
+            this.Cubic4Saw[diameterClass, heightClass] = cubic4saw;
+            this.Scribner4Saw[diameterClass, heightClass] = scribner4saw;
+            this.Logs4Saw[diameterClass, heightClass] = logs4S;
+
+            this.Cubic3Saw[diameterClass, heightClass] = cubic3saw;
+            this.Logs3Saw[diameterClass, heightClass] = logs3S;
+            this.Scribner3Saw[diameterClass, heightClass] = scribner3saw;
+
+            this.Cubic2Saw[diameterClass, heightClass] = cubic2saw;
+            this.Scribner2Saw[diameterClass, heightClass] = scribner2saw;
+            this.Logs2Saw[diameterClass, heightClass] = logs2S;
         }
 
         public int ToDiameterIndex(float dbhInCentimeters)
@@ -896,18 +926,22 @@ namespace Mars.Seem.Tree
 
         private void ZeroTree(int diameterClass, int heightClass)
         {
-            this.Cubic2Saw[diameterClass, heightClass] = 0.0F;
-            this.Cubic3Saw[diameterClass, heightClass] = 0.0F;
-            this.Cubic4Saw[diameterClass, heightClass] = 0.0F;
-            this.Logs2Saw[diameterClass, heightClass] = 0;
-            this.Logs3Saw[diameterClass, heightClass] = 0;
-            this.Logs4Saw[diameterClass, heightClass] = 0;
             this.LogCubic[diameterClass, heightClass, 0] = 0.0F; // mark first log as zero m³ since it's tested for NaN to see if tree needs scaling, leave higher logs as NaN
             this.LogTopDiameterInCentimeters[diameterClass, heightClass, 0] = 0.0F; // mark first log as zero cm since it's tested for NaN to see if tree needs scaling, leave higher logs as NaN
-            this.Scribner2Saw[diameterClass, heightClass] = 0.0F;
-            this.Scribner3Saw[diameterClass, heightClass] = 0.0F;
-            this.Scribner4Saw[diameterClass, heightClass] = 0.0F;
             this.UnscaledNeiloidCubic[diameterClass, heightClass] = 0.0F; // no merchantable volume means no neiloid height and thus zero unscaled neiloid volume
+
+            // since ScaleTree() calls ZeroTree(), the same assignment order as at end of ScaleTree() is required for thread safety
+            this.Cubic4Saw[diameterClass, heightClass] = 0.0F;
+            this.Scribner4Saw[diameterClass, heightClass] = 0.0F;
+            this.Logs4Saw[diameterClass, heightClass] = 0;
+
+            this.Cubic3Saw[diameterClass, heightClass] = 0.0F;
+            this.Scribner3Saw[diameterClass, heightClass] = 0.0F;
+            this.Logs3Saw[diameterClass, heightClass] = 0;
+
+            this.Cubic2Saw[diameterClass, heightClass] = 0.0F;
+            this.Scribner2Saw[diameterClass, heightClass] = 0.0F;
+            this.Logs2Saw[diameterClass, heightClass] = 0;
         }
     }
 }

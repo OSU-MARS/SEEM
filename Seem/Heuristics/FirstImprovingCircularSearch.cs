@@ -138,7 +138,7 @@ namespace Mars.Seem.Heuristics
             public OrganonStandTrajectory CandidateTrajectory { get; private init; }
             public int MovesSinceLastImprovement { get; set; }
             public PrescriptionPerformanceCounters PerfCounters { get; private init; }
-            public IList<int> ThinningPeriods { get; private init; }
+            public List<int> ThinningPeriods { get; private init; }
             public int TreeIndex { get; set; }
             public int[] UncompactedPeriodIndices { get; private init; }
             public int[] UncompactedTreeIndices { get; private init; }

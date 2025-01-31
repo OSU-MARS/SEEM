@@ -53,7 +53,7 @@ namespace Mars.Seem.Cmdlets
             return "Optimize-ThresholdAccepting";
         }
 
-        protected override IList<HeuristicParameters> GetParameterCombinations()
+        protected override List<HeuristicParameters> GetParameterCombinations()
         {
             return this.GetDefaultParameterCombinations();
         }

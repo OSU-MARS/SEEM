@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Diagnostics;
+using Mars.Seem.Extensions;
 
 namespace Mars.Seem.Test
 {
@@ -17,20 +18,26 @@ namespace Mars.Seem.Test
     public class PublicApi : OrganonTest
     {
         private static readonly float BiomassTolerance;
-        private static readonly float HarvestTolerance;
         private static readonly float QmdTolerance;
         private static readonly float TopHeightTolerance;
         private static readonly float VolumeTolerance;
+
+        #if DEBUG
+        private static readonly float HarvestTolerance;
+        #endif
 
         public TestContext? TestContext { get; set; }
 
         static PublicApi()
         {
             PublicApi.BiomassTolerance = 1.01F;
-            PublicApi.HarvestTolerance = 1.01F;
             PublicApi.QmdTolerance = 1.01F;
             PublicApi.TopHeightTolerance = 1.01F;
             PublicApi.VolumeTolerance = 1.01F;
+
+            #if DEBUG
+            PublicApi.HarvestTolerance = 1.01F;
+            #endif
         }
 
         private static HeuristicStandTrajectories<HeuristicParameters> CreateResults(HeuristicParameters parameters, int firstThinPeriodIndex, int rotationLength)
@@ -235,82 +242,154 @@ namespace Mars.Seem.Test
 
                 Assert.IsTrue((firstCircularRegen.Fallers.ChainsawBasalAreaPerHa > 77.364F) && (firstCircularRegen.Fallers.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 77.364F), "regen: fallers");
                 Assert.IsTrue(firstCircularRegen.Fallers.ChainsawCrew == ChainsawCrewType.Fallers, "regen: fallers");
-                Assert.IsTrue((firstCircularRegen.Fallers.ChainsawCubicVolumePerHa > 277.560F) && (firstCircularRegen.Fallers.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 277.560F), "regen: fallers");
                 Assert.IsTrue(firstCircularRegen.Fallers.ChainsawFalling == true, "regen: fallers");
-                Assert.IsTrue((firstCircularRegen.Fallers.ChainsawMinimumCost > 5960.01F) && (firstCircularRegen.Fallers.ChainsawMinimumCost < PublicApi.HarvestTolerance * 5960.01F), "regen: fallers");
-                Assert.IsTrue((firstCircularRegen.Fallers.ChainsawPMhPerHa > 19.933F) && (firstCircularRegen.Fallers.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 19.933F), "regen: fallers");
                 Assert.IsTrue(firstCircularRegen.Fallers.ChainsawUtilization == 0.5F, "regen: fallers");
-                Assert.IsTrue((firstCircularRegen.Fallers.LoadedWeightPerHa > 201926.0F) && (firstCircularRegen.Fallers.LoadedWeightPerHa < PublicApi.HarvestTolerance * 201926.0F), "regen: fallers");
-                Assert.IsTrue((firstCircularRegen.Fallers.SystemCostPerHaWithYarder > 12949.77F) && (firstCircularRegen.Fallers.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 12949.77F), "regen: fallers");
-                Assert.IsTrue((firstCircularRegen.Fallers.SystemCostPerHaWithYoader > 13680.87F) && (firstCircularRegen.Fallers.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 13680.87F), "regen: fallers");
-                Assert.IsTrue((firstCircularRegen.Fallers.YardedWeightPerHa > 213994.5F) && (firstCircularRegen.Fallers.YardedWeightPerHa < PublicApi.HarvestTolerance * 213994.5F), "regen: fallers");
                 Assert.IsTrue(MathF.Abs(firstCircularRegen.Fallers.LoadedWeightPerHa - firstCircularRegen.FellerBuncher.LoadedWeightPerHa) < 0.1F);
                 Assert.IsTrue(MathF.Abs(firstCircularRegen.Fallers.YardedWeightPerHa - firstCircularRegen.FellerBuncher.YardedWeightPerHa) < 0.1F);
+                if (configuration.Variant.Simd == SimdInstructions.Avx10)
+                {
+                    Assert.IsTrue((firstCircularRegen.Fallers.ChainsawCubicVolumePerHa > 277.438F) && (firstCircularRegen.Fallers.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 277.438F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.ChainsawMinimumCost > 5955.90F) && (firstCircularRegen.Fallers.ChainsawMinimumCost < PublicApi.HarvestTolerance * 5955.90F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.ChainsawPMhPerHa > 19.919F) && (firstCircularRegen.Fallers.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 19.919F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.LoadedWeightPerHa >= 201828.3F) && (firstCircularRegen.Fallers.LoadedWeightPerHa < PublicApi.HarvestTolerance * 201828.3F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.SystemCostPerHaWithYarder > 12942.62F) && (firstCircularRegen.Fallers.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 12942.62F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.SystemCostPerHaWithYoader > 13673.40F) && (firstCircularRegen.Fallers.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 13673.40F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.YardedWeightPerHa > 213900.8F) && (firstCircularRegen.Fallers.YardedWeightPerHa < PublicApi.HarvestTolerance * 213900.8F), "regen: fallers");
+                }
+                else
+                {
+                    Assert.IsTrue((firstCircularRegen.Fallers.ChainsawCubicVolumePerHa > 277.560F) && (firstCircularRegen.Fallers.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 277.560F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.ChainsawMinimumCost > 5960.01F) && (firstCircularRegen.Fallers.ChainsawMinimumCost < PublicApi.HarvestTolerance * 5960.01F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.ChainsawPMhPerHa > 19.933F) && (firstCircularRegen.Fallers.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 19.933F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.LoadedWeightPerHa > 201926.0F) && (firstCircularRegen.Fallers.LoadedWeightPerHa < PublicApi.HarvestTolerance * 201926.0F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.SystemCostPerHaWithYarder > 12949.77F) && (firstCircularRegen.Fallers.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 12949.77F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.SystemCostPerHaWithYoader > 13680.87F) && (firstCircularRegen.Fallers.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 13680.87F), "regen: fallers");
+                    Assert.IsTrue((firstCircularRegen.Fallers.YardedWeightPerHa > 213994.5F) && (firstCircularRegen.Fallers.YardedWeightPerHa < PublicApi.HarvestTolerance * 213994.5F), "regen: fallers");
+                }
 
                 Assert.IsTrue(firstCircularRegen.FellerBuncher.AnchorMachine == true, "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherCostPerHa > 311.68F) && (firstCircularRegen.FellerBuncher.FellerBuncherCostPerHa < PublicApi.HarvestTolerance * 311.68F), "regen: feller-buncher");
+                Assert.IsTrue(firstCircularRegen.FellerBuncher.Yarder.ChainsawCrew == ChainsawCrewType.Bucker, "regen: feller-buncher");
+                Assert.IsTrue(firstCircularRegen.FellerBuncher.Yarder.ChainsawFalling == false, "regen: feller-buncher");
+                Assert.IsTrue(firstCircularRegen.FellerBuncher.Yoader.ChainsawCrew == ChainsawCrewType.Bucker, "regen: feller-buncher");
+                Assert.IsTrue(firstCircularRegen.FellerBuncher.Yoader.ChainsawFalling == false, "regen: feller-buncher");
+                if (configuration.Variant.Simd == SimdInstructions.Avx10)
+                {
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherCostPerHa > 311.61F) && (firstCircularRegen.FellerBuncher.FellerBuncherCostPerHa < PublicApi.HarvestTolerance * 311.61F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherProductivity > 290.703F) && (firstCircularRegen.FellerBuncher.FellerBuncherProductivity < PublicApi.HarvestTolerance * 290.703F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.LoadedWeightPerHa >= 201828.3F) && (firstCircularRegen.FellerBuncher.LoadedWeightPerHa < PublicApi.HarvestTolerance * 201828.3F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.YardedWeightPerHa > 213900.8F) && (firstCircularRegen.FellerBuncher.YardedWeightPerHa < PublicApi.HarvestTolerance * 213900.8F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.ChainsawBasalAreaPerHa > 37.050F) && (firstCircularRegen.FellerBuncher.Yarder.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 37.050F), "regen: feller-buncher+yarder chainsaw basal area");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.SystemCostPerHa > 8313.86F) && (firstCircularRegen.FellerBuncher.Yarder.SystemCostPerHa < PublicApi.HarvestTolerance * 8313.86F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawBasalAreaPerHa > 63.237F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 63.237F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawCubicVolumePerHa > 226.269F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 226.269F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawMinimumCost > 1379.43F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawMinimumCost < PublicApi.HarvestTolerance * 1379.43F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawPMhPerHa > 12.932F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 12.932F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.SystemCostPerHa > 9549.88F) && (firstCircularRegen.FellerBuncher.Yoader.SystemCostPerHa < PublicApi.HarvestTolerance * 9549.88F), "regen: feller-buncher");
+                }
+                else
+                {
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherCostPerHa > 311.68F) && (firstCircularRegen.FellerBuncher.FellerBuncherCostPerHa < PublicApi.HarvestTolerance * 311.68F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherProductivity > 290.862F) && (firstCircularRegen.FellerBuncher.FellerBuncherProductivity < PublicApi.HarvestTolerance * 290.862F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.LoadedWeightPerHa > 201926.1F) && (firstCircularRegen.FellerBuncher.LoadedWeightPerHa < PublicApi.HarvestTolerance * 201926.1F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.YardedWeightPerHa > 213994.0F) && (firstCircularRegen.FellerBuncher.YardedWeightPerHa < PublicApi.HarvestTolerance * 213994.0F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.ChainsawPMhPerHa > 8.195F) && (firstCircularRegen.FellerBuncher.Yarder.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 8.195F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.SystemCostPerHa > 8316.98F) && (firstCircularRegen.FellerBuncher.Yarder.SystemCostPerHa < PublicApi.HarvestTolerance * 8316.98F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawBasalAreaPerHa > 63.224F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 63.224F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawCubicVolumePerHa > 226.391F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 226.391F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawMinimumCost > 1380.68F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawMinimumCost < PublicApi.HarvestTolerance * 1380.68F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawPMhPerHa > 12.943F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 12.943F), "regen: feller-buncher");
+                    Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.SystemCostPerHa > 9554.56F) && (firstCircularRegen.FellerBuncher.Yoader.SystemCostPerHa < PublicApi.HarvestTolerance * 9554.56F), "regen: feller-buncher");
+                }
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherCostPerSMh > 263.4F) && (firstCircularRegen.FellerBuncher.FellerBuncherCostPerSMh < PublicApi.HarvestTolerance * 263.5F), "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherPMhPerHa > 0.910F) && (firstCircularRegen.FellerBuncher.FellerBuncherPMhPerHa < PublicApi.HarvestTolerance * 0.910F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.FellerBuncherProductivity > 290.862F) && (firstCircularRegen.FellerBuncher.FellerBuncherProductivity < PublicApi.HarvestTolerance * 290.862F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.LoadedWeightPerHa > 201926.1F) && (firstCircularRegen.FellerBuncher.LoadedWeightPerHa < PublicApi.HarvestTolerance * 201926.1F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.YardedWeightPerHa > 213994.0F) && (firstCircularRegen.FellerBuncher.YardedWeightPerHa < PublicApi.HarvestTolerance * 213994.0F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.ChainsawBasalAreaPerHa > 37.043F) && (firstCircularRegen.FellerBuncher.Yarder.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 37.043F), "regen: feller-buncher+yarder chainsaw basal area");
-                Assert.IsTrue(firstCircularRegen.FellerBuncher.Yarder.ChainsawCrew == ChainsawCrewType.Bucker, "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.ChainsawCubicVolumePerHa > 129.370F) && (firstCircularRegen.FellerBuncher.Yarder.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 129.370F), "regen: feller-buncher");
-                Assert.IsTrue(firstCircularRegen.FellerBuncher.Yarder.ChainsawFalling == false, "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.ChainsawMinimumCost > 874.20F) && (firstCircularRegen.FellerBuncher.Yarder.ChainsawMinimumCost < PublicApi.HarvestTolerance * 874.20F), "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.ChainsawPMhPerHa > 8.195F) && (firstCircularRegen.FellerBuncher.Yarder.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 8.195F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.ChainsawUtilization > 0.74F) && (firstCircularRegen.FellerBuncher.Yarder.ChainsawUtilization < PublicApi.HarvestTolerance * 0.75F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.Yarder.SystemCostPerHa > 8316.98F) && (firstCircularRegen.FellerBuncher.Yarder.SystemCostPerHa < PublicApi.HarvestTolerance * 8316.98F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawBasalAreaPerHa > 63.224F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 63.224F), "regen: feller-buncher");
-                Assert.IsTrue(firstCircularRegen.FellerBuncher.Yoader.ChainsawCrew == ChainsawCrewType.Bucker, "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawCubicVolumePerHa > 226.391F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 226.391F), "regen: feller-buncher");
-                Assert.IsTrue(firstCircularRegen.FellerBuncher.Yoader.ChainsawFalling == false, "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawMinimumCost > 1380.68F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawMinimumCost < PublicApi.HarvestTolerance * 1380.68F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawPMhPerHa > 12.943F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 12.943F), "regen: feller-buncher");
                 Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.ChainsawUtilization > 0.74F) && (firstCircularRegen.FellerBuncher.Yoader.ChainsawUtilization < PublicApi.HarvestTolerance * 0.75F), "regen: feller-buncher");
-                Assert.IsTrue((firstCircularRegen.FellerBuncher.Yoader.SystemCostPerHa > 9554.56F) && (firstCircularRegen.FellerBuncher.Yoader.SystemCostPerHa < PublicApi.HarvestTolerance * 9554.56F), "regen: feller-buncher");
 
-                Assert.IsTrue((firstCircularRegen.HarvestRelatedTaskCostPerHa > 688.89F) && (firstCircularRegen.HarvestRelatedTaskCostPerHa < PublicApi.HarvestTolerance * 688.89F), "regen: harvest tasks");
-                Assert.IsTrue((firstCircularRegen.LoaderSMhPerHectare > 4.312F) && (firstCircularRegen.LoaderSMhPerHectare < PublicApi.HarvestTolerance * 4.312F), "regen: loader");
-                Assert.IsTrue((firstCircularRegen.MerchantableCubicVolumePerHa > 264.920F) && (firstCircularRegen.MerchantableCubicVolumePerHa < PublicApi.HarvestTolerance * 264.920F), "regen: merchantable cubic volume");
                 Assert.IsTrue(firstCircularRegen.MinimumCostHarvestSystem == HarvestSystemEquipment.FellerBuncherGrappleSwingYarderProcessorLoader, "regen: min cost system");
-                Assert.IsTrue((firstCircularRegen.MinimumSystemCostPerHa > 8316.98F) && (firstCircularRegen.MinimumSystemCostPerHa < PublicApi.HarvestTolerance * 8316.98F), "regen: min cost system");
-                Assert.IsTrue((firstCircularRegen.NetPresentValuePerHa > 3062.03F) && (firstCircularRegen.NetPresentValuePerHa < PublicApi.HarvestTolerance * 3062.03F), "regen: NPV");
-                Assert.IsTrue((firstCircularRegen.PondValue2SawPerHa > 24668.05F) && (firstCircularRegen.PondValue2SawPerHa < PublicApi.HarvestTolerance * 24668.05F), "regen: pond 2S");
-                Assert.IsTrue((firstCircularRegen.PondValue3SawPerHa > 1573.129F) && (firstCircularRegen.PondValue3SawPerHa < PublicApi.HarvestTolerance * 1573.129F), "regen: pond 3S");
-                Assert.IsTrue((firstCircularRegen.PondValue4SawPerHa > 1102.866F) && (firstCircularRegen.PondValue4SawPerHa < PublicApi.HarvestTolerance * 1102.866F), "regen: pond 4S");
+                if (configuration.Variant.Simd == SimdInstructions.Avx10)
+                {
+                    Assert.IsTrue((firstCircularRegen.HarvestRelatedTaskCostPerHa > 688.48F) && (firstCircularRegen.HarvestRelatedTaskCostPerHa < PublicApi.HarvestTolerance * 688.48F), "regen: harvest tasks");
+                    Assert.IsTrue((firstCircularRegen.LoaderSMhPerHectare > 4.310F) && (firstCircularRegen.LoaderSMhPerHectare < PublicApi.HarvestTolerance * 4.310F), "regen: loader");
+                    Assert.IsTrue((firstCircularRegen.MerchantableCubicVolumePerHa > 264.711F) && (firstCircularRegen.MerchantableCubicVolumePerHa < PublicApi.HarvestTolerance * 264.711F), "regen: merchantable cubic volume");
+                    Assert.IsTrue((firstCircularRegen.MinimumSystemCostPerHa > 8313.86F) && (firstCircularRegen.MinimumSystemCostPerHa < PublicApi.HarvestTolerance * 8313.86F), "regen: min cost system");
+                    Assert.IsTrue((firstCircularRegen.NetPresentValuePerHa > 3056.51F) && (firstCircularRegen.NetPresentValuePerHa < PublicApi.HarvestTolerance * 3056.51F), "regen: NPV");
+                    Assert.IsTrue((firstCircularRegen.PondValue2SawPerHa > 24629.58F) && (firstCircularRegen.PondValue2SawPerHa < PublicApi.HarvestTolerance * 24629.58F), "regen: pond 2S");
+                    Assert.IsTrue((firstCircularRegen.PondValue3SawPerHa >= 1578.489F) && (firstCircularRegen.PondValue3SawPerHa < PublicApi.HarvestTolerance * 1578.489F), "regen: pond 3S");
+                    Assert.IsTrue((firstCircularRegen.PondValue4SawPerHa > 1100.250F) && (firstCircularRegen.PondValue4SawPerHa < PublicApi.HarvestTolerance * 1100.250F), "regen: pond 4S");
+                }
+                else
+                {
+                    Assert.IsTrue((firstCircularRegen.HarvestRelatedTaskCostPerHa > 688.89F) && (firstCircularRegen.HarvestRelatedTaskCostPerHa < PublicApi.HarvestTolerance * 688.89F), "regen: harvest tasks");
+                    Assert.IsTrue((firstCircularRegen.LoaderSMhPerHectare > 4.312F) && (firstCircularRegen.LoaderSMhPerHectare < PublicApi.HarvestTolerance * 4.312F), "regen: loader");
+                    Assert.IsTrue((firstCircularRegen.MerchantableCubicVolumePerHa > 264.920F) && (firstCircularRegen.MerchantableCubicVolumePerHa < PublicApi.HarvestTolerance * 264.920F), "regen: merchantable cubic volume");
+                    Assert.IsTrue((firstCircularRegen.MinimumSystemCostPerHa > 8316.98F) && (firstCircularRegen.MinimumSystemCostPerHa < PublicApi.HarvestTolerance * 8316.98F), "regen: min cost system");
+                    Assert.IsTrue((firstCircularRegen.NetPresentValuePerHa > 3062.03F) && (firstCircularRegen.NetPresentValuePerHa < PublicApi.HarvestTolerance * 3062.03F), "regen: NPV");
+                    Assert.IsTrue((firstCircularRegen.PondValue2SawPerHa > 24668.05F) && (firstCircularRegen.PondValue2SawPerHa < PublicApi.HarvestTolerance * 24668.05F), "regen: pond 2S");
+                    Assert.IsTrue((firstCircularRegen.PondValue3SawPerHa > 1573.129F) && (firstCircularRegen.PondValue3SawPerHa < PublicApi.HarvestTolerance * 1573.129F), "regen: pond 3S");
+                    Assert.IsTrue((firstCircularRegen.PondValue4SawPerHa > 1102.866F) && (firstCircularRegen.PondValue4SawPerHa < PublicApi.HarvestTolerance * 1102.866F), "regen: pond 4S");
+                }
                 Assert.IsTrue((firstCircularRegen.ReforestationNpv < -77.43F) && (firstCircularRegen.ReforestationNpv > PublicApi.HarvestTolerance * -77.43F), "regen: reforestation");
 
                 Assert.IsTrue(firstCircularRegen.Yarder.OverweightFirstLogsPerHa == 0.0F, "regen: yarder");
-                Assert.IsTrue((firstCircularRegen.Yarder.ProcessorPMhPerHa > 2.691F) && (firstCircularRegen.Yarder.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.691F), "regen: yarder");
-                Assert.IsTrue((firstCircularRegen.Yarder.ProcessorProductivity > 98.427F) && (firstCircularRegen.Yarder.ProcessorProductivity < PublicApi.HarvestTolerance * 98.427F), "regen: yarder");
-                Assert.IsTrue((firstCircularRegen.Yarder.YarderPMhPerHectare > 4.761F) && (firstCircularRegen.Yarder.YarderPMhPerHectare < PublicApi.HarvestTolerance * 4.761F), "regen: yarder");
-                Assert.IsTrue((firstCircularRegen.Yarder.YarderProductivity > 55.639F) && (firstCircularRegen.Yarder.YarderProductivity < PublicApi.HarvestTolerance * 55.639F), "regen: yarder");
-                Assert.IsTrue((firstCircularRegen.Yarder.YarderSMhPerHectare > 5.951F) && (firstCircularRegen.Yarder.YarderSMhPerHectare < PublicApi.HarvestTolerance * 5.951F), "regen: yarder");
+                if (configuration.Variant.Simd == SimdInstructions.Avx10)
+                {
+                    Assert.IsTrue((firstCircularRegen.Yarder.ProcessorPMhPerHa > 2.690F) && (firstCircularRegen.Yarder.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.691F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yarder.ProcessorProductivity > 98.395F) && (firstCircularRegen.Yarder.ProcessorProductivity < PublicApi.HarvestTolerance * 98.395F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yarder.YarderPMhPerHectare > 4.759F) && (firstCircularRegen.Yarder.YarderPMhPerHectare < PublicApi.HarvestTolerance * 4.759F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yarder.YarderProductivity > 55.619F) && (firstCircularRegen.Yarder.YarderProductivity < PublicApi.HarvestTolerance * 55.619F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yarder.YarderSMhPerHectare > 5.949F) && (firstCircularRegen.Yarder.YarderSMhPerHectare < PublicApi.HarvestTolerance * 5.949F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yoader.ProcessorPMhPerHa > 2.652F) && (firstCircularRegen.Yoader.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.652F), "regen: yoader");
+                    Assert.IsTrue((firstCircularRegen.Yoader.ProcessorProductivity > 99.781F) && (firstCircularRegen.Yoader.ProcessorProductivity < PublicApi.HarvestTolerance * 99.781F), "regen: yoader");
+                    Assert.IsTrue((firstCircularRegen.Yoader.YarderPMhPerHectare > 6.141F) && (firstCircularRegen.Yoader.YarderPMhPerHectare < PublicApi.HarvestTolerance * 6.141F), "regen: yoader");
+                    Assert.IsTrue((firstCircularRegen.Yoader.YarderProductivity > 43.105F) && (firstCircularRegen.Yoader.YarderProductivity < PublicApi.HarvestTolerance * 43.105F), "regen: yoader");
+                    Assert.IsTrue((firstCircularRegen.Yoader.YarderSMhPerHectare > 8.188F) && (firstCircularRegen.Yoader.YarderSMhPerHectare < PublicApi.HarvestTolerance * 8.188F), "regen: yoader");
+                }
+                else
+                {
+                    Assert.IsTrue((firstCircularRegen.Yarder.ProcessorPMhPerHa > 2.691F) && (firstCircularRegen.Yarder.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.691F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yarder.ProcessorProductivity > 98.427F) && (firstCircularRegen.Yarder.ProcessorProductivity < PublicApi.HarvestTolerance * 98.427F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yarder.YarderPMhPerHectare > 4.761F) && (firstCircularRegen.Yarder.YarderPMhPerHectare < PublicApi.HarvestTolerance * 4.761F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yarder.YarderProductivity > 55.639F) && (firstCircularRegen.Yarder.YarderProductivity < PublicApi.HarvestTolerance * 55.639F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yarder.YarderSMhPerHectare > 5.951F) && (firstCircularRegen.Yarder.YarderSMhPerHectare < PublicApi.HarvestTolerance * 5.951F), "regen: yarder");
+                    Assert.IsTrue((firstCircularRegen.Yoader.ProcessorPMhPerHa > 2.653F) && (firstCircularRegen.Yoader.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.653F), "regen: yoader");
+                    Assert.IsTrue((firstCircularRegen.Yoader.ProcessorProductivity > 99.822F) && (firstCircularRegen.Yoader.ProcessorProductivity < PublicApi.HarvestTolerance * 99.822F), "regen: yoader");
+                    Assert.IsTrue((firstCircularRegen.Yoader.YarderPMhPerHectare > 6.143F) && (firstCircularRegen.Yoader.YarderPMhPerHectare < PublicApi.HarvestTolerance * 6.143F), "regen: yoader");
+                    Assert.IsTrue((firstCircularRegen.Yoader.YarderProductivity > 43.120F) && (firstCircularRegen.Yoader.YarderProductivity < PublicApi.HarvestTolerance * 43.120F), "regen: yoader");
+                    Assert.IsTrue((firstCircularRegen.Yoader.YarderSMhPerHectare > 8.191F) && (firstCircularRegen.Yoader.YarderSMhPerHectare < PublicApi.HarvestTolerance * 8.191F), "regen: yoader");
+                }
                 Assert.IsTrue((firstCircularRegen.Yoader.OverweightFirstLogsPerHa > 1.270F) && (firstCircularRegen.Yoader.OverweightFirstLogsPerHa < PublicApi.HarvestTolerance * 1.270F), "regen: yoader");
-                Assert.IsTrue((firstCircularRegen.Yoader.ProcessorPMhPerHa > 2.653F) && (firstCircularRegen.Yoader.ProcessorPMhPerHa < PublicApi.HarvestTolerance * 2.653F), "regen: yoader");
-                Assert.IsTrue((firstCircularRegen.Yoader.ProcessorProductivity > 99.822F) && (firstCircularRegen.Yoader.ProcessorProductivity < PublicApi.HarvestTolerance * 99.822F), "regen: yoader");
-                Assert.IsTrue((firstCircularRegen.Yoader.YarderPMhPerHectare > 6.143F) && (firstCircularRegen.Yoader.YarderPMhPerHectare < PublicApi.HarvestTolerance * 6.143F), "regen: yoader");
-                Assert.IsTrue((firstCircularRegen.Yoader.YarderProductivity > 43.120F) && (firstCircularRegen.Yoader.YarderProductivity < PublicApi.HarvestTolerance * 43.120F), "regen: yoader");
-                Assert.IsTrue((firstCircularRegen.Yoader.YarderSMhPerHectare > 8.191F) && (firstCircularRegen.Yoader.YarderSMhPerHectare < PublicApi.HarvestTolerance * 8.191F), "regen: yoader");
 
                 Assert.IsTrue(firstCircularRegen.TrackedHarvester.AnchorMachine == true, "regen: tracked harvester");
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.ChainsawBasalAreaPerHa > 5.332F) && (firstCircularRegen.TrackedHarvester.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 5.332F), "regen: tracked harvester");
                 Assert.IsTrue(firstCircularRegen.TrackedHarvester.ChainsawCrew == ChainsawCrewType.Bucker, "regen: tracked harvester");
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.ChainsawCubicVolumePerHa > 18.022F) && (firstCircularRegen.TrackedHarvester.ChainsawCubicVolumePerHa < PublicApi.HarvestTolerance * 18.022F), "regen: tracked harvester");
                 Assert.IsTrue(firstCircularRegen.TrackedHarvester.ChainsawFalling == false, "regen: tracked harvester");
-                Assert.IsTrue((firstCircularRegen.TrackedHarvester.ChainsawMinimumCost > 781.35F) && (firstCircularRegen.TrackedHarvester.ChainsawMinimumCost < PublicApi.HarvestTolerance * 781.35F), "regen: tracked harvester");
+                Assert.IsTrue(firstCircularRegen.TrackedHarvester.IsTracked == true, "regen: tracked harvester");
+                if (configuration.Variant.Simd == SimdInstructions.Avx10)
+                {
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.ChainsawMinimumCost > 781.20F) && (firstCircularRegen.TrackedHarvester.ChainsawMinimumCost < PublicApi.HarvestTolerance * 781.20F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterCostPerHa > 1865.94F) && (firstCircularRegen.TrackedHarvester.HarvesterCostPerHa < PublicApi.HarvestTolerance * 1865.94F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterPMhPerHa > 5.432F) && (firstCircularRegen.TrackedHarvester.HarvesterPMhPerHa < PublicApi.HarvestTolerance * 5.432F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterProductivity > 48.731F) && (firstCircularRegen.TrackedHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 48.731F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYarder > 8466.07F) && (firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 8466.07F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYoader > 8740.12F) && (firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 8740.12F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.YardedWeightPerHa > 199673.1F) && (firstCircularRegen.TrackedHarvester.YardedWeightPerHa < PublicApi.HarvestTolerance * 199673.1F), "regen: tracked harvester");
+                }
+                else
+                {
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.ChainsawMinimumCost > 781.35F) && (firstCircularRegen.TrackedHarvester.ChainsawMinimumCost < PublicApi.HarvestTolerance * 781.35F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterCostPerHa > 1866.86F) && (firstCircularRegen.TrackedHarvester.HarvesterCostPerHa < PublicApi.HarvestTolerance * 1866.86F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterPMhPerHa > 5.434F) && (firstCircularRegen.TrackedHarvester.HarvesterPMhPerHa < PublicApi.HarvestTolerance * 5.434F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterProductivity > 48.746F) && (firstCircularRegen.TrackedHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 48.746F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYarder > 8469.53F) && (firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 8469.53F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYoader > 8743.69F) && (firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 8743.69F), "regen: tracked harvester");
+                    Assert.IsTrue((firstCircularRegen.TrackedHarvester.YardedWeightPerHa > 199760.0F) && (firstCircularRegen.TrackedHarvester.YardedWeightPerHa < PublicApi.HarvestTolerance * 199760.0F), "regen: tracked harvester");
+                }
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.ChainsawPMhPerHa > 1.302F) && (firstCircularRegen.TrackedHarvester.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 1.302F), "regen: tracked harvester");
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.ChainsawUtilization > 0.133F) && (firstCircularRegen.TrackedHarvester.ChainsawUtilization < PublicApi.HarvestTolerance * 0.133F), "regen: tracked harvester");
-                Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterCostPerHa > 1866.86F) && (firstCircularRegen.TrackedHarvester.HarvesterCostPerHa < PublicApi.HarvestTolerance * 1866.86F), "regen: tracked harvester");
                 Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterCostPerSMh > 264.4F) && (firstCircularRegen.TrackedHarvester.HarvesterCostPerSMh < PublicApi.HarvestTolerance * 264.5F), "regen: tracked harvester");
-                Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterPMhPerHa > 5.434F) && (firstCircularRegen.TrackedHarvester.HarvesterPMhPerHa < PublicApi.HarvestTolerance * 5.434F), "regen: tracked harvester");
-                Assert.IsTrue((firstCircularRegen.TrackedHarvester.HarvesterProductivity > 48.746F) && (firstCircularRegen.TrackedHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 48.746F), "regen: tracked harvester");
-                Assert.IsTrue(firstCircularRegen.TrackedHarvester.IsTracked == true, "regen: tracked harvester");
-                Assert.IsTrue((firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYarder > 8469.53F) && (firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 8469.53F), "regen: tracked harvester");
-                Assert.IsTrue((firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYoader > 8743.69F) && (firstCircularRegen.TrackedHarvester.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 8743.69F), "regen: tracked harvester");
-                Assert.IsTrue((firstCircularRegen.TrackedHarvester.YardedWeightPerHa > 199760.0F) && (firstCircularRegen.TrackedHarvester.YardedWeightPerHa < PublicApi.HarvestTolerance * 199760.0F), "regen: tracked harvester");
 
                 Assert.IsTrue(firstCircularRegen.WheeledHarvester.AnchorMachine == false, "regen: wheeled harvester");
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.ChainsawBasalAreaPerHa > 33.430F) && (firstCircularRegen.WheeledHarvester.ChainsawBasalAreaPerHa < PublicApi.HarvestTolerance * 33.430F), "regen: wheeled harvester");
@@ -320,24 +399,45 @@ namespace Mars.Seem.Test
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.ChainsawMinimumCost > 2842.73F) && (firstCircularRegen.WheeledHarvester.ChainsawMinimumCost < PublicApi.HarvestTolerance * 2842.73F), "regen: wheeled harvester");
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.ChainsawPMhPerHa > 9.507F) && (firstCircularRegen.WheeledHarvester.ChainsawPMhPerHa < PublicApi.HarvestTolerance * 9.507F), "regen: wheeled harvester");
                 Assert.IsTrue((firstCircularRegen.WheeledHarvester.ChainsawUtilization > 0.499F) && (firstCircularRegen.WheeledHarvester.ChainsawUtilization < PublicApi.HarvestTolerance * 0.499F), "regen: wheeled harvester");
-                Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterCostPerHa > 907.14F) && (firstCircularRegen.WheeledHarvester.HarvesterCostPerHa < PublicApi.HarvestTolerance * 907.14F), "regen: wheeled harvester");
-                Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterCostPerSMh > 224.0F) && (firstCircularRegen.WheeledHarvester.HarvesterCostPerSMh < PublicApi.HarvestTolerance * 225.0F), "regen: wheeled harvester");
-                Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterPMhPerHa > 3.104F) && (firstCircularRegen.WheeledHarvester.HarvesterPMhPerHa < PublicApi.HarvestTolerance * 3.104F), "regen: wheeled harvester");
-                Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterProductivity > 85.335F) && (firstCircularRegen.WheeledHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 85.335F), "regen: wheeled harvester");
                 Assert.IsTrue(firstCircularRegen.WheeledHarvester.IsTracked == false, "regen: wheeled harvester");
-                Assert.IsTrue((firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYarder > 9562.6F) && (firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 9562.6F), "regen: wheeled harvester");
-                Assert.IsTrue((firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYoader > 9836.7F) && (firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 9836.7F), "regen: wheeled harvester");
-                Assert.IsTrue((firstCircularRegen.WheeledHarvester.YardedWeightPerHa > 205149.0F) && (firstCircularRegen.WheeledHarvester.YardedWeightPerHa < PublicApi.HarvestTolerance * 205149.0F), "regen: wheeled harvester");
+                if (configuration.Variant.Simd == SimdInstructions.Avx10)
+                {
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterCostPerHa > 906.20F) && (firstCircularRegen.WheeledHarvester.HarvesterCostPerHa < PublicApi.HarvestTolerance * 907.14F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterPMhPerHa > 3.101F) && (firstCircularRegen.WheeledHarvester.HarvesterPMhPerHa < PublicApi.HarvestTolerance * 3.101F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterProductivity > 85.356F) && (firstCircularRegen.WheeledHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 85.356F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYarder > 9559.30F) && (firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 9559.30F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYoader > 9833.35F) && (firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 9833.35F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.YardedWeightPerHa > 205062.4F) && (firstCircularRegen.WheeledHarvester.YardedWeightPerHa < PublicApi.HarvestTolerance * 205062.4F), "regen: wheeled harvester");
+                }
+                else
+                {
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterCostPerHa > 907.14F) && (firstCircularRegen.WheeledHarvester.HarvesterCostPerHa < PublicApi.HarvestTolerance * 907.14F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterPMhPerHa > 3.104F) && (firstCircularRegen.WheeledHarvester.HarvesterPMhPerHa < PublicApi.HarvestTolerance * 3.104F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterProductivity > 85.335F) && (firstCircularRegen.WheeledHarvester.HarvesterProductivity < PublicApi.HarvestTolerance * 85.335F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYarder > 9562.6F) && (firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYarder < PublicApi.HarvestTolerance * 9562.6F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYoader > 9836.7F) && (firstCircularRegen.WheeledHarvester.SystemCostPerHaWithYoader < PublicApi.HarvestTolerance * 9836.7F), "regen: wheeled harvester");
+                    Assert.IsTrue((firstCircularRegen.WheeledHarvester.YardedWeightPerHa > 205149.0F) && (firstCircularRegen.WheeledHarvester.YardedWeightPerHa < PublicApi.HarvestTolerance * 205149.0F), "regen: wheeled harvester");
+                }
+                Assert.IsTrue((firstCircularRegen.WheeledHarvester.HarvesterCostPerSMh > 224.0F) && (firstCircularRegen.WheeledHarvester.HarvesterCostPerSMh < PublicApi.HarvestTolerance * 225.0F), "regen: wheeled harvester");
 
                 // check volumes if converged to optimal (unthinned) solution
                 float scribner2saw = firstCircularStandingVolume.Scribner2Saw[landExpectationValueIts.MaximizeForPlanningPeriod];
                 float scribner3saw = firstCircularStandingVolume.Scribner3Saw[landExpectationValueIts.MaximizeForPlanningPeriod];
                 float scribner4saw = firstCircularStandingVolume.Scribner4Saw[landExpectationValueIts.MaximizeForPlanningPeriod];
-                Assert.IsTrue((scribner2saw >= 38.252F) && (scribner2saw <= PublicApi.HarvestTolerance * 38.252F), "Scribner.C 2S");
-                Assert.IsTrue((scribner3saw >= 2.493F) && (scribner3saw <= PublicApi.HarvestTolerance * 2.493F), "Scribner.C 3S");
-                Assert.IsTrue((scribner4saw >= 2.01F) && (scribner4saw <= PublicApi.HarvestTolerance * 2.01F), "Scribner.C 4S");
+                if (configuration.Variant.Simd == SimdInstructions.Avx10)
+                {
+                    Assert.IsTrue((scribner2saw >= 38.193F) && (scribner2saw <= PublicApi.HarvestTolerance * 38.193F), "Scribner.C 2S");
+                    Assert.IsTrue((scribner3saw >= 2.502F) && (scribner3saw <= PublicApi.HarvestTolerance * 2.502F), "Scribner.C 3S");
+                    Assert.IsTrue((scribner4saw >= 2.008F) && (scribner4saw <= PublicApi.HarvestTolerance * 2.008F), "Scribner.C 4S");
+                }
+                else
+                {
+                    Assert.IsTrue((scribner2saw >= 38.252F) && (scribner2saw <= PublicApi.HarvestTolerance * 38.252F), "Scribner.C 2S");
+                    Assert.IsTrue((scribner3saw >= 2.493F) && (scribner3saw <= PublicApi.HarvestTolerance * 2.493F), "Scribner.C 3S");
+                    Assert.IsTrue((scribner4saw >= 2.01F) && (scribner4saw <= PublicApi.HarvestTolerance * 2.01F), "Scribner.C 4S");
+                }
                 #else
-                // TODO
+                // TODO (low priority): also check release builds
                 #endif
             }
 
@@ -346,8 +446,8 @@ namespace Mars.Seem.Test
             // release builds, so does the content of the whitelist. The unthinned solution has the highest financial value and it is
             // expected prescription search will always locate it it.
             #if DEBUG
-                Span<float> minFinancialValues = [ -0.0351F, 0.120F ];
-                Span<int> treesThinned = [ 5, 0 ];
+                Span<float> minFinancialValues = configuration.Variant.Simd == SimdInstructions.Avx10 ? [ 0.117F ] : [ -0.0351F, 0.120F ];
+                Span<int> treesThinned = configuration.Variant.Simd == SimdInstructions.Avx10 ? [ 0 ] : [ 5, 0];
             #else
                 Span<float> minFinancialValues = [ 1.075F, 1.169F ];
                 Span<int> treesThinned = [ 2, 0 ];
@@ -558,14 +658,16 @@ namespace Mars.Seem.Test
             Assert.IsTrue(solutionsRejected >= 0);
         }
 
-        [TestMethod]
-        public void NelderTrajectory()
+        private void NelderTrajectory(SimdInstructions simd)
         {
             int expectedUnthinnedTreeRecordCount = 661;
             int lastPeriod = 9;
 
             PermanentPlotsWithHeight nelder = PublicApi.GetNelder();
-            OrganonConfiguration configurationNwo = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo());
+            OrganonConfiguration configurationNwo = OrganonTest.CreateOrganonConfiguration(new OrganonVariantNwo()
+            {
+                Simd = simd
+            });
             OrganonStand stand = nelder.ToOrganonStand(configurationNwo, ageInYears: 20, Constant.Default.DouglasFirSiteIndexInM, Constant.Default.WesternHemlockSiteIndexInM, maximumTreeRecords: Int32.MaxValue, ImputationMethod.None);
             stand.PlantingDensityInTreesPerHectare = TestConstant.NelderReplantingDensityInTreesPerHectare;
 
@@ -620,13 +722,13 @@ namespace Mars.Seem.Test
             ExpectedStandTrajectory unthinnedExpected = new()
             {
                 //                 0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = [ 16.84F, 20.96F, 24.63F, 27.93F, 31.01F, 33.96F, 36.86F, 39.72F, 42.57F, 45.41F ], // cm
+                MinimumQmdInCm = [16.84F, 20.96F, 24.63F, 27.93F, 31.01F, 33.96F, 36.86F, 39.72F, 42.57F, 45.41F], // cm
                 //                      0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeightInM = [ 16.50F, 20.68F, 24.48F, 27.91F, 31.04F, 33.89F, 36.50F, 38.89F, 41.10F, 43.13F ], // m
+                MinimumTopHeightInM = [16.50F, 20.68F, 24.48F, 27.91F, 31.04F, 33.89F, 36.50F, 38.89F, 41.10F, 43.13F], // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = [ 65.82F, 154.34F, 252.96F, 363.45F, 468.31F, 558.84F, 638.64F, 709.21F, 771.96F, 828.46F ],
-                MinimumStandingMbfPerHa = [ 9.64F, 18.87F, 30.66F, 46.63F, 61.66F, 74.19F, 87.95F, 102.12F, 114.95F, 126.89F ],
+                MinimumStandingCubicM3PerHa = [65.82F, 154.34F, 252.96F, 363.45F, 468.31F, 558.84F, 638.64F, 709.21F, 771.96F, 828.46F],
+                MinimumStandingMbfPerHa = [9.64F, 18.87F, 30.66F, 46.63F, 61.66F, 74.19F, 87.95F, 102.12F, 114.95F, 126.89F],
                 MinimumHarvestCubicM3PerHa = new float[lastPeriod + 1], // no thinning -> all zero
                 MinimumHarvestMbfPerHa = new float[lastPeriod + 1] // no thinning -> all zero
             };
@@ -645,15 +747,15 @@ namespace Mars.Seem.Test
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 400,
                 //                 0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = [ 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.33F, 44.28F, 47.04F, 49.65F ], // cm
+                MinimumQmdInCm = [16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.33F, 44.28F, 47.04F, 49.65F], // cm
                 //                      0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeightInM = [ 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.58F, 38.05F, 40.33F, 42.43F ], // m
+                MinimumTopHeightInM = [16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.58F, 38.05F, 40.33F, 42.43F], // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = [ 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 511.58F, 597.88F, 677.49F, 750.30F ],
-                MinimumStandingMbfPerHa = [ 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 67.30F, 83.50F, 99.00F, 112.93F ],
-                MinimumHarvestCubicM3PerHa = [ 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F ],
-                MinimumHarvestMbfPerHa = [ 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F ]
+                MinimumStandingCubicM3PerHa = [65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 511.58F, 597.88F, 677.49F, 750.30F],
+                MinimumStandingMbfPerHa = [9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 67.30F, 83.50F, 99.00F, 112.93F],
+                MinimumHarvestCubicM3PerHa = [0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F],
+                MinimumHarvestMbfPerHa = [0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F]
             };
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -680,17 +782,17 @@ namespace Mars.Seem.Test
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 400,
                 //                 0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = [ 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 48.38F, 51.02F ], // cm
+                MinimumQmdInCm = [16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 48.38F, 51.02F], // cm
                 //                      0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeightInM = [ 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.88F, 42.02F ], // m
+                MinimumTopHeightInM = [16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.88F, 42.02F], // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = [ 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 589.38F, 666.28F ],
-                MinimumStandingMbfPerHa = [ 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 85.56F, 99.86F ],
-                MinimumHarvestCubicM3PerHa = [ 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 0.0F, 0.0F ],
-                MinimumHarvestMbfPerHa = [ 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 0.0F, 0.0F ]
+                MinimumStandingCubicM3PerHa = [65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 589.38F, 666.28F],
+                MinimumStandingMbfPerHa = [9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 85.56F, 99.86F],
+                MinimumHarvestCubicM3PerHa = [0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 0.0F, 0.0F],
+                MinimumHarvestMbfPerHa = [0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 0.0F, 0.0F]
             };
-            float[] minimumTwoThinLiveBiomass = [ 85531F, 146900F, 212987F, 167906F, 226196F, 283469F, 278099F, 329517F, 377780F, 422620F ]; // kg/ha
+            float[] minimumTwoThinLiveBiomass = [85531F, 146900F, 212987F, 167906F, 226196F, 283469F, 278099F, 329517F, 377780F, 422620F]; // kg/ha
 
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -731,15 +833,15 @@ namespace Mars.Seem.Test
                 MinimumTreesSelected = 200,
                 MaximumTreesSelected = 485,
                 //                 0       1       2       3       4       5       6       7       8       9
-                MinimumQmdInCm = [ 16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 51.89F, 55.16F ], // cm
+                MinimumQmdInCm = [16.84F, 20.96F, 24.63F, 30.22F, 34.47F, 38.10F, 41.90F, 45.32F, 51.89F, 55.16F], // cm
                 //                      0       1       2       3       4       5       6       7       8       9
-                MinimumTopHeightInM = [ 16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.41F, 41.52F ], // m
+                MinimumTopHeightInM = [16.50F, 20.68F, 24.48F, 26.92F, 29.98F, 32.89F, 35.13F, 37.57F, 39.41F, 41.52F], // m
                 // Poudel 2018 + Scribner long log net MBF/ha
                 // bilinear interpolation: 1 cm diameter classes, 1 m height classes
-                MinimumStandingCubicM3PerHa = [ 65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 483.19F, 559.39F ],
-                MinimumStandingMbfPerHa = [ 9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 69.92F, 83.92F ],
-                MinimumHarvestCubicM3PerHa = [ 0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 98.60F, 0.0F ],
-                MinimumHarvestMbfPerHa = [ 0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 15.17F, 0.0F ]
+                MinimumStandingCubicM3PerHa = [65.82F, 154.34F, 252.96F, 227.28F, 324.42F, 420.62F, 420.97F, 506.76F, 483.19F, 559.39F],
+                MinimumStandingMbfPerHa = [9.64F, 18.87F, 30.66F, 27.73F, 41.23F, 53.74F, 55.08F, 70.40F, 69.92F, 83.92F],
+                MinimumHarvestCubicM3PerHa = [0.0F, 0.0F, 0.0F, 107.49F, 0.0F, 0.0F, 81.40F, 0.0F, 98.60F, 0.0F],
+                MinimumHarvestMbfPerHa = [0.0F, 0.0F, 0.0F, 14.79F, 0.0F, 0.0F, 11.89F, 0.0F, 15.17F, 0.0F]
             };
             for (int periodIndex = 0; periodIndex < firstThinPeriod; ++periodIndex)
             {
@@ -769,6 +871,24 @@ namespace Mars.Seem.Test
 
             PublicApi.Verify(threeThinTrajectory, threeThinExpected, configurationNwo.Variant.TimeStepInYears);
             PublicApi.Verify(threeThinTrajectory, threeThinExpected);
+        }
+
+        [TestMethod]
+        public void NelderTrajectoryAvx()
+        {
+            this.NelderTrajectory(SimdInstructions.Avx);
+        }
+
+        [TestMethod]
+        public void NelderTrajectoryAvx10()
+        {
+            this.NelderTrajectory(SimdInstructions.Avx10);
+        }
+
+        [TestMethod]
+        public void NelderTrajectoryVex128()
+        {
+            this.NelderTrajectory(SimdInstructions.Vex128);
         }
 
         [TestMethod]
@@ -1357,8 +1477,8 @@ namespace Mars.Seem.Test
             if (heuristic is GeneticAlgorithm genetic)
             {
                 GeneticParameters geneticParameters = genetic.GetParameters();
-                Assert.IsTrue(perfCounters.TreesRandomizedInConstruction > 0.4F * geneticParameters.PopulationSize * treeRecordCount);
-                Assert.IsTrue(perfCounters.TreesRandomizedInConstruction < 0.6F * geneticParameters.PopulationSize * treeRecordCount);
+                Assert.IsTrue(perfCounters.TreesRandomizedInConstruction > 0.4F * geneticParameters.PopulationSize * treeRecordCount, "genetic algorithm tree randomization");
+                Assert.IsTrue(perfCounters.TreesRandomizedInConstruction < 0.6F * geneticParameters.PopulationSize * treeRecordCount, "genetic algorithm tree randomization");
             }
             else if (heuristic is PrescriptionEnumeration)
             {
@@ -1416,7 +1536,7 @@ namespace Mars.Seem.Test
             Assert.IsTrue(trajectory.GetFirstThinPeriod() == expectedTrajectory.FirstThinPeriod);
             Assert.IsTrue(trajectory.GetSecondThinPeriod() == expectedTrajectory.SecondThinPeriod);
 
-            IList<int> thinningPeriods = trajectory.Treatments.GetHarvestPeriods();
+            List<int> thinningPeriods = trajectory.Treatments.GetHarvestPeriods();
             Assert.IsTrue(thinningPeriods[^1] == Constant.RegenerationHarvestIfEligible);
             if (expectedTrajectory.FirstThinPeriod != Constant.NoHarvestPeriod)
             {

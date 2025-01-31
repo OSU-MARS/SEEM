@@ -100,7 +100,7 @@ namespace Mars.Seem.Cmdlets
             get { return false; }
         }
 
-        private List<int> ConvertAgesToSimulationPeriods(IList<int> agesInYears, float timestepInYears, bool thinningAges)
+        private List<int> ConvertAgesToSimulationPeriods(List<int> agesInYears, float timestepInYears, bool thinningAges)
         {
             Debug.Assert(this.Stand != null);
 
@@ -168,7 +168,7 @@ namespace Mars.Seem.Cmdlets
             return new ThinByIndividualTreeSelection(thinPeriodIndex);
         }
 
-        protected IList<HeuristicParameters> GetDefaultParameterCombinations()
+        protected List<HeuristicParameters> GetDefaultParameterCombinations()
         {
             List<HeuristicParameters> parameterCombinations = [];
             foreach (float constructionGreediness in this.ConstructionGreediness)
@@ -234,7 +234,7 @@ namespace Mars.Seem.Cmdlets
         protected abstract string GetName();
 
         // ideally this would be virtual but, as of C# 9.0, the nature of C# generics requires GetDefaultParameterCombinations() to be separate
-        protected abstract IList<TParameters> GetParameterCombinations();
+        protected abstract List<TParameters> GetParameterCombinations();
 
         private string GetStatusDescription(SilviculturalSpace silviculturalSpace, SilviculturalCoordinate currentPosition, int workerThreadsUsed)
         {
@@ -318,14 +318,14 @@ namespace Mars.Seem.Cmdlets
             int totalRuntimeCost = 0;
 
             float timestepInYears = (float)organonConfiguration.Variant.TimeStepInYears;
-            IList<int> firstThinPeriods = this.ConvertAgesToSimulationPeriods(this.FirstThinAge, timestepInYears, thinningAges: true);
-            IList<int> secondThinPeriods = this.ConvertAgesToSimulationPeriods(this.SecondThinAge, timestepInYears, thinningAges: true);
-            IList<int> thirdThinPeriods = this.ConvertAgesToSimulationPeriods(this.ThirdThinAge, timestepInYears, thinningAges: true);
-            IList<int> rotationLengthsInPeriods = this.ConvertAgesToSimulationPeriods(this.RotationAge, timestepInYears, thinningAges: false);
+            List<int> firstThinPeriods = this.ConvertAgesToSimulationPeriods(this.FirstThinAge, timestepInYears, thinningAges: true);
+            List<int> secondThinPeriods = this.ConvertAgesToSimulationPeriods(this.SecondThinAge, timestepInYears, thinningAges: true);
+            List<int> thirdThinPeriods = this.ConvertAgesToSimulationPeriods(this.ThirdThinAge, timestepInYears, thinningAges: true);
+            List<int> rotationLengthsInPeriods = this.ConvertAgesToSimulationPeriods(this.RotationAge, timestepInYears, thinningAges: false);
 
             int treeCount = this.Stand!.GetTreeRecordCount();
             List<SilviculturalCoordinate> combinationsToEvaluate = [];
-            IList<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
+            List<TParameters> parameterCombinationsForHeuristic = this.GetParameterCombinations();
             HeuristicStandTrajectories<TParameters> results = new(parameterCombinationsForHeuristic, firstThinPeriods, secondThinPeriods, thirdThinPeriods, rotationLengthsInPeriods, this.Financial, this.SolutionPoolSize);
             
             for (int parameterIndex = 0; parameterIndex < parameterCombinationsForHeuristic.Count; ++parameterIndex)

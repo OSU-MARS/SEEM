@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Avx512 = System.Runtime.Intrinsics.X86.Avx10v1.V512;
 
 namespace Mars.Seem.Tree
 {
@@ -290,15 +291,15 @@ namespace Mars.Seem.Tree
             Vector256<float> siteIndexFromGround256 = Vector256.Create(site.SiteIndexFromGround);
             Vector256<float> X1 = Vector256.Create(site.X1);
 
-            Vector256<float> XX1 = Avx512F.Add(Avx512F.Divide(MathAvx10.Ln(Avx512F.Divide(treeHeight, siteIndexFromGround256)), B1), X2toB2);
-            Vector256<float> xx1lessThanZero = Avx512F.CompareLessThanOrEqual(XX1, Vector256<float>.Zero);
-            Vector256<float> growthEffectiveAge = Avx512F.Subtract(MathAvx10.Pow(XX1, Avx512F.VL.Reciprocal14(B2)), X1);
-            growthEffectiveAge = Avx512F.BlendVariable(growthEffectiveAge, Vector256.Create(500.0F), xx1lessThanZero);
+            Vector256<float> XX1 = Avx10v1.Add(Avx10v1.Divide(MathAvx10.Ln(Avx10v1.Divide(treeHeight, siteIndexFromGround256)), B1), X2toB2);
+            Vector256<float> xx1lessThanZero = Avx10v1.CompareLessThanOrEqual(XX1, Vector256<float>.Zero);
+            Vector256<float> growthEffectiveAge = Avx10v1.Subtract(MathAvx10.Pow(XX1, Avx512.VL.Reciprocal14(B2)), X1);
+            growthEffectiveAge = Avx10v1.BlendVariable(growthEffectiveAge, Vector256.Create(500.0F), xx1lessThanZero);
 
             Vector256<float> timeStepInYearsPlusX1 = Vector256.Create(timeStepInYears + site.X1);
-            Vector256<float> potentialHeightPower = Avx512F.Multiply(B1, Avx512F.Subtract(MathAvx10.Pow(Avx512F.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
-            Vector256<float> potentialHeight = Avx512F.Multiply(siteIndexFromGround256, MathAvx10.Exp(potentialHeightPower));
-            potentialHeightGrowth = Avx512F.Subtract(potentialHeight, treeHeight);
+            Vector256<float> potentialHeightPower = Avx10v1.Multiply(B1, Avx10v1.Subtract(MathAvx10.Pow(Avx10v1.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
+            Vector256<float> potentialHeight = Avx10v1.Multiply(siteIndexFromGround256, MathAvx10.Exp(potentialHeightPower));
+            potentialHeightGrowth = Avx10v1.Subtract(potentialHeight, treeHeight);
 
             return growthEffectiveAge;
         }
@@ -311,15 +312,15 @@ namespace Mars.Seem.Tree
             Vector512<float> siteIndexFromGround256 = Vector512.Create(site.SiteIndexFromGround);
             Vector512<float> X1 = Vector512.Create(site.X1);
 
-            Vector512<float> XX1 = Avx512F.Add(Avx512F.Divide(MathAvx10.Ln(Avx512F.Divide(treeHeight, siteIndexFromGround256)), B1), X2toB2);
-            Vector512<float> xx1lessThanZero = Avx512F.CompareLessThanOrEqual(XX1, Vector512<float>.Zero);
-            Vector512<float> growthEffectiveAge = Avx512F.Subtract(MathAvx10.Pow(XX1, Avx512F.Reciprocal14(B2)), X1);
-            growthEffectiveAge = Avx512F.BlendVariable(growthEffectiveAge, Vector512.Create(500.0F), xx1lessThanZero);
+            Vector512<float> XX1 = Avx512.Add(Avx512.Divide(MathAvx10.Ln(Avx512.Divide(treeHeight, siteIndexFromGround256)), B1), X2toB2);
+            Vector512<float> xx1lessThanZero = Avx512.CompareLessThanOrEqual(XX1, Vector512<float>.Zero);
+            Vector512<float> growthEffectiveAge = Avx512.Subtract(MathAvx10.Pow(XX1, Avx512.Reciprocal14(B2)), X1);
+            growthEffectiveAge = Avx512.BlendVariable(growthEffectiveAge, Vector512.Create(500.0F), xx1lessThanZero);
 
             Vector512<float> timeStepInYearsPlusX1 = Vector512.Create(timeStepInYears + site.X1);
-            Vector512<float> potentialHeightPower = Avx512F.Multiply(B1, Avx512F.Subtract(MathAvx10.Pow(Avx512F.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
-            Vector512<float> potentialHeight = Avx512F.Multiply(siteIndexFromGround256, MathAvx10.Exp(potentialHeightPower));
-            potentialHeightGrowth = Avx512F.Subtract(potentialHeight, treeHeight);
+            Vector512<float> potentialHeightPower = Avx512.Multiply(B1, Avx512.Subtract(MathAvx10.Pow(Avx512.Add(growthEffectiveAge, timeStepInYearsPlusX1), B2), X2toB2));
+            Vector512<float> potentialHeight = Avx512.Multiply(siteIndexFromGround256, MathAvx10.Exp(potentialHeightPower));
+            potentialHeightGrowth = Avx512.Subtract(potentialHeight, treeHeight);
 
             return growthEffectiveAge;
         }

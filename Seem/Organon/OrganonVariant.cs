@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Avx512 = System.Runtime.Intrinsics.X86.Avx10v1.V512;
 
 namespace Mars.Seem.Organon
 {
@@ -23,12 +24,11 @@ namespace Mars.Seem.Organon
             this.crownCoefficients = [];
             this.heightCoefficients = [];
             this.OldTreeAgeThreshold = oldTreeAgeThreshold;
-            this.Simd = Constant.Default.Simd;
+            this.Simd = SimdInstructionsExtensions.GetDefault();
             this.TimeStepInYears = treeModel == TreeModel.OrganonRap ? 1 : 5;
             this.TreeModel = treeModel;
         }
 
-        // VEX 128 with quads of strata: 3.0x speedup from scalar
         public void AddCrownCompetitionByHeight(Trees trees, float[] crownCompetitionByHeight)
         {
             switch (this.Simd)
@@ -43,6 +43,7 @@ namespace Mars.Seem.Organon
                     this.AddCrownCompetitionByHeightAvx512(trees, crownCompetitionByHeight);
                     break;
                 case SimdInstructions.Vex128:
+                    // VEX 128 with quads of strata: 3.0x speedup from scalar
                     this.AddCrownCompetitionByHeightVex128(trees, crownCompetitionByHeight);
                     break;
                 default:
@@ -536,38 +537,38 @@ namespace Mars.Seem.Organon
                     Vector256<float> heightToLargestCrownWidth256 = Vector256.Create(heightToLargestCrownWidth);
                     Vector256<float> largestCrownWidth256 = Vector256.Create(largestCrownWidth);
                     Vector256<float> strataHeightIncrement = Vector256.Create(8.0F * crownCompetitionByHeight[^1] / Constant.OrganonHeightStrata);
-                    Vector256<float> strataHeight = Avx512F.Multiply(Vector256.Create(0.125F, 0.250F, 0.375F, 0.500F, 0.625F, 0.750F, 0.875F, 1.00F), strataHeightIncrement); // find CCF at top of strata as in Fortran
+                    Vector256<float> strataHeight = Avx10v1.Multiply(Vector256.Create(0.125F, 0.250F, 0.375F, 0.500F, 0.625F, 0.750F, 0.875F, 1.00F), strataHeightIncrement); // find CCF at top of strata as in Fortran
                     for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += Constant.Simd256x8.Width)
                     {
-                        Vector256<float> strataBelowTreeHeightMask = Avx512F.CompareLessThan(strataHeight, heightInFeet256);
-                        if (Avx512F.MoveMask(strataBelowTreeHeightMask) == Constant.Simd256x8.MaskAllFalse)
+                        Vector256<float> strataBelowTreeHeightMask = Avx10v1.CompareLessThan(strataHeight, heightInFeet256);
+                        if (Avx10v1.MoveMask(strataBelowTreeHeightMask) == Constant.Simd256x8.MaskAllFalse)
                         {
                             // tree contributes no crown competition factor above its height
                             break;
                         }
 
                         // find crown width and lowered CCFs for any strata above height of largest crown width
-                        Vector256<float> strataAboveLargestCrownMask = Avx512F.CompareGreaterThan(strataHeight, heightToLargestCrownWidth256);
-                        if (Avx512F.MoveMask(strataAboveLargestCrownMask) != Constant.Simd256x8.MaskAllFalse)
+                        Vector256<float> strataAboveLargestCrownMask = Avx10v1.CompareGreaterThan(strataHeight, heightToLargestCrownWidth256);
+                        if (Avx10v1.MoveMask(strataAboveLargestCrownMask) != Constant.Simd256x8.MaskAllFalse)
                         {
                             // very slightly faster to divide than to precompute denominator reciprocal
-                            Vector256<float> relativePosition = Avx512F.Divide(Avx512F.Subtract(heightInFeet256, strataHeight), Avx512F.Subtract(heightInFeet256, heightToLargestCrownWidth256));
-                            Vector256<float> largestWidthMultiplier = MathAvx10.Pow(relativePosition, Avx512F.Add(cwB1_256, Avx512F.Add(Avx512F.Multiply(cwB2_256, Avx512F.Sqrt(relativePosition)), cwB3heightDiameterRatio256)));
-                            Vector256<float> crownWidthInStrata = Avx512F.Multiply(largestCrownWidth256, largestWidthMultiplier);
-                            Vector256<float> crownCompetitionFactorInStrata = Avx512F.Multiply(ccfExpansionFactor256, Avx512F.Multiply(crownWidthInStrata, crownWidthInStrata));
-                            crownCompetitionFactor = Avx512F.BlendVariable(crownCompetitionFactor, crownCompetitionFactorInStrata, strataAboveLargestCrownMask);
+                            Vector256<float> relativePosition = Avx10v1.Divide(Avx10v1.Subtract(heightInFeet256, strataHeight), Avx10v1.Subtract(heightInFeet256, heightToLargestCrownWidth256));
+                            Vector256<float> largestWidthMultiplier = MathAvx10.Pow(relativePosition, Avx10v1.Add(cwB1_256, Avx10v1.Add(Avx10v1.Multiply(cwB2_256, Avx10v1.Sqrt(relativePosition)), cwB3heightDiameterRatio256)));
+                            Vector256<float> crownWidthInStrata = Avx10v1.Multiply(largestCrownWidth256, largestWidthMultiplier);
+                            Vector256<float> crownCompetitionFactorInStrata = Avx10v1.Multiply(ccfExpansionFactor256, Avx10v1.Multiply(crownWidthInStrata, crownWidthInStrata));
+                            crownCompetitionFactor = Avx10v1.BlendVariable(crownCompetitionFactor, crownCompetitionFactorInStrata, strataAboveLargestCrownMask);
                         }
 
                         // zero any elements above tree height
-                        crownCompetitionFactor = Avx512F.BlendVariable(Vector256<float>.Zero, crownCompetitionFactor, strataBelowTreeHeightMask);
+                        crownCompetitionFactor = Avx10v1.BlendVariable(Vector256<float>.Zero, crownCompetitionFactor, strataBelowTreeHeightMask);
 
                         // accumulate CCF
-                        Vector256<float> crownCompetitionByHeight256 = Avx512F.LoadVector256(pinnedCrownCompetitionByHeight + strataIndex);
-                        crownCompetitionByHeight256 = Avx512F.Add(crownCompetitionByHeight256, crownCompetitionFactor);
-                        Avx512F.Store(pinnedCrownCompetitionByHeight + strataIndex, crownCompetitionByHeight256);
+                        Vector256<float> crownCompetitionByHeight256 = Avx10v1.LoadVector256(pinnedCrownCompetitionByHeight + strataIndex);
+                        crownCompetitionByHeight256 = Avx10v1.Add(crownCompetitionByHeight256, crownCompetitionFactor);
+                        Avx10v1.Store(pinnedCrownCompetitionByHeight + strataIndex, crownCompetitionByHeight256);
 
                         // move upwards to next quad of strata
-                        strataHeight = Avx512F.Add(strataHeight, strataHeightIncrement);
+                        strataHeight = Avx10v1.Add(strataHeight, strataHeightIncrement);
                     }
                 }
             }
@@ -640,10 +641,10 @@ namespace Mars.Seem.Organon
                     Vector512<float> heightToLargestCrownWidth512 = Vector512.Create(heightToLargestCrownWidth);
                     Vector512<float> largestCrownWidth512 = Vector512.Create(largestCrownWidth);
                     Vector512<float> strataHeightIncrement = Vector512.Create(8.0F * crownCompetitionByHeight[^1] / Constant.OrganonHeightStrata);
-                    Vector512<float> strataHeight = Avx512F.Multiply(Vector512.Create(0.0625F, 0.1250F, 0.1875F, 0.2500F, 0.3125F, 0.375F, 0.4375F, 0.500F, 5625F, 0.625F, 0.6875F, 0.750F, 0.8125F, 0.875F, 0.9375F, 1.00F), strataHeightIncrement);
+                    Vector512<float> strataHeight = Avx512.Multiply(Vector512.Create(0.0625F, 0.1250F, 0.1875F, 0.2500F, 0.3125F, 0.375F, 0.4375F, 0.500F, 5625F, 0.625F, 0.6875F, 0.750F, 0.8125F, 0.875F, 0.9375F, 1.00F), strataHeightIncrement);
                     for (int strataIndex = 0; strataIndex < crownCompetitionByHeight.Length - 2; strataIndex += Constant.Simd512x16.Width)
                     {
-                        Vector512<float> strataBelowTreeHeightMask = Avx512F.CompareLessThan(strataHeight, heightInFeet512);
+                        Vector512<float> strataBelowTreeHeightMask = Avx512.CompareLessThan(strataHeight, heightInFeet512);
                         if (strataBelowTreeHeightMask.ExtractMostSignificantBits() == Constant.Simd512x16.MaskAllFalse)
                         {
                             // tree contributes no crown competition factor above its height
@@ -651,27 +652,27 @@ namespace Mars.Seem.Organon
                         }
 
                         // find crown width and lowered CCFs for any strata above height of largest crown width
-                        Vector512<float> strataAboveLargestCrownMask = Avx512F.CompareGreaterThan(strataHeight, heightToLargestCrownWidth512);
+                        Vector512<float> strataAboveLargestCrownMask = Avx512.CompareGreaterThan(strataHeight, heightToLargestCrownWidth512);
                         if (strataAboveLargestCrownMask.ExtractMostSignificantBits() != Constant.Simd512x16.MaskAllFalse)
                         {
                             // very slightly faster to divide than to precompute denominator reciprocal
-                            Vector512<float> relativePosition = Avx512F.Divide(Avx512F.Subtract(heightInFeet512, strataHeight), Avx512F.Subtract(heightInFeet512, heightToLargestCrownWidth512));
-                            Vector512<float> largestWidthMultiplier = MathAvx10.Pow(relativePosition, Avx512F.Add(cwB1_512, Avx512F.Add(Avx512F.Multiply(cwB2_512, Avx512F.Sqrt(relativePosition)), cwB3heightDiameterRatio512)));
-                            Vector512<float> crownWidthInStrata = Avx512F.Multiply(largestCrownWidth512, largestWidthMultiplier);
-                            Vector512<float> crownCompetitionFactorInStrata = Avx512F.Multiply(ccfExpansionFactor512, Avx512F.Multiply(crownWidthInStrata, crownWidthInStrata));
-                            crownCompetitionFactor = Avx512F.BlendVariable(crownCompetitionFactor, crownCompetitionFactorInStrata, strataAboveLargestCrownMask);
+                            Vector512<float> relativePosition = Avx512.Divide(Avx512.Subtract(heightInFeet512, strataHeight), Avx512.Subtract(heightInFeet512, heightToLargestCrownWidth512));
+                            Vector512<float> largestWidthMultiplier = MathAvx10.Pow(relativePosition, Avx512.Add(cwB1_512, Avx512.Add(Avx512.Multiply(cwB2_512, Avx512.Sqrt(relativePosition)), cwB3heightDiameterRatio512)));
+                            Vector512<float> crownWidthInStrata = Avx512.Multiply(largestCrownWidth512, largestWidthMultiplier);
+                            Vector512<float> crownCompetitionFactorInStrata = Avx512.Multiply(ccfExpansionFactor512, Avx512.Multiply(crownWidthInStrata, crownWidthInStrata));
+                            crownCompetitionFactor = Avx512.BlendVariable(crownCompetitionFactor, crownCompetitionFactorInStrata, strataAboveLargestCrownMask);
                         }
 
                         // zero any elements above tree height
-                        crownCompetitionFactor = Avx512F.BlendVariable(Vector512<float>.Zero, crownCompetitionFactor, strataBelowTreeHeightMask);
+                        crownCompetitionFactor = Avx512.BlendVariable(Vector512<float>.Zero, crownCompetitionFactor, strataBelowTreeHeightMask);
 
                         // accumulate CCF
-                        Vector512<float> crownCompetitionByHeight256 = Avx512F.LoadVector512(pinnedCrownCompetitionByHeight + strataIndex);
-                        crownCompetitionByHeight256 = Avx512F.Add(crownCompetitionByHeight256, crownCompetitionFactor);
-                        Avx512F.Store(pinnedCrownCompetitionByHeight + strataIndex, crownCompetitionByHeight256);
+                        Vector512<float> crownCompetitionByHeight256 = Avx512.LoadVector512(pinnedCrownCompetitionByHeight + strataIndex);
+                        crownCompetitionByHeight256 = Avx512.Add(crownCompetitionByHeight256, crownCompetitionFactor);
+                        Avx512.Store(pinnedCrownCompetitionByHeight + strataIndex, crownCompetitionByHeight256);
 
                         // move upwards to next quad of strata
-                        strataHeight = Avx512F.Add(strataHeight, strataHeightIncrement);
+                        strataHeight = Avx512.Add(strataHeight, strataHeightIncrement);
                     }
                 }
             }
@@ -909,17 +910,17 @@ namespace Mars.Seem.Organon
             // here can be made slightly more efficient by adding a guard strata whose competition factor is always zero and vectorizing the
             // compare and clamp.
             Debug.Assert(crownCompetitionByHeight[^1] > 4.5F);
-            Vector256<float> strataIndexAsFloat = Avx512F.Multiply(Vector256.Create((float)Constant.OrganonHeightStrata / crownCompetitionByHeight[^1]), height);
-            Vector256<int> strataIndex = Avx512F.ConvertToVector256Int32WithTruncation(strataIndexAsFloat);
-            DebugV.Assert(Avx512F.CompareGreaterThan(strataIndex, Vector256.Create(-1))); // no integer >=
+            Vector256<float> strataIndexAsFloat = Avx10v1.Multiply(Vector256.Create((float)Constant.OrganonHeightStrata / crownCompetitionByHeight[^1]), height);
+            Vector256<int> strataIndex = Avx10v1.ConvertToVector256Int32WithTruncation(strataIndexAsFloat);
+            DebugV.Assert(Avx10v1.CompareGreaterThan(strataIndex, Vector256.Create(-1))); // no integer >=
 
             Vector256<int> maxStrataIndex = Vector256.Create(crownCompetitionByHeight.Length - 2); // CCF is zero in uppermost strata
-            Vector256<int> treeTallerThanMaxStrataHeight = Avx512F.CompareGreaterThan(strataIndex, maxStrataIndex);
-            strataIndex = Avx512F.BlendVariable(strataIndex, maxStrataIndex, treeTallerThanMaxStrataHeight);
+            Vector256<int> treeTallerThanMaxStrataHeight = Avx10v1.CompareGreaterThan(strataIndex, maxStrataIndex);
+            strataIndex = Avx10v1.BlendVariable(strataIndex, maxStrataIndex, treeTallerThanMaxStrataHeight);
 
             fixed (float* crownCompetition = crownCompetitionByHeight)
             {
-                Vector256<float> crownCompetitionFactor = Avx512F.GatherVector256(crownCompetition, strataIndex, sizeof(float));
+                Vector256<float> crownCompetitionFactor = Avx10v1.GatherVector256(crownCompetition, strataIndex, sizeof(float));
                 return crownCompetitionFactor;
             }
         }
@@ -931,19 +932,19 @@ namespace Mars.Seem.Organon
             // here can be made slightly more efficient by adding a guard strata whose competition factor is always zero and vectorizing the
             // compare and clamp.
             Debug.Assert(crownCompetitionByHeight[^1] > 4.5F);
-            Vector512<float> strataIndexAsFloat = Avx512F.Multiply(Vector512.Create((float)Constant.OrganonHeightStrata / crownCompetitionByHeight[^1]), height);
-            Vector512<int> strataIndex = Avx512F.ConvertToVector512Int32WithTruncation(strataIndexAsFloat);
-            DebugV.Assert(Avx512F.CompareGreaterThan(strataIndex, Vector512.Create(-1))); // no integer >=
+            Vector512<float> strataIndexAsFloat = Avx512.Multiply(Vector512.Create((float)Constant.OrganonHeightStrata / crownCompetitionByHeight[^1]), height);
+            Vector512<int> strataIndex = Avx512.ConvertToVector512Int32WithTruncation(strataIndexAsFloat);
+            DebugV.Assert(Avx512.CompareGreaterThan(strataIndex, Vector512.Create(-1))); // no integer >=
 
             Vector512<int> maxStrataIndex = Vector512.Create(crownCompetitionByHeight.Length - 2); // CCF is zero in uppermost strata
-            Vector512<int> treeTallerThanMaxStrataHeight = Avx512F.CompareGreaterThan(strataIndex, maxStrataIndex);
-            strataIndex = Avx512F.BlendVariable(strataIndex, maxStrataIndex, treeTallerThanMaxStrataHeight);
+            Vector512<int> treeTallerThanMaxStrataHeight = Avx512.CompareGreaterThan(strataIndex, maxStrataIndex);
+            strataIndex = Avx512.BlendVariable(strataIndex, maxStrataIndex, treeTallerThanMaxStrataHeight);
 
             fixed (float* crownCompetition = crownCompetitionByHeight)
             {
                 // no 512 bit gather in .NET 8; https://github.com/dotnet/runtime/issues/87097
-                Vector512<float> crownCompetitionFactor = Vector512.Create(Avx512F.GatherVector256(crownCompetition, strataIndex.GetLower(), sizeof(float)),
-                                                                           Avx512F.GatherVector256(crownCompetition, strataIndex.GetUpper(), sizeof(float)));
+                Vector512<float> crownCompetitionFactor = Vector512.Create(Avx512.GatherVector256(crownCompetition, strataIndex.GetLower(), sizeof(float)),
+                                                                           Avx512.GatherVector256(crownCompetition, strataIndex.GetUpper(), sizeof(float)));
                 return crownCompetitionFactor;
             }
         }
@@ -998,12 +999,12 @@ namespace Mars.Seem.Organon
         protected static Vector256<float> GetCrownRatioAdjustmentAvx10(Vector256<float> crownRatio)
         {
             Vector256<float> crownRatioAdjustment = Vector256.Create(1.0F);
-            Vector256<float> exponentMask = Avx512F.CompareLessThan(crownRatio, Vector256.Create(0.11F));
-            if (Avx512F.MoveMask(exponentMask) != Constant.Simd256x8.MaskAllFalse)
+            Vector256<float> exponentMask = Avx10v1.CompareLessThan(crownRatio, Vector256.Create(0.11F));
+            if (Avx10v1.MoveMask(exponentMask) != Constant.Simd256x8.MaskAllFalse)
             {
-                Vector256<float> power = Avx512F.Multiply(Vector256.Create(-25.0F * 25.0F), Avx512F.Multiply(crownRatio, crownRatio));
+                Vector256<float> power = Avx10v1.Multiply(Vector256.Create(-25.0F * 25.0F), Avx10v1.Multiply(crownRatio, crownRatio));
                 Vector256<float> exponent = MathAvx10.MaskExp(power, exponentMask);
-                crownRatioAdjustment = Avx512F.Subtract(crownRatioAdjustment, exponent);
+                crownRatioAdjustment = Avx10v1.Subtract(crownRatioAdjustment, exponent);
             }
             return crownRatioAdjustment;
         }
@@ -1011,12 +1012,12 @@ namespace Mars.Seem.Organon
         protected static Vector512<float> GetCrownRatioAdjustmentAvx512(Vector512<float> crownRatio)
         {
             Vector512<float> crownRatioAdjustment = Vector512.Create(1.0F);
-            Vector512<float> exponentMask = Avx512F.CompareLessThan(crownRatio, Vector512.Create(0.11F));
+            Vector512<float> exponentMask = Avx512.CompareLessThan(crownRatio, Vector512.Create(0.11F));
             if (exponentMask.ExtractMostSignificantBits() != Constant.Simd256x8.MaskAllFalse)
             {
-                Vector512<float> power = Avx512F.Multiply(Vector512.Create(-25.0F * 25.0F), Avx512F.Multiply(crownRatio, crownRatio));
+                Vector512<float> power = Avx512.Multiply(Vector512.Create(-25.0F * 25.0F), Avx512.Multiply(crownRatio, crownRatio));
                 Vector512<float> exponent = MathAvx10.MaskExp(power, exponentMask);
-                crownRatioAdjustment = Avx512F.Subtract(crownRatioAdjustment, exponent);
+                crownRatioAdjustment = Avx512.Subtract(crownRatioAdjustment, exponent);
             }
             return crownRatioAdjustment;
         }
@@ -1446,7 +1447,7 @@ namespace Mars.Seem.Organon
                 for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += Constant.Simd256x8.Width)
                 {
                     // inline version of GetGrowthEffectiveAge()
-                    Vector256<float> height = Avx512F.LoadVector256(heights + treeIndex);
+                    Vector256<float> height = Avx10v1.LoadVector256(heights + treeIndex);
                     Vector256<float> growthEffectiveAge;
                     Vector256<float> potentialHeightGrowth;
                     if (trees.Species == FiaCode.TsugaHeterophylla)
@@ -1458,7 +1459,7 @@ namespace Mars.Seem.Organon
                         growthEffectiveAge = DouglasFir.GetPsmeAbgrGrowthEffectiveAgeAvx10(psmeSite!, this.TimeStepInYears, height, out potentialHeightGrowth);
                     }
                     Vector256<float> crownCompetitionFactor = OrganonVariant.GetCrownCompetitionFactorByHeightAvx10(height, crownCompetitionByHeight);
-                    Vector256<float> sqrtCrownCompetitionFactor = Avx512F.Sqrt(crownCompetitionFactor);
+                    Vector256<float> sqrtCrownCompetitionFactor = Avx10v1.Sqrt(crownCompetitionFactor);
                     Vector256<float> crownCompetitionIncrementToP4;
                     if (heightCoefficients.P4 == 0.5F)
                     {
@@ -1469,31 +1470,31 @@ namespace Mars.Seem.Organon
                         crownCompetitionIncrementToP4 = crownCompetitionFactor;
                     }
 
-                    Vector256<float> crownRatio = Avx512F.LoadVector256(crownRatios + treeIndex);
-                    Vector256<float> proportionBelowCrown = Avx512F.Subtract(one, crownRatio);
-                    Vector256<float> B0 = Avx512F.Multiply(P1, MathAvx10.Exp(Avx512F.Multiply(P2, crownCompetitionFactor)));
-                    Vector256<float> B1 = MathAvx10.Exp(Avx512F.Multiply(P3, crownCompetitionIncrementToP4)); // exp(P3 * sqrt(CCI)) for PSME and THSE, exp(P3 * CCI) for ABGR
-                    Vector256<float> FCR = Avx512F.Multiply(Avx512F.Multiply(minusP5, Avx512F.Multiply(proportionBelowCrown, proportionBelowCrown)), MathAvx10.Exp(Avx512F.Multiply(P7, sqrtCrownCompetitionFactor))); // P7 is 0.0 for ABGR and TSHE -> exp() = 1.0
-                    Vector256<float> modifier = Avx512F.Multiply(P8, Avx512F.Add(B0, Avx512F.Multiply(Avx512F.Subtract(B1, B0), MathAvx10.Exp(FCR))));
+                    Vector256<float> crownRatio = Avx10v1.LoadVector256(crownRatios + treeIndex);
+                    Vector256<float> proportionBelowCrown = Avx10v1.Subtract(one, crownRatio);
+                    Vector256<float> B0 = Avx10v1.Multiply(P1, MathAvx10.Exp(Avx10v1.Multiply(P2, crownCompetitionFactor)));
+                    Vector256<float> B1 = MathAvx10.Exp(Avx10v1.Multiply(P3, crownCompetitionIncrementToP4)); // exp(P3 * sqrt(CCI)) for PSME and THSE, exp(P3 * CCI) for ABGR
+                    Vector256<float> FCR = Avx10v1.Multiply(Avx10v1.Multiply(minusP5, Avx10v1.Multiply(proportionBelowCrown, proportionBelowCrown)), MathAvx10.Exp(Avx10v1.Multiply(P7, sqrtCrownCompetitionFactor))); // P7 is 0.0 for ABGR and TSHE -> exp() = 1.0
+                    Vector256<float> modifier = Avx10v1.Multiply(P8, Avx10v1.Add(B0, Avx10v1.Multiply(Avx10v1.Subtract(B1, B0), MathAvx10.Exp(FCR))));
                     Vector256<float> crownRatioAdjustment = OrganonVariant.GetCrownRatioAdjustmentAvx10(crownRatio);
-                    Vector256<float> heightGrowth = Avx512F.Multiply(potentialHeightGrowth, Avx512F.Multiply(modifier, crownRatioAdjustment));
-                    Vector256<float> expansionFactor = Avx512F.LoadVector256(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
+                    Vector256<float> heightGrowth = Avx10v1.Multiply(potentialHeightGrowth, Avx10v1.Multiply(modifier, crownRatioAdjustment));
+                    Vector256<float> expansionFactor = Avx10v1.LoadVector256(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
                     Vector256<float> zero = Vector256<float>.Zero;
-                    heightGrowth = Avx512F.BlendVariable(heightGrowth, zero, Avx512F.CompareLessThanOrEqual(expansionFactor, zero));
-                    DebugV.Assert(Avx512F.CompareGreaterThanOrEqual(heightGrowth, zero));
-                    DebugV.Assert(Avx512F.CompareLessThanOrEqual(heightGrowth, Vector256.Create(Constant.Maximum.HeightIncrementInFeet)));
-                    Avx512F.Store(heightGrowths + treeIndex, heightGrowth);
+                    heightGrowth = Avx10v1.BlendVariable(heightGrowth, zero, Avx10v1.CompareLessThanOrEqual(expansionFactor, zero));
+                    DebugV.Assert(Avx10v1.CompareGreaterThanOrEqual(heightGrowth, zero));
+                    DebugV.Assert(Avx10v1.CompareLessThanOrEqual(heightGrowth, Vector256.Create(Constant.Maximum.HeightIncrementInFeet)));
+                    Avx10v1.Store(heightGrowths + treeIndex, heightGrowth);
 
                     // if growth effective age > old tree age is true, then 0xffff ffff = -1 is returned from the comparison
                     // Reinterpreting as Vector256<int> and subtracting therefore adds one to the old tree record counts where old trees occur.
-                    oldTreeRecordCount256 = Avx512F.Subtract(oldTreeRecordCount256, Avx512F.CompareGreaterThan(growthEffectiveAge, oldTreeAgeThreshold).AsInt32());
+                    oldTreeRecordCount256 = Avx10v1.Subtract(oldTreeRecordCount256, Avx10v1.CompareGreaterThan(growthEffectiveAge, oldTreeAgeThreshold).AsInt32());
                 }
             }
 
-            Vector128<int> oldTreeRecordCount128 = Avx512F.Add(Avx512F.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractLower128),
-                                                               Avx512F.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractUpper128));
-            oldTreeRecordCount128 = Avx512F.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
-            oldTreeRecordCount128 = Avx512F.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
+            Vector128<int> oldTreeRecordCount128 = Avx10v1.Add(Avx10v1.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractLower128),
+                                                               Avx10v1.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractUpper128));
+            oldTreeRecordCount128 = Avx10v1.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
+            oldTreeRecordCount128 = Avx10v1.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
             return oldTreeRecordCount128.ToScalar();
         }
 
@@ -1530,7 +1531,7 @@ namespace Mars.Seem.Organon
                 for (int treeIndex = 0; treeIndex < trees.Count; treeIndex += Constant.Simd512x16.Width)
                 {
                     // inline version of GetGrowthEffectiveAge()
-                    Vector512<float> height = Avx512F.LoadVector512(heights + treeIndex);
+                    Vector512<float> height = Avx512.LoadVector512(heights + treeIndex);
                     Vector512<float> growthEffectiveAge;
                     Vector512<float> potentialHeightGrowth;
                     if (trees.Species == FiaCode.TsugaHeterophylla)
@@ -1542,7 +1543,7 @@ namespace Mars.Seem.Organon
                         growthEffectiveAge = DouglasFir.GetPsmeAbgrGrowthEffectiveAgeAvx512(psmeSite!, this.TimeStepInYears, height, out potentialHeightGrowth);
                     }
                     Vector512<float> crownCompetitionFactor = OrganonVariant.GetCrownCompetitionFactorByHeightAvx512(height, crownCompetitionByHeight);
-                    Vector512<float> sqrtCrownCompetitionFactor = Avx512F.Sqrt(crownCompetitionFactor);
+                    Vector512<float> sqrtCrownCompetitionFactor = Avx512.Sqrt(crownCompetitionFactor);
                     Vector512<float> crownCompetitionIncrementToP4;
                     if (heightCoefficients.P4 == 0.5F)
                     {
@@ -1553,24 +1554,24 @@ namespace Mars.Seem.Organon
                         crownCompetitionIncrementToP4 = crownCompetitionFactor;
                     }
 
-                    Vector512<float> crownRatio = Avx512F.LoadVector512(crownRatios + treeIndex);
-                    Vector512<float> proportionBelowCrown = Avx512F.Subtract(one, crownRatio);
-                    Vector512<float> B0 = Avx512F.Multiply(P1, MathAvx10.Exp(Avx512F.Multiply(P2, crownCompetitionFactor)));
-                    Vector512<float> B1 = MathAvx10.Exp(Avx512F.Multiply(P3, crownCompetitionIncrementToP4)); // exp(P3 * sqrt(CCI)) for PSME and THSE, exp(P3 * CCI) for ABGR
-                    Vector512<float> FCR = Avx512F.Multiply(Avx512F.Multiply(minusP5, Avx512F.Multiply(proportionBelowCrown, proportionBelowCrown)), MathAvx10.Exp(Avx512F.Multiply(P7, sqrtCrownCompetitionFactor))); // P7 is 0.0 for ABGR and TSHE -> exp() = 1.0
-                    Vector512<float> modifier = Avx512F.Multiply(P8, Avx512F.Add(B0, Avx512F.Multiply(Avx512F.Subtract(B1, B0), MathAvx10.Exp(FCR))));
+                    Vector512<float> crownRatio = Avx512.LoadVector512(crownRatios + treeIndex);
+                    Vector512<float> proportionBelowCrown = Avx512.Subtract(one, crownRatio);
+                    Vector512<float> B0 = Avx512.Multiply(P1, MathAvx10.Exp(Avx512.Multiply(P2, crownCompetitionFactor)));
+                    Vector512<float> B1 = MathAvx10.Exp(Avx512.Multiply(P3, crownCompetitionIncrementToP4)); // exp(P3 * sqrt(CCI)) for PSME and THSE, exp(P3 * CCI) for ABGR
+                    Vector512<float> FCR = Avx512.Multiply(Avx512.Multiply(minusP5, Avx512.Multiply(proportionBelowCrown, proportionBelowCrown)), MathAvx10.Exp(Avx512.Multiply(P7, sqrtCrownCompetitionFactor))); // P7 is 0.0 for ABGR and TSHE -> exp() = 1.0
+                    Vector512<float> modifier = Avx512.Multiply(P8, Avx512.Add(B0, Avx512.Multiply(Avx512.Subtract(B1, B0), MathAvx10.Exp(FCR))));
                     Vector512<float> crownRatioAdjustment = OrganonVariant.GetCrownRatioAdjustmentAvx512(crownRatio);
-                    Vector512<float> heightGrowth = Avx512F.Multiply(potentialHeightGrowth, Avx512F.Multiply(modifier, crownRatioAdjustment));
-                    Vector512<float> expansionFactor = Avx512F.LoadVector512(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
+                    Vector512<float> heightGrowth = Avx512.Multiply(potentialHeightGrowth, Avx512.Multiply(modifier, crownRatioAdjustment));
+                    Vector512<float> expansionFactor = Avx512.LoadVector512(expansionFactors + treeIndex); // maybe worth continuing in loop if all expansion factors are zero?
                     Vector512<float> zero = Vector512<float>.Zero;
-                    heightGrowth = Avx512F.BlendVariable(heightGrowth, zero, Avx512F.CompareLessThanOrEqual(expansionFactor, zero));
-                    DebugV.Assert(Avx512F.CompareGreaterThanOrEqual(heightGrowth, zero));
-                    DebugV.Assert(Avx512F.CompareLessThanOrEqual(heightGrowth, Vector512.Create(Constant.Maximum.HeightIncrementInFeet)));
-                    Avx512F.Store(heightGrowths + treeIndex, heightGrowth);
+                    heightGrowth = Avx512.BlendVariable(heightGrowth, zero, Avx512.CompareLessThanOrEqual(expansionFactor, zero));
+                    DebugV.Assert(Avx512.CompareGreaterThanOrEqual(heightGrowth, zero));
+                    DebugV.Assert(Avx512.CompareLessThanOrEqual(heightGrowth, Vector512.Create(Constant.Maximum.HeightIncrementInFeet)));
+                    Avx512.Store(heightGrowths + treeIndex, heightGrowth);
                     
                     // if growth effective age > old tree age is true, then 0xffff ffff = -1 is returned from the comparison
                     // Reinterpreting as Vector512<int> and subtracting therefore adds one to the old tree record counts where old trees occur.
-                    oldTreeRecordCount512 = Avx512F.Subtract(oldTreeRecordCount512, Avx512F.CompareGreaterThan(growthEffectiveAge, oldTreeAgeThreshold).AsInt32());
+                    oldTreeRecordCount512 = Avx512.Subtract(oldTreeRecordCount512, Avx512.CompareGreaterThan(growthEffectiveAge, oldTreeAgeThreshold).AsInt32());
                 }
             }
 
@@ -1582,12 +1583,12 @@ namespace Mars.Seem.Organon
             // oldTreeRecordCount256[5] = oldTreeRecordCount512[13] + oldTreeRecordCount512[5]
             // oldTreeRecordCount256[6] = oldTreeRecordCount512[14] + oldTreeRecordCount512[6]
             // oldTreeRecordCount256[7] = oldTreeRecordCount512[15] + oldTreeRecordCount512[7]
-            Vector256<int> oldTreeRecordCount256 = Avx512F.Add(Avx512F.ExtractVector256(oldTreeRecordCount512, Constant.Simd512x16.ExtractLower256),
-                                                               Avx512F.ExtractVector256(oldTreeRecordCount512, Constant.Simd512x16.ExtractUpper256));
-            Vector128<int> oldTreeRecordCount128 = Avx512F.Add(Avx512F.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractLower128),
-                                                               Avx512F.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractUpper128));
-            oldTreeRecordCount128 = Avx512F.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
-            oldTreeRecordCount128 = Avx512F.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
+            Vector256<int> oldTreeRecordCount256 = Avx512.Add(Avx512.ExtractVector256(oldTreeRecordCount512, Constant.Simd512x16.ExtractLower256),
+                                                               Avx512.ExtractVector256(oldTreeRecordCount512, Constant.Simd512x16.ExtractUpper256));
+            Vector128<int> oldTreeRecordCount128 = Avx512.Add(Avx512.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractLower128),
+                                                               Avx512.ExtractVector128(oldTreeRecordCount256, Constant.Simd256x8.ExtractUpper128));
+            oldTreeRecordCount128 = Avx512.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
+            oldTreeRecordCount128 = Avx512.HorizontalAdd(oldTreeRecordCount128, oldTreeRecordCount128);
             return oldTreeRecordCount128.ToScalar();
         }
 

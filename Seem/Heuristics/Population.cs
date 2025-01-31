@@ -60,7 +60,7 @@ namespace Mars.Seem.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(standTrajectory));
             }
 
-            IList<int> thinningPeriods = standTrajectory.Treatments.GetThinningPeriods();
+            List<int> thinningPeriods = standTrajectory.Treatments.GetThinningPeriods();
 
             // set up selection probabilities
             // With multiple diameter classes:

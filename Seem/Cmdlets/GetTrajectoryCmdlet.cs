@@ -1,4 +1,5 @@
-﻿using Mars.Seem.Tree;
+﻿using Mars.Seem.Extensions;
+using Mars.Seem.Tree;
 using System;
 using System.Management.Automation;
 
@@ -19,7 +20,7 @@ namespace Mars.Seem.Cmdlets
 
         protected GetTrajectoryCmdlet()
         {
-            this.Simd = Constant.Default.Simd;
+            this.Simd = SimdInstructionsExtensions.GetDefault();
             this.Threads = Environment.ProcessorCount / 2;
             this.TreeVolume = TreeScaling.Default;
         }
