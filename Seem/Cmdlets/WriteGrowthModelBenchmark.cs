@@ -28,7 +28,7 @@ namespace Mars.Seem.Cmdlets
             {
                 // for now, assume benchmark threads ran on the highest frequency cores
                 // TODO: affinitize threads to cores or track thread affinity
-                List<float> averageProcessorFrequenciesInGHz = new(benchmark.GetAverageFrequenciesInGHz());
+                List<float> averageProcessorFrequenciesInGHz = [.. benchmark.GetAverageFrequenciesInGHz()];
                 averageProcessorFrequenciesInGHz.Sort((float a, float b) => b.CompareTo(a)); // descending
 
                 string linePrefix = benchmark.Simd.ToString() + "," + benchmark.Threads.ToString(CultureInfo.InvariantCulture);

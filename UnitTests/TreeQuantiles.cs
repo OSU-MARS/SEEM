@@ -42,7 +42,7 @@ namespace Mars.Seem.Test
                 float[] speciesQuantileLiveExpansionFactor = new float[TestConstant.DbhQuantiles];
                 float[] speciesQuantileMaxDbh = new float[TestConstant.DbhQuantiles];
                 float[] speciesQuantileMeanDbh = new float[TestConstant.DbhQuantiles];
-                float[] speciesQuantileMinDbh = Enumerable.Repeat(Constant.CentimetersPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
+                float[] speciesQuantileMinDbh = [.. Enumerable.Repeat(Constant.CentimetersPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles)];
 
                 Trees treesOfSpecies = stand.TreesBySpecies[initialDbhQuantile.Key];
                 for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
@@ -99,7 +99,7 @@ namespace Mars.Seem.Test
                 float[] quantileMeanCrownRatio = new float[TestConstant.DbhQuantiles];
                 float[] quantileMeanDbh = new float[TestConstant.DbhQuantiles];
                 float[] quantileMeanHeight = new float[TestConstant.DbhQuantiles];
-                float[] quantileMinDbh = Enumerable.Repeat(Constant.CentimetersPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles).ToArray();
+                float[] quantileMinDbh = [.. Enumerable.Repeat(Constant.CentimetersPerInch * TestConstant.Maximum.DiameterInInches, TestConstant.DbhQuantiles)];
                 for (int treeIndex = 0; treeIndex < initialDbhQuantile.Value.Length; ++treeIndex)
                 {
                     int quantile = initialDbhQuantile.Value[treeIndex];

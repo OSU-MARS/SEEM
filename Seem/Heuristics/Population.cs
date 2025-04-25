@@ -164,7 +164,7 @@ namespace Mars.Seem.Heuristics
             this.individualIndexByFitness.Clear();
             foreach (KeyValuePair<float, List<int>> individualOfFitness in other.individualIndexByFitness)
             {
-                this.individualIndexByFitness.Add(individualOfFitness.Key, new List<int>(individualOfFitness.Value));
+                this.individualIndexByFitness.Add(individualOfFitness.Key, [.. individualOfFitness.Value]);
             }
 
             Array.Copy(other.IndividualFitness, 0, this.IndividualFitness, 0, this.IndividualFitness.Length);

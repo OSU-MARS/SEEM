@@ -30,11 +30,11 @@ namespace Mars.Seem.Organon
         private OrganonTreatments(OrganonTreatments other)
             : base(other)
         {
-            this.basalAreaByPeriod = new(other.basalAreaByPeriod);
+            this.basalAreaByPeriod = [.. other.basalAreaByPeriod];
             this.currentSimulationPeriod = other.currentSimulationPeriod;
 
-            this.BasalAreaThinnedByPeriod = new(other.BasalAreaThinnedByPeriod);
-            this.PoundsOfNitrogenPerAcreByPeriod = new(other.PoundsOfNitrogenPerAcreByPeriod);
+            this.BasalAreaThinnedByPeriod = [.. other.BasalAreaThinnedByPeriod];
+            this.PoundsOfNitrogenPerAcreByPeriod = [.. other.PoundsOfNitrogenPerAcreByPeriod];
         }
 
         public bool ApplyToPeriod(int periodJustBeginning, OrganonStandTrajectory trajectory)

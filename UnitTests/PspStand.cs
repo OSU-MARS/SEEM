@@ -33,7 +33,7 @@ namespace Mars.Seem.Test
 
         public void AddIngrowth(int year, OrganonStand stand, OrganonStandDensity standDensity)
         {
-            List<int> remainingIngrowthYears = this.IngrowthByYear.Keys.Where(key => key > this.yearOfMostRecentIngrowthAdded).ToList();
+            List<int> remainingIngrowthYears = [.. this.IngrowthByYear.Keys.Where(key => key > this.yearOfMostRecentIngrowthAdded)];
             if ((remainingIngrowthYears.Count < 1) || (remainingIngrowthYears[0] > year))
             {
                 // no ingrowth in this simulation step

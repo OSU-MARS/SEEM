@@ -142,7 +142,7 @@ namespace Mars.Seem.Cmdlets
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
                 writeContext.SetSilviculturalSpace(silviculturalSpace);
 
-                // marshall trajectories into Arrow arrays
+                // marshall trajectories into Arrow arrays across all financial scenarios
                 for (int coordinateIndex = 0; coordinateIndex < silviculturalSpace.CoordinatesEvaluated.Count; ++coordinateIndex)
                 {
                     writeContext.SetSilviculturalCoordinate(coordinateIndex);

@@ -44,7 +44,7 @@ namespace Mars.Seem.Output
                 {
                     SilviculturalCoordinate coordinate = silviculturalSpace.CoordinatesEvaluated[coordinateIndex];
                     StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
-                    periodsToWrite += this.GetPeriodsToWrite(highTrajectory, silviculturalSpace.FinancialScenarios.Count);
+                    periodsToWrite += silviculturalSpace.FinancialScenarios.Count * this.GetPeriodsToWrite(highTrajectory);
                 }
             }
 
@@ -56,18 +56,13 @@ namespace Mars.Seem.Output
             int periodsToWrite = 0;
             for (int trajectoryIndex = 0; trajectoryIndex < trajectories.Count; ++trajectoryIndex)
             {
-                periodsToWrite += this.GetPeriodsToWrite(trajectories[trajectoryIndex]);
+                periodsToWrite += this.FinancialScenarios.Count * this.GetPeriodsToWrite(trajectories[trajectoryIndex]);
             }
 
             return periodsToWrite;
         }
 
         public int GetPeriodsToWrite(StandTrajectory trajectory)
-        {
-            return this.GetPeriodsToWrite(trajectory, this.FinancialScenarios.Count);
-        }
-
-        private int GetPeriodsToWrite(StandTrajectory trajectory, int financialScenarioCount)
         {
             int periodsToWrite;
             if (this.HarvestsOnly)
@@ -78,7 +73,7 @@ namespace Mars.Seem.Output
                     ++harvests;
 
                     Harvest harvest = trajectory.Treatments.Harvests[harvestIndex];
-                    if (harvest.Period == EndOfRotationPeriod)
+                    if (harvest.Period == this.EndOfRotationPeriod)
                     {
                         return harvests; // thin scheduled in same period as end of rotation
                     }
@@ -91,7 +86,6 @@ namespace Mars.Seem.Output
                 periodsToWrite = trajectory.StandByPeriod.Length;
             }
 
-            periodsToWrite *= financialScenarioCount;
             return periodsToWrite;
         }
 

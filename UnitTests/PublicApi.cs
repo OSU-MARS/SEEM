@@ -657,7 +657,7 @@ namespace Mars.Seem.Test
             Assert.IsTrue(solutionsRejected >= 0);
         }
 
-        private void NelderTrajectory(SimdInstructions simd)
+        private static void NelderTrajectory(SimdInstructions simd)
         {
             int expectedUnthinnedTreeRecordCount = 661;
             int lastPeriod = 9;
@@ -875,19 +875,19 @@ namespace Mars.Seem.Test
         [TestMethod]
         public void NelderTrajectoryAvx()
         {
-            this.NelderTrajectory(SimdInstructions.Avx);
+            PublicApi.NelderTrajectory(SimdInstructions.Avx);
         }
 
         [TestMethod]
         public void NelderTrajectoryAvx10()
         {
-            this.NelderTrajectory(SimdInstructions.Avx10);
+            PublicApi.NelderTrajectory(SimdInstructions.Avx10);
         }
 
         [TestMethod]
         public void NelderTrajectoryVex128()
         {
-            this.NelderTrajectory(SimdInstructions.Vex128);
+            PublicApi.NelderTrajectory(SimdInstructions.Vex128);
         }
 
         [TestMethod]
