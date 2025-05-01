@@ -2,9 +2,7 @@
 using Mars.Seem.Organon;
 using Mars.Seem.Tree;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace Mars.Seem.Silviculture
 {
@@ -85,6 +83,13 @@ namespace Mars.Seem.Silviculture
             };
         }
 
+        /// <summary>
+        /// Mark trees for thinning from below, proportionally, and above based on specified thinning intensity percentages.
+        /// </summary>
+        /// <remarks>
+        /// Percentages are applied to merchantable species on the basis of the stand's total basal area. Depending on intensity, stand
+        /// composition, and number of reserve trees, percentages may not be achievable.
+        /// </remarks>
         public override float EvaluateTreeSelection(OrganonStandTrajectory trajectory)
         {
             float totalPercentage = this.fromAbovePercentage + this.fromBelowPercentage + this.proportionalPercentage;
@@ -93,23 +98,32 @@ namespace Mars.Seem.Silviculture
                 throw new NotSupportedException("Sum of from above, from below, and proportional removal percentages is " + totalPercentage + ". This is beyond the valid range of 0-100%.");
             }
 
-            OrganonStand standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (this.Period - 1) + ".");
-            Units standUnits = standAtEndOfPreviousPeriod.GetUnits();
-            (float diameterToCmMultiplier, float _, float _) = UnitsExtensions.GetConversionToMetric(standUnits);
-            float diameterToStandUnitsMultiplier = 1.0F / diameterToCmMultiplier;
-
-            // sort trees by diameter
-            SortedList<FiaCode, int[]> dbhSortOrderBySpecies = [];
-            SortedList<FiaCode, int> thinFromAboveIndexBySpecies = [];
-            SortedList<FiaCode, int> thinFromBelowIndexBySpecies = [];
-            float maximumDbh = Single.MinValue;
-            float minimumDbh = Single.MaxValue;
-            FiaCode currentMaximumDbhSpeciesSelection = default;
-            FiaCode currentMinimumDbhSpeciesSelection = default;
-            foreach (Trees treesOfSpecies in standAtEndOfPreviousPeriod.TreesBySpecies.Values)
+            OrganonStand? standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1];
+            OrganonStandDensity? densityAtEndOfPreviousPeriod = trajectory.DensityByPeriod[this.Period - 1];
+            if ((standAtEndOfPreviousPeriod == null) || (densityAtEndOfPreviousPeriod == null))
             {
-                if ((treesOfSpecies.Count == 0) || 
-                    (trajectory.TreeScaling.TryGetForwarderVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? forwardedVolumeTable) == false))
+                throw new NotSupportedException("Stand information is not available for period " + (this.Period - 1) + ".");
+            }
+
+            Units standUnits = standAtEndOfPreviousPeriod.GetUnits();
+            float diameterToCmMultiplier = standUnits.GetDbhConversionToMetric();
+            float diameterToStandUnitsMultiplier = 1.0F / diameterToCmMultiplier;
+            float basalAreaToStandUnitsMultiplier = 1.0F / standUnits.GetBasalAreaConversionToMetric();
+            float totalBasalAreaAtEndOfPreviousPeriodInStandUnits = basalAreaToStandUnitsMultiplier * densityAtEndOfPreviousPeriod.BasalAreaPerHa;
+
+            // flatten tree lists and sort by diameter
+            // If needed, could special case to skip sorting if only proportional thinning's called for.
+            int treeRecordsInStand = standAtEndOfPreviousPeriod.GetTreeRecordCount();
+            int[] mergedIndicesCompacted = new int[treeRecordsInStand];
+            FiaCode[] mergedSpecies = new FiaCode[treeRecordsInStand];
+            float[] mergedDbh = new float[treeRecordsInStand];
+            int flatDestinationIndex = 0;
+            float totalThinnableBasalAreaInStandUnits = 0.0F;
+            for (int speciesIndex = 0; speciesIndex < standAtEndOfPreviousPeriod.TreesBySpecies.Count; ++speciesIndex)
+            {
+                Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies.Values[speciesIndex];
+                FiaCode treeSpecies = treesOfSpecies.Species;
+                if ((treesOfSpecies.Count == 0) || (trajectory.TreeScaling.TryGetForwarderVolumeTable(treeSpecies, out TreeSpeciesMerchantableVolumeTable? forwardedVolumeTable) == false))
                 {
                     // no trees to thin
                     // TODO: support thinning of nonmerchantable species
@@ -122,231 +136,146 @@ namespace Mars.Seem.Silviculture
                 }
                 if (forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters != longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
                 {
-                    // if needed, this can be moved after the max DBH is obtained and thrown only when trees larger than a volume table limit are present
+                    // if needed, this could be thrown only when trees larger than a volume table limit are present
                     throw new NotSupportedException("Forwarded volume table's maximum DBH of " + forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters + " cm differs from the long log volume table's " + longLogVolumeTable.MaximumMerchantableDiameterInCentimeters + " cm.  Since it is not known whether the thin will be performed as a long or short log harvest the largest harvest eligible tree size cannot be determined.");
                 }
 
-                // for now, assume large tree retention
-                float maximumFellableDbh = diameterToStandUnitsMultiplier * forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters;
-
-                int[] dbhSortOrder = treesOfSpecies.GetDbhSortOrder();
-                float maximumDbhInSpecies = Single.NaN;
-                int thinFromAboveIndexOfLargestFellableTreeInSpecies = dbhSortOrder.Length - 1;
-                for (int thinFromAboveIndex = thinFromAboveIndexOfLargestFellableTreeInSpecies; thinFromAboveIndex > 0; --thinFromAboveIndex)
+                float maximumFellableDbhInStandUnits = diameterToStandUnitsMultiplier * forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters;
+                Array.Copy(treesOfSpecies.Dbh, 0, mergedDbh, flatDestinationIndex, treesOfSpecies.Count);
+                for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
                 {
-                    int compactedTreeIndex = dbhSortOrder[thinFromAboveIndex];
-                    float dbh = treesOfSpecies.Dbh[compactedTreeIndex];
-                    if (dbh <= maximumFellableDbh)
-                    {
-                        maximumDbhInSpecies = dbh;
-                        thinFromAboveIndexOfLargestFellableTreeInSpecies = thinFromAboveIndex;
-                        break;
-                    }
-                }
-                if (Single.IsNaN(maximumDbhInSpecies))
-                {
-                    continue; // all trees in species are larger than the maximum fellable DBH and thus, for now, assumed to be retained
-                }
-
-                dbhSortOrderBySpecies.Add(treesOfSpecies.Species, dbhSortOrder);
-                thinFromAboveIndexBySpecies.Add(treesOfSpecies.Species, thinFromAboveIndexOfLargestFellableTreeInSpecies + 1); // + 1 because thin from above loop needs to - 1
-                thinFromBelowIndexBySpecies.Add(treesOfSpecies.Species, 0); // TODO: support retention of advance regeneration
-
-                if (maximumDbhInSpecies > maximumDbh)
-                {
-                    maximumDbh = maximumDbhInSpecies;
-                    currentMaximumDbhSpeciesSelection = treesOfSpecies.Species;
-                }
-
-                float minimumDbhInSpecies = treesOfSpecies.Dbh[dbhSortOrder[0]];
-                if (minimumDbhInSpecies < minimumDbh)
-                {
-                    minimumDbh = minimumDbhInSpecies;
-                    currentMinimumDbhSpeciesSelection = treesOfSpecies.Species;
-                }
-            }
-
-            // thin from above
-            OrganonStandDensity? densityAtEndOfPreviousPeriod = trajectory.DensityByPeriod[this.Period - 1];
-            Debug.Assert((densityAtEndOfPreviousPeriod != null) && (standUnits == Units.English));
-            float targetBasalAreaEnglish = 0.01F * this.FromAbovePercentage * Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * densityAtEndOfPreviousPeriod.BasalAreaPerHa;
-            float basalAreaRemovedFromAbove = 0.0F;
-            while (basalAreaRemovedFromAbove < targetBasalAreaEnglish)
-            {
-                Trees treesWithLargestDbh = standAtEndOfPreviousPeriod.TreesBySpecies[currentMaximumDbhSpeciesSelection];
-                int thinFromAboveIndex = thinFromAboveIndexBySpecies[currentMaximumDbhSpeciesSelection] - 1;
-                if (thinFromAboveIndex < 0)
-                {
-                    continue; // no more fellable trees in this species
-                }
-
-                int compactedTreeIndex = dbhSortOrderBySpecies[currentMaximumDbhSpeciesSelection][thinFromAboveIndex];
-                int uncompactedTreeIndex = treesWithLargestDbh.UncompactedIndex[compactedTreeIndex];
-
-                int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesWithLargestDbh.Species][uncompactedTreeIndex];
-                if (currentHarvestPeriod == Constant.NoHarvestPeriod)
-                {
-                    // skip trees which have been marked as not harvestable (reserves, cull, nonmerchantable)
-                    continue;
-                }
-
-                // selection of previously harvested trees is a defect but trees 1) not selected for thinning, selected for thinning in
-                // 2) this period or 3) later periods are eligible for removal in this period
-                if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod != Constant.RegenerationHarvestIfEligible) && (currentHarvestPeriod < this.Period))
-                {
-                    throw new NotSupportedException("Could not select tree " + treesWithLargestDbh.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
-                }
-                if (treesWithLargestDbh.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
-                {
-                    throw new NotSupportedException("Could not select tree " + treesWithLargestDbh.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesWithLargestDbh.LiveExpansionFactor[compactedTreeIndex].ToString(Constant.Default.ExpansionFactorFormat) + ".");
-                }
-                Debug.Assert(diameterToCmMultiplier * treesWithLargestDbh.Dbh[compactedTreeIndex] <= 100.1F); // for now, quick implementation, TODO: follow volume table maximum DBH by species
-                trajectory.SetTreeSelection(currentMaximumDbhSpeciesSelection, uncompactedTreeIndex, this.Period);
-
-                float basalAreaOfTree = treesWithLargestDbh.GetBasalArea(compactedTreeIndex);
-                basalAreaRemovedFromAbove += basalAreaOfTree; // for now, use complete removal of tree's expansion factor
-                thinFromAboveIndexBySpecies[currentMaximumDbhSpeciesSelection] = thinFromAboveIndex;
-
-                // find next largest tree (by diameter) which hasn't been thinned
-                maximumDbh = Single.MinValue;
-                bool foundNextTree = false;
-                foreach (Trees treesOfSpecies in standAtEndOfPreviousPeriod.TreesBySpecies.Values)
-                {
-                    int[] dbhSortOrder = dbhSortOrderBySpecies[treesOfSpecies.Species];
-                    thinFromAboveIndex = thinFromAboveIndexBySpecies[treesOfSpecies.Species];
-                    Debug.Assert((thinFromAboveIndex >= 0) && (thinFromAboveIndex < dbhSortOrder.Length));
-
-                    float largestDbh = treesOfSpecies.Dbh[dbhSortOrder[thinFromAboveIndex]];
-                    if (largestDbh > maximumDbh)
-                    {
-                        maximumDbh = largestDbh;
-                        currentMaximumDbhSpeciesSelection = treesOfSpecies.Species;
-                        foundNextTree = true;
-                    }
-                }
-                if (foundNextTree == false)
-                {
-                    // avoid looping forever if, for some reason, basal area target cannot be reached
-                    break;
-                }
-            }
-
-            // thin from below
-            Debug.Assert(standUnits == Units.English);
-            targetBasalAreaEnglish = 0.01F * this.FromBelowPercentage * Constant.HectaresPerAcre * Constant.SquareFeetPerSquareMeter * densityAtEndOfPreviousPeriod.BasalAreaPerHa;
-            float basalAreaRemovedFromBelow = 0.0F;
-            while (basalAreaRemovedFromBelow < targetBasalAreaEnglish)
-            {
-                Trees treesWithSmallestDbh = standAtEndOfPreviousPeriod.TreesBySpecies[currentMinimumDbhSpeciesSelection];
-                int thinFromBelowIndex = thinFromBelowIndexBySpecies[currentMinimumDbhSpeciesSelection];
-                int compactedTreeIndex = dbhSortOrderBySpecies[currentMinimumDbhSpeciesSelection][thinFromBelowIndex];
-                int uncompactedTreeIndex = treesWithSmallestDbh.UncompactedIndex[compactedTreeIndex];
-                float basalAreaOfTree = treesWithSmallestDbh.GetBasalArea(compactedTreeIndex);
-
-                int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesWithSmallestDbh.Species][uncompactedTreeIndex];
-                if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod != Constant.RegenerationHarvestIfEligible) && (currentHarvestPeriod < this.Period))
-                {
-                    throw new NotSupportedException("Could not select tree " + treesWithSmallestDbh.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
-                }
-                if (treesWithSmallestDbh.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
-                {
-                    throw new NotSupportedException("Could not select tree " + treesWithSmallestDbh.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesWithSmallestDbh.LiveExpansionFactor[compactedTreeIndex].ToString(Constant.Default.ExpansionFactorFormat) + ".");
-                }
-                Debug.Assert(diameterToCmMultiplier * treesWithSmallestDbh.Dbh[compactedTreeIndex] <= 100.1F); // for now, quick implementation, TODO: follow volume table maximum DBH by species
-                trajectory.SetTreeSelection(currentMinimumDbhSpeciesSelection, uncompactedTreeIndex, this.Period);
-
-                basalAreaRemovedFromBelow += basalAreaOfTree;
-                thinFromBelowIndexBySpecies[currentMinimumDbhSpeciesSelection] = thinFromBelowIndex + 1;
-
-                // find next smallest tree (by diameter) which hasn't been thinned
-                minimumDbh = Single.MaxValue;
-                bool foundNextTree = false;
-                foreach (Trees treesOfSpecies in standAtEndOfPreviousPeriod.TreesBySpecies.Values)
-                {
-                    int thinFromAboveIndex = thinFromAboveIndexBySpecies[treesOfSpecies.Species];
-                    thinFromBelowIndex = thinFromBelowIndexBySpecies[treesOfSpecies.Species];
-                    if (thinFromBelowIndex >= thinFromAboveIndex)
-                    {
-                        // no more trees to remove in this species
-                        continue;
-                    }
-
-                    int[] dbhSortOrder = dbhSortOrderBySpecies[treesOfSpecies.Species];
-                    float smallestDbh = treesOfSpecies.Dbh[dbhSortOrder[thinFromBelowIndex]];
-                    if (smallestDbh < minimumDbh)
-                    {
-                        minimumDbh = smallestDbh;
-                        currentMinimumDbhSpeciesSelection = treesOfSpecies.Species;
-                        foundNextTree = true;
-                    }
-                }
-                if (foundNextTree == false)
-                {
-                    break;
-                }
-            }
-
-            // thin remaining trees proportionally
-            float proportionalThinAccumulator = 0.0F;
-            float proportionalIncrement = 0.01F * this.ProportionalPercentage * 100.0F / (100.0F - this.FromAbovePercentage - this.FromBelowPercentage);
-            float basalAreaRemovedProportionally = 0.0F;
-            for (int speciesIndex = 0; speciesIndex < dbhSortOrderBySpecies.Count; ++speciesIndex)
-            {
-                FiaCode treeSpecies = dbhSortOrderBySpecies.Keys[speciesIndex];
-                Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[treeSpecies];
-                if (treesOfSpecies.Count == 0)
-                {
-                    continue;
-                }
-
-                int[] dbhSortOrder = dbhSortOrderBySpecies.Values[speciesIndex];
-                for (int proportionalThinIndex = thinFromBelowIndexBySpecies[treeSpecies]; proportionalThinIndex < thinFromAboveIndexBySpecies[treeSpecies]; ++proportionalThinIndex)
-                {
-                    int compactedTreeIndex = dbhSortOrder[proportionalThinIndex];
                     int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
                     int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species][uncompactedTreeIndex];
                     if (currentHarvestPeriod == Constant.NoHarvestPeriod)
                     {
-                        // skip trees which have been marked as not harvestable (reserves, cull, nonmerchantable)
+                        // trees marked not harvestable (reserve, nonmerchantable) can't be thinned so don't need to be flattened
+                        // TODO: remove trees marked as cull?
                         continue;
                     }
 
-                    proportionalThinAccumulator += proportionalIncrement;
-                    if (proportionalThinAccumulator >= 1.0F)
+                    float dbh = treesOfSpecies.Dbh[compactedTreeIndex];
+                    if (dbh > maximumFellableDbhInStandUnits)
                     {
-                        float basalAreaOfTree = treesOfSpecies.GetBasalArea(compactedTreeIndex);
-                        if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod != Constant.RegenerationHarvestIfEligible) && (currentHarvestPeriod < this.Period))
-                        {
-                            throw new NotSupportedException("Could not select tree " + treesOfSpecies.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because it is assigned to period " + currentHarvestPeriod + ".");
-                        }
-                        if (treesOfSpecies.LiveExpansionFactor[compactedTreeIndex] <= 0.0F)
-                        {
-                            throw new NotSupportedException("Could not select tree " + treesOfSpecies.Tag[compactedTreeIndex] + " for proportional thinning in period " + this.Period + " because its expansion factor is " + treesOfSpecies.LiveExpansionFactor[compactedTreeIndex].ToString(Constant.Default.ExpansionFactorFormat) + ".");
-                        }
-                        Debug.Assert(diameterToCmMultiplier * treesOfSpecies.Dbh[compactedTreeIndex] <= 100.1F); // for now, quick implementation, TODO: follow volume table maximum DBH by species
-                        trajectory.SetTreeSelection(treeSpecies, uncompactedTreeIndex, this.Period);
-
-                        basalAreaRemovedProportionally += basalAreaOfTree;                        
-                        proportionalThinAccumulator -= 1.0F;
+                        // for now, assume large tree retention
+                        continue;
                     }
-                    else if (currentHarvestPeriod == this.Period)
+
+                    mergedDbh[flatDestinationIndex] = dbh;
+                    mergedIndicesCompacted[flatDestinationIndex] = compactedTreeIndex;
+                    mergedSpecies[flatDestinationIndex] = treeSpecies;
+                    ++flatDestinationIndex;
+
+                    totalThinnableBasalAreaInStandUnits += treesOfSpecies.GetBasalArea(compactedTreeIndex);
+                }
+            }
+
+            int maxFlatDestinationIndexExclusive = flatDestinationIndex;
+            if (maxFlatDestinationIndexExclusive < 1)
+            {
+                // no trees eligible for thinning
+                // This case can be reached several different ways but is most likely to occur when a previous thin cuts all of the trees
+                // eligible for removal or all eligible trees die out of the stand before this thinning period.
+                Debug.Assert(totalThinnableBasalAreaInStandUnits == 0.0F);
+                return 0.0F; // no basal area can be removed
+            }
+
+            Array.Fill(mergedDbh, Single.PositiveInfinity, flatDestinationIndex, mergedDbh.Length - flatDestinationIndex); // set any unused DBHes to infinity so they sort at end
+            Debug.Assert(totalThinnableBasalAreaInStandUnits <= totalBasalAreaAtEndOfPreviousPeriodInStandUnits + Constant.Math.SinglePrecisionSumTolerance); // identical within numerical accuracy if stand is 100% merch species without any reserves
+
+            int[] dbhSortIndices = ArrayExtensions.CreateSequentialIndices(treeRecordsInStand);
+            Array.Sort(mergedDbh, dbhSortIndices);
+
+            // thin from below
+            float basalAreaToRemoveFromBelow = 0.01F * this.fromBelowPercentage * totalBasalAreaAtEndOfPreviousPeriodInStandUnits;
+            float basalAreaRemovedFromBelow = 0.0F;
+            int thinFromBelowIndex = 0;
+            while (basalAreaRemovedFromBelow < basalAreaToRemoveFromBelow)
+            {
+                int flatTreeIndex = dbhSortIndices[thinFromBelowIndex];
+                FiaCode treeSpecies = mergedSpecies[flatTreeIndex];
+                int compactedTreeIndex = mergedIndicesCompacted[flatTreeIndex];
+                
+                // for now, thin individual tree records
+                // Basal area target is thus very likely to be exceeded by a fraction of a tree record. If needed, exact removal can be
+                // implemented by fractionally reducing the record's expansion factor instead of setting it to zero.
+                Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[treeSpecies];
+                int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
+                trajectory.SetTreeSelection(treeSpecies, uncompactedTreeIndex, this.Period);
+                basalAreaRemovedFromBelow += treesOfSpecies.GetBasalArea(compactedTreeIndex);
+
+                ++thinFromBelowIndex;
+                if (thinFromBelowIndex >= maxFlatDestinationIndexExclusive)
+                {
+                    break;
+                }
+            }
+
+            // thin from above
+            float basalAreaToRemoveFromAbove = 0.01F * this.fromAbovePercentage * totalBasalAreaAtEndOfPreviousPeriodInStandUnits;
+            float basalAreaRemovedFromAbove = 0.0F;
+            int thinFromAboveIndex = maxFlatDestinationIndexExclusive - 1;
+            while (basalAreaRemovedFromAbove < basalAreaToRemoveFromAbove)
+            {
+                int flatTreeIndex = dbhSortIndices[thinFromAboveIndex];
+                FiaCode treeSpecies = mergedSpecies[flatTreeIndex];
+                int compactedTreeIndex = mergedIndicesCompacted[flatTreeIndex];
+
+                Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[treeSpecies];
+                int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
+                trajectory.SetTreeSelection(treeSpecies, uncompactedTreeIndex, this.Period);
+                basalAreaRemovedFromAbove += treesOfSpecies.GetBasalArea(compactedTreeIndex);
+                
+                --thinFromAboveIndex;
+                if (thinFromAboveIndex <= thinFromBelowIndex)
+                {
+                    break;
+                }
+            }
+
+            // thin remaining trees proportionally or unmark trees from thinning if no longer selected at the current intensities
+            // For now, assumes sufficient tree records and even enough expansion factors for the error of using constant increment
+            // accumulation to average out. Variable rate accumulation linked to trees' basal area and expansion factors would be more
+            // robust and thus likely preferable.
+            // float basalAreaToRemoveProportionally = 0.01F * this.fromAbovePercentage * totalBasalAreaAtEndOfPreviousPeriodInStandUnits;
+            float basalAreaRemovedProportionally = 0.0F;
+            float proportionalThinIncrementAccumulator = 0.0F;
+            float proportionalThinIncrementInMeanTreeRecords = 0.01F * this.ProportionalPercentage * 100.0F / (100.0F - this.FromAbovePercentage - this.FromBelowPercentage);
+            for (int proportionalThinIndex = thinFromBelowIndex; proportionalThinIndex <= thinFromAboveIndex; ++proportionalThinIndex)
+            {
+                int flatTreeIndex = dbhSortIndices[proportionalThinIndex];
+                FiaCode treeSpecies = mergedSpecies[flatTreeIndex];
+                int compactedTreeIndex = mergedIndicesCompacted[flatTreeIndex];
+
+                Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[treeSpecies];
+                int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];                
+
+                proportionalThinIncrementAccumulator += proportionalThinIncrementInMeanTreeRecords;
+                if (proportionalThinIncrementAccumulator >= 1.0F)
+                {                    
+                    trajectory.SetTreeSelection(treeSpecies, uncompactedTreeIndex, this.Period);
+
+                    float basalAreaOfTree = treesOfSpecies.GetBasalArea(compactedTreeIndex);
+                    basalAreaRemovedProportionally += basalAreaOfTree;
+                    proportionalThinIncrementAccumulator -= 1.0F;
+                }
+                else
+                {
+                    int currentHarvestPeriod = trajectory.TreeSelectionBySpecies[treesOfSpecies.Species][uncompactedTreeIndex];
+                    if (currentHarvestPeriod == this.Period)
                     {
                         // for now, assume this is the only harvest prescription active for this period
                         // This makes the prescription authorative for tree assignments in the period and, therefore, able to release trees from
-                        // harvest.
+                        // harvest. Separate processing is not needed for thins from below or above as this loop always runs and will thus mark
+                        // (above case) or unmark (this case) every harvest eligible tree not marked for thinning from above or below. (This will
+                        // break if the definition of harvest eligibility changes at runtime, but that's not currently supported.)
                         trajectory.SetTreeSelection(treeSpecies, uncompactedTreeIndex, Constant.RegenerationHarvestIfEligible);
-                    }
-                    else if ((currentHarvestPeriod != Constant.NoHarvestPeriod) && (currentHarvestPeriod != Constant.RegenerationHarvestIfEligible) && (currentHarvestPeriod < this.Period))
-                    {
-                        // tree is expected to be retained through this period (but possibly harvested later), so prior removal is an error
-                        throw new NotSupportedException("Tree " + treesOfSpecies.Tag[compactedTreeIndex] + " is thinned in period " + currentHarvestPeriod + " but is expected to be retained through period " + this.Period + ".");
                     }
                 }
             }
 
-            float basalAreaRemoved = basalAreaRemovedFromAbove + basalAreaRemovedProportionally + basalAreaRemovedFromBelow;
-            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemoved > 0.0F) || (((int)(0.01F * totalPercentage * thinFromAboveIndexBySpecies.Values.Sum() - Constant.RoundTowardsZeroTolerance) <= 1) && (basalAreaRemoved == 0.0F)));
-            return basalAreaRemoved;
+            float basalAreaRemovedInStandUnits = basalAreaRemovedFromAbove + basalAreaRemovedProportionally + basalAreaRemovedFromBelow;
+            Debug.Assert((totalPercentage >= 0.0F && basalAreaRemovedInStandUnits > 0.0F) || (((int)(0.01F * totalPercentage * maxFlatDestinationIndexExclusive - Constant.Math.RoundTowardsZeroTolerance) <= 1.0F) && (basalAreaRemovedInStandUnits == 0.0F)));
+            return basalAreaRemovedInStandUnits;
         }
 
         public override bool TryCopyFrom(Harvest other)

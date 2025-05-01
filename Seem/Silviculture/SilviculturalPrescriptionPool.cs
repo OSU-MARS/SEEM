@@ -65,7 +65,7 @@ namespace Mars.Seem.Silviculture
                 // In cases where heuristics evaluate a trajectory across rotation lengths and financial scenarios it's assumed all
                 // solutions in the pool have trajectories available for the same rotation lengths and, therefore, that there isn't
                 // reason to prefer one solution over another due to it having a closer match in rotation lengths.
-                float solutionIndexScalingFactor = (this.SolutionsInPool - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
+                float solutionIndexScalingFactor = (this.SolutionsInPool - Constant.Math.RoundTowardsZeroTolerance) / byte.MaxValue;
                 int solutionIndex = (int)(solutionIndexScalingFactor * this.Pseudorandom.GetPseudorandomByteAsFloat());
                 eliteTreeSelection = this.EliteTreeSelections[solutionIndex];
             }

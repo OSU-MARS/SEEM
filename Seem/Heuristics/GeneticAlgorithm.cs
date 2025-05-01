@@ -167,7 +167,7 @@ namespace Mars.Seem.Heuristics
             this.PopulationStatistics.AddGeneration(currentGeneration, this.harvestPeriods);
 
             // for each generation of size n, perform n fertile matings
-            float treeScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            float treeScalingFactor = (initialTreeRecordCount - Constant.Math.RoundTowardsZeroTolerance) / UInt16.MaxValue;
             Population nextGeneration = new(currentGeneration);
             OrganonStandTrajectory firstChildTrajectory = this.CurrentTrajectory;
             OrganonStandTrajectory secondChildTrajectory = new(this.CurrentTrajectory);

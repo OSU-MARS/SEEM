@@ -1,6 +1,6 @@
 ﻿namespace Mars.Seem.Heuristics
 {
-    public enum PrescriptionUnits
+    public enum PrescriptionUnits : byte
     {
         BasalAreaPerAcreRetained,
         StemPercentageRemoved

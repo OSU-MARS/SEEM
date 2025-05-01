@@ -1,6 +1,6 @@
 ﻿namespace Mars.Seem.Heuristics
 {
-    public enum MoveType
+    public enum MoveType : byte
     {
         OneOpt,
         TwoOptExchange

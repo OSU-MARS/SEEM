@@ -1,14 +1,18 @@
-﻿namespace Mars.Seem.Tree
+﻿using System;
+
+namespace Mars.Seem.Tree
 {
-    public enum TreeConditionCode
+    [Flags]
+    public enum TreeConditionCode : byte
     {
-        Live,
-        BrokenTop,
-        Cull,
-        Defect,
-        Marginal,
-        Reserve,
-        SiteTree,
-        Snag
+        None = 0x00,
+        Live = 0x01,
+        BrokenTop = 0x02,
+        Cull = 0x04,
+        Defect = 0x08,
+        Marginal = 0x10,
+        Reserve = 0x20,
+        SiteTree = 0x40,
+        Snag = 0x80
     }
 }

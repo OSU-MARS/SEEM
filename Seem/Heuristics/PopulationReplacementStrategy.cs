@@ -1,6 +1,6 @@
 ﻿namespace Mars.Seem.Heuristics
 {
-    public enum PopulationReplacementStrategy
+    public enum PopulationReplacementStrategy : byte
     {
         ContributionOfDiversityReplaceWorst,
         ReplaceWorst

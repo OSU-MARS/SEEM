@@ -1,7 +1,6 @@
 ﻿using Mars.Seem.Heuristics;
 using Mars.Seem.Tree;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Mars.Seem
@@ -35,9 +34,6 @@ namespace Mars.Seem
         public const float RedAlderAdditionalMortalityGrowthEffectiveAgeInYears = 55.0F;
         public const float ReinekeExponent = 1.605F;
         public const int RegenerationHarvestIfEligible = 0;
-        // 0.00003 and smaller result in expected ArgumentOutOfRangeExceptions due to single precision
-        // However, 0.0001 still results in rare exceptions. The underlying cause is unclear.
-        public const float RoundTowardsZeroTolerance = 0.001F;
         public const float SecondsPerHour = 3600.0F;
         public const float SquareMetersPerSquareFoot = 0.09290304F;
         public const float SquareFeetPerSquareMeter = 10.7639104167097F;
@@ -252,6 +248,9 @@ namespace Mars.Seem
 
             public const float One = 1.0F;
             public const int OneAsInt = 0x3f800000; // 0x3f800000 = 1.0F
+
+            public const float RoundTowardsZeroTolerance = 0.001F;
+            public const float SinglePrecisionSumTolerance = 0.001F;
         }
 
         public static class Maximum

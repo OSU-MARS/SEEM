@@ -105,7 +105,7 @@ namespace Mars.Seem.Heuristics
             float meanAcceptanceProbability = this.InitialProbability;
             float movingAverageOfObjectiveChange = -1.0F;
             float movingAverageMemory = 1.0F - 1.0F / this.ProbabilityWindowLength;
-            float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.Math.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             for (int iteration = 1; (iteration < this.Iterations) && (meanAcceptanceProbability >= this.FinalProbability); meanAcceptanceProbability *= this.Alpha)

@@ -374,7 +374,7 @@ namespace Mars.Seem.Heuristics
             if (harvests.Count > 0)
             {
                 // set thinning intensities
-                float defaultProportionalIntensity = this.GetDefaultProportionalIntensity();
+                float defaultProportionalIntensityInPercent = this.GetDefaultProportionalIntensity();
                 for (int thinIndex = 0; thinIndex < harvests.Count; ++thinIndex)
                 {
                     //ThinByPrescription thinPrescription = (ThinByPrescription)harvests[thinIndex];
@@ -404,7 +404,7 @@ namespace Mars.Seem.Heuristics
                     //else
                     //{
                         moveState.CandidateIntensities[baseIndex] = 0.0F;
-                        moveState.CandidateIntensities[baseIndex + 1] = defaultProportionalIntensity;
+                        moveState.CandidateIntensities[baseIndex + 1] = defaultProportionalIntensityInPercent;
                         moveState.CandidateIntensities[baseIndex + 2] = 0.0F;
                     //}
                 }
@@ -474,16 +474,16 @@ namespace Mars.Seem.Heuristics
             if (this.RestartOnLocalMaximum && (perfCounters.MovesAccepted == 1) && (startFromDefaultPosition == false))
             {
                 // move to default position
-                float defaultProportionalIntensity = this.GetDefaultProportionalIntensity();
+                float defaultProportionalIntensityInPercent = this.GetDefaultProportionalIntensity();
                 for (int harvest = 0; harvest < harvests.Count; ++harvest)
                 {
                     int baseIndex = 3 * harvest;
                     moveState.CandidateIntensities[baseIndex] = 0.0F;
-                    moveState.CandidateIntensities[baseIndex + 1] = defaultProportionalIntensity;
+                    moveState.CandidateIntensities[baseIndex + 1] = defaultProportionalIntensityInPercent;
                     moveState.CandidateIntensities[baseIndex + 2] = 0.0F;
 
                     moveState.ThinningIntensities[baseIndex] = 0.0F;
-                    moveState.ThinningIntensities[baseIndex + 1] = defaultProportionalIntensity;
+                    moveState.ThinningIntensities[baseIndex + 1] = defaultProportionalIntensityInPercent;
                     moveState.ThinningIntensities[baseIndex + 2] = 0.0F;
                 }
 

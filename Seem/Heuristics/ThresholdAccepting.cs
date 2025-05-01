@@ -62,7 +62,7 @@ namespace Mars.Seem.Heuristics
             this.EvaluateInitialSelection(coordinate, this.IterationsPerThreshold.Sum(), perfCounters);
 
             float acceptedFinancialValue = this.FinancialValue.GetHighestValue();
-            float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.Math.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             for (int thresholdIndex = 0; thresholdIndex < this.Thresholds.Count; ++thresholdIndex)

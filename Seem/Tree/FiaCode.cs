@@ -10,6 +10,7 @@ namespace Mars.Seem.Tree
     /// </remarks>
     public enum FiaCode : UInt16
     {
+        // Abies = 10,
         AbiesAmabalis = 11,
         AbiesConcolor = 15,
         AbiesGrandis = 17,
@@ -45,5 +46,8 @@ namespace Mars.Seem.Tree
         ThujaPlicata = 242,
         TsugaHeterophylla = 263,
         TsugaMertensiana = 264
+        // UmbellulariaCalifornica = 981
+        // UnknownDeadHardwood = 998
+        // UnknownLiveTree = 999
     }
 }

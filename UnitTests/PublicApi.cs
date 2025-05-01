@@ -446,7 +446,7 @@ namespace Mars.Seem.Test
             // expected prescription search will always locate it it.
             #if DEBUG
                 Span<float> minFinancialValues = configuration.Variant.Simd == SimdInstructions.Avx10 ? [ 0.117F ] : [ -0.0351F, 0.120F ];
-                Span<int> treesThinned = configuration.Variant.Simd == SimdInstructions.Avx10 ? [ 0 ] : [ 5, 0];
+                Span<int> treesThinned = configuration.Variant.Simd == SimdInstructions.Avx10 ? [ 0 ] : [ 5, 0 ];
             #else
                 Span<float> minFinancialValues = [ 1.075F, 1.169F ];
                 Span<int> treesThinned = [ 2, 0 ];
@@ -760,14 +760,14 @@ namespace Mars.Seem.Test
             {
                 Stand? unthinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
                 Assert.IsNotNull(unthinnedStand);
-                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount);
+                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount, "Expected " + expectedUnthinnedTreeRecordCount + " tree records before thinning but " + unthinnedStand.GetTreeRecordCount() + " records were present.");
             }
-            int expectedFirstThinTreeRecordCount = 328; // must be updated if prescription changes
+            int expectedFirstThinTreeRecordCount = 328; // must be updated if prescription changes, verify consistency with thinning intensities
             for (int periodIndex = firstThinPeriod; periodIndex < oneThinTrajectory.PlanningPeriods; ++periodIndex)
             {
                 Stand? thinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
                 Assert.IsNotNull(thinnedStand);
-                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount);
+                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount, "Expected " + expectedFirstThinTreeRecordCount + " tree records after thinning but " + thinnedStand.GetTreeRecordCount() + " records were retained.");
             }
 
             PublicApi.Verify(oneThinTrajectory, oneThinExpected, configurationNwo.Variant.TimeStepInYears);
@@ -1530,35 +1530,35 @@ namespace Mars.Seem.Test
             }
             Assert.IsTrue(String.IsNullOrEmpty(trajectory.Name) == false);
             Assert.IsTrue(trajectory.PeriodLengthInYears == timeStepInYears);
-            Assert.IsTrue(trajectory.PlanningPeriods == expectedTrajectory.Length); // BUGBUG: clean off by one semantic
+            Assert.IsTrue(trajectory.PlanningPeriods == expectedTrajectory.Length);
 
             Assert.IsTrue(trajectory.GetFirstThinPeriod() == expectedTrajectory.FirstThinPeriod);
             Assert.IsTrue(trajectory.GetSecondThinPeriod() == expectedTrajectory.SecondThinPeriod);
 
-            List<int> thinningPeriods = trajectory.Treatments.GetHarvestPeriods();
-            Assert.IsTrue(thinningPeriods[^1] == Constant.RegenerationHarvestIfEligible);
+            List<int> harvestPeriods = trajectory.Treatments.GetHarvestPeriods();
+            Assert.IsTrue(harvestPeriods[^1] == Constant.RegenerationHarvestIfEligible);
             if (expectedTrajectory.FirstThinPeriod != Constant.NoHarvestPeriod)
             {
-                Assert.IsTrue(thinningPeriods[0] == expectedTrajectory.FirstThinPeriod);
+                Assert.IsTrue(harvestPeriods[0] == expectedTrajectory.FirstThinPeriod);
                 if (expectedTrajectory.ThirdThinPeriod != Constant.NoHarvestPeriod)
                 {
-                    Assert.IsTrue(thinningPeriods[1] == expectedTrajectory.SecondThinPeriod);
-                    Assert.IsTrue(thinningPeriods[2] == expectedTrajectory.ThirdThinPeriod);
-                    Assert.IsTrue(thinningPeriods.Count == 4);
+                    Assert.IsTrue(harvestPeriods[1] == expectedTrajectory.SecondThinPeriod);
+                    Assert.IsTrue(harvestPeriods[2] == expectedTrajectory.ThirdThinPeriod);
+                    Assert.IsTrue(harvestPeriods.Count == 4);
                 }
                 else if (expectedTrajectory.SecondThinPeriod != Constant.NoHarvestPeriod)
                 {
-                    Assert.IsTrue(thinningPeriods[1] == expectedTrajectory.SecondThinPeriod);
-                    Assert.IsTrue(thinningPeriods.Count == 3);
+                    Assert.IsTrue(harvestPeriods[1] == expectedTrajectory.SecondThinPeriod);
+                    Assert.IsTrue(harvestPeriods.Count == 3);
                 }
                 else
                 {
-                    Assert.IsTrue(thinningPeriods.Count == 2);
+                    Assert.IsTrue(harvestPeriods.Count == 2);
                 }
             }
             else
             {
-                Assert.IsTrue(thinningPeriods.Count == 1);
+                Assert.IsTrue(harvestPeriods.Count == 1);
             }
 
             PublicApi.Verify(trajectory.TreeSelectionBySpecies, expectedTrajectory);

@@ -1,6 +1,6 @@
 ﻿namespace Mars.Seem.Tree
 {
-    public enum TreeModel
+    public enum TreeModel : byte
     {
         OrganonSwo,
         OrganonNwo,

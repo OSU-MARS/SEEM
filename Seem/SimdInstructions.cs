@@ -1,6 +1,8 @@
-﻿namespace Mars.Seem
+﻿using System;
+
+namespace Mars.Seem
 {
-    public enum SimdInstructions
+    public enum SimdInstructions : UInt16 // can be reduced to byte by changing value of Avx512 if needed
     {
         /// <summary>
         /// AVX, AVX2, or (not currently used) FMA instructions at 256 bit width.

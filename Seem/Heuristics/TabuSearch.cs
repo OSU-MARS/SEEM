@@ -250,7 +250,7 @@ namespace Mars.Seem.Heuristics
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             OrganonStandTrajectory highestNonTabuTrajectory = new(this.CurrentTrajectory);
             OrganonStandTrajectory highTrajectoryInIteration = new(this.CurrentTrajectory);
-            float tenureScalingFactor = (this.MaximumTenure - 2 - Constant.RoundTowardsZeroTolerance) / byte.MaxValue;
+            float tenureScalingFactor = (this.MaximumTenure - 2 - Constant.Math.RoundTowardsZeroTolerance) / byte.MaxValue;
             //List<int> allTreeIndices = new List<int>(initialTreeRecordCount);
             //for (int treeIndex = 0; treeIndex < initialTreeRecordCount; ++treeIndex)
             //{

@@ -188,7 +188,7 @@ namespace Mars.Seem.Heuristics
             // exact either but makes the number of randomizations performed a more consistent function of α.
             thinningPeriods.Sort(); // ensure thins are listed in chronological order for diameter checking in TryRandomizeTreeSelection()
             int initialTreeRecordCount = this.CurrentTrajectory.GetInitialTreeRecordCount();
-            float treeIndexScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            float treeIndexScalingFactor = (initialTreeRecordCount - Constant.Math.RoundTowardsZeroTolerance) / UInt16.MaxValue;
             float treesToRandomize = initialTreeRecordCount * (1.0F - constructionGreediness);
             int treeSelectionsRandomized = 0; // for now, count randomizations which don't change a tree's harvest period as randomizations
             if (treesToRandomize < 10.0F)
@@ -363,7 +363,7 @@ namespace Mars.Seem.Heuristics
             if (harvestProbability < finalHarvestProbability)
             {
                 // TODO: support unequal harvest period probabilities
-                float thinIndexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / finalHarvestProbability;
+                float thinIndexScalingFactor = (thinningPeriods.Count - Constant.Math.RoundTowardsZeroTolerance) / finalHarvestProbability;
                 int thinIndex = (int)(thinIndexScalingFactor * harvestProbability);
                 harvestPeriod = thinningPeriods[thinIndex];
             }

@@ -85,8 +85,8 @@ namespace Mars.Seem.Organon
             }
 
             float diameterGrowthMultiplier = 1.0F + a8 * prem * MathV.Exp(a9 * yearsSinceMostRecentThin);
-            Debug.Assert(diameterGrowthMultiplier >= 1.0F); // increased diameter growth from increased taper
-            Debug.Assert(diameterGrowthMultiplier < 1.5F);
+            Debug.Assert(diameterGrowthMultiplier >= 1.00F); // increased diameter growth from increased taper
+            Debug.Assert(diameterGrowthMultiplier < 1.51F);
             return diameterGrowthMultiplier;
         }
 

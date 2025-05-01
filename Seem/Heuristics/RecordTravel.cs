@@ -96,7 +96,7 @@ namespace Mars.Seem.Heuristics
             int iterationsSinceBestObjectiveImproved = 0;
             int iterationsSinceFinancialValueIncreaseOrReheat = 0;
             float previousObjectiveFunction = Single.MinValue;
-            float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            float treeIndexScalingFactor = (this.CurrentTrajectory.GetInitialTreeRecordCount() - Constant.Math.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);
             float deviation = this.RelativeDeviation * MathF.Abs(acceptedFinancialValue) + this.FixedDeviation;

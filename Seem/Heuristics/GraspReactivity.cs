@@ -28,7 +28,7 @@ namespace Mars.Seem.Heuristics
                 throw new ArgumentOutOfRangeException(nameof(constructionGreediness));
             }
 
-            int binIndex = (int)((constructionGreediness - Constant.RoundTowardsZeroTolerance) / this.GreedinessBinWidth);
+            int binIndex = (int)((constructionGreediness - Constant.Math.RoundTowardsZeroTolerance) / this.GreedinessBinWidth);
             if (selectedAsEliteSolution)
             {
                 ++this.SelectionHistogram[binIndex];
@@ -41,8 +41,8 @@ namespace Mars.Seem.Heuristics
 
         public float GetConstructionGreediness(float minimumGreediness, float maximumGreediness)
         {
-            int minimumBinIndex = (int)((minimumGreediness - Constant.RoundTowardsZeroTolerance) / this.GreedinessBinWidth);
-            int maximumBinIndex = (int)((maximumGreediness - Constant.RoundTowardsZeroTolerance) / this.GreedinessBinWidth);
+            int minimumBinIndex = (int)((minimumGreediness - Constant.Math.RoundTowardsZeroTolerance) / this.GreedinessBinWidth);
+            int maximumBinIndex = (int)((maximumGreediness - Constant.Math.RoundTowardsZeroTolerance) / this.GreedinessBinWidth);
 
             int total = 0;
             for (int binIndex = minimumBinIndex; binIndex <= maximumBinIndex; ++binIndex)

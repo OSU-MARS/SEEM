@@ -3,7 +3,7 @@
 namespace Mars.Seem.Test
 {
     [Flags]
-    public enum ExpectedTreeChanges
+    public enum ExpectedTreeChanges : byte
     {
         NoDiameterOrHeightGrowth = 0x0,
         DiameterGrowth = 0x1,

@@ -112,7 +112,7 @@ namespace Mars.Seem.Heuristics
                             if (probability < selectionProbability)
                             {
                                 // probability falls into the harvest fraction, choose equally among available harvest periods
-                                float indexScalingFactor = (thinningPeriods.Count - Constant.RoundTowardsZeroTolerance) / selectionProbability;
+                                float indexScalingFactor = (thinningPeriods.Count - Constant.Math.RoundTowardsZeroTolerance) / selectionProbability;
                                 int periodIndex = (int)(indexScalingFactor * probability);
                                 thinningPeriod = thinningPeriods[periodIndex];
                                 ++treeSelectionsRandomized;
@@ -200,7 +200,7 @@ namespace Mars.Seem.Heuristics
 
             // find length and position of crossover
             int treeRecordCount = firstChildTrajectory.TreeSelectionBySpecies.Values.Sum(treeSelection => treeSelection.Count);
-            float treeScalingFactor = (treeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            float treeScalingFactor = (treeRecordCount - Constant.Math.RoundTowardsZeroTolerance) / UInt16.MaxValue;
             int[] crossoverPoints = new int[points];
             for (int pointIndex = 0; pointIndex < points; ++pointIndex)
             {
@@ -366,7 +366,7 @@ namespace Mars.Seem.Heuristics
             }
 
             Trees treesOfSpecies = standBeforeThinning.TreesBySpecies.Values.First();
-            return Population.GetTreeQuantiles(treesOfSpecies, treesOfSpecies.GetDbhSortOrder, diameterQuantiles);
+            return Population.GetTreeQuantiles(treesOfSpecies, treesOfSpecies.GetIndicesByDbhAscending, diameterQuantiles);
         }
 
         private static List<int> GetTreeHeightQuantiles(Stand standBeforeThinning, int diameterQuantiles)
@@ -377,7 +377,7 @@ namespace Mars.Seem.Heuristics
             }
 
             Trees treesOfSpecies = standBeforeThinning.TreesBySpecies.Values.First();
-            return Population.GetTreeQuantiles(treesOfSpecies, treesOfSpecies.GetHeightSortOrder, diameterQuantiles);
+            return Population.GetTreeQuantiles(treesOfSpecies, treesOfSpecies.GetIndicesByHeightAscending, diameterQuantiles);
         }
 
         private static List<int> GetTreeQuantiles(Trees treesOfSpecies, Func<int[]> getSortOrder, int quantiles)
@@ -386,7 +386,7 @@ namespace Mars.Seem.Heuristics
 
             int[] treeSortOrder = getSortOrder.Invoke();
             List<int> quantileByTree = new(treesOfSpecies.Capacity);
-            float quantileScalingFactor = (quantiles - Constant.RoundTowardsZeroTolerance) / treesOfSpecies.Count;
+            float quantileScalingFactor = (quantiles - Constant.Math.RoundTowardsZeroTolerance) / treesOfSpecies.Count;
             for (int treeIndex = 0; treeIndex < treesOfSpecies.Count; ++treeIndex)
             {
                 int quantile = (int)MathF.Floor(quantileScalingFactor * treeSortOrder[treeIndex]);

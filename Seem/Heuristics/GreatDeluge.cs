@@ -88,7 +88,7 @@ namespace Mars.Seem.Heuristics
             }
 
             //float harvestPeriodScalingFactor = (this.CurrentTrajectory.HarvestPeriods - Constant.RoundToZeroTolerance) / byte.MaxValue;
-            float treeIndexScalingFactor = (initialTreeRecordCount - Constant.RoundTowardsZeroTolerance) / UInt16.MaxValue;
+            float treeIndexScalingFactor = (initialTreeRecordCount - Constant.Math.RoundTowardsZeroTolerance) / UInt16.MaxValue;
 
             // initial selection is considered iteration 0, so loop starts with iteration 1
             OrganonStandTrajectory candidateTrajectory = new(this.CurrentTrajectory);

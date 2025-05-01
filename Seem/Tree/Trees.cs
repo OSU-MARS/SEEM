@@ -214,7 +214,7 @@ namespace Mars.Seem.Tree
             };
         }
 
-        public int[] GetDbhSortOrder()
+        public int[] GetIndicesByDbhAscending()
         {
             int[] dbhSortIndices = ArrayExtensions.CreateSequentialIndices(this.Count);
             float[] dbhCloneWhichBecomesSorted = new float[this.Count];
@@ -223,7 +223,7 @@ namespace Mars.Seem.Tree
             return dbhSortIndices;
         }
 
-        public int[] GetHeightSortOrder()
+        public int[] GetIndicesByHeightAscending()
         {
             int[] heightSortIndices = ArrayExtensions.CreateSequentialIndices(this.Count);
             float[] heightCloneWhichBecomesSorted = new float[this.Count];

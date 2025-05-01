@@ -1,6 +1,6 @@
 ﻿namespace Mars.Seem
 {
-    public enum Units
+    public enum Units : byte
     {
         Metric,
         English

@@ -107,10 +107,15 @@ namespace Mars.Seem.Silviculture
                     {
                         // tree felled and bucked by harvester, no chainsaw use
                         this.WheeledHarvester.AddTree(treeWheeledHarvesterPMsPerHa);
-                        
-                        float woodAndRemainingBarkVolumePerStem = (treeMerchantableVolumeInM3 + unscaledNeiloidVolumeInM3) / (1.0F - treeSpeciesProperties.BarkFractionAfterHarvester);
-                        float treeForwardedWeightInKgPerHa = expansionFactorPerHa * woodAndRemainingBarkVolumePerStem * treeSpeciesProperties.StemDensityAfterHarvester; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
-                        this.Forwarder.AddTree(treeForwardedWeightInKgPerHa);
+
+                        if (treeMerchantableVolumeInM3 > 0.0F)
+                        {
+                            // for now, assume forwarder leaves trees without merchantable volume
+                            // (Could want to remove nonmerch for pile burning but that's not currently supported.)
+                            float woodAndRemainingBarkVolumePerStem = (treeMerchantableVolumeInM3 + unscaledNeiloidVolumeInM3) / (1.0F - treeSpeciesProperties.BarkFractionAfterHarvester);
+                            float treeForwardedWeightInKgPerHa = expansionFactorPerHa * woodAndRemainingBarkVolumePerStem * treeSpeciesProperties.StemDensityAfterHarvester; // / merchantableFractionOfLogLength; // 1 in BC Firmwood
+                            this.Forwarder.AddTree(treeForwardedWeightInKgPerHa);
+                        }
                     }
                     else
                     {
@@ -118,9 +123,12 @@ namespace Mars.Seem.Silviculture
                         float treeChainsawPMsPerHa = expansionFactorPerHa * treeChainsawPMsWithWheeledHarvester;
                         this.WheeledHarvester.AddTree(treeWheeledHarvesterPMsPerHa, treeChainsawPMsPerHa, treeBasalAreaInM2PerHa, treeMerchantableVolumePerHa);
 
-                        // for now, assume no bark loss from going through feed rollers
-                        float treeForwardedWeightInKgPerHa = expansionFactorPerHa * treeSpeciesProperties.GetStemOrLogWeightWithAllBark(treeMerchantableVolumeInM3 + unscaledNeiloidVolumeInM3);
-                        this.Forwarder.AddTree(treeForwardedWeightInKgPerHa);
+                        if (treeMerchantableVolumeInM3 > 0.0F)
+                        {
+                            // for now, assume no bark loss from going through feed rollers
+                            float treeForwardedWeightInKgPerHa = expansionFactorPerHa * treeSpeciesProperties.GetStemOrLogWeightWithAllBark(treeMerchantableVolumeInM3 + unscaledNeiloidVolumeInM3);
+                            this.Forwarder.AddTree(treeForwardedWeightInKgPerHa);
+                        }
 
                         previousOversizeTreeBehindHarvester = !previousOversizeTreeBehindHarvester;
                     }

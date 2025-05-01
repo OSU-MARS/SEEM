@@ -7,6 +7,7 @@ namespace Mars.Seem.Extensions
     {
         public static TreeConditionCode Parse(string code)
         {
+            // for now only single codes are supported but reserve, at least, could be combined with other codes
             return code switch
             {
                 ".." => TreeConditionCode.Live,
