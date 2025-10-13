@@ -31,7 +31,7 @@ namespace Mars.Seem.Cmdlets
             Debug.Assert(this.Stands != null);
             if (this.Stands is not CruisedStands cruisedStands)
             {
-                throw new NotSupportedException("Unable to determine growth model to use in predicting stands from type " + this.Stands.GetType().Name + ".");
+                throw new NotSupportedException($"Unable to determine growth model to use in predicting stands from type {this.Stands.GetType().Name}.");
             }
 
             OrganonConfiguration organonConfiguration = new(cruisedStands.OrganonVariant);

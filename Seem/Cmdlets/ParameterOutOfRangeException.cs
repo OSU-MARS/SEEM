@@ -10,7 +10,7 @@ namespace Mars.Seem.Cmdlets
         }
 
         public ParameterOutOfRangeException(string? paramName, string? message)
-            : base(message + " (Parameter '" + paramName + "')")
+            : base($"{message} (Parameter '{paramName}')")
         {
         }
     }

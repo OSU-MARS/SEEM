@@ -16,9 +16,7 @@ namespace Mars.Seem.Test
 
         public void WriteToCsv(StreamWriter writer, OrganonVariant variant, int year)
         {
-            writer.WriteLine("{0},{1},{2},{3},{4}",
-                             variant.TreeModel, year, this.TreesPerHa, this.BasalAreaPerHa,
-                             this.CrownCompetitionFactor);
+            writer.WriteLine($"{variant.TreeModel},{year},{this.TreesPerHa},{this.BasalAreaPerHa},{this.CrownCompetitionFactor}");
         }
     }
 }

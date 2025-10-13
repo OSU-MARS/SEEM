@@ -31,7 +31,7 @@ namespace Mars.Seem.Organon
 
             this.StandByPeriod[0] = new OrganonStand(stand); // subsequent periods initialized lazily in Simulate()
             //{
-            //    Name = this.Name + "p0" // append period index to stand name; sometimes useful when debugging
+            //    Name = this.Name}p0" // append period index to stand name; sometimes useful when debugging
             //};
         }
 
@@ -72,7 +72,7 @@ namespace Mars.Seem.Organon
             }
             if (matchingHarvestFound == false)
             {
-                throw new NotSupportedException("Expected a harvest to have already been moved to period " + newPeriod + ".");
+                throw new NotSupportedException($"Expected a harvest to have already been moved to period {newPeriod}.");
             }
 
             // clear no longer applicable basal area and fertilization
@@ -200,7 +200,7 @@ namespace Mars.Seem.Organon
             OrganonStand? standForPeriod = this.StandByPeriod[periodIndex];
             if (standForPeriod == null)
             {
-                throw new InvalidOperationException("Stand for period " + periodIndex + " has not been simulated.");
+                throw new InvalidOperationException($"Stand for period {periodIndex} has not been simulated.");
             }
 
             foreach (Trees treesOfSpecies in standForPeriod.TreesBySpecies.Values)
@@ -214,7 +214,7 @@ namespace Mars.Seem.Organon
                 int treeIndex = Array.BinarySearch<int>(treesOfSpecies.UncompactedIndex, allSpeciesUncompactedTreeIndex);
                 if (treeIndex < 0)
                 {
-                    throw new InvalidOperationException("All species uncompacted index " + allSpeciesUncompactedTreeIndex + " expected to fall within tree species " + treesOfSpecies.Species + " but was not found.");
+                    throw new InvalidOperationException($"All species uncompacted index {allSpeciesUncompactedTreeIndex} expected to fall within tree species {treesOfSpecies.Species} but was not found.");
                 }
                 return treesOfSpecies.Dbh[treeIndex];
             }
@@ -266,7 +266,7 @@ namespace Mars.Seem.Organon
                 {
                     if (simulationStand == null)
                     {
-                        OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
+                        OrganonStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException($"Stand information is not available for period {periodIndex - 1}.");
                         simulationStand = new OrganonStand(previousStand);
                     }
                     foreach (KeyValuePair<FiaCode, IndividualTreeSelection> individualTreeSelection in this.TreeSelectionBySpecies)
@@ -321,7 +321,7 @@ namespace Mars.Seem.Organon
                         Debug.Assert(simulationStand.Name != null);
                         OrganonStand standForPeriod = new(simulationStand);
                         //{
-                        //    Name = this.Name + "p" + periodIndex // append period index to stand name; sometimes useful when debugging
+                        //    Name = $"{this.Name}p{periodIndex // append period index to stand name; sometimes useful when debugging
                         //};
                         this.StandByPeriod[periodIndex] = standForPeriod;
                     }

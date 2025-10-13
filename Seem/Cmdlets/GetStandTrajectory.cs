@@ -94,7 +94,7 @@ namespace Mars.Seem.Cmdlets
             }
             if (SimdInstructionsExtensions.IsSupported(this.Simd) == false)
             {
-                throw new ParameterOutOfRangeException(nameof(this.Simd), this.Simd + " instructions are not supported on this processor.");
+                throw new ParameterOutOfRangeException(nameof(this.Simd), $"{this.Simd} instructions are not supported on this processor.");
             }
 
             int totalLoadStepDurationInSeconds = (int)((this.BenchmarkDuration + this.BenchmarkWarmup).TotalSeconds);
@@ -111,7 +111,7 @@ namespace Mars.Seem.Cmdlets
                 int threads = this.BenchmarkThreads[threadCountIndex];
                 progressRecord.PercentComplete = (int)(100.0F * benchmarks.Count / this.BenchmarkThreads.Count);
                 progressRecord.SecondsRemaining = totalLoadStepDurationInSeconds * (this.BenchmarkThreads.Count - benchmarks.Count);
-                progressRecord.StatusDescription = "Starting benchmark with " + threads + " thread" + (threads > 1 ? "s" : String.Empty) + "...";
+                progressRecord.StatusDescription = $"Starting benchmark with {threads} thread{(threads > 1 ? "s" : String.Empty)}...";
                 this.WriteProgress(progressRecord);
 
                 parallelOptions.MaxDegreeOfParallelism = threads;
@@ -157,7 +157,7 @@ namespace Mars.Seem.Cmdlets
 
             progressRecord.PercentComplete = 100;
             progressRecord.SecondsRemaining = 0;
-            progressRecord.StatusDescription = this.Simd + " benchmarking complete.";
+            progressRecord.StatusDescription = $"{this.Simd} benchmarking complete.";
             this.WriteProgress(progressRecord);
             return benchmarks;
         }

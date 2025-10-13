@@ -65,7 +65,7 @@ namespace Mars.Seem.Optimization
                 IndividualTreeSelection selection2 = selectionBySpecies2[selection1forSpecies.Key];
                 if (selection1.Count != selection2.Count)
                 {
-                    throw new ArgumentException("Tree selections for " + selection1forSpecies.Key + " have different tree counts.");
+                    throw new ArgumentException($"Tree selections for {selection1forSpecies.Key} have different tree counts.");
                 }
                 for (int treeIndex = 0; treeIndex < selection1.Count; ++treeIndex)
                 {

@@ -63,7 +63,7 @@ namespace Mars.Seem.Heuristics
         {
             if (this.TryGetBestTrajectory(coordinate, out OrganonStandTrajectory? bestTrajectory) == false)
             {
-                throw new InvalidOperationException("Best trajectory for rotation index " + coordinate.RotationIndex + " and financial scenario index " + coordinate.FinancialIndex + " is null.");
+                throw new InvalidOperationException($"Best trajectory for rotation index {coordinate.RotationIndex} and financial scenario index {coordinate.FinancialIndex} is null.");
             }
             return bestTrajectory;
         }
@@ -100,7 +100,7 @@ namespace Mars.Seem.Heuristics
                     scribnerVolumeInMbf += trajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(endOfRotationPeriod);
                     return scribnerVolumeInMbf;
                 default:
-                    throw new NotSupportedException("Unhandled timber objective " + this.RunParameters.TimberObjective + ".");
+                    throw new NotSupportedException($"Unhandled timber objective {this.RunParameters.TimberObjective}.");
             }
         }
 

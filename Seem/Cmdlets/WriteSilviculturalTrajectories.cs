@@ -2,7 +2,6 @@
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management.Automation;
@@ -80,7 +79,7 @@ namespace Mars.Seem.Cmdlets
                     this.WriteFeather(writeContext);
                     break;
                 default:
-                    throw new NotSupportedException("Unknown file type '" + fileExtension + "' in " + nameof(this.FilePath) + "'" + this.FilePath + "'.");
+                    throw new NotSupportedException($"Unknown file type '{fileExtension}' in {nameof(this.FilePath)}'{this.FilePath}'.");
             }
         }
 
@@ -119,7 +118,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-StandTrajectory: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        this.WriteWarning($"Write-SilviculturalTrajectories: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
                         break;
                     }
                 }
@@ -131,7 +130,7 @@ namespace Mars.Seem.Cmdlets
             Debug.Assert(this.Trajectories != null);
             if (this.HeuristicParameters)
             {
-                throw new NotSupportedException("Inclusion of heuristic parameter columns when writing feather is not currently supported.  Either write to .csv or omit the -" + nameof(this.HeuristicParameters) + " switch.");
+                throw new NotSupportedException($"Inclusion of heuristic parameter columns when writing feather is not currently supported.  Either write to .csv or omit the -{nameof(this.HeuristicParameters)} switch.");
             }
 
             int periodsToWrite = writeContext.GetPeriodsToWrite(this.Trajectories);

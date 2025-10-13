@@ -279,7 +279,7 @@ namespace Mars.Seem.Tree
                     this.MinimumScalingDiameter4Saw = Constant.CentimetersPerInch * 5.0F; // cm
                     break;
                 default:
-                    throw new NotSupportedException("Unhandled species " + treeSpecies + ".");
+                    throw new NotSupportedException($"Unhandled species {treeSpecies}.");
             }
 
             this.MaximumMerchantableDiameterInCentimeters = 100.0F; // >127 cm allowed by Scribner rules, amount of exceedance set by species taper
@@ -452,7 +452,7 @@ namespace Mars.Seem.Tree
                 }
                 if (heightInMeters >= this.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString(Constant.Default.HeightInMFormat) + " m exceeds the species' volume table capacity of " + this.MaximumHeightInMeters.ToString(Constant.Default.HeightInMFormat) + " m in harvest period " + harvestPeriod + ".");
+                    throw new NotSupportedException($"{treesOfSpecies.Species} {treesOfSpecies.Tag[compactedTreeIndex]}'s height of {heightInMeters.ToString(Constant.Default.HeightInMFormat)} m exceeds the species' volume table capacity of {this.MaximumHeightInMeters.ToString(Constant.Default.HeightInMFormat)} m in harvest period {harvestPeriod}.");
                 }
 
                 // bilinear interpolation setup
@@ -521,7 +521,7 @@ namespace Mars.Seem.Tree
                 harvestedMerchVolume.Scribner4Saw += expansionFactorPerHa * scribner4sawForTree;
 
                 Debug.Assert((cubic2sawForTree >= 0.0F) && (cubic3sawForTree >= 0.0F) && (cubic4sawForTree >= 0.0F), "Cubic volume is not greater than or equal to zero.");
-                Debug.Assert((scribner2sawForTree >= 0.0F) && (scribner3sawForTree >= 0.0F) && (scribner4sawForTree >= 0.0F), "Scribner volume is not greater than or equal to zero for " + treesOfSpecies.Species + " with height " + heightInMeters + " m and DBH " + dbhInCm + " cm (2S " + scribner2sawForTree + ", 3S " + scribner3sawForTree + ", 4S " + scribner4sawForTree + " MBF/ha).");
+                Debug.Assert((scribner2sawForTree >= 0.0F) && (scribner3sawForTree >= 0.0F) && (scribner4sawForTree >= 0.0F), $"Scribner volume is not greater than or equal to zero for {treesOfSpecies.Species} with height {heightInMeters} m and DBH {dbhInCm} cm (2S {scribner2sawForTree}, 3S {scribner3sawForTree}, 4S {scribner4sawForTree} MBF/ha).");
             }
 
             harvestedMerchVolume.ConvertToMbf();
@@ -583,7 +583,7 @@ namespace Mars.Seem.Tree
                 }
                 if (heightInMeters >= this.MaximumHeightInMeters)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + "'s height of " + heightInMeters.ToString(Constant.Default.HeightInMFormat) + " m exceeds the species' volume table capacity of " + this.MaximumHeightInMeters.ToString(Constant.Default.HeightInMFormat) + " m.");
+                    throw new NotSupportedException($"{treesOfSpecies.Species} {treesOfSpecies.Tag[compactedTreeIndex]}'s height of {heightInMeters.ToString(Constant.Default.HeightInMFormat)} m exceeds the species' volume table capacity of {this.MaximumHeightInMeters.ToString(Constant.Default.HeightInMFormat)} m.");
                 }
 
                 // bilinear interpolation setup
@@ -652,7 +652,7 @@ namespace Mars.Seem.Tree
                 standingMerchVolume.Scribner4Saw += expansionFactorPerHa * scribner4sawForTree;
 
                 Debug.Assert((cubic2sawForTree >= 0.0F) && (cubic3sawForTree >= 0.0F) && (cubic4sawForTree >= 0.0F), "Cubic volume is not greater than or equal to zero.");
-                Debug.Assert((scribner2sawForTree >= 0.0F) && (scribner3sawForTree >= 0.0F) && (scribner4sawForTree >= 0.0F), "Scribner volume is not greater than or equal to zero for " + treesOfSpecies.Species + " with height " + heightInMeters + " m and DBH " + dbhInCm + " cm (2S " + scribner2sawForTree + ", 3S " + scribner3sawForTree + ", 4S " + scribner4sawForTree + " MBF/ha).");
+                Debug.Assert((scribner2sawForTree >= 0.0F) && (scribner3sawForTree >= 0.0F) && (scribner4sawForTree >= 0.0F), $"Scribner volume is not greater than or equal to zero for {treesOfSpecies.Species} with height {heightInMeters} m and DBH {dbhInCm} cm (2S {scribner2sawForTree}, 3S {scribner3sawForTree}, 4S {scribner4sawForTree} MBF/ha).");
             }
 
             standingMerchVolume.ConvertToMbf();

@@ -121,7 +121,7 @@ namespace Mars.Seem.Tree
         {
             if (this.Species != other.Species)
             {
-                throw new ArgumentOutOfRangeException(nameof(other), "Attempt to copy volumes of " + other.Species + " to " + this.Species + ".");
+                throw new ArgumentOutOfRangeException(nameof(other), $"Attempt to copy volumes of {other.Species} to {this.Species}.");
             }
 
             int minPeriods = Math.Min(this.Length, other.Length);

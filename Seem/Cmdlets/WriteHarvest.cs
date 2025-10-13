@@ -29,7 +29,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     SilviculturalCoordinate coordinate = defaultSilviculturalSpace.CoordinatesEvaluated[coordinateIndex];
                     StandTrajectory highTrajectory = defaultSilviculturalSpace.GetHighTrajectory(coordinate);
-                    line.Append("," + highTrajectory.Name + "harvest");
+                    line.Append($",{highTrajectory.Name}harvest");
                 }
 
                 // standing volume headers
@@ -37,7 +37,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     SilviculturalCoordinate coordinate = defaultSilviculturalSpace.CoordinatesEvaluated[resultIndex];
                     StandTrajectory highTrajectory = defaultSilviculturalSpace.GetHighTrajectory(coordinate);
-                    line.Append("," + highTrajectory.Name + "standing");
+                    line.Append($",{highTrajectory.Name}standing");
                 }
                 writer.WriteLine(line);
             }
@@ -59,14 +59,14 @@ namespace Mars.Seem.Cmdlets
                     {
                         StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
                         float thinVolumeScribner = highTrajectory.GetTotalScribnerVolumeThinned(periodIndex);
-                        line.Append("," + thinVolumeScribner.ToString(CultureInfo.InvariantCulture));
+                        line.Append($",{thinVolumeScribner.ToString(CultureInfo.InvariantCulture)}");
                     }
 
                     foreach (SilviculturalCoordinate coordinate in silviculturalSpace.CoordinatesEvaluated)
                     {
                         StandTrajectory highTrajectory = silviculturalSpace.GetHighTrajectory(coordinate);
                         float regenVolumeScribner = highTrajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex);
-                        line.Append("," + regenVolumeScribner.ToString(CultureInfo.InvariantCulture));
+                        line.Append($",{regenVolumeScribner.ToString(CultureInfo.InvariantCulture)}");
                     }
 
                     writer.WriteLine(line);
@@ -80,7 +80,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-Harvest: Maximum file size of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB reached.");
+                        this.WriteWarning($"Write-Harvest: Maximum file size of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB reached.");
                         break;
                     }
                 }

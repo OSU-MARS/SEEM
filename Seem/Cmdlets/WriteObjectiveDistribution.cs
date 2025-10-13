@@ -65,7 +65,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-ObjectiveDistribution: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        this.WriteWarning($"Write-ObjectiveDistribution: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
                         break;
                     }
                 }

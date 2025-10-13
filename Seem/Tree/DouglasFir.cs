@@ -31,17 +31,17 @@ namespace Mars.Seem.Tree
             // actual data limit of the paper is 109 cm but, since regression is well behaved, allow use with somewhat larger stems
             if ((dbhInCm < 0.0F) || (dbhInCm > 120.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds the regression limit of Maguire and Hann 1990.");
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), $"Diameter of {dbhInCm.ToString(Constant.Default.DiameterInCmFormat)} cm is either negative or exceeds the regression limit of Maguire and Hann 1990.");
             }
             if ((heightInM < 0.0F) || (heightInM > 75.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either negative or exceeds regression limit of 75.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), $"Height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m is either negative or exceeds regression limit of 75.0 m.");
             }
             // fitting limit of the paper is 30 cm but, based on discussion with Maguire and greater stability of the Walters and Hann regression form
             // used compared to the Kozak 2004 form, allow lower heights
             if ((evaluationHeightInM < 0.1F * Constant.MetersPerFoot) || (evaluationHeightInM > Constant.DbhHeightInM))
             {
-                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString(Constant.Default.HeightInMFormat) + " m is less than the regression limit of 0.25 feet or exceeds breast height (" + Constant.DbhHeightInM + ").");
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), $"Evaluation height of {evaluationHeightInM.ToString(Constant.Default.HeightInMFormat)} m is less than the regression limit of 0.25 feet or exceeds breast height ({Constant.DbhHeightInM}).");
             }
 
             // for now, no effort is made to resolve discontinuities between Curtis and Arney 1977 and Maguire and Hann 1990
@@ -60,7 +60,7 @@ namespace Mars.Seem.Tree
             // Curtis and Arney's dataset includes one stem of 28 inches DBH (71 cm), the rest are 24 inches (61 cm) and smaller
             // if ((dbhInCm < 0.0F) || (dbhInCm > 71.0F))
             // {
-            //     throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds the regression limit of Curtis and Arney 1977.");
+            //     throw new ArgumentOutOfRangeException(nameof(dbhInCm), $"Diameter of {dbhInCm.ToString(Constant.Default.DiameterInCmFormat)} cm is either negative or exceeds the regression limit of Curtis and Arney 1977.");
             // }
 
             // solution of Curtis and Arney 1977, equation 1 (valid for heights of 0.25-2 feet), for stump diameter outside of bark
@@ -86,7 +86,7 @@ namespace Mars.Seem.Tree
             // else
             // {
             //     // At diameters above a meter or so, roots 1 and 3 become a complex conjugate pair. Root 2 becomes real but is negative.
-            //     throw new ArgumentOutOfRangeException(nameof(dbhInCm), "DBH of " + dbhInCm + " cm is beyond the regression fitting range of Curtis and Arney 1977.");
+            //     throw new ArgumentOutOfRangeException(nameof(dbhInCm), $"DBH of {dbhInCm} cm is beyond the regression fitting range of Curtis and Arney 1977.");
             // }
 
             return diameterOutsideBark;
@@ -98,15 +98,15 @@ namespace Mars.Seem.Tree
         {
             if ((dbhInCm < 0.0F) || (dbhInCm > 135.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds regression limit of 135.0 cm.");
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), $"Diameter of {dbhInCm.ToString(Constant.Default.DiameterInCmFormat)} cm is either negative or exceeds regression limit of 135.0 cm.");
             }
             if ((heightInM < 0.0F) || (heightInM > 75.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either negative or exceeds regression limit of 75.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), $"Height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m is either negative or exceeds regression limit of 75.0 m.");
             }
             if ((evaluationHeightInM < Constant.MetersPerFoot) || (evaluationHeightInM > heightInM))
             {
-                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString(Constant.Default.HeightInMFormat) + " m is less than the regression limit of 1.0 feet or exceeds tree height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m.");
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), $"Evaluation height of {evaluationHeightInM.ToString(Constant.Default.HeightInMFormat)} m is less than the regression limit of 1.0 feet or exceeds tree height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m.");
             }
 
             float dbhInInches = Constant.InchesPerCentimeter * dbhInCm;

@@ -384,7 +384,7 @@ namespace Mars.Seem.Heuristics
                     //{
                     //    if ((totalIntensity < this.HeuristicParameters.MinimumIntensity) || (totalIntensity > this.HeuristicParameters.MaximumIntensity))
                     //    {
-                    //        throw new NotSupportedException("Total intensity of thinning prescription " + thinIndex + "  is " + totalIntensity + ". This does not fall within the required range of " + this.HeuristicParameters.MinimumIntensity + "-" + this.HeuristicParameters.MaximumIntensity + ".");
+                    //        throw new NotSupportedException($"Total intensity of thinning prescription {thinIndex} is {totalIntensity}. This does not fall within the required range of {this.HeuristicParameters.MinimumIntensity}-{this.HeuristicParameters.MaximumIntensity}.");
                     //    }
 
                     //    // within numerical precision, moving intensity from above and below to proportional can't violate constraints since

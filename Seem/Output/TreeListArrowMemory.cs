@@ -92,7 +92,7 @@ namespace Mars.Seem.Output
         {
             if (UInt32.TryParse(trajectory.Name, out UInt32 standID) == false)
             {
-                throw new NotSupportedException("Stand trajectory name '" + trajectory.Name + "' could not be converted to an unsigned 32 bit integer. For the moment, trajectory names are required to be stand IDs.");
+                throw new NotSupportedException($"Stand trajectory name '{trajectory.Name}' could not be converted to an unsigned 32 bit integer. For the moment, trajectory names are required to be stand IDs.");
             }
 
             Span<UInt32> batchStand = MemoryMarshal.Cast<byte, UInt32>(this.stand);
@@ -113,7 +113,7 @@ namespace Mars.Seem.Output
             int recordIndex = startIndexInRecordBatch;
             for (int periodIndex = 0; periodIndex < trajectory.StandByPeriod.Length; ++periodIndex)
             {
-                Stand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
+                Stand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException($"Stand information missing for period {periodIndex}.");
                 for (int speciesIndex = 0; speciesIndex < stand.TreesBySpecies.Count; ++speciesIndex)
                 {
                     Trees treesOfSpecies = stand.TreesBySpecies.Values[speciesIndex];

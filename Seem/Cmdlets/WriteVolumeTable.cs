@@ -63,13 +63,13 @@ namespace Mars.Seem.Cmdlets
                 {
                     return WesternHemlock.GetDiameterOutsideBark(dbhInCm, heightInM, evaluationHeightInM);
                 },
-                _ => throw new NotSupportedException("Unhandled species " + treeSpecies + ".")
+                _ => throw new NotSupportedException($"Unhandled species {treeSpecies}.")
             };
             Func<float, float, float> getNeiloidHeight = treeSpecies switch
             {
                 FiaCode.PseudotsugaMenziesii => DouglasFir.GetNeiloidHeight,
                 FiaCode.TsugaHeterophylla => WesternHemlock.GetNeiloidHeight,
-                _ => throw new NotSupportedException("Unhandled species " + treeSpecies + ".")
+                _ => throw new NotSupportedException($"Unhandled species {treeSpecies}.")
             };
 
             string speciesPrefix = String.Concat(logLengthAsString, ",", FiaCodeExtensions.ToFourLetterCode(treeSpecies));
@@ -79,7 +79,7 @@ namespace Mars.Seem.Cmdlets
                 // Height:diameter ratio could potentially be used as a modifier, with higher ratio trees having shorter crowns.
                 float heightInM = volumeTable.GetHeight(heightClass);
                 float heightToCrownBaseInM = (1.0F - 0.4F) * heightInM;
-                string speciesAndHeightPrefix = speciesPrefix + "," + heightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture);
+                string speciesAndHeightPrefix = $"{speciesPrefix},{heightInM.ToString(Constant.Default.HeightInMFormat, CultureInfo.InvariantCulture)}";
                 for (int diameterClass = 1; diameterClass < volumeTable.DiameterClasses; ++diameterClass) // diameterClass 0 has 0 cm DBH, so is skipped
                 {
                     float dbhInCm = volumeTable.GetDiameter(diameterClass);
@@ -156,7 +156,7 @@ namespace Mars.Seem.Cmdlets
             }
             if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
             {
-                this.WriteWarning("Write-VolumeTable: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                this.WriteWarning($"Write-VolumeTable: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
             }
         }
     }

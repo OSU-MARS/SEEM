@@ -150,7 +150,7 @@ namespace Mars.Seem.Tree
 
         public static NotSupportedException CreateUnhandledSpeciesException(FiaCode species)
         {
-            return new NotSupportedException(String.Format("Unhandled species {0}.", species));
+            return new NotSupportedException($"Unhandled species {species}.");
         }
 
         public void Add(int plot, int tag, float dbh, float height, float crownRatio, float liveExpansionFactor, TreeConditionCode codes)
@@ -210,7 +210,7 @@ namespace Mars.Seem.Tree
             {
                 Units.English => Constant.ForestersEnglish * dbh * dbh * liveExpansionFactor, // return basal area in ft²/ac for Organon
                 Units.Metric => Constant.ForestersMetric * dbh * dbh * liveExpansionFactor, // m²/ha
-                _ => throw new NotSupportedException("Unhandled units " + this.Units + ".")
+                _ => throw new NotSupportedException($"Unhandled units {this.Units}.")
             };
         }
 
@@ -328,7 +328,7 @@ namespace Mars.Seem.Tree
             }
             else
             {
-                throw new NotSupportedException("Unhandled units conversion from " + this.Units + " to " + newUnits + ".");
+                throw new NotSupportedException($"Unhandled units conversion from {this.Units} to {newUnits}.");
             }
 
             this.Units = newUnits;

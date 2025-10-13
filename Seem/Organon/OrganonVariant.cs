@@ -47,7 +47,7 @@ namespace Mars.Seem.Organon
                     this.AddCrownCompetitionByHeightVex128(trees, crownCompetitionByHeight);
                     break;
                 default:
-                    throw new NotSupportedException("Unhandled SIMD " + this.Simd + ".");
+                    throw new NotSupportedException($"Unhandled SIMD {this.Simd}.");
             };
         }
 
@@ -861,7 +861,7 @@ namespace Mars.Seem.Organon
 
         public static NotSupportedException CreateUnhandledModelException(TreeModel treeModel)
         {
-            return new NotSupportedException(String.Format("Unhandled model {0}.", treeModel));
+            return new NotSupportedException($"Unhandled model {treeModel}.");
         }
 
         protected static float GetCrownCompetitionFactorByHeight(float height, float[] crownCompetitionByHeight)
@@ -1318,7 +1318,7 @@ namespace Mars.Seem.Organon
                 SimdInstructions.Avx10 => this.GrowHeightBigSixAvx10(configuration, stand, trees, crownCompetitionByHeight),
                 SimdInstructions.Avx512 => this.GrowHeightBigSixAvx512(configuration, stand, trees, crownCompetitionByHeight),
                 SimdInstructions.Vex128 => this.GrowHeightBigSixVex128(configuration, stand, trees, crownCompetitionByHeight),
-                _ => throw new NotSupportedException("Unhandled SIMD instruction set " + this.Simd + ".")
+                _ => throw new NotSupportedException($"Unhandled SIMD instruction set {this.Simd}.")
             };
         }
 

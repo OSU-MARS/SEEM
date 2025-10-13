@@ -77,7 +77,7 @@ namespace Mars.Seem.Heuristics
             {
                 PrescriptionUnits.BasalAreaPerAcreRetained => 1000.0F,
                 PrescriptionUnits.StemPercentageRemoved => 100.0F,
-                _ => throw new NotSupportedException(String.Format("Unhandled units {0}.", this.HeuristicParameters.Units))
+                _ => throw new NotSupportedException($"Unhandled units {this.HeuristicParameters.Units}.")
             };
             if ((this.HeuristicParameters.DefaultIntensityStepSize < this.HeuristicParameters.MinimumIntensityStepSize) ||
                 (this.HeuristicParameters.DefaultIntensityStepSize > this.HeuristicParameters.MaximumIntensityStepSize))
@@ -136,7 +136,7 @@ namespace Mars.Seem.Heuristics
                 }
                 if (minimumRotationIndex < 0)
                 {
-                    throw new InvalidOperationException("Couldn't find rotation length exceeding last thin period of " + latestThinPeriod + ".");
+                    throw new InvalidOperationException($"Couldn't find rotation length exceeding last thin period of {latestThinPeriod}.");
                 }
                 constructionSourcePosition = new(coordinate)
                 {

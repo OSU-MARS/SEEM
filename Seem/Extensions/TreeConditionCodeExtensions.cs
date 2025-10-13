@@ -17,7 +17,7 @@ namespace Mars.Seem.Extensions
                 "RT" => TreeConditionCode.Reserve,
                 "C." => TreeConditionCode.Cull,
                 "M." => TreeConditionCode.Marginal,
-                _ => throw new NotSupportedException("Unhandled tree condition code '" + code + "'.")
+                _ => throw new NotSupportedException($"Unhandled tree condition code '{code}'.")
             };
         }
     }

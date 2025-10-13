@@ -28,7 +28,7 @@ namespace Mars.Seem.Extensions
                 SimdInstructions.Avx10 => 256,
                 SimdInstructions.Avx512 => 512,
                 SimdInstructions.Vex128 => 128,
-                _ => throw new NotSupportedException("Unhandled instruction set " + instructions + "."),
+                _ => throw new NotSupportedException($"Unhandled instruction set {instructions}."),
             };
         }
 
@@ -47,7 +47,7 @@ namespace Mars.Seem.Extensions
                 SimdInstructions.Avx or SimdInstructions.Vex128 => Fma.IsSupported,
                 SimdInstructions.Avx10 => Avx10v1.IsSupported | Avx512F.VL.IsSupported,
                 SimdInstructions.Avx512 => Avx10v1.V512.IsSupported | Avx512F.IsSupported,
-                _ => throw new NotSupportedException("Unhandled instruction set " + instructions + ".")
+                _ => throw new NotSupportedException($"Unhandled instruction set {instructions}.")
             };
         }
     }

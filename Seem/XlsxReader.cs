@@ -18,7 +18,7 @@ namespace Mars.Seem
             // AAA-XFD: remaining columns, indices 702+ = (A-Z + 1) * 26 * 26 + (A-Z + 1) * 26 + A-Z
             if ((cellReference.Length < 2) || (cellReference[0] < 'A') || (cellReference[0] > 'Z'))
             {
-                throw new ArgumentOutOfRangeException(nameof(cellReference), "Cell reference '" + cellReference + "' is too short or does not begin with a letter.");
+                throw new ArgumentOutOfRangeException(nameof(cellReference), $"Cell reference '{cellReference}' is too short or does not begin with a letter.");
             }
 
             int firstColumn = cellReference[0] - 'A';
@@ -49,7 +49,7 @@ namespace Mars.Seem
             WorkbookPart? workbook = xlsx.WorkbookPart;
             if ((workbook == null) || (workbook.Workbook.Sheets == null))
             {
-                throw new NotSupportedException("Could not find workbook for worksheet '" + worksheetName + "'. The workbook is null or is missing a sheets part.");
+                throw new NotSupportedException($"Could not find workbook for worksheet '{worksheetName}'. The workbook is null or is missing a sheets part.");
             }
 
             // read shared strings
@@ -106,7 +106,7 @@ namespace Mars.Seem
             string[] range = dimension.Split(':');
             if ((range == null) || (range.Length != 2))
             {
-                throw new XmlException(String.Format("Worksheet dimension reference '{0}' is malformed.", dimension));
+                throw new XmlException($"Worksheet dimension reference '{dimension}' is malformed.");
             }
             int maximumColumnIndex = XlsxReader.GetExcelColumnIndex(range[1]);
 
@@ -163,7 +163,7 @@ namespace Mars.Seem
                                             char character = value[index];
                                             if ((character > '9') || (character < '0'))
                                             {
-                                                throw new FormatException("Shared string index '" + value + "' is not an integer greater than or equal to zero.");
+                                                throw new FormatException($"Shared string index '{value}' is not an integer greater than or equal to zero.");
                                             }
                                             sharedStringIndex = 10 * sharedStringIndex + character - '0';
                                         }
@@ -178,7 +178,7 @@ namespace Mars.Seem
                                 }
                                 else
                                 {
-                                    throw new XmlException("Value element <" + valueElement + "> not found for cell of type t=\"" + cellType + "\".");
+                                    throw new XmlException($"Value element <{valueElement}> not found for cell of type t=\"{cellType}\".");
                                 }
                             }
                             else

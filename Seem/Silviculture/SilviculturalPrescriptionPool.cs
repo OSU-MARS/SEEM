@@ -71,7 +71,7 @@ namespace Mars.Seem.Silviculture
             }
             if (eliteTreeSelection == null)
             {
-                throw new InvalidOperationException("Elite solution in pool with " + this.SolutionsInPool + " solutions is unexpectedly null. Is this due to a reader-writer race condition?");
+                throw new InvalidOperationException($"Elite solution in pool with {this.SolutionsInPool} solutions is unexpectedly null. Is this due to a reader-writer race condition?");
             }
 
             return eliteTreeSelection;

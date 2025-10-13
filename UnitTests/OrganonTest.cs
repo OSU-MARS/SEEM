@@ -177,7 +177,7 @@ namespace Mars.Seem.Test
                     float diameterGrowthInInches = treesOfSpecies.DbhGrowth[treeIndex];
                     if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowth))
                     {
-                        Assert.IsTrue(diameterGrowthInInches > 0.0F, "{0}: {1} {2} did not grow in diameter.", variant.TreeModel, treesOfSpecies.Species, treeIndex);
+                        Assert.IsTrue(diameterGrowthInInches > 0.0F, $"{variant.TreeModel}: {treesOfSpecies.Species} {treeIndex} did not grow in diameter.");
                         Assert.IsTrue(diameterGrowthInInches <= 0.1F * TestConstant.Maximum.DiameterInInches);
                     }
                     else if (expectedGrowth.HasFlag(ExpectedTreeChanges.DiameterGrowthOrNoChange))
@@ -192,12 +192,12 @@ namespace Mars.Seem.Test
                     float heightGrowthInFeet = treesOfSpecies.HeightGrowth[treeIndex];
                     if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowth))
                     {
-                        Assert.IsTrue(heightGrowthInFeet > 0.0F, "{0}: {1} {2} did not grow in height.", variant.TreeModel, treesOfSpecies.Species, treeIndex);
+                        Assert.IsTrue(heightGrowthInFeet > 0.0F, $"{variant.TreeModel}: {treesOfSpecies.Species} {treeIndex} did not grow in height.");
                         Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
                     }
                     else if (expectedGrowth.HasFlag(ExpectedTreeChanges.HeightGrowthOrNoChange))
                     {
-                        Assert.IsTrue(heightGrowthInFeet >= 0.0F, "{0}: {1} {2} decreased in height.", variant.TreeModel, treesOfSpecies.Species, treeIndex);
+                        Assert.IsTrue(heightGrowthInFeet >= 0.0F, $"{variant.TreeModel}: {treesOfSpecies.Species} {treeIndex} decreased in height.");
                         Assert.IsTrue(heightGrowthInFeet <= 0.1F * TestConstant.Maximum.HeightInFeet);
                     }
                     else

@@ -330,7 +330,7 @@ namespace Mars.Seem.Organon
                     continue;
                 }
 
-                Debug.Assert((species != FiaCode.PseudotsugaMenziesii) || ((configuration.Genetics == false) && (configuration.SwissNeedleCast == false)), "Douglas-fir is not a big six species for " + configuration.Variant.TreeModel + " but genetic gain or Swiss Needle Cast is enabled.");
+                Debug.Assert((species != FiaCode.PseudotsugaMenziesii) || ((configuration.Genetics == false) && (configuration.SwissNeedleCast == false)), $"Douglas-fir is not a big six species for {configuration.Variant.TreeModel} but genetic gain or Swiss Needle Cast is enabled.");
                 OrganonGrowth.GrowHeightMinorSpecies(configuration, stand, treesOfSpecies, calibrationBySpecies[species].Height);
             }
 
@@ -657,7 +657,7 @@ namespace Mars.Seem.Organon
             }
             if (Enum.IsDefined<TreeModel>(configuration.Variant.TreeModel) == false)
             {
-                throw new ArgumentOutOfRangeException(nameof(configuration), "Unknown Organon variant " + configuration.Variant.TreeModel + ".");
+                throw new ArgumentOutOfRangeException(nameof(configuration), $"Unknown Organon variant {configuration.Variant.TreeModel}.");
             }
             if ((stand.SiteIndexInFeet < Constant.Minimum.SiteIndexInFeet) || (stand.SiteIndexInFeet > Constant.Maximum.SiteIndexInFeet))
             {
@@ -670,7 +670,7 @@ namespace Mars.Seem.Organon
 
             if (stand.AgeInYears < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(stand), nameof(stand.AgeInYears) + " must be zero or greater.");
+                throw new ArgumentOutOfRangeException(nameof(stand), $"{nameof(stand.AgeInYears)} must be zero or greater.");
             }
 
             for (int fertilizationindex = 0; fertilizationindex < treatments.PoundsOfNitrogenPerAcreByPeriod.Count; ++fertilizationindex)
@@ -734,7 +734,7 @@ namespace Mars.Seem.Organon
                 }
                 if ((treatments.PoundsOfNitrogenPerAcreByPeriod.Count > 0) && (configuration.DouglasFirFoliageRetentionInYears < 3.0F))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(configuration), nameof(configuration.DouglasFirFoliageRetentionInYears) + " must be 3.0 or greater when " + nameof(configuration.SwissNeedleCast) + " and " + nameof(treatments.PoundsOfNitrogenPerAcreByPeriod) + " isn't empty.");
+                    throw new ArgumentOutOfRangeException(nameof(configuration), $"{nameof(configuration.DouglasFirFoliageRetentionInYears)} must be 3.0 or greater when {nameof(configuration.SwissNeedleCast)} and {nameof(treatments.PoundsOfNitrogenPerAcreByPeriod)} isn't empty.");
                 }
             }
             else
@@ -776,27 +776,27 @@ namespace Mars.Seem.Organon
                 {
                     if (configuration.Variant.IsSpeciesSupported(treesOfSpecies.Species) == false)
                     {
-                        throw new NotSupportedException(String.Format("{0} does not support {1} (tree {2}).", configuration.Variant.TreeModel, treesOfSpecies.Species, treeIndex));
+                        throw new NotSupportedException($"{configuration.Variant.TreeModel} does not support {treesOfSpecies.Species} (tree {treeIndex}).");
                     }
                     float dbhInInches = treesOfSpecies.Dbh[treeIndex];
                     if (dbhInInches < 0.09F)
                     {
-                        throw new NotSupportedException(String.Format("Diameter of tree {0} is less than 0.1 inches.", treeIndex));
+                        throw new NotSupportedException($"Diameter of tree {treeIndex} is less than 0.1 inches.");
                     }
                     float heightInFeet = treesOfSpecies.Height[treeIndex];
                     if (heightInFeet < 4.5F)
                     {
-                        throw new NotSupportedException(String.Format("Height of tree {0} is less than 4.5 feet.", treeIndex));
+                        throw new NotSupportedException($"Height of tree {treeIndex} is less than 4.5 feet.");
                     }
                     float crownRatio = treesOfSpecies.CrownRatio[treeIndex];
                     if ((crownRatio < 0.0F) || (crownRatio > 1.0F))
                     {
-                        throw new NotSupportedException(String.Format("Crown ratio of tree {0} is not between 0 and 1.", treeIndex));
+                        throw new NotSupportedException($"Crown ratio of tree {treeIndex} is not between 0 and 1.");
                     }
                     float expansionFactor = treesOfSpecies.LiveExpansionFactor[treeIndex];
                     if (expansionFactor < 0.0F)
                     {
-                        throw new NotSupportedException(String.Format("Expansion factor of tree {0} is negative.", treeIndex));
+                        throw new NotSupportedException($"Expansion factor of tree {treeIndex} is negative.");
                     }
                 }
             }
@@ -1107,7 +1107,7 @@ namespace Mars.Seem.Organon
                     TreeModel.OrganonSmc => 120,
                     TreeModel.OrganonRap => 30,
                     TreeModel.OrganonSwo => 500,
-                    _ => throw new NotSupportedException("Unhandled variant " + configuration.Variant.TreeModel + ".")
+                    _ => throw new NotSupportedException($"Unhandled variant {configuration.Variant.TreeModel}.")
                 };
                 int standAgeAtNextTimestep = stand.AgeInYears + configuration.Variant.TimeStepInYears;
 

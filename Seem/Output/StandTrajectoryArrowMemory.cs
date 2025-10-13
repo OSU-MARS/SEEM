@@ -334,7 +334,7 @@ namespace Mars.Seem.Output
         {
             if (UInt32.TryParse(trajectory.Name, out UInt32 standID) == false)
             {
-                throw new NotSupportedException("Stand trajectory name '" + trajectory.Name + "' could not be converted to an unsigned 32 bit integer. For the moment, trajectory names are required to be stand IDs.");
+                throw new NotSupportedException($"Stand trajectory name '{trajectory.Name}' could not be converted to an unsigned 32 bit integer. For the moment, trajectory names are required to be stand IDs.");
             }
 
             Span<UInt32> batchStand = MemoryMarshal.Cast<byte, UInt32>(this.stand);
@@ -513,7 +513,7 @@ namespace Mars.Seem.Output
             Int16 year = writeContext.StartYear != null ? (Int16)writeContext.StartYear : Constant.NoDataInt16;
             for (int periodIndex = startPeriod, recordIndex = startIndexInRecordBatch; periodIndex <= lastPeriodToCopy; ++periodIndex, ++recordIndex)
             {
-                Stand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
+                Stand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException($"Stand information missing for period {periodIndex}.");
 
                 float basalAreaThinnedPerHa = trajectory.GetBasalAreaThinnedPerHa(periodIndex); // m²/ha
                 if (writeContext.HarvestsOnly)
@@ -669,7 +669,7 @@ namespace Mars.Seem.Output
                         }
                         else
                         {
-                            throw new NotSupportedException("Unhandled thinning of type " + thinFinancialValue.GetType().Name + ".");
+                            throw new NotSupportedException($"Unhandled thinning of type {thinFinancialValue.GetType().Name}.");
                         }
                     }
                     else
@@ -838,7 +838,7 @@ namespace Mars.Seem.Output
                         }
                         else
                         {
-                            throw new NotSupportedException("Unhandled thinning of type " + thinFinancialValue.GetType().Name + ".");
+                            throw new NotSupportedException($"Unhandled thinning of type {thinFinancialValue.GetType().Name}.");
                         }
                     }
                     else

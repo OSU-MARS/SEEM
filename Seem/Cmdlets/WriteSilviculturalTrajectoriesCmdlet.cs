@@ -33,7 +33,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     if (this.Trajectories.Count > 1)
                     {
-                        throw new NotSupportedException("Writing heuristic parameters is not supported for multiple runs. Turn off -" + nameof(this.HeuristicParameters) + " or write each element of -" + nameof(this.Trajectories) + " individually");
+                        throw new NotSupportedException($"Writing heuristic parameters is not supported for multiple runs. Turn off -{nameof(this.HeuristicParameters)} or write each element of -{nameof(this.Trajectories)} individually");
                     }
 
                     HeuristicParameters? firstHeuristicParameters = heuristicTrajectories.GetParameters(Constant.HeuristicDefault.CoordinateIndex);
@@ -43,7 +43,7 @@ namespace Mars.Seem.Cmdlets
                     }
                 }
             }
-            return "stand," + maybeHeuristicParametersWithTrailingComma + "thin1,thin2,thin3,rotation,financialScenario";
+            return $"stand,{maybeHeuristicParametersWithTrailingComma}thin1,thin2,thin3,rotation,financialScenario";
         }
 
         protected static int GetMaxCoordinateIndex(SilviculturalSpace silviculturalSpace)
@@ -62,7 +62,7 @@ namespace Mars.Seem.Cmdlets
                 SilviculturalSpace silviculturalSpace = this.Trajectories[trajectoryIndex];
                 if (silviculturalSpace.CoordinatesEvaluated.Count < 1)
                 {
-                    throw new ParameterOutOfRangeException(nameof(this.Trajectories), "-" + nameof(this.Trajectories) + " contains an empty set of stand trajectories. At least one run must be present in each set of results.");
+                    throw new ParameterOutOfRangeException(nameof(this.Trajectories), $"-{nameof(this.Trajectories)} contains an empty set of stand trajectories. At least one run must be present in each set of results.");
                 }
             }
         }

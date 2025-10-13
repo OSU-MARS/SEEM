@@ -10,7 +10,7 @@ namespace Mars.Seem.Extensions
             {
                 Units.English => Constant.AcresPerHectare * Constant.SquareMetersPerSquareFoot, // ft²/ac * ac/ha * m²/ft² = m²/ha
                 Units.Metric => 1.0F,
-                _ => throw new NotSupportedException("Unhandled units " + units + "."),
+                _ => throw new NotSupportedException($"Unhandled units {units}."),
             };
         }
 
@@ -20,7 +20,7 @@ namespace Mars.Seem.Extensions
             {
                 Units.English => (Constant.CentimetersPerInch, Constant.MetersPerFoot, Constant.AcresPerHectare),
                 Units.Metric => (1.0F, 1.0F, 1.0F),
-                _ => throw new NotSupportedException("Unhandled units " + units + "."),
+                _ => throw new NotSupportedException($"Unhandled units {units}."),
             };
         }
 
@@ -30,7 +30,7 @@ namespace Mars.Seem.Extensions
             {
                 Units.English => Constant.CentimetersPerInch,
                 Units.Metric => 1.0F,
-                _ => throw new NotSupportedException("Unhandled units " + units + "."),
+                _ => throw new NotSupportedException($"Unhandled units {units}."),
             };
         }
     }

@@ -49,7 +49,7 @@ namespace Mars.Seem.Output
             {
                 if (this.financialScenarios == null)
                 {
-                    throw new InvalidOperationException("Financial scenarios have not been specified.  Either set them at construction time or call " + nameof(this.SetSilviculturalCoordinate) + "() before accessing the " + nameof(FinancialScenarios) + " property.");
+                    throw new InvalidOperationException($"Financial scenarios have not been specified.  Either set them at construction time or call {nameof(this.SetSilviculturalCoordinate)}() before accessing the {nameof(FinancialScenarios)} property.");
                 }
                 return this.financialScenarios;
             }
@@ -65,7 +65,7 @@ namespace Mars.Seem.Output
             {
                 if (this.HighTrajectoryNullable == null)
                 {
-                    throw new InvalidOperationException("Silvicultural coordinate has not been specified.  Call " + nameof(this.SetSilviculturalCoordinate) + "() and " + nameof(this.SetSilviculturalCoordinate) + " before calling " + nameof(this.HighTrajectory) + ".");
+                    throw new InvalidOperationException($"Silvicultural coordinate has not been specified.  Call {nameof(this.SetSilviculturalCoordinate)}() and {nameof(this.SetSilviculturalCoordinate)} before calling {nameof(this.HighTrajectory)}.");
                 }
 
                 return this.HighTrajectoryNullable;
@@ -79,11 +79,11 @@ namespace Mars.Seem.Output
             {
                 if (this.silviculturalSpace == null)
                 {
-                    throw new InvalidOperationException("Silvicultural space has not been specified.  Call " + nameof(this.SetSilviculturalSpace) + "() before calling " + nameof(this.GetCsvPrefixForSilviculturalCoordinate) + ".");
+                    throw new InvalidOperationException($"Silvicultural space has not been specified.  Call {nameof(this.SetSilviculturalSpace)}() before calling {nameof(this.GetCsvPrefixForSilviculturalCoordinate)}.");
                 }
                 if (this.silviculturalCoordinate == null)
                 {
-                    throw new InvalidOperationException("Silvicultural coordinate has not been specified, leaving heuristic parameter index unknown.  Call " + nameof(this.SetSilviculturalCoordinate) + "() and " + nameof(this.SetSilviculturalCoordinate) + " before calling " + nameof(this.GetCsvPrefixForSilviculturalCoordinate) + ".");
+                    throw new InvalidOperationException($"Silvicultural coordinate has not been specified, leaving heuristic parameter index unknown.  Call {nameof(this.SetSilviculturalCoordinate)}() and {nameof(this.SetSilviculturalCoordinate)} before calling {nameof(this.GetCsvPrefixForSilviculturalCoordinate)}.");
                 }
 
                 if (this.silviculturalSpace is HeuristicStandTrajectories heuristicTrajectories)
@@ -107,7 +107,7 @@ namespace Mars.Seem.Output
         {
             if (this.HighTrajectoryNullable == null)
             {
-                throw new InvalidOperationException("Silvicultural coordinate has not been specified.  Call " + nameof(this.SetSilviculturalCoordinate) + "() and " + nameof(this.SetSilviculturalCoordinate) + " before calling " + nameof(this.GetHarvestAges) + ".");
+                throw new InvalidOperationException($"Silvicultural coordinate has not been specified.  Call {nameof(this.SetSilviculturalCoordinate)}() and {nameof(this.SetSilviculturalCoordinate)} before calling {nameof(this.GetHarvestAges)}.");
             }
 
             int firstThinAge = Constant.NoHarvestPeriod;
@@ -143,7 +143,7 @@ namespace Mars.Seem.Output
         {
             if (this.silviculturalSpace == null)
             {
-                throw new InvalidOperationException("Silvicultural space has not been specified.  Call " + nameof(this.SetSilviculturalSpace) + "() before calling " + nameof(this.SetSilviculturalCoordinate) + ".");
+                throw new InvalidOperationException($"Silvicultural space has not been specified.  Call {nameof(this.SetSilviculturalSpace)}() before calling {nameof(this.SetSilviculturalCoordinate)}.");
             }
 
             this.SetSilviculturalCoordinate(this.silviculturalSpace.CoordinatesEvaluated[coordinateIndex]);
@@ -153,7 +153,7 @@ namespace Mars.Seem.Output
         {
             if (this.silviculturalSpace == null)
             {
-                throw new InvalidOperationException("Silvicultural space has not been specified.  Call " + nameof(this.SetSilviculturalSpace) + "() before calling " + nameof(this.SetSilviculturalCoordinate) + ".");
+                throw new InvalidOperationException($"Silvicultural space has not been specified.  Call {nameof(this.SetSilviculturalSpace)}() before calling {nameof(this.SetSilviculturalCoordinate)}.");
             }
 
             this.silviculturalCoordinate = coordinate;

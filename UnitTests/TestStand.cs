@@ -90,9 +90,7 @@ namespace Mars.Seem.Test
 
                     float basalAreaLarger = TestConstant.AcresPerHectare * TestConstant.SquareMetersPerSquareFoot * density.GetBasalAreaLarger(dbhInInches);
                     float ccfLarger = density.GetCrownCompetitionFactorLarger(dbhInInches);
-                    writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}",
-                                     variant.TreeModel, year, id, treesOfSpecies.Species, basalAreaLarger, ccfLarger, Constant.CentimetersPerInch * dbhInInches,
-                                     heightInMeters, liveExpansionFactor, crownRatio);
+                    writer.WriteLine($"{variant.TreeModel},{year},{id},{treesOfSpecies.Species},{basalAreaLarger},{ccfLarger},{Constant.CentimetersPerInch * dbhInInches},{heightInMeters},{liveExpansionFactor},{crownRatio}");
                 }
             }
         }
@@ -118,10 +116,7 @@ namespace Mars.Seem.Test
                     float dbhGrowth = treesOfSpecies.DbhGrowth[treeIndex];
                     float heightGrowth = treesOfSpecies.HeightGrowth[treeIndex];
                     int quantile = initialDbhQuantile[treeIndex];
-                    testContext.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
-                                          variant.TreeModel, year, id, treesOfSpecies.Species,
-                                          dbhInInches, heightInFeet, expansionFactor, deadExpansionFactor,
-                                          crownRatio, dbhGrowth, heightGrowth, quantile);
+                    testContext.WriteLine($"{variant.TreeModel},{year},{id},{treesOfSpecies.Species},{dbhInInches},{heightInFeet},{expansionFactor},{deadExpansionFactor},{crownRatio},{dbhGrowth},{heightGrowth},{quantile}");
                 }
             }
         }
@@ -161,9 +156,7 @@ namespace Mars.Seem.Test
                     float dbhGrowth = Constant.CentimetersPerInch * treesOfSpecies.DbhGrowth[treeIndex];
                     float heightGrowth = Constant.MetersPerFoot * treesOfSpecies.HeightGrowth[treeIndex];
                     int quantile = initialDbhQuantile[treeIndex];
-                    writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11}",
-                                     variant.TreeModel, year, id, treesOfSpecies.Species, dbhInCentimeters, heightInMeters,
-                                     expansionFactor, deadExpansionFactor, crownRatio, dbhGrowth, heightGrowth, quantile);
+                    writer.WriteLine($"{variant.TreeModel},{year},{id},{treesOfSpecies.Species},{dbhInCentimeters},{heightInMeters},{expansionFactor},{deadExpansionFactor},{crownRatio},{dbhGrowth},{heightGrowth},{quantile}");
                 }
             }
         }

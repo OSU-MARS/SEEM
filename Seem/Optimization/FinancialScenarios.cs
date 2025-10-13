@@ -254,7 +254,7 @@ namespace Mars.Seem.Optimization
             Stand? endOfRotationStand = trajectory.StandByPeriod[endOfRotationPeriod];
             if (endOfRotationStand == null)
             {
-                throw new InvalidOperationException("Stand information is missing for period " + endOfRotationPeriod + ". Has the stand trajectory been fully simulated?");
+                throw new InvalidOperationException($"Stand information is missing for period {endOfRotationPeriod}. Has the stand trajectory been fully simulated?");
             }
 
             // get harvest revenue
@@ -375,7 +375,7 @@ namespace Mars.Seem.Optimization
                 //     pondValue4Saw = 0.0F;
                 //     break;
                 default:
-                    throw new NotSupportedException("Unhandled species " + treeSpecies + ".");
+                    throw new NotSupportedException($"Unhandled species {treeSpecies}.");
             }
 
             float harvestTaxPerMbf = this.HarvestTaxPerMbf[financialIndex];
@@ -757,7 +757,7 @@ namespace Mars.Seem.Optimization
             Stand? previousStand = trajectory.StandByPeriod[thinningPeriod - 1];
             if (previousStand == null)
             {
-                throw new InvalidOperationException("Stand information is missing for period " + (thinningPeriod - 1) + ". Has the stand trajectory been simulated?");
+                throw new InvalidOperationException($"Stand information is missing for period {thinningPeriod - 1}. Has the stand trajectory been simulated?");
             }
 
             // TODO: unify merchantable and operable volume calculations?
@@ -1297,7 +1297,7 @@ namespace Mars.Seem.Optimization
                         this.White4SPond = columnIndex;
                         break;
                     default:
-                        throw new NotSupportedException("Unknown column '" + columnHeader + "'.");
+                        throw new NotSupportedException($"Unknown column '{columnHeader}'.");
                 }
             }
 

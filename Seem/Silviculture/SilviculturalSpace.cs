@@ -112,15 +112,15 @@ namespace Mars.Seem.Silviculture
                 Debug.Assert((parameterIndex >= 0) && (firstThinPeriodIndex >= 0) && (secondThinPeriodIndex >= 0) && (thirdThinPeriodIndex >= 0) && (rotationIndex >= 0) && (financialIndex >= 0));
 
                 SilviculturalCoordinateExploration[][][][][] parameterElements = this.elements[parameterIndex];
-                Debug.Assert(parameterElements != null, "Invalid parameter index " + parameterIndex + ".");
+                Debug.Assert(parameterElements != null, $"Invalid parameter index {parameterIndex}.");
                 SilviculturalCoordinateExploration[][][][] firstThinElements = parameterElements[firstThinPeriodIndex];
-                Debug.Assert(firstThinElements != null, "Invalid first thin index " + firstThinPeriodIndex + ".");
+                Debug.Assert(firstThinElements != null, $"Invalid first thin index {firstThinPeriodIndex}.");
                 SilviculturalCoordinateExploration[][][] secondThinElements = firstThinElements[secondThinPeriodIndex];
-                Debug.Assert(secondThinElements != null, "Invalid second thin index " + secondThinPeriodIndex + ".");
+                Debug.Assert(secondThinElements != null, $"Invalid second thin index {secondThinPeriodIndex}.");
                 SilviculturalCoordinateExploration[][] thirdThinElements = secondThinElements[thirdThinPeriodIndex];
-                Debug.Assert(thirdThinElements != null, "Invalid third thin index " + thirdThinPeriodIndex + ".");
+                Debug.Assert(thirdThinElements != null, $"Invalid third thin index {thirdThinPeriodIndex}.");
                 SilviculturalCoordinateExploration[] rotationLengthElements = thirdThinElements[rotationIndex];
-                Debug.Assert(rotationLengthElements != null, "Invalid rotation index " + rotationIndex + ".");
+                Debug.Assert(rotationLengthElements != null, $"Invalid rotation index {rotationIndex}.");
                 SilviculturalCoordinateExploration element = rotationLengthElements[financialIndex];
                 Debug.Assert(element != null);
                 return element;
@@ -130,15 +130,15 @@ namespace Mars.Seem.Silviculture
                 Debug.Assert((parameterIndex >= 0) && (firstThinPeriodIndex >= 0) && (secondThinPeriodIndex >= 0) && (thirdThinPeriodIndex >= 0) && (rotationIndex >= 0) && (financialIndex >= 0));
 
                 SilviculturalCoordinateExploration[][][][][] parameterElements = this.elements[parameterIndex];
-                Debug.Assert(parameterElements != null, "Invalid parameter index " + parameterIndex + ".");
+                Debug.Assert(parameterElements != null, $"Invalid parameter index {parameterIndex}.");
                 SilviculturalCoordinateExploration[][][][] firstThinElements = parameterElements[firstThinPeriodIndex];
-                Debug.Assert(firstThinElements != null, "Invalid first thin index " + firstThinPeriodIndex + ".");
+                Debug.Assert(firstThinElements != null, $"Invalid first thin index {firstThinPeriodIndex}.");
                 SilviculturalCoordinateExploration[][][] secondThinElements = firstThinElements[secondThinPeriodIndex];
-                Debug.Assert(secondThinElements != null, "Invalid second thin index " + secondThinPeriodIndex + ".");
+                Debug.Assert(secondThinElements != null, $"Invalid second thin index {secondThinPeriodIndex}.");
                 SilviculturalCoordinateExploration[][] thirdThinElements = secondThinElements[thirdThinPeriodIndex];
-                Debug.Assert(thirdThinElements != null, "Invalid third thin index " + thirdThinPeriodIndex + ".");
+                Debug.Assert(thirdThinElements != null, $"Invalid third thin index {thirdThinPeriodIndex}.");
                 SilviculturalCoordinateExploration[] rotationLengthElements = thirdThinElements[rotationIndex];
-                Debug.Assert(rotationLengthElements != null, "Invalid rotation index " + rotationIndex + ".");
+                Debug.Assert(rotationLengthElements != null, $"Invalid rotation index {rotationIndex}.");
                 rotationLengthElements[financialIndex] = value; 
             }
         }
@@ -182,7 +182,7 @@ namespace Mars.Seem.Silviculture
             StandTrajectory? highTrajectory = prescriptions.High.Trajectory;
             if (highTrajectory == null)
             {
-                throw new NotSupportedException("Precription pool at position (parameters: " + coordinate.ParameterIndex + ", financial: " + coordinate.FinancialIndex + ", first thin: " + coordinate.FirstThinPeriodIndex + ", second thin: " + coordinate.SecondThinPeriodIndex + ", third thin: " + coordinate.ThirdThinPeriodIndex + ", rotation: " + coordinate.RotationIndex + ") is missing a high trajectory.");
+                throw new NotSupportedException($"Precription pool at position (parameters: {coordinate.ParameterIndex}, financial: {coordinate.FinancialIndex}, first thin: {coordinate.FirstThinPeriodIndex}, second thin: {coordinate.SecondThinPeriodIndex}, third thin: {coordinate.ThirdThinPeriodIndex}, rotation: {coordinate.RotationIndex}) is missing a high trajectory.");
             }
 
             return highTrajectory;
@@ -371,7 +371,7 @@ namespace Mars.Seem.Silviculture
                 (trajectory.GetThirdThinPeriod() != thirdThinPeriod) ||
                 (trajectory.PlanningPeriods < rotationLength))
             {
-                throw new ArgumentOutOfRangeException(nameof(trajectory), "Heuristic's stand entries do not match position. Heuristic versus position: first thin period " + trajectory.GetFirstThinPeriod() + " versus " + firstThinPeriod + ", second thin " + trajectory.GetSecondThinPeriod() + " versus " + secondThinPeriod + ", third thin " + trajectory.GetThirdThinPeriod() + " versus " + thirdThinPeriod + ", planning periods " + trajectory.PlanningPeriods + " versus " + rotationLength + ".");
+                throw new ArgumentOutOfRangeException(nameof(trajectory), $"Heuristic's stand entries do not match position. Heuristic versus position: first thin period {trajectory.GetFirstThinPeriod()} versus {firstThinPeriod}, second thin {trajectory.GetSecondThinPeriod()} versus {secondThinPeriod}, third thin {trajectory.GetThirdThinPeriod()} versus {thirdThinPeriod}, planning periods {trajectory.PlanningPeriods} versus {rotationLength}.");
             }
         }
     }

@@ -95,14 +95,14 @@ namespace Mars.Seem.Silviculture
             float totalPercentage = this.fromAbovePercentage + this.fromBelowPercentage + this.proportionalPercentage;
             if ((totalPercentage < 0.0F) || (totalPercentage > 100.0F))
             {
-                throw new NotSupportedException("Sum of from above, from below, and proportional removal percentages is " + totalPercentage + ". This is beyond the valid range of 0-100%.");
+                throw new NotSupportedException($"Sum of from above, from below, and proportional removal percentages is {totalPercentage}. This is beyond the valid range of 0-100%.");
             }
 
             OrganonStand? standAtEndOfPreviousPeriod = trajectory.StandByPeriod[this.Period - 1];
             OrganonStandDensity? densityAtEndOfPreviousPeriod = trajectory.DensityByPeriod[this.Period - 1];
             if ((standAtEndOfPreviousPeriod == null) || (densityAtEndOfPreviousPeriod == null))
             {
-                throw new NotSupportedException("Stand information is not available for period " + (this.Period - 1) + ".");
+                throw new NotSupportedException($"Stand information is not available for period {this.Period - 1}.");
             }
 
             Units standUnits = standAtEndOfPreviousPeriod.GetUnits();
@@ -132,12 +132,12 @@ namespace Mars.Seem.Silviculture
 
                 if (trajectory.TreeScaling.TryGetLongLogVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? longLogVolumeTable) == false)
                 {
-                    throw new NotSupportedException(treesOfSpecies.Species + " has a forwarded volume table but not a long log volume table.");
+                    throw new NotSupportedException($"{treesOfSpecies.Species} has a forwarded volume table but not a long log volume table.");
                 }
                 if (forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters != longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
                 {
                     // if needed, this could be thrown only when trees larger than a volume table limit are present
-                    throw new NotSupportedException("Forwarded volume table's maximum DBH of " + forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters + " cm differs from the long log volume table's " + longLogVolumeTable.MaximumMerchantableDiameterInCentimeters + " cm.  Since it is not known whether the thin will be performed as a long or short log harvest the largest harvest eligible tree size cannot be determined.");
+                    throw new NotSupportedException($"Forwarded volume table's maximum DBH of {forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters} cm differs from the long log volume table's {longLogVolumeTable.MaximumMerchantableDiameterInCentimeters} cm.  Since it is not known whether the thin will be performed as a long or short log harvest the largest harvest eligible tree size cannot be determined.");
                 }
 
                 float maximumFellableDbhInStandUnits = diameterToStandUnitsMultiplier * forwardedVolumeTable.MaximumMerchantableDiameterInCentimeters;

@@ -479,11 +479,11 @@ namespace Mars.Seem.Test
                 }
             }
             Assert.IsTrue((matchingOptimaIndexFirstCircular >= 0) && (treesThinnedByFirstCircular == treesThinned[matchingOptimaIndexFirstCircular]),
-                          "First circular financial value " + highestFirstCircularFinancialValue + " with " + treesThinnedByFirstCircular + " trees thinned.");
+                          $"First circular financial value {highestFirstCircularFinancialValue} with {treesThinnedByFirstCircular} trees thinned.");
             Assert.IsTrue((matchingOptimaIndexHero >= 0) && (treesThinnedByHero == treesThinned[matchingOptimaIndexHero]),
-                          "Hero financial value " + highestHeroFinancialValue + " with " + treesThinnedByHero + " trees thinned.");
+                          $"Hero financial value {highestHeroFinancialValue} with {treesThinnedByHero} trees thinned.");
             Assert.IsTrue((matchingOptimaIndexPrescription == maxMinFinancialValueIndex) && (treesThinnedByPrescription == treesThinned[matchingOptimaIndexPrescription]),
-                          "Prescription financial value " + highestPrescriptionFinancialValue + " with " + treesThinnedByPrescription + " trees thinned.");
+                          $"Prescription financial value {highestPrescriptionFinancialValue} with {treesThinnedByPrescription} trees thinned.");
         }
 
         [TestMethod]
@@ -760,14 +760,14 @@ namespace Mars.Seem.Test
             {
                 Stand? unthinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
                 Assert.IsNotNull(unthinnedStand);
-                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount, "Expected " + expectedUnthinnedTreeRecordCount + " tree records before thinning but " + unthinnedStand.GetTreeRecordCount() + " records were present.");
+                Assert.IsTrue(unthinnedStand.GetTreeRecordCount() == expectedUnthinnedTreeRecordCount, $"Expected {expectedUnthinnedTreeRecordCount} tree records before thinning but {unthinnedStand.GetTreeRecordCount()} records were present.");
             }
             int expectedFirstThinTreeRecordCount = 328; // must be updated if prescription changes, verify consistency with thinning intensities
             for (int periodIndex = firstThinPeriod; periodIndex < oneThinTrajectory.PlanningPeriods; ++periodIndex)
             {
                 Stand? thinnedStand = oneThinTrajectory.StandByPeriod[periodIndex];
                 Assert.IsNotNull(thinnedStand);
-                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount, "Expected " + expectedFirstThinTreeRecordCount + " tree records after thinning but " + thinnedStand.GetTreeRecordCount() + " records were retained.");
+                Assert.IsTrue(thinnedStand.GetTreeRecordCount() == expectedFirstThinTreeRecordCount, $"Expected {expectedFirstThinTreeRecordCount} tree records after thinning but {thinnedStand.GetTreeRecordCount()} records were retained.");
             }
 
             PublicApi.Verify(oneThinTrajectory, oneThinExpected, configurationNwo.Variant.TimeStepInYears);
@@ -1162,7 +1162,7 @@ namespace Mars.Seem.Test
                     runtime += heroCounters.Duration;
                 }
             }
-            this.TestContext!.WriteLine(runtime.TotalSeconds.ToString() + "s for " + (runs - 1) + " Organon NWO runs with " + treeRecordCount + " Douglas-firs.");
+            this.TestContext!.WriteLine($"{runtime.TotalSeconds}s for {runs - 1} Organon NWO runs with {treeRecordCount} Douglas-firs.");
         }
 
         private static void TryAppendAcceptedFinancialValue(List<float> objectives, Heuristic heuristic, int moveIndex)
@@ -1217,10 +1217,10 @@ namespace Mars.Seem.Test
             float recalculatedHighestFinancialValue = heuristic.GetFinancialValue(bestTrajectory, Constant.HeuristicDefault.CoordinateIndex);
             float highestFinancialValue = heuristic.FinancialValue.GetHighestValue();
             float highestFinancialValueRatio = highestFinancialValue / recalculatedHighestFinancialValue;
-            this.TestContext!.WriteLine("{0} best objective: {1} (recalculation ratio {2})", heuristic.GetName(), highestFinancialValue, highestFinancialValueRatio);
+            this.TestContext!.WriteLine($"{heuristic.GetName()} best objective: {highestFinancialValue} (recalculation ratio {highestFinancialValueRatio})");
             if (heuristic.RunParameters.TimberObjective == TimberObjective.LandExpectationValue)
             {
-                Assert.IsTrue(highestFinancialValue > -3.25F, "Highest financial value found by " + heuristic.GetName() + " is " + highestFinancialValue + ".");
+                Assert.IsTrue(highestFinancialValue > -3.25F, $"Highest financial value found by {heuristic.GetName()} is {highestFinancialValue}.");
             }
             else
             {
@@ -1262,7 +1262,7 @@ namespace Mars.Seem.Test
                     {
                         fraction = 0.72F;
                     }
-                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > fraction * beginFinancialValue, heuristic.GetName() + ": " + recalculatedCurrentObjectiveFunction + " is " + recalculatedCurrentObjectiveFunction / beginFinancialValue + " of " + beginFinancialValue + ".");
+                    Assert.IsTrue(recalculatedCurrentObjectiveFunction > fraction * beginFinancialValue, $"{heuristic.GetName()}: {recalculatedCurrentObjectiveFunction} is {recalculatedCurrentObjectiveFunction / beginFinancialValue} of {beginFinancialValue}.");
                 }
                 else
                 {
@@ -1333,7 +1333,7 @@ namespace Mars.Seem.Test
                     {
                         Debugger.Break();
                     }
-                    Assert.IsTrue(Constant.Default.ThinningPondValueMultiplier * thinVolumeScribner < previousStandingVolumeScribner, "Thinning volume: " + thinVolumeScribner + " MBF/ha in period " + periodIndex + " but previous period's standing volume is " + previousStandingVolumeScribner + " MBF/ha."); // allow for differences between short and long log scaling
+                    Assert.IsTrue(Constant.Default.ThinningPondValueMultiplier * thinVolumeScribner < previousStandingVolumeScribner, $"Thinning volume: {thinVolumeScribner} MBF/ha in period {periodIndex} but previous period's standing volume is {previousStandingVolumeScribner} MBF/ha."); // allow for differences between short and long log scaling
                     Assert.IsTrue(bestForwardedThinVolume.Scribner2Saw[periodIndex] >= 0.0F, "Forwarded thin: 2S Scribner volume is negative.");
                     Assert.IsTrue(bestForwardedThinVolume.Scribner3Saw[periodIndex] >= 0.0F, "Forwarded thin: 3S Scribner volume is negative.");
                     Assert.IsTrue(bestForwardedThinVolume.Scribner4Saw[periodIndex] >= 0.0F, "Forwarded thin: 4S Scribner volume is negative.");
@@ -1350,9 +1350,9 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(bestLongLogThinVolume.Cubic4Saw[periodIndex] >= 0.0F, "Long log thin: 4S cubic volume is negative.");
 
                     Assert.IsTrue(bestThinNpv != null);
-                    Assert.IsTrue(bestThinNpv.PondValue2SawPerHa >= 0.0F, "2S NPV is " + bestThinNpv.PondValue2SawPerHa + ".");
-                    Assert.IsTrue(bestThinNpv.PondValue3SawPerHa >= 0.0F, "3S NPV is " + bestThinNpv.PondValue3SawPerHa + ".");
-                    Assert.IsTrue(bestThinNpv.PondValue4SawPerHa >= 0.0F, "4S NPV is " + bestThinNpv.PondValue4SawPerHa + "."); // potentially fairly low when only 4S is removed
+                    Assert.IsTrue(bestThinNpv.PondValue2SawPerHa >= 0.0F, $"2S NPV is {bestThinNpv.PondValue2SawPerHa}.");
+                    Assert.IsTrue(bestThinNpv.PondValue3SawPerHa >= 0.0F, $"3S NPV is {bestThinNpv.PondValue3SawPerHa}.");
+                    Assert.IsTrue(bestThinNpv.PondValue4SawPerHa >= 0.0F, $"4S NPV is {bestThinNpv.PondValue4SawPerHa}."); // potentially fairly low when only 4S is removed
 
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] >= 0.0F);
                     Assert.IsTrue(heuristic.CurrentTrajectory.Treatments.BasalAreaThinnedByPeriod[periodIndex] <= 200.0F);
@@ -1406,18 +1406,18 @@ namespace Mars.Seem.Test
                 float bestScribnerStandingVolume = bestTrajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex);
                 float currentScribnerStandingVolume = heuristic.CurrentTrajectory.GetTotalRegenerationHarvestMerchantableScribnerVolume(periodIndex);
                 // zero merchantable on Nelder 1 at age 20 with Poudel 2018 net volume
-                Assert.IsTrue(bestCubicRegenVolume >= 0.0F, "Standing cubic volume from best trajectory is " + bestCubicRegenVolume + " m³.");
-                Assert.IsTrue(currentCubicRegenVolume >= 0.0F, "Standing cubic volume from current trajectory is " + currentCubicRegenVolume + " m³.");
-                Assert.IsTrue(bestScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + bestScribnerStandingVolume + " MBF.");
-                Assert.IsTrue(currentScribnerStandingVolume >= 0.0F, "Standing Scribner volume from best trajectory is " + currentScribnerStandingVolume + " MBF.");
+                Assert.IsTrue(bestCubicRegenVolume >= 0.0F, $"Standing cubic volume from best trajectory is {bestCubicRegenVolume} m³.");
+                Assert.IsTrue(currentCubicRegenVolume >= 0.0F, $"Standing cubic volume from current trajectory is {currentCubicRegenVolume} m³.");
+                Assert.IsTrue(bestScribnerStandingVolume >= 0.0F, $"Standing Scribner volume from best trajectory is {bestScribnerStandingVolume} MBF.");
+                Assert.IsTrue(currentScribnerStandingVolume >= 0.0F, $"Standing Scribner volume from best trajectory is {currentScribnerStandingVolume} MBF.");
 
                 if (periodIndex > 0)
                 {
                     // for now, assume monotonic increase in standing volumes except in harvest periods
                     if (periodIndex != firstThinningPeriod)
                     {
-                        Assert.IsTrue(bestCubicRegenVolume >= previousBestCubicRegenVolume, "Standing cubic volume did not increase monotonically (current: " + bestCubicRegenVolume + ", previous: " + previousBestCubicRegenVolume + ").");
-                        Assert.IsTrue(bestScribnerStandingVolume >= previousBestScribnerRegenVolume, "Standing Scribner volume did not increase monotonically (current: " + bestScribnerStandingVolume + ", previous: " + previousBestScribnerRegenVolume + ").");
+                        Assert.IsTrue(bestCubicRegenVolume >= previousBestCubicRegenVolume, $"Standing cubic volume did not increase monotonically (current: {bestCubicRegenVolume}, previous: {previousBestCubicRegenVolume}).");
+                        Assert.IsTrue(bestScribnerStandingVolume >= previousBestScribnerRegenVolume, $"Standing Scribner volume did not increase monotonically (current: {bestScribnerStandingVolume}, previous: {previousBestScribnerRegenVolume}).");
                         Assert.IsTrue(currentCubicRegenVolume >= previousCurrentCubicRegenVolume);
                         Assert.IsTrue(currentScribnerStandingVolume >= previousCurrentScribnerRegenVolume);
                     }
@@ -1583,16 +1583,16 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) >= expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
                 Assert.IsTrue(trajectory.GetTotalScribnerVolumeThinned(periodIndex) <= PublicApi.VolumeTolerance * expectedTrajectory.MinimumHarvestMbfPerHa[periodIndex]);
 
-                OrganonStand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information missing for period " + periodIndex + ".");
+                OrganonStand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException($"Stand information missing for period {periodIndex}.");
                 float qmdInCm = stand.GetQuadraticMeanDiameterInCentimeters();
                 float topHeight = stand.GetTopHeightInMeters();
                 int treeRecords = stand.GetTreeRecordCount();
 
                 Assert.IsTrue((stand.Name != null) && (trajectory.Name != null) && stand.Name.StartsWith(trajectory.Name));
-                Assert.IsTrue(qmdInCm > expectedTrajectory.MinimumQmdInCm[periodIndex], periodIndex + ": QMD " + qmdInCm + " is greater than " + expectedTrajectory.MinimumQmdInCm[periodIndex] + " cm.");
-                Assert.IsTrue(qmdInCm < PublicApi.QmdTolerance * expectedTrajectory.MinimumQmdInCm[periodIndex], periodIndex + ": QMD " + qmdInCm + " is less than " + PublicApi.QmdTolerance * expectedTrajectory.MinimumQmdInCm[periodIndex] + " cm.");
-                Assert.IsTrue(topHeight > expectedTrajectory.MinimumTopHeightInM[periodIndex], periodIndex + ": Top height " + topHeight + ".");
-                Assert.IsTrue(topHeight < PublicApi.TopHeightTolerance * expectedTrajectory.MinimumTopHeightInM[periodIndex], periodIndex + ": Top height " + topHeight + ".");
+                Assert.IsTrue(qmdInCm > expectedTrajectory.MinimumQmdInCm[periodIndex], $"{periodIndex}: QMD {qmdInCm} is greater than {expectedTrajectory.MinimumQmdInCm[periodIndex]} cm.");
+                Assert.IsTrue(qmdInCm < PublicApi.QmdTolerance * expectedTrajectory.MinimumQmdInCm[periodIndex], $"{periodIndex}: QMD {qmdInCm} is less than {PublicApi.QmdTolerance * expectedTrajectory.MinimumQmdInCm[periodIndex]} cm.");
+                Assert.IsTrue(topHeight > expectedTrajectory.MinimumTopHeightInM[periodIndex], $"{periodIndex}: Top height {topHeight}.");
+                Assert.IsTrue(topHeight < PublicApi.TopHeightTolerance * expectedTrajectory.MinimumTopHeightInM[periodIndex], $"{periodIndex}: Top height {topHeight}.");
                 Assert.IsTrue(treeRecords > 0);
                 Assert.IsTrue(treeRecords < 666);
 
@@ -1675,7 +1675,7 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(snagsPerHectare >= 0.0F);
 
                 // for now, assume no ingrowth
-                Assert.IsTrue(initialStemsPerHectare >= stemsPerHectare, stemsPerHectare + " stems per hectare in period " + period + " is an increase from the initial value of " + initialStemsPerHectare + ".");
+                Assert.IsTrue(initialStemsPerHectare >= stemsPerHectare, $"{stemsPerHectare} stems per hectare in period {period} is an increase from the initial value of {initialStemsPerHectare}.");
             }
         }
 

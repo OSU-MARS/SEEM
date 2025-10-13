@@ -25,7 +25,7 @@ namespace Mars.Seem.Cmdlets
             // header
             if (this.ShouldWriteCsvHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",standAge,species,diameter class,snags,logs");
+                writer.WriteLine($"{this.GetCsvHeaderForSilviculturalCoordinate()},standAge,species,diameter class,snags,logs");
             }
 
             long estimatedBytesSinceLastFileLength = 0;
@@ -56,8 +56,8 @@ namespace Mars.Seem.Cmdlets
                         {
                             float[,] logsByPeriodAndDiameterClass = snagsAndLogs.LogsPerHectareBySpeciesAndDiameterClass[species];
                             float[,] snagsByPeriodAndDiameterClass = snagsAndLogs.SnagsPerHectareBySpeciesAndDiameterClass[species];
-                            string standAgeAndSpeciesCode = standAge + "," + species.ToFourLetterCode();
-                            string linePrefixForPeriodAndSpecies = linePrefix + "," + standAgeAndSpeciesCode;
+                            string standAgeAndSpeciesCode = $"{standAge},{species.ToFourLetterCode()}";
+                            string linePrefixForPeriodAndSpecies = $"{linePrefix},{standAgeAndSpeciesCode}";
 
                             for (int diameterClassIndex = 0; diameterClassIndex < snagsAndLogs.DiameterClasses; ++diameterClassIndex)
                             {
@@ -87,7 +87,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-SnagsAndLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        this.WriteWarning($"Write-SnagsAndDownLogs: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
                         break;
                     }
                 }

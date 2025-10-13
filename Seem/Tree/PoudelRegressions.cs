@@ -63,15 +63,15 @@ namespace Mars.Seem.Tree
             // Allow extrapolation beyond fit range in lieu of a better predictor.
             if ((dbhInCm < 0.0F) || (dbhInCm > 135.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds regression limit of 135.0 cm.");
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), $"Diameter of {dbhInCm.ToString(Constant.Default.DiameterInCmFormat)} cm is either negative or exceeds regression limit of 135.0 cm.");
             }
             if ((heightInM < PoudelRegressions.MinimumKozakHeightInM) || (heightInM > 85.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 85.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), $"Height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 85.0 m.");
             }
             if ((evaluationHeightInM < 0.0F) || (evaluationHeightInM > heightInM))
             {
-                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString(Constant.Default.HeightInMFormat) + " m is negative or exceeds tree height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m.");
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), $"Evaluation height of {evaluationHeightInM.ToString(Constant.Default.HeightInMFormat)} m is negative or exceeds tree height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m.");
             }
 
             const float b1 = 1.04208F;
@@ -97,15 +97,15 @@ namespace Mars.Seem.Tree
             // same code as GetDouglasFirDiameterInsideBark() with western hemlock values of b1-b9, also from Table 4: M4 (Kozak 2004) form
             if ((dbhInCm < 0.0F) || (dbhInCm > 135.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds regression limit of 135.0 cm.");
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), $"Diameter of {dbhInCm.ToString(Constant.Default.DiameterInCmFormat)} cm is either negative or exceeds regression limit of 135.0 cm.");
             }
             if ((heightInM < PoudelRegressions.MinimumKozakHeightInM) || (heightInM > 75.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 75.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), $"Height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 75.0 m.");
             }
             if ((evaluationHeightInM < 0.0F) || (evaluationHeightInM > heightInM))
             {
-                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString(Constant.Default.HeightInMFormat) + " m is negative or exceeds tree height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m.");
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), $"Evaluation height of {evaluationHeightInM.ToString(Constant.Default.HeightInMFormat)} m is negative or exceeds tree height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m.");
             }
             if (evaluationHeightInM == heightInM)
             {
@@ -244,7 +244,7 @@ namespace Mars.Seem.Tree
                     break;
                 // Mountain hemlock –0.9861(0.58) 2.0975(0.14) 1.0000 –2.3 8.8
                 default:
-                    throw new NotSupportedException("Unhandled tree species " + treesOfSpecies.Species + ".");
+                    throw new NotSupportedException($"Unhandled tree species {treesOfSpecies.Species}.");
             }
 
             float liveBiomassInKgPerHa = 0.0F;

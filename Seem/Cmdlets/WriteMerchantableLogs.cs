@@ -132,9 +132,9 @@ namespace Mars.Seem.Cmdlets
                         }
                         if (stand == null)
                         {
-                            throw new InvalidOperationException("Stand has not been simulated for period " + period + ".");
+                            throw new InvalidOperationException($"Stand has not been simulated for period {period}.");
                         }
-                        string linePrefixForStandAge = linePrefix + "," + highTrajectory.GetEndOfPeriodAge(period).ToString(CultureInfo.InvariantCulture);
+                        string linePrefixForStandAge = $"{linePrefix},{highTrajectory.GetEndOfPeriodAge(period).ToString(CultureInfo.InvariantCulture)}";
 
                         if (this.Histogram)
                         {
@@ -146,7 +146,7 @@ namespace Mars.Seem.Cmdlets
 
                         foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
                         {
-                            string linePrefixForStandAgeAndSpecies = linePrefixForStandAge + "," + treesOfSpecies.Species.ToFourLetterCode();
+                            string linePrefixForStandAgeAndSpecies = $"{linePrefixForStandAge},{treesOfSpecies.Species.ToFourLetterCode()}";
                             IndividualTreeSelection treeSelectionForSpecies = highTrajectory.TreeSelectionBySpecies[treesOfSpecies.Species];
 
                             highTrajectory.TreeScaling.TryGetForwarderVolumeTable(treesOfSpecies.Species, out TreeSpeciesMerchantableVolumeTable? forwarderVolumeTable);
@@ -161,7 +161,7 @@ namespace Mars.Seem.Cmdlets
                             }
                             if (forwarderVolumeTable.MaximumLogs < longLogVolumeTable.MaximumLogs)
                             {
-                                throw new NotSupportedException(forwarderVolumeTable.MaximumLogs + " logs are buckable from " + treesOfSpecies.Species + " in period " + period + ", which is more than the " + longLogVolumeTable.MaximumLogs + " logs buckable in regeneration harvest.");
+                                throw new NotSupportedException($"{forwarderVolumeTable.MaximumLogs} logs are buckable from {treesOfSpecies.Species} in period {period}, which is more than the {longLogVolumeTable.MaximumLogs} logs buckable in regeneration harvest.");
                             }
 
                             for (int compactedTreeIndex = 0; compactedTreeIndex < treesOfSpecies.Count; ++compactedTreeIndex)
@@ -348,7 +348,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-MechantableLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        this.WriteWarning($"Write-MechantableLogs: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
                         break;
                     }
                 }

@@ -20,7 +20,7 @@ namespace Mars.Seem.Output
         {
             if ((maximumBatchLength < 10 * 1000) || (maximumBatchLength > 100 * 1000 * 1000))
             {
-                throw new ArgumentOutOfRangeException(nameof(maximumBatchLength), "Record batch size of " + maximumBatchLength + " is unexpectedly large or small.");
+                throw new ArgumentOutOfRangeException(nameof(maximumBatchLength), $"Record batch size of {maximumBatchLength} is unexpectedly large or small.");
             }
 
             this.MaximumBatchLength = maximumBatchLength;
@@ -167,7 +167,7 @@ namespace Mars.Seem.Output
                 IArrowType fieldType = this.Schema.FieldsList[fieldIndex].DataType;
                 if (fieldType.IsFixedWidth == false)
                 {
-                    throw new NotSupportedException("Unhandled type " + fieldType.TypeId + " for field " + fieldType.Name + ".");
+                    throw new NotSupportedException($"Unhandled type {fieldType.TypeId} for field {fieldType.Name}.");
                 }
                 FixedWidthType fixedWidthType = (FixedWidthType)fieldType;
                 fixedWidthBitsPerRow += fixedWidthType.BitWidth;

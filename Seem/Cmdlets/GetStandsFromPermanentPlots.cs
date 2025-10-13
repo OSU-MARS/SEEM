@@ -136,7 +136,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     if (this.Ages.Length != this.ExpansionFactorPerHa.Length)
                     {
-                        throw new ParameterOutOfRangeException(nameof(this.Ages) + " or " + nameof(this.ExpansionFactorPerHa));
+                        throw new ParameterOutOfRangeException($"{nameof(this.Ages)} or {nameof(this.ExpansionFactorPerHa)}");
                     }
 
                     SortedList<int, float> expansionFactorByAge = [];

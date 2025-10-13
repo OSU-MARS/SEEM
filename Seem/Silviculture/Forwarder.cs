@@ -37,7 +37,7 @@ namespace Mars.Seem.Silviculture
             float forwarderPayloadInKg = Forwarder.GetForwarderPayloadInKg(stand, harvestSystems);
             if (forwarderPayloadInKg <= 0.0F)
             {
-                throw new NotSupportedException("Either stand slope of " + stand.SlopeInPercent + "% or access slope of " + stand.AccessSlopeInPercent + "% is too steep for forwarding.");
+                throw new NotSupportedException($"Either stand slope of {stand.SlopeInPercent}% or access slope of {stand.AccessSlopeInPercent}% is too steep for forwarding.");
             }
 
             // TODO: full bark retention on trees bucked by chainsaw (for now it's assumed all trees are bucked by a harvester)

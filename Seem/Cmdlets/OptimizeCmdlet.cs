@@ -241,32 +241,32 @@ namespace Mars.Seem.Cmdlets
             string mostRecentEvaluationDescription = String.Empty;
             if (silviculturalSpace.ParameterCombinations > 1)
             {
-                mostRecentEvaluationDescription += ", parameters " + currentPosition.ParameterIndex + "/" + silviculturalSpace.ParameterCombinations;
+                mostRecentEvaluationDescription += $", parameters {currentPosition.ParameterIndex}/{silviculturalSpace.ParameterCombinations}";
             }
             if (silviculturalSpace.FirstThinPeriods.Count > 1)
             {
-                mostRecentEvaluationDescription += ", thin 1 " + currentPosition.FirstThinPeriodIndex + "/" + silviculturalSpace.FirstThinPeriods.Count;
+                mostRecentEvaluationDescription += $", thin 1 {currentPosition.FirstThinPeriodIndex}/{silviculturalSpace.FirstThinPeriods.Count}";
             }
             if (silviculturalSpace.SecondThinPeriods.Count > 1)
             {
-                mostRecentEvaluationDescription += ", 2 " + currentPosition.SecondThinPeriodIndex + "/" + silviculturalSpace.SecondThinPeriods.Count;
+                mostRecentEvaluationDescription += $", 2 {currentPosition.SecondThinPeriodIndex}/{silviculturalSpace.SecondThinPeriods.Count}";
             }
             if (silviculturalSpace.ThirdThinPeriods.Count > 1)
             {
-                mostRecentEvaluationDescription += ", 3 " + currentPosition.ThirdThinPeriodIndex + "/" + silviculturalSpace.ThirdThinPeriods.Count;
+                mostRecentEvaluationDescription += $", 3 {currentPosition.ThirdThinPeriodIndex}/{silviculturalSpace.ThirdThinPeriods.Count}";
             }
             if (this.HeuristicEvaluatesAcrossRotationsAndScenarios == false)
             {
                 if (silviculturalSpace.RotationLengths.Count > 1)
                 {
-                    mostRecentEvaluationDescription += ", rotation " + currentPosition.RotationIndex + "/" + silviculturalSpace.RotationLengths.Count;
+                    mostRecentEvaluationDescription += $", rotation {currentPosition.RotationIndex}/{silviculturalSpace.RotationLengths.Count}";
                 }
                 if (this.Financial.Count > 1)
                 {
-                    mostRecentEvaluationDescription += ", scenario " + currentPosition.FinancialIndex + "/" + this.Financial.Count;
+                    mostRecentEvaluationDescription += $", scenario {currentPosition.FinancialIndex}/{this.Financial.Count}";
                 }
             }
-            mostRecentEvaluationDescription += " (" + workerThreadsUsed + " threads)";
+            mostRecentEvaluationDescription += $" ({workerThreadsUsed} threads)";
             return mostRecentEvaluationDescription;
         }
 
@@ -307,7 +307,7 @@ namespace Mars.Seem.Cmdlets
             if ((this.TimberObjective == TimberObjective.ScribnerVolume) && (this.Financial.Count > 1) && (this.HeuristicEvaluatesAcrossRotationsAndScenarios == false))
             {
                 // low priority to improve this by checking for varying discount rates but at least warn about limited support
-                this.WriteWarning("Timber optimization objective is " + this.TimberObjective + " but multiple discount rates may be specified in different financial scenarios. If so, optimization will be unnecessarily repeated for each discount rate.");
+                this.WriteWarning($"Timber optimization objective is {this.TimberObjective} but multiple discount rates may be specified in different financial scenarios. If so, optimization will be unnecessarily repeated for each discount rate.");
             }
 
             Stopwatch stopwatch = new();
@@ -518,13 +518,12 @@ namespace Mars.Seem.Cmdlets
                                     financialScenario = results.FinancialScenarios.DiscountRate[coordinate.FinancialIndex].ToString();
                                     rotationLength = results.RotationLengths[coordinate.RotationIndex].ToString();
                                 }
-                                throw new AggregateException("Exception encountered during optimization. Parameters " + coordinate.ParameterIndex +
-                                                             ", first thin period " + results.FirstThinPeriods[coordinate.FirstThinPeriodIndex] +
-                                                             ", second thin period " + results.SecondThinPeriods[coordinate.SecondThinPeriodIndex] +
-                                                             ", third thin period " + results.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex] +
-                                                             ", rotation length " + rotationLength +
-                                                             ", financial scenario " + financialScenario +
-                                                             ".",
+
+                                throw new AggregateException($"Exception encountered during optimization. Parameters {coordinate.ParameterIndex}" +
+                                                             $", first thin period {results.FirstThinPeriods[coordinate.FirstThinPeriodIndex]}" +
+                                                             $", second thin period {results.SecondThinPeriods[coordinate.SecondThinPeriodIndex]}" +
+                                                             $", third thin period {results.ThirdThinPeriods[coordinate.ThirdThinPeriodIndex]}" +
+                                                             $", rotation length {rotationLength}, financial scenario {financialScenario}.",
                                                              exception);
                             }
                         }
@@ -558,7 +557,7 @@ namespace Mars.Seem.Cmdlets
                     int currentPositionIndex = Math.Min(currentRun / this.BestOf, combinationsToEvaluate.Count - 1);
                     SilviculturalCoordinate mostRecentCombination = combinationsToEvaluate[currentPositionIndex];
 
-                    string mostRecentEvaluationDescription = "run " + currentRun + "/" + totalRuns + this.GetStatusDescription(results, mostRecentCombination, usableWorkerThreads);
+                    string mostRecentEvaluationDescription = $"run {currentRun}/{totalRuns}{this.GetStatusDescription(results, mostRecentCombination, usableWorkerThreads)}";
                     double fractionComplete = (double)runtimeCostCompleted / (double)totalRuntimeCost;
                     double secondsElapsed = stopwatch.Elapsed.TotalSeconds;
                     double secondsRemaining = secondsElapsed * (1.0 / fractionComplete - 1.0);
@@ -581,7 +580,7 @@ namespace Mars.Seem.Cmdlets
             if (progressWritten)
             {
                 // write progress complete
-                string mostRecentEvaluationDescription = totalRuns + " runs " + this.GetStatusDescription(results, combinationsToEvaluate[^1], usableWorkerThreads);
+                string mostRecentEvaluationDescription = $"{totalRuns} runs{this.GetStatusDescription(results, combinationsToEvaluate[^1], usableWorkerThreads)}";
                 this.WriteProgress(new ProgressRecord(0, cmdletName, mostRecentEvaluationDescription)
                 {
                     PercentComplete = 100,
@@ -608,16 +607,9 @@ namespace Mars.Seem.Cmdlets
         {
             results.GetPoolPerformanceCounters(out int solutionsCached, out int solutionsAccepted, out int solutionsRejected);
 
-            this.WriteVerbose("{0}: {1} configurations with {2} runs in {3:0.00} minutes ({4:0.00}M timesteps in {5:0.00} core-minutes, {6:0.00}% move acceptance, {7} solutions pooled, {8:0.00}% pool acceptance).",
-                              this.GetName(),
-                              results.CoordinatesEvaluated.Count,
-                              this.BestOf * results.CoordinatesEvaluated.Count,
-                              elapsedTime.TotalMinutes,
-                              1E-6F * totalPerfCounters.GrowthModelTimesteps,
-                              totalPerfCounters.Duration.TotalMinutes,
-                              100.0F * totalPerfCounters.MovesAccepted / (totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected),
-                              solutionsCached,
-                              100.0F * solutionsAccepted / (solutionsAccepted + solutionsRejected));
+            float moveAcceptancePercentage = 100.0F * totalPerfCounters.MovesAccepted / (totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected);
+            float poolAcceptancePercentage = 100.0F * solutionsAccepted / (solutionsAccepted + solutionsRejected);
+            this.WriteVerbose($"{this.GetName()}: {results.CoordinatesEvaluated.Count} configurations with {this.BestOf * results.CoordinatesEvaluated.Count} runs in {elapsedTime.TotalMinutes:0.00} minutes ({1E-6F * totalPerfCounters.GrowthModelTimesteps:0.00}M timesteps in {totalPerfCounters.Duration.TotalMinutes:0.00} core-minutes, {moveAcceptancePercentage:0.00}% move acceptance, {solutionsCached} solutions pooled, {poolAcceptancePercentage:0.00}% pool acceptance).");
         }
 
         private void WriteSingleDistributionSummary(SilviculturalCoordinateExploration element, PrescriptionPerformanceCounters totalPerfCounters, TimeSpan elapsedTime)
@@ -630,14 +622,16 @@ namespace Mars.Seem.Cmdlets
 
             base.WriteVerbose(String.Empty); // Visual Studio code workaround
             int totalMoves = totalPerfCounters.MovesAccepted + totalPerfCounters.MovesRejected;
-            this.WriteVerbose("{0}: {1} moves, {2} changing ({3:0%}), {4} unchanging ({5:0%})", highHeuristic.GetName(), totalMoves, totalPerfCounters.MovesAccepted, (float)totalPerfCounters.MovesAccepted / (float)totalMoves, totalPerfCounters.MovesRejected, (float)totalPerfCounters.MovesRejected / (float)totalMoves);
-            this.WriteVerbose("objective: best {0:0.00#}, mean {1:0.00#} ending {2:0.00#}.", highHeuristic.FinancialValue.GetHighestValue(), element.Distribution.HighestFinancialValueBySolution.Average(), highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(Constant.HeuristicDefault.CoordinateIndex, Constant.HeuristicDefault.CoordinateIndex).Last());
+            float changingMoveFraction = (float)totalPerfCounters.MovesAccepted / (float)totalMoves;
+            float unchangingMoveFraction = (float)totalPerfCounters.MovesRejected / (float)totalMoves;
+            this.WriteVerbose($"{highHeuristic.GetName()}: {totalMoves} moves, {totalPerfCounters.MovesAccepted} changing ({changingMoveFraction:0%}), {totalPerfCounters.MovesRejected} unchanging ({unchangingMoveFraction:0%})");
+            this.WriteVerbose($"objective: best {highHeuristic.FinancialValue.GetHighestValue():0.00#}, mean {element.Distribution.HighestFinancialValueBySolution.Average():0.00#} ending {highHeuristic.FinancialValue.GetAcceptedValuesWithDefaulting(Constant.HeuristicDefault.CoordinateIndex, Constant.HeuristicDefault.CoordinateIndex).Last():0.00#}.");
 
             double totalSeconds = totalPerfCounters.Duration.TotalSeconds;
             double movesPerSecond = totalMoves / totalSeconds;
             double movesPerSecondMultiplier = movesPerSecond > 1E3 ? 1E-3 : 1.0;
             string movesPerSecondScale = movesPerSecond > 1E3 ? "k" : String.Empty;
-            this.WriteVerbose("{0} moves in {1:0.000} core-s and {2:0.000}s clock time ({3:0.00} {4} moves/core-s).", totalMoves, totalSeconds, elapsedTime.TotalSeconds, movesPerSecondMultiplier * movesPerSecond, movesPerSecondScale);
+            this.WriteVerbose($"{totalMoves} moves in {totalSeconds:0.000} core-s and {elapsedTime.TotalSeconds:0.000}s clock time ({movesPerSecondMultiplier * movesPerSecond:0.00} {movesPerSecondScale} moves/core-s).");
         }
 
         private bool TryCreateThin(int thinPeriodIndex, [NotNullWhen(true)] out Harvest? thin)
@@ -650,11 +644,6 @@ namespace Mars.Seem.Cmdlets
 
             thin = this.CreateThin(thinPeriodIndex);
             return true;
-        }
-
-        protected void WriteVerbose(string format, params object[] args)
-        {
-            base.WriteVerbose(String.Format(format, args));
         }
     }
 }

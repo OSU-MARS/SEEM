@@ -18,7 +18,7 @@ namespace Mars.Seem.Cmdlets
 
             for (int thread = 0; thread < threads; ++thread)
             {
-                this.frequencyCounters[thread] = new("Processor Information", "% Processor Performance", "0," + thread);
+                this.frequencyCounters[thread] = new("Processor Information", "% Processor Performance", $"0,{thread}");
             }
         }
 

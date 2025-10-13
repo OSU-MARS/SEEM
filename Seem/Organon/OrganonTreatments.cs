@@ -65,7 +65,7 @@ namespace Mars.Seem.Organon
                     {
                         // for now, assume only one harvest occurs in any one period
                         // If multiple harvests occur then the logic below .
-                        throw new NotSupportedException("Multiple harvests found for period " + harvest.Period + ".");
+                        throw new NotSupportedException($"Multiple harvests found for period {harvest.Period}.");
                     }
 
                     float basalAreaRemovedByHarvest = harvest.EvaluateTreeSelection(trajectory);

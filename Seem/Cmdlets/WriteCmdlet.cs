@@ -54,7 +54,7 @@ namespace Mars.Seem.Cmdlets
             Debug.Assert(uncompressedBytesPerRow * arrowMemory.MaximumBatchLength < 2.0F * 1024.0F * 1024.0F * 1024.0F); // https://github.com/apache/arrow/issues/37069
             if (uncompressedFileSizeInGB > this.LimitGB)
             {
-                throw new NotSupportedException("Expected file size of " + uncompressedFileSizeInGB.ToString("0.00") + " GB exceeds size limit of " + this.LimitGB.ToString("0.00") + " GB.");
+                throw new NotSupportedException($"Expected file size of {uncompressedFileSizeInGB:0.00} GB exceeds size limit of {this.LimitGB:0.00} GB.");
             }
         }
 
@@ -328,7 +328,7 @@ namespace Mars.Seem.Cmdlets
                         }
                         else
                         {
-                            throw new NotSupportedException("Unhandled thinning of type " + thinFinancialValue.GetType().Name + ".");
+                            throw new NotSupportedException($"Unhandled thinning of type {thinFinancialValue.GetType().Name}.");
                         }
                     }
                     else
@@ -506,7 +506,7 @@ namespace Mars.Seem.Cmdlets
                         }
                         else
                         {
-                            throw new NotSupportedException("Unhandled thinning of type " + thinFinancialValue.GetType().Name + ".");
+                            throw new NotSupportedException($"Unhandled thinning of type {thinFinancialValue.GetType().Name}.");
                         }
                     }
                     else

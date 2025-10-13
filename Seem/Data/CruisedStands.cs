@@ -108,13 +108,13 @@ namespace Mars.Seem.Data
             float areaInHa = Single.Parse(rowAsStrings[this.standHeader.Area]);
             if (Single.IsNaN(areaInHa) || (areaInHa <= 0.0F) || (areaInHa > 1000.0F))
             {
-                throw new XmlException("Stand area of " + areaInHa + " ha is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.Area);
+                throw new XmlException($"Stand area of {areaInHa} ha is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.Area);
             }
 
             float siteIndexInM = Single.Parse(rowAsStrings[this.standHeader.SiteIndex]);
             if (Single.IsNaN(siteIndexInM) || (siteIndexInM <= 0.0F) || (siteIndexInM > 200.0F))
             {
-                throw new XmlException("Site index of " + siteIndexInM + " m is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.SiteIndex);
+                throw new XmlException($"Site index of {siteIndexInM} m is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.SiteIndex);
             }
 
             string ageAsString = rowAsStrings[this.standHeader.Age];
@@ -124,44 +124,44 @@ namespace Mars.Seem.Data
                 ageInYears = Int32.Parse(ageAsString);
                 if (Single.IsNaN(ageInYears) || (ageInYears < 0) || (ageInYears > 1000))
                 {
-                    throw new XmlException("Age of " + ageInYears + " years is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.Age);
+                    throw new XmlException($"Age of {ageInYears} years is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.Age);
                 }
             }
 
             float slopeInPercent = Single.Parse(rowAsStrings[this.standHeader.SlopeInPercent]);
             if (Single.IsNaN(slopeInPercent) || (slopeInPercent < 0.0F) || (slopeInPercent > 200.0F))
             {
-                throw new XmlException("Slope of " + slopeInPercent + " % is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.SlopeInPercent);
+                throw new XmlException($"Slope of {slopeInPercent} % is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.SlopeInPercent);
             }
 
             float forwardingRoadDistanceInM = Single.Parse(rowAsStrings[this.standHeader.ForwardingRoad]);
             if (Single.IsNaN(forwardingRoadDistanceInM) || (forwardingRoadDistanceInM < 0.0F) || (forwardingRoadDistanceInM > 5000.0F))
             {
-                throw new XmlException("On road forwarding distance of " + forwardingRoadDistanceInM + " m is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.ForwardingRoad);
+                throw new XmlException($"On road forwarding distance of {forwardingRoadDistanceInM} m is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.ForwardingRoad);
             }
 
             float forwardingUntetheredDistanceInM = Single.Parse(rowAsStrings[this.standHeader.ForwardingUnthered]);
             if (Single.IsNaN(forwardingUntetheredDistanceInM) || (forwardingUntetheredDistanceInM < 0.0F) || (forwardingUntetheredDistanceInM > 2000.0F))
             {
-                throw new XmlException("Untethered forwarding distance of " + forwardingUntetheredDistanceInM + " m is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.ForwardingUnthered);
+                throw new XmlException($"Untethered forwarding distance of {forwardingUntetheredDistanceInM} m is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.ForwardingUnthered);
             }
 
             float forwardingTetheredDistanceInM = Single.Parse(rowAsStrings[this.standHeader.ForwardingTethered]);
             if (Single.IsNaN(forwardingTetheredDistanceInM) || (forwardingTetheredDistanceInM < 0.0F) || (forwardingTetheredDistanceInM > 2000.0F))
             {
-                throw new XmlException("Tethered forwarding distance of " + forwardingTetheredDistanceInM + " m is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.ForwardingTethered);
+                throw new XmlException($"Tethered forwarding distance of {forwardingTetheredDistanceInM} m is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.ForwardingTethered);
             }
 
             float meanYardingDistanceFactor = Single.Parse(rowAsStrings[this.standHeader.YardingFactor]);
             if (Single.IsNaN(meanYardingDistanceFactor) || (meanYardingDistanceFactor < 0.0F) || (meanYardingDistanceFactor > 2.0F))
             {
-                throw new XmlException("Yarding distance factor of " + meanYardingDistanceFactor + " is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.YardingFactor);
+                throw new XmlException($"Yarding distance factor of {meanYardingDistanceFactor} is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.YardingFactor);
             }
 
             float plantingDensityInTph = Single.Parse(rowAsStrings[this.standHeader.PlantingDensityPerHa]);
             if (Single.IsNaN(plantingDensityInTph) || (plantingDensityInTph < 0.0F) || (plantingDensityInTph > 5000.0F))
             {
-                throw new XmlException("Planting density of " + plantingDensityInTph + " trees per hectare is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.PlantingDensityPerHa);
+                throw new XmlException($"Planting density of {plantingDensityInTph} trees per hectare is unexpectedly large or small.", null, rowIndex + 1, this.standHeader.PlantingDensityPerHa);
             }
 
             OrganonStand stand = new(this.OrganonVariant, ageInYears, Constant.FeetPerMeter * siteIndexInM)
@@ -211,7 +211,7 @@ namespace Mars.Seem.Data
             int standID = Int32.Parse(standIDasString);
             if (this.standsByID.TryGetValue(standID, out Stand? stand) == false)
             {
-                throw new XmlException("Stand ID " + standID + " is not present in stands list.", null, rowIndex + 1, this.treeHeader.Stand);
+                throw new XmlException($"Stand ID {standID} is not present in stands list.", null, rowIndex + 1, this.treeHeader.Stand);
             }
 
             FiaCode species = FiaCodeExtensions.Parse(rowAsStrings[this.treeHeader.Species]);
@@ -355,7 +355,7 @@ namespace Mars.Seem.Data
                         case "slopeAbove100PercentFraction":
                             break;
                         default:
-                            throw new NotSupportedException("Unhandled column " + columnHeader + ".");
+                            throw new NotSupportedException($"Unhandled column {columnHeader}.");
                     }
                 }
 
@@ -474,7 +474,7 @@ namespace Mars.Seem.Data
                             this.HeightToBrokenTop = columnIndex;
                             break;
                         default:
-                            throw new NotSupportedException("Unhandled column " + columnHeader + ".");
+                            throw new NotSupportedException($"Unhandled column {columnHeader}.");
                     }
                 }
 

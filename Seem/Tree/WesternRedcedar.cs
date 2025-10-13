@@ -23,15 +23,15 @@ namespace Mars.Seem.Tree
             // simplified from Table 5 for Equation 8, see R
             if ((dbhInCm < 0.0F) || (dbhInCm > 160.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(dbhInCm), "Diameter of " + dbhInCm.ToString(Constant.Default.DiameterInCmFormat) + " cm is either negative or exceeds regression limit of 135.0 cm.");
+                throw new ArgumentOutOfRangeException(nameof(dbhInCm), $"Diameter of {dbhInCm.ToString(Constant.Default.DiameterInCmFormat)} cm is either negative or exceeds regression limit of 135.0 cm.");
             }
             if ((heightInM < 0.0F) || (heightInM > 75.0F))
             {
-                throw new ArgumentOutOfRangeException(nameof(heightInM), "Height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 75.0 m.");
+                throw new ArgumentOutOfRangeException(nameof(heightInM), $"Height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m is either less than the Kozak 2004 regression form's minimum of 1.3 m or exceeds regression limit of 75.0 m.");
             }
             if ((evaluationHeightInM < 0.0F) || (evaluationHeightInM > heightInM))
             {
-                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), "Evaluation height of " + evaluationHeightInM.ToString(Constant.Default.HeightInMFormat) + " m is negative or exceeds tree height of " + heightInM.ToString(Constant.Default.HeightInMFormat) + " m.");
+                throw new ArgumentOutOfRangeException(nameof(evaluationHeightInM), $"Evaluation height of {evaluationHeightInM.ToString(Constant.Default.HeightInMFormat)} m is negative or exceeds tree height of {heightInM.ToString(Constant.Default.HeightInMFormat)} m.");
             }
             if (evaluationHeightInM == heightInM)
             {

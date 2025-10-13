@@ -81,9 +81,9 @@ namespace Mars.Seem.Heuristics
 
         public override string GetCsvHeader(string prefix)
         {
-            return prefix + "Thin1above," + prefix + "Thin1proportional," + prefix + "Thin1below," +
-                   prefix + "Thin2above," + prefix + "Thin2proportional," + prefix + "Thin2below," +
-                   prefix + "Thin3above," + prefix + "Thin3proportional," + prefix + "Thin3below";
+            return $"{prefix}Thin1above,{prefix}Thin1proportional,{prefix}Thin1below," +
+                   $"{prefix}Thin2above,{prefix}Thin2proportional,{prefix}Thin2below," +
+                   $"{prefix}Thin3above,{prefix}Thin3proportional,{prefix}Thin3below";
         }
 
         public override string GetCsvValues(SilviculturalCoordinate coordinate, int moveNumber)

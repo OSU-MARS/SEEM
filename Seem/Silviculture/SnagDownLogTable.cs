@@ -167,7 +167,7 @@ namespace Mars.Seem.Silviculture
                     decayPower = 1.152F;
                     break;
                 default:
-                    throw new NotSupportedException("Unhandled tree species " + species + ".");
+                    throw new NotSupportedException($"Unhandled tree species {species}.");
             }
         }
     }

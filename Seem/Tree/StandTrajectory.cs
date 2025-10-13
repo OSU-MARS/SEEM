@@ -158,7 +158,7 @@ namespace Mars.Seem.Tree
         {
             if (this.TreeSelectionBySpecies.Count != otherTreeSelection.Count)
             {
-                throw new ArgumentOutOfRangeException(nameof(otherTreeSelection), "Attempt to copy between mismatched tree selections. This stand trajectory has tree selections for " + this.TreeSelectionBySpecies.Count + " species. The tree selection provided has " + otherTreeSelection.Count + " species.");
+                throw new ArgumentOutOfRangeException(nameof(otherTreeSelection), $"Attempt to copy between mismatched tree selections. This stand trajectory has tree selections for {this.TreeSelectionBySpecies.Count} species. The tree selection provided has {otherTreeSelection.Count} species.");
             }
 
             bool atLeastOneTreeMoved = false;
@@ -169,7 +169,7 @@ namespace Mars.Seem.Tree
                 FiaCode thisSpecies = this.TreeSelectionBySpecies.Keys[speciesIndex];
                 if (otherSpecies != thisSpecies)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(otherTreeSelection), "Attempt to copy between mismatched tree selections. This stand trajectory has " + thisSpecies + " at index " + speciesIndex + " and the tree selection provided has " + otherSpecies + ".");
+                    throw new ArgumentOutOfRangeException(nameof(otherTreeSelection), $"Attempt to copy between mismatched tree selections. This stand trajectory has {thisSpecies} at index {speciesIndex} and the tree selection provided has {otherSpecies}.");
                 }
 
                 IndividualTreeSelection otherSelectionForSpecies = otherTreeSelection.Values[speciesIndex];
@@ -496,7 +496,7 @@ namespace Mars.Seem.Tree
             {
                 if (currentHarvestPeriod == Constant.NoHarvestPeriod)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod), "Attempt to mark " + species + " at uncompacted tree index " + uncompactedTreeIndex + " for harvest in period " + newHarvestPeriod + " but tree is marked as excluded from harvest.");
+                    throw new ArgumentOutOfRangeException(nameof(newHarvestPeriod), $"Attempt to mark {species} at uncompacted tree index {uncompactedTreeIndex} for harvest in period {newHarvestPeriod} but tree is marked as excluded from harvest.");
                 }
                 this.TreeSelectionBySpecies[species][uncompactedTreeIndex] = newHarvestPeriod;
                 this.UpdateEariestPeriodChanged(currentHarvestPeriod, newHarvestPeriod);
@@ -620,7 +620,7 @@ namespace Mars.Seem.Tree
 
         public override TStandDensity GetStandDensity(int periodIndex)
         {
-            return this.DensityByPeriod[periodIndex] ?? throw new InvalidOperationException("Stand density is null for period " + periodIndex + ". Has the stand trajectory been simulated?");
+            return this.DensityByPeriod[periodIndex] ?? throw new InvalidOperationException($"Stand density is null for period {periodIndex}. Has the stand trajectory been simulated?");
         }
 
         protected override int GetThinPeriod(int thinIndex)
@@ -645,7 +645,7 @@ namespace Mars.Seem.Tree
         public override void RecalculateRegenerationHarvestMerchantableVolumeIfNeeded(int periodIndex)
         {
             // standing volume/long log harvest volume
-            TStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information is not available for period " + periodIndex + ".");
+            TStand stand = this.StandByPeriod[periodIndex] ?? throw new NotSupportedException($"Stand information is not available for period {periodIndex}.");
             for (int merchantableSpeciesIndex = 0; merchantableSpeciesIndex < this.LongLogRegenerationVolumeBySpecies.Count; ++merchantableSpeciesIndex)
             {
                 TreeSpeciesMerchantableVolume longLogVolumeForSpecies = this.LongLogRegenerationVolumeBySpecies.Values[merchantableSpeciesIndex];
@@ -671,7 +671,7 @@ namespace Mars.Seem.Tree
             if (periodHasHarvest)
             {
                 // trees' expansion factors are set to zero when harvested so use trees' volume at end of the previous period
-                TStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException("Stand information is not available for period " + (periodIndex - 1) + ".");
+                TStand previousStand = this.StandByPeriod[periodIndex - 1] ?? throw new NotSupportedException($"Stand information is not available for period {periodIndex - 1}.");
                 for (int treeSpeciesIndex = 0; treeSpeciesIndex < this.ForwardedThinVolumeBySpecies.Count; ++treeSpeciesIndex)
                 {
                     TreeSpeciesMerchantableVolume forwardedThinVolumeForSpecies = this.ForwardedThinVolumeBySpecies.Values[treeSpeciesIndex];

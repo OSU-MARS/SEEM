@@ -43,7 +43,7 @@ namespace Mars.Seem.Cmdlets
                     this.WriteFeather();
                     break;
                 default:
-                    throw new NotSupportedException("Unknown file type '" + fileExtension + "' in " + nameof(this.FilePath) + "'" + this.FilePath + "'.");
+                    throw new NotSupportedException($"Unknown file type '{fileExtension}' in {nameof(this.FilePath)}'{this.FilePath}'.");
             }
         }
 
@@ -71,7 +71,7 @@ namespace Mars.Seem.Cmdlets
                 int? year = this.StartYear;
                 for (int periodIndex = 0; periodIndex < trajectory.PlanningPeriods; ++periodIndex)
                 {
-                    Stand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException("Stand information not available for period " + periodIndex + ".");
+                    Stand stand = trajectory.StandByPeriod[periodIndex] ?? throw new NotSupportedException($"Stand information not available for period {periodIndex}.");
                     string ageAsString = age.ToString(CultureInfo.InvariantCulture); // currently no support for individual tree ages
 
                     foreach (Trees treesOfSpecies in stand.TreesBySpecies.Values)
@@ -116,7 +116,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-TreeList: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        this.WriteWarning($"Write-TreeList: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
                         break;
                     }
                 }

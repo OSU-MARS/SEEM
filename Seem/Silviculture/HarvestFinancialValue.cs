@@ -43,7 +43,7 @@ namespace Mars.Seem.Silviculture
 
         protected static Stand GetAndValidateStand(StandTrajectory trajectory, int harvestPeriod, bool isThin)
         {
-            Stand? stand = trajectory.StandByPeriod[harvestPeriod - (isThin ? 1 : 0)] ?? throw new ArgumentOutOfRangeException(nameof(trajectory), "Stand at period " + harvestPeriod + " is null.");
+            Stand? stand = trajectory.StandByPeriod[harvestPeriod - (isThin ? 1 : 0)] ?? throw new ArgumentOutOfRangeException(nameof(trajectory), $"Stand at period {harvestPeriod} is null.");
 
             Debug.Assert((stand.AccessDistanceInM >= 0.0F) && (stand.AccessDistanceInM <= 5000.0F) &&
                          (stand.AccessSlopeInPercent >= 0.0F) && (stand.AccessSlopeInPercent <= 100.0F) &&
@@ -54,12 +54,12 @@ namespace Mars.Seem.Silviculture
                          (stand.ForwardingDistanceOnRoad >= 0.0F) && (stand.ForwardingDistanceOnRoad <= 5000.0F) &&
                          (stand.MeanYardingDistanceFactor > 0.0F) && (stand.MeanYardingDistanceFactor <= 4.0F) &&
                          (stand.SlopeInPercent >= 0.0F) && (stand.SlopeInPercent <= 200.0F),
-                         "Stand '" + stand.Name + "' has a nonphysical distance, area, or length.");
+                         $"Stand '{stand.Name}' has a nonphysical distance, area, or length.");
             
             // TODO: check if stand or access is steep enough to require tethering.
             //if (stand.CorridorLengthInMTethered > Constant.Maximum.TetheredCorridorLengthInM)
             //{
-            //    throw new ArgumentOutOfRangeException(nameof(trajectory), "Stand at period " + harvestPeriod + " has a corridor length of " + stand.CorridorLengthInMTethered + " m, which exceeds the maximum tethered corridor length of " + Constant.Maximum.TetheredCorridorLengthInM + " m.");
+            //    throw new ArgumentOutOfRangeException(nameof(trajectory), $"Stand at period {harvestPeriod} has a corridor length of {stand.CorridorLengthInMTethered} m, which exceeds the maximum tethered corridor length of {Constant.Maximum.TetheredCorridorLengthInM} m.");
             //}
             return stand;
         }
@@ -92,7 +92,7 @@ namespace Mars.Seem.Silviculture
                 // automatic reserve trees should never be marked for thinning: this indicates a tree selection bug in a heuristic or
                 // silvicultural prescription
                 float diameterToCmMultiplier = treesOfSpecies.Units.GetDbhConversionToMetric();
-                throw new NotSupportedException(treesOfSpecies.Species + " " + treesOfSpecies.Tag[compactedTreeIndex] + " with DBH of " + diameterToCmMultiplier * treesOfSpecies.Dbh[compactedTreeIndex] + " cm is selected for thinning. This tree exceeds the long log volume table's DBH limit of " + volumeTable.MaximumMerchantableDiameterInCentimeters + " cm.");
+                throw new NotSupportedException($"{treesOfSpecies.Species} {treesOfSpecies.Tag[compactedTreeIndex]} with DBH of {diameterToCmMultiplier * treesOfSpecies.Dbh[compactedTreeIndex]} cm is selected for thinning. This tree exceeds the long log volume table's DBH limit of {volumeTable.MaximumMerchantableDiameterInCentimeters} cm.");
             }
 
             // otherwise, for now, assume tree was initially small enough not to be automatic reserve but has grown across the

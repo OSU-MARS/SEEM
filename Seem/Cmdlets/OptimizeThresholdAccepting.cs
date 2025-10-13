@@ -30,7 +30,7 @@ namespace Mars.Seem.Cmdlets
         {
             if ((this.IterationsPerThreshold != null) ^ (this.Thresholds != null))
             {
-                throw new ParameterOutOfRangeException(nameof(this.IterationsPerThreshold), nameof(this.IterationsPerThreshold) + " and " + this.Thresholds + " must both be set or both be null.");
+                throw new ParameterOutOfRangeException(nameof(this.IterationsPerThreshold), $"{nameof(this.IterationsPerThreshold)} and {this.Thresholds} must both be set or both be null.");
             }
 
             ThresholdAccepting acceptor = new(this.Stand!, heuristicParameters, runParameters);
@@ -39,7 +39,7 @@ namespace Mars.Seem.Cmdlets
                 Debug.Assert(this.Thresholds != null);
                 if (this.IterationsPerThreshold.Count != this.Thresholds.Count)
                 {
-                    throw new ParameterOutOfRangeException(nameof(this.IterationsPerThreshold), nameof(this.IterationsPerThreshold) + " and " + this.Thresholds + " must be of the same length.");
+                    throw new ParameterOutOfRangeException(nameof(this.IterationsPerThreshold), $"{nameof(this.IterationsPerThreshold)} and {this.Thresholds} must be of the same length.");
                 }
 
                 acceptor.IterationsPerThreshold.CopyFrom(this.IterationsPerThreshold);

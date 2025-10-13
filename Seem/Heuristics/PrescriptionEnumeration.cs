@@ -150,7 +150,7 @@ namespace Mars.Seem.Heuristics
                     // no changes needed
                     break;
                 default:
-                    throw new NotSupportedException(String.Format("Unhandled units {0}.", this.HeuristicParameters.Units));
+                    throw new NotSupportedException($"Unhandled units {this.HeuristicParameters.Units}.");
             }
 
             float maximumAllowedPercentage = this.HeuristicParameters.FromAbovePercentageUpperLimit + this.HeuristicParameters.ProportionalPercentageUpperLimit + this.HeuristicParameters.FromBelowPercentageUpperLimit;

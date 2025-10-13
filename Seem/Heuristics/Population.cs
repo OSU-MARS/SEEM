@@ -47,11 +47,11 @@ namespace Mars.Seem.Heuristics
         {
             if (parameters.MinimumConstructionGreediness != Constant.Grasp.FullyRandomConstructionForMaximization)
             {
-                throw new NotSupportedException(nameof(parameters) + " partially greedy population initialization is not currently supported.");
+                throw new NotSupportedException($"{nameof(parameters)} partially greedy population initialization is not currently supported.");
             }
             if (parameters.InitialThinningProbability != Constant.HeuristicDefault.InitialThinningProbability)
             {
-                throw new NotSupportedException(nameof(parameters) + ".InitialThinningProbability is not currently supported.");
+                throw new NotSupportedException($"{nameof(parameters)}.InitialThinningProbability is not currently supported.");
             }
 
             Stand? standBeforeThinning = standTrajectory.StandByPeriod[0];
@@ -75,7 +75,7 @@ namespace Mars.Seem.Heuristics
                 PopulationInitializationMethod.DiameterClass => Population.GetTreeDiameterClasses(standBeforeThinning, parameters.InitializationClasses),
                 PopulationInitializationMethod.DiameterQuantile => Population.GetTreeDiameterQuantiles(standBeforeThinning, parameters.InitializationClasses),
                 PopulationInitializationMethod.HeightQuantile => Population.GetTreeHeightQuantiles(standBeforeThinning, parameters.InitializationClasses),
-                _ => throw new NotSupportedException("Unhandled population initialization method " + parameters.InitializationMethod + ".")
+                _ => throw new NotSupportedException($"Unhandled population initialization method {parameters.InitializationMethod}.")
             };
             List<float> selectionProbabilityByIndex = new(parameters.InitializationClasses);
             float selectionProbabilityIncrement = (float)parameters.InitializationClasses / this.PoolCapacity;
@@ -224,7 +224,7 @@ namespace Mars.Seem.Heuristics
                     (firstChildSelectionForSpecies.Count != treesOfSpecies) ||
                     (secondChildSelectionForSpecies.Count != treesOfSpecies))
                 {
-                    throw new NotSupportedException("Mismatched counts among parents and children for " + treeSpecies + ".");
+                    throw new NotSupportedException($"Mismatched counts among parents and children for {treeSpecies}.");
                 }
 
                 for (int treeIndex = 0; treeIndex < treesOfSpecies; ++treeIndex)
@@ -263,7 +263,7 @@ namespace Mars.Seem.Heuristics
                 IndividualTreeSelection secondParentSelectionForSpecies = secondParentTreeSelection[firstParentSelectionForSpecies.Key];
                 if (firstParentSelectionForSpecies.Value.Count != secondParentSelectionForSpecies.Count)
                 {
-                    throw new NotSupportedException("Parents have different numbers of trees for species " + firstParentSelectionForSpecies.Key + ".");
+                    throw new NotSupportedException($"Parents have different numbers of trees for species {firstParentSelectionForSpecies.Key}.");
                 }
 
                 for (int treeIndex = 0; treeIndex < firstParentSelectionForSpecies.Value.Count; ++treeIndex)
@@ -548,7 +548,7 @@ namespace Mars.Seem.Heuristics
             {
                 PopulationReplacementStrategy.ContributionOfDiversityReplaceWorst => this.TryReplaceByDiversityOrFitness(newFitness, trajectory),
                 PopulationReplacementStrategy.ReplaceWorst => this.TryReplaceWorst(newFitness, trajectory, [ SolutionPool.UnknownDistance ], SolutionPool.UnknownNeighbor),
-                _ => throw new NotSupportedException(String.Format("Unhandled replacement strategy {0}.", replacementStrategy))
+                _ => throw new NotSupportedException($"Unhandled replacement strategy {replacementStrategy}.")
             };
         }
 

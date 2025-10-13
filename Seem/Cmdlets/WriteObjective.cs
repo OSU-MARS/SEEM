@@ -41,7 +41,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     throw new NotSupportedException("Cannot generate csv header because first result is missing a high or low heuristic.");
                 }
-                StringBuilder line = new(this.GetCsvHeaderForSilviculturalCoordinate() + ",move,count");
+                StringBuilder line = new($"{this.GetCsvHeaderForSilviculturalCoordinate()},move,count");
 
                 string lowMoveLogHeader = "lowMoveLog";
                 HeuristicMoveLog? lowMoveLog = prescriptions.Low.Heuristic.GetMoveLog();
@@ -49,7 +49,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     lowMoveLogHeader = lowMoveLog.GetCsvHeader("low");
                 }
-                line.Append("," + lowMoveLogHeader);
+                line.Append($",{lowMoveLogHeader}");
 
                 line.Append(",low,lowCandidate,min,percentile2.5,percentile10,lowerQuartile,median,mean,upperQuartile,percentile90,percentile97.5,max");
 
@@ -59,7 +59,7 @@ namespace Mars.Seem.Cmdlets
                 {
                     highMoveLogHeader = highMoveLog.GetCsvHeader("high");
                 }
-                line.Append("," + highMoveLogHeader);
+                line.Append($",{highMoveLogHeader}");
 
                 line.Append(",high,highCandidate");
                 writer.WriteLine(line);
@@ -127,7 +127,7 @@ namespace Mars.Seem.Cmdlets
 
                     SilviculturalCoordinateExploration exploration = silviculturalSpace[coordinate];
                     Heuristic highHeuristic = exploration.Pool.High.Heuristic!; // checked for null in GetHeuristicAndPositionCsvValues()
-                    Heuristic lowHeuristic = exploration.Pool.Low.Heuristic ?? throw new InvalidOperationException("Evaluated coordinate " + coordinateIndex + " does not have a low heuristic.");
+                    Heuristic lowHeuristic = exploration.Pool.Low.Heuristic ?? throw new InvalidOperationException($"Evaluated coordinate {coordinateIndex} does not have a low heuristic.");
 
                     if (highHeuristic.RunParameters.LogOnlyImprovingMoves != lowHeuristic.RunParameters.LogOnlyImprovingMoves)
                     {
@@ -237,7 +237,7 @@ namespace Mars.Seem.Cmdlets
 
                         if (lowMoveNumber != highMoveNumber)
                         {
-                            throw new NotSupportedException("Low move number " + lowMoveNumber + " does not match high move number " + highMoveNumber + ".");
+                            throw new NotSupportedException($"Low move number {lowMoveNumber} does not match high move number {highMoveNumber}.");
                         }
                         string moveNumber;
                         if (highMoveNumber != moveIndex)
@@ -280,7 +280,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-Objective: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        this.WriteWarning($"Write-Objective: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
                         break;
                     }
                 }

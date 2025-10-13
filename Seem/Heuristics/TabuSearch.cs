@@ -197,7 +197,7 @@ namespace Mars.Seem.Heuristics
             {
                 TabuTenure.Fixed => this.MaximumTenure,
                 TabuTenure.Stochastic => (int)(tenureScalingFactor * this.Pseudorandom.GetPseudorandomByteAsFloat()) + 2,
-                _ => throw new NotSupportedException(String.Format("Unhandled tenure mode {0}.", this.Tenure))
+                _ => throw new NotSupportedException($"Unhandled tenure mode {this.Tenure}.")
             };
         }
 

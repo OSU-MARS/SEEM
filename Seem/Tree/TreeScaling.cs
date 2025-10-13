@@ -54,7 +54,7 @@ namespace Mars.Seem.Tree
                 }
                 else if (maximumMerchantableDbhInCm != longLogVolumeTable.MaximumMerchantableDiameterInCentimeters)
                 {
-                    throw new NotSupportedException("Maximum merchantable DBH for " + treeSpecies + " is " + maximumMerchantableDbhInCm + " cm in cut to length harvests and " + longLogVolumeTable.MaximumMerchantableDiameterInCentimeters + " cm in long long harvests. Currently, the maximum merchantable volume must be the same for both log sizes.");
+                    throw new NotSupportedException($"Maximum merchantable DBH for {treeSpecies} is {maximumMerchantableDbhInCm} cm in cut to length harvests and {longLogVolumeTable.MaximumMerchantableDiameterInCentimeters} cm in long long harvests. Currently, the maximum merchantable volume must be the same for both log sizes.");
                 }
             }
 
@@ -86,7 +86,7 @@ namespace Mars.Seem.Tree
                 FiaCode.NotholithocarpusDensiflorus or
                 FiaCode.Salix or
                 FiaCode.TaxusBrevifolia => null,
-                _ => throw new NotSupportedException("Unhandled tree species " + treeSpecies + ".")
+                _ => throw new NotSupportedException($"Unhandled tree species {treeSpecies}.")
             };
 
             return volumeTable != null;

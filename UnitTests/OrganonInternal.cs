@@ -136,7 +136,7 @@ namespace Mars.Seem.Test
                     for (float heightGeneticFactor = 0.0F; heightGeneticFactor <= 25.0F; heightGeneticFactor += 5.0F)
                     {
                         DouglasFir.GetGeneticModifiers(standAgeInYears, diameterGeneticFactor, heightGeneticFactor, out float diameterGrowthModifier, out float heightGrowthModifier);
-                        this.TestContext.WriteLine("{0},{1},{2},{3},{4}", standAgeInYears, diameterGeneticFactor, heightGeneticFactor, diameterGrowthModifier, heightGrowthModifier);
+                        this.TestContext.WriteLine($"{standAgeInYears},{diameterGeneticFactor},{heightGeneticFactor},{diameterGrowthModifier},{heightGrowthModifier}");
                         Assert.IsTrue(diameterGrowthModifier >= 1.0F);
                         Assert.IsTrue(diameterGrowthModifier < 2.0F);
                         Assert.IsTrue(heightGrowthModifier >= 1.0F);
@@ -149,7 +149,7 @@ namespace Mars.Seem.Test
             for (float FR = 0.5F; FR <= 5.0F; FR += 0.5F)
             {
                 DouglasFir.GetSwissNeedleCastModifiers(FR, out float diameterGrowthModifier, out float heightGrowthModifier);
-                this.TestContext.WriteLine("{0},{1},{2}", FR, diameterGrowthModifier, heightGrowthModifier);
+                this.TestContext.WriteLine($"{FR},{diameterGrowthModifier},{heightGrowthModifier}");
                 Assert.IsTrue(diameterGrowthModifier >= 0.0F);
                 Assert.IsTrue(diameterGrowthModifier <= 1.0F);
                 Assert.IsTrue(heightGrowthModifier >= 0.0F);
@@ -284,7 +284,7 @@ namespace Mars.Seem.Test
                 TestStand stand = OrganonTest.CreateDefaultStand(configuration);
                 OrganonStandDensity standDensity = new(variant, stand);
 
-                this.TestContext!.WriteLine("{0},{1} m²/ha,{2} trees per hectare,{3} crown competition factor", variant, standDensity.BasalAreaPerHa, standDensity.TreesPerHa, standDensity.CrownCompetitionFactor);
+                this.TestContext!.WriteLine($"{variant},{standDensity.BasalAreaPerHa} m²/ha,{standDensity.TreesPerHa} trees per hectare,{standDensity.CrownCompetitionFactor} crown competition factor");
                 this.TestContext.WriteLine("index,large tree BA larger,large tree CCF larger");
                 for (int largeTreeCompetitionIndex = 0; largeTreeCompetitionIndex < standDensity.LargeTreeBasalAreaLarger.Length; ++largeTreeCompetitionIndex)
                 {
@@ -294,7 +294,7 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(largeTreeBasalAreaLarger < TestConstant.Maximum.TreeBasalAreaLarger);
                     Assert.IsTrue(largeTreeCrownCompetitionFactor >= 0.0F);
                     Assert.IsTrue(largeTreeCrownCompetitionFactor < TestConstant.Maximum.StandCrownCompetitionFactor);
-                    this.TestContext.WriteLine("{0},{1}", largeTreeBasalAreaLarger, largeTreeCrownCompetitionFactor);
+                    this.TestContext.WriteLine($"{largeTreeBasalAreaLarger},{largeTreeCrownCompetitionFactor}");
                 }
                 this.TestContext.WriteLine("index,small tree BA larger,large tree CCF larger");
                 for (int smallTreeCompetitionIndex = 0; smallTreeCompetitionIndex < standDensity.SmallTreeBasalAreaLarger.Length; ++smallTreeCompetitionIndex)
@@ -305,7 +305,7 @@ namespace Mars.Seem.Test
                     Assert.IsTrue(smallTreeBasalAreaLarger < TestConstant.Maximum.TreeBasalAreaLarger);
                     Assert.IsTrue(smallTreeCrownCompetitionFactor >= 0.0F);
                     Assert.IsTrue(smallTreeCrownCompetitionFactor < TestConstant.Maximum.StandCrownCompetitionFactor);
-                    this.TestContext.WriteLine("{0},{1}", smallTreeBasalAreaLarger, smallTreeCrownCompetitionFactor);
+                    this.TestContext.WriteLine($"{smallTreeBasalAreaLarger},{smallTreeCrownCompetitionFactor}");
                 }
                 this.TestContext.WriteLine(String.Empty);
 
@@ -332,7 +332,7 @@ namespace Mars.Seem.Test
         //    {
         //        OrganonConfiguration configuration = OrganonTest.CreateOrganonConfiguration(variant);
         //        TestStand stand = OrganonTest.CreateDefaultStand(configuration);
-        //        this.TestContext.WriteLine("{0},{1},{2}", variant, stand.SdiMaxLnQmd, stand.SdiMaxReciprocalExponent);
+        //        this.TestContext.WriteLine($"{variant},{stand.SdiMaxLnQmd},{stand.SdiMaxReciprocalExponent}");
 
         //        Assert.IsTrue(stand.SdiMaxLnQmd < 7.0F);
         //        Assert.IsTrue(stand.SdiMaxLnQmd > 5.0F);

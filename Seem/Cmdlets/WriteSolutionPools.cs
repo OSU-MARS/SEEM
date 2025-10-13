@@ -36,13 +36,11 @@ namespace Mars.Seem.Cmdlets
                 string?[] distanceHeader = new string?[maxPoolCapacity];
                 for (int solutionIndex = 0; solutionIndex < maxPoolCapacity; ++solutionIndex)
                 {
-                    financialHeader[solutionIndex] = "financial" + solutionIndex.ToString(CultureInfo.InvariantCulture);
-                    distanceHeader[solutionIndex] = "distance" + solutionIndex.ToString(CultureInfo.InvariantCulture);
+                    financialHeader[solutionIndex] = $"financial{solutionIndex.ToString(CultureInfo.InvariantCulture)}";
+                    distanceHeader[solutionIndex] = $"distance{solutionIndex.ToString(CultureInfo.InvariantCulture)}";
                 }
 
-                writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",pooled,accepted,rejected," + 
-                                 String.Join(',', financialHeader) + "," +
-                                 String.Join(',', distanceHeader));
+                writer.WriteLine($"{this.GetCsvHeaderForSilviculturalCoordinate()},pooled,accepted,rejected,{String.Join(',', financialHeader)},{String.Join(',', distanceHeader)}");
             }
 
             // pool contents
@@ -63,7 +61,7 @@ namespace Mars.Seem.Cmdlets
                 }
                 if (poolCapacity != maxPoolCapacity)
                 {
-                    throw new NotSupportedException("Pool capacity " + poolCapacity + " for trajectory " + trajectoryIndex + " does not match the maximum capacity of " + maxPoolCapacity + ". Padding to align columns to the maximum capacity hasn't yet been implemented.");
+                    throw new NotSupportedException($"Pool capacity {poolCapacity} for trajectory {trajectoryIndex} does not match the maximum capacity of {maxPoolCapacity}. Padding to align columns to the maximum capacity hasn't yet been implemented.");
                 }
 
                 string?[] distances = new string?[poolCapacity];
@@ -74,7 +72,7 @@ namespace Mars.Seem.Cmdlets
                     SilviculturalPrescriptionPool prescriptions = silviculturalSpace[coordinate].Pool;
                     if (prescriptions.PoolCapacity != poolCapacity)
                     {
-                        throw new NotSupportedException("Solution pool capacity changed from " + poolCapacity + " to " + prescriptions.PoolCapacity + ".");
+                        throw new NotSupportedException($"Solution pool capacity changed from {poolCapacity} to {prescriptions.PoolCapacity}.");
                     }
 
                     writeContext.SetSilviculturalCoordinate(coordinate);
@@ -125,7 +123,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-SolutionPool: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        this.WriteWarning($"Write-SolutionPools: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
                         break;
                     }
                 }

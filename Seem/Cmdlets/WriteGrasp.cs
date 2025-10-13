@@ -63,7 +63,7 @@ namespace Mars.Seem.Cmdlets
             }
             if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
             {
-                this.WriteWarning("Write-SnagsAndLogs: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                this.WriteWarning($"Write-Grasp: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
             }
         }
     }

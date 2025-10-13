@@ -69,7 +69,7 @@ namespace Mars.Seem.Data
                 {
                     if ((this.csvHeader.Spacing < 0) && (this.csvHeader.Replicate < 0))
                     {
-                        throw new XmlException(nameof(this.IncludeSpacingAndReplicateInTag) + " is set but spacing and replicate columns are not available.", null, 1, 0);
+                        throw new XmlException($"{nameof(this.IncludeSpacingAndReplicateInTag)} is set but spacing and replicate columns are not available.", null, 1, 0);
                     }
                 }
 
@@ -144,17 +144,17 @@ namespace Mars.Seem.Data
             {
                 if ((tag < 0) || (tag > 999))
                 {
-                    throw new XmlException("Setting " + nameof(this.IncludeSpacingAndReplicateInTag) + " requires tag numbers be in [0, 99].", null, rowIndex + 1, this.csvHeader.Replicate);
+                    throw new XmlException($"Setting {nameof(this.IncludeSpacingAndReplicateInTag)} requires tag numbers be in [0, 99].", null, rowIndex + 1, this.csvHeader.Replicate);
                 }
                 int replicate = Int32.Parse(rowAsStrings[this.csvHeader.Replicate]);
                 if ((replicate < 0) || (replicate > 99))
                 {
-                    throw new XmlException("Setting " + nameof(this.IncludeSpacingAndReplicateInTag) + " requires replicate numbers in [0, 99].", null, rowIndex + 1, this.csvHeader.Replicate);
+                    throw new XmlException($"Setting {nameof(this.IncludeSpacingAndReplicateInTag)} requires replicate numbers in [0, 99].", null, rowIndex + 1, this.csvHeader.Replicate);
                 }
                 float spacing = Single.Parse(rowAsStrings[this.csvHeader.Spacing]);
                 if (spacing <= 0.0F)
                 {
-                    throw new XmlException("Setting " + nameof(this.IncludeSpacingAndReplicateInTag) + " requires positive spacings.", null, rowIndex + 1, this.csvHeader.Spacing);
+                    throw new XmlException($"Setting {nameof(this.IncludeSpacingAndReplicateInTag)} requires positive spacings.", null, rowIndex + 1, this.csvHeader.Spacing);
                 }
 
                 // form extended tag number as ssrrttt where ss = spacing in dm, r = replicate number, and tt = tag number
@@ -242,7 +242,7 @@ namespace Mars.Seem.Data
             StringBuilder plotIDsAsString = new(this.plotIDs[0].ToString(CultureInfo.InvariantCulture));
             for (int index = 1; index < this.plotIDs.Count; ++index)
             {
-                plotIDsAsString.Append("y" + this.plotIDs[index].ToString(CultureInfo.InvariantCulture));
+                plotIDsAsString.Append($"y{this.plotIDs[index].ToString(CultureInfo.InvariantCulture)}");
             }
             OrganonStand organonStand = new(configuration.Variant, ageInYears, Constant.FeetPerMeter * primarySpeciesSiteIndexInM)
             {
@@ -280,7 +280,7 @@ namespace Mars.Seem.Data
                     {
                         if (imputationMethod == ImputationMethod.None)
                         {
-                            throw new NotSupportedException("Tree " + tag + " on plot " + plot + " has a missing, zero, or negative diameter or height at age " + ageInYears + ".");
+                            throw new NotSupportedException($"Tree {tag} on plot {plot} has a missing, zero, or negative diameter or height at age {ageInYears}.");
                         }
                         else if (imputationMethod == ImputationMethod.SimpleLinearAssumeDead)
                         {
@@ -292,7 +292,7 @@ namespace Mars.Seem.Data
                         }
                         else
                         {
-                            throw new NotSupportedException("Unhandled imputation method " + imputationMethod + ".");
+                            throw new NotSupportedException($"Unhandled imputation method {imputationMethod}.");
                         }
                     }
 
@@ -409,7 +409,7 @@ namespace Mars.Seem.Data
                     {
                         if (Single.IsNaN(previousMeasuredDbhInInches))
                         {
-                            // throw new NotSupportedException("Could not impute diameter of tree " + tag + " on plot " + plot + " at age " + ageInYears + " as its diameter was not recoreded in either the previous or following stand measurement.");
+                            // throw new NotSupportedException($"Could not impute diameter of tree {tag} on plot {plot} at age {ageInYears} as its diameter was not recoreded in either the previous or following stand measurement.");
                             return false; // tree isn't in previous or subsequent measurement; assume dead
                         }
                         else
@@ -423,7 +423,7 @@ namespace Mars.Seem.Data
                     {
                         if (Single.IsNaN(nextMeasuredDbhInInches))
                         {
-                            // throw new NotSupportedException("Could not impute diameter of tree " + tag + " on plot " + plot + " at age " + this.AgeInYears + " as its diameter was not recoreded in either the previous or following stand measurement.");
+                            // throw new NotSupportedException($"Could not impute diameter of tree {tag} on plot {plot} at age {this.AgeInYears} as its diameter was not recoreded in either the previous or following stand measurement.");
                             return false;
                         }
 
@@ -598,7 +598,7 @@ namespace Mars.Seem.Data
                         case "leaderCode":
                             break;
                         default:
-                            throw new NotSupportedException("Unhandled column " + columnHeader + ".");
+                            throw new NotSupportedException($"Unhandled column {columnHeader}.");
                     }
 
                     //else if (columnHeader.StartsWith("dbh", StringComparison.OrdinalIgnoreCase))

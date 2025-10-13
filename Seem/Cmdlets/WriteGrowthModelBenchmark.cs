@@ -31,7 +31,7 @@ namespace Mars.Seem.Cmdlets
                 List<float> averageProcessorFrequenciesInGHz = [.. benchmark.GetAverageFrequenciesInGHz()];
                 averageProcessorFrequenciesInGHz.Sort((float a, float b) => b.CompareTo(a)); // descending
 
-                string linePrefix = benchmark.Simd.ToString() + "," + benchmark.Threads.ToString(CultureInfo.InvariantCulture);
+                string linePrefix = $"{benchmark.Simd},{benchmark.Threads.ToString(CultureInfo.InvariantCulture)}";
                 for (int thread = 0; thread < benchmark.Threads; ++thread)
                 {
                     float averageGHz = averageProcessorFrequenciesInGHz[thread];

@@ -182,9 +182,7 @@ namespace Mars.Seem.Test
 
                 for (int quantile = 0; quantile < TestConstant.DbhQuantiles; ++quantile)
                 {
-                    writer.WriteLine("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}", variant.TreeModel, year, speciesCode, quantile, 
-                                     meanDbhInCmForSpecies.Value[quantile], meanHeight[quantile], liveExpansionFactors[quantile], 
-                                     deadExpansionFactors[quantile], meanCrownRatios[quantile], minDbh[quantile], maxDbh[quantile]);
+                    writer.WriteLine($"{variant.TreeModel},{year},{speciesCode},{quantile},{meanDbhInCmForSpecies.Value[quantile]},{meanHeight[quantile]},{liveExpansionFactors[quantile]},{deadExpansionFactors[quantile]},{meanCrownRatios[quantile]},{minDbh[quantile]},{maxDbh[quantile]}");
                 }
             }
         }

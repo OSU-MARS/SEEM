@@ -30,7 +30,7 @@ namespace Mars.Seem.Cmdlets
             using StreamWriter writer = this.CreateCsvWriter();
             if (this.ShouldWriteCsvHeader())
             {
-                writer.WriteLine(this.GetCsvHeaderForSilviculturalCoordinate() + ",plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
+                writer.WriteLine($"{this.GetCsvHeaderForSilviculturalCoordinate()},plot,tag,lowSelection,highSelection,highThin1dbh,highThin1height,highThin1cr,highThin1ef,highThin1cubic,highThin2dbh,highThin2height,highThin2cr,highThin2ef,highThin2cubic,highThin3dbh,highThin3height,highThin3cr,highThin3ef,highThin3cubic,highRegenDbh,highRegenHeight,highRegenCR,highRegenEF,highRegenCubic");
             }
 
             // write data
@@ -76,7 +76,7 @@ namespace Mars.Seem.Cmdlets
                         highStandBeforeFirstThin = highTrajectory.StandByPeriod[firstThinPeriod - 1];
                         if (highStandBeforeFirstThin == null)
                         {
-                            throw new ParameterOutOfRangeException(nameof(this.Trajectories), "High trajectory in run " + trajectoryIndex + " has not been fully simulated as stand is null at first thinning. Did the heuristic perform at least one move?");
+                            throw new ParameterOutOfRangeException(nameof(this.Trajectories), $"High trajectory in run {trajectoryIndex} has not been fully simulated as stand is null at first thinning. Did the heuristic perform at least one move?");
                         }
                     }
 
@@ -87,7 +87,7 @@ namespace Mars.Seem.Cmdlets
                         highStandBeforeSecondThin = highTrajectory.StandByPeriod[secondThinPeriod - 1];
                         if (highStandBeforeSecondThin == null)
                         {
-                            throw new ParameterOutOfRangeException(nameof(this.Trajectories), "High trajectory in run " + trajectoryIndex + " has not been fully simulated as stand is null at second thinning. Did the heuristic perform at least one move?");
+                            throw new ParameterOutOfRangeException(nameof(this.Trajectories), $"High trajectory in run {trajectoryIndex} has not been fully simulated as stand is null at second thinning. Did the heuristic perform at least one move?");
                         }
                     }
 
@@ -98,14 +98,14 @@ namespace Mars.Seem.Cmdlets
                         highStandBeforeThirdThin = highTrajectory.StandByPeriod[thirdThinPeriod - 1];
                         if (highStandBeforeThirdThin == null)
                         {
-                            throw new ParameterOutOfRangeException(nameof(this.Trajectories), "High trajectory in run " + trajectoryIndex + " has not been fully simulated as stand is null at third thinning. Did the heuristic perform at least one move?");
+                            throw new ParameterOutOfRangeException(nameof(this.Trajectories), $"High trajectory in run {trajectoryIndex} has not been fully simulated as stand is null at third thinning. Did the heuristic perform at least one move?");
                         }
                     }
 
                     Stand? highStandAtEnd = highTrajectory.StandByPeriod[writeContext.EndOfRotationPeriod];
                     if (highStandAtEnd == null)
                     {
-                        throw new ParameterOutOfRangeException(nameof(this.Trajectories), "High trajectory in run " + trajectoryIndex + " has not been fully simulated as stand is null at end of rotation. Did the heuristic perform at least one move?");
+                        throw new ParameterOutOfRangeException(nameof(this.Trajectories), $"High trajectory in run {trajectoryIndex} has not been fully simulated as stand is null at end of rotation. Did the heuristic perform at least one move?");
                     }
 
                     Units regenUnits = highStandAtEnd.GetUnits();
@@ -279,7 +279,7 @@ namespace Mars.Seem.Cmdlets
                     }
                     if (knownFileSizeInBytes + estimatedBytesSinceLastFileLength > maxFileSizeInBytes)
                     {
-                        this.WriteWarning("Write-HarvestSchedule: File size limit of " + this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat) + " GB exceeded.");
+                        this.WriteWarning($"Write-HarvestSchedule: File size limit of {this.LimitGB.ToString(Constant.Default.FileSizeLimitFormat)} GB exceeded.");
                         break;
                     }
                 }

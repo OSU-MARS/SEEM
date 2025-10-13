@@ -46,7 +46,7 @@ namespace Mars.Seem.Extensions
                     "FD" => FiaCode.PseudotsugaMenziesii,
                     "MB" => FiaCode.AcerMacrophyllum,
                     "HW" => FiaCode.TsugaHeterophylla,
-                    _ => throw new NotSupportedException(String.Format("Unhandled species '{0}'.", twoOrFourLetterCode))
+                    _ => throw new NotSupportedException($"Unhandled species '{twoOrFourLetterCode}'.")
                 };
             }
             else if (twoOrFourLetterCode.Length == 4)
@@ -79,7 +79,7 @@ namespace Mars.Seem.Extensions
                     "TABR" => FiaCode.TaxusBrevifolia,
                     "THPL" => FiaCode.ThujaPlicata,
                     "TSHE" => FiaCode.TsugaHeterophylla,
-                    _ => throw new NotSupportedException(String.Format("Unhandled species '{0}'.", twoOrFourLetterCode))
+                    _ => throw new NotSupportedException($"Unhandled species '{twoOrFourLetterCode}'.")
                 };
             }
             else
@@ -115,7 +115,7 @@ namespace Mars.Seem.Extensions
                 FiaCode.TaxusBrevifolia => "TABR",
                 FiaCode.ThujaPlicata => "THPL",
                 FiaCode.TsugaHeterophylla => "TSHE",
-                _ => throw new NotSupportedException(String.Format("Unhandled species {0}.", species)),
+                _ => throw new NotSupportedException($"Unhandled species {species}."),
             };
         }
     }
