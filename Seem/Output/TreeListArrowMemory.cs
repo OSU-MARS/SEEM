@@ -95,17 +95,17 @@ namespace Mars.Seem.Output
                 throw new NotSupportedException($"Stand trajectory name '{trajectory.Name}' could not be converted to an unsigned 32 bit integer. For the moment, trajectory names are required to be stand IDs.");
             }
 
-            Span<UInt32> batchStand = MemoryMarshal.Cast<byte, UInt32>(this.stand);
-            Span<Int32> batchPlot = MemoryMarshal.Cast<byte, Int32>(this.plot);
-            Span<Int32> batchTag = MemoryMarshal.Cast<byte, Int32>(this.tag);
-            Span<FiaCode> batchSpecies = MemoryMarshal.Cast<byte, FiaCode>(this.species);
-            Span<Int16> batchYear = MemoryMarshal.Cast<byte, Int16>(this.year);
-            Span<Int16> batchStandAge = MemoryMarshal.Cast<byte, Int16>(this.standAge);
-            Span<float> batchDbh = MemoryMarshal.Cast<byte, float>(this.dbh);
-            Span<float> batchHeight = MemoryMarshal.Cast<byte, float>(this.height);
-            Span<float> batchCrownRatio = MemoryMarshal.Cast<byte, float>(this.crownRatio);
-            Span<float> batchLiveExpansionFactor = MemoryMarshal.Cast<byte, float>(this.liveExpansionFactor);
-            Span<float> batchDeadExpansionFactor = MemoryMarshal.Cast<byte, float>(this.deadExpansionFactor);
+            Span<UInt32> batchStand = MemoryMarshal.Cast<byte, UInt32>(this.stand.AsSpan()); // .AsSpan() required because arrays are otherwise interpreted as ReadOnlySpan
+            Span<Int32> batchPlot = MemoryMarshal.Cast<byte, Int32>(this.plot.AsSpan());
+            Span<Int32> batchTag = MemoryMarshal.Cast<byte, Int32>(this.tag.AsSpan());
+            Span<FiaCode> batchSpecies = MemoryMarshal.Cast<byte, FiaCode>(this.species.AsSpan());
+            Span<Int16> batchYear = MemoryMarshal.Cast<byte, Int16>(this.year.AsSpan());
+            Span<Int16> batchStandAge = MemoryMarshal.Cast<byte, Int16>(this.standAge.AsSpan());
+            Span<float> batchDbh = MemoryMarshal.Cast<byte, float>(this.dbh.AsSpan());
+            Span<float> batchHeight = MemoryMarshal.Cast<byte, float>(this.height.AsSpan());
+            Span<float> batchCrownRatio = MemoryMarshal.Cast<byte, float>(this.crownRatio.AsSpan());
+            Span<float> batchLiveExpansionFactor = MemoryMarshal.Cast<byte, float>(this.liveExpansionFactor.AsSpan());
+            Span<float> batchDeadExpansionFactor = MemoryMarshal.Cast<byte, float>(this.deadExpansionFactor.AsSpan());
 
             Int16 year = startYear != null ? (Int16)startYear.Value : Constant.NoDataInt16;
             Int16 standAge = (Int16)trajectory.PeriodZeroAgeInYears;

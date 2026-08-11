@@ -47,7 +47,7 @@ namespace Mars.Seem
             using FileStream stream = new(xlsxFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using SpreadsheetDocument xlsx = SpreadsheetDocument.Open(stream, false);
             WorkbookPart? workbook = xlsx.WorkbookPart;
-            if ((workbook == null) || (workbook.Workbook.Sheets == null))
+            if ((workbook == null) || (workbook.Workbook == null) || (workbook.Workbook.Sheets == null))
             {
                 throw new NotSupportedException($"Could not find workbook for worksheet '{worksheetName}'. The workbook is null or is missing a sheets part.");
             }

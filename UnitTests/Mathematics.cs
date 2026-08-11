@@ -335,17 +335,17 @@ namespace Mars.Seem.Test
                 Assert.IsTrue(shuffle256_3.ToScalar() == 3);
             }
 
-            if (Avx512F.VL.IsSupported | Avx10v1.IsSupported)
+            if (Avx512F.IsSupported)
             {
                 // 256 bit
                 Vector256<int> index256 = Vector256.Create(0, 1, 2, 3, 0, 1, 2, 3);
-                Vector256<int> shuffle256_1 = Avx10v1.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower1);
-                Vector256<int> shuffle256_2 = Avx10v1.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower2);
-                Vector256<int> shuffle256_3 = Avx10v1.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower3);
+                Vector256<int> shuffle256_1 = Avx512.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower1);
+                Vector256<int> shuffle256_2 = Avx512.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower2);
+                Vector256<int> shuffle256_3 = Avx512.Shuffle(index256, Constant.Simd128x4.ShuffleRotateLower3);
 
-                AssertV.IsTrue(Avx10v1.CompareEqual(shuffle256_1, Vector256.Create(1, 2, 3, 0, 1, 2, 3, 0)));
-                AssertV.IsTrue(Avx10v1.CompareEqual(shuffle256_2, Vector256.Create(2, 3, 0, 1, 2, 3, 0, 1)));
-                AssertV.IsTrue(Avx10v1.CompareEqual(shuffle256_3, Vector256.Create(3, 0, 1, 2, 3, 0, 1, 2)));
+                AssertV.IsTrue(Avx512.CompareEqual(shuffle256_1, Vector256.Create(1, 2, 3, 0, 1, 2, 3, 0)));
+                AssertV.IsTrue(Avx512.CompareEqual(shuffle256_2, Vector256.Create(2, 3, 0, 1, 2, 3, 0, 1)));
+                AssertV.IsTrue(Avx512.CompareEqual(shuffle256_3, Vector256.Create(3, 0, 1, 2, 3, 0, 1, 2)));
 
                 Assert.IsTrue(shuffle256_1.ToScalar() == 1);
                 Assert.IsTrue(shuffle256_2.ToScalar() == 2);
