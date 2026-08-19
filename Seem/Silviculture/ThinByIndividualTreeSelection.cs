@@ -31,7 +31,7 @@ namespace Mars.Seem.Silviculture
                     int harvestPeriod = treeSelectionForSpecies.Value[treeIndex];
                     if (harvestPeriod == this.Period)
                     {
-                        float basalArea = treesOfSpecies.GetBasalArea(treeIndex);
+                        float basalArea = treesOfSpecies.GetLiveBasalArea(treeIndex);
                         basalAreaRemoved += basalArea;
                     }
                 }

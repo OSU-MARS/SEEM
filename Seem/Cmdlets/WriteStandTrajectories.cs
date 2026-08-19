@@ -82,10 +82,10 @@ namespace Mars.Seem.Cmdlets
             string? fileExtension = Path.GetExtension(this.FilePath);
             switch (fileExtension)
             {
-                case Constant.FileExtension.Csv:
+                case Constant.File.CsvExtension:
                     this.WriteCsv(writeContext);
                     break;
-                case Constant.FileExtension.Feather:
+                case Constant.File.FeatherExtension:
                     this.WriteFeather(writeContext);
                     break;
                 default:
@@ -136,14 +136,15 @@ namespace Mars.Seem.Cmdlets
             Debug.Assert(this.Trajectories != null);
 
             int periodsToWrite = writeContext.GetPeriodsToWrite(this.Trajectories);
-            StandTrajectoryArrowMemory arrowMemory = this.CreateStandTrajectoryArrowMemory(periodsToWrite);
+            StandTrajectoryArrowMemory arrowMemory = new(writeContext, periodsToWrite);
+            this.CheckOutputFileSize(arrowMemory);
 
             // marshall trajectories into Arrow arrays
             for (int trajectoryIndex = 0; trajectoryIndex < this.Trajectories.Count; ++trajectoryIndex)
             {
+                StandTrajectory trajectory = this.Trajectories[trajectoryIndex];
                 for (int financialIndex = 0; financialIndex < writeContext.FinancialScenarios.Count; ++financialIndex)
                 {
-                    StandTrajectory trajectory = this.Trajectories[trajectoryIndex];
                     writeContext.SetStandTrajectoryCoordinate(trajectory, financialIndex);
                     arrowMemory.Add(trajectory, writeContext);
                 }

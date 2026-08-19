@@ -165,7 +165,7 @@ namespace Mars.Seem.Silviculture
                     mergedSpecies[flatDestinationIndex] = treeSpecies;
                     ++flatDestinationIndex;
 
-                    totalThinnableBasalAreaInStandUnits += treesOfSpecies.GetBasalArea(compactedTreeIndex);
+                    totalThinnableBasalAreaInStandUnits += treesOfSpecies.GetLiveBasalArea(compactedTreeIndex);
                 }
             }
 
@@ -201,7 +201,7 @@ namespace Mars.Seem.Silviculture
                 Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[treeSpecies];
                 int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
                 trajectory.SetTreeSelection(treeSpecies, uncompactedTreeIndex, this.Period);
-                basalAreaRemovedFromBelow += treesOfSpecies.GetBasalArea(compactedTreeIndex);
+                basalAreaRemovedFromBelow += treesOfSpecies.GetLiveBasalArea(compactedTreeIndex);
 
                 ++thinFromBelowIndex;
                 if (thinFromBelowIndex >= maxFlatDestinationIndexExclusive)
@@ -223,7 +223,7 @@ namespace Mars.Seem.Silviculture
                 Trees treesOfSpecies = standAtEndOfPreviousPeriod.TreesBySpecies[treeSpecies];
                 int uncompactedTreeIndex = treesOfSpecies.UncompactedIndex[compactedTreeIndex];
                 trajectory.SetTreeSelection(treeSpecies, uncompactedTreeIndex, this.Period);
-                basalAreaRemovedFromAbove += treesOfSpecies.GetBasalArea(compactedTreeIndex);
+                basalAreaRemovedFromAbove += treesOfSpecies.GetLiveBasalArea(compactedTreeIndex);
                 
                 --thinFromAboveIndex;
                 if (thinFromAboveIndex <= thinFromBelowIndex)
@@ -254,7 +254,7 @@ namespace Mars.Seem.Silviculture
                 {                    
                     trajectory.SetTreeSelection(treeSpecies, uncompactedTreeIndex, this.Period);
 
-                    float basalAreaOfTree = treesOfSpecies.GetBasalArea(compactedTreeIndex);
+                    float basalAreaOfTree = treesOfSpecies.GetLiveBasalArea(compactedTreeIndex);
                     basalAreaRemovedProportionally += basalAreaOfTree;
                     proportionalThinIncrementAccumulator -= 1.0F;
                 }

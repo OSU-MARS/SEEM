@@ -14,7 +14,7 @@ namespace Mars.Seem.Cmdlets
     {
         [Parameter(Mandatory = true, HelpMessage = "List of stands to predict.")]
         [ValidateNotNull]
-        public CruisedStands? Stands { get; set; }
+        public StandList? Stands { get; set; }
 
         [Parameter(HelpMessage = "Time range, in years, to predict stands over.")]
         [ValidateRange(1, 500)]
@@ -29,7 +29,7 @@ namespace Mars.Seem.Cmdlets
         protected override void ProcessRecord()
         {
             Debug.Assert(this.Stands != null);
-            if (this.Stands is not CruisedStands cruisedStands)
+            if (this.Stands is not StandList cruisedStands)
             {
                 throw new NotSupportedException($"Unable to determine growth model to use in predicting stands from type {this.Stands.GetType().Name}.");
             }

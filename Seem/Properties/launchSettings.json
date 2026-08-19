@@ -2,8 +2,7 @@
   "profiles": {
     "perf profiling": {
       "commandName": "Executable",
-      "executablePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
-      "commandLineArgs": "\"%USERPROFILE%\\PhD\\SEEM\\UnitTests\\performanceProfile.ps1\""
+      "executablePath": "C:\\Program Files\\PowerShell\\7\\pwsh.exe"
     },
     "debug": {
       "commandName": "Executable",

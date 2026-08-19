@@ -8,7 +8,7 @@ namespace Mars.Seem.Tree
     /// <remarks>
     /// Primarily from the USFS FIA western species list provided with FVS's documentation.
     /// </remarks>
-    public enum FiaCode : UInt16
+    public enum FiaCode : UInt16 // sync ArrowArrayExtensions.AsArrowArray() if underlying type changes
     {
         // Abies = 10,
         AbiesAmabalis = 11,

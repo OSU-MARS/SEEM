@@ -12,7 +12,7 @@ using System.Diagnostics;
 namespace Mars.Seem.Cmdlets
 {
     [Cmdlet(VerbsCommon.Get, "StandsFromPermanentPlots")]
-    public class GetStandsFromPermanentPlots : GetStandCmdlet
+    public class GetStandsFromPermanentPlots : GetStandsCmdlet
     {
         [Parameter(HelpMessage = "Distance from stand to nearest road in meters.")]
         [ValidateRange(0.0F, 10.0F * 1000.0F)]
@@ -63,7 +63,7 @@ namespace Mars.Seem.Cmdlets
 
         [Parameter(Mandatory = true)]
         [ValidateNotNullOrEmpty]
-        public List<int>? Plots { get; set; }
+        public List<int> Plots { get; set; }
 
         [Parameter]
         [ValidateRange(0.0F, 200.0F)]
@@ -96,6 +96,9 @@ namespace Mars.Seem.Cmdlets
             this.HemlockSiteIndexInM = Constant.Default.WesternHemlockSiteIndexInM;
             this.Imputation = ImputationMethod.None;
             this.IncludeSpacingAndReplicateInTag = false;
+            this.Model = TreeModel.OrganonNwo;
+            this.Plots = [];
+            this.PlantingDensityPerHa = null;
             this.SlopeInPercent = Constant.HarvestCost.DefaultSlopeInPercent;
             this.SiteIndexInM = Constant.Default.DouglasFirSiteIndexInM; 
             this.Trees = Int32.MaxValue;
@@ -122,7 +125,7 @@ namespace Mars.Seem.Cmdlets
 
         protected override void ProcessRecord()
         {
-            Debug.Assert(String.IsNullOrWhiteSpace(this.Xlsx) == false);
+            Debug.Assert(String.IsNullOrWhiteSpace(this.File) == false);
 
             // read plot data
             PermanentPlotsWithHeight plot;
@@ -130,7 +133,7 @@ namespace Mars.Seem.Cmdlets
             {
                 if (this.ExpansionFactorPerHa.Length == 1)
                 {
-                    plot = new PermanentPlotsWithHeight(this.Plots!, this.ExpansionFactorPerHa[0]);
+                    plot = new PermanentPlotsWithHeight(this.Plots, this.ExpansionFactorPerHa[0]);
                 }
                 else
                 {
@@ -145,7 +148,7 @@ namespace Mars.Seem.Cmdlets
                         expansionFactorByAge.Add(this.Ages[ageIndex], this.ExpansionFactorPerHa[ageIndex]);
                     }
 
-                    plot = new PermanentPlotsWithHeight(this.Plots!, this.ExpansionFactorPerHa[0])
+                    plot = new PermanentPlotsWithHeight(this.Plots, this.ExpansionFactorPerHa[0])
                     {
                         ExpansionFactorPerHaByAge = expansionFactorByAge
                     };
@@ -153,7 +156,7 @@ namespace Mars.Seem.Cmdlets
             }
             else
             {
-                plot = new PermanentPlotsWithHeight(this.Plots!);
+                plot = new PermanentPlotsWithHeight(this.Plots);
             }
 
             if (this.ExcludeSpecies.Length > 0)
@@ -165,7 +168,7 @@ namespace Mars.Seem.Cmdlets
                 }
             }
             plot.IncludeSpacingAndReplicateInTag = this.IncludeSpacingAndReplicateInTag;
-            plot.Read(this.Xlsx, this.TreesSheet);
+            plot.Read(this.File, this.TreesSheet);
 
             IList<int> ages = this.Ages;
             if (ages.Count == 0)

@@ -30,7 +30,7 @@ namespace Mars.Seem.Tree
                     }
 
                     treesPerAcre += expansionFactor;
-                    basalAreaPerAcre += treesOfSpecies.GetBasalArea(treeIndex);
+                    basalAreaPerAcre += treesOfSpecies.GetLiveBasalArea(treeIndex);
                 }
             }
 

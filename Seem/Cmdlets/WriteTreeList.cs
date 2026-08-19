@@ -36,10 +36,10 @@ namespace Mars.Seem.Cmdlets
             string? fileExtension = Path.GetExtension(this.FilePath);
             switch (fileExtension)
             {
-                case Constant.FileExtension.Csv:
+                case Constant.File.CsvExtension:
                     this.WriteCsv();
                     break;
-                case Constant.FileExtension.Feather:
+                case Constant.File.FeatherExtension:
                     this.WriteFeather();
                     break;
                 default:

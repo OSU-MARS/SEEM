@@ -153,7 +153,7 @@ namespace Mars.Seem.Tree
             return new NotSupportedException($"Unhandled species {species}.");
         }
 
-        public void Add(int plot, int tag, float dbh, float height, float crownRatio, float liveExpansionFactor, TreeConditionCode codes)
+        public void Add(int plot, int tag, float dbh, float height, float crownRatio, float expansionFactor, TreeConditionCode codes)
         {
             // allow NaN and negative DBHes as they may later be imputed
             Debug.Assert(Single.IsNaN(dbh) || ((dbh >= 0.0F) && (dbh < 500.0F)));
@@ -162,9 +162,9 @@ namespace Mars.Seem.Tree
             {
                 throw new ArgumentOutOfRangeException(nameof(crownRatio));
             }
-            if (Single.IsNaN(liveExpansionFactor) || (liveExpansionFactor < 0.0F) || (liveExpansionFactor > Constant.Maximum.ExpansionFactorPerAcre))
+            if (Single.IsNaN(expansionFactor) || (expansionFactor < 0.0F) || (expansionFactor > Constant.Maximum.ExpansionFactorPerAcre))
             {
-                throw new ArgumentOutOfRangeException(nameof(liveExpansionFactor));
+                throw new ArgumentOutOfRangeException(nameof(expansionFactor));
             }
 
             if (this.Capacity == this.Count)
@@ -195,23 +195,21 @@ namespace Mars.Seem.Tree
             this.Dbh[this.Count] = dbh;
             this.Height[this.Count] = height;
             this.CrownRatio[this.Count] = crownRatio;
-            this.LiveExpansionFactor[this.Count] = liveExpansionFactor;
+            if ((codes & TreeConditionCode.Live) == TreeConditionCode.Live)
+            {
+                this.DeadExpansionFactor[this.Count] = 0.0F;
+                this.LiveExpansionFactor[this.Count] = expansionFactor;
+            }
+            else
+            {
+                Debug.Assert((codes & TreeConditionCode.Snag) == TreeConditionCode.Snag);
+                this.DeadExpansionFactor[this.Count] = expansionFactor;
+                this.LiveExpansionFactor[this.Count] = 0.0F;
+            }
             this.Codes[this.Count] = codes;
             this.UncompactedIndex[this.Count] = this.Count; // if needed, support multiple species by including offset due to trees of other species
 
             ++this.Count;
-        }
-
-        public float GetBasalArea(int compactedTreeIndex)
-        {
-            float dbh = this.Dbh[compactedTreeIndex];
-            float liveExpansionFactor = this.LiveExpansionFactor[compactedTreeIndex];
-            return this.Units switch
-            {
-                Units.English => Constant.ForestersEnglish * dbh * dbh * liveExpansionFactor, // return basal area in ft²/ac for Organon
-                Units.Metric => Constant.ForestersMetric * dbh * dbh * liveExpansionFactor, // m²/ha
-                _ => throw new NotSupportedException($"Unhandled units {this.Units}.")
-            };
         }
 
         public int[] GetIndicesByDbhAscending()
@@ -230,6 +228,18 @@ namespace Mars.Seem.Tree
             Array.Copy(this.Height, 0, heightCloneWhichBecomesSorted, 0, this.Count);
             Array.Sort(heightCloneWhichBecomesSorted, heightSortIndices);
             return heightSortIndices;
+        }
+
+        public float GetLiveBasalArea(int compactedTreeIndex)
+        {
+            float dbh = this.Dbh[compactedTreeIndex];
+            float liveExpansionFactor = this.LiveExpansionFactor[compactedTreeIndex];
+            return this.Units switch
+            {
+                Units.English => Constant.ForestersEnglish * dbh * dbh * liveExpansionFactor, // return basal area in ft²/ac for Organon
+                Units.Metric => Constant.ForestersMetric * dbh * dbh * liveExpansionFactor, // m²/ha
+                _ => throw new NotSupportedException($"Unhandled units {this.Units}.")
+            };
         }
 
         public static int GetSimdCompatibleCapacity(int minimumSize)

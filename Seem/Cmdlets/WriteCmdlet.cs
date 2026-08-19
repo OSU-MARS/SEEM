@@ -49,9 +49,9 @@ namespace Mars.Seem.Cmdlets
         protected void CheckOutputFileSize(ArrowMemory arrowMemory)
         {
             // estimate output file size
-            float uncompressedBytesPerRow = arrowMemory.GetUncompressedBytesPerRow();
-            float uncompressedFileSizeInGB = uncompressedBytesPerRow * arrowMemory.TotalNumberOfRecords / (1024.0F * 1024.0F * 1024.0F);
-            Debug.Assert(uncompressedBytesPerRow * arrowMemory.MaximumBatchLength < 2.0F * 1024.0F * 1024.0F * 1024.0F); // https://github.com/apache/arrow/issues/37069
+            float uncompressedBytesPerRecord = arrowMemory.GetUncompressedBytesPerRow();
+            float uncompressedFileSizeInGB = uncompressedBytesPerRecord * arrowMemory.TotalNumberOfRecords / (1024.0F * 1024.0F * 1024.0F);
+            Debug.Assert(uncompressedBytesPerRecord * arrowMemory.MaximumBatchLength < 2.0F * 1024.0F * 1024.0F * 1024.0F); // https://github.com/apache/arrow/issues/37069
             if (uncompressedFileSizeInGB > this.LimitGB)
             {
                 throw new NotSupportedException($"Expected file size of {uncompressedFileSizeInGB:0.00} GB exceeds size limit of {this.LimitGB:0.00} GB.");
@@ -69,13 +69,6 @@ namespace Mars.Seem.Cmdlets
             }
             FileStream stream = new(this.FilePath, fileMode, FileAccess.Write, FileShare.Read, Constant.Default.FileWriteBufferSizeInBytes, FileOptions.SequentialScan);
             return new StreamWriter(stream, Encoding.UTF8); // callers assume UTF8, see remarks for StreamLengthSynchronizationInterval
-        }
-
-        protected StandTrajectoryArrowMemory CreateStandTrajectoryArrowMemory(int periodsToWrite)
-        {
-            StandTrajectoryArrowMemory arrowMemory = new(periodsToWrite);
-            this.CheckOutputFileSize(arrowMemory);
-            return arrowMemory;
         }
 
         protected virtual string GetCsvHeaderForSilviculturalCoordinate()

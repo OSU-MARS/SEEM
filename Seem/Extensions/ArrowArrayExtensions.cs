@@ -1,20 +1,110 @@
 ﻿using Apache.Arrow;
-using Apache.Arrow.Types;
+using Mars.Seem.Silviculture;
+using Mars.Seem.Tree;
 using System;
-using Array = System.Array;
+using System.Buffers;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Mars.Seem.Extensions
 {
-    public class ArrowArrayExtensions
+    public static class ArrowArrayExtensions
     {
+        public static UInt8Array AsArrowArray(this byte[] data)
+        {
+            return new UInt8Array(new ArrowBuffer(data), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static UInt8Array AsArrowArray(this ChainsawCrewType[] data)
+        {
+            Debug.Assert(sizeof(ChainsawCrewType) == sizeof(byte));
+            ReinterpretingMemoryManager<ChainsawCrewType, byte> reinterpretedData = new(data.AsMemory());
+            return new UInt8Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static DoubleArray AsArrowArray(this double[] data)
+        {
+            ReinterpretingMemoryManager<double, byte> reinterpretedData = new(data.AsMemory());
+            return new DoubleArray(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static UInt16Array AsArrowArray(this FiaCode[] data)
+        {
+            Debug.Assert(sizeof(FiaCode) == sizeof(UInt16));
+            ReinterpretingMemoryManager<FiaCode, byte> reinterpretedData = new(data.AsMemory());
+            return new UInt16Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static FloatArray AsArrowArray(this float[] data)
+        {
+            ReinterpretingMemoryManager<float, byte> reinterpretedData = new(data.AsMemory());
+            return new FloatArray(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static UInt8Array AsArrowArray(this ForwarderLoadingMethod[] data)
+        {
+            Debug.Assert(sizeof(ForwarderLoadingMethod) == sizeof(byte));
+            ReinterpretingMemoryManager<ForwarderLoadingMethod, byte> reinterpretedData = new(data.AsMemory());
+            return new UInt8Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static UInt8Array AsArrowArray(this HarvestSystemEquipment[] data)
+        {
+            Debug.Assert(sizeof(HarvestSystemEquipment) == sizeof(byte));
+            ReinterpretingMemoryManager<HarvestSystemEquipment, byte> reinterpretedData = new(data.AsMemory());
+            return new UInt8Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static Int16Array AsArrowArray(this Int16[] data)
+        {
+            ReinterpretingMemoryManager<Int16, byte> reinterpretedData = new(data.AsMemory());
+            return new Int16Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static Int32Array AsArrowArray(this Int32[] data)
+        {
+            ReinterpretingMemoryManager<Int32, byte> reinterpretedData = new(data.AsMemory());
+            return new Int32Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static Int64Array AsArrowArray(this Int64[] data)
+        {
+            ReinterpretingMemoryManager<Int64, byte> reinterpretedData = new(data.AsMemory());
+            return new Int64Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static Int8Array AsArrowArray(this sbyte[] data)
+        {
+            ReinterpretingMemoryManager<sbyte, byte> reinterpretedData = new(data.AsMemory());
+            return new Int8Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static UInt16Array AsArrowArray(this UInt16[] data)
+        {
+            ReinterpretingMemoryManager<UInt16, byte> reinterpretedData = new(data.AsMemory());
+            return new UInt16Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static UInt32Array AsArrowArray(this UInt32[] data)
+        {
+            ReinterpretingMemoryManager<UInt32, byte> reinterpretedData = new(data.AsMemory());
+            return new UInt32Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
+        public static UInt64Array AsArrowArray(this UInt64[] data)
+        {
+            ReinterpretingMemoryManager<UInt64, byte> reinterpretedData = new(data.AsMemory());
+            return new UInt64Array(new ArrowBuffer(reinterpretedData.Memory), ArrowBuffer.Empty, data.Length, 0, 0);
+        }
+
         // Apache 12.0 does not support replacement dictionaries from C#, preventing string table implementation
         // As of 9.0, it appears the current state of support is the necessary C# classes exist but the dictionary batch required to
         // accompany the record batch is silently not written in feather files (https://arrow.apache.org/docs/status.html#ipc-format,
         // https://arrow.apache.org/docs/format/Columnar.html). The result is that, while writes from C# appear successful, reads in R
         // fail with Key error: Dictionary with id 1 not found.
         // See also https://github.com/apache/arrow/blob/master/csharp/src/Apache.Arrow/Ipc/ArrowStreamWriter.cs WriteDictionary(Field)
-        // public static readonly DictionaryType StringTable256Type = new(Int32Type.Default, StringType.Default, false);
-
+        //public static readonly DictionaryType StringTable256Type = new(Int32Type.Default, StringType.Default, false);
+        // 
         //public static DictionaryArray MakeDictionaryColumn(Memory<byte> indicies, IList<string> values)
         //{
         //    StringArray.Builder valueArray = new();
@@ -27,85 +117,38 @@ namespace Mars.Seem.Extensions
         //    return new DictionaryArray(new(UInt8Type.Default, StringType.Default, false), indexArray, valueArray.Build());
         //}
 
-        public static IArrowArray Wrap(IntegerType integerDataType, Memory<byte> memory)
+        // work around C#'s lack of reinterpret_cast and Arrow's lack reinterpreting array/ArrowBuffer constructors
+        // From https://stackoverflow.com/questions/54511330/how-can-i-cast-memoryt-to-another.
+        private class ReinterpretingMemoryManager<TFrom, TTo> : MemoryManager<TTo>
+            where TFrom : unmanaged
+            where TTo : unmanaged
         {
-            if (integerDataType.IsSigned)
+            private readonly Memory<TFrom> from;
+
+            public ReinterpretingMemoryManager(Memory<TFrom> from)
             {
-                return integerDataType.BitWidth switch
-                {
-                    8 => ArrowArrayExtensions.WrapInInt8(memory),
-                    16 => ArrowArrayExtensions.WrapInInt16(memory),
-                    32 => ArrowArrayExtensions.WrapInInt32(memory),
-                    64 => ArrowArrayExtensions.WrapInInt64(memory),
-                    _ => throw new ArgumentOutOfRangeException(nameof(integerDataType))
-                };
+                this.from = from;
             }
-            else
+
+            public override Span<TTo> GetSpan()
             {
-                return integerDataType.BitWidth switch
-                {
-                    8 => ArrowArrayExtensions.WrapInUInt8(memory),
-                    16 => ArrowArrayExtensions.WrapInUInt16(memory),
-                    32 => ArrowArrayExtensions.WrapInUInt32(memory),
-                    64 => ArrowArrayExtensions.WrapInUInt64(memory),
-                    _ => throw new ArgumentOutOfRangeException(nameof(integerDataType))
-                };
+                return MemoryMarshal.Cast<TFrom, TTo>(from.Span);
             }
-        }
 
-        private static ArrayData WrapInArrayData(IArrowType dataType, Memory<byte> memory, int length)
-        {
-            return new ArrayData(dataType, length, 0, 0, [ ArrowBuffer.Empty, new ArrowBuffer(memory) ], []);
-        }
+            protected override void Dispose(bool _)
+            {
+                // nothing to dispose
+            }
 
-        public static FloatArray WrapInFloat(Memory<byte> memory)
-        {
-            return new FloatArray(ArrowArrayExtensions.WrapInArrayData(FloatType.Default, memory, memory.Length / sizeof(float)));
-        }
+            public override MemoryHandle Pin(int _)
+            {
+                throw new NotSupportedException();
+            }
 
-        public static Int8Array WrapInInt8(Memory<byte> memory)
-        {
-            return new Int8Array(ArrowArrayExtensions.WrapInArrayData(Int8Type.Default, memory, memory.Length));
-        }
-
-        public static Int16Array WrapInInt16(Memory<byte> memory)
-        {
-            return new Int16Array(ArrowArrayExtensions.WrapInArrayData(Int16Type.Default, memory, memory.Length / sizeof(Int16)));
-        }
-
-        public static Int32Array WrapInInt32(Memory<byte> memory)
-        {
-            return new Int32Array(ArrowArrayExtensions.WrapInArrayData(Int32Type.Default, memory, memory.Length / sizeof(Int32)));
-        }
-
-        public static Int64Array WrapInInt64(Memory<byte> memory)
-        {
-            return new Int64Array(ArrowArrayExtensions.WrapInArrayData(Int64Type.Default, memory, memory.Length / sizeof(Int64)));
-        }
-
-        public static UInt8Array WrapInUInt8(Memory<byte> memory)
-        {
-            return new UInt8Array(ArrowArrayExtensions.WrapInArrayData(UInt8Type.Default, memory, memory.Length));
-        }
-
-        //public static StringArray WrapInString(Memory<byte> utf8, Memory<byte> offsets)
-        //{
-        //    return new StringArray(new ArrayData(StringType.Default, offsets.Length, 0, 0, new ArrowBuffer[] { new ArrowBuffer(offsets), new ArrowBuffer(utf8) }, Array.Empty<ArrayData>()));
-        //}
-
-        public static UInt16Array WrapInUInt16(Memory<byte> memory)
-        {
-            return new UInt16Array(ArrowArrayExtensions.WrapInArrayData(UInt16Type.Default, memory, memory.Length / sizeof(UInt16)));
-        }
-
-        public static UInt32Array WrapInUInt32(Memory<byte> memory)
-        {
-            return new UInt32Array(ArrowArrayExtensions.WrapInArrayData(UInt32Type.Default, memory, memory.Length / sizeof(UInt32)));
-        }
-
-        public static UInt64Array WrapInUInt64(Memory<byte> memory)
-        {
-            return new UInt64Array(ArrowArrayExtensions.WrapInArrayData(UInt64Type.Default, memory, memory.Length / sizeof(UInt64)));
+            public override void Unpin()
+            {
+                throw new NotSupportedException();
+            }
         }
     }
 }

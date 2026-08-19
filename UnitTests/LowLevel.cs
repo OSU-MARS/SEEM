@@ -1,9 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Apache.Arrow;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Mars.Seem.Extensions;
 using Mars.Seem.Optimization;
 using Mars.Seem.Silviculture;
 using Mars.Seem.Tree;
 using System;
+using Mars.Seem.Output;
 
 namespace Mars.Seem.Test
 {
@@ -11,6 +13,145 @@ namespace Mars.Seem.Test
     [TestClass]
     public class LowLevel
     {
+        [TestMethod]
+        public void ArrowExtensions()
+        {
+            FiaCode[] dataFia = [ FiaCode.AbiesAmabalis, FiaCode.AbiesLasiocarpa, FiaCode.PinusLambertiana, FiaCode.TsugaMertensiana ];
+            UInt16Array arrowFia = dataFia.AsArrowArray();
+            float[] dataFloat = [ Single.NegativeInfinity, Single.MinValue, -1.0F, 0.0F, 1.0F, Single.MaxValue, Single.PositiveInfinity ];
+            FloatArray arrowFloat = dataFloat.AsArrowArray();
+            double[] dataDouble = [ Double.NegativeInfinity, Double.MinValue, -1.0, 0.0, 1.0, Double.MaxValue, Double.PositiveInfinity ];
+            DoubleArray arrowDouble = dataDouble.AsArrowArray();
+
+            sbyte[] dataInt8 = [ sbyte.MinValue, -1, 0, 1, sbyte.MaxValue ];
+            Int8Array arrowInt8 = dataInt8.AsArrowArray();
+            Int16[] dataInt16 = [ Int16.MinValue, -1, 0, 1, Int16.MaxValue ];
+            Int16Array arrowInt16 = dataInt16.AsArrowArray();
+            Int32[] dataInt32 = [ Int32.MinValue, -1, 0, 1, Int32.MaxValue ];
+            Int32Array arrowInt32 = dataInt32.AsArrowArray();
+            Int64[] dataInt64 = [ Int64.MinValue, -1, 0, 1, Int64.MaxValue ];
+            Int64Array arrowInt64 = dataInt64.AsArrowArray();
+
+            byte[] dataUInt8 = [ byte.MinValue, 2, 3, 4, 5, byte.MaxValue ];
+            UInt8Array arrowUInt8 = dataUInt8.AsArrowArray();
+            UInt16[] dataUInt16 = [ UInt16.MinValue, 1, 2, 3, 4, 5, UInt16.MaxValue ];
+            UInt16Array arrowUInt16 = dataUInt16.AsArrowArray();
+            UInt32[] dataUInt32 = [ UInt32.MinValue, 1, 2, 3, 4, 5, UInt32.MaxValue ];
+            UInt32Array arrowUInt32 = dataUInt32.AsArrowArray();
+            UInt64[] dataUInt64 = [ UInt64.MinValue, 1, 2, 3, 4, 5, UInt64.MaxValue ];
+            UInt64Array arrowUInt64 = dataUInt64.AsArrowArray();
+
+            ReadOnlySpan<UInt16> arrowValuesFia = arrowFia.Values;
+            for (int index = 0; index < dataFia.Length; ++index)
+            {
+                Assert.IsTrue(arrowValuesFia[index] == (UInt16)dataFia[index], $"FiaCode marshaling failed at index {index}. {arrowValuesFia[index]} does not match {dataFia[index]}.");
+            }
+
+            ReadOnlySpan<float> arrowValuesFloat = arrowFloat.Values;
+            ReadOnlySpan<double> arrowValuesDouble = arrowDouble.Values;
+            Assert.IsTrue((arrowFloat.Length == dataFloat.Length) && (arrowValuesFloat.Length == dataFloat.Length), "Float length.");
+            Assert.IsTrue((arrowDouble.Length == dataDouble.Length) && (arrowValuesDouble.Length == dataDouble.Length), "Double length.");
+            for (int index = 0; index < dataFloat.Length; ++index)
+            {
+                Assert.IsTrue(arrowValuesFloat[index] == dataFloat[index], $"Float marshaling failed at index {index}. {arrowValuesFloat[index]} does not match {dataFloat[index]}.");
+                Assert.IsTrue(arrowValuesDouble[index] == dataDouble[index], $"Double marshaling failed at index {index}. {arrowValuesDouble[index]} does not match {dataDouble[index]}.");
+            }
+
+            ReadOnlySpan<sbyte> arrowValuesInt8 = arrowInt8.Values;
+            ReadOnlySpan<Int16> arrowValuesInt16 = arrowInt16.Values;
+            ReadOnlySpan<Int32> arrowValuesInt32 = arrowInt32.Values;
+            ReadOnlySpan<Int64> arrowValuesInt64 = arrowInt64.Values;
+            Assert.IsTrue((arrowInt8.Length == dataInt8.Length) && (arrowValuesInt8.Length == dataInt8.Length), "Int8 length.");
+            Assert.IsTrue((arrowInt16.Length == dataInt16.Length) && (arrowValuesInt16.Length == dataInt16.Length), "Int16 length.");
+            Assert.IsTrue((arrowInt32.Length == dataInt32.Length) && (arrowValuesInt32.Length == dataInt32.Length), "Int32 length.");
+            Assert.IsTrue((arrowInt64.Length == dataInt64.Length) && (arrowValuesInt64.Length == dataInt64.Length), "Int64 length.");
+            for (int index = 0; index < dataInt8.Length; ++index)
+            {
+                Assert.IsTrue(arrowValuesInt8[index] == dataInt8[index], $"Int8 marshaling failed at index {index}. {arrowValuesInt8[index]} does not match {dataInt8[index]}.");
+                Assert.IsTrue(arrowValuesInt16[index] == dataInt16[index], $"Int16 marshaling failed at index {index}. {arrowValuesInt16[index]} does not match {dataInt16[index]}.");
+                Assert.IsTrue(arrowValuesInt32[index] == dataInt32[index], $"Int32 marshaling failed at index {index}. {arrowValuesInt32[index]} does not match {dataInt32[index]}.");
+                Assert.IsTrue(arrowValuesInt64[index] == dataInt64[index], $"Int64 marshaling failed at index {index}. {arrowValuesInt64[index]} does not match {dataInt64[index]}.");
+            }
+
+            ReadOnlySpan<byte> arrowValuesUInt8 = arrowUInt8.Values;
+            ReadOnlySpan<UInt16> arrowValuesUInt16 = arrowUInt16.Values;
+            ReadOnlySpan<UInt32> arrowValuesUInt32 = arrowUInt32.Values;
+            ReadOnlySpan<UInt64> arrowValuesUInt64 = arrowUInt64.Values;
+            Assert.IsTrue((arrowUInt8.Length == dataUInt8.Length) && (arrowValuesUInt8.Length == dataUInt8.Length), "UInt8 length.");
+            Assert.IsTrue((arrowUInt16.Length == dataUInt16.Length) && (arrowValuesUInt16.Length == dataUInt16.Length), "UInt16 length.");
+            Assert.IsTrue((arrowUInt32.Length == dataUInt32.Length) && (arrowValuesUInt32.Length == dataUInt32.Length), "UInt32 length.");
+            Assert.IsTrue((arrowUInt64.Length == dataUInt64.Length) && (arrowValuesUInt64.Length == dataUInt64.Length), "UInt64 length.");
+            for (int index = 0; index < dataUInt8.Length; ++index)
+            {
+                Assert.IsTrue(arrowValuesUInt8[index] == dataUInt8[index], $"UInt8 marshaling failed at index {index}. {arrowValuesUInt8[index]} does not match {dataUInt8[index]}.");
+                Assert.IsTrue(arrowValuesUInt16[index] == dataUInt16[index], $"UInt16 marshaling failed at index {index}. {arrowValuesUInt16[index]} does not match {dataUInt16[index]}.");
+                Assert.IsTrue(arrowValuesUInt32[index] == dataUInt32[index], $"UInt32 marshaling failed at index {index}. {arrowValuesUInt32[index]} does not match {dataUInt32[index]}.");
+                Assert.IsTrue(arrowValuesUInt64[index] == dataUInt64[index], $"UInt64 marshaling failed at index {index}. {arrowValuesUInt64[index]} does not match {dataUInt64[index]}.");
+            }
+        }
+
+        [TestMethod]
+        public void ArrowSerialization()
+        {
+            // stands
+            WriteStandTrajectoryContext maximumWriteContext = new(harvestsOnly: false, heuristicParameters: false, noTreeGrowth: false, noFinancial: false, noCarbon: false, noHarvestCosts: false, noTimberSorts: false, noEquipmentProductivity: false, diameterClassSize: Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters, maximumDiameter: Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters);
+            WriteStandTrajectoryContext noTreeGrowthWriteContext = new(harvestsOnly: false, heuristicParameters: false, noTreeGrowth: true, noFinancial: false, noCarbon: false, noHarvestCosts: false, noTimberSorts: false, noEquipmentProductivity: false, diameterClassSize: Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters, maximumDiameter: Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters);
+            WriteStandTrajectoryContext noFinancialWriteContext = new(harvestsOnly: false, heuristicParameters: false, noTreeGrowth: false, noFinancial: true, noCarbon: false, noHarvestCosts: false, noTimberSorts: false, noEquipmentProductivity: false, diameterClassSize: Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters, maximumDiameter: Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters);
+            WriteStandTrajectoryContext noHarvestCostWriteContext = new(harvestsOnly: false, heuristicParameters: false, noTreeGrowth: false, noFinancial: false, noCarbon: false, noHarvestCosts: true, noTimberSorts: false, noEquipmentProductivity: false, diameterClassSize: Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters, maximumDiameter: Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters);
+            WriteStandTrajectoryContext noTimberSortsWriteContext = new(harvestsOnly: false, heuristicParameters: false, noTreeGrowth: false, noFinancial: false, noCarbon: false, noHarvestCosts: false, noTimberSorts: true, noEquipmentProductivity: false, diameterClassSize: Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters, maximumDiameter: Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters);
+            WriteStandTrajectoryContext noEquipmentProductivityWriteContext = new(harvestsOnly: false, heuristicParameters: false, noTreeGrowth: false, noFinancial: false, noCarbon: false, noHarvestCosts: false, noTimberSorts: false, noEquipmentProductivity: true, diameterClassSize: Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters, maximumDiameter: Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters);
+            WriteStandTrajectoryContext minimumWriteContext = new(harvestsOnly: false, heuristicParameters: false, noTreeGrowth: true, noFinancial: true, noCarbon: true, noHarvestCosts: true, noTimberSorts: true, noEquipmentProductivity: true, diameterClassSize: Constant.Bucking.VolumeTableDiameterClassSizeInCentimeters, maximumDiameter: Constant.Bucking.VolumeTableMaximumDiameterToLogInCentimeters);
+
+            StandTrajectoryArrowMemory maximumTrajectoryArrow = new(maximumWriteContext, totalNumberOfRecords: 1);
+            StandTrajectoryArrowMemory noTreeGrowthTrajectoryArrow = new(noTreeGrowthWriteContext, totalNumberOfRecords: 1);
+            StandTrajectoryArrowMemory noFinancialTrajectoryArrow = new(noFinancialWriteContext, totalNumberOfRecords: 1);
+            StandTrajectoryArrowMemory noHarvestCostsTrajectoryArrow = new(noHarvestCostWriteContext, totalNumberOfRecords: 1);
+            StandTrajectoryArrowMemory noTimberSortsTrajectoryArrow = new(noTimberSortsWriteContext, totalNumberOfRecords: 1);
+            StandTrajectoryArrowMemory noEquipmentProductivityTrajectoryArrow = new(noEquipmentProductivityWriteContext, totalNumberOfRecords: 1);
+            StandTrajectoryArrowMemory minimumTrajectoryArrow = new(minimumWriteContext, totalNumberOfRecords: 1);
+
+            int maximumTrajectoryArrowColumns = maximumTrajectoryArrow.Schema.FieldsList.Count;
+            int noTreeGrowthTrajectoryArrowColumns = noTreeGrowthTrajectoryArrow.Schema.FieldsList.Count;
+            int noFinancialTrajectoryArrowColumns = noFinancialTrajectoryArrow.Schema.FieldsList.Count;
+            int noHarvestCostsTrajectoryArrowColumns = noHarvestCostsTrajectoryArrow.Schema.FieldsList.Count;
+            int noTimberSortsTrajectoryArrowColumns = noTimberSortsTrajectoryArrow.Schema.FieldsList.Count;
+            int noEquipmentProductivityTrajectoryArrowColumns = noEquipmentProductivityTrajectoryArrow.Schema.FieldsList.Count;
+            int minimumTrajectoryArrowColumns = minimumTrajectoryArrow.Schema.FieldsList.Count;
+
+            int maximumBytesPerStandTrajectoryRecord = maximumTrajectoryArrow.GetUncompressedBytesPerRow();
+            int noTreeGrowthBytesPerStandTrajectoryRecord = noTreeGrowthTrajectoryArrow.GetUncompressedBytesPerRow();
+            int noFinancialBytesPerStandTrajectoryRecord = noFinancialTrajectoryArrow.GetUncompressedBytesPerRow();
+            int noHarvestCostsBytesPerStandTrajectoryRecord = noHarvestCostsTrajectoryArrow.GetUncompressedBytesPerRow();
+            int noTimberSortsBytesPerStandTrajectoryRecord = noTimberSortsTrajectoryArrow.GetUncompressedBytesPerRow();
+            int noEquipmentProductivityBytesPerStandTrajectoryRecord = noEquipmentProductivityTrajectoryArrow.GetUncompressedBytesPerRow();
+            int minimumBytesPerStandTrajectoryRecord = minimumTrajectoryArrow.GetUncompressedBytesPerRow();
+
+            Assert.IsTrue(maximumTrajectoryArrowColumns == 143, $"StandTrajectoryBatch(max) has {maximumTrajectoryArrowColumns} columns.");
+            Assert.IsTrue(noTreeGrowthTrajectoryArrowColumns == 131, $"StandTrajectoryBatch(noTreeGrowth) has {noTreeGrowthTrajectoryArrowColumns} columns.");
+            Assert.IsTrue(noFinancialTrajectoryArrowColumns == 141, $"StandTrajectoryBatch(noFinancial) has {noFinancialTrajectoryArrowColumns} columns.");
+            Assert.IsTrue(noHarvestCostsTrajectoryArrowColumns == 120, $"StandTrajectoryBatch(noHarvestCosts) has {noHarvestCostsTrajectoryArrowColumns} columns.");
+            Assert.IsTrue(noTimberSortsTrajectoryArrowColumns == 119, $"StandTrajectoryBatch(noTimberSorts) has {noTimberSortsTrajectoryArrowColumns} columns.");
+            Assert.IsTrue(noEquipmentProductivityTrajectoryArrowColumns == 69, $"StandTrajectoryBatch(noEquipmentProductivity) has {noEquipmentProductivityTrajectoryArrowColumns} columns.");
+            Assert.IsTrue(minimumTrajectoryArrowColumns == 8, $"StandTrajectoryBatch(minimum) has {minimumTrajectoryArrowColumns} columns.");
+
+            Assert.IsTrue(maximumBytesPerStandTrajectoryRecord == 527, "StandTrajectoryBatch.GetBytesPerRecord(max)");
+            Assert.IsTrue(noTreeGrowthBytesPerStandTrajectoryRecord == 479, "StandTrajectoryBatch.GetBytesPerRecord(noTreeGrowth)");
+            Assert.IsTrue(noFinancialBytesPerStandTrajectoryRecord == 519, "StandTrajectoryBatch.GetBytesPerRecord(noFinancial)");
+            Assert.IsTrue(noHarvestCostsBytesPerStandTrajectoryRecord == 441, "StandTrajectoryBatch.GetBytesPerRecord(noHarvestCosts)");
+            Assert.IsTrue(noTimberSortsBytesPerStandTrajectoryRecord == 431, "StandTrajectoryBatch.GetBytesPerRecord(noTimberSorts)");
+            Assert.IsTrue(noEquipmentProductivityBytesPerStandTrajectoryRecord == 258, "StandTrajectoryBatch.GetBytesPerRecord(noEquipmentProductivity)");
+            Assert.IsTrue(minimumBytesPerStandTrajectoryRecord == 20, "StandTrajectoryBatch.GetBytesPerRecord(minimum)");
+
+            Assert.IsTrue(maximumTrajectoryArrow.RecordBatches.Count == 0, $"maximumTrajectoryArrowMemory.RecordBatches.Count = {maximumTrajectoryArrow.RecordBatches.Count}.");
+            Assert.IsTrue(maximumTrajectoryArrow.RecordCount == 0, $"maximumTrajectoryArrowMemory.RecordCount = {maximumTrajectoryArrow.RecordCount}.");
+            Assert.IsTrue(maximumTrajectoryArrow.Schema.FieldsList.Count == 143, $"maximumTrajectoryArrowMemory.Schema.FieldsList.Count = {maximumTrajectoryArrow.Schema.FieldsList.Count}.");
+            Assert.IsTrue(maximumTrajectoryArrow.Schema.Metadata.Count == maximumTrajectoryArrow.Schema.FieldsList.Count, $"maximumTrajectoryArrowMemory.Schema.Metadata.Count = {maximumTrajectoryArrow.Schema.Metadata.Count} does not match the number of fields in the schema ({maximumTrajectoryArrow.Schema.FieldsList.Count}).");
+            Assert.IsTrue(maximumTrajectoryArrow.TotalNumberOfRecords == 1, $"maximumTrajectoryArrowMemory.TotalNumberOfRecords = {maximumTrajectoryArrow.TotalNumberOfRecords}.");
+
+            // trees
+            // Not currently anything in TreeListArrowMemory that's easily tested at a low level as constructors require stand trajectories.
+        }
+
         [TestMethod]
         public void BreadthFirstEnumeration()
         {

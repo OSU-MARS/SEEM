@@ -128,10 +128,12 @@ namespace Mars.Seem
             public const float WesternHemlockSiteIndexInM = 29.1F; // from Malcolm Knapp Research Forest spacing trial plot 21
         }
 
-        public static class FileExtension
+        public static class File
         {
-            public const string Csv = ".csv";
-            public const string Feather = ".feather";
+            public const string CsvExtension = ".csv";
+            public const int DefaultBufferSize = 256 * 1024; // 256 kB
+            public const string FeatherExtension = ".feather";
+            public const string XlsxExtension = ".xlsx";
         }
 
         public static class Financial

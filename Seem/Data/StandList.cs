@@ -1,24 +1,29 @@
-﻿using Mars.Seem.Extensions;
+﻿using Apache.Arrow;
+using Apache.Arrow.Compression;
+using Apache.Arrow.Ipc;
+using Mars.Seem.Extensions;
+using Mars.Seem.Organon;
+using Mars.Seem.Output;
 using Mars.Seem.Tree;
-using System.Xml;
 using System;
 using System.Collections.Generic;
-using Mars.Seem.Organon;
+using System.IO;
+using System.Xml;
 
 namespace Mars.Seem.Data
 {
-    public class CruisedStands : TreeReader
+    public class StandList : TreeReader
     {
         private int nextTreeID;
-        private readonly CruisedStandHeader standHeader;
-        private readonly Dictionary<int, Stand> standsByID;
-        private readonly CruisedTreeHeader treeHeader;
+        private readonly StandSpreadsheetHeader standHeader;
+        private readonly Dictionary<UInt32, Stand> standsByID;
+        private readonly TreeSpreadsheetHeader treeHeader;
 
         public OrganonVariant OrganonVariant { get; private init; }
         // workaround https://github.com/PowerShell/PowerShell/issues/20066 with a Stands property rather than implementing IList<Stand>
-        public IList<Stand> Stands { get; private init; }
+        public List<Stand> Stands { get; private init; }
 
-        public CruisedStands(TreeModel growthModel)
+        public StandList(TreeModel growthModel)
         {
             this.nextTreeID = 0;
             this.standHeader = new();
@@ -96,7 +101,7 @@ namespace Mars.Seem.Data
         //    this.Stands.RemoveAt(index);
         //}
 
-        private void ParseStandRow(int rowIndex, string[] rowAsStrings)
+        private void ParseStandSpreadsheetRow(int rowIndex, string[] rowAsStrings)
         {
             if (rowIndex == 0)
             {
@@ -104,7 +109,7 @@ namespace Mars.Seem.Data
                 return;
             }
 
-            int standID = Int32.Parse(rowAsStrings[this.standHeader.ID]);
+            UInt32 standID = UInt32.Parse(rowAsStrings[this.standHeader.ID]);
             float areaInHa = Single.Parse(rowAsStrings[this.standHeader.Area]);
             if (Single.IsNaN(areaInHa) || (areaInHa <= 0.0F) || (areaInHa > 1000.0F))
             {
@@ -187,7 +192,7 @@ namespace Mars.Seem.Data
             this.standsByID.Add(standID, stand);
         }
 
-        private void ParseTreeRow(int rowIndex, string[] rowAsStrings)
+        private void ParseTreeSpreadsheetRow(int rowIndex, string[] rowAsStrings)
         {
             if (rowIndex == 0)
             {
@@ -208,7 +213,7 @@ namespace Mars.Seem.Data
                 return; // assume end of data in file
             }
 
-            int standID = Int32.Parse(standIDasString);
+            UInt32 standID = UInt32.Parse(standIDasString);
             if (this.standsByID.TryGetValue(standID, out Stand? stand) == false)
             {
                 throw new XmlException($"Stand ID {standID} is not present in stands list.", null, rowIndex + 1, this.treeHeader.Stand);
@@ -250,15 +255,10 @@ namespace Mars.Seem.Data
             ++this.nextTreeID;
         }
 
-        public void Read(string xlsxFilePath, string standWorksheetName, string treesWorksheetName)
+        private void PopulateStandList()
         {
-            // read stands and trees
-            XlsxReader reader = new();
-            XlsxReader.ReadWorksheet(xlsxFilePath, standWorksheetName, this.ParseStandRow);
-            XlsxReader.ReadWorksheet(xlsxFilePath, treesWorksheetName, this.ParseTreeRow);
-
             // set height to crown base on all trees
-            // filter any stands without trees on the assumption that they were not cruised
+            // Skip any stands without trees on the assumption that they were not cruised
             this.Stands.Clear();
             foreach (Stand stand in this.standsByID.Values)
             {
@@ -278,10 +278,38 @@ namespace Mars.Seem.Data
             }
 
             // reset for next read
+            this.nextTreeID = 0;
             this.standsByID.Clear();
         }
 
-        private class CruisedStandHeader
+        public void ReadTreesFromArrowAndStandsFromSpreadsheet(string arrowTreeFilePath, string xlsxStandFilePath, string standWorksheetName)
+        {
+            // read stands from spreadsheet
+            XlsxReader reader = new();
+            XlsxReader.ReadWorksheet(xlsxStandFilePath, standWorksheetName, this.ParseStandSpreadsheetRow);
+
+            // read trees 
+            using FileStream individualTreeStream = new(arrowTreeFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, Constant.File.DefaultBufferSize);
+            using ArrowFileReader individualTreeFile = new(individualTreeStream, new CompressionCodecFactory());
+            for (RecordBatch? arrowBatch = individualTreeFile.ReadNextRecordBatch(); arrowBatch != null; arrowBatch = individualTreeFile.ReadNextRecordBatch())
+            {
+                TreeListArrowMemory.TreeListBatch.ReadToStandDictionary(arrowBatch, this.standsByID, this.DefaultCrownRatio);
+            }
+
+            this.PopulateStandList();
+        }
+
+        public void ReadTreesAndStandsFromSpreadsheet(string xlsxFilePath, string standWorksheetName, string treesWorksheetName)
+        {
+            // read stands and trees
+            XlsxReader reader = new();
+            XlsxReader.ReadWorksheet(xlsxFilePath, standWorksheetName, this.ParseStandSpreadsheetRow);
+            XlsxReader.ReadWorksheet(xlsxFilePath, treesWorksheetName, this.ParseTreeSpreadsheetRow);
+
+            this.PopulateStandList();
+        }
+
+        private class StandSpreadsheetHeader
         {
             public int ID { get; set; }
             public int Age { get; set; }
@@ -294,7 +322,7 @@ namespace Mars.Seem.Data
             public int SlopeInPercent { get; set; }
             public int YardingFactor { get; set; }
 
-            public CruisedStandHeader()
+            public StandSpreadsheetHeader()
             {
                 this.Age = -1;
                 this.Area = -1;
@@ -403,7 +431,7 @@ namespace Mars.Seem.Data
             }
         }
 
-        private class CruisedTreeHeader
+        private class TreeSpreadsheetHeader
         {
             public int Age { get; set; }
             public int Codes { get; set; }
@@ -416,7 +444,7 @@ namespace Mars.Seem.Data
             public int Stand { get; set; }
             public int Tag { get; set; }
 
-            public CruisedTreeHeader()
+            public TreeSpreadsheetHeader()
             {
                 this.Age = -1;
                 this.Codes = -1;

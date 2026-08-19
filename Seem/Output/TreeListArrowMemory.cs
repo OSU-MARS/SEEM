@@ -1,42 +1,31 @@
 ﻿using Apache.Arrow;
 using Apache.Arrow.Types;
+using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using Mars.Seem.Extensions;
 using Mars.Seem.Tree;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 namespace Mars.Seem.Output
 {
     public class TreeListArrowMemory : ArrowMemory
     {
-        private byte[]? stand;
-        private byte[]? plot;
-        private byte[]? tag;
-        private byte[]? species;
-        private byte[]? year;
-        private byte[]? standAge;
-        private byte[]? dbh;
-        private byte[]? height;
-        private byte[]? crownRatio;
-        private byte[]? liveExpansionFactor;
-        private byte[]? deadExpansionFactor;
+        public const string StandFieldName = "stand";
+        public const string PlotFieldName = "plot";
+        public const string TagFieldName = "tag";
+        public const string SpeciesFieldName = "species";
+        public const string YearFieldName = "year";
+        public const string StandAgeFieldName = "standAge";
+        public const string DbhFieldName = "dbh";
+        public const string HeightFieldName = "height";
+        public const string CrownRatioFieldName = "crownRatio";
+        public const string LiveExpansionFactorFieldName = "liveExpansionFactor";
+        public const string DeadExpansionFactorFieldName = "deadExpansionFactor";
 
         public TreeListArrowMemory(List<StandTrajectory> trajectories, int? startYear) 
-            : base(TreeListArrowMemory.CreateSchema(), TreeListArrowMemory.DefaultMaximumRecordsPerBatch)
+            : base(TreeListArrowMemory.CreateSchema(), maximumBatchLength: 10 * 1000 * 1000)
         {
-            this.stand = null;
-            this.plot = null;
-            this.tag = null;
-            this.species = null;
-            this.year = null;
-            this.standAge = null;
-            this.dbh = null;
-            this.height = null;
-            this.crownRatio = null;
-            this.liveExpansionFactor = null;
-            this.deadExpansionFactor = null;
-
             this.TotalNumberOfRecords = 0;
 
             // find record batch sizes
@@ -75,37 +64,26 @@ namespace Mars.Seem.Output
             for (int batchIndex = 0; batchIndex < recordBatchPlans.Count; ++batchIndex)
             {
                 (trajectoryStartIndex, int trajectoryEndIndex, treeTimestepsInBatch) = recordBatchPlans[batchIndex];
-                this.AppendNewBatch(treeTimestepsInBatch);
 
+                TreeListBatch batch = new(treeTimestepsInBatch);
                 int startIndexInRecordBatch = 0;
                 for (int trajectoryIndex = trajectoryStartIndex; trajectoryIndex < trajectoryEndIndex; ++trajectoryIndex)
                 {
                     StandTrajectory trajectory = trajectories[trajectoryIndex];
-                    startIndexInRecordBatch = this.Add(trajectory, startYear, startIndexInRecordBatch);
+                    startIndexInRecordBatch = TreeListArrowMemory.CopyStandTrajectoryToArrowBatch(trajectory, startYear, batch, startIndexInRecordBatch);
                 }
 
+                this.RecordBatches.Add(new(this.Schema, batch.AsArrowArrays(), treeTimestepsInBatch));
                 this.TotalNumberOfRecords += treeTimestepsInBatch;
             }
         }
 
-        private int Add(StandTrajectory trajectory, int? startYear, int startIndexInRecordBatch)
+        private static int CopyStandTrajectoryToArrowBatch(StandTrajectory trajectory, int? startYear, TreeListBatch batchArrays, int startIndexInRecordBatch)
         {
             if (UInt32.TryParse(trajectory.Name, out UInt32 standID) == false)
             {
                 throw new NotSupportedException($"Stand trajectory name '{trajectory.Name}' could not be converted to an unsigned 32 bit integer. For the moment, trajectory names are required to be stand IDs.");
             }
-
-            Span<UInt32> batchStand = MemoryMarshal.Cast<byte, UInt32>(this.stand.AsSpan()); // .AsSpan() required because arrays are otherwise interpreted as ReadOnlySpan
-            Span<Int32> batchPlot = MemoryMarshal.Cast<byte, Int32>(this.plot.AsSpan());
-            Span<Int32> batchTag = MemoryMarshal.Cast<byte, Int32>(this.tag.AsSpan());
-            Span<FiaCode> batchSpecies = MemoryMarshal.Cast<byte, FiaCode>(this.species.AsSpan());
-            Span<Int16> batchYear = MemoryMarshal.Cast<byte, Int16>(this.year.AsSpan());
-            Span<Int16> batchStandAge = MemoryMarshal.Cast<byte, Int16>(this.standAge.AsSpan());
-            Span<float> batchDbh = MemoryMarshal.Cast<byte, float>(this.dbh.AsSpan());
-            Span<float> batchHeight = MemoryMarshal.Cast<byte, float>(this.height.AsSpan());
-            Span<float> batchCrownRatio = MemoryMarshal.Cast<byte, float>(this.crownRatio.AsSpan());
-            Span<float> batchLiveExpansionFactor = MemoryMarshal.Cast<byte, float>(this.liveExpansionFactor.AsSpan());
-            Span<float> batchDeadExpansionFactor = MemoryMarshal.Cast<byte, float>(this.deadExpansionFactor.AsSpan());
 
             Int16 year = startYear != null ? (Int16)startYear.Value : Constant.NoDataInt16;
             Int16 standAge = (Int16)trajectory.PeriodZeroAgeInYears;
@@ -119,22 +97,22 @@ namespace Mars.Seem.Output
                     Trees treesOfSpecies = stand.TreesBySpecies.Values[speciesIndex];
                     int treeCount = treesOfSpecies.Count;
 
-                    batchStand.Slice(recordIndex, treeCount).Fill(standID);
-                    treesOfSpecies.Plot[..treeCount].CopyTo(batchPlot[recordIndex..]);
-                    treesOfSpecies.Tag[..treeCount].CopyTo(batchTag[recordIndex..]);
-                    batchSpecies.Slice(recordIndex, treeCount).Fill(treesOfSpecies.Species);
-                    batchYear.Slice(recordIndex, treeCount).Fill(year);
-                    batchStandAge.Slice(recordIndex, treeCount).Fill(standAge);
+                    batchArrays.Stand.AsSpan().Slice(recordIndex, treeCount).Fill(standID);
+                    treesOfSpecies.Plot[..treeCount].CopyTo(batchArrays.Plot.AsSpan().Slice(recordIndex, treeCount));
+                    treesOfSpecies.Tag[..treeCount].CopyTo(batchArrays.Tag.AsSpan().Slice(recordIndex, treeCount));
+                    batchArrays.Species.AsSpan().Slice(recordIndex, treeCount).Fill(treesOfSpecies.Species);
+                    batchArrays.Year.AsSpan().Slice(recordIndex, treeCount).Fill(year);
+                    batchArrays.StandAge.AsSpan().Slice(recordIndex, treeCount).Fill(standAge);
 
-                    treesOfSpecies.CrownRatio[..treeCount].CopyTo(batchCrownRatio[recordIndex..]);
+                    treesOfSpecies.CrownRatio[..treeCount].CopyTo(batchArrays.CrownRatio.AsSpan().Slice(recordIndex, treeCount));
 
                     (float diameterToCmMultiplier, float heightToMetersMultiplier, float hectareExpansionFactorMultiplier) = treesOfSpecies.Units.GetConversionToMetric();
                     for (int treeIndex = 0; treeIndex < treeCount; ++recordIndex, ++treeIndex)
                     {
-                        batchDbh[recordIndex] = diameterToCmMultiplier * treesOfSpecies.Dbh[treeIndex];
-                        batchHeight[recordIndex] = heightToMetersMultiplier * treesOfSpecies.Height[treeIndex];
-                        batchLiveExpansionFactor[recordIndex] = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[treeIndex];
-                        batchDeadExpansionFactor[recordIndex] = hectareExpansionFactorMultiplier * treesOfSpecies.DeadExpansionFactor[treeIndex];
+                        batchArrays.Dbh[recordIndex] = diameterToCmMultiplier * treesOfSpecies.Dbh[treeIndex];
+                        batchArrays.Height[recordIndex] = heightToMetersMultiplier * treesOfSpecies.Height[treeIndex];
+                        batchArrays.LiveExpansionFactor[recordIndex] = hectareExpansionFactorMultiplier * treesOfSpecies.LiveExpansionFactor[treeIndex];
+                        batchArrays.DeadExpansionFactor[recordIndex] = hectareExpansionFactorMultiplier * treesOfSpecies.DeadExpansionFactor[treeIndex];
                     }
                 }
 
@@ -149,71 +127,132 @@ namespace Mars.Seem.Output
             return recordIndex;
         }
 
-        private void AppendNewBatch(int capacityInRecords)
-        {
-            this.stand = new byte[capacityInRecords * sizeof(UInt32)];
-            this.plot = new byte[capacityInRecords * sizeof(Int32)];
-            this.tag = new byte[capacityInRecords * sizeof(Int32)];
-            this.species = new byte[capacityInRecords * sizeof(FiaCode)];
-            this.year = new byte[capacityInRecords * sizeof(Int16)];
-            this.standAge = new byte[capacityInRecords * sizeof(Int16)];
-            this.dbh = new byte[capacityInRecords * sizeof(float)];
-            this.height = new byte[capacityInRecords * sizeof(float)];
-            this.crownRatio = new byte[capacityInRecords * sizeof(float)];
-            this.liveExpansionFactor = new byte[capacityInRecords * sizeof(float)];
-            this.deadExpansionFactor = new byte[capacityInRecords * sizeof(float)];
-
-            IArrowArray[] arrowArrays =
-            [
-                ArrowArrayExtensions.WrapInUInt32(this.stand),
-                ArrowArrayExtensions.WrapInInt32(this.plot),
-                ArrowArrayExtensions.WrapInInt32(this.tag),
-                ArrowArrayExtensions.WrapInUInt16(this.species),
-                ArrowArrayExtensions.WrapInInt16(this.year),
-                ArrowArrayExtensions.WrapInInt16(this.standAge),
-                ArrowArrayExtensions.WrapInFloat(this.dbh),
-                ArrowArrayExtensions.WrapInFloat(this.height),
-                ArrowArrayExtensions.WrapInFloat(this.crownRatio),
-                ArrowArrayExtensions.WrapInFloat(this.liveExpansionFactor),
-                ArrowArrayExtensions.WrapInFloat(this.deadExpansionFactor)
-            ];
-
-            this.RecordBatches.Add(new(this.Schema, arrowArrays, capacityInRecords));
-        }
-
         private static Schema CreateSchema()
         {
             List<Field> fields =
             [
-                new("stand", UInt32Type.Default, false),
-                new("plot", Int32Type.Default, false),
-                new("tag", Int32Type.Default, false),
-                new("species", Int16Type.Default, false),
-                new("year", UInt16Type.Default, false),
-                new("standAge", UInt16Type.Default, false),
-                new("dbh", FloatType.Default, false),
-                new("height", FloatType.Default, false),
-                new("crownRatio", FloatType.Default, false),
-                new("liveExpansionFactor", FloatType.Default, false),
-                new("deadExpansionFactor", FloatType.Default, false)
+                new(TreeListArrowMemory.StandFieldName, UInt32Type.Default, false),
+                new(TreeListArrowMemory.PlotFieldName, Int32Type.Default, false),
+                new(TreeListArrowMemory.TagFieldName, Int32Type.Default, false),
+                new(TreeListArrowMemory.SpeciesFieldName, Int16Type.Default, false),
+                new(TreeListArrowMemory.YearFieldName, UInt16Type.Default, false),
+                new(TreeListArrowMemory.StandAgeFieldName, UInt16Type.Default, false),
+                new(TreeListArrowMemory.DbhFieldName, FloatType.Default, false),
+                new(TreeListArrowMemory.HeightFieldName, FloatType.Default, false),
+                new(TreeListArrowMemory.CrownRatioFieldName, FloatType.Default, false),
+                new(TreeListArrowMemory.LiveExpansionFactorFieldName, FloatType.Default, false),
+                new(TreeListArrowMemory.DeadExpansionFactorFieldName, FloatType.Default, false)
             ];
 
             Dictionary<string, string> metadata = new()
             {
-                { "stand", "stand ID" },
-                { "plot", "plot ID" },
-                { "tag", "tree ID" },
-                { "species", "Integer code for tree species, currently a USFS FIA code (US Forest Service Forest Inventory and Analysis, 16 bit)." },
-                { "year", "calendar year, CE, if specified" },
-                { "standAge", "nominal age of dominant and codominant trees in stand, years" },
-                { "dbh", "diameter at breast height, cm" },
-                { "height", "tree height, m" },
-                { "crownRatio", "crown ratio, fraction of height" },
-                { "liveExpansionFactor", "live trees per hectare" },
-                { "deadExpansionFactor", "newly dead trees and snags per hectare" }
+                { TreeListArrowMemory.StandFieldName, "stand ID" },
+                { TreeListArrowMemory.PlotFieldName, "plot ID" },
+                { TreeListArrowMemory.TagFieldName, "tree ID" },
+                { TreeListArrowMemory.SpeciesFieldName, "Integer code for tree species, currently a USFS FIA code (US Forest Service Forest Inventory and Analysis, 16 bit)." },
+                { TreeListArrowMemory.YearFieldName, "calendar year, CE, if specified" },
+                { TreeListArrowMemory.StandAgeFieldName, "nominal age of dominant and codominant trees in stand, years" },
+                { TreeListArrowMemory.DbhFieldName, "diameter at breast height, cm" },
+                { TreeListArrowMemory.HeightFieldName, "tree height, m" },
+                { TreeListArrowMemory.CrownRatioFieldName, "crown ratio, fraction of height" },
+                { TreeListArrowMemory.LiveExpansionFactorFieldName, "live trees per hectare" },
+                { TreeListArrowMemory.DeadExpansionFactorFieldName, "newly dead trees and snags per hectare" }
             };
 
             return new Schema(fields, metadata);
+        }
+
+        public class TreeListBatch // mutable view of a record batch
+        {
+            public UInt32[] Stand { get; private init; }
+            public Int32[] Plot { get; private init; }
+            public Int32[] Tag { get; private init; }
+            public FiaCode[] Species { get; private init; }
+            public Int16[] Year { get; private init; }
+            public Int16[] StandAge { get; private init; }
+            public float[] Dbh { get; private init; }
+            public float[] Height { get; private init; }
+            public float[] CrownRatio { get; private init; }
+            public float[] LiveExpansionFactor { get; private init; }
+            public float[] DeadExpansionFactor { get; private init; }
+
+            public TreeListBatch(int capacityInRecords)
+            {
+                this.Stand = new UInt32[capacityInRecords];
+                this.Plot = new Int32[capacityInRecords];
+                this.Tag = new Int32[capacityInRecords];
+                this.Species = new FiaCode[capacityInRecords];
+                this.Year = new Int16[capacityInRecords];
+                this.StandAge = new Int16[capacityInRecords];
+                this.Dbh = new float[capacityInRecords];
+                this.Height = new float[capacityInRecords];
+                this.CrownRatio = new float[capacityInRecords];
+                this.LiveExpansionFactor = new float[capacityInRecords];
+                this.DeadExpansionFactor = new float[capacityInRecords];
+            }
+
+            public static void ReadToStandDictionary(RecordBatch arrowBatch, Dictionary<UInt32, Stand> standsByID, float defaultCrownRatio)
+            {
+                IArrowArray[] fields = [.. arrowBatch.Arrays];
+                Schema schema = arrowBatch.Schema;
+
+                UInt32Array? standIDarray = ArrowMemory.MaybeGetArray<UInt32Array>("standID", schema, fields);
+                UInt32Array? treeIDarrray = ArrowMemory.MaybeGetArray<UInt32Array>("treeID", schema, fields);
+                UInt16Array? fiaCodeArray = ArrowMemory.MaybeGetArray<UInt16Array>("fiaCode", schema, fields);
+                FloatArray? heightArray = ArrowMemory.MaybeGetArray<FloatArray>("height", schema, fields);
+                FloatArray? dbhArray = ArrowMemory.MaybeGetArray<FloatArray>("dbh", schema, fields);
+                BooleanArray? isSnagArray = ArrowMemory.MaybeGetArray<BooleanArray>("isSnag", schema, fields);
+                if ((standIDarray == null) || (treeIDarrray == null) || (fiaCodeArray == null) || (heightArray == null) || (dbhArray == null) || (isSnagArray == null))
+                {
+                    throw new ArgumentException($"Record batch has an unknown schema. Currently the only schema supported must contain the fields standID (UInt32), treeID (UInt32), fiaCode (UInt16), height (float), dbh (float), isSnag (bool).");
+                }
+
+                ReadOnlySpan<UInt32> standIDs = standIDarray.Values;
+                ReadOnlySpan<UInt32> treeIDs = treeIDarrray.Values;
+                ReadOnlySpan<UInt16> fiaCodes = fiaCodeArray.Values;
+                ReadOnlySpan<float> heights = heightArray.Values;
+                ReadOnlySpan<float> diametersAtBreastHeight = dbhArray.Values;
+                ReadOnlySpan<byte> isSnagBytes = isSnagArray.Values;
+
+                for (int treeIndex = 0; treeIndex < arrowBatch.Length; ++treeIndex)
+                {
+                    UInt32 standID = standIDs[treeIndex];
+                    if (standsByID.TryGetValue(standID, out Stand? stand) == false)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(arrowBatch), $"Stand ID {standID} at record {treeIndex} is not present in stands dictionary. Is the dictionary complete and in sync with the tree list?");
+                    }
+
+                    UInt32 treeID = treeIDs[treeIndex];
+                    FiaCode species = (FiaCode)fiaCodes[treeIndex];
+                    float dbh = diametersAtBreastHeight[treeIndex];
+                    float height = heights[treeIndex];
+                    TreeConditionCode codes = BitUtility.GetBit(isSnagBytes, treeIndex) ? TreeConditionCode.Snag : TreeConditionCode.Live;
+
+                    // add tree with placeholder crown ratio
+                    if (stand.TreesBySpecies.TryGetValue(species, out Trees? treesOfSpecies) == false)
+                    {
+                        treesOfSpecies = new Trees(species, minimumSize: 1, Units.Metric);
+                        stand.TreesBySpecies.Add(species, treesOfSpecies);
+                    }
+
+                    treesOfSpecies.Add(plot: 1, (Int32)treeID, dbh, height, defaultCrownRatio, 1.0F, codes);
+                }
+            }
+
+            public IArrowArray[] AsArrowArrays() // Arrow's read only view
+            {
+                return [ this.Stand.AsArrowArray(),
+                         this.Plot.AsArrowArray(),
+                         this.Tag.AsArrowArray(),
+                         this.Species.AsArrowArray(),
+                         this.Year.AsArrowArray(),
+                         this.StandAge.AsArrowArray(),
+                         this.Dbh.AsArrowArray(),
+                         this.Height.AsArrowArray(),
+                         this.CrownRatio.AsArrowArray(),
+                         this.LiveExpansionFactor.AsArrowArray(),
+                         this.DeadExpansionFactor.AsArrowArray() ];
+            }
         }
     }
 }
